@@ -21,6 +21,7 @@ export default async function LandingPage() {
                             height={1080}
                             priority
                             className={"max-h-[70lvh] w-auto md:mt-2 rounded-b-lg md:rounded-lg shadow-2xl"}
+                            placeholder={"blur"}
                         />
                         : <center>
                             <div
