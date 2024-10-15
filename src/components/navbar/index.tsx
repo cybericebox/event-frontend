@@ -24,23 +24,21 @@ import {HamburgerIcon} from "@chakra-ui/icons";
 import NavItem from "./NavItem";
 import LabButton from "./LabButton";
 import Logo from "../Logo"
-import {AuthenticatedOnClient, SignOut} from "@/hooks/auth";
-import {useEvent} from "@/hooks/useEvent";
+import {AuthenticatedClient} from "@/hooks/auth";
 import {WithTeamParticipation, WithTeam} from "@/components/team/WithTeam";
 import {useRouter} from "next/navigation";
 import {WithEvent} from "@/components/event/WithEvent";
+import {signOut} from "@/api/authAPI";
 
 
 export default function NavBar() {
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [navSize, changeNavSize] = useState("small"); // Used for the menu button which is also commented out below
-    const eventInfo = useEvent().useGetEventInfo();
     const PlatformName = "Cyber ICE Box";
     const router = useRouter();
 
     const newSignOut = () => {
-        SignOut().then(() => {
-            console.log("Signed out")
+        signOut().then(() => {
             router.refresh()
         });
         onClose()
@@ -153,13 +151,14 @@ export default function NavBar() {
                 as="nav"
                 top="0"
             >
-                {AuthenticatedOnClient().IsAuthenticated ? (
+                {AuthenticatedClient().IsAuthenticated ? (
                     <>
+                        <WithEvent>
                     <WithTeam>
                         <LabButton
                             display={navSize !== "small" ? "flex" : "none"}
                         />
-                        </WithTeam>
+                        </WithTeam></WithEvent>
 
                         <IconButton
                             marginLeft="10px"
@@ -261,14 +260,16 @@ export default function NavBar() {
                             </Flex>
                         </DrawerHeader>
                         <DrawerBody>
-                            {AuthenticatedOnClient().IsAuthenticated && (
+                            {AuthenticatedClient().IsAuthenticated && (
                                 <Center>
+                                <WithEvent>
                                     <WithTeam>
                                     <LabButton
                                         display={navSize === "small" ? "flex" : "none"}
                                         inDrawer
                                     />
                                     </WithTeam>
+                                </WithEvent>
                                 </Center>
 
                             )}
@@ -308,7 +309,7 @@ export default function NavBar() {
                                     customClickEvent={onClose}
                                 />
                             </Center>
-                            {AuthenticatedOnClient().IsAuthenticated ? (
+                            {AuthenticatedClient().IsAuthenticated ? (
                                 <>
                                     <Center width="fit-content" margin="auto">
                                     <WithEvent>

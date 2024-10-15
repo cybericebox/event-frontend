@@ -1,4 +1,4 @@
-import {AuthenticatedOnServer} from "@/hooks/auth/server";
-import {AuthenticatedOnClient, SignOut} from "@/hooks/auth/client";
+import {AuthenticatedServer} from "@/hooks/auth/server";
+import {AuthenticatedClient} from "@/hooks/auth/client";
 
-export {AuthenticatedOnServer, AuthenticatedOnClient, SignOut};
+export {AuthenticatedServer, AuthenticatedClient};

@@ -20,8 +20,7 @@ export default function ScoreGraph({activeChartSeries}: ScoreGraphProps) {
             type: 'time',
             boundaryGap: false,
             max: () => {
-                let now = new Date().toISOString();
-                return now
+                return new Date().toISOString();
             }
         },
         yAxis: {

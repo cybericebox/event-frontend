@@ -1,22 +1,21 @@
 "use client"
-import type React from "react";
+import React from "react";
 import {Center, Icon, Table, TableContainer, Tbody, Td, Th, Thead, Tr} from "@chakra-ui/react";
 import moment from "moment";
 import {GiDrop, GiMedal} from "react-icons/gi";
 import {useChallenge} from "@/hooks/useChallenge";
 import "@/app/globals.css"
 import {useEvent} from "@/hooks/useEvent";
-import {ParticipationType} from "@/types/event";
+import {ParticipationTypeEnum} from "@/types/event";
 
 
 function ChallengeSolvesTable({descriptionID}: { descriptionID: string }) {
-
-    const getSolves = useChallenge().useChallengeSolvedBy(descriptionID)
-    const getEventInfo = useEvent().useGetEventInfo()
+    const {ChallengeSolvedByResponse} = useChallenge().useChallengeSolvedBy(descriptionID)
+    const {GetEventInfoResponse} = useEvent().useGetEventInfo()
 
     return (
         <>
-            {getSolves?.data && getSolves.data.length === 0 ? (
+            {ChallengeSolvedByResponse && ChallengeSolvedByResponse.Data.length === 0 ? (
                 <>
                     <Center w="100%">Немає жодного рішення</Center>
                 </>
@@ -40,12 +39,12 @@ function ChallengeSolvesTable({descriptionID}: { descriptionID: string }) {
                             <Tr>
                                 <Th textAlign="center" color="#dfdfe3">#</Th>
                                 <Th textAlign="center"
-                                    color="#dfdfe3">{getEventInfo.data?.Participation === ParticipationType.Individual ? "Учасник" : "Команда"}</Th>
+                                    color="#dfdfe3">{GetEventInfoResponse?.Data.Participation === ParticipationTypeEnum.Individual ? "Учасник" : "Команда"}</Th>
                                 <Th textAlign="center" color="#dfdfe3">Час</Th>
                             </Tr>
                         </Thead>
                         <Tbody>
-                            {getSolves?.data && getSolves.data.map((solve, index) => (
+                            {ChallengeSolvedByResponse && ChallengeSolvedByResponse.Data.map((solve, index) => (
                                 <Tr key={solve.ID}>
                                     {index > 2 ? (
                                         <Td textAlign="center">
