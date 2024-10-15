@@ -1,46 +1,108 @@
 'use client'
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {CreateTeamData, createTeamFn, getTeamFn, getVPNConfig, JoinTeamData, joinTeamFn} from "@/api/teamAPI";
+import {createTeamFn, getTeamFn, getVPNConfig, joinTeamFn} from "@/api/teamAPI";
+import {ICreateTeam, IJoinTeam, TeamSchema, VPNConfigSchema} from "@/types/user";
 
-const useGetTeam = (enabled: boolean) => {
-    return useQuery({
+const useGetTeam = () => {
+    const {
+        data: GetTeamResponse,
+        isLoading,
+        isError,
+        isSuccess,
+        error,
+        refetch: GetTeam
+    } = useQuery({
         queryKey: ['selfTeam'],
         queryFn: getTeamFn,
         retry: 0,
-        enabled: enabled,
+        select: (data) => {
+            const res = TeamSchema.safeParse(data.data.Data)
+            if (!res.success) {
+                throw new Error("Invalid response")
+            } else {
+                data.data.Data = res.data
+            }
+
+            return data.data
+        }
     })
+
+    const GetTeamRequest = {
+        isLoading,
+        isError,
+        isSuccess,
+        error,
+    }
+
+    return {GetTeamResponse, GetTeamRequest, GetTeam}
 }
 
 const useGetVPNConfig = () => {
-    return useQuery({
+    const {
+        data: GetVPNConfigResponse,
+        isLoading,
+        isError,
+        isSuccess,
+        error,
+        refetch: GetVPNConfig
+    } = useQuery({
         queryKey: ['vpnConfig'],
         queryFn: getVPNConfig,
         retry: 0,
         enabled: false,
+        select: (data) => {
+            const res = VPNConfigSchema.safeParse(data.data.Data)
+            if (!res.success) {
+                throw new Error("Invalid response")
+            } else {
+                data.data.Data = res.data
+            }
+
+            return data.data
+        }
     })
 
+    const GetVPNConfigRequest = {
+        isLoading,
+        isError,
+        isSuccess,
+        error,
+    }
+
+    return {GetVPNConfigResponse, GetVPNConfigRequest, GetVPNConfig}
 }
 
 const useCreateTeam = () => {
     const client = useQueryClient()
-    return useMutation({
+    const {
+        data: CreateTeamResponse,
+        mutate: CreateTeam,
+        isPending: PendingCreate
+    } = useMutation({
         mutationKey: ["createTeam"],
-        mutationFn: async (data: CreateTeamData) => await createTeamFn(data),
+        mutationFn: async (data: ICreateTeam) => await createTeamFn(data),
         onSuccess: () => {
             client.invalidateQueries({queryKey: ['selfTeam']}).catch((e) => console.log(e))
         }
     })
+    return {CreateTeamResponse, CreateTeam, PendingCreate}
 }
 
 const useJoinTeam = () => {
     const client = useQueryClient()
-    return useMutation({
+    const {
+        mutate: JoinTeam,
+        isPending: PendingJoin,
+        data: JoinTeamResponse
+    } = useMutation({
         mutationKey: ["joinTeam"],
-        mutationFn: async (data: JoinTeamData) => await joinTeamFn(data),
+        mutationFn: async (data: IJoinTeam) => await joinTeamFn(data),
         onSuccess: () => {
             client.invalidateQueries({queryKey: ['selfTeam']}).catch((e) => console.log(e))
         }
     })
+
+    return {JoinTeam, PendingJoin, JoinTeamResponse}
 }
 
 export const useTeam = () => {

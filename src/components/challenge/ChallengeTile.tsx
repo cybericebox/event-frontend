@@ -12,7 +12,6 @@ export interface ChallengeTileProps {
 
 
 export default function ChallengeTile(props: ChallengeTileProps) {
-
     return (
         <Button
             height="110px"

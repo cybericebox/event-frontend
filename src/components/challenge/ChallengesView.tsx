@@ -1,32 +1,25 @@
 import React, {useState} from "react";
-import type {Challenge} from "@/types/challenge";
+import type {IChallengeInfo} from "@/types/challenge";
 import {useChallenge} from "@/hooks/useChallenge";
 import Loader from "@/components/Loaders";
 import ChallengeTile from "@/components/challenge/ChallengeTile";
 import ChallengeModal from "@/components/challenge/ChallengeModal";
 
-interface ChallengesModelProps {
+interface ChallengesViewProps {
     show: boolean;
     allowToSolve: boolean;
 }
 
-export default function ChallengesModel({show, allowToSolve}: ChallengesModelProps) {
-    const [selected, setSelected] = useState<Challenge | null>()
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const onModalClose = () => setIsModalOpen(false);
+export default function ChallengesView({show, allowToSolve}: ChallengesViewProps) {
+    const [challengeModel, setChallengeModel] = useState<IChallengeInfo>()
 
-    const challenges = useChallenge().useGetChallenges(show)
-
-    const openModal = (challenge: Challenge) => {
-        setSelected(challenge)
-        setIsModalOpen(true);
-    };
+    const {GetChallengesResponse, GetChallengesRequest} = useChallenge().useGetChallenges(show)
 
     return (
         <>
-            {challenges.isLoading ? <Loader/> :
-                challenges?.data && (
-                    challenges?.data.map((category) => (
+            {GetChallengesRequest.isLoading ? <Loader/> :
+                GetChallengesResponse && (
+                    GetChallengesResponse.Data.map((category) => (
                             <div
                                 key={category.ID}
                                 className={"w-full pb-5"}
@@ -45,16 +38,16 @@ export default function ChallengesModel({show, allowToSolve}: ChallengesModelPro
                                             solved={challenge.Solved}
                                             name={challenge.Name}
                                             points={challenge.Points}
-                                            onClick={() => openModal(challenge)}
+                                            onClick={() => setChallengeModel(challenge)}
                                         />
                                     ))}
                                 </div>
                             </div>
                         ))
                 )}
-            {!!selected &&
-                <ChallengeModal isOpen={isModalOpen} onClose={onModalClose} disabled={!allowToSolve}
-                                selected={selected}/>}
+            {!!challengeModel &&
+                <ChallengeModal isOpen={!!challengeModel} onClose={() => setChallengeModel(undefined)} disabled={!allowToSolve}
+                                selected={challengeModel}/>}
         </>
     )
 

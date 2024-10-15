@@ -1,42 +1,20 @@
-import type {EventInfo, Score} from "@/types/event";
+import {baseAPI} from "@/api/baseAPI";
+import {AxiosResponse} from "axios";
+import {IResponse} from "@/types/api";
+import {IEventInfo, IJoinEventInfo, IEventScore} from "@/types/event";
 
-export const getEventInfoFn = async (): Promise<EventInfo> => {
-    return await fetch('/api/events/self/info', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-    }).then(res => res.json());
+export const getEventInfoFn = async (): Promise<AxiosResponse<IResponse<IEventInfo>, any>> => {
+    return await baseAPI.get('/events/self/info')
 }
 
-export const getJoinEventStatusFn = async () => {
-    return await fetch('/api/events/self/join', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-    }).then(res => res.json());
-
+export const getJoinEventStatusFn = async (): Promise<AxiosResponse<IResponse<IJoinEventInfo>, any>> => {
+    return await baseAPI.get('/events/self/join/info')
 }
 
-export const joinEventFn = async () => {
-    return await fetch('/api/events/self/join', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-    }).then(res => res.json());
+export const joinEventFn = async (): Promise<AxiosResponse<IResponse, any>> => {
+    return await baseAPI.get('/events/self/join?noRedirect=true')
 }
 
-
-export const getScore = async (): Promise<Score> => {
-    return await fetch('api/events/self/score', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-    }).then(res => res.json());
+export const getScore = async (): Promise<AxiosResponse<IResponse<IEventScore>, any>> => {
+    return await baseAPI.get('/events/self/score')
 }

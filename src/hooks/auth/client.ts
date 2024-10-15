@@ -1,9 +1,10 @@
+"use client";
 import {getCookie} from "cookies-next"
-import {Authenticated} from "@/types/user";
+import {IAuthenticated} from "@/types/auth";
 
 const permissionsTokenField = "permissionsToken"
 
-export function AuthenticatedOnClient(): Authenticated {
+export function AuthenticatedClient(): IAuthenticated {
     const token = getCookie(permissionsTokenField) || ""
     try {
         const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
@@ -18,16 +19,6 @@ export function AuthenticatedOnClient(): Authenticated {
             ID: ""
         }
     }
-}
-
-export const SignOut = async () => {
-    return await fetch('/api/auth/sign-out', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-    });
 }
 
 

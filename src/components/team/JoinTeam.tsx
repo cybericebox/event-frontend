@@ -33,7 +33,7 @@ export type Props = {
 export default function JoinTeam({setIsJoinTeam}: Props) {
     const [showPassword, setShowPassword] = useState(false);
 
-    const joinTeam = useTeam().useJoinTeam()
+    const {JoinTeam, JoinTeamResponse} = useTeam().useJoinTeam()
 
     const handleShowClick = () => setShowPassword(!showPassword);
 
@@ -45,7 +45,7 @@ export default function JoinTeam({setIsJoinTeam}: Props) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        joinTeam.mutate({
+        JoinTeam({
             Name: reqData.name,
             JoinCode: reqData.code
         })
@@ -81,8 +81,8 @@ export default function JoinTeam({setIsJoinTeam}: Props) {
                     Вступ до команди
                 </Text>
                 {
-                    joinTeam?.data?.message && (
-                        joinTeam?.data?.message === "team wrong credentials" ? (
+                    JoinTeamResponse?.data && (
+                        JoinTeamResponse?.data.Status.Code === 0 ? (
                             <Alert status="error">
                                 <AlertIcon/>
                                 <AlertDescription>Неправильна назва команди чи код</AlertDescription>

@@ -24,19 +24,17 @@ export type Props = {
 }
 
 export default function CreateTeam({setIsJoinTeam}: Props) {
-    const createTeam = useTeam().useCreateTeam()
+    const {CreateTeam, CreateTeamResponse} = useTeam().useCreateTeam()
     const [name, setName] = useState("");
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        createTeam.mutate({Name: name});
+        CreateTeam({Name: name});
     };
 
     const changeHandler = (e: any) => {
         setName(e.target.value.trim());
     };
-
-    console.log(createTeam);
 
     return (
         <Flex
@@ -60,8 +58,8 @@ export default function CreateTeam({setIsJoinTeam}: Props) {
                 >
                     Реєстрація команди
                 </Text>
-                {createTeam?.data?.message && (
-                    createTeam?.data?.message === "team exists" ?
+                {CreateTeamResponse?.data && (
+                    CreateTeamResponse?.data.Status.Code === 0 ?
                         (<Alert status="error">
                             <AlertIcon/>
                             <AlertDescription>

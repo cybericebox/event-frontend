@@ -20,23 +20,29 @@ import {MdFlag} from "react-icons/md";
 import type React from "react";
 import {useState} from "react";
 import {useChallenge} from "@/hooks/useChallenge";
-import type {Challenge} from "@/types/challenge";
+import type {IChallengeInfo} from "@/types/challenge";
 
 export interface ChallengeFormProps {
     disabled: boolean;
-    challenge: Challenge;
+    challenge: IChallengeInfo;
     onClose: () => void;
 }
 
 export default function ChallengeForm(props: ChallengeFormProps) {
-    const solve = useChallenge().useSolveChallenge(props.challenge.ID)
+    const {SolveChallenge, SolveChallengeResponse} = useChallenge().useSolveChallenge(props.challenge.ID)
     const [flag, setFlag] = useState("");
 
     const submitForm = async (e: any) => {
         e.preventDefault();
 
-        solve.mutate({
+        SolveChallenge({
             Solution: flag,
+        }, {
+            onSuccess: () => {
+                if (SolveChallengeResponse?.data.Data.Solved) {
+                    setTimeout(() => props.onClose(), 2000)
+                }
+            }
         })
 
         setFlag("");
@@ -47,7 +53,6 @@ export default function ChallengeForm(props: ChallengeFormProps) {
         setFlag(e.target.value);
     };
 
-    solve.isSuccess && solve?.data?.message === "Challenge solved successfully" && setTimeout(() => props.onClose(), 2000)
 
     return (
         <>
@@ -84,6 +89,24 @@ export default function ChallengeForm(props: ChallengeFormProps) {
                             }}
                         />
                     </Flex>
+                    <div className={"flex flex-wrap my-5 gap-3"}>
+                        {props.challenge.AttachedFiles.map((file, index) => (
+                                <div
+                                    key={file.ID}
+                                    className={"text-center bg-primary text-white px-3 py-2 rounded-md font-medium"}
+                                >
+                                    <a
+                                        key={index}
+                                        href={`/api/events/self/challenges/${props.challenge.ID}/download/${file.ID}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        {file.Name}
+                                    </a>
+                                </div>
+                            ))
+                        }
+                    </div>
                 </Stack>
             </Flex>
             <form onSubmit={submitForm}>
@@ -109,7 +132,7 @@ export default function ChallengeForm(props: ChallengeFormProps) {
                                     />
                                 </InputGroup>
                             </FormControl>
-                            <Collapse in={solve?.data?.message === "incorrect solution"}>
+                            <Collapse in={SolveChallengeResponse?.data.Data && !SolveChallengeResponse?.data.Data.Solved}>
                                 <Alert status="error">
                                     <AlertIcon/>
                                     <AlertDescription>
@@ -117,7 +140,7 @@ export default function ChallengeForm(props: ChallengeFormProps) {
                                     </AlertDescription>
                                 </Alert>
                             </Collapse>
-                            <Collapse in={solve?.data?.message === "Challenge solved successfully"}>
+                            <Collapse in={SolveChallengeResponse?.data.Data && SolveChallengeResponse?.data.Data.Solved}>
                                 <Alert status="success">
                                     <AlertIcon/>
                                     <AlertDescription>
