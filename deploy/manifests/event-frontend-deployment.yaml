@@ -25,9 +25,12 @@ spec:
       containers:
         - name: event-frontend
           image: cybericebox/event-frontend:latest
-          envFrom:
-            - configMapRef:
-                name: config
+          env:
+            - name: NEXT_PUBLIC_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: DOMAIN
           ports:
             - containerPort: 3000
               protocol:  TCP
