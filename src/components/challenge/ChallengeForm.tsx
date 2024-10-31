@@ -84,6 +84,7 @@ export default function ChallengeForm(props: ChallengeFormProps) {
                     </Flex>
                     <Flex backgroundColor="#fff" color="#000">
                         <div
+                            className={"ProseMirror w-full"}
                             dangerouslySetInnerHTML={{
                                 __html: props.challenge.Description,
                             }}
