@@ -5,7 +5,7 @@ import JoinTeam from "./JoinTeam";
 
 export default function TeamModel() {
 
-    const [isJoinTeam, setIsJoinTeam] = useState(false);
+    const [isJoinTeam, setIsJoinTeam] = useState(true);
 
     return !isJoinTeam ?
         <CreateTeam setIsJoinTeam={setIsJoinTeam}/> :
