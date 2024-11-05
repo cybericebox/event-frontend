@@ -103,7 +103,6 @@ const useGetScore = (enabled: boolean) => {
         refetchInterval: 5 * 60 * 1000,
         select: (data) => {
             const res = EventScoreSchema.safeParse(data.data.Data)
-            console.log(res)
             if (!res.success) {
                 throw new Error("Invalid response")
             } else {

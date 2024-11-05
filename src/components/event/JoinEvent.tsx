@@ -4,10 +4,40 @@ import {useEvent} from "@/hooks/useEvent";
 import {CountdownTimer} from "@/components/Countdown";
 import Link from "next/link";
 import {AuthenticatedClient} from "@/hooks/auth";
+import {ParticipationStatusEnum} from "@/types/event";
 
-export default function JoinEvent() {
+interface JoinEventProps {
+    status?: ParticipationStatusEnum
+}
+
+export default function JoinEvent({status}: JoinEventProps) {
     const {GetEventInfoResponse} = useEvent().useGetEventInfo()
     const {JoinEvent} = useEvent().useJoinEvent()
+
+    const join = () => (
+        <button
+            onClick={() => JoinEvent()}
+            className={"bg-[#211a52] w-full hover:opacity-70 text-white font-bold py-2 px-4 rounded text-md md:text-lg text-center"}
+        >
+            Доєднатися до заходу
+        </button>
+    )
+
+    const pending = () => (
+        <div
+            className={"bg-gray-400 w-full hover:opacity-70 text-white font-bold py-2 px-4 rounded text-md md:text-lg text-center"}
+        >
+            Заявка на участь в заході розглядається. Очікуйте на результат
+        </div>
+    )
+
+    const rejected = () => (
+        <div
+            className={"bg-red-500 w-full hover:opacity-70 text-white font-bold py-2 px-4 rounded text-md md:text-lg text-center"}
+        >
+            Заявка на участь в заході відхилена.<br/>Будь ласка, зверніться до організаторів
+        </div>
+    )
     return (
         <div
             className={"flex flex-col w-full items-center justify-center"}
@@ -22,12 +52,12 @@ export default function JoinEvent() {
                 >
                     {
                         AuthenticatedClient().IsAuthenticated ?
-                            <button
-                                onClick={() =>JoinEvent()}
-                                className={"bg-[#211a52] w-full hover:opacity-70 text-white font-bold py-2 px-4 rounded text-md md:text-lg text-center"}
-                            >
-                                Доєднатися до заходу
-                            </button> : <Link href={"/api/events/self/join"}
+                            status === ParticipationStatusEnum.NoParticipationStatus ?
+                                join() :
+                                status === ParticipationStatusEnum.PendingParticipationStatus ?
+                                    pending() :
+                                    rejected()
+                            : <Link href={"/api/events/self/join"}
                                               prefetch={false}
                                               className={"bg-[#211a52] w-full hover:opacity-70 text-white font-bold py-2 px-4 rounded text-md md:text-lg text-center"}
                             >

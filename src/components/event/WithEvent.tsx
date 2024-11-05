@@ -31,7 +31,7 @@ export function WithEventForm({children, skip}: WithEventProps) {
     if (GetJoinEventStatusRequest.isSuccess && GetJoinEventStatusResponse?.Data.Status === ParticipationStatusEnum.ApprovedParticipationStatus) return children
 
     if (GetEventInfoRequest.isSuccess && GetEventInfoResponse?.Data) {
-        if (GetEventInfoResponse?.Data.Registration !== RegistrationTypeEnum.Close && new Date(GetEventInfoResponse?.Data.StartTime || 0).getTime() > Date.now()) return <JoinEvent/>
+        if (GetEventInfoResponse?.Data.Registration !== RegistrationTypeEnum.Close && new Date(GetEventInfoResponse?.Data.StartTime || 0).getTime() > Date.now()) return <JoinEvent status={GetJoinEventStatusResponse?.Data.Status}/>
     }
 
     return <></>
