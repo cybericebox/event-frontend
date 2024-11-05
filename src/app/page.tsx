@@ -3,10 +3,26 @@ import type React from "react";
 import {WithEventForm} from "@/components/event/WithEvent";
 import {CountdownTimer} from "@/components/Countdown";
 import {getEventInfoOnServerFn} from "@/api/serverAPI";
+import {getPlaiceholder} from "plaiceholder";
 
+async function getBase64Image(src: string) {
+    const buffer = await fetch(src).then(async res => Buffer.from(await res.arrayBuffer()));
+
+    const {metadata: {height, width}, ...placeholder} = await getPlaiceholder(buffer, {size: 64});
+
+    return {
+        ...placeholder,
+        img: {
+            src,
+            width,
+            height,
+        }
+    }
+}
 
 export default async function LandingPage() {
     const eventInfo = await getEventInfoOnServerFn()
+    const {img, base64} = await getBase64Image(eventInfo?.Data.Picture || "")
 
     return (
         <div
@@ -15,11 +31,10 @@ export default async function LandingPage() {
             {!!eventInfo?.Data &&
                 (!!eventInfo?.Data.Picture ?
                         <Image
-                            src={eventInfo?.Data.Picture}
                             alt={`Banner ${eventInfo?.Data.Name}`}
-                            width={1920}
-                            height={1080}
-                            priority
+                            {...img}
+                            placeholder={"blur"}
+                            blurDataURL={base64}
                             className="rounded-b-lg md:rounded-2xl shadow-2xl lg:max-w-[90vw] xl:max-w-[65vw] w-full"
                         />
                         : <center>
