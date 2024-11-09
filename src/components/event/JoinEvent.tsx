@@ -56,7 +56,9 @@ export default function JoinEvent({status}: JoinEventProps) {
                                 join() :
                                 status === ParticipationStatusEnum.PendingParticipationStatus ?
                                     pending() :
-                                    rejected()
+                                    status === ParticipationStatusEnum.RejectedParticipationStatus ?
+                                        rejected() :
+                                        null
                             : <Link href={"/api/events/self/join"}
                                               prefetch={false}
                                               className={"bg-[#211a52] w-full hover:opacity-70 text-white font-bold py-2 px-4 rounded text-md md:text-lg text-center"}

@@ -102,12 +102,12 @@ const useGetScore = (enabled: boolean) => {
         refetchOnWindowFocus: true,
         refetchInterval: 5 * 60 * 1000,
         select: (data) => {
-            const res = EventScoreSchema.safeParse(data.data.Data)
-            if (!res.success) {
-                throw new Error("Invalid response")
-            } else {
-                data.data.Data = res.data
-            }
+            // const res = EventScoreSchema.safeParse(data.data.Data)
+            // if (!res.success) {
+            //     throw new Error("Invalid response")
+            // } else {
+            //     data.data.Data = res.data
+            // }
 
             data.data.Data.ActiveChartSeries = []
             data.data.Data.TeamsScores.forEach((team, index) => {
