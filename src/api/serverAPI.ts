@@ -3,6 +3,7 @@ import {headers} from "next/headers";
 import {IResponse} from "@/types/api";
 
 export const getEventInfoOnServerFn = async (): Promise<IResponse<IEventInfo>> => {
+    console.log("getEventInfoOnServerFn", headers().get("subdomain"))
     const eventUrl = `https://${headers().get("subdomain")}.${process.env.NEXT_PUBLIC_DOMAIN}`
     const response =  await fetch(`${eventUrl}/api/events/self/info`, {
         method: 'GET',
