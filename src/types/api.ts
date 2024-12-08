@@ -2,6 +2,7 @@ interface IBaseResponse {
     Status: {
         Code: number;
         Message: string;
+        Details?: any[string];
     };
 }
 

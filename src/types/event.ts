@@ -70,8 +70,8 @@ export interface IJoinEventInfo extends z.infer<typeof JoinEventInfoSchema> {
 }
 
 export const TeamChallengeSolutionSchema = z.object({
-    ChallengeID : z.string().uuid(),
-    SolvedRank: z.number().int(),
+    ID : z.string().uuid(),
+    Rank: z.number().int(),
 })
 
 
