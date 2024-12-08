@@ -2,6 +2,7 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {createTeamFn, getTeamFn, getVPNConfig, joinTeamFn} from "@/api/teamAPI";
 import {ICreateTeam, IJoinTeam, TeamSchema, VPNConfigSchema} from "@/types/user";
+import {ErrorInvalidResponseData} from "@/types/common";
 
 const useGetTeam = () => {
     const {
@@ -18,7 +19,8 @@ const useGetTeam = () => {
         select: (data) => {
             const res = TeamSchema.safeParse(data.data.Data)
             if (!res.success) {
-                throw new Error("Invalid response")
+                console.log(res.error)
+                throw ErrorInvalidResponseData
             } else {
                 data.data.Data = res.data
             }
@@ -53,7 +55,8 @@ const useGetVPNConfig = () => {
         select: (data) => {
             const res = VPNConfigSchema.safeParse(data.data.Data)
             if (!res.success) {
-                throw new Error("Invalid response")
+                console.log(res.error)
+                throw ErrorInvalidResponseData
             } else {
                 data.data.Data = res.data
             }

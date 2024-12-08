@@ -4,6 +4,7 @@ import {challengeSolvedByFn, getChallengesFn, solveChallengeFn} from "@/api/chal
 import {ChallengeCategoryInfoSchema, ISolveChallenge} from "@/types/challenge";
 import {z} from "zod";
 import {TeamSolutionSchema} from "@/types/challenge";
+import {ErrorInvalidResponseData} from "@/types/common";
 
 const refetchInterval = 30 * 1000
 
@@ -24,7 +25,8 @@ const useGetChallenges = (enabled: boolean) => {
         select: (data) => {
             const res = z.array(ChallengeCategoryInfoSchema).safeParse(data.data.Data)
             if (!res.success) {
-                throw new Error("Invalid response")
+                console.log(res.error)
+                throw ErrorInvalidResponseData
             } else {
                 data.data.Data = res.data
             }
@@ -60,7 +62,8 @@ const useChallengeSolvedBy = (id: string) => {
         select: (data) => {
             const res = z.array(TeamSolutionSchema).safeParse(data.data.Data)
             if (!res.success) {
-                throw new Error("Invalid response")
+                console.log(res.error)
+                throw ErrorInvalidResponseData
             } else {
                 data.data.Data = res.data
             }

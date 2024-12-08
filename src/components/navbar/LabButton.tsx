@@ -15,7 +15,7 @@ export default function LabButton({display, inDrawer}: LabButtonProps) {
         const element = document.createElement("a");
         const file = new Blob([text], {type: 'text/plain'});
         element.href = URL.createObjectURL(file);
-        element.download = `${window.location.hostname.split(".")[0]}-wireguard.conf`;
+        element.download = `${window.location.hostname.split(".")[0]}wireguard.conf`;
         element.click();
         URL.revokeObjectURL(element.href);
     }

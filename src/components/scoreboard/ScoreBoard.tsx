@@ -5,14 +5,14 @@ import ScoreTable from "@/components/scoreboard/SolveTable";
 import {useEvent} from "@/hooks/useEvent";
 import {useState} from "react";
 import type {IActiveChartSeriesItem} from "@/types/event";
-import Loader from "@/components/Loaders";
+import Loader from "@/components/Loader";
 
 interface ScoreBoardProps {
     show: boolean;
 }
 
 export default function ScoreBoard({show}: ScoreBoardProps) {
-    const {GetScoreResponse, GetScoreRequest} = useEvent().useGetScore(show)
+    const {GetScoreResponse, GetScoreRequest} = useEvent().useGetScore({enabled: show})
     const [activeChartSeries, setActiveChartSeries] = useState<{
         labels: string[],
         data: IActiveChartSeriesItem[]

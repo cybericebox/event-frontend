@@ -1,5 +1,6 @@
 import type React from 'react'
 import ReactECharts from 'echarts-for-react';
+import {useEvent} from "@/hooks/useEvent";
 
 interface ScoreGraphProps {
     activeChartSeries: {
@@ -9,7 +10,7 @@ interface ScoreGraphProps {
 }
 
 export default function ScoreGraph({activeChartSeries}: ScoreGraphProps) {
-
+    const {GetEventInfoResponse} = useEvent().useGetEventInfo()
     const options = {
         legend: {
             // Try 'horizontal'
@@ -20,7 +21,10 @@ export default function ScoreGraph({activeChartSeries}: ScoreGraphProps) {
             type: 'time',
             boundaryGap: false,
             max: () => {
-                return new Date().toISOString();
+                return GetEventInfoResponse?.Data.FinishTime.toISOString();
+            },
+            min : () => {
+                return GetEventInfoResponse?.Data.StartTime.toISOString();
             }
         },
         yAxis: {
@@ -31,7 +35,8 @@ export default function ScoreGraph({activeChartSeries}: ScoreGraphProps) {
                 dataZoom: {
                     yAxisIndex: 'none',
                 },
-                saveAsImage: {}
+                saveAsImage: {
+                }
             }
         },
         dataZoom: [

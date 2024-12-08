@@ -10,6 +10,7 @@ import {getEventInfoOnServerFn} from "@/api/serverAPI";
 
 export async function generateMetadata(): Promise<Metadata> {
     const data = await getEventInfoOnServerFn();
+    const eventUrl = `https://${(await headers()).get("subdomain")}.${process.env.NEXT_PUBLIC_DOMAIN}`
     return {
         title: data.Data.Name,
         description: `${data.Data.Name} | Cyber ICE Box Platform`,
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
             title: data.Data.Name,
             description: `${data.Data.Name} | Cyber ICE Box Platform`,
             type: "website",
-            url: `https://${headers().get("subdomain")}.${process.env.NEXT_PUBLIC_DOMAIN}`,
+            url: eventUrl,
             images: [
                 {
                     url: data.Data.Picture || "",

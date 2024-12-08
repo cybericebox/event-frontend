@@ -1,6 +1,7 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {getEventInfoFn, getJoinEventStatusFn, getScore, joinEventFn} from "@/api/eventAPI";
 import {EventInfoSchema, EventScoreSchema, JoinEventInfoSchema} from "@/types/event";
+import {ErrorInvalidResponseData} from "@/types/common";
 
 const useGetEventInfo = () => {
     const {
@@ -16,7 +17,8 @@ const useGetEventInfo = () => {
         select: (data) => {
             const res = EventInfoSchema.safeParse(data.data.Data)
             if (!res.success) {
-                throw new Error("Invalid response")
+                console.log(res.error)
+                throw ErrorInvalidResponseData
             } else {
                 data.data.Data = res.data
             }
@@ -52,7 +54,8 @@ const useGetJoinEventStatus = (enabled: boolean) => {
         select: (data) => {
             const res = JoinEventInfoSchema.safeParse(data.data.Data)
             if (!res.success) {
-                throw new Error("Invalid response")
+                console.log(res.error)
+                throw ErrorInvalidResponseData
             } else {
                 data.data.Data = res.data
             }
@@ -87,7 +90,7 @@ const useJoinEvent = () => {
     return {JoinEventResponse, JoinEvent, PendingJoinEvent}
 }
 
-const useGetScore = (enabled: boolean) => {
+const useGetScore = ({enabled}: {enabled: boolean}) => {
     const {
         data: GetScoreResponse,
         isLoading,
@@ -97,17 +100,18 @@ const useGetScore = (enabled: boolean) => {
         refetch: GetScore
     } =  useQuery({
         queryKey: ['score'],
-        queryFn: getScore,
+        queryFn: () => getScore(),
         enabled: enabled,
         refetchOnWindowFocus: true,
         refetchInterval: 5 * 60 * 1000,
         select: (data) => {
-            // const res = EventScoreSchema.safeParse(data.data.Data)
-            // if (!res.success) {
-            //     throw new Error("Invalid response")
-            // } else {
-            //     data.data.Data = res.data
-            // }
+            const res = EventScoreSchema.safeParse(data.data.Data)
+            if (!res.success) {
+                console.log(res.error)
+                throw ErrorInvalidResponseData
+            } else {
+                data.data.Data = res.data
+            }
 
             data.data.Data.ActiveChartSeries = []
             data.data.Data.TeamsScores.forEach((team, index) => {

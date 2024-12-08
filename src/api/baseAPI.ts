@@ -14,6 +14,7 @@ baseAPI.interceptors.response.use((response: AxiosResponse) => response,
     (error) => {
         if (error.response?.status === 401) {
             if (typeof window !== "undefined") {
+                window.onbeforeunload = () => false;
                 window.location.reload();
             }
         }

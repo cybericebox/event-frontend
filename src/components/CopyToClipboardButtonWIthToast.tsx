@@ -2,8 +2,8 @@
 
 import React from "react";
 import {Button} from "@/components/ui/button";
-import toast from "react-hot-toast";
 import {cn} from "@/utils/cn";
+import {SuccessToast} from "@/components/customToast";
 
 async function copyToClipboard(text: string) {
     try {
@@ -29,7 +29,7 @@ export default function CopyToClipboardButtonWithToast({
 
     const handleCopyClick = () => {
         copyToClipboard(textToCopy).then(
-            () => toast.success(toastMessage, {duration: 2000}),
+            () => SuccessToast(toastMessage, {duration: 3000}),
         )
     }
 

@@ -4,7 +4,7 @@ import {RiTeamLine} from "react-icons/ri";
 import CopyToClipboardButtonWithToast from "@/components/CopyToClipboardButtonWIthToast";
 import type React from "react";
 import {useTeam} from "@/hooks/useTeam";
-import Loader from "@/components/Loaders";
+import Loader from "@/components/Loader";
 
 export default function TeamProfile() {
     const {GetTeamResponse, GetTeamRequest} = useTeam().useGetTeam()

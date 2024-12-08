@@ -30,7 +30,7 @@ interface ScoreTableProps {
 }
 
 export default function ScoreTable(props: ScoreTableProps) {
-    const {GetScoreResponse} = useEvent().useGetScore(true)
+    const {GetScoreResponse} = useEvent().useGetScore({enabled: true})
     const {GetEventInfoResponse} = useEvent().useGetEventInfo()
     const [tableData, setTableData] = useState<ITeamScore[]>([])
     const [searchValue, setSearchValue] = useState("");
@@ -188,15 +188,15 @@ export default function ScoreTable(props: ScoreTableProps) {
             </div>
 
             <div className="flex w-full space-x-0 solve-table-container">
-                <TableContainer style={{overflowX: "auto"}} >
+                <TableContainer minW={'fit-content'}>
                     <Table
                         variant="unstyled"
                         className="rotated-header solve-table table-left"
                     >
                         <Thead>
                             <Tr>
+                                <Th></Th>
                                 <Th textAlign="center">#</Th>
-                                <Th>На графіку</Th>
                                 <Th>{GetEventInfoResponse?.Data.Participation === ParticipationTypeEnum.Individual ? "Учасник" : "Команда"}</Th>
                                 <Th>Результат</Th>
                             </Tr>
@@ -204,14 +204,23 @@ export default function ScoreTable(props: ScoreTableProps) {
                         <Tbody>
                             {tableData.map((team) => (
                                 <Tr key={team.TeamName}>
+                                    <Td>
+                                        <Switch
+                                            value={Number(team.InChart)}
+                                            isChecked={team.InChart}
+                                            onChange={(e) => chartSwitchHandler(e, team)}
+                                            id="email-alerts"
+                                            className={"w-0"}
+                                        />
+                                    </Td>
                                     {Number(team.Rank) > 3 ? (
-                                        <Td textAlign="center" width="20px">
+                                        <Td textAlign="center">
                                             {team.Rank}
                                         </Td>
                                     ) : (
                                         <>
                                             {Number(team.Rank) === 1 && (
-                                                <Td width="20px">
+                                                <Td>
                                                     <Icon
                                                         fontSize="xl"
                                                         color="#FFD700"
@@ -220,7 +229,7 @@ export default function ScoreTable(props: ScoreTableProps) {
                                                 </Td>
                                             )}
                                             {Number(team.Rank) === 2 && (
-                                                <Td width="20px">
+                                                <Td>
                                                     <Icon
                                                         fontSize="xl"
                                                         color="silver"
@@ -229,7 +238,7 @@ export default function ScoreTable(props: ScoreTableProps) {
                                                 </Td>
                                             )}
                                             {Number(team.Rank) === 3 && (
-                                                <Td width="20px">
+                                                <Td>
                                                     <Icon
                                                         fontSize="xl"
                                                         color="#CD7F32"
@@ -239,16 +248,8 @@ export default function ScoreTable(props: ScoreTableProps) {
                                             )}
                                         </>
                                     )}
-                                    <Td width="20px">
-                                        <Switch
-                                            value={Number(team.InChart)}
-                                            isChecked={team.InChart}
-                                            onChange={(e) => chartSwitchHandler(e, team)}
-                                            id="email-alerts"
-                                        />
-                                    </Td>
-                                    <Td minW={"300px"}>{team.TeamName}</Td>
-                                    <Td width="60px">{team.Score}</Td>
+                                    <Td>{team.TeamName}</Td>
+                                    <Td>{team.Score}</Td>
                                 </Tr>
                             ))}
                         </Tbody>
@@ -281,34 +282,34 @@ export default function ScoreTable(props: ScoreTableProps) {
                         </Thead>
                         <Tbody>
                             {tableData.map((team) => (
-                                <Tr key={team.TeamName}>
+                                <Tr key={team.TeamID}>
                                     {GetScoreResponse?.Data.Challenges && GetScoreResponse?.Data.Challenges.map((challenge) => (
                                         <Td key={challenge.ID} className="table-solve-icon-container">
                                             <Center>
                                                 {team.TeamSolutions[challenge.ID] && (
                                                     <>
-                                                        {team.TeamSolutions[challenge.ID].SolvedRank === 1 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank === 1 && (
                                                             <Icon
                                                                 fontSize="xl"
                                                                 color="#00e5ff"
                                                                 as={GiDrop}
                                                             ></Icon>
                                                         )}
-                                                        {team.TeamSolutions[challenge.ID].SolvedRank === 2 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank === 2 && (
                                                             <Icon
                                                                 fontSize="xl"
                                                                 color="silver"
                                                                 as={GiMedal}
                                                             ></Icon>
                                                         )}
-                                                        {team.TeamSolutions[challenge.ID].SolvedRank === 3 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank === 3 && (
                                                             <Icon
                                                                 fontSize="xl"
                                                                 color="#CD7F32"
                                                                 as={GiMedal}
                                                             ></Icon>
                                                         )}
-                                                        {team.TeamSolutions[challenge.ID].SolvedRank > 3 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank > 3 && (
                                                             <Icon as={FaFlag}/>
                                                         )}
                                                     </>

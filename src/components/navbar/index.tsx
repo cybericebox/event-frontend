@@ -24,7 +24,7 @@ import {HamburgerIcon} from "@chakra-ui/icons";
 import NavItem from "./NavItem";
 import LabButton from "./LabButton";
 import Logo from "../Logo"
-import {AuthenticatedClient} from "@/hooks/auth";
+import {ClientAuthentication} from "@/hooks/auth";
 import {WithTeamParticipation, WithTeam} from "@/components/team/WithTeam";
 import {useRouter} from "next/navigation";
 import {WithEvent} from "@/components/event/WithEvent";
@@ -151,7 +151,7 @@ export default function NavBar() {
                 as="nav"
                 top="0"
             >
-                {AuthenticatedClient().IsAuthenticated ? (
+                {ClientAuthentication().IsAuthenticated ? (
                     <>
                         <WithEvent>
                     <WithTeam>
@@ -260,7 +260,7 @@ export default function NavBar() {
                             </Flex>
                         </DrawerHeader>
                         <DrawerBody>
-                            {AuthenticatedClient().IsAuthenticated && (
+                            {ClientAuthentication().IsAuthenticated && (
                                 <Center>
                                 <WithEvent>
                                     <WithTeam>
@@ -309,7 +309,7 @@ export default function NavBar() {
                                     customClickEvent={onClose}
                                 />
                             </Center>
-                            {AuthenticatedClient().IsAuthenticated ? (
+                            {ClientAuthentication().IsAuthenticated ? (
                                 <>
                                     <Center width="fit-content" margin="auto">
                                     <WithEvent>

@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import type {IChallengeInfo} from "@/types/challenge";
 import {useChallenge} from "@/hooks/useChallenge";
-import Loader from "@/components/Loaders";
+import Loader from "@/components/Loader";
 import ChallengeTile from "@/components/challenge/ChallengeTile";
 import ChallengeModal from "@/components/challenge/ChallengeModal";
 

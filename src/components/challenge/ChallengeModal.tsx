@@ -16,7 +16,7 @@ import React from "react";
 import ChallengeForm from "@/components/challenge/ChallengeForm";
 import {useChallenge} from "@/hooks/useChallenge";
 import ChallengeSolvesTable from "@/components/challenge/ChallengeSolvesTable";
-import {IChallengeInfo} from "@/types/challenge";
+import type {IChallengeInfo} from "@/types/challenge";
 
 export interface ChallengeModalProps {
     isOpen: boolean;

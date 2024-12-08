@@ -3,7 +3,7 @@ import type React from "react";
 import {useEvent} from "@/hooks/useEvent";
 import {CountdownTimer} from "@/components/Countdown";
 import Link from "next/link";
-import {AuthenticatedClient} from "@/hooks/auth";
+import {ClientAuthentication} from "@/hooks/auth";
 import {ParticipationStatusEnum} from "@/types/event";
 
 interface JoinEventProps {
@@ -51,7 +51,7 @@ export default function JoinEvent({status}: JoinEventProps) {
                     className={"rounded-lg border border-gray-200 shadow-md px-4 py-5"}
                 >
                     {
-                        AuthenticatedClient().IsAuthenticated ?
+                        ClientAuthentication().IsAuthenticated ?
                             status === ParticipationStatusEnum.NoParticipationStatus ?
                                 join() :
                                 status === ParticipationStatusEnum.PendingParticipationStatus ?

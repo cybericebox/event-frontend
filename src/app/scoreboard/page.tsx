@@ -55,7 +55,6 @@ export default function ScoreboardPage() {
                             <WithEventForm skip={GetEventInfoResponse?.Data.ScoreboardAvailability === ScoreboardVisibilityTypeEnum.Public}>
                                 <ScoreBoard show={showScoreboard}/>
                             </WithEventForm>
-
                     )
                 }
             </div>

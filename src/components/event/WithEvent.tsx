@@ -1,9 +1,9 @@
 'use client'
 import React from "react";
-import Loader from "@/components/Loaders";
+import Loader from "@/components/Loader";
 import JoinEvent from "@/components/event/JoinEvent";
 import {useEvent} from "@/hooks/useEvent";
-import {AuthenticatedClient} from "@/hooks/auth";
+import {ClientAuthentication} from "@/hooks/auth";
 import {ParticipationStatusEnum, RegistrationTypeEnum} from "@/types/event";
 
 interface WithEventProps {
@@ -12,7 +12,7 @@ interface WithEventProps {
 }
 
 export function WithEventForm({children, skip}: WithEventProps) {
-    const {GetJoinEventStatusResponse, GetJoinEventStatusRequest} = useEvent().useGetJoinEventStatus(AuthenticatedClient().IsAuthenticated)
+    const {GetJoinEventStatusResponse, GetJoinEventStatusRequest} = useEvent().useGetJoinEventStatus(ClientAuthentication().IsAuthenticated)
     const {GetEventInfoResponse, GetEventInfoRequest} = useEvent().useGetEventInfo()
 
     // if component need to be public dynamic
@@ -38,7 +38,7 @@ export function WithEventForm({children, skip}: WithEventProps) {
 }
 
 export function WithEvent({children}: WithEventProps) {
-    const {GetJoinEventStatusResponse, GetJoinEventStatusRequest} = useEvent().useGetJoinEventStatus(AuthenticatedClient().IsAuthenticated)
+    const {GetJoinEventStatusResponse, GetJoinEventStatusRequest} = useEvent().useGetJoinEventStatus(ClientAuthentication().IsAuthenticated)
 
     if (GetJoinEventStatusRequest.isSuccess && GetJoinEventStatusResponse?.Data.Status === ParticipationStatusEnum.ApprovedParticipationStatus) return children
     return <></>
