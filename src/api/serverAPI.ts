@@ -1,10 +1,10 @@
-import {EventInfoSchema, IEventInfo,} from "@/types/event";
+import {EventInfoSchema, type IEventInfo} from "@/types/event";
 import {headers} from "next/headers";
-import {IResponse} from "@/types/api";
+import type {IResponse} from "@/types/api";
+import {ErrorInvalidResponseData} from "@/types/common";
 
 export const getEventInfoOnServerFn = async (): Promise<IResponse<IEventInfo>> => {
-    console.log("getEventInfoOnServerFn", headers().get("subdomain"))
-    const eventUrl = `https://${headers().get("subdomain")}.${process.env.NEXT_PUBLIC_DOMAIN}`
+    const eventUrl = `https://${(await headers()).get("subdomain")}.${process.env.NEXT_PUBLIC_DOMAIN}`
     const response =  await fetch(`${eventUrl}/api/events/self/info`, {
         method: 'GET',
         headers: {
@@ -20,7 +20,8 @@ export const getEventInfoOnServerFn = async (): Promise<IResponse<IEventInfo>> =
         const data = await response.json() as IResponse<IEventInfo>;
         const res = EventInfoSchema.safeParse(data.Data);
         if (!res.success) {
-            throw new Error("Invalid response");
+            console.log(res.error)
+            throw ErrorInvalidResponseData
         } else {
             data.Data = res.data;
         }
