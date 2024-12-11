@@ -11,8 +11,8 @@ export default function QueryProvider({children}: {
                 refetchOnMount: true,
                 refetchOnReconnect: true,
                 refetchOnWindowFocus: true,
-                staleTime: 5 * 60 * 1000,
-                refetchInterval: 5 * 60 * 1000
+                staleTime: 60 * 1000,
+                refetchInterval: 60 * 1000
             },
         }
     })
