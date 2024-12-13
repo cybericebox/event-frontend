@@ -5,6 +5,7 @@ import {SlGraph} from "react-icons/sl";
 import {WithEventForm} from "@/components/event/WithEvent";
 import ScoreBoard from "@/components/scoreboard/ScoreBoard";
 import {ScoreboardVisibilityTypeEnum} from "@/types/event";
+import {useRouter} from "next/navigation";
 
 let intervalId: NodeJS.Timeout;
 
@@ -12,6 +13,7 @@ export default function ScoreboardPage() {
     const {GetEventInfoResponse} = useEvent().useGetEventInfo()
     const [timeNow, setTimeNow] = useState(Date.now())
     const showScoreboard = new Date(GetEventInfoResponse?.Data.StartTime || 0).getTime() < timeNow
+    const router = useRouter()
 
     useEffect(() => {
         if(!!intervalId && !showScoreboard) {
@@ -27,6 +29,10 @@ export default function ScoreboardPage() {
 
     if (!!intervalId && showScoreboard) {
         clearInterval(intervalId)
+    }
+
+    if (GetEventInfoResponse?.Data.ScoreboardAvailability === ScoreboardVisibilityTypeEnum.Hidden) {
+        router.push("/")
     }
 
     return (

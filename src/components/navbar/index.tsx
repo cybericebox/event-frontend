@@ -27,7 +27,7 @@ import Logo from "../Logo"
 import {ClientAuthentication} from "@/hooks/auth";
 import {WithTeamParticipation, WithTeam} from "@/components/team/WithTeam";
 import {useRouter} from "next/navigation";
-import {WithEvent} from "@/components/event/WithEvent";
+import {WithEvent, WithScoreBoard} from "@/components/event/WithEvent";
 import {signOut} from "@/api/authAPI";
 
 
@@ -120,7 +120,8 @@ export default function NavBar() {
                         title="Завдання"
                         to="/challenges"
                     />
-                    <NavItem
+                    <WithScoreBoard>
+                        <NavItem
                         navSize={navSize}
                         displayTooltip={false}
                         displayTitle
@@ -129,6 +130,7 @@ export default function NavBar() {
                         title="Результати"
                         to="/scoreboard"
                     />
+                    </WithScoreBoard>
                     <NavItem
                         navSize={navSize}
                         displayTooltip={false}
@@ -286,6 +288,7 @@ export default function NavBar() {
                                 />
                             </Center>
                             <Center width="fit-content" margin="auto">
+                                <WithScoreBoard>
                                 <NavItem
                                     navSize={"large"}
 
@@ -296,6 +299,7 @@ export default function NavBar() {
                                     to="/scoreboard"
                                     customClickEvent={onClose}
                                 />
+                                </WithScoreBoard>
                             </Center>
                             <Center width="fit-content" margin="auto">
                                 <NavItem

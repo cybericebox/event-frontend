@@ -4,7 +4,7 @@ import {useEvent} from "@/hooks/useEvent";
 import {CountdownTimer} from "@/components/Countdown";
 import Link from "next/link";
 import {ClientAuthentication} from "@/hooks/auth";
-import {ParticipationStatusEnum} from "@/types/event";
+import {EventTypeEnum, ParticipationStatusEnum} from "@/types/event";
 
 interface JoinEventProps {
     status?: ParticipationStatusEnum
@@ -49,6 +49,8 @@ export default function JoinEvent({status}: JoinEventProps) {
                     text={"До початку заходу залишилось"}
                     until={GetEventInfoResponse?.Data.StartTime || 0}
                     className={"rounded-lg border border-gray-200 shadow-md px-4 py-5"}
+                    show={GetEventInfoResponse?.Data.Type === EventTypeEnum.Practice}
+                    textAfter={"Захід вже розпочався"}
                 >
                     {
                         ClientAuthentication().IsAuthenticated ?

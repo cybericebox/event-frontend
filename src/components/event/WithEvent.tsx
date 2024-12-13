@@ -4,7 +4,12 @@ import Loader from "@/components/Loader";
 import JoinEvent from "@/components/event/JoinEvent";
 import {useEvent} from "@/hooks/useEvent";
 import {ClientAuthentication} from "@/hooks/auth";
-import {ParticipationStatusEnum, RegistrationTypeEnum} from "@/types/event";
+import {
+    EventTypeEnum,
+    ParticipationStatusEnum,
+    RegistrationTypeEnum,
+    ScoreboardVisibilityTypeEnum
+} from "@/types/event";
 
 interface WithEventProps {
     children?: React.ReactNode;
@@ -31,7 +36,10 @@ export function WithEventForm({children, skip}: WithEventProps) {
     if (GetJoinEventStatusRequest.isSuccess && GetJoinEventStatusResponse?.Data.Status === ParticipationStatusEnum.ApprovedParticipationStatus) return children
 
     if (GetEventInfoRequest.isSuccess && GetEventInfoResponse?.Data) {
-        if (GetEventInfoResponse?.Data.Registration !== RegistrationTypeEnum.Close && new Date(GetEventInfoResponse?.Data.StartTime || 0).getTime() > Date.now()) return <JoinEvent status={GetJoinEventStatusResponse?.Data.Status}/>
+        if (GetEventInfoResponse?.Data.Registration !== RegistrationTypeEnum.Close
+            && ((GetEventInfoResponse?.Data.StartTime.getTime() > Date.now() && GetEventInfoResponse?.Data.Type === EventTypeEnum.Competition) ||
+                (GetEventInfoResponse?.Data.Type === EventTypeEnum.Practice))
+        ) return <JoinEvent status={GetJoinEventStatusResponse?.Data.Status}/>
     }
 
     return <></>
@@ -41,5 +49,12 @@ export function WithEvent({children}: WithEventProps) {
     const {GetJoinEventStatusResponse, GetJoinEventStatusRequest} = useEvent().useGetJoinEventStatus(ClientAuthentication().IsAuthenticated)
 
     if (GetJoinEventStatusRequest.isSuccess && GetJoinEventStatusResponse?.Data.Status === ParticipationStatusEnum.ApprovedParticipationStatus) return children
+    return <></>
+}
+
+export function WithScoreBoard({children}: WithEventProps) {
+    const {GetEventInfoResponse, GetEventInfoRequest} = useEvent().useGetEventInfo()
+
+    if (GetEventInfoRequest.isSuccess && GetEventInfoResponse?.Data.ScoreboardAvailability != ScoreboardVisibilityTypeEnum.Hidden) return children
     return <></>
 }
