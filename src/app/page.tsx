@@ -14,6 +14,7 @@ export default async function LandingPage() {
             {!!eventInfo?.Data &&
                 (!!eventInfo?.Data.Picture ?
                         <Image
+                            unoptimized={true}
                             width={1920}
                             height={1080}
                             alt={`Banner ${eventInfo?.Data.Name}`}
