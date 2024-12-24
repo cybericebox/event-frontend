@@ -4,7 +4,6 @@ import {
     Flex,
     Modal,
     ModalBody,
-    ModalCloseButton,
     ModalContent,
     ModalOverlay,
     Tab,
@@ -17,23 +16,21 @@ import React from "react";
 import ChallengeForm from "@/components/challenge/ChallengeForm";
 import {useChallenge} from "@/hooks/useChallenge";
 import ChallengeSolvesTable from "@/components/challenge/ChallengeSolvesTable";
-import {Challenge} from "@/types/challenge";
+import type {IChallengeInfo} from "@/types/challenge";
 
 export interface ChallengeModalProps {
     isOpen: boolean;
     onClose: () => void;
     disabled: boolean;
-    selected: Challenge;
+    selected: IChallengeInfo;
 }
 
 export default function ChallengeModal(props: ChallengeModalProps) {
-    const getSolves = useChallenge().useChallengeSolvedBy(props.selected?.ID)
+    const {ChallengeSolvedByResponse} = useChallenge().useChallengeSolvedBy(props.selected?.ID)
 
     const closeModal = () => {
         props.onClose();
     };
-
-    if (!!props.selected) {
         return (
             <Modal
                 onClose={closeModal}
@@ -50,7 +47,7 @@ export default function ChallengeModal(props: ChallengeModalProps) {
                             <TabList margin="20px">
                                 <Tab color="#211a52">Завдання</Tab>
                                 <Tab color="#211a52">
-                                    {getSolves?.data ? getSolves.data.length + (getSolves.data.length > 0 && getSolves.data.length < 5 ? " Рішення" : " Рішень") : "0 Рішень"}
+                                    {ChallengeSolvedByResponse?.Data ? ChallengeSolvedByResponse.Data.length + (ChallengeSolvedByResponse.Data.length > 0 && ChallengeSolvedByResponse.Data.length < 5 ? " Рішення" : " Рішень") : "0 Рішень"}
                                 </Tab>
                             </TabList>
 
@@ -73,5 +70,4 @@ export default function ChallengeModal(props: ChallengeModalProps) {
                 </ModalContent>
             </Modal>
         )
-    }
 }

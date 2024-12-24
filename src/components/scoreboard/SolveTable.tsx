@@ -1,10 +1,8 @@
 "use client";
 import React, {ChangeEvent, useCallback, useEffect, useState} from "react";
 import {
-    Box,
     Button,
     Center,
-    HStack,
     Icon,
     Input,
     InputGroup,
@@ -23,24 +21,24 @@ import {GiDrop, GiMedal, GiTrophy} from "react-icons/gi";
 import cloneDeep from "lodash/cloneDeep";
 import {debounce} from "lodash";
 import {useEvent} from "@/hooks/useEvent";
-import {ActiveChartSeriesItem, ParticipationType, TeamScore} from "@/types/event";
+import {IActiveChartSeriesItem, ITeamScore, ParticipationTypeEnum} from "@/types/event";
 
 
 interface ScoreTableProps {
-    activeChartSeries: { labels: string[], data: ActiveChartSeriesItem[] };
-    setActiveChartSeries: ({labels, data}: { labels: string[], data: ActiveChartSeriesItem[] }) => void;
+    activeChartSeries: { labels: string[], data: IActiveChartSeriesItem[] };
+    setActiveChartSeries: ({labels, data}: { labels: string[], data: IActiveChartSeriesItem[] }) => void;
 }
 
 export default function ScoreTable(props: ScoreTableProps) {
-    const score = useEvent().useGetScore()
-    const getEventInfo = useEvent().useGetEventInfo()
-    const [tableData, setTableData] = useState<TeamScore[]>([])
+    const {GetScoreResponse} = useEvent().useGetScore({enabled: true})
+    const {GetEventInfoResponse} = useEvent().useGetEventInfo()
+    const [tableData, setTableData] = useState<ITeamScore[]>([])
     const [searchValue, setSearchValue] = useState("");
     //
     const columnWidth = 63;
     const maxWidth = 500;
     const calculateMinWidth = () => {
-        let width = score?.data?.ChallengeList ? score?.data?.ChallengeList?.length * columnWidth : 0;
+        let width = GetScoreResponse?.Data.Challenges ? GetScoreResponse?.Data.Challenges?.length * columnWidth : 0;
         if (width < maxWidth) {
             return String(width) + "px";
         } else {
@@ -49,7 +47,7 @@ export default function ScoreTable(props: ScoreTableProps) {
     };
     //
     const calculateOverflow = () => {
-        let width = score?.data?.ChallengeList ? score?.data?.ChallengeList?.length * columnWidth : 0;
+        let width = GetScoreResponse?.Data.Challenges ? GetScoreResponse?.Data.Challenges?.length * columnWidth : 0;
         if (width < maxWidth) {
             return "visible";
         } else {
@@ -57,7 +55,7 @@ export default function ScoreTable(props: ScoreTableProps) {
         }
     };
     //
-    const getInChartLabels = (activeChartSeries: ActiveChartSeriesItem[]) => {
+    const getInChartLabels = (activeChartSeries: IActiveChartSeriesItem[]) => {
         let data: string[] = [];
         activeChartSeries.forEach((element) => {
             data.push(element.name)
@@ -67,19 +65,19 @@ export default function ScoreTable(props: ScoreTableProps) {
     //
     const changeSearchData = (text: string, activeChartSeriesData: {
         labels: string[],
-        data: ActiveChartSeriesItem[]
+        data: IActiveChartSeriesItem[]
     }) => {
 
-        let newTableData: TeamScore[] = [];
-        if (!score?.data?.TeamsScores) {
+        let newTableData: ITeamScore[] = [];
+        if (!GetScoreResponse?.Data.TeamsScores) {
             return;
         }
         if (text === "") {
-            newTableData = cloneDeep(score?.data?.TeamsScores)
+            newTableData = cloneDeep(GetScoreResponse?.Data.TeamsScores)
         } else {
             newTableData =
                 cloneDeep(
-                    score?.data?.TeamsScores.filter((el) => {
+                    GetScoreResponse?.Data.TeamsScores.filter((el) => {
                         return el.TeamName.toLowerCase().indexOf(text.toLowerCase()) > -1;
                     })
                 )
@@ -91,16 +89,16 @@ export default function ScoreTable(props: ScoreTableProps) {
         setTableData(newTableData)
     };
 
-    const chartSwitchHandler = (e: ChangeEvent<HTMLInputElement>, team: TeamScore) => {
-        let newSeriesArray: ActiveChartSeriesItem[] = [];
+    const chartSwitchHandler = (e: ChangeEvent<HTMLInputElement>, team: ITeamScore) => {
+        let newSeriesArray: IActiveChartSeriesItem[] = [];
 
-        if (!score?.data?.TeamsScores) return;
+        if (!GetScoreResponse?.Data.TeamsScores) return;
 
         if (e.target.checked) {
             newSeriesArray = cloneDeep(props.activeChartSeries.data);
             let seriesToPush = {
-                name: score?.data?.TeamsScores[team.Rank - 1].TeamName,
-                data: score?.data?.TeamsScores[team.Rank - 1].TeamScoreTimeline,
+                name: GetScoreResponse?.Data.TeamsScores[team.Rank - 1].TeamName,
+                data: GetScoreResponse?.Data.TeamsScores[team.Rank - 1].TeamScoreTimeline,
                 type: "line",
             };
             newSeriesArray.push(seriesToPush);
@@ -140,25 +138,25 @@ export default function ScoreTable(props: ScoreTableProps) {
     }, [searchValue, props.activeChartSeries, debounceLoadData]);
 
     useEffect(() => {
-        if (score?.data?.ActiveChartSeries) {
+        if (GetScoreResponse?.Data.ActiveChartSeries) {
             props.setActiveChartSeries({
-                labels: getInChartLabels(score?.data?.ActiveChartSeries),
-                data: score?.data?.ActiveChartSeries
+                labels: getInChartLabels(GetScoreResponse?.Data.ActiveChartSeries),
+                data: GetScoreResponse?.Data.ActiveChartSeries
             })
         }
     }, [])
 
 
     return (
-        <Box
-            w="100%"
-            className="solve-table-container"
-            style={{caretColor: "black"}}
+        <div
+            className={"w-full solve-table-container caret-black"}
         >
-            <HStack w="100%">
+            <div
+                className="flex w-full gap-3"
+            >
                 <InputGroup size="md" w="300px" top="60px">
                     <Input
-                        placeholder={getEventInfo.data?.Participation === ParticipationType.Individual ? "Знайти учасника" : "Знайти команду"}
+                        placeholder={GetEventInfoResponse?.Data.Participation === ParticipationTypeEnum.Individual ? "Знайти учасника" : "Знайти команду"}
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                         borderColor="#211a52"
@@ -167,7 +165,7 @@ export default function ScoreTable(props: ScoreTableProps) {
                         <Button
                             h="1.75rem"
                             size="sm"
-                            onClick={(e) => setSearchValue("")}
+                            onClick={() => setSearchValue("")}
                             backgroundColor="#54616e"
                             _hover={{backgroundColor: "#434d56"}}
                             color="#dfdfe3"
@@ -187,33 +185,42 @@ export default function ScoreTable(props: ScoreTableProps) {
                 >
                     Очистити графік
                 </Button>
-            </HStack>
+            </div>
 
-            <HStack spacing="0" w="100%" className="solve-table-container">
-                <TableContainer style={{overflowX: "auto"}} >
+            <div className="flex w-full space-x-0 solve-table-container">
+                <TableContainer minW={'fit-content'}>
                     <Table
                         variant="unstyled"
                         className="rotated-header solve-table table-left"
                     >
                         <Thead>
                             <Tr>
+                                <Th></Th>
                                 <Th textAlign="center">#</Th>
-                                <Th>На графіку</Th>
-                                <Th>{getEventInfo.data?.Participation === ParticipationType.Individual ? "Учасник" : "Команда"}</Th>
+                                <Th>{GetEventInfoResponse?.Data.Participation === ParticipationTypeEnum.Individual ? "Учасник" : "Команда"}</Th>
                                 <Th>Результат</Th>
                             </Tr>
                         </Thead>
                         <Tbody>
                             {tableData.map((team) => (
                                 <Tr key={team.TeamName}>
+                                    <Td>
+                                        <Switch
+                                            value={Number(team.InChart)}
+                                            isChecked={team.InChart}
+                                            onChange={(e) => chartSwitchHandler(e, team)}
+                                            id="email-alerts"
+                                            className={"w-0"}
+                                        />
+                                    </Td>
                                     {Number(team.Rank) > 3 ? (
-                                        <Td textAlign="center" width="20px">
+                                        <Td textAlign="center">
                                             {team.Rank}
                                         </Td>
                                     ) : (
                                         <>
                                             {Number(team.Rank) === 1 && (
-                                                <Td width="20px">
+                                                <Td>
                                                     <Icon
                                                         fontSize="xl"
                                                         color="#FFD700"
@@ -222,7 +229,7 @@ export default function ScoreTable(props: ScoreTableProps) {
                                                 </Td>
                                             )}
                                             {Number(team.Rank) === 2 && (
-                                                <Td width="20px">
+                                                <Td>
                                                     <Icon
                                                         fontSize="xl"
                                                         color="silver"
@@ -231,7 +238,7 @@ export default function ScoreTable(props: ScoreTableProps) {
                                                 </Td>
                                             )}
                                             {Number(team.Rank) === 3 && (
-                                                <Td width="20px">
+                                                <Td>
                                                     <Icon
                                                         fontSize="xl"
                                                         color="#CD7F32"
@@ -241,16 +248,8 @@ export default function ScoreTable(props: ScoreTableProps) {
                                             )}
                                         </>
                                     )}
-                                    <Td width="20px">
-                                        <Switch
-                                            value={Number(team.InChart)}
-                                            isChecked={team.InChart}
-                                            onChange={(e) => chartSwitchHandler(e, team)}
-                                            id="email-alerts"
-                                        />
-                                    </Td>
-                                    <Td minW={"300px"}>{team.TeamName}</Td>
-                                    <Td width="60px">{team.Score}</Td>
+                                    <Td>{team.TeamName}</Td>
+                                    <Td>{team.Score}</Td>
                                 </Tr>
                             ))}
                         </Tbody>
@@ -270,8 +269,8 @@ export default function ScoreTable(props: ScoreTableProps) {
                     >
                         <Thead>
                             <Tr>
-                                {score?.data?.ChallengeList && Object.entries(score?.data?.ChallengeList).map(([key, challenge]) => (
-                                    <Th key={key}>
+                                {GetScoreResponse?.Data.Challenges && GetScoreResponse?.Data.Challenges.map((challenge) => (
+                                    <Th key={challenge.ID}>
                                         <div className="rotated-header-container">
                                             <div className="rotated-header-content">
                                                 {challenge.Name}
@@ -283,34 +282,34 @@ export default function ScoreTable(props: ScoreTableProps) {
                         </Thead>
                         <Tbody>
                             {tableData.map((team) => (
-                                <Tr key={team.TeamName}>
-                                    {score?.data?.ChallengeList && Object.entries(score?.data?.ChallengeList).map(([key, challenge]) => (
-                                        <Td key={key} className="table-solve-icon-container">
+                                <Tr key={team.TeamID}>
+                                    {GetScoreResponse?.Data.Challenges && GetScoreResponse?.Data.Challenges.map((challenge) => (
+                                        <Td key={challenge.ID} className="table-solve-icon-container">
                                             <Center>
-                                                {team.TeamSolutions[challenge.ID!] && (
+                                                {team.TeamSolutions[challenge.ID] && (
                                                     <>
-                                                        {team.TeamSolutions[challenge.ID!].Rank === 1 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank === 1 && (
                                                             <Icon
                                                                 fontSize="xl"
                                                                 color="#00e5ff"
                                                                 as={GiDrop}
                                                             ></Icon>
                                                         )}
-                                                        {team.TeamSolutions[challenge.ID!].Rank === 2 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank === 2 && (
                                                             <Icon
                                                                 fontSize="xl"
                                                                 color="silver"
                                                                 as={GiMedal}
                                                             ></Icon>
                                                         )}
-                                                        {team.TeamSolutions[challenge.ID!].Rank === 3 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank === 3 && (
                                                             <Icon
                                                                 fontSize="xl"
                                                                 color="#CD7F32"
                                                                 as={GiMedal}
                                                             ></Icon>
                                                         )}
-                                                        {team.TeamSolutions[challenge.ID!].Rank > 3 && (
+                                                        {team.TeamSolutions[challenge.ID].Rank > 3 && (
                                                             <Icon as={FaFlag}/>
                                                         )}
                                                     </>
@@ -323,8 +322,8 @@ export default function ScoreTable(props: ScoreTableProps) {
                         </Tbody>
                     </Table>
                 </TableContainer>
-            </HStack>
-        </Box>
+            </div>
+        </div>
     );
 }
 

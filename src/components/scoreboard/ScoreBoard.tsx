@@ -4,17 +4,18 @@ import ScoreGraph from "@/components/scoreboard/ScoreGraph";
 import ScoreTable from "@/components/scoreboard/SolveTable";
 import {useEvent} from "@/hooks/useEvent";
 import {useState} from "react";
-import type {ActiveChartSeriesItem} from "@/types/event";
+import type {IActiveChartSeriesItem} from "@/types/event";
+import Loader from "@/components/Loader";
 
 interface ScoreBoardProps {
     show: boolean;
 }
 
 export default function ScoreBoard({show}: ScoreBoardProps) {
-    const score = useEvent().useGetScore(show)
+    const {GetScoreResponse, GetScoreRequest} = useEvent().useGetScore({enabled: show})
     const [activeChartSeries, setActiveChartSeries] = useState<{
         labels: string[],
-        data: ActiveChartSeriesItem[]
+        data: IActiveChartSeriesItem[]
     }>({labels: [], data: []})
 
     if (!show) {
@@ -25,10 +26,14 @@ export default function ScoreBoard({show}: ScoreBoardProps) {
         </div>
     }
 
+    if (GetScoreRequest.isLoading) {
+        return <Loader/>
+    }
+
     return (
         <>
             {
-                score?.data && (
+                GetScoreResponse && (
                     <>
                         <div
                             className={"h-[500px]"}

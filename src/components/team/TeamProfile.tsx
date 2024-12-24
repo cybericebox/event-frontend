@@ -4,13 +4,14 @@ import {RiTeamLine} from "react-icons/ri";
 import CopyToClipboardButtonWithToast from "@/components/CopyToClipboardButtonWIthToast";
 import type React from "react";
 import {useTeam} from "@/hooks/useTeam";
-import Loader from "@/components/Loaders";
+import Loader from "@/components/Loader";
 
 export default function TeamProfile() {
-    const team = useTeam().useGetTeam(true)
-    if (team.isLoading) {
+    const {GetTeamResponse, GetTeamRequest} = useTeam().useGetTeam()
+    if (GetTeamRequest.isLoading) {
         return <Loader/>
     }
+
     return (
         <Flex maxW={"800px"} w="100%" m={"auto"} flexDir="column" color="#211a52">
             <Box w="100%" marginTop="50px" marginBottom="50px">
@@ -20,7 +21,7 @@ export default function TeamProfile() {
                 </Center>
                 <Card mt={"20px"}>
                     <CardBody>
-                        {!team.data?.Name ? <Center><Heading size='xs' textTransform='uppercase'>
+                        {!GetTeamResponse?.Data.Name ? <Center><Heading size='xs' textTransform='uppercase'>
                                 Ви не долучились до жодної з команд
                             </Heading> </Center> :
                             <Stack divider={<StackDivider/>} spacing='4'>
@@ -29,7 +30,7 @@ export default function TeamProfile() {
                                         Назва команди
                                     </Heading>
                                     <Text pt='2' fontSize='sm'>
-                                        {team.data?.Name}
+                                        {GetTeamResponse?.Data.Name}
                                     </Text>
                                 </Box>
                                 <Box>
@@ -41,16 +42,9 @@ export default function TeamProfile() {
                                             ****************
                                         </Text>
                                         <CopyToClipboardButtonWithToast
-                                            textToCopy={team.data?.JoinCode}
-                                            toastOptions={{
-                                                title: 'Скопійовано',
-                                                description: "Код для приєднання було успішно скопійовано до буферу обміну.",
-                                                status: 'success',
-                                                duration: 9000,
-                                                isClosable: true,
-                                            }}
-                                            ml={"90px"}
-                                            fontSize='sm'
+                                            className={"font-semibold ml-24"}
+                                            textToCopy={GetTeamResponse?.Data.JoinCode!}
+                                            toastMessage={"Код для приєднання було успішно скопійовано до буферу обміну."}
                                         >
                                             Скопіювати код
                                         </CopyToClipboardButtonWithToast>

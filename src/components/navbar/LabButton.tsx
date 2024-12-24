@@ -9,23 +9,22 @@ export interface LabButtonProps {
 }
 
 export default function LabButton({display, inDrawer}: LabButtonProps) {
-    const getVPNConfig = useTeam().useGetVPNConfig();
+    const {GetVPNConfig} = useTeam().useGetVPNConfig();
 
     const createFileFromString = (text: string) => {
-        console.log(text)
         const element = document.createElement("a");
         const file = new Blob([text], {type: 'text/plain'});
         element.href = URL.createObjectURL(file);
-        element.download = `${window.location.hostname.split(".")[0]}-wireguard.conf`;
+        element.download = `${window.location.hostname.split(".")[0]}wireguard.conf`;
         element.click();
         URL.revokeObjectURL(element.href);
     }
 
     const DownloadWgConfig = () => {
-        getVPNConfig.refetch()
+        GetVPNConfig()
             .then((res) => {
-                if (res.data) {
-                    createFileFromString(res.data)
+                if (res.data?.Data) {
+                    createFileFromString(res.data.Data)
                 }
             })
     }

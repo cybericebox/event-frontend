@@ -1,39 +1,44 @@
 'use client'
 
-import {Button, ButtonProps, useToast, UseToastOptions} from "@chakra-ui/react";
 import React from "react";
+import {Button} from "@/components/ui/button";
+import {cn} from "@/utils/cn";
+import {SuccessToast} from "@/components/customToast";
 
 async function copyToClipboard(text: string) {
     try {
         await navigator.clipboard.writeText(text);
     } catch (e) {
+        console.error('Failed to copy: ', e)
     }
 }
 
-export interface CopyToClipboardButtonProps extends ButtonProps {
+export interface CopyToClipboardButtonProps {
     textToCopy: string,
-    toastOptions: UseToastOptions
+    children: React.ReactNode
+    toastMessage: string
+    className?: string
 }
 
 export default function CopyToClipboardButtonWithToast({
                                                            children,
                                                            textToCopy,
-                                                           toastOptions,
-                                                           ...props
+                                                              toastMessage,
+    className
                                                        }: CopyToClipboardButtonProps) {
-    const toast = useToast()
 
     const handleCopyClick = () => {
         copyToClipboard(textToCopy).then(
-            () => toast({...toastOptions})
+            () => SuccessToast(toastMessage, {duration: 3000}),
         )
     }
 
     return (
         <div>
             <Button
+                type="button"
+                className={cn("text-xs", className)}
                 onClick={handleCopyClick}
-                {...props}
             >
                 {children}
             </Button>

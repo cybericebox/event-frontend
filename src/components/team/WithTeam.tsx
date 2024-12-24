@@ -1,9 +1,9 @@
 'use client'
 import type React from "react";
-import Loader from "@/components/Loaders";
+import Loader from "@/components/Loader";
 import {useTeam} from "@/hooks/useTeam";
 import {useEvent} from "@/hooks/useEvent";
-import {ParticipationType} from "@/types/event";
+import {ParticipationTypeEnum} from "@/types/event";
 import TeamModel from "@/components/team/TeamModel";
 
 interface WithTeamProps {
@@ -11,26 +11,27 @@ interface WithTeamProps {
 }
 
 export function WithTeamForm({children}: WithTeamProps) {
-    const getSelfTeam = useTeam().useGetTeam(true)
+    const {GetTeamResponse, GetTeamRequest} = useTeam().useGetTeam()
 
-    if (getSelfTeam.isSuccess) {
-        if (!!getSelfTeam.data.Name) return children
-        return <TeamModel />
-    }
+    if (GetTeamRequest.isLoading) return <Loader/>
 
-    return <Loader/>
+    if (GetTeamRequest.isSuccess && !!GetTeamResponse?.Data.Name) return children
+
+    if (GetTeamRequest.isError) return <TeamModel/>
+
+    return <></>
 }
 
 export function WithTeam({children}: WithTeamProps) {
-    const getSelfTeam = useTeam().useGetTeam(true)
+    const {GetTeamResponse, GetTeamRequest} = useTeam().useGetTeam()
 
-    if (getSelfTeam.isSuccess && !!getSelfTeam.data.Name) return children
+    if (GetTeamRequest.isSuccess && !!GetTeamResponse?.Data.Name) return children
     return <></>
 }
 
 export function WithTeamParticipation({children}: WithTeamProps) {
-    const getEventInfo = useEvent().useGetEventInfo()
+    const {GetEventInfoResponse, GetEventInfoRequest} = useEvent().useGetEventInfo()
 
-    if (getEventInfo.isSuccess && getEventInfo.data.Participation === ParticipationType.Team) return children
+    if (GetEventInfoRequest.isSuccess && GetEventInfoResponse?.Data.Participation === ParticipationTypeEnum.Team) return children
     return <></>
 }

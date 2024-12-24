@@ -4,15 +4,16 @@ import {useEffect, useState} from "react"
 import {SlGraph} from "react-icons/sl";
 import {WithEventForm} from "@/components/event/WithEvent";
 import ScoreBoard from "@/components/scoreboard/ScoreBoard";
-import Loader from "@/components/Loaders";
-import {ScoreboardVisibilityType} from "@/types/event";
+import {ScoreboardVisibilityTypeEnum} from "@/types/event";
+import {useRouter} from "next/navigation";
 
 let intervalId: NodeJS.Timeout;
 
 export default function ScoreboardPage() {
-    const eventInfo = useEvent().useGetEventInfo()
+    const {GetEventInfoResponse} = useEvent().useGetEventInfo()
     const [timeNow, setTimeNow] = useState(Date.now())
-    const showScoreboard = new Date(eventInfo.data?.StartTime || 0).getTime() < timeNow
+    const showScoreboard = new Date(GetEventInfoResponse?.Data.StartTime || 0).getTime() < timeNow
+    const router = useRouter()
 
     useEffect(() => {
         if(!!intervalId && !showScoreboard) {
@@ -28,6 +29,10 @@ export default function ScoreboardPage() {
 
     if (!!intervalId && showScoreboard) {
         clearInterval(intervalId)
+    }
+
+    if (GetEventInfoResponse?.Data.ScoreboardAvailability === ScoreboardVisibilityTypeEnum.Hidden) {
+        router.push("/")
     }
 
     return (
@@ -52,11 +57,10 @@ export default function ScoreboardPage() {
                 className={"px-10"}
             >
                 {
-                    eventInfo.data && (
-                            <WithEventForm skip={eventInfo.data?.ScoreboardAvailability === ScoreboardVisibilityType.Public}>
+                    GetEventInfoResponse && (
+                            <WithEventForm skip={GetEventInfoResponse?.Data.ScoreboardAvailability === ScoreboardVisibilityTypeEnum.Public}>
                                 <ScoreBoard show={showScoreboard}/>
                             </WithEventForm>
-
                     )
                 }
             </div>
