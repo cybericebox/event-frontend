@@ -22,7 +22,7 @@ export default function ScoreBoard({show}: ScoreBoardProps) {
         return <div
             className={"text-lg md:text-2xl font-bold text-[#211a52] text-center"}
         >
-            Результати будуть доступні після початку змагання
+            Результати будуть доступні після початку заходу
         </div>
     }
 

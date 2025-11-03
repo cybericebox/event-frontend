@@ -23,7 +23,7 @@ export function WithEventForm({children, skip}: WithEventProps) {
     // if component need to be public dynamic
     if (skip) return children
 
-    // run code only on client
+    // run code only on a client
     if(typeof window === 'undefined') {
         return <></>
     }
@@ -36,9 +36,10 @@ export function WithEventForm({children, skip}: WithEventProps) {
     if (GetJoinEventStatusRequest.isSuccess && GetJoinEventStatusResponse?.Data.Status === ParticipationStatusEnum.ApprovedParticipationStatus) return children
 
     if (GetEventInfoRequest.isSuccess && GetEventInfoResponse?.Data) {
-        if (GetEventInfoResponse?.Data.Registration !== RegistrationTypeEnum.Close
-            && ((GetEventInfoResponse?.Data.StartTime.getTime() > Date.now() && GetEventInfoResponse?.Data.Type === EventTypeEnum.Competition) ||
-                (GetEventInfoResponse?.Data.Type === EventTypeEnum.Practice))
+        if (GetEventInfoResponse.Data.Registration !== RegistrationTypeEnum.Close
+            && GetEventInfoResponse.Data.FinishTime.getTime() > Date.now()
+            && ((GetEventInfoResponse.Data.StartTime.getTime() > Date.now() && GetEventInfoResponse.Data.Type === EventTypeEnum.Competition) ||
+                (GetEventInfoResponse.Data.Type === EventTypeEnum.Practice))
         ) return <JoinEvent status={GetJoinEventStatusResponse?.Data.Status}/>
     }
 

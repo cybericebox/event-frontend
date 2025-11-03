@@ -29,28 +29,30 @@ export default function LabButton({display, inDrawer}: LabButtonProps) {
             })
     }
 
-    return (
-            <Flex display={display}>
-                <Link
-                    target="_blank"
-                    _hover={{textDecor: "none"}}
-                >
-                    <Button
-                        backgroundColor={inDrawer ? "#dfdfe3" : "#54616e"}
-                        color={inDrawer ? "#54616e" : "#dfdfe3"}
-                        _hover={
-                            inDrawer
-                                ? {backgroundColor: "#c8c8d0"}
-                                : {backgroundColor: "#434d56"}
-                        }
-                        onClick={() => DownloadWgConfig()}
-                        fontSize={"sm"}
-                    >
-                        <Text>Під&apos;єднатись до лабораторії</Text>
-                    </Button>
-                </Link>
-            </Flex>
-    );
+    return <></>
+
+    // return (
+    //         <Flex display={display}>
+    //             <Link
+    //                 target="_blank"
+    //                 _hover={{textDecor: "none"}}
+    //             >
+    //                 <Button
+    //                     backgroundColor={inDrawer ? "#dfdfe3" : "#54616e"}
+    //                     color={inDrawer ? "#54616e" : "#dfdfe3"}
+    //                     _hover={
+    //                         inDrawer
+    //                             ? {backgroundColor: "#c8c8d0"}
+    //                             : {backgroundColor: "#434d56"}
+    //                     }
+    //                     onClick={() => DownloadWgConfig()}
+    //                     fontSize={"sm"}
+    //                 >
+    //                     <Text>Під&apos;єднатись до лабораторії</Text>
+    //                 </Button>
+    //             </Link>
+    //         </Flex>
+    // );
 }
 
 
