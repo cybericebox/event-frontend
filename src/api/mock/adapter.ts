@@ -1,7 +1,13 @@
 import axios, {AxiosInstance, InternalAxiosRequestConfig} from "axios";
 import {eventInfoFixture} from "@/api/mock/fixtures/event";
 import {notificationsFixture} from "@/api/mock/fixtures/notifications";
-import {challengesFixture, solvedByFixture, teamFixture, CORRECT_FLAGS} from "@/api/mock/fixtures/challenges";
+import {
+    challengesFixture,
+    solvedByFixture,
+    teamFixture,
+    CORRECT_FLAGS,
+    markChallengeSolved,
+} from "@/api/mock/fixtures/challenges";
 import {SolveChallengeSchema} from "@/types/challenge";
 
 // A route body is either a static fixture or a function of the request config
@@ -28,7 +34,9 @@ const ROUTES: { test: (url: string, method?: string) => boolean; body: Body }[] 
                 typeof config.data === "string" ? JSON.parse(config.data) : config.data
             );
             const solution = parsed.success ? parsed.data.Solution : "";
-            return {Status: {Code: 200, Message: "OK"}, Data: {Solved: CORRECT_FLAGS[id] === solution}};
+            const solved = CORRECT_FLAGS[id] === solution;
+            if (solved) markChallengeSolved(id);
+            return {Status: {Code: 200, Message: "OK"}, Data: {Solved: solved}};
         },
     },
 ];

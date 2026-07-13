@@ -66,6 +66,15 @@ export const challengesFixture: IResponse<IChallengeInfoCategoryInfo[]> = {
     Data: categories,
 };
 
+// Mock is stateful in dev: a correct /solve flips the challenge to solved
+// so a subsequent challenges refetch reflects it (matches real backend).
+export function markChallengeSolved(challengeID: string): void {
+    for (const category of challengesFixture.Data) {
+        const ch = category.Challenges.find((c) => c.ID === challengeID)
+        if (ch) { ch.Solved = true; return }
+    }
+}
+
 const solutions: ITeamSolution[] = z.array(TeamSolutionSchema).parse([
     {ID: uid("9001"), Name: "fr0sty", SolvedAt: new Date(Date.now() - 3600_000).toISOString()},
     {ID: uid("9002"), Name: "ice_wizard", SolvedAt: new Date(Date.now() - 1800_000).toISOString()},
