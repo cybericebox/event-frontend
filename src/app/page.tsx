@@ -1,11 +1,24 @@
 import Image from "next/image";
 import type React from "react";
+import {redirect} from "next/navigation";
 import {WithEventForm} from "@/components/event/WithEvent";
 import {CountdownTimer} from "@/components/Countdown";
 import {getEventInfoOnServerFn} from "@/api/serverAPI";
 
 export default async function LandingPage() {
     const eventInfo = await getEventInfoOnServerFn()
+
+    // In-event (StartTime <= now < FinishTime) → the App shell is the home; send the
+    // participant straight to challenges. The not-in-event branch keeps the landing render
+    // (proper Landing is a later sub-project).
+    const start = eventInfo?.Data?.StartTime;
+    const finish = eventInfo?.Data?.FinishTime;
+    if (start && finish) {
+        const now = Date.now();
+        if (new Date(start).getTime() <= now && now < new Date(finish).getTime()) {
+            redirect("/challenges");
+        }
+    }
 
     return (
         <div
