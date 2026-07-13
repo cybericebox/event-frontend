@@ -5,7 +5,7 @@ import ScoreTable from "@/components/scoreboard/SolveTable";
 import {useEvent} from "@/hooks/useEvent";
 import {useState} from "react";
 import type {IActiveChartSeriesItem} from "@/types/event";
-import Loader from "@/components/Loader";
+import {Spinner} from "@/components/ui/spinner";
 
 interface ScoreBoardProps {
     show: boolean;
@@ -27,7 +27,7 @@ export default function ScoreBoard({show}: ScoreBoardProps) {
     }
 
     if (GetScoreRequest.isLoading) {
-        return <Loader/>
+        return <div className='flex justify-center items-center'><Spinner size="md" className="text-primary"/></div>
     }
 
     return (

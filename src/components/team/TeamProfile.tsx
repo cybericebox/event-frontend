@@ -4,12 +4,12 @@ import {RiTeamLine} from "react-icons/ri";
 import CopyToClipboardButtonWithToast from "@/components/CopyToClipboardButtonWIthToast";
 import type React from "react";
 import {useTeam} from "@/hooks/useTeam";
-import Loader from "@/components/Loader";
+import {Spinner} from "@/components/ui/spinner";
 
 export default function TeamProfile() {
     const {GetTeamResponse, GetTeamRequest} = useTeam().useGetTeam()
     if (GetTeamRequest.isLoading) {
-        return <Loader/>
+        return <div className='flex justify-center items-center'><Spinner size="md" className="text-primary"/></div>
     }
 
     return (

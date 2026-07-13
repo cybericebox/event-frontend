@@ -1,6 +1,6 @@
 'use client'
 import type React from "react";
-import Loader from "@/components/Loader";
+import {Spinner} from "@/components/ui/spinner";
 import {useTeam} from "@/hooks/useTeam";
 import {useEvent} from "@/hooks/useEvent";
 import {ParticipationTypeEnum} from "@/types/event";
@@ -13,7 +13,7 @@ interface WithTeamProps {
 export function WithTeamForm({children}: WithTeamProps) {
     const {GetTeamResponse, GetTeamRequest} = useTeam().useGetTeam()
 
-    if (GetTeamRequest.isLoading) return <Loader/>
+    if (GetTeamRequest.isLoading) return <div className='flex justify-center items-center'><Spinner size="md" className="text-primary"/></div>
 
     if (GetTeamRequest.isSuccess && !!GetTeamResponse?.Data.Name) return children
 

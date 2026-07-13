@@ -1,0 +1,63 @@
+@tailwind components;
+/* Ice-cube loader — isometric ICE-Box that melts then refreezes.
+   Self-contained: keyframes + color rules travel with the component,
+   so no host globals.css changes are needed. All keyframes are ice-* prefixed. */
+
+.ice-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+/* The default color lives in @layer components so Tailwind's utilities layer
+   (e.g. .text-white) still wins: unlayered author CSS would otherwise always
+   beat layered utilities regardless of order. Ice-cyan by default; override
+   anywhere with --ice-loader-color or a text-color utility. The unlayered
+   `button .ice-loader` rule below stays unlayered so it beats this layered
+   default and lets the cube inherit the button's text color. */
+@layer components {
+  .ice-loader { color: var(--ice-loader-color, #63c1f7); }
+}
+.ice-loader svg {
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+}
+button .ice-loader { color: currentColor; }
+
+/* Size = font-size; the svg is 1em square. */
+.ice-loader-sm { font-size: 20px; }
+.ice-loader-md { font-size: 32px; }
+.ice-loader-lg { font-size: 60px; }
+
+/* Animated faces pivot on their own box. */
+.ice-top, .ice-side, .ice-pud, .ice-shine { transform-box: fill-box; }
+.ice-top  { transform-origin: 50% 50%;  animation: ice-top  2.2s ease-in-out infinite; }
+.ice-side { transform-origin: 50% 100%; animation: ice-side 2.2s ease-in-out infinite; }
+.ice-side-r { animation-delay: .04s; }
+.ice-pud  { transform-origin: 50% 50%;  animation: ice-pud  2.2s ease-in-out infinite; }
+.ice-shine { animation: ice-shine 2.2s ease-in-out infinite; }
+
+@keyframes ice-top {
+  0%, 100% { transform: translateY(0) scaleY(1); opacity: 1; }
+  45%, 55% { transform: translateY(6px) scaleY(.15); opacity: .35; }
+}
+@keyframes ice-side {
+  0%, 100% { transform: scaleY(1); opacity: 1; }
+  45%, 55% { transform: scaleY(.08); opacity: .25; }
+}
+@keyframes ice-pud {
+  0%, 30% { transform: scale(.2); opacity: 0; }
+  50%     { transform: scale(1);  opacity: .9; }
+  70%, 100% { transform: scale(.2); opacity: 0; }
+}
+@keyframes ice-shine {
+  0%, 100% { opacity: 0; }
+  20% { opacity: .85; }
+  40% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ice-top, .ice-side, .ice-pud, .ice-shine { animation: none; }
+  .ice-pud, .ice-shine { opacity: 0; }
+}

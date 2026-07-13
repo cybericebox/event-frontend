@@ -1,6 +1,6 @@
 'use client'
 import React from "react";
-import Loader from "@/components/Loader";
+import {Spinner} from "@/components/ui/spinner";
 import JoinEvent from "@/components/event/JoinEvent";
 import {useEvent} from "@/hooks/useEvent";
 import {ClientAuthentication} from "@/hooks/auth";
@@ -29,7 +29,7 @@ export function WithEventForm({children, skip}: WithEventProps) {
     }
 
     if (GetJoinEventStatusRequest.isLoading) {
-        return <Loader/>
+        return <div className='flex justify-center items-center'><Spinner size="md" className="text-primary"/></div>
     }
 
     // if user joins event

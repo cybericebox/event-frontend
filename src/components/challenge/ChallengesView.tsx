@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import type {IChallengeInfo} from "@/types/challenge";
 import {useChallenge} from "@/hooks/useChallenge";
-import Loader from "@/components/Loader";
+import {Spinner} from "@/components/ui/spinner";
 import ChallengeTile from "@/components/challenge/ChallengeTile";
 import ChallengeModal from "@/components/challenge/ChallengeModal";
 
@@ -17,7 +17,7 @@ export default function ChallengesView({show, allowToSolve}: ChallengesViewProps
 
     return (
         <>
-            {GetChallengesRequest.isLoading ? <Loader/> :
+            {GetChallengesRequest.isLoading ? <div className='flex justify-center items-center'><Spinner size="md" className="text-primary"/></div> :
                 GetChallengesResponse && (
                     GetChallengesResponse.Data.map((category) => (
                             <div
