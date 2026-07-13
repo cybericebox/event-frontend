@@ -26,9 +26,9 @@ export function TopBand() {
                     "linear-gradient(90deg,#172159,hsl(var(--primary)) 55%,#243488)",
             }}
         >
-            <Link href="/" className="flex items-center gap-3 text-white" aria-label="На головну">
+            <div className="flex items-center gap-3 text-white">
                 <Logo width={34} height={34} />
-                <span className="flex flex-col leading-tight">
+                <Link href="/" className="flex flex-col leading-tight" aria-label="На головну">
                     {loading ? (
                         <Spinner size="sm" className="text-primary-foreground" />
                     ) : (
@@ -39,8 +39,8 @@ export function TopBand() {
                             <span className="text-[11px] text-white/70">Jeopardy CTF</span>
                         </>
                     )}
-                </span>
-            </Link>
+                </Link>
+            </div>
 
             <div className="ml-auto flex items-center gap-3">
                 {/* Standing chip: static placeholder — no rank/standing data in the current

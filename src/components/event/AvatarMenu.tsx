@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/utils/cn"
 import { signOut } from "@/api/authAPI"
 
-// Profile lives on the external id-domain; keep it an anchor so it navigates out of the app.
+// Placeholder internal route until the profile page is wired to the external id-domain link.
 const PROFILE_HREF = "/profile"
 
 function MenuRow({
@@ -66,7 +66,7 @@ export function AvatarMenu() {
                     className="flex items-center gap-2 rounded-[11px] border border-white/[0.22] bg-white/10 py-1 pl-1 pr-2.5 transition-colors hover:bg-white/20"
                 >
                     <Avatar className="size-[30px]">
-                        <AvatarFallback className="bg-gradient-to-br from-white to-[#bfe3ff] text-xs font-bold text-primary">
+                        <AvatarFallback className="bg-gradient-to-br from-white to-accent text-xs font-bold text-primary">
                             ІМ
                         </AvatarFallback>
                     </Avatar>
