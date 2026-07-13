@@ -1,4 +1,5 @@
 import axios, {AxiosResponse} from "axios";
+import {installMockAdapter} from "@/api/mock/adapter";
 
 export const baseAPI = axios.create({
     baseURL: "/api",
@@ -7,6 +8,9 @@ export const baseAPI = axios.create({
         Accept: "application/json",
     },
 });
+
+// No-op unless NEXT_PUBLIC_USE_MOCKS === "1"; serves fixtures for known routes when enabled.
+installMockAdapter(baseAPI);
 
 
 // Add a response interceptor to handle errors and refresh page
