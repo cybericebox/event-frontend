@@ -1,4 +1,4 @@
-import {AxiosAdapter, AxiosInstance} from "axios";
+import axios, {AxiosInstance} from "axios";
 import {eventInfoFixture} from "@/api/mock/fixtures/event";
 import {notificationsFixture} from "@/api/mock/fixtures/notifications";
 
@@ -16,7 +16,9 @@ const ROUTES: { test: (url: string, method?: string) => boolean; body: unknown }
 export function installMockAdapter(api: AxiosInstance): void {
     if (process.env.NEXT_PUBLIC_USE_MOCKS !== "1") return;
 
-    const passthrough = api.defaults.adapter as AxiosAdapter;
+    // api.defaults.adapter is the name array (e.g. ["xhr","http","fetch"]), not a callable;
+    // axios.getAdapter resolves it to the actual adapter function.
+    const passthrough = axios.getAdapter(api.defaults.adapter);
 
     api.defaults.adapter = async (config) => {
         const url = (config.baseURL ?? "") + (config.url ?? "");

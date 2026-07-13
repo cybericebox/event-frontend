@@ -1,14 +1,14 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ExternalLink, MessageSquare, LogOut, ChevronDown } from "lucide-react"
+import { User, MessageSquare, LogOut, ChevronDown } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/utils/cn"
 import { signOut } from "@/api/authAPI"
 
-// Placeholder internal route until the profile page is wired to the external id-domain link.
-const PROFILE_HREF = "/profile"
+// Neutralized placeholder until the profile link is wired to the external id-domain page.
+const PROFILE_HREF = "#"
 
 function MenuRow({
     icon,
@@ -93,7 +93,7 @@ export function AvatarMenu() {
 
                 <div className="py-1">
                     <MenuRow
-                        icon={<ExternalLink className={iconClass} />}
+                        icon={<User className={iconClass} />}
                         label="Профіль"
                         href={PROFILE_HREF}
                     />
