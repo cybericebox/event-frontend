@@ -1,6 +1,8 @@
 import type {Metadata} from "next";
 import "./globals.css";
 import type React from "react";
+import {GeistSans} from "geist/font/sans";
+import {GeistMono} from "geist/font/mono";
 import {Providers} from "@/utils/providers";
 import NavBar from "@/components/navbar";
 import Footer from "@/components/Footer";
@@ -38,7 +40,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="uk">
+        <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`}>
         <body>
         <Providers>
             <NavBar/>
