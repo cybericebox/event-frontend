@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useEvent } from "@/hooks/useEvent"
 import { useTeam } from "@/hooks/useTeam"
@@ -32,6 +32,19 @@ export function ChallengesBoard() {
     const started = !!event && new Date(event.StartTime).getTime() <= now
     const finished = !!event && new Date(event.FinishTime).getTime() < now
     const needsTeam = event?.Participation === ParticipationTypeEnum.Team
+
+    // Before-start gate has no ticking clock on its own: without this, `now`/`started`
+    // are computed once per render, so the board never re-renders when the countdown
+    // reaches StartTime and CountdownTimer (no `show` prop) blanks to null at the CTF
+    // start until a manual refresh. Tick once a second only while not yet started; the
+    // moment `started` flips true (recomputed from Date.now() above) the effect clears
+    // itself. Hooks must not be conditional, so this runs before any early return.
+    const [, forceTick] = useState(0)
+    useEffect(() => {
+        if (started) return
+        const id = setInterval(() => forceTick((n) => n + 1), 1000)
+        return () => clearInterval(id)
+    }, [started])
 
     const { GetTeamResponse, GetTeamRequest } = useTeam().useGetTeam()
     const hasTeam = GetTeamRequest.isSuccess && !!GetTeamResponse?.Data?.Name
