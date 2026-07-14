@@ -1,6 +1,7 @@
 import axios, {AxiosInstance, InternalAxiosRequestConfig} from "axios";
 import {eventInfoFixture} from "@/api/mock/fixtures/event";
 import {notificationsFixture} from "@/api/mock/fixtures/notifications";
+import {scoreFixture} from "@/api/mock/fixtures/scoreboard";
 import {
     challengesFixture,
     solvedByFixture,
@@ -22,6 +23,7 @@ const ROUTES: { test: (url: string, method?: string) => boolean; body: Body }[] 
     {test: (u) => u.includes("events/self/info"), body: eventInfoFixture},
     {test: (u) => u.includes("events/self/notifications"), body: notificationsFixture},
     {test: (u) => u.includes("events/self/challenges/info"), body: challengesFixture},
+    {test: (u) => u.includes("events/self/score"), body: scoreFixture},
     {test: (u) => u.includes("/solvedBy"), body: solvedByFixture},
     // Match the team route but NOT its /vpn-config sub-path.
     {test: (u) => u.includes("events/self/teams/self") && !u.includes("vpn-config"), body: teamFixture},
