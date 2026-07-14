@@ -1,8 +1,12 @@
 import {IResponse} from "@/types/api";
 import {EventScoreSchema, IEventScore} from "@/types/event";
+import {teamFixture} from "./challenges";
 
 // Stable UUID helper for fixtures (valid v4 shape; deterministic strings).
 const uid = (n: string) => `00000000-0000-4000-8000-${n.padStart(12, "0")}`;
+// The viewer's own team (from the team fixture) so its scoreboard row can be
+// matched and tinted; falls back to a valid uuid if the field is ever unset.
+const OWN_TEAM_ID = teamFixture.Data.ID ?? uid("703");
 // Challenge IDs reused as TeamSolutions keys.
 const CH = [uid("c1"), uid("c2"), uid("c3")];
 // Event window mirrors the event fixture (started ~1h ago).
@@ -29,7 +33,8 @@ const data: IEventScore = EventScoreSchema.parse({
         {ID: CH[2], Name: "Glacier Cipher"},
     ],
     TeamsScores: teams.map((t, ti) => ({
-        TeamID: uid(`70${ti}`),
+        // Rank 4 (index 3) is the viewer's own team, so its row gets the own-team tint.
+        TeamID: ti === 3 ? OWN_TEAM_ID : uid(`70${ti}`),
         TeamName: t.name,
         Rank: t.rank,
         Score: t.score,
