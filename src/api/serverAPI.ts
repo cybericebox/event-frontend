@@ -11,11 +11,15 @@ export const getEventInfoOnServerFn = async (): Promise<IResponse<IEventInfo>> =
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
         return eventInfoFixture;
     }
-    const eventUrl = `https://${(await headers()).get("subdomain")}.${process.env.NEXT_PUBLIC_DOMAIN}`
-    const response =  await fetch(`${eventUrl}/api/events/self/info`, {
+    const eventHost = (await headers()).get("host");
+    const apiHost = `api.${process.env.NEXT_PUBLIC_DOMAIN}`;
+    const internalOrigin = process.env.INTERNAL_API_ORIGIN;
+    const response =  await fetch(`${internalOrigin ?? `https://${apiHost}`}/api/events/self/info`, {
         method: 'GET',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            Origin: `https://${eventHost}`,
+            ...(internalOrigin ? {Host: apiHost} : {}),
         },
         next: {
             revalidate: 3, // 5 minutes

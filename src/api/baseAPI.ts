@@ -2,7 +2,7 @@ import axios, {AxiosResponse} from "axios";
 import {installMockAdapter} from "@/api/mock/adapter";
 
 export const baseAPI = axios.create({
-    baseURL: "/api",
+    baseURL: `https://api.${process.env.NEXT_PUBLIC_DOMAIN}/api`,
     withCredentials: true,
     headers: {
         Accept: "application/json",
@@ -24,4 +24,3 @@ baseAPI.interceptors.response.use((response: AxiosResponse) => response,
         }
         return Promise.reject(error);
     });
-

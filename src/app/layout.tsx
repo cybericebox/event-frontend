@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
         if (!name) {
             return {title: FALLBACK_TITLE};
         }
-        const eventUrl = `https://${(await headers()).get("subdomain")}.${process.env.NEXT_PUBLIC_DOMAIN}`
+        const eventUrl = `https://${(await headers()).get("host")}`
         return {
             title: name,
             description: `${name} | Cyber ICE Box Platform`,
