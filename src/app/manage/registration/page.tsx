@@ -20,28 +20,29 @@ export default function RegistrationPage() {
     const queryClient = useQueryClient();
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const lifecycleQuery = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useState<{eventID: string; registration: 0 | 1 | 2; joinPolicy: 0 | 1} | null>(null);
+    const [edit, setEdit] = useState<{eventID: string; registration: 0 | 1 | 2; joinPolicy: 0 | 1; maxTeams: number | null} | null>(null);
     const [saving, setSaving] = useState(false);
     const config = configQuery.data;
     const lifecycle = lifecycleQuery.data;
     const registration = edit?.eventID === eventID ? edit.registration : config?.Registration;
     const joinPolicy = edit?.eventID === eventID ? edit.joinPolicy : lifecycle?.JoinPolicy;
-    const registrationDirty = config !== undefined && registration !== config.Registration;
+    const maxTeams = edit?.eventID === eventID ? edit.maxTeams : config?.MaxTeams;
+    const registrationDirty = config !== undefined && (registration !== config.Registration || maxTeams !== config.MaxTeams);
     const joinDirty = lifecycle !== undefined && joinPolicy !== lifecycle.JoinPolicy;
     const dirty = registrationDirty || joinDirty;
 
-    function update(patch: Partial<{registration: 0 | 1 | 2; joinPolicy: 0 | 1}>) {
-        if (registration === undefined || joinPolicy === undefined) return;
-        setEdit({eventID, registration: patch.registration ?? registration, joinPolicy: patch.joinPolicy ?? joinPolicy});
+    function update(patch: Partial<{registration: 0 | 1 | 2; joinPolicy: 0 | 1; maxTeams: number | null}>) {
+        if (registration === undefined || joinPolicy === undefined || maxTeams === undefined) return;
+        setEdit({eventID, registration: patch.registration ?? registration, joinPolicy: patch.joinPolicy ?? joinPolicy, maxTeams: patch.maxTeams === undefined ? maxTeams : patch.maxTeams});
     }
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
-        if (!config || !lifecycle || registration === undefined || joinPolicy === undefined || !canManage || saving || !dirty || (joinDirty && !lifecycle.Configured)) return;
+        if (!config || !lifecycle || registration === undefined || joinPolicy === undefined || maxTeams === undefined || (maxTeams !== null && (!Number.isInteger(maxTeams) || maxTeams < 1)) || !canManage || saving || !dirty || (joinDirty && !lifecycle.Configured)) return;
         setSaving(true);
         try {
             if (registrationDirty) {
-                const updated = await putManageConfig(eventID, {...asInput(config), Registration: registration});
+                const updated = await putManageConfig(eventID, {...asInput(config), Registration: registration, MaxTeams: maxTeams});
                 queryClient.setQueryData(["event-management-config", eventID], updated);
             }
             if (joinDirty) {
@@ -73,7 +74,8 @@ export default function RegistrationPage() {
                 </div>
                 {!lifecycle.Configured && <small>Період можна змінити після збереження <Link href="/manage/schedule">публікації та часу</Link>.</small>}
             </div>
+            {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title="Кількість команд" help={"Найбільша кількість команд, які можуть приєднатися до події.\n\nЗалиште порожнім, якщо обмеження не потрібне."} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage || saving} placeholder="Без обмеження" /></div>}
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
     </form>;
 }

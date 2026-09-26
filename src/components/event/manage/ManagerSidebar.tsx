@@ -19,10 +19,10 @@ type Group = {id: string; label: string; items: Item[]};
 
 // Пауза: повернути до навігації, коли з'явиться механізм призупинення події.
 const groups: Group[] = [
-    {id: "event", label: "Захід", items: [
+    {id: "event", label: "Подія", items: [
         {href: "/manage/settings", label: "Загальне", icon: Settings2},
         {href: "/manage/appearance", label: "Вигляд", icon: Palette},
-        {href: "/manage/participation-settings", label: "Формат участі", icon: UsersRound},
+        {href: "/manage/participation-settings", label: "Формат події", icon: UsersRound},
         {href: "/manage/schedule", label: "Публікація і час", icon: CalendarDays},
     ]},
     {id: "pages", label: "Сторінки", items: [
@@ -38,7 +38,6 @@ const groups: Group[] = [
     ]},
     {id: "participation", label: "Участь", items: [
         {href: "/manage/registration", label: "Реєстрація", icon: UserRound},
-        {href: "/manage/participation-rules", label: "Правила участі", icon: ListChecks},
         {href: "/manage/applications", label: "Заявки", icon: ClipboardCheck},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},

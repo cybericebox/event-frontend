@@ -110,7 +110,7 @@ export default function ManageSchedulePage() {
         <header className="event-manage-heading"><div><h1>Публікація і час</h1><p>Усі дати вводяться за місцевим часом вашого пристрою.</p></div><span className="event-manage-status"><CalendarDays size={16} />{statusNames[lifecycle.data.Status]}</span></header>
         {!canManage && <div className="event-manage-notice" role="status"><Info size={18} />Доступний лише перегляд. Змінювати розклад може менеджер події.</div>}
         {!lifecycle.data.Configured && <div className="event-manage-notice" role="status"><Info size={18} />Подію ще не заплановано. Публікація почнеться у вказаний час після збереження.</div>}
-        {config.data?.Participation === null && <div className="event-manage-notice" role="status"><Info size={18} />Спочатку виберіть <Link href="/manage/participation-settings">формат участі</Link>.</div>}
+        {config.data?.Participation === null && <div className="event-manage-notice" role="status"><Info size={18} />Спочатку виберіть <Link href="/manage/participation-settings">формат події</Link>.</div>}
         {!lifecycle.data.Infrastructure.CanStart && <div className="event-manage-feedback event-manage-feedback--error" role="status">Інфраструктура поки не готова до старту{lifecycle.data.Infrastructure.Reason ? `: ${lifecycle.data.Infrastructure.Reason}` : "."} Перевірте її перед початком.</div>}
         <form className="event-manage-section" onSubmit={save}>
             <div className="event-manage-section__head"><h2>Ключові дати</h2><p>Спочатку сайт стане доступним гостям, потім відкриються завдання. Завершення й закриття можна запланувати окремо.</p></div>

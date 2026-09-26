@@ -39,7 +39,7 @@ export const ManageLifecycleSchema = z.object({
     WithdrawAt: z.string().nullable(),
     Status: z.enum(["not_published", "published", "started", "finished", "withdrawn"]),
     UpdatedAt: z.string(),
-    Infrastructure: z.object({HasDynamicLabs: z.boolean(), RequiresVPN: z.boolean(), CanStart: z.boolean(), Reason: z.string().nullable().optional()}),
+    Infrastructure: z.object({HasDynamicLabs: z.boolean(), LaboratoriesAvailable: z.boolean(), RequiresVPN: z.boolean(), CanStart: z.boolean(), Reason: z.string().nullable().optional()}),
 });
 export type ManageLifecycle = z.infer<typeof ManageLifecycleSchema>;
 export type ManageLifecycleInput = Pick<ManageLifecycle, "JoinPolicy" | "PublishAt" | "StartAt" | "FinishAt" | "WithdrawAt">;
@@ -90,7 +90,7 @@ let mockFaviconURL = "";
 let mockLifecycle: ManageLifecycle = {
     Configured: false, JoinPolicy: 0, PublishAt: null, StartAt: null, FinishAt: null, WithdrawAt: null,
     Status: "not_published", UpdatedAt: "2026-09-26T00:00:00Z",
-    Infrastructure: {HasDynamicLabs: false, RequiresVPN: false, CanStart: true, Reason: null},
+    Infrastructure: {HasDynamicLabs: false, LaboratoriesAvailable: false, RequiresVPN: false, CanStart: true, Reason: null},
 };
 let mockContent: ManageContent = {
     Landing: {blocks: [
