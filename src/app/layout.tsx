@@ -94,6 +94,8 @@ export default async function RootLayout({
             {/* The development edge caches Next's CSS chunk; keep new management controls current. */}
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
             <link rel="stylesheet" href="/event-manage-brand-v13.css" />
+            {/* eslint-disable-next-line @next/next/no-css-tags -- The development edge caches stable Next CSS chunk URLs. */}
+            <link rel="stylesheet" href="/event-manage-access-v5.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
             <link rel="stylesheet" href="/event-action-toast-v1.css" />
         </head>

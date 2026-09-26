@@ -243,9 +243,11 @@ textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
 .event-manage-choice-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ib-3)}
 .event-manage-choice-group label{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);cursor:pointer}
 .event-manage-choice-group label:has(input:checked){border-color:var(--ib-action);background:var(--ib-soft)}
-.event-manage-choice-points{display:grid;gap:var(--ib-1);margin:var(--ib-2) 0 0;padding-left:var(--ib-4);list-style:disc;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+.event-manage-choice-points{display:block;margin:var(--ib-2) 0 0;padding-left:var(--ib-4);list-style:disc;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+.event-manage-choice-points li+li{margin-top:var(--ib-1)}
 .event-manage-schedule__note{margin-top:var(--ib-5);color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-date-picker__trigger{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-2);text-align:left;cursor:pointer}
+.event-date-picker__trigger span{flex:1;min-width:0}
 .event-date-picker__trigger svg{flex:none;color:var(--ib-dim)}
 .event-date-picker__trigger:disabled{cursor:not-allowed}
 .event-date-picker__placeholder{color:var(--ib-dim)}
@@ -263,6 +265,8 @@ textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
 .event-date-picker__footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--ib-3);margin-top:var(--ib-3);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
 .event-date-picker__time,.event-date-picker__actions{display:flex;align-items:center;gap:var(--ib-2)}
 .event-date-picker__time{font-size:var(--ib-fs-13)}
+.event-date-picker__time:has(.event-date-picker__time-hint){display:grid;justify-items:start;gap:4px}
+.event-date-picker__time-hint{max-width:220px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
 .event-date-picker__time input{width:44px;height:32px;padding:0 var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-ink);font:inherit;font-variant-numeric:tabular-nums;text-align:center}
 .event-date-picker__actions .ib-btn{min-height:32px;padding:0 var(--ib-3);font-size:var(--ib-fs-12)}
 .event-manage-setup{max-width:1040px;margin:0 auto;padding-bottom:var(--ib-12)}
