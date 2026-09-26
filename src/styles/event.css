@@ -9,6 +9,12 @@ body.event-root main{overflow-x:visible}
 .event-navbar .ib-navbar__nav{margin-left:0}
 .event-navbar .ib-navbar__link{padding-inline:var(--ib-2);font-size:var(--ib-fs-13)}
 .event-navbar .event-manage-entry{white-space:nowrap;font-size:var(--ib-fs-12)}
+.event-navbar .ib-navbar__nav{position:relative}
+.event-navbar__measure{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;max-width:none;overflow:visible;white-space:nowrap}
+.event-navbar__more-measure{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none}
+.event-navbar__more-menu{z-index:70;min-width:200px;max-width:min(320px,90vw);padding:var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);box-shadow:var(--ib-shadow-overlay)}
+.event-navbar__more-menu a{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r-sm);color:var(--ib-body);text-decoration:none}
+.event-navbar__more-menu a:hover,.event-navbar__more-menu a[aria-current="page"]{background:var(--ib-soft);color:var(--ib-ink)}
 .event-navbar__icon,.event-account__trigger{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:0;border-radius:var(--ib-r);background:transparent;color:var(--ib-dim);cursor:pointer}
 .event-navbar__icon:hover,.event-account__trigger:hover{background:var(--ib-soft);color:var(--ib-ink)}
 .event-navbar__icon:disabled{opacity:.55;cursor:default}

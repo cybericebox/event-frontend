@@ -1,12 +1,13 @@
 "use client";
 
-import {useState} from "react";
+import {useLayoutEffect, useMemo, useRef, useState} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
-import {useQueryClient} from "@tanstack/react-query";
-import {Bell, LogOut, Menu, Network, Settings2, UserRound, Users, X} from "lucide-react";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {Bell, ChevronDown, LogOut, Menu, Network, Settings2, UserRound, Users, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
+import {getNavigationPages} from "@/api/navigationPages";
 import {signOut} from "@/api/authAPI";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import crest from "@/styles/assets/crest-128.png";
@@ -61,20 +62,67 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
 export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, canViewResults = false, management = false}: Props) {
     const path = usePathname();
     const [open, setOpen] = useState(false);
-    const links = [
+    const [moreOpen, setMoreOpen] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(Number.POSITIVE_INFINITY);
+    const navRef = useRef<HTMLElement>(null);
+    const measureRef = useRef<HTMLUListElement>(null);
+    const measureMoreRef = useRef<HTMLButtonElement>(null);
+    const pages = useQuery({
+        queryKey: ["event-navigation-pages", event.EventID, approved],
+        queryFn: () => getNavigationPages(event.EventID),
+        retry: false, refetchOnWindowFocus: false,
+    });
+    const links = useMemo(() => [
         {href: "/", label: "Головна"},
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
         ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
-    ];
+        ...(pages.data ?? []).map(page => ({href: `/p/${page.Slug}`, label: page.Title})),
+    ], [approved, canViewResults, event.CanViewResults, pages.data]);
+
+    useLayoutEffect(() => {
+        const nav = navRef.current;
+        const measureList = measureRef.current;
+        const measureMore = measureMoreRef.current;
+        if (!nav || !measureList || !measureMore) return;
+        const measure = () => {
+            if (!nav.clientWidth) return;
+            const widths = Array.from(measureList.children, item => (item as HTMLElement).offsetWidth);
+            const total = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, widths.length - 1) * 2;
+            if (total <= nav.clientWidth) {
+                setVisibleCount(widths.length);
+                setMoreOpen(false);
+                return;
+            }
+            const room = Math.max(0, nav.clientWidth - measureMore.offsetWidth - 2);
+            let used = 0;
+            let count = 0;
+            for (const width of widths) {
+                if (used + width > room) break;
+                used += width + 2;
+                count++;
+            }
+            setVisibleCount(count);
+        };
+        const frame = requestAnimationFrame(measure);
+        const observer = new ResizeObserver(measure);
+        observer.observe(nav);
+        void document.fonts?.ready.then(measure);
+        return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+    }, [links]);
+
+    const overflow = links.slice(visibleCount);
     return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`}>
         <div className="ib-navbar__bar">
             <Link className="ib-navbar__brand" href="/" aria-label={`${event.Name}, головна події`} onClick={() => setOpen(false)}>
                 <Image className="ib-navbar__crest" src={crest} alt="" width={32} height={32} />
                 <span className="ib-navbar__name">{event.Name}</span>
             </Link>
-            <nav className="ib-navbar__nav" aria-label="Розділи події"><ul className="ib-navbar__tabs">
-                {links.map(link => <li key={link.href}><Link className="ib-navbar__link" href={link.href} aria-current={path === link.href ? "page" : undefined}>{link.label}</Link></li>)}
-            </ul></nav>
+            <nav className="ib-navbar__nav" aria-label="Розділи події" ref={navRef}>
+                <ul className="ib-navbar__tabs">{links.slice(0, visibleCount).map(link => <li key={link.href}><Link className="ib-navbar__link" href={link.href} aria-current={path === link.href ? "page" : undefined}>{link.label}</Link></li>)}</ul>
+                {overflow.length > 0 && <div className="ib-navbar__more"><Popover open={moreOpen} onOpenChange={setMoreOpen}><PopoverTrigger asChild><button className={`ib-navbar__more-btn${overflow.some(link => path === link.href) ? " is-current" : ""}`} type="button">Ще <ChevronDown className="ib-icon" /></button></PopoverTrigger><PopoverContent align="start" sideOffset={4} className="event-navbar__more-menu">{overflow.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setMoreOpen(false)}>{link.label}</Link>)}</PopoverContent></Popover></div>}
+                <ul className="ib-navbar__tabs event-navbar__measure" ref={measureRef} aria-hidden="true">{links.map(link => <li key={link.href}><span className="ib-navbar__link">{link.label}</span></li>)}</ul>
+                <button className="ib-navbar__more-btn event-navbar__more-measure" type="button" ref={measureMoreRef} tabIndex={-1} aria-hidden="true">Ще <ChevronDown className="ib-icon" /></button>
+            </nav>
             <div className="ib-navbar__actions">
                 {authenticated && (management ? <Link className="ib-btn ib-btn--sm event-manage-entry" href="/manage" aria-current={path.startsWith("/manage") ? "page" : undefined}><Settings2 size={16} aria-hidden="true" />Адміністрування</Link> : <ManagerEntry eventID={event.EventID} variant="nav" />)}
                 <ThemeToggle />
