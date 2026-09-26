@@ -3,7 +3,7 @@ import {z} from "zod";
 export const ContentValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 export const ContentVariableSchema = z.object({name: z.string(), format: z.enum(["text", "number", "date-time", "boolean"])});
 export const ContentVisibilitySchema = z.object({variable: z.string(), operator: z.string(), value: ContentValueSchema});
-export const PageBlockTypes = ["section", "text", "hero", "facts", "timeline", "doc", "faq", "cta", "countdown", "divider"] as const;
+export const PageBlockTypes = ["section", "text", "hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "divider"] as const;
 export type PageBlockType = typeof PageBlockTypes[number];
 export const ContentBlockSchema = z.object({
     id: z.string(),

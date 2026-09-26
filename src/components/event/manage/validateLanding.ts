@@ -12,6 +12,10 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         const text = block.type === "section" ? block.label ?? "" : block.type === "text" ? block.markdown ?? "" : "";
         if ((block.type === "section" || block.type === "text") && !text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
         if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
+        if (block.type === "section" && block.variant && !["left", "center"].includes(block.variant)) return `Блок ${index + 1}: невідоме розташування заголовка.`;
+        if (block.type === "text" && block.variant && !["narrow", "wide"].includes(block.variant)) return `Блок ${index + 1}: невідома ширина тексту.`;
+        if (block.type === "timeline" && block.variant && !["grid", "list"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка розкладу.`;
+        if (block.type === "banner" && block.variant && !["edge", "frame"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка банера.`;
         if (["facts", "timeline", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
         if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
@@ -21,7 +25,6 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "cta" && block.secondaryAction && (!block.secondaryAction.label.trim() || !/^(\/(?!\/)|#|https:\/\/)/.test(block.secondaryAction.href))) return `Блок ${index + 1}: заповніть другу дію та її посилання.`;
         if (block.type === "facts" && block.variant && !["strip", "rows"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка фактів.`;
         if (block.type === "hero") {
-            if (index !== 0) return `Блок ${index + 1}: герой має бути першим блоком.`;
             if (!block.title?.trim()) return `Блок ${index + 1}: вкажіть назву героя.`;
             if (block.variant && !["mass", "plain"].includes(block.variant)) return `Блок ${index + 1}: невідоме оформлення героя.`;
             if ((block.items?.length ?? 0) > 4 || block.items?.some(item => !item.label?.trim() || !item.value?.trim())) return `Блок ${index + 1}: заповніть факти героя, не більше чотирьох.`;
@@ -31,6 +34,8 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
             if (block.targetVariable && !catalog.some(item => item.name === block.targetVariable && item.format === "date-time")) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
         }
         if (block.type === "countdown" && (!block.targetVariable || !catalog.some(item => item.name === block.targetVariable && item.format === "date-time"))) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
+        if (block.type === "countdown" && block.variant && !["split", "center"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка відліку.`;
+        if (block.type === "countdown" && block.action && (!block.action.label.trim() || !/^(\/(?!\/)|#|https:\/\/)/.test(block.action.href))) return `Блок ${index + 1}: заповніть кнопку відліку та її посилання.`;
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
         for (const variable of block.variables ?? []) {
             if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для цієї сторінки.`;

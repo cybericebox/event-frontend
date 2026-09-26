@@ -7,6 +7,8 @@
 .ib-block-countdown__text{margin-top:var(--ib-1);max-width:48ch;color:var(--ib-dim)}
 .ib-block-countdown__side{display:flex;flex-direction:column;align-items:flex-end;gap:var(--ib-4)}
 .ib-block-countdown__side .ib-timer{align-items:flex-end;text-align:right}
+.ib-block-countdown--center .ib-block__in{display:flex;flex-direction:column;align-items:center;text-align:center}
+.ib-block-countdown--center .ib-block-countdown__side,.ib-block-countdown--center .ib-block-countdown__side .ib-timer{align-items:center;text-align:center}
 .ib-mass .ib-block-countdown__title{color:var(--ib-on-brand)}
 .ib-mass .ib-block-countdown__text{color:var(--ib-on-brand-2)}
 @container ib-blocks (max-width:620px){.ib-block-countdown__side{align-items:flex-start}.ib-block-countdown__side .ib-timer{align-items:flex-start;text-align:left}}

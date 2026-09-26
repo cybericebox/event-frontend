@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef, useState, type ChangeEvent} from "react";
-import {ArrowDown, ArrowUp, Braces, CircleHelp, Plus, Trash2, X} from "lucide-react";
+import {ArrowDown, ArrowUp, Braces, CircleHelp, GripVertical, Plus, Trash2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
 import {initialVisibilityValue, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -49,19 +49,22 @@ function EditorTextField({field, label, value, placeholder, multiline, compact, 
     return <label className="event-manage-field"><FieldLabel label={label} required={required} help={help} />{multiline ? <textarea {...common} rows={compact ? 3 : 7} /> : <input {...common} />}</label>;
 }
 
-export function LandingBlockEditor({block, index, count, values, catalog, canEdit, landing = false, heroFirst = false, onUpdate, onMove, onDelete}: {
+export function LandingBlockEditor({block, index, count, values, catalog, canEdit, selected = false, onSelect, onUpdate, onMove, onReorder, onDelete}: {
     block: ContentBlock;
     index: number;
     count: number;
     values: Record<string, ContentValue>;
     catalog: ContentVariableDefinition[];
     canEdit: boolean;
-    landing?: boolean;
-    heroFirst?: boolean;
+    selected?: boolean;
+    onSelect: () => void;
     onUpdate: (value: ContentBlock) => void;
     onMove: (direction: -1 | 1) => void;
+    onReorder: (sourceID: string, targetID: string) => void;
     onDelete: () => void;
 }) {
+    const pointerID = useRef<number | null>(null);
+    const dropTarget = useRef<HTMLElement | null>(null);
     const [variableOpen, setVariableOpen] = useState(false);
     const [variableSearch, setVariableSearch] = useState("");
     const [rulesOpen, setRulesOpen] = useState(!!block.visibility?.length);
@@ -70,6 +73,16 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
     const activeField = useRef(block.type === "section" ? "label" : block.type === "text" ? "markdown" : "title");
     const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const filteredVariables = catalog.filter(variable => `${variable.label} ${variable.name}`.toLocaleLowerCase("uk").includes(variableSearch.toLocaleLowerCase("uk")));
+
+    function blockAt(clientX: number, clientY: number): HTMLElement | null {
+        return document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-editor-block-id]") ?? null;
+    }
+
+    function clearDropTarget() {
+        dropTarget.current?.classList.remove("is-drop-target");
+        dropTarget.current = null;
+        pointerID.current = null;
+    }
 
     function rememberSelection(input: HTMLInputElement | HTMLTextAreaElement) {
         selection.current = {start: input.selectionStart ?? input.value.length, end: input.selectionEnd ?? input.value.length};
@@ -98,7 +111,7 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
         }
         if (field === "action:label") {
             const action = {...(base.action ?? {href: ""}), label: value};
-            return {...base, action: block.type === "hero" && !action.label && !action.href ? undefined : action};
+            return {...base, action: block.type !== "cta" && !action.label && !action.href ? undefined : action};
         }
         if (field === "secondaryAction:label") {
             const secondaryAction = {...(base.secondaryAction ?? {href: ""}), label: value};
@@ -147,25 +160,33 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
     }
 
     const blockLabel = blockPalette.find(item => item.type === block.type)?.label ?? block.type;
-    return <section className="event-content-editor__block" aria-label={`${blockLabel} ${index + 1}`}>
+    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__drag")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__drag")) onSelect();}}>
         <div className="event-content-editor__block-head">
             <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong></div>
             {canEdit && <div className="event-content-editor__block-actions">
-                <EventTooltip content="Перемістити вище">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} вище`} aria-describedby={id} disabled={index === 0 || (heroFirst && index === 1)} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
-                <EventTooltip content="Перемістити нижче">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} нижче`} aria-describedby={id} disabled={index === count - 1 || (heroFirst && index === 0)} onClick={() => onMove(1)}><ArrowDown size={16} /></button>}</EventTooltip>
+                <EventTooltip content="Перетягнути блок. Для клавіатури скористайтеся стрілками.">{id => <button type="button" className="event-content-editor__drag" aria-label={`Перетягнути блок ${index + 1}`} aria-describedby={id} onPointerDown={event => {if (event.button !== 0) return; event.preventDefault(); pointerID.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId);}} onPointerMove={event => {if (pointerID.current !== event.pointerId) return; const target = blockAt(event.clientX, event.clientY); const next = target?.dataset.editorBlockId !== block.id ? target : null; if (dropTarget.current === next) return; dropTarget.current?.classList.remove("is-drop-target"); next?.classList.add("is-drop-target"); dropTarget.current = next;}} onPointerUp={event => {if (pointerID.current !== event.pointerId) return; const targetID = blockAt(event.clientX, event.clientY)?.dataset.editorBlockId; clearDropTarget(); if (targetID && targetID !== block.id) onReorder(block.id, targetID);}} onPointerCancel={clearDropTarget}><GripVertical size={16} /></button>}</EventTooltip>
+                <EventTooltip content="Перемістити вище">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} вище`} aria-describedby={id} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
+                <EventTooltip content="Перемістити нижче">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} нижче`} aria-describedby={id} disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown size={16} /></button>}</EventTooltip>
                 <EventTooltip content="Видалити блок">{id => <button type="button" className="event-content-editor__danger" aria-label={`Видалити блок ${index + 1}`} aria-describedby={id} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
         </div>
         <div className="event-content-editor__block-body">
             {block.type === "section" && inputField("label", "Заголовок розділу", "Назва розділу", false, true)}
+            {block.type === "section" && <div className="event-manage-field"><FieldLabel label="Розташування" /><EventSelect ariaLabel="Розташування заголовка" value={block.variant ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {block.type === "text" && inputField("markdown", "Вміст (Markdown)", "Напишіть текст сторінки…", true, true, "Підтримуються заголовки, списки, посилання, цитати й код. HTML не підтримується.")}
-            {["hero", "facts", "timeline", "doc", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : "Заголовок", "Назва блока", false, block.type === "hero" || block.type === "cta")}
+            {block.type === "text" && <div className="event-manage-field"><FieldLabel label="Ширина тексту" /><EventSelect ariaLabel="Ширина тексту" value={block.variant ?? "narrow"} options={[{value: "narrow", label: "Для читання"}, {value: "wide", label: "На всю ширину"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
+            {["hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : block.type === "banner" ? "Підпис поверх фото" : "Заголовок", block.type === "banner" ? "Необов’язково" : "Назва блока", false, block.type === "hero" || block.type === "cta")}
+            {block.type === "banner" && <>
+                <div className="event-manage-field"><FieldLabel label="Розмір банера" /><EventSelect ariaLabel="Розмір банера" value={block.variant ?? "edge"} options={[{value: "edge", label: "На всю ширину"}, {value: "frame", label: "У рамці сторінки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
+                <p className="event-content-editor__hint">Банер використовує обкладинку події з розділу «Загальне».</p>
+            </>}
             {block.type === "hero" && <>
-                <div className="event-manage-field"><FieldLabel label="Оформлення" /><EventSelect ariaLabel="Оформлення героя" value={landing ? block.variant ?? "mass" : "plain"} options={landing ? [{value: "mass", label: "Брендове"}, {value: "plain", label: "Звичайне"}] : [{value: "plain", label: "Звичайне"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
+                <div className="event-manage-field"><FieldLabel label="Оформлення" /><EventSelect ariaLabel="Оформлення героя" value={block.variant ?? "mass"} options={[{value: "mass", label: "Брендове"}, {value: "plain", label: "Звичайне"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {inputField("by", "Рядок організатора", "Подія CyberICEBox")}
                 {inputField("kicker", "Надзаголовок", "Необов’язково")}
             </>}
             {block.type === "facts" && <div className="event-manage-field"><FieldLabel label="Розкладка" help="Смуга показує великі значення; рядки зручні для коротких правил." /><EventSelect ariaLabel="Розкладка фактів" value={block.variant ?? "strip"} options={[{value: "strip", label: "Смуга"}, {value: "rows", label: "Рядки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
+            {block.type === "timeline" && <div className="event-manage-field"><FieldLabel label="Розкладка" /><EventSelect ariaLabel="Розкладка розкладу" value={block.variant ?? "grid"} options={[{value: "grid", label: "Картки в ряд"}, {value: "list", label: "Вертикальний список"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {["hero", "facts", "timeline", "faq"].includes(block.type) && <>
                 {block.type !== "hero" && inputField("sub", "Пояснення", "Необов’язково")}
                 {block.type === "faq" && <div className="event-manage-field"><FieldLabel label="Відкрите питання" help="Питання, відповідь на яке видно одразу після відкриття сторінки." /><EventSelect ariaLabel="Питання, відкрите спочатку" value={block.openItem === undefined ? "none" : String(block.openItem)} options={[{value: "none", label: "Жодне"}, ...(block.items ?? []).map((_, position) => ({value: String(position), label: `Питання ${position + 1}`}))]} disabled={!canEdit} onValueChange={value => onUpdate({...block, openItem: value === "none" ? undefined : Number(value)})} /></div>}
@@ -203,10 +224,14 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
                 <label className="event-manage-field"><FieldLabel label="Посилання другої дії" /><input className="event-manage-input" value={block.secondaryAction?.href ?? ""} disabled={!canEdit} onChange={event => {const secondaryAction = {...(block.secondaryAction ?? {label: ""}), href: event.target.value}; onUpdate({...block, secondaryAction: !secondaryAction.label && !secondaryAction.href ? undefined : secondaryAction});}} placeholder="/p/rules" /></label>
                 <div className="event-manage-field"><FieldLabel label="Оформлення" /><EventSelect value={block.variant ?? "plain"} ariaLabel="Оформлення блока" options={[{value: "plain", label: "Звичайне"}, {value: "mass", label: "Брендове"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
             </>}
-            {block.type === "countdown" && <div className="event-manage-field"><FieldLabel label="Дата, до якої рахувати" required help="Відлік може використовувати будь-яку дозволену цій сторінці змінну дати." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата зворотного відліку" placeholder="Оберіть змінну дати" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {
+            {block.type === "countdown" && <><div className="event-manage-field"><FieldLabel label="Дата, до якої рахувати" required help="Відлік може використовувати будь-яку дозволену цій сторінці змінну дати." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата зворотного відліку" placeholder="Оберіть змінну дати" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {
                 const variable = contentVariableByName.get(value);
                 onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name} : {...block, targetVariable: ""});
-            }} /></div>}
+            }} /></div>
+                <div className="event-manage-field"><FieldLabel label="Розкладка" /><EventSelect ariaLabel="Розкладка відліку" value={block.variant ?? "split"} options={[{value: "split", label: "Текст ліворуч, відлік праворуч"}, {value: "center", label: "Усе по центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
+                {inputField("action:label", "Кнопка під відліком", "Необов’язково")}
+                <label className="event-manage-field"><FieldLabel label="Посилання кнопки" help="Внутрішній шлях від / або повне посилання HTTPS." /><input className="event-manage-input" value={block.action?.href ?? ""} disabled={!canEdit} onChange={event => {const action = {...(block.action ?? {label: ""}), href: event.target.value}; onUpdate({...block, action: !action.label && !action.href ? undefined : action});}} placeholder="/challenges" /></label>
+            </>}
             {block.type === "divider" && <div className="event-content-editor__item">
                 <div className="event-manage-field"><FieldLabel label="Відступ" /><EventSelect value={block.size ?? "md"} ariaLabel="Відступ роздільника" options={[{value: "sm", label: "Малий"}, {value: "md", label: "Середній"}, {value: "lg", label: "Великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, size: value})} /></div>
                 <label className="event-manage-field"><span>Лінія</span><input type="checkbox" checked={!!block.line} disabled={!canEdit} onChange={event => onUpdate({...block, line: event.target.checked})} /></label>

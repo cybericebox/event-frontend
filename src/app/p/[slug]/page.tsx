@@ -18,5 +18,5 @@ export default async function ContentPage({params}: {params: Promise<{slug: stri
     if (!event) return <ClientContentPage slug={slug} />;
     const content = await getEventPageContent(slug);
     if (!content) return <ClientContentPage slug={slug} publicEventID={event.EventID} />;
-    return <ContentBlocks document={content.Page.Document} variables={content.Variables} title={content.Page.Title} />;
+    return <ContentBlocks document={content.Page.Document} variables={content.Variables} title={content.Page.Title} coverImage={event.PreviewPicture} />;
 }
