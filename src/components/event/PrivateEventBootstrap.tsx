@@ -8,6 +8,8 @@ import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {getManageAccess, ManageApiError} from "@/api/manage";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {GuestShell} from "./GuestShell";
+import {EventLoading} from "./EventLoading";
+import {EventBrandProvider} from "./EventBrandLogo";
 
 const PrivateEventContext = createContext<PublicEventInfo | null>(null);
 
@@ -39,7 +41,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
     }, [identity.data]);
 
     if (identity.isPending || (identity.data && access.isPending)) {
-        return <div className="event-shell-state" role="status">Завантажуємо попередній перегляд події…</div>;
+        return <EventLoading event={identity.data} full label="Завантажуємо попередній перегляд події…" />;
     }
     if (identity.isError || access.isError) {
         const status = identity.error instanceof ClientEventInfoError ? identity.error.status
@@ -54,7 +56,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         </div>;
     }
     const event = identity.data!;
-    return <PrivateEventContext.Provider value={event}>
+    return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>
         <GuestShell event={event} authenticated>
             <div className="event-private-preview-banner" role="status">
                 <span>Попередній перегляд. Сторінка ще недоступна відвідувачам.</span>
@@ -62,5 +64,5 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
             </div>
             {children}
         </GuestShell>
-    </PrivateEventContext.Provider>;
+    </PrivateEventContext.Provider></EventBrandProvider>;
 }

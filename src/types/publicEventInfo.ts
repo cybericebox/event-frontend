@@ -14,6 +14,7 @@ export const PublicEventInfoSchema = z.object({
     CanViewParticipants: z.boolean(),
     PreviewDescription: z.string(),
     PreviewPicture: z.string(),
+    LogoURL: z.string().default(""),
     Theme: EventThemeSchema,
 });
 

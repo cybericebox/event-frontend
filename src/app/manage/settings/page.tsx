@@ -5,12 +5,14 @@ import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, Check, Info} from "lucide-react";
 import Link from "next/link";
-import {getManageConfig, getManageLifecycle, getManageName, ManageApiError, putManageConfig, putManageName, putManageTheme, type ManageConfig, type ManageConfigInput} from "@/api/manage";
+import {getManageConfig, getManageLifecycle, getManageName, ManageApiError, putManageConfig, putManageName, putManageTheme, uploadManageLogo, removeManageLogo, type ManageConfig, type ManageConfigInput} from "@/api/manage";
 import {deriveTheme} from "@/components/event/manage/deriveTheme";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {EventBrandLogo} from "@/components/event/EventBrandLogo";
+import {EventLoading} from "@/components/event/EventLoading";
 
 type ConfigDraft = ManageConfigInput;
-type Section = "name" | "config" | "theme";
+type Section = "name" | "config" | "theme" | "logo";
 
 const registrationOptions = [{value: 0, label: "Закрита"}, {value: 1, label: "За схваленням"}, {value: 2, label: "Відкрита"}];
 const visibilityOptions = [{value: 0, label: "Приховано"}, {value: 1, label: "Учасникам"}, {value: 2, label: "Усім"}];
@@ -130,7 +132,22 @@ export default function ManageSettingsPage() {
         });
     }
 
-    if (!eventID || nameQuery.isPending || configQuery.isPending || lifecycleQuery.isPending) return <div className="event-manage-loading" role="status">Завантажуємо налаштування події…</div>;
+    async function uploadLogo(file: File | undefined) {
+        if (!file) return;
+        await save("logo", async () => {
+            await uploadManageLogo(eventID, file);
+            window.location.reload();
+        });
+    }
+
+    async function resetLogo() {
+        await save("logo", async () => {
+            await removeManageLogo(eventID);
+            window.location.reload();
+        });
+    }
+
+    if (!eventID || nameQuery.isPending || configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} label="Завантажуємо налаштування події…" />;
     if (nameQuery.isError || configQuery.isError || lifecycleQuery.isError || !configDraft || !configQuery.data || !lifecycleQuery.data) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити налаштування</h1><p>Перевірте з’єднання і повторіть запит.</p><button className="ib-btn" onClick={() => { void nameQuery.refetch(); void configQuery.refetch(); void lifecycleQuery.refetch(); }}>Повторити</button></div>;
     const participationLocked = lifecycleQuery.data.Configured && lifecycleQuery.data.Status !== "not_published";
 
@@ -147,6 +164,19 @@ export default function ManageSettingsPage() {
                     <label className="event-manage-field"><span>Публічна назва</span><input className="event-manage-input" value={nameDraft} onChange={event => setNameDraft(event.target.value)} maxLength={255} required disabled={!canManage || saving !== null} /></label>
                     <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !nameDirty || !nameDraft.trim() || saving !== null}>{saving === "name" ? "Зберігаємо…" : "Зберегти назву"}</button></div>
                 </form>
+
+                <section className="event-manage-section" aria-labelledby="event-logo-title">
+                    <div className="event-manage-section__head"><div><h2 id="event-logo-title">Логотип події</h2><p>Показується на сайті та під час завантаження. Якщо його немає, використовується логотип платформи.</p></div></div>
+                    <div className="event-manage-logo-preview"><EventBrandLogo event={event} size={72} /><span>{event.LogoURL ? "Логотип події" : "Логотип платформи"}</span></div>
+                    <div className="event-manage-section__actions event-manage-logo-actions">
+                        <label className={`ib-btn${!canManage || saving !== null ? " is-disabled" : ""}`}>
+                            Завантажити логотип
+                            <input className="event-manage-visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" disabled={!canManage || saving !== null} onChange={change => {void uploadLogo(change.target.files?.[0]); change.target.value = "";}} />
+                        </label>
+                        <button className="ib-btn" type="button" disabled={!canManage || !event.LogoURL || saving !== null} onClick={() => void resetLogo()}>Скинути до логотипа платформи</button>
+                    </div>
+                    <small>PNG, JPEG або WebP до 2 МБ.</small>
+                </section>
 
                 <form className="event-manage-section" onSubmit={saveConfig}>
                     <div className="event-manage-section__head"><div><h2>Участь і видимість</h2><p>Визначте спосіб участі та те, що бачать відвідувачі.</p></div></div>

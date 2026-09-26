@@ -4,6 +4,8 @@ import {useEffect, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {ManagerShell} from "./ManagerShell";
+import {EventLoading} from "../EventLoading";
+import {EventBrandProvider} from "../EventBrandLogo";
 
 export function ManagerBootstrap({children}: {children: ReactNode}) {
     const event = useQuery({
@@ -24,7 +26,7 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         document.title = `${event.data.Name} | Cyber ICE Box`;
     }, [event.data]);
 
-    if (event.isPending) return <div className="event-shell-state" role="status">Завантажуємо керування подією…</div>;
+    if (event.isPending) return <EventLoading full label="Завантажуємо керування подією…" />;
     if (event.isError) {
         const status = event.error instanceof ClientEventInfoError ? event.error.status : 0;
         const unavailable = status === 0 || status >= 500;
@@ -36,5 +38,5 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
                 : <a className="ib-btn ib-btn--primary" href={`https://id.${process.env.NEXT_PUBLIC_DOMAIN}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>Увійти</a>}
         </div>;
     }
-    return <ManagerShell event={event.data}>{children}</ManagerShell>;
+    return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data}>{children}</ManagerShell></EventBrandProvider>;
 }

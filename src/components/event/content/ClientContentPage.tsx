@@ -6,6 +6,7 @@ import {getManageContent, getManagePage, ManageApiError} from "@/api/manage";
 import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
 import {EventPageContentSchema, type EventPageContent} from "@/types/eventContent";
 import {ContentBlocks} from "./ContentBlocks";
+import {EventLoading} from "../EventLoading";
 
 async function getVisiblePage(eventID: string, slug: string): Promise<EventPageContent | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return null;
@@ -38,7 +39,7 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
         enabled: !!eventID,
         retry: false,
     });
-    if (!eventID || page.isPending) return <div className="event-shell-state" role="status">Завантажуємо сторінку…</div>;
+    if (!eventID || page.isPending) return <EventLoading event={privateEvent} label="Завантажуємо сторінку…" />;
     if (page.isError) {
         const missing = page.error instanceof ManageApiError && [403, 404].includes(page.error.status);
         return <div className="event-shell-state" role="alert">

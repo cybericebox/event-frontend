@@ -5,6 +5,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CalendarDays, Check, Info} from "lucide-react";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageLifecycle, type ManageLifecycle} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {EventLoading} from "@/components/event/EventLoading";
 
 type ScheduleDraft = {
     JoinPolicy: 0 | 1;
@@ -102,7 +103,7 @@ export default function ManageSchedulePage() {
     }
 
     if (lifecycle.isError || config.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити розклад</h1><button className="ib-btn" onClick={() => { void lifecycle.refetch(); void config.refetch(); }}>Повторити</button></div>;
-    if (lifecycle.isPending || config.isPending || !draft) return <div className="event-manage-loading" role="status">Завантажуємо розклад…</div>;
+    if (lifecycle.isPending || config.isPending || !draft) return <EventLoading event={event} label="Завантажуємо розклад…" />;
     if (!lifecycle.data) return null;
 
     return <div className="event-manage-settings event-manage-schedule">

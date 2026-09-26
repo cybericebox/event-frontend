@@ -18,7 +18,7 @@ export async function getClientEventInfo(): Promise<PublicEventInfo> {
             StartTime: "2026-09-26T00:00:00Z", FinishTime: null,
             Status: 0, Participation: null, Registration: 0,
             CanViewResults: false, CanViewParticipants: false,
-            PreviewDescription: "", PreviewPicture: "",
+            PreviewDescription: "", PreviewPicture: "", LogoURL: "",
             Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
         });
     }

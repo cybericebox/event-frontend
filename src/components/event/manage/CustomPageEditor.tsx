@@ -12,6 +12,7 @@ import {LandingBlockEditor} from "./LandingBlockEditor";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {blockPalette, createPageBlock} from "./blockPalette";
 import {useManager} from "./ManagerShell";
+import {EventLoading} from "../EventLoading";
 import {validateLanding} from "./validateLanding";
 
 const emptyPage: ManagePageInput = {
@@ -102,7 +103,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     }
 
     if (page.isError || content.isError || definitions.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити сторінку</h1><button className="ib-btn" onClick={() => void Promise.all([page.refetch(), content.refetch(), definitions.refetch()])}>Повторити</button></div>;
-    if ((!isNew && page.isPending) || content.isPending || definitions.isPending) return <div className="event-manage-loading" role="status">Завантажуємо редактор…</div>;
+    if ((!isNew && page.isPending) || content.isPending || definitions.isPending) return <EventLoading event={event} label="Завантажуємо редактор…" />;
 
     return <div className="event-manage-content">
         <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Сторінки</p><h1>{isNew ? "Нова сторінка" : draft.Title}</h1><p>Той самий конструктор блоків, що й на головній сторінці.</p></div>{!isNew && <Link className="ib-btn" href={`/p/${draft.Slug}`} target="_blank">Відкрити <ArrowUpRight size={16} /></Link>}</header>

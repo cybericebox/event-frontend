@@ -185,6 +185,30 @@ export const putManageName = (eventID: string, name: string) => request(eventID,
 export const getManageConfig = (eventID: string) => request(eventID, "config", ManageConfigSchema);
 export const putManageConfig = (eventID: string, config: ManageConfigInput) => request(eventID, "config", ManageConfigSchema, "PUT", config);
 export const putManageTheme = (eventID: string, theme: ManageThemeInput) => request(eventID, "theme", ManageConfigSchema, "PUT", theme);
+
+export async function uploadManageLogo(eventID: string, file: File): Promise<string> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return URL.createObjectURL(file);
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
+        method: "POST", credentials: "include", cache: "no-store", body,
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+    const envelope = z.object({Data: z.object({LogoURL: z.string()})}).parse(await response.json());
+    return envelope.Data.LogoURL;
+}
+
+export async function removeManageLogo(eventID: string): Promise<void> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return;
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
+        method: "DELETE", credentials: "include", cache: "no-store",
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+}
 export const getManageLifecycle = (eventID: string) => request(eventID, "lifecycle", ManageLifecycleSchema);
 export const putManageLifecycle = (eventID: string, input: ManageLifecycleInput) => request(eventID, "lifecycle", ManageLifecycleSchema, "PUT", input);
 export const getManageContent = (eventID: string) => request(eventID, "content", ManageContentSchema);

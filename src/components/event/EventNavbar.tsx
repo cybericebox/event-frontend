@@ -1,7 +1,6 @@
 "use client";
 
 import {useLayoutEffect, useMemo, useRef, useState} from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -11,7 +10,7 @@ import {getNavigationPages} from "@/api/navigationPages";
 import {signOut} from "@/api/authAPI";
 import {getCurrentUser, profilePictureUrl} from "@/api/clientAuth";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
-import crest from "@/styles/assets/crest-128.png";
+import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
 import {ManagerEntry} from "./manage/ManagerEntry";
 
@@ -125,7 +124,7 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
     return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`}>
         <div className="ib-navbar__bar">
             <Link className="ib-navbar__brand" href="/" aria-label={`${event.Name}, головна події`} onClick={() => setOpen(false)}>
-                <Image className="ib-navbar__crest" src={crest} alt="" width={32} height={32} />
+                <EventBrandLogo event={event} className="ib-navbar__crest" />
                 <span className="ib-navbar__name">{event.Name}</span>
             </Link>
             <nav className="ib-navbar__nav" aria-label="Розділи події" ref={navRef}>

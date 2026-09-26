@@ -12,6 +12,7 @@ import {ParticipantShell} from "./ParticipantShell";
 import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
+import {EventLoading} from "./EventLoading";
 
 export function AppShell({children, event, unavailable}: {
     children: ReactNode;
@@ -56,7 +57,7 @@ export function AppShell({children, event, unavailable}: {
     }
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
     if (currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending))) {
-        return <div className="event-shell-state" role="status" aria-label="Завантаження події" />;
+        return <EventLoading event={event} full label="Завантаження події…" />;
     }
     if (currentUser.isError || joinStatus.isError || (approved && (participantInfo.isError || ownTeam.isError))) {
         return <div className="event-shell-state" role="status">

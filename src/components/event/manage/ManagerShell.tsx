@@ -1,14 +1,14 @@
 "use client";
 
 import {createContext, useContext, useState, type ReactNode} from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useQuery} from "@tanstack/react-query";
 import {ArrowLeft, CalendarDays, ExternalLink, FileText, LayoutDashboard, Menu, Plus, Settings2, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
-import crest from "@/styles/assets/crest-128.png";
+import {EventBrandLogo} from "../EventBrandLogo";
+import {EventLoading} from "../EventLoading";
 import {EventNavbar} from "../EventNavbar";
 
 function signInHref(event: PublicEventInfo): string {
@@ -42,7 +42,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         retry: false, refetchOnWindowFocus: false,
     });
 
-    if (access.isPending) return <div className="event-shell-state" role="status">Перевіряємо доступ до керування подією…</div>;
+    if (access.isPending) return <EventLoading event={event} full label="Перевіряємо доступ до керування подією…" />;
     if (access.isError) {
         const status = access.error instanceof ManageApiError ? access.error.status : 0;
         return <div className="event-shell-state" role="alert">
@@ -58,7 +58,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         <div className="ib-admin-shell__layout">
             <aside className="ib-admin-side ib-mass" aria-label="Керування подією">
                 <div className="ib-admin-side__head">
-                    <Image className="ib-admin-side__crest" src={crest} alt="" width={32} height={32} />
+                    <EventBrandLogo event={event} className="ib-admin-side__crest" />
                     <div className="ib-admin-side__title"><b>{event.Name}</b><small>Керування подією</small></div>
                     <button className="ib-admin-side__close" type="button" aria-label="Закрити меню" onClick={() => setDrawerOpen(false)}><X size={18} /></button>
                 </div>

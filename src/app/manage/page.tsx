@@ -6,6 +6,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, CalendarDays, Check, FileText, UsersRound} from "lucide-react";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, putManageLifecycle, type ManageConfigInput} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {EventLoading} from "@/components/event/EventLoading";
 
 function localDateTime(iso: string | null): string {
     if (!iso) return "";
@@ -30,7 +31,7 @@ export default function ManageIndex() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
-    if (config.isPending || lifecycle.isPending) return <div className="event-manage-loading" role="status">Перевіряємо готовність події…</div>;
+    if (config.isPending || lifecycle.isPending) return <EventLoading event={event} label="Перевіряємо готовність події…" />;
     if (config.isError || lifecycle.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося перевірити налаштування</h1><button className="ib-btn" onClick={() => { void config.refetch(); void lifecycle.refetch(); }}>Повторити</button></div>;
 
     const participation = participationDraft ?? config.data.Participation;

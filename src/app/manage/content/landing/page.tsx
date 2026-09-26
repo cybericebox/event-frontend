@@ -10,6 +10,7 @@ import {LandingHero} from "@/components/event/content/LandingHero";
 import {LandingBlockEditor} from "@/components/event/manage/LandingBlockEditor";
 import {blockPalette, createPageBlock} from "@/components/event/manage/blockPalette";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {EventLoading} from "@/components/event/EventLoading";
 import {validateLanding} from "@/components/event/manage/validateLanding";
 import type {ContentBlock, ContentDocument, PageBlockType} from "@/types/eventContent";
 
@@ -83,7 +84,7 @@ export default function ManageLandingPage() {
     }
 
     if (content.isError || variables.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити головну сторінку</h1><button className="ib-btn" onClick={() => void Promise.all([content.refetch(), variables.refetch()])}>Повторити</button></div>;
-    if (content.isPending || variables.isPending || !draft) return <div className="event-manage-loading" role="status">Завантажуємо головну сторінку…</div>;
+    if (content.isPending || variables.isPending || !draft) return <EventLoading event={event} label="Завантажуємо головну сторінку…" />;
 
     return <div className="event-manage-content">
         <header className="event-manage-heading"><div><h1>Головна сторінка</h1><p>Побудуйте сторінку з блоків у потрібному порядку.</p></div>{event.Status !== 0 && event.Status !== 4 && <Link className="ib-btn" href="/">Відкрити сайт <ArrowUpRight size={16} /></Link>}</header>

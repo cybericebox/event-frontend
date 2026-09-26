@@ -29,6 +29,7 @@ import {Toaster} from "react-hot-toast";
 import {headers} from "next/headers";
 import {getPublicEventInfo} from "@/api/publicEventInfo";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
+import {EventBrandProvider} from "@/components/event/EventBrandLogo";
 
 const FALLBACK_TITLE = "Cyber ICE Box";
 
@@ -84,9 +85,11 @@ export default async function RootLayout({
         <head><script dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} /></head>
         <body className="event-root">
         <Providers>
+            <EventBrandProvider logoURL={event?.LogoURL ?? ""}>
             <AppShell event={event} unavailable={unavailable}>
                 {children}
             </AppShell>
+            </EventBrandProvider>
             <Toaster position={"top-center"}/>
         </Providers>
         </body>

@@ -24,6 +24,7 @@ export const getPublicEventInfo = cache(async (): Promise<PublicEventInfo | null
             CanViewParticipants: true,
             PreviewDescription: "",
             PreviewPicture: "",
+            LogoURL: "",
             Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
         };
     }

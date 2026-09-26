@@ -24,6 +24,10 @@
 .ib-admin-side :focus-visible{outline-color:var(--ib-on-brand)}
 .ib-admin-side__head{display:flex;align-items:center;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-brand-line);flex:none}
 .ib-admin-side__crest{width:32px;height:32px;object-fit:contain;flex:none}
+.event-manage-logo-preview{display:flex;align-items:center;gap:var(--ib-4);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r)}
+.event-manage-logo-preview img{width:72px;height:72px;object-fit:contain}
+.event-manage-logo-actions{gap:var(--ib-2);flex-wrap:wrap}
+.event-manage-visually-hidden{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}
 .ib-admin-side__title{flex:1;min-width:0;line-height:var(--ib-lh-tight)}
 .ib-admin-side__title b{display:block;font-weight:var(--ib-w-semibold);color:var(--ib-on-brand)}
 .ib-admin-side__title small{display:block;margin-top:2px;font-size:var(--ib-fs-12);color:var(--ib-on-brand-3)}
