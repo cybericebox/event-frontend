@@ -27,7 +27,7 @@ function asInput(config: ManageConfig): ConfigDraft {
         MaxTeamSize: config.MaxTeamSize,
         MinTeamSize: config.MinTeamSize,
         MaxTeams: config.MaxTeams,
-        UseVPN: config.UseVPN,
+        DynamicLabsPlanned: config.DynamicLabsPlanned,
     };
 }
 
@@ -160,7 +160,7 @@ export default function ManageSettingsPage() {
                         <label className="event-manage-field"><span>Мінімум у команді</span><input className="event-manage-input" type="number" min={1} max={configDraft.MaxTeamSize} value={configDraft.MinTeamSize ?? ""} onChange={event => setConfigDraft({...configDraft, MinTeamSize: numberOrNull(event.target.value)})} placeholder="Без обмеження" disabled={!canManage || participationLocked || saving !== null} /></label>
                         <label className="event-manage-field"><span>Кількість команд</span><input className="event-manage-input" type="number" min={1} value={configDraft.MaxTeams ?? ""} onChange={event => setConfigDraft({...configDraft, MaxTeams: numberOrNull(event.target.value)})} placeholder="Без обмеження" disabled={!canManage || saving !== null} /></label>
                     </div>}
-                    <label className="event-manage-field"><span>VPN для учасників</span><span className="event-manage-check"><input type="checkbox" checked={configDraft.UseVPN} onChange={event => setConfigDraft({...configDraft, UseVPN: event.target.checked})} disabled={!canManage || saving !== null} /><span>Використовувати VPN</span></span><small>Учасники з командою зможуть отримати особистий конфіг і перевірити тунель до старту. Завдання та лабораторії можна додати пізніше.</small></label>
+                    <label className="event-manage-field"><span>Динамічні лабораторії</span><span className="event-manage-check"><input type="checkbox" checked={configDraft.DynamicLabsPlanned} onChange={event => setConfigDraft({...configDraft, DynamicLabsPlanned: event.target.checked})} disabled={!canManage || saving !== null} /><span>Плануються динамічні лабораторії</span></span><small>Для лабораторій буде підготовлено VPN та інтернет-шлюз. Учасники з командою зможуть перевірити VPN до старту; завдання можна додати пізніше.</small></label>
                     <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !configDirty || !validTeamLimits || !validPicture || saving !== null}>{saving === "config" ? "Зберігаємо…" : "Зберегти параметри"}</button></div>
                 </form>
 

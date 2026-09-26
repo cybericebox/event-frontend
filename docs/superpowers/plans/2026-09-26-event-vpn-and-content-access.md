@@ -10,6 +10,8 @@
 
 **Spec:** `/Volumes/Projects/My/CyberICEBox/docs/EVENT-SITE-SPEC.md`, sections 3, 4, 5 and 7. This is one execution plan: VPN first, then the complete access matrix and page-builder variables. Page versioning and the visual block catalog beyond the existing types remain later site-redesign work.
 
+**2026-09-26 product correction (supersedes older `UseVPN` setting references below):** Management has one `DynamicLabsPlanned` setting. The approved participant may receive a derived `UseVPN` capability, while guest/applicant responses omit both. Every team, including an individual's internal team, queues creation of its own LabGroup at team creation. The group starts both VPN and internet gateway before the event starts or any Lab exists; later challenge Labs join this group. Closed runtime keeps the group's services running and grants no client-to-Lab routes. An explicit pause stops task Lab devices and closes their routes, while the group VPN and internet gateway remain running. The personal config request creates only that participant's VPN client. Tasks 1–4 below record the original approved sequence and must be reconciled to this corrected contract before Tasks 5–9 are considered complete. Future batch actions on Labs in selected groups, chosen by caller-owned key/value labels, are recorded in the site spec and deferred from this plan.
+
 ## Global Constraints
 
 - The API session cookie stays on `api.<domain>`; authenticated browser requests use `credentials: "include"`.
@@ -25,7 +27,7 @@
 
 ## Review Focus
 
-1. Existing events with no new database value: default `UseVPN=false`, preserving no early VPN exposure.
+1. Existing events with no new database value: default `DynamicLabsPlanned=false`, preserving no early VPN exposure.
 2. Approved participant without a team: API denies config even if `UseVPN=true`; UI hides the route.
 3. Disabled VPN after a config exists: API denies further issuance and revokes the existing route through the lifecycle reconciliation.
 4. Group exists before labs: later lab deployment reuses the same group and leaves the test endpoint reachable.
@@ -88,7 +90,7 @@
 
 **Files:** `event-frontend/src/api/manage.ts`; `src/app/manage/settings/page.tsx`; `src/components/event/ParticipantShell.tsx` or its replacement common navbar; `src/api/clientAuth.ts`; new `src/app/vpn/page.tsx` and focused VPN API/UI modules; affected CSS and tests.
 
-**Interfaces:** Management GET/PUT carries `UseVPN`. The participant VPN route appears only when `participantInfo.UseVPN && approved && hasTeam`; in individual mode `hasTeam` becomes true after the automatic internal team is created. The route calls the existing event-self personal config endpoint with browser credentials. A status endpoint supplies the private test gateway address.
+**Interfaces:** Management GET/PUT carries `DynamicLabsPlanned`. The participant VPN route appears only when the derived `participantInfo.UseVPN && approved && hasTeam`; in individual mode `hasTeam` becomes true after the automatic internal team is created. The route calls the existing event-self personal config endpoint with browser credentials. A status endpoint supplies the private test gateway address.
 
 - [ ] Test that the settings checkbox can be enabled with zero exercises, persists after reload and is not tied to `Infrastructure.RequiresVPN`.
 - [ ] Add a team-membership query rather than treating approved participation alone as sufficient. Test team mode with and without membership, individual mode after internal team creation, and disabled VPN.
@@ -101,7 +103,7 @@
 
 **Files:** `AP Backend/internal/delivery/controller/http/handler/eventself/dto.go`, `handler.go` and handler tests; `internal/useCase/event/views.go`; `event-frontend/src/types/publicEventInfo.ts`, `src/types/participantEventInfo.ts`, `src/components/event/GuestShell.tsx`, `src/components/event/AppShell.tsx`.
 
-**Interfaces:** The four server projections are guest, signed-in applicant, approved participant and event moderator. `public-info` has only identity, published branding, public timing/rules and derived navigation capability; applicant info adds only own application state; `participant-info` adds `UseVPN` and participant capabilities; management reads retain edit fields. Public and applicant DTOs never contain `Infrastructure` or `UseVPN`.
+**Interfaces:** The four server projections are guest, signed-in applicant, approved participant and event moderator. `public-info` has only identity, published branding, public timing/rules and derived navigation capability; applicant info adds only own application state; `participant-info` adds derived `UseVPN` and participant capabilities; management reads retain editable `DynamicLabsPlanned`. Public and applicant DTOs never contain `Infrastructure`, `UseVPN` or `DynamicLabsPlanned`.
 
 - [ ] Add response-shape tests for the same event in all four roles. Assert exact field presence/absence, including no `publishAt`, `withdrawAt`, `manualFinishAt`, raw visibility enums, infrastructure plan or `UseVPN` in guest/applicant JSON. Assert `UseVPN` is present only for approved participant and moderator.
 - [ ] Replace public navigation's use of raw `ScoreboardVisibility`/`ParticipantsVisibility` with server-derived `CanViewResults` and `CanViewParticipants`. Derive from the saved policy and caller role; a hidden result is never exposed by a stale client setting.

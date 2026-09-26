@@ -17,7 +17,7 @@ export const ManageConfigSchema = z.object({
     MaxTeamSize: z.number().int().positive(),
     MinTeamSize: optionalLimit,
     MaxTeams: optionalLimit,
-    UseVPN: z.boolean(),
+    DynamicLabsPlanned: z.boolean(),
     Theme: themeSchema,
     UpdatedAt: z.string(),
 });
@@ -70,7 +70,7 @@ let mockConfig: ManageConfig = {
     MaxTeamSize: 5,
     MinTeamSize: null,
     MaxTeams: null,
-    UseVPN: false,
+    DynamicLabsPlanned: false,
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
     UpdatedAt: "2026-09-26T00:00:00Z",
 };
