@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState, type FormEvent} from "react";
+import {useMemo, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CalendarDays, Check, Info} from "lucide-react";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageLifecycle, type ManageLifecycle} from "@/api/manage";
@@ -55,12 +55,13 @@ export default function ManageSchedulePage() {
         refetchInterval: false, refetchOnWindowFocus: false,
     });
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchInterval: false, refetchOnWindowFocus: false});
-    const [draft, setDraft] = useState<ScheduleDraft | null>(null);
+    const [edited, setEdited] = useState<{eventID: string; value: ScheduleDraft} | null>(null);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
-    useEffect(() => { if (lifecycle.data) setDraft(toDraft(lifecycle.data)); }, [lifecycle.data]);
+    const draft = edited?.eventID === eventID ? edited.value : lifecycle.data ? toDraft(lifecycle.data) : null;
+    const setDraft = (value: ScheduleDraft) => setEdited({eventID, value});
 
     const validation = useMemo(() => {
         if (!draft) return "";
@@ -92,6 +93,7 @@ export default function ManageSchedulePage() {
                 WithdrawAt: draft.ScheduledEnd ? new Date(draft.WithdrawAt).toISOString() : null,
             });
             queryClient.setQueryData(["event-management-lifecycle", eventID], updated);
+            setEdited(null);
             setMessage("Розклад збережено");
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
@@ -130,6 +132,5 @@ export default function ManageSchedulePage() {
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)}>{saving ? "Зберігаємо…" : "Зберегти розклад"}</button></div>
         </form>
-        <p className="event-manage-schedule__note">Час існування домену задається в глобальній адмінці окремо. Поточний стан події розраховується автоматично за цим розкладом.</p>
     </div>;
 }

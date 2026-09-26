@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState, type CSSProperties, type FormEvent} from "react";
+import {useMemo, useState, type CSSProperties, type FormEvent} from "react";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, Check, Info} from "lucide-react";
@@ -15,6 +15,7 @@ type Section = "name" | "config" | "theme";
 const registrationOptions = [{value: 0, label: "Закрита"}, {value: 1, label: "За схваленням"}, {value: 2, label: "Відкрита"}];
 const visibilityOptions = [{value: 0, label: "Приховано"}, {value: 1, label: "Учасникам"}, {value: 2, label: "Усім"}];
 const colorPattern = /^#[0-9a-fA-F]{6}$/;
+const defaultBrand = "#211A52";
 
 function asInput(config: ManageConfig): ConfigDraft {
     return {
@@ -49,10 +50,9 @@ export default function ManageSettingsPage() {
     const queryClient = useQueryClient();
     const {event, canManage} = useManager();
     const eventID = event.EventID;
-    const [nameDraft, setNameDraft] = useState("");
-    const [configDraft, setConfigDraft] = useState<ConfigDraft | null>(null);
-    const [brandDraft, setBrandDraft] = useState("");
-    const [accentDraft, setAccentDraft] = useState("");
+    const [nameEdit, setNameEdit] = useState<{eventID: string; value: string} | null>(null);
+    const [configEdit, setConfigEdit] = useState<{eventID: string; value: ConfigDraft} | null>(null);
+    const [themeEdit, setThemeEdit] = useState<{eventID: string; brand: string; accent: string} | null>(null);
     const [saving, setSaving] = useState<Section | null>(null);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
@@ -61,14 +61,14 @@ export default function ManageSettingsPage() {
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), enabled: !!eventID, refetchInterval: false, refetchOnWindowFocus: false});
     const lifecycleQuery = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), enabled: !!eventID, refetchInterval: false, refetchOnWindowFocus: false});
 
-    useEffect(() => { if (nameQuery.data) setNameDraft(nameQuery.data.Name); }, [nameQuery.data]);
-    useEffect(() => {
-        if (configQuery.data) {
-            setConfigDraft(asInput(configQuery.data));
-            setBrandDraft(configQuery.data.Theme.Brand);
-            setAccentDraft(configQuery.data.Theme.Accent);
-        }
-    }, [configQuery.data]);
+    const nameDraft = nameEdit?.eventID === eventID ? nameEdit.value : nameQuery.data?.Name ?? "";
+    const configDraft = configEdit?.eventID === eventID ? configEdit.value : configQuery.data ? asInput(configQuery.data) : null;
+    const brandDraft = themeEdit?.eventID === eventID ? themeEdit.brand : configQuery.data?.Theme.Brand ?? defaultBrand;
+    const accentDraft = themeEdit?.eventID === eventID ? themeEdit.accent : configQuery.data?.Theme.Accent ?? "";
+    const setNameDraft = (value: string) => setNameEdit({eventID, value});
+    const setConfigDraft = (value: ConfigDraft) => setConfigEdit({eventID, value});
+    const setBrandDraft = (brand: string) => setThemeEdit({eventID, brand, accent: accentDraft});
+    const setAccentDraft = (accent: string) => setThemeEdit({eventID, brand: brandDraft, accent});
 
     const previewTheme = useMemo(() => deriveTheme(brandDraft, accentDraft, configQuery.data?.Theme.Version ?? 1), [brandDraft, accentDraft, configQuery.data?.Theme.Version]);
     const nameDirty = !!nameQuery.data && nameDraft.trim() !== nameQuery.data.Name;
@@ -101,6 +101,7 @@ export default function ManageSettingsPage() {
         await save("name", async () => {
             const updated = await putManageName(eventID, nameDraft.trim());
             queryClient.setQueryData(["event-management-name", eventID], updated);
+            setNameEdit(null);
         });
     }
 
@@ -110,6 +111,7 @@ export default function ManageSettingsPage() {
         await save("config", async () => {
             const updated = await putManageConfig(eventID, configDraft);
             queryClient.setQueryData(["event-management-config", eventID], updated);
+            setConfigEdit(null);
         });
     }
 
@@ -119,6 +121,7 @@ export default function ManageSettingsPage() {
         await save("theme", async () => {
             const updated = await putManageTheme(eventID, {Brand: brandDraft.trim(), Accent: accentDraft.trim()});
             queryClient.setQueryData(["event-management-config", eventID], updated);
+            setThemeEdit(null);
             const root = document.documentElement;
             root.style.setProperty("--ev-brand", updated.Theme.Brand);
             root.style.setProperty("--ev-accent-light", updated.Theme.AccentLight);
@@ -167,11 +170,11 @@ export default function ManageSettingsPage() {
                 <form className="event-manage-section" onSubmit={saveTheme}>
                     <div className="event-manage-section__head"><div><h2>Кольори події</h2><p>Уся палітра сайту обчислюється з бренду та необов’язкового акценту.</p></div></div>
                     <div className="event-manage-fields-two">
-                        <label className="event-manage-field"><span>Брендовий колір</span><span className="event-manage-color"><input type="color" aria-label="Обрати брендовий колір" value={colorPattern.test(brandDraft) ? brandDraft : "#211A52"} onChange={event => setBrandDraft(event.target.value)} disabled={!canManage || saving !== null} /><input className="event-manage-input" value={brandDraft} onChange={event => setBrandDraft(event.target.value)} placeholder="#211A52" maxLength={7} disabled={!canManage || saving !== null} /></span><small>Колір має залишатися читабельним із білим текстом.</small></label>
-                        <label className="event-manage-field"><span>Акцент</span><span className="event-manage-color"><input type="color" aria-label="Обрати акцент" value={colorPattern.test(accentDraft) ? accentDraft : "#5CCB7C"} onChange={event => setAccentDraft(event.target.value)} disabled={!canManage || saving !== null} /><input className="event-manage-input" value={accentDraft} onChange={event => setAccentDraft(event.target.value)} placeholder="Необов’язково" maxLength={7} disabled={!canManage || saving !== null} /></span><small>Якщо порожньо, використовується брендовий колір.</small></label>
+                        <div className="event-manage-field"><label className="event-manage-field__label"><span>Брендовий колір</span><span className="event-manage-color"><input type="color" aria-label="Обрати брендовий колір" value={colorPattern.test(brandDraft) ? brandDraft : defaultBrand} onChange={event => setBrandDraft(event.target.value)} disabled={!canManage || saving !== null} /><input className="event-manage-input" value={brandDraft} onChange={event => setBrandDraft(event.target.value)} placeholder={defaultBrand} maxLength={7} disabled={!canManage || saving !== null} /></span><small>Колір має залишатися читабельним із білим текстом.</small></label><button className="event-manage-field__reset" type="button" onClick={() => setBrandDraft(defaultBrand)} disabled={!canManage || saving !== null || brandDraft.toUpperCase() === defaultBrand}>Скинути брендовий колір</button></div>
+                        <div className="event-manage-field"><label className="event-manage-field__label"><span>Акцент</span><span className="event-manage-color"><input type="color" aria-label="Обрати акцент" value={colorPattern.test(accentDraft) ? accentDraft : "#5CCB7C"} onChange={event => setAccentDraft(event.target.value)} disabled={!canManage || saving !== null} /><input className="event-manage-input" value={accentDraft} onChange={event => setAccentDraft(event.target.value)} placeholder="Необов’язково" maxLength={7} disabled={!canManage || saving !== null} /></span><small>Якщо порожньо, використовується брендовий колір.</small></label><button className="event-manage-field__reset" type="button" onClick={() => setAccentDraft("")} disabled={!canManage || saving !== null || !accentDraft}>Скинути акцент</button></div>
                     </div>
                     {!previewTheme && <p className="event-manage-validation" role="alert">Введіть кольори у форматі #RRGGBB. Бренд має мати достатній контраст із білим.</p>}
-                    <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !themeDirty || !previewTheme || saving !== null}>{saving === "theme" ? "Зберігаємо…" : "Зберегти кольори"}</button></div>
+                    <div className="event-manage-section__actions"><button className="ib-btn" type="button" onClick={() => setThemeEdit({eventID, brand: defaultBrand, accent: ""})} disabled={!canManage || saving !== null || (brandDraft.toUpperCase() === defaultBrand && !accentDraft)}>Скинути всю тему</button><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !themeDirty || !previewTheme || saving !== null}>{saving === "theme" ? "Зберігаємо…" : "Зберегти кольори"}</button></div>
                 </form>
             </div>
             <aside className="event-manage-preview" aria-label="Попередній перегляд кольорів">

@@ -72,7 +72,7 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
     }
 
     function addRule() {
-        const variable = contentVariableByName.get("event.isStarted");
+        const variable = contentVariableByName.get("event.isStarted") ?? catalog[0];
         if (!variable) return;
         const nextBlock = withBinding(block, variable);
         onUpdate({...nextBlock, visibility: [...(nextBlock.visibility ?? []), {variable: variable.name, operator: "equals", value: true}]});
