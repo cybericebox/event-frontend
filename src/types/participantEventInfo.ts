@@ -4,6 +4,8 @@ import {z} from "zod";
 export const ParticipantEventInfoSchema = z.object({
     EventID: z.string().uuid(),
     UseVPN: z.boolean(),
+    CanViewResults: z.boolean(),
+    CanViewParticipants: z.boolean(),
 });
 
 export type ParticipantEventInfo = z.infer<typeof ParticipantEventInfoSchema>;

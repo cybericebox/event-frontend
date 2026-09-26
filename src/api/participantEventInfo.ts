@@ -12,6 +12,8 @@ export async function getParticipantEventInfo(): Promise<ParticipantEventInfo> {
         return ParticipantEventInfoSchema.parse({
             EventID: "01900000-0000-7000-8000-000000000001",
             UseVPN: false,
+            CanViewResults: false,
+            CanViewParticipants: false,
         });
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;

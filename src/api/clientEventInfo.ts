@@ -17,7 +17,7 @@ export async function getClientEventInfo(): Promise<PublicEventInfo> {
             Tag: "winter-arena-2026", Name: "Winter Arena CTF",
             StartTime: "2026-09-26T00:00:00Z", FinishTime: null,
             Status: 0, Participation: null, Registration: 0,
-            ScoreboardVisibility: 0, ParticipantsVisibility: 0,
+            CanViewResults: false, CanViewParticipants: false,
             PreviewDescription: "", PreviewPicture: "",
             Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
         });

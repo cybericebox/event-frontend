@@ -10,10 +10,7 @@ export function GuestShell({event, authenticated, children}: {
     authenticated: boolean;
     children: ReactNode;
 }) {
-    const links = [
-        {href: "/", label: "Головна"},
-        ...(event.ScoreboardVisibility === 2 ? [{href: "/scoreboard", label: "Результати"}] : []),
-    ];
+    const links = [{href: "/", label: "Головна"}, ...(event.CanViewResults ? [{href: "/scoreboard", label: "Результати"}] : [])];
     return <div className="event-guest-shell">
         <EventNavbar event={event} authenticated={authenticated} />
         <main className="event-guest-main">{children}</main>

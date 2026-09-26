@@ -19,6 +19,7 @@ type Props = {
     approved?: boolean;
     hasTeam?: boolean;
     useVPN?: boolean;
+    canViewResults?: boolean;
     management?: boolean;
 };
 
@@ -57,13 +58,13 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
     </Popover>;
 }
 
-export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, management = false}: Props) {
+export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, canViewResults = false, management = false}: Props) {
     const path = usePathname();
     const [open, setOpen] = useState(false);
     const links = [
         {href: "/", label: "Головна"},
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
-        ...((approved ? event.ScoreboardVisibility !== 0 : event.ScoreboardVisibility === 2) ? [{href: "/scoreboard", label: "Результати"}] : []),
+        ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
     ];
     return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`}>
         <div className="ib-navbar__bar">
