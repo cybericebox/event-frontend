@@ -18,6 +18,7 @@ import {AppShell} from "@/components/event/AppShell";
 import {Toaster} from "react-hot-toast";
 import {headers} from "next/headers";
 import {getPublicEventInfo} from "@/api/publicEventInfo";
+import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 
 const FALLBACK_TITLE = "Cyber ICE Box";
 
@@ -69,7 +70,8 @@ export default async function RootLayout({
         "--ev-accent-live": theme.AccentLive,
     } as React.CSSProperties : undefined;
     return (
-        <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle}>
+        <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} suppressHydrationWarning>
+        <head><script dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} /></head>
         <body className="event-root">
         <Providers>
             <AppShell event={event} unavailable={unavailable}>

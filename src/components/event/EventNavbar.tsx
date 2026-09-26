@@ -9,6 +9,7 @@ import {Bell, ChevronDown, LogOut, Menu, Network, Settings2, UserRound, Users, X
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {signOut} from "@/api/authAPI";
+import {getCurrentUser, profilePictureUrl} from "@/api/clientAuth";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import crest from "@/styles/assets/crest-128.png";
 import {ThemeToggle} from "./ThemeToggle";
@@ -36,6 +37,13 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
     const [signOutError, setSignOutError] = useState(false);
     const router = useRouter();
     const queryClient = useQueryClient();
+    const profile = useQuery({
+        queryKey: ["event-current-user"], queryFn: getCurrentUser,
+        retry: false, refetchOnWindowFocus: false,
+    });
+    const picture = profilePictureUrl(profile.data?.Picture ?? "");
+    const initials = `${profile.data?.FirstName?.trim()?.[0] ?? ""}${profile.data?.LastName?.trim()?.[0] ?? ""}`.toLocaleUpperCase("uk-UA")
+        || profile.data?.Email?.trim()?.[0]?.toLocaleUpperCase("uk-UA") || "?";
     const leave = async () => {
         try {
             setSignOutError(false);
@@ -48,7 +56,11 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
         }
     };
     return <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild><button className="event-account__trigger" type="button" aria-label="Меню акаунта" aria-expanded={open}><UserRound size={18} aria-hidden="true" /></button></PopoverTrigger>
+        <PopoverTrigger asChild><button className="event-account__trigger" type="button" aria-label="Меню акаунта" aria-expanded={open}><span className="event-account__avatar" aria-hidden="true">{picture ? (
+            // The API returns an origin-specific media URL; this app is statically exported.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
+        ) : initials}</span></button></PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="event-account__menu">
             <a href={identityHref("/profile", event)}><UserRound size={16} />Профіль</a>
             {approved && <Link href="/team" onClick={() => setOpen(false)}><Users size={16} />{event.Participation === 0 ? "Моя участь" : "Моя команда"}</Link>}
