@@ -26,7 +26,7 @@ import {GeistSans} from "geist/font/sans";
 import {GeistMono} from "geist/font/mono";
 import {Providers} from "@/utils/providers";
 import {AppShell} from "@/components/event/AppShell";
-import {Toaster} from "react-hot-toast";
+import {EventActionToaster} from "@/components/ui/EventActionToaster";
 import {headers} from "next/headers";
 import {getPublicEventInfo} from "@/api/publicEventInfo";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
@@ -94,6 +94,8 @@ export default async function RootLayout({
             {/* The development edge caches Next's CSS chunk; keep new management controls current. */}
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
             <link rel="stylesheet" href="/event-manage-brand-v13.css" />
+            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
+            <link rel="stylesheet" href="/event-action-toast-v1.css" />
         </head>
         <body className="event-root">
         <Providers>
@@ -102,7 +104,7 @@ export default async function RootLayout({
                 {children}
             </AppShell>
             </EventBrandProvider>
-            <Toaster position={"top-center"}/>
+            <EventActionToaster />
         </Providers>
         </body>
         </html>

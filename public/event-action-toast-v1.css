@@ -1,0 +1,13 @@
+.event-action-toast{display:flex;align-items:flex-start;gap:12px;width:min(384px,calc(100vw - 32px));padding:12px 16px;border:1px solid;border-radius:8px;box-shadow:0 10px 15px -3px rgb(0 0 0 / .1),0 4px 6px -4px rgb(0 0 0 / .1);background:var(--ib-surface);color:var(--ib-body);font:400 14px/20px var(--ib-font);pointer-events:auto;transition:opacity 150ms ease}
+.event-action-toast[data-visible="false"]{opacity:0}
+.event-action-toast[data-tone="success"]{border-color:var(--ib-ok);background:var(--ib-ok-bg)}
+.event-action-toast[data-tone="warning"]{border-color:var(--ib-warn);background:var(--ib-warn-bg)}
+.event-action-toast[data-tone="error"]{border-color:var(--ib-danger);background:color-mix(in srgb,var(--ib-danger) 15%,var(--ib-surface))}
+.event-action-toast__icon{width:16px;height:16px;flex:none;margin-top:2px}
+.event-action-toast[data-tone="success"] .event-action-toast__icon{color:var(--ib-ok)}
+.event-action-toast[data-tone="warning"] .event-action-toast__icon{color:var(--ib-warn)}
+.event-action-toast[data-tone="error"] .event-action-toast__icon{color:var(--ib-danger)}
+.event-action-toast__message{min-width:0;flex:1;overflow-wrap:anywhere;white-space:pre-line}
+.event-action-toast__close{display:grid;place-items:center;flex:none;padding:2px;border:0;border-radius:4px;background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-action-toast__close:hover{color:var(--ib-body)}
+.event-action-toast__close:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
