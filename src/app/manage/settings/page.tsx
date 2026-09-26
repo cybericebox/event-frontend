@@ -3,7 +3,7 @@
 import {useMemo, useState, type CSSProperties, type FormEvent} from "react";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ArrowUpRight, Check, Info} from "lucide-react";
+import {ArrowUpRight, CalendarDays, Check, Info} from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {getManageConfig, getManageLifecycle, getManageName, ManageApiError, putManageConfig, putManageName, putManageTheme, uploadManageLogo, removeManageLogo, uploadManagePreviewPicture, removeManagePreviewPicture, type ManageConfig, type ManageConfigInput} from "@/api/manage";
@@ -175,7 +175,7 @@ export default function ManageSettingsPage() {
     const participationLocked = lifecycleQuery.data.Configured && lifecycleQuery.data.Status !== "not_published";
 
     return <div className="event-manage-settings">
-        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Керування подією</p><h1>Основні налаштування</h1><p>Назва, участь і вигляд сайту події.</p></div><Link className="ib-btn" href="/">Переглянути сайт <ArrowUpRight size={16} /></Link></header>
+        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Керування подією</p><h1>Основні налаштування</h1><p>Назва, участь і вигляд сайту події.</p></div><div className="event-manage-heading__actions"><Link className="ib-btn" href="/manage/schedule"><CalendarDays size={16} />Розклад і публікація</Link><Link className="ib-btn" href="/">Переглянути сайт <ArrowUpRight size={16} /></Link></div></header>
         {!canManage && <div className="event-manage-notice" role="status"><Info size={18} />Доступний лише перегляд. Змінювати налаштування може менеджер події.</div>}
         {error && <div className="event-manage-feedback event-manage-feedback--error" role="alert">{error}</div>}
         {message && <div className="event-manage-feedback" role="status"><Check size={16} />{message}</div>}

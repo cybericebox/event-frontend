@@ -1,15 +1,16 @@
 "use client";
 
 import {createContext, useContext, useState, type ReactNode} from "react";
-import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useQuery} from "@tanstack/react-query";
-import {ArrowLeft, CalendarDays, FileText, LayoutDashboard, Menu, Plus, Settings2, X} from "lucide-react";
+import {Menu} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
-import {EventBrandLogo} from "../EventBrandLogo";
 import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavbar";
+import {ManagerSidebar} from "./ManagerSidebar";
+import {managerLocationTitle} from "./managerNavigation";
+import Link from "next/link";
 
 function signInHref(event: PublicEventInfo): string {
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
@@ -55,27 +56,11 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
     return <div className="event-manage-frame">
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <div className="ib-admin-shell__layout">
-            <aside className="ib-admin-side ib-mass" aria-label="Керування подією">
-                <div className="ib-admin-side__head">
-                    <Link href="/" className="event-manage-brand" aria-label="На сайт події"><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>Керування подією</small></div></Link>
-                    <button className="ib-admin-side__close" type="button" aria-label="Закрити меню" onClick={() => setDrawerOpen(false)}><X size={18} /></button>
-                </div>
-                <nav className="ib-admin-side__nav" aria-label="Розділи керування">
-                    <div className="ib-admin-side__group">Подія</div>
-                    <Link className="ib-admin-side__item" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={() => setDrawerOpen(false)}><LayoutDashboard size={16} /><span className="ib-admin-side__label">Огляд і підготовка</span></Link>
-                    <Link className="ib-admin-side__item" href="/manage/settings" aria-current={pathname === "/manage/settings" ? "page" : undefined} onClick={() => setDrawerOpen(false)}><Settings2 size={16} /><span className="ib-admin-side__label">Налаштування</span></Link>
-                    <Link className="ib-admin-side__item" href="/manage/schedule" aria-current={pathname === "/manage/schedule" ? "page" : undefined} onClick={() => setDrawerOpen(false)}><CalendarDays size={16} /><span className="ib-admin-side__label">Розклад</span></Link>
-                    <div className="ib-admin-side__group">Сторінки</div>
-                    <Link className="ib-admin-side__item" href="/manage/content/landing" aria-current={pathname === "/manage/content/landing" ? "page" : undefined} onClick={() => setDrawerOpen(false)}><FileText size={16} /><span className="ib-admin-side__label">Головна сторінка</span></Link>
-                    {(pages.data ?? []).map(page => <Link className="ib-admin-side__item" key={page.ID} href={`/manage/content/pages/${page.Slug}`} aria-current={pathname === `/manage/content/pages/${page.Slug}` ? "page" : undefined} onClick={() => setDrawerOpen(false)}><FileText size={16} /><span className="ib-admin-side__label">{page.Title}</span></Link>)}
-                    {access.data.CanManage && <Link className="ib-admin-side__item" href="/manage/content/pages/new" aria-current={pathname === "/manage/content/pages/new" ? "page" : undefined} onClick={() => setDrawerOpen(false)}><Plus size={16} /><span className="ib-admin-side__label">Додати сторінку</span></Link>}
-                </nav>
-                <div className="ib-admin-side__foot"><Link className="ib-admin-side__item" href="/" onClick={() => setDrawerOpen(false)}><ArrowLeft size={16} /><span className="ib-admin-side__label">На сайт події</span></Link></div>
-            </aside>
+            <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
             <div className="ib-admin-shell__main">
                 <header className="ib-topbar">
                     <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label="Відкрити меню" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>
-                    <ol className="ib-topbar__crumbs"><li aria-current="page">{pathname === "/manage" ? "Огляд і підготовка" : pathname === "/manage/schedule" ? "Розклад" : pathname === "/manage/content/landing" ? "Головна сторінка" : pathname.startsWith("/manage/content/pages/") ? "Сторінки" : "Налаштування"}</li></ol>
+                    <ol className="ib-topbar__crumbs"><li aria-current="page">{managerLocationTitle(pathname, pages.data ?? [])}</li></ol>
                     <div className="ib-topbar__actions">{!access.data.CanManage && <span className="event-manage-mode">Лише перегляд</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
                 <main className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
