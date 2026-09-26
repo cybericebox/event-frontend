@@ -18,7 +18,7 @@ export default async function LandingPage() {
     if (!content) notFound();
 
     return <div className="event-landing ib-blocks">
-        <LandingHero event={event} />
+        {!content.Landing.blocks.some(block => block.type === "hero") && <LandingHero event={event} />}
         <ContentBlocks document={content.Landing} variables={content.Variables} />
     </div>;
 }

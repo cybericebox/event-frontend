@@ -22,7 +22,7 @@ export function PrivateLanding() {
         <button className="ib-btn" onClick={() => void content.refetch()}>Повторити</button>
     </div>;
     return <div className="event-landing ib-blocks">
-        <LandingHero event={event} preview />
+        {!content.data.Landing.blocks.some(block => block.type === "hero") && <LandingHero event={event} preview />}
         <ContentBlocks document={content.data.Landing} variables={content.data.Variables} />
     </div>;
 }

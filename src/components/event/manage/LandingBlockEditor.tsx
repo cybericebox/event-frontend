@@ -49,13 +49,15 @@ function EditorTextField({field, label, value, placeholder, multiline, compact, 
     return <label className="event-manage-field"><FieldLabel label={label} required={required} help={help} />{multiline ? <textarea {...common} rows={compact ? 3 : 7} /> : <input {...common} />}</label>;
 }
 
-export function LandingBlockEditor({block, index, count, values, catalog, canEdit, onUpdate, onMove, onDelete}: {
+export function LandingBlockEditor({block, index, count, values, catalog, canEdit, landing = false, heroFirst = false, onUpdate, onMove, onDelete}: {
     block: ContentBlock;
     index: number;
     count: number;
     values: Record<string, ContentValue>;
     catalog: ContentVariableDefinition[];
     canEdit: boolean;
+    landing?: boolean;
+    heroFirst?: boolean;
     onUpdate: (value: ContentBlock) => void;
     onMove: (direction: -1 | 1) => void;
     onDelete: () => void;
@@ -85,7 +87,8 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
             return block.items?.[Number(index)]?.[key as "label" | "value"] ?? "";
         }
         if (field === "action:label") return block.action?.label ?? "";
-        return block[field as "label" | "markdown" | "title" | "sub" | "text"] ?? "";
+        if (field === "secondaryAction:label") return block.secondaryAction?.label ?? "";
+        return block[field as "label" | "markdown" | "title" | "sub" | "text" | "by" | "kicker" | "note"] ?? "";
     }
 
     function changeField(field: string, value: string, base = block): ContentBlock {
@@ -93,7 +96,14 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
             const [, index, key] = field.split(":");
             return {...base, items: (base.items ?? []).map((item, position) => position === Number(index) ? {...item, [key]: value} : item)};
         }
-        if (field === "action:label") return {...base, action: {...(base.action ?? {href: ""}), label: value}};
+        if (field === "action:label") {
+            const action = {...(base.action ?? {href: ""}), label: value};
+            return {...base, action: block.type === "hero" && !action.label && !action.href ? undefined : action};
+        }
+        if (field === "secondaryAction:label") {
+            const secondaryAction = {...(base.secondaryAction ?? {href: ""}), label: value};
+            return {...base, secondaryAction: !secondaryAction.label && !secondaryAction.href ? undefined : secondaryAction};
+        }
         return {...base, [field]: value};
     }
 
@@ -141,24 +151,37 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
         <div className="event-content-editor__block-head">
             <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong></div>
             {canEdit && <div className="event-content-editor__block-actions">
-                <button type="button" title="Перемістити вище" aria-label={`Перемістити блок ${index + 1} вище`} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>
-                <button type="button" title="Перемістити нижче" aria-label={`Перемістити блок ${index + 1} нижче`} disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown size={16} /></button>
-                <button type="button" className="event-content-editor__danger" title="Видалити блок" aria-label={`Видалити блок ${index + 1}`} onClick={onDelete}><Trash2 size={16} /></button>
+                <EventTooltip content="Перемістити вище">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} вище`} aria-describedby={id} disabled={index === 0 || (heroFirst && index === 1)} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
+                <EventTooltip content="Перемістити нижче">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} нижче`} aria-describedby={id} disabled={index === count - 1 || (heroFirst && index === 0)} onClick={() => onMove(1)}><ArrowDown size={16} /></button>}</EventTooltip>
+                <EventTooltip content="Видалити блок">{id => <button type="button" className="event-content-editor__danger" aria-label={`Видалити блок ${index + 1}`} aria-describedby={id} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
         </div>
         <div className="event-content-editor__block-body">
             {block.type === "section" && inputField("label", "Заголовок розділу", "Назва розділу", false, true)}
             {block.type === "text" && inputField("markdown", "Вміст (Markdown)", "Напишіть текст сторінки…", true, true, "Підтримуються заголовки, списки, посилання, цитати й код. HTML не підтримується.")}
-            {["facts", "timeline", "faq", "cta", "countdown"].includes(block.type) && inputField("title", "Заголовок", "Назва блока", false, block.type === "cta")}
-            {["facts", "timeline", "faq"].includes(block.type) && <>
-                {inputField("sub", "Пояснення", "Необов’язково")}
+            {["hero", "facts", "timeline", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : "Заголовок", "Назва блока", false, block.type === "hero" || block.type === "cta")}
+            {block.type === "hero" && <>
+                <div className="event-manage-field"><FieldLabel label="Оформлення" /><EventSelect ariaLabel="Оформлення героя" value={landing ? block.variant ?? "mass" : "plain"} options={landing ? [{value: "mass", label: "Брендове"}, {value: "plain", label: "Звичайне"}] : [{value: "plain", label: "Звичайне"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
+                {inputField("by", "Рядок організатора", "Подія CyberICEBox")}
+                {inputField("kicker", "Надзаголовок", "Необов’язково")}
+            </>}
+            {["hero", "facts", "timeline", "faq"].includes(block.type) && <>
+                {block.type !== "hero" && inputField("sub", "Пояснення", "Необов’язково")}
                 {(block.items ?? []).map((item, itemIndex) => <div className={`event-content-editor__item${block.type === "faq" ? " event-content-editor__item--faq" : ""}`} key={itemIndex}>
                     {block.type === "faq" && <div className="event-content-editor__item-head"><strong>Питання {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити питання ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><Trash2 size={15} /></button>}</div>}
                     {inputField(`item:${itemIndex}:label`, block.type === "timeline" ? "Час" : block.type === "faq" ? "Питання" : "Підпис", "", false, true)}
                     {inputField(`item:${itemIndex}:value`, block.type === "timeline" ? "Подія" : block.type === "faq" ? "Відповідь" : "Значення", "", block.type === "faq", true, block.type === "faq" ? "Можна використовувати Markdown для списків і посилань." : undefined, block.type === "faq")}
                     {canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><X size={16} /></button>}
                 </div>)}
-                {canEdit && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> Додати пункт</button>}
+                {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
+            </>}
+            {block.type === "hero" && <>
+                <div className="event-manage-field"><FieldLabel label="Відлік" help="Дата береться зі змінної події. Відлік можна вимкнути." /><EventSelect ariaLabel="Дата відліку героя" value={block.targetVariable ?? ""} placeholder="Без відліку" options={[{value: "", label: "Без відліку"}, ...catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))]} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name} : {...block, targetVariable: ""});}} /></div>
+                {inputField("action:label", "Головна дія", "Текст кнопки")}
+                <label className="event-manage-field"><FieldLabel label="Посилання головної дії" help="Внутрішній шлях від / або повне посилання HTTPS." /><input className="event-manage-input" value={block.action?.href ?? ""} disabled={!canEdit} onChange={event => {const action = {...(block.action ?? {label: ""}), href: event.target.value}; onUpdate({...block, action: !action.label && !action.href ? undefined : action});}} placeholder="/challenges" /></label>
+                {inputField("secondaryAction:label", "Друга дія", "Необов’язково")}
+                <label className="event-manage-field"><FieldLabel label="Посилання другої дії" /><input className="event-manage-input" value={block.secondaryAction?.href ?? ""} disabled={!canEdit} onChange={event => {const secondaryAction = {...(block.secondaryAction ?? {label: ""}), href: event.target.value}; onUpdate({...block, secondaryAction: !secondaryAction.label && !secondaryAction.href ? undefined : secondaryAction});}} placeholder="/p/rules" /></label>
+                {inputField("note", "Примітка", "Необов’язково")}
             </>}
             {["cta", "countdown"].includes(block.type) && inputField("text", "Опис", "Необов’язково")}
             {block.type === "cta" && <>

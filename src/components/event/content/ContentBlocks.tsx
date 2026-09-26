@@ -52,7 +52,7 @@ export function ContentBlocks({document, variables, title}: {
     const blocks = document.blocks.filter(block => (block.visibility ?? []).every(rule =>
         compare(variables[rule.variable], rule.operator, rule.value)));
     return <div className="ib-blocks">
-        {title && <section className="ib-block event-content-heading"><div className="ib-block__in"><h1 className="ib-block__title ib-block__title--page">{title}</h1></div></section>}
+        {title && !blocks.some(block => block.type === "hero") && <section className="ib-block event-content-heading"><div className="ib-block__in"><h1 className="ib-block__title ib-block__title--page">{title}</h1></div></section>}
         {blocks.map(block => {
             const declared = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
             const render = (value = "") => replaceVariables(value, variables, declared);
@@ -60,6 +60,30 @@ export function ContentBlocks({document, variables, title}: {
                 {block.title && <h2 className="ib-block__title">{render(block.title)}</h2>}
                 {block.sub && <p className="ib-block__sub">{render(block.sub)}</p>}
             </div> : null;
+            if (block.type === "hero") {
+                const target = variables[block.targetVariable ?? ""];
+                const primaryHref = safeHref(block.action?.href ?? "");
+                const secondaryHref = safeHref(block.secondaryAction?.href ?? "");
+                const mass = block.variant === "mass";
+                return <section className={`ib-block ib-block-hero${mass ? " ib-mass ib-mass-waves" : ""}`} key={block.id} id={block.id}>
+                    <div className="ib-block__in">
+                        {block.by && <p className="ib-block-hero__by">{render(block.by)}</p>}
+                        {block.kicker && <span className="ib-block-hero__kicker">{render(block.kicker)}</span>}
+                        <h1 className="ib-block-hero__title">{render(block.title)}</h1>
+                        <div className="ib-block-hero__row">
+                            <dl className="ib-block-hero__facts">{(block.items ?? []).map((item, index) => <div key={index}><dt>{render(item.label)}</dt><dd>{render(item.value)}</dd></div>)}</dl>
+                            <div className="ib-block-hero__aside">
+                                {block.targetVariable && <CountdownValue target={typeof target === "string" ? target : null} />}
+                                <div className="ib-block-hero__cta">
+                                    {primaryHref && block.action?.label && <a className={`ib-btn ${mass ? "ib-btn--mass" : "ib-btn--primary"}`} href={primaryHref}>{render(block.action.label)}</a>}
+                                    {secondaryHref && block.secondaryAction?.label && <a className="ib-btn" href={secondaryHref}>{render(block.secondaryAction.label)}</a>}
+                                </div>
+                                {block.note && <p className="ib-block-hero__note">{render(block.note)}</p>}
+                            </div>
+                        </div>
+                    </div>
+                </section>;
+            }
             if (block.type === "section") return <section className="ib-block" key={block.id} id={block.id}>
                 <div className="ib-block__in"><h2 className="ib-block__title">{replaceVariables(block.label ?? "", variables, declared)}</h2></div>
             </section>;

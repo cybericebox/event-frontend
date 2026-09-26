@@ -3,7 +3,7 @@ import {z} from "zod";
 export const ContentValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 export const ContentVariableSchema = z.object({name: z.string(), format: z.enum(["text", "number", "date-time", "boolean"])});
 export const ContentVisibilitySchema = z.object({variable: z.string(), operator: z.string(), value: ContentValueSchema});
-export const PageBlockTypes = ["section", "text", "facts", "timeline", "faq", "cta", "countdown", "divider"] as const;
+export const PageBlockTypes = ["section", "text", "hero", "facts", "timeline", "faq", "cta", "countdown", "divider"] as const;
 export type PageBlockType = typeof PageBlockTypes[number];
 export const ContentBlockSchema = z.object({
     id: z.string(),
@@ -13,9 +13,13 @@ export const ContentBlockSchema = z.object({
     title: z.string().optional(),
     sub: z.string().optional(),
     text: z.string().optional(),
+    by: z.string().optional(),
+    kicker: z.string().optional(),
+    note: z.string().optional(),
     items: z.array(z.object({label: z.string().optional(), value: z.string().optional()})).optional(),
     targetVariable: z.string().optional(),
     action: z.object({label: z.string(), href: z.string()}).optional(),
+    secondaryAction: z.object({label: z.string(), href: z.string()}).optional(),
     variant: z.string().optional(),
     size: z.string().optional(),
     line: z.boolean().optional(),

@@ -65,8 +65,8 @@ export default function ManageLandingPage() {
 
     function addBlock(type: PageBlockType) {
         if (!draft) return;
-        const block = createPageBlock(type);
-        change({blocks: [...draft.blocks, block]});
+        const block = createPageBlock(type, true);
+        change({blocks: type === "hero" ? [block, ...draft.blocks] : [...draft.blocks, block]});
     }
 
     async function save() {
@@ -97,12 +97,12 @@ export default function ManageLandingPage() {
             <div className="event-content-editor">
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Порядок блоків відповідає їхньому порядку на сайті.</p></div><span>{blockCountLabel(draft.blocks.length)}</span></div>
                 {draft.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
-                <div className="event-content-editor__stack">{draft.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.blocks.length} values={publicValues} catalog={catalog} canEdit={canManage && !saving} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onDelete={() => change({blocks: draft.blocks.filter((_, position) => position !== index)})} />)}</div>
-                {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
+                <div className="event-content-editor__stack">{draft.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.blocks.length} values={publicValues} catalog={catalog} canEdit={canManage && !saving} landing heroFirst={draft.blocks[0]?.type === "hero"} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onDelete={() => change({blocks: draft.blocks.filter((_, position) => position !== index)})} />)}</div>
+                {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !draft.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setMessage(""); setError("");}}><RotateCcw size={16} /> Скасувати зміни</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти сторінку"}</button></div></div>
             </div>
-            <aside className="event-manage-content__preview" aria-label="Попередній перегляд головної сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>Той самий макет, що бачать гості.</p></div></div><div className="event-manage-content__preview-window"><div className="event-landing ib-blocks"><LandingHero event={event} preview /><ContentBlocks document={draft} variables={publicValues} /></div></div></aside>
+            <aside className="event-manage-content__preview" aria-label="Попередній перегляд головної сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>Той самий макет, що бачать гості.</p></div></div><div className="event-manage-content__preview-window"><div className="event-landing ib-blocks">{!draft.blocks.some(block => block.type === "hero") && <LandingHero event={event} preview />}<ContentBlocks document={draft} variables={publicValues} /></div></div></aside>
         </div>
     </div>;
 }

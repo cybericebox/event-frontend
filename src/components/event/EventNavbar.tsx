@@ -136,7 +136,7 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
             <div className="ib-navbar__actions">
                 {authenticated && (management ? <Link className="ib-btn ib-btn--sm event-manage-entry" href="/manage" aria-current={path.startsWith("/manage") ? "page" : undefined}><Settings2 size={16} aria-hidden="true" />Адміністрування</Link> : <ManagerEntry eventID={event.EventID} variant="nav" />)}
                 <ThemeToggle />
-                {approved && <button className="event-navbar__icon" type="button" aria-label="Сповіщення поки недоступні" title="Сповіщення поки недоступні" disabled><Bell size={18} /></button>}
+                {approved && <button className="event-navbar__icon" type="button" aria-label="Сповіщення поки недоступні" disabled><Bell size={18} /></button>}
                 {authenticated ? <AccountMenu event={event} approved={approved} hasTeam={hasTeam} useVPN={useVPN} /> : <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>Увійти</a>}
                 <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? "Закрити меню" : "Відкрити меню"} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>
             </div>

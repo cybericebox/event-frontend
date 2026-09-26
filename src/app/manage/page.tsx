@@ -7,6 +7,7 @@ import {ArrowUpRight, CalendarDays, Check, FileText, UsersRound} from "lucide-re
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, putManageLifecycle, type ManageConfigInput} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventSelect} from "@/components/ui/EventSelect";
 
 function localDateTime(iso: string | null): string {
     if (!iso) return "";
@@ -102,7 +103,7 @@ export default function ManageIndex() {
                 <label className="event-manage-field"><span>Максимум учасників у команді</span><input className="event-manage-input" type="number" min={1} step={1} value={maxTeamSize} onChange={event => setMaxTeamSizeDraft(event.target.value)} disabled={!canManage || locked || saving} required /><small>Виберіть розмір команди до планування публікації.</small></label>
                 <label className="event-manage-field"><span>Мінімум учасників у команді</span><input className="event-manage-input" type="number" min={1} max={maxTeamSize || undefined} step={1} value={minTeamSize} onChange={event => setMinTeamSizeDraft(event.target.value)} disabled={!canManage || locked || saving} placeholder="Без мінімуму" /><small>Необов’язково; після публікації теж фіксується.</small></label>
             </div>}
-            <label className="event-manage-field"><span>Реєстрація після публікації</span><select className="event-manage-input" value={registration} onChange={event => setRegistrationDraft(Number(event.target.value) as 0 | 1 | 2)} disabled={!canManage || saving}><option value={0}>Закрита</option><option value={1}>За схваленням</option><option value={2}>Відкрита</option></select><small>Цей режим можна змінити пізніше. До публікації реєстрація закрита незалежно від вибору.</small></label>
+            <div className="event-manage-field"><span>Реєстрація після публікації <span aria-label="Обов’язкове поле">*</span></span><EventSelect ariaLabel="Реєстрація після публікації" value={String(registration)} options={[{value: "0", label: "Закрита"}, {value: "1", label: "За схваленням"}, {value: "2", label: "Відкрита"}]} onValueChange={value => setRegistrationDraft(Number(value) as 0 | 1 | 2)} disabled={!canManage || saving} /><small>Цей режим можна змінити пізніше. До публікації реєстрація закрита незалежно від вибору.</small></div>
             <div className="event-manage-fields-two">
                 <label className="event-manage-field"><span>Публікація</span><input className="event-manage-input" type="datetime-local" value={publishAt} onChange={event => setPublishAtDraft(event.target.value)} disabled={!canManage || saving} required /><small>З цього часу сайт і реєстрація можуть бути доступні відвідувачам.</small></label>
                 <label className="event-manage-field"><span>Початок</span><input className="event-manage-input" type="datetime-local" value={startAt} onChange={event => setStartAtDraft(event.target.value)} disabled={!canManage || saving} required /><small>Після початку можна проходити завдання.</small></label>

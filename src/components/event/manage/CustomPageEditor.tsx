@@ -42,7 +42,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const catalog = useMemo(() => (definitions.data ?? []).filter(item => item.audience <= draft.Visibility), [definitions.data, draft.Visibility]);
     const values = useMemo(() => Object.fromEntries(catalog.map(item => [item.name, content.data?.Variables[item.name] ?? null])), [catalog, content.data?.Variables]);
     const documentError = definitions.data ? validateLanding(draft.Document, catalog) : null;
-    const validation = draft.Slug === "new" ? "Адреса new зарезервована для створення сторінки." :
+    const validation = draft.Document.blocks.some(block => block.type === "hero" && block.variant === "mass") ? "На додатковій сторінці герой має звичайне оформлення." : draft.Slug === "new" ? "Адреса new зарезервована для створення сторінки." :
         !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.Slug) || draft.Slug.length > 128 ? "Адреса сторінки: латинські літери, цифри й дефіси." :
         !draft.Title.trim() || draft.Title.length > 255 ? "Вкажіть назву сторінки до 255 символів." : documentError;
     const dirty = isNew || JSON.stringify(saved) !== JSON.stringify(draft);
@@ -63,7 +63,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     }
     function addBlock(type: PageBlockType) {
         const block = createPageBlock(type);
-        change({...draft, Document: {blocks: [...draft.Document.blocks, block]}});
+        change({...draft, Document: {blocks: type === "hero" ? [block, ...draft.Document.blocks] : [...draft.Document.blocks, block]}});
     }
 
     async function save() {
@@ -121,8 +121,8 @@ export function CustomPageEditor({slug}: {slug?: string}) {
                 </div>
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Порядок блоків відповідає порядку на сайті.</p></div><span>{draft.Document.blocks.length}</span></div>
                 {draft.Document.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
-                <div className="event-content-editor__stack">{draft.Document.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.Document.blocks.length} values={values} catalog={catalog} canEdit={canManage && !saving} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onDelete={() => change({...draft, Document: {blocks: draft.Document.blocks.filter((_, position) => position !== index)}})} />)}</div>
-                {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
+                <div className="event-content-editor__stack">{draft.Document.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.Document.blocks.length} values={values} catalog={catalog} canEdit={canManage && !saving} heroFirst={draft.Document.blocks[0]?.type === "hero"} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onDelete={() => change({...draft, Document: {blocks: draft.Document.blocks.filter((_, position) => position !== index)}})} />)}</div>
+                {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !draft.Document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && !isNew && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setError("");}}><RotateCcw size={16} /> Скасувати</button>}{!isNew && canManage && <button className="ib-btn event-content-editor__delete" type="button" disabled={saving} onClick={() => void remove()}><Trash2 size={16} /> Видалити</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div></div>
             </div>

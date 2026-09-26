@@ -3,6 +3,7 @@
 import {useEffect, useRef, useState} from "react";
 import {Monitor, Moon, Sun} from "lucide-react";
 import {readThemeChoice, setThemeChoice, watchSystemTheme, type ThemeChoice} from "@/utils/theme";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const choices: {value: ThemeChoice; label: string; icon: typeof Sun}[] = [
     {value: "light", label: "Світла тема", icon: Sun},
@@ -28,9 +29,9 @@ export function ThemeToggle() {
     };
 
     return <div className="event-theme-toggle" role="radiogroup" aria-label="Тема оформлення">
-        {choices.map(({value, label, icon: Icon}) => <button key={value} type="button" role="radio"
-            aria-checked={choice === value} aria-label={label} title={label} onClick={() => select(value)}>
+        {choices.map(({value, label, icon: Icon}) => <EventTooltip key={value} content={label}>{id => <button type="button" role="radio"
+            aria-checked={choice === value} aria-label={label} aria-describedby={id} onClick={() => select(value)}>
             <Icon size={16} aria-hidden="true" />
-        </button>)}
+        </button>}</EventTooltip>)}
     </div>;
 }
