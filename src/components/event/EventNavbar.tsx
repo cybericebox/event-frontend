@@ -4,7 +4,7 @@ import {useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, LogOut, Menu, Network, Settings2, UserRound, Users, X} from "lucide-react";
+import {ChevronDown, LogOut, Menu, Network, UserRound, Users, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {signOut} from "@/api/authAPI";
@@ -22,7 +22,6 @@ type Props = {
     hasTeam?: boolean;
     useVPN?: boolean;
     canViewResults?: boolean;
-    management?: boolean;
 };
 
 function identityHref(path: string, event: PublicEventInfo) {
@@ -71,7 +70,19 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
     </Popover>;
 }
 
-export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, canViewResults = false, management = false}: Props) {
+export function EventHeaderActions({event, authenticated, approved = false, hasTeam = false, useVPN = false}: Omit<Props, "canViewResults">) {
+    return <>
+        <ThemeToggle />
+        {authenticated && <>
+            <span className="event-header-divider" aria-hidden="true" />
+            <NotificationsPopover />
+            <AccountMenu event={event} approved={approved} hasTeam={hasTeam} useVPN={useVPN} />
+        </>}
+        {!authenticated && <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>Увійти</a>}
+    </>;
+}
+
+export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, canViewResults = false}: Props) {
     const path = usePathname();
     const [open, setOpen] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
@@ -135,16 +146,14 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
                 <button className="ib-navbar__more-btn event-navbar__more-measure" type="button" ref={measureMoreRef} tabIndex={-1} aria-hidden="true">Ще <ChevronDown className="ib-icon" /></button>
             </nav>
             <div className="ib-navbar__actions">
-                {authenticated && (management ? <Link className="ib-btn ib-btn--sm event-manage-entry" href="/manage" aria-current={path.startsWith("/manage") ? "page" : undefined}><Settings2 size={16} aria-hidden="true" />Адміністрування</Link> : <ManagerEntry eventID={event.EventID} variant="nav" />)}
-                <ThemeToggle />
-                {authenticated && <NotificationsPopover />}
-                {authenticated ? <AccountMenu event={event} approved={approved} hasTeam={hasTeam} useVPN={useVPN} /> : <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>Увійти</a>}
+                {authenticated && <ManagerEntry eventID={event.EventID} variant="nav" />}
+                <EventHeaderActions event={event} authenticated={authenticated} approved={approved} hasTeam={hasTeam} useVPN={useVPN} />
                 <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? "Закрити меню" : "Відкрити меню"} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>
             </div>
         </div>
         <nav className="ib-navbar__panel" id="event-menu" aria-label="Мобільне меню">
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
-            {authenticated && (management ? <Link href="/manage" onClick={() => setOpen(false)}>Адміністрування</Link> : <ManagerEntry eventID={event.EventID} variant="panel" />)}
+            {authenticated && <ManagerEntry eventID={event.EventID} variant="panel" />}
         </nav>
     </header>;
 }

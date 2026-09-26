@@ -4,12 +4,12 @@ import {createContext, useContext, useState, type ReactNode} from "react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useQuery} from "@tanstack/react-query";
-import {ArrowLeft, CalendarDays, ExternalLink, FileText, LayoutDashboard, Menu, Plus, Settings2, X} from "lucide-react";
+import {ArrowLeft, CalendarDays, FileText, LayoutDashboard, Menu, Plus, Settings2, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
 import {EventBrandLogo} from "../EventBrandLogo";
 import {EventLoading} from "../EventLoading";
-import {EventNavbar} from "../EventNavbar";
+import {EventHeaderActions} from "../EventNavbar";
 
 function signInHref(event: PublicEventInfo): string {
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
@@ -53,13 +53,11 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
     }
 
     return <div className="event-manage-frame">
-        <EventNavbar event={event} authenticated management />
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <div className="ib-admin-shell__layout">
             <aside className="ib-admin-side ib-mass" aria-label="Керування подією">
                 <div className="ib-admin-side__head">
-                    <EventBrandLogo event={event} className="ib-admin-side__crest" />
-                    <div className="ib-admin-side__title"><b>{event.Name}</b><small>Керування подією</small></div>
+                    <Link href="/" className="event-manage-brand" aria-label="На сайт події"><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>Керування подією</small></div></Link>
                     <button className="ib-admin-side__close" type="button" aria-label="Закрити меню" onClick={() => setDrawerOpen(false)}><X size={18} /></button>
                 </div>
                 <nav className="ib-admin-side__nav" aria-label="Розділи керування">
@@ -77,8 +75,8 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
             <div className="ib-admin-shell__main">
                 <header className="ib-topbar">
                     <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label="Відкрити меню" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>
-                    <ol className="ib-topbar__crumbs"><li><Link href="/manage">Керування</Link></li><li aria-current="page">{pathname === "/manage" ? "Огляд і підготовка" : pathname === "/manage/schedule" ? "Розклад" : pathname === "/manage/content/landing" ? "Головна сторінка" : pathname.startsWith("/manage/content/pages/") ? "Сторінки" : "Налаштування"}</li></ol>
-                    <div className="ib-topbar__actions"><span className="event-manage-mode">{access.data.CanManage ? "Редагування" : "Лише перегляд"}</span><Link className="ib-topbar__icon-btn" href="/" aria-label="Відкрити сайт події"><ExternalLink size={18} /></Link></div>
+                    <ol className="ib-topbar__crumbs"><li aria-current="page">{pathname === "/manage" ? "Огляд і підготовка" : pathname === "/manage/schedule" ? "Розклад" : pathname === "/manage/content/landing" ? "Головна сторінка" : pathname.startsWith("/manage/content/pages/") ? "Сторінки" : "Налаштування"}</li></ol>
+                    <div className="ib-topbar__actions">{!access.data.CanManage && <span className="event-manage-mode">Лише перегляд</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
                 <main className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
             </div>

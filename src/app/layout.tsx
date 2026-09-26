@@ -88,6 +88,8 @@ export default async function RootLayout({
             {/* The development edge caches Next's stable CSS chunk URL; this versioned asset keeps inbox styles current. */}
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS is required behind the development edge cache. */}
             <link rel="stylesheet" href="/event-inbox-v1.css" />
+            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
+            <link rel="stylesheet" href="/event-navbar-v2.css" />
         </head>
         <body className="event-root">
         <Providers>
