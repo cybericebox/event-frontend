@@ -209,6 +209,36 @@ export async function removeManageLogo(eventID: string): Promise<void> {
     });
     if (!response.ok) throw new ManageApiError(response.status);
 }
+
+export async function uploadManagePreviewPicture(eventID: string, file: File): Promise<string> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
+        mockConfig = {...mockConfig, PreviewPicture: URL.createObjectURL(file)};
+        return mockConfig.PreviewPicture;
+    }
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
+        method: "POST", credentials: "include", cache: "no-store", body,
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+    const envelope = z.object({Data: z.object({PreviewPicture: z.string()})}).parse(await response.json());
+    return envelope.Data.PreviewPicture;
+}
+
+export async function removeManagePreviewPicture(eventID: string): Promise<void> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
+        mockConfig = {...mockConfig, PreviewPicture: ""};
+        return;
+    }
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
+        method: "DELETE", credentials: "include", cache: "no-store",
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+}
 export const getManageLifecycle = (eventID: string) => request(eventID, "lifecycle", ManageLifecycleSchema);
 export const putManageLifecycle = (eventID: string, input: ManageLifecycleInput) => request(eventID, "lifecycle", ManageLifecycleSchema, "PUT", input);
 export const getManageContent = (eventID: string) => request(eventID, "content", ManageContentSchema);

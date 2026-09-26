@@ -5,7 +5,8 @@ import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, Check, Info} from "lucide-react";
 import Link from "next/link";
-import {getManageConfig, getManageLifecycle, getManageName, ManageApiError, putManageConfig, putManageName, putManageTheme, uploadManageLogo, removeManageLogo, type ManageConfig, type ManageConfigInput} from "@/api/manage";
+import Image from "next/image";
+import {getManageConfig, getManageLifecycle, getManageName, ManageApiError, putManageConfig, putManageName, putManageTheme, uploadManageLogo, removeManageLogo, uploadManagePreviewPicture, removeManagePreviewPicture, type ManageConfig, type ManageConfigInput} from "@/api/manage";
 import {deriveTheme} from "@/components/event/manage/deriveTheme";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventBrandLogo} from "@/components/event/EventBrandLogo";
@@ -13,7 +14,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
 
 type ConfigDraft = ManageConfigInput;
-type Section = "name" | "config" | "theme" | "logo";
+type Section = "name" | "config" | "theme" | "logo" | "preview";
 
 const registrationOptions = [{value: 0, label: "Закрита"}, {value: 1, label: "За схваленням"}, {value: 2, label: "Відкрита"}];
 const visibilityOptions = [{value: 0, label: "Приховано"}, {value: 1, label: "Учасникам"}, {value: 2, label: "Усім"}];
@@ -78,7 +79,6 @@ export default function ManageSettingsPage() {
     const configDirty = !!configQuery.data && !!configDraft && JSON.stringify(configDraft) !== JSON.stringify(asInput(configQuery.data));
     const themeDirty = !!configQuery.data && (brandDraft.toUpperCase() !== configQuery.data.Theme.Brand || accentDraft.toUpperCase() !== configQuery.data.Theme.Accent);
     const validTeamLimits = !!configDraft && configDraft.MaxTeamSize >= 1 && (!configDraft.MinTeamSize || configDraft.MinTeamSize <= configDraft.MaxTeamSize) && (!configDraft.MaxTeams || configDraft.MaxTeams >= 1);
-    const validPicture = !configDraft?.PreviewPicture || /^https:\/\/[^/]+/.test(configDraft.PreviewPicture);
     const previewStyle = previewTheme ? {
         "--ev-brand": previewTheme.Brand,
         "--ev-accent-light": previewTheme.AccentLight,
@@ -148,6 +148,28 @@ export default function ManageSettingsPage() {
         });
     }
 
+    function setPreviewPicture(picture: string) {
+        queryClient.setQueryData<ManageConfig>(["event-management-config", eventID], current => current ? {...current, PreviewPicture: picture} : current);
+        setConfigEdit(current => current?.eventID === eventID ? {eventID, value: {...current.value, PreviewPicture: picture}} : current);
+    }
+
+    async function uploadPreviewPicture(file: File | undefined) {
+        if (!file) return;
+        if (!(["image/png", "image/jpeg", "image/webp"].includes(file.type)) || file.size > 5 * 1024 * 1024) {
+            setError("Оберіть PNG, JPEG або WebP розміром до 5 МБ.");
+            setMessage("");
+            return;
+        }
+        await save("preview", async () => setPreviewPicture(await uploadManagePreviewPicture(eventID, file)));
+    }
+
+    async function resetPreviewPicture() {
+        await save("preview", async () => {
+            await removeManagePreviewPicture(eventID);
+            setPreviewPicture("");
+        });
+    }
+
     if (!eventID || nameQuery.isPending || configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} label="Завантажуємо налаштування події…" />;
     if (nameQuery.isError || configQuery.isError || lifecycleQuery.isError || !configDraft || !configQuery.data || !lifecycleQuery.data) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити налаштування</h1><p>Перевірте з’єднання і повторіть запит.</p><button className="ib-btn" onClick={() => { void nameQuery.refetch(); void configQuery.refetch(); void lifecycleQuery.refetch(); }}>Повторити</button></div>;
     const participationLocked = lifecycleQuery.data.Configured && lifecycleQuery.data.Status !== "not_published";
@@ -179,6 +201,19 @@ export default function ManageSettingsPage() {
                     <small>PNG, JPEG або WebP до 2 МБ.</small>
                 </section>
 
+                <section className="event-manage-section" aria-labelledby="event-preview-title">
+                    <div className="event-manage-section__head"><div><h2 id="event-preview-title">Зображення прев’ю</h2><p>Використовується в картці події та під час поширення посилання.</p></div></div>
+                    {configDraft.PreviewPicture ? <div className="event-manage-picture-preview"><Image src={configDraft.PreviewPicture} alt="Поточне зображення прев’ю події" width={560} height={280} unoptimized /></div> : <div className="event-manage-picture-empty">Зображення ще не додано</div>}
+                    <div className="event-manage-section__actions event-manage-logo-actions">
+                        <label className={`ib-btn${!canManage || saving !== null ? " is-disabled" : ""}`}>
+                            Завантажити зображення
+                            <input className="event-manage-visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" disabled={!canManage || saving !== null} onChange={change => {void uploadPreviewPicture(change.target.files?.[0]); change.target.value = "";}} />
+                        </label>
+                        <button className="ib-btn" type="button" disabled={!canManage || !configDraft.PreviewPicture || saving !== null} onClick={() => void resetPreviewPicture()}>Прибрати зображення</button>
+                    </div>
+                    <small>PNG, JPEG або WebP до 5 МБ.</small>
+                </section>
+
                 <form className="event-manage-section" onSubmit={saveConfig}>
                     <div className="event-manage-section__head"><div><h2>Участь і видимість</h2><p>Визначте спосіб участі та те, що бачать відвідувачі.</p></div></div>
                     <div className="event-manage-fields-two">
@@ -188,14 +223,13 @@ export default function ManageSettingsPage() {
                         <div className="event-manage-field"><span>Список учасників <span aria-label="Обов’язкове поле">*</span></span><EventSelect ariaLabel="Видимість учасників" value={String(configDraft.ParticipantsVisibility)} options={visibilityOptions.map(option => ({value: String(option.value), label: option.label}))} onValueChange={value => setConfigDraft({...configDraft, ParticipantsVisibility: Number(value) as 0 | 1 | 2})} disabled={!canManage || saving !== null} /></div>
                     </div>
                     <label className="event-manage-field"><span>Короткий опис</span><textarea className="event-manage-input" value={configDraft.PreviewDescription} onChange={event => setConfigDraft({...configDraft, PreviewDescription: event.target.value})} maxLength={1000} rows={3} disabled={!canManage || saving !== null} /><small>Для прев’ю та списку подій. Повний вміст головної налаштовується окремо.</small></label>
-                    <label className="event-manage-field"><span>Посилання на зображення прев’ю</span><input className="event-manage-input" type="url" value={configDraft.PreviewPicture} onChange={event => setConfigDraft({...configDraft, PreviewPicture: event.target.value})} placeholder="https://…" disabled={!canManage || saving !== null} /><small>Лише захищене посилання HTTPS.</small></label>
                     {configDraft.Participation === 1 && <div className="event-manage-fields-three">
                         <label className="event-manage-field"><span>Максимум у команді</span><input className="event-manage-input" type="number" min={1} value={configDraft.MaxTeamSize} onChange={event => setConfigDraft({...configDraft, MaxTeamSize: Number(event.target.value)})} disabled={!canManage || participationLocked || saving !== null} /></label>
                         <label className="event-manage-field"><span>Мінімум у команді</span><input className="event-manage-input" type="number" min={1} max={configDraft.MaxTeamSize} value={configDraft.MinTeamSize ?? ""} onChange={event => setConfigDraft({...configDraft, MinTeamSize: numberOrNull(event.target.value)})} placeholder="Без обмеження" disabled={!canManage || participationLocked || saving !== null} /></label>
                         <label className="event-manage-field"><span>Кількість команд</span><input className="event-manage-input" type="number" min={1} value={configDraft.MaxTeams ?? ""} onChange={event => setConfigDraft({...configDraft, MaxTeams: numberOrNull(event.target.value)})} placeholder="Без обмеження" disabled={!canManage || saving !== null} /></label>
                     </div>}
                     <label className="event-manage-field"><span>Динамічні лабораторії</span><span className="event-manage-check"><input type="checkbox" checked={configDraft.DynamicLabsPlanned} onChange={event => setConfigDraft({...configDraft, DynamicLabsPlanned: event.target.checked})} disabled={!canManage || saving !== null} /><span>Плануються динамічні лабораторії</span></span><small>Для лабораторій буде підготовлено VPN та інтернет-шлюз. Учасники з командою зможуть перевірити VPN до старту; завдання можна додати пізніше.</small></label>
-                    <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !configDirty || !validTeamLimits || !validPicture || saving !== null}>{saving === "config" ? "Зберігаємо…" : "Зберегти параметри"}</button></div>
+                    <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !configDirty || !validTeamLimits || saving !== null}>{saving === "config" ? "Зберігаємо…" : "Зберегти параметри"}</button></div>
                 </form>
 
                 <form className="event-manage-section" onSubmit={saveTheme}>
