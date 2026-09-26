@@ -24,6 +24,7 @@ export const ContentBlockSchema = z.object({
     variant: z.string().optional(),
     size: z.string().optional(),
     line: z.boolean().optional(),
+    openItem: z.number().int().optional(),
     variables: z.array(ContentVariableSchema).optional(),
     visibility: z.array(ContentVisibilitySchema).optional(),
 });

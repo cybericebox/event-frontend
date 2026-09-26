@@ -13,6 +13,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if ((block.type === "section" || block.type === "text") && !text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
         if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
         if (["facts", "timeline", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
+        if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
         if (block.type === "cta" && (!block.title?.trim() || !block.action?.label.trim() || !block.action?.href.trim())) return `Блок ${index + 1}: додайте заголовок і кнопку.`;
         if (block.type === "cta" && block.action && !/^(\/(?!\/)|#|https:\/\/)/.test(block.action.href)) return `Блок ${index + 1}: посилання має бути внутрішнім або HTTPS.`;
