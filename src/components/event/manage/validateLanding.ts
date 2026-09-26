@@ -1,9 +1,10 @@
 import type {ContentDocument} from "@/types/eventContent";
-import {contentVariableByName, visibilityOperators} from "@/components/event/content/variableCatalog";
+import {visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 
 const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
 
-export function validateLanding(document: ContentDocument): string | null {
+export function validateLanding(document: ContentDocument, catalog: ContentVariableDefinition[]): string | null {
+    const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const ids = new Set<string>();
     for (const [index, block] of document.blocks.entries()) {
         if (!block.id.trim() || ids.has(block.id)) return `Блок ${index + 1}: некоректний або повторний ідентифікатор.`;

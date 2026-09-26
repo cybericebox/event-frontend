@@ -2,6 +2,7 @@ import {z} from "zod";
 import {deriveTheme} from "@/components/event/manage/deriveTheme";
 import {EventThemeSchema} from "@/types/eventTheme";
 import {ContentDocumentSchema, ContentValueSchema, type ContentDocument} from "@/types/eventContent";
+import {ContentVariableCatalogSchema} from "@/components/event/content/variableCatalog";
 
 const themeSchema = EventThemeSchema;
 const optionalLimit = z.number().int().positive().nullable();
@@ -122,6 +123,13 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
             return schema.parse(mockLifecycle);
         }
         if (path === "content") return schema.parse(mockContent);
+        if (path === "content/variables") return schema.parse([
+            {name: "event.name", label: "Назва події", format: "text", audience: 0},
+            {name: "event.startAt", label: "Час початку", format: "date-time", audience: 0},
+            {name: "event.isStarted", label: "Розпочато", format: "boolean", audience: 0},
+            {name: "event.approvedTeamCount", label: "Схвалені команди", format: "number", audience: 0},
+            {name: "event.publishAt", label: "Час публікації", format: "date-time", audience: 2},
+        ]);
         if (path.startsWith("pages/")) return schema.parse({
             Slug: decodeURIComponent(path.slice(6)), Title: "Питання та відповіді",
             Document: {blocks: [{id: "sample", type: "text", markdown: "Вміст цієї сторінки налаштовується організаторами події."}]},
@@ -150,6 +158,7 @@ export const putManageTheme = (eventID: string, theme: ManageThemeInput) => requ
 export const getManageLifecycle = (eventID: string) => request(eventID, "lifecycle", ManageLifecycleSchema);
 export const putManageLifecycle = (eventID: string, input: ManageLifecycleInput) => request(eventID, "lifecycle", ManageLifecycleSchema, "PUT", input);
 export const getManageContent = (eventID: string) => request(eventID, "content", ManageContentSchema);
+export const getManageContentVariables = (eventID: string) => request(eventID, "content/variables", ContentVariableCatalogSchema);
 export const getManagePage = (eventID: string, slug: string) => request(eventID, `pages/${encodeURIComponent(slug)}`, ManagePageSchema);
 
 export async function putManageLanding(eventID: string, document: ContentDocument): Promise<void> {

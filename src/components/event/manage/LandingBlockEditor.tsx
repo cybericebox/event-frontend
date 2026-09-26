@@ -3,7 +3,7 @@
 import {useRef, useState, type ChangeEvent, type Ref} from "react";
 import {ArrowDown, ArrowUp, Braces, Plus, Trash2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
-import {contentVariableByName, contentVariableCatalog, initialVisibilityValue, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
+import {initialVisibilityValue, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 
 function localDateTime(value: ContentValue): string {
     if (typeof value !== "string" || !value || Number.isNaN(Date.parse(value))) return "";
@@ -22,11 +22,12 @@ function withBinding(block: ContentBlock, variable: ContentVariableDefinition): 
     return {...block, variables: [...(block.variables ?? []), {name: variable.name, format: variable.format}]};
 }
 
-export function LandingBlockEditor({block, index, count, values, canEdit, onUpdate, onMove, onDelete}: {
+export function LandingBlockEditor({block, index, count, values, catalog, canEdit, onUpdate, onMove, onDelete}: {
     block: ContentBlock;
     index: number;
     count: number;
     values: Record<string, ContentValue>;
+    catalog: ContentVariableDefinition[];
     canEdit: boolean;
     onUpdate: (value: ContentBlock) => void;
     onMove: (direction: -1 | 1) => void;
@@ -37,9 +38,10 @@ export function LandingBlockEditor({block, index, count, values, canEdit, onUpda
     const [rulesOpen, setRulesOpen] = useState(!!block.visibility?.length);
     const textRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
     const selection = useRef({start: 0, end: 0});
+    const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const field = block.type === "section" ? "label" : "markdown";
     const text = block[field] ?? "";
-    const filteredVariables = contentVariableCatalog.filter(variable => `${variable.label} ${variable.name}`.toLocaleLowerCase("uk").includes(variableSearch.toLocaleLowerCase("uk")));
+    const filteredVariables = catalog.filter(variable => `${variable.label} ${variable.name}`.toLocaleLowerCase("uk").includes(variableSearch.toLocaleLowerCase("uk")));
 
     function rememberSelection() {
         const input = textRef.current;
@@ -70,7 +72,8 @@ export function LandingBlockEditor({block, index, count, values, canEdit, onUpda
     }
 
     function addRule() {
-        const variable = contentVariableByName.get("event.isStarted")!;
+        const variable = contentVariableByName.get("event.isStarted");
+        if (!variable) return;
         const nextBlock = withBinding(block, variable);
         onUpdate({...nextBlock, visibility: [...(nextBlock.visibility ?? []), {variable: variable.name, operator: "equals", value: true}]});
         setRulesOpen(true);
@@ -112,7 +115,7 @@ export function LandingBlockEditor({block, index, count, values, canEdit, onUpda
                         <select className="event-manage-input" aria-label={`Змінна умови ${ruleIndex + 1}`} value={rule.variable} disabled={!canEdit} onChange={event => {
                             const nextVariable = contentVariableByName.get(event.target.value);
                             if (nextVariable) setRule(ruleIndex, {variable: nextVariable.name, operator: visibilityOperators(nextVariable.format)[0].value, value: initialVisibilityValue(nextVariable.format)});
-                        }}>{!definition && <option value={rule.variable}>{rule.variable}</option>}{contentVariableCatalog.map(variable => <option key={variable.name} value={variable.name}>{variable.label}</option>)}</select>
+                        }}>{!definition && <option value={rule.variable}>{rule.variable}</option>}{catalog.map(variable => <option key={variable.name} value={variable.name}>{variable.label}</option>)}</select>
                         <select className="event-manage-input" aria-label={`Порівняння умови ${ruleIndex + 1}`} value={rule.operator} disabled={!canEdit} onChange={event => setRule(ruleIndex, {...rule, operator: event.target.value})}>{!operators.some(option => option.value === rule.operator) && <option value={rule.operator}>{rule.operator}</option>}{operators.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
                         {format === "boolean" ? <select className="event-manage-input" aria-label={`Значення умови ${ruleIndex + 1}`} value={rule.value === true ? "true" : "false"} disabled={!canEdit} onChange={event => setRule(ruleIndex, {...rule, value: event.target.value === "true"})}><option value="true">Так</option><option value="false">Ні</option></select>
                             : <input className="event-manage-input" aria-label={`Значення умови ${ruleIndex + 1}`} type={format === "number" ? "number" : format === "date-time" ? "datetime-local" : "text"} value={format === "date-time" ? localDateTime(rule.value) : String(rule.value ?? "")} disabled={!canEdit} onChange={(event: ChangeEvent<HTMLInputElement>) => setRule(ruleIndex, {...rule, value: format === "number" ? Number(event.target.value) : format === "date-time" ? event.target.value ? new Date(event.target.value).toISOString() : "" : event.target.value})} />}
