@@ -3,7 +3,7 @@
 import {useState} from "react";
 import Link from "next/link";
 import {
-    ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown, ClipboardCheck, Eye,
+    ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown, ClipboardCheck,
     ClipboardList, FileCheck2, FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
     ListChecks, Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
@@ -17,16 +17,13 @@ import "./managerSidebar.css";
 type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean};
 type Group = {id: string; label: string; items: Item[]};
 
+// Пауза: повернути до навігації, коли з'явиться механізм призупинення події.
 const groups: Group[] = [
     {id: "event", label: "Захід", items: [
         {href: "/manage/settings", label: "Загальне", icon: Settings2},
         {href: "/manage/appearance", label: "Вигляд", icon: Palette},
         {href: "/manage/participation-settings", label: "Формат участі", icon: UsersRound},
-    ]},
-    {id: "access", label: "Доступ", items: [
-        {href: "/manage/visibility", label: "Видимість", icon: Eye},
         {href: "/manage/schedule", label: "Публікація і час", icon: CalendarDays},
-        // Пауза: додати окремий пункт, коли з'явиться механізм призупинення події.
     ]},
     {id: "pages", label: "Сторінки", items: [
         {href: "/manage/content/landing", label: "Головна сторінка", icon: FileText},
@@ -40,12 +37,14 @@ const groups: Group[] = [
         {href: "/manage/attempts", label: "Правила спроб", icon: ListChecks},
     ]},
     {id: "participation", label: "Участь", items: [
+        {href: "/manage/registration", label: "Реєстрація", icon: UserRound},
         {href: "/manage/participation-rules", label: "Правила участі", icon: ListChecks},
         {href: "/manage/applications", label: "Заявки", icon: ClipboardCheck},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
     ]},
     {id: "results", label: "Результати", items: [
+        {href: "/manage/results-settings", label: "Налаштування результатів", icon: SlidersHorizontal},
         {href: "/manage/results", label: "Таблиця результатів", icon: Trophy},
         {href: "/manage/submissions", label: "Надсилання", icon: Send},
         {href: "/manage/solves", label: "Розв’язання", icon: FileCheck2},

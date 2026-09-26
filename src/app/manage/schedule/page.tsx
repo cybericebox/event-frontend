@@ -12,7 +12,6 @@ import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 
 type ScheduleDraft = {
-    JoinPolicy: 0 | 1;
     PublishAt: string;
     StartAt: string;
     FinishAt: string;
@@ -35,7 +34,6 @@ function localDateTime(iso: string | null): string {
 
 function toDraft(value: ManageLifecycle): ScheduleDraft {
     return {
-        JoinPolicy: value.JoinPolicy,
         PublishAt: localDateTime(value.PublishAt),
         StartAt: localDateTime(value.StartAt),
         FinishAt: localDateTime(value.FinishAt),
@@ -89,7 +87,7 @@ export default function ManageSchedulePage() {
         setSaving(true);
         try {
             const updated = await putManageLifecycle(eventID, {
-                JoinPolicy: draft.JoinPolicy,
+                JoinPolicy: lifecycle.data!.JoinPolicy,
                 PublishAt: new Date(draft.PublishAt).toISOString(),
                 StartAt: new Date(draft.StartAt).toISOString(),
                 FinishAt: draft.ScheduledEnd ? new Date(draft.FinishAt).toISOString() : null,
@@ -125,12 +123,6 @@ export default function ManageSchedulePage() {
                 <ManageDateField id="finish-at" title="Завершення" help={"Після цього часу відповіді на завдання більше не прийматимуться.\n\nДата потрібна, якщо заплановане завершення увімкнено."} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
                 <ManageDateField id="withdraw-at" title="Закриття доступу" help={"Після цього часу сайт події перестане бути публічним.\n\nЗакриття має бути пізніше завершення."} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
             </div>}
-            <div className="event-manage-section__head"><h2>Приєднання</h2></div>
-            <ManageFieldLabel title="Період приєднання" help={"Визначає, до якого часу можна приєднатися до події або змінити команду.\n\nСпосіб реєстрації налаштовується на сторінці «Видимість»."} required />
-            <div className="event-manage-choice-group" role="radiogroup" aria-label="Період приєднання">
-                <label><input type="radio" name="join-policy" checked={draft.JoinPolicy === 0} onChange={() => setDraft({...draft, JoinPolicy: 0})} disabled={!canManage || saving} /><span><strong>До початку</strong><small>Приєднання закриється на старті.</small></span></label>
-                <label><input type="radio" name="join-policy" checked={draft.JoinPolicy === 1} onChange={() => setDraft({...draft, JoinPolicy: 1})} disabled={!canManage || saving} /><span><strong>Протягом події</strong><small>Приєднатися можна й після старту.</small></span></label>
-            </div>
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)}>{saving ? "Зберігаємо…" : "Зберегти розклад"}</button></div>
         </form>
