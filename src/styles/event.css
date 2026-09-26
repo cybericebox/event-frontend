@@ -18,6 +18,41 @@ body.event-root main{overflow-x:visible}
 .event-navbar__icon,.event-account__trigger{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:0;border-radius:var(--ib-r);background:transparent;color:var(--ib-dim);cursor:pointer}
 .event-navbar__icon:hover,.event-account__trigger:hover{background:var(--ib-soft);color:var(--ib-ink)}
 .event-navbar__icon:disabled{opacity:.55;cursor:default}
+.event-notifications__trigger{position:relative;flex:none}
+.event-notifications__count{position:absolute;top:-3px;right:-5px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 3px;border-radius:var(--ib-r-pill);background:var(--ib-action);color:var(--ib-on-action);font-size:10px;font-weight:var(--ib-w-semibold);line-height:1}
+.event-notifications__panel{z-index:80;display:flex;flex-direction:column;width:min(510px,calc(100vw - 24px));max-height:min(610px,calc(100dvh - 70px));overflow:hidden;padding:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink);box-shadow:var(--ib-shadow-overlay)}
+.event-notifications__head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);min-height:52px;padding:var(--ib-2) var(--ib-4);border-bottom:1px solid var(--ib-line)}
+.event-notifications__head>div{display:flex;align-items:center;gap:var(--ib-2);min-width:0}
+.event-notifications__head strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14)}
+.event-notifications__head button,.event-notifications__detail a,.event-notification-popin button:not(.event-notification-popin__close){border:0;background:transparent;color:var(--ib-action);font:var(--ib-w-medium) var(--ib-fs-12)/1.2 var(--ib-font);cursor:pointer}
+.event-notifications__head button:hover,.event-notifications__detail a:hover,.event-notification-popin button:hover{text-decoration:underline}
+.event-notifications__head .event-notifications__icon-btn{display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:var(--ib-r);color:var(--ib-dim)}
+.event-notifications__head .event-notifications__icon-btn:hover{background:var(--ib-soft);color:var(--ib-ink);text-decoration:none}
+.event-notifications__trigger:focus-visible,.event-notifications__head button:focus-visible,.event-notifications__list button:focus-visible,.event-notification-popin button:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.event-notifications__scroll,.event-notifications__detail{min-height:0;overflow-y:auto}
+.event-notifications__list{margin:0;padding:0;list-style:none}
+.event-notifications__list li+li{border-top:1px solid var(--ib-line)}
+.event-notifications__list button{display:grid;gap:var(--ib-1);width:100%;padding:var(--ib-3) var(--ib-4);border:0;background:transparent;color:var(--ib-ink);font:var(--ib-w-regular) var(--ib-fs-13)/var(--ib-lh-ui) var(--ib-font);text-align:left;cursor:pointer}
+.event-notifications__list button:hover,.event-notifications__list button:focus-visible{background:var(--ib-soft)}
+.event-notifications__list button.is-unread{font-weight:var(--ib-w-semibold)}
+.event-notifications__list button>span{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3)}
+.event-notifications__list i{width:8px;height:8px;flex:none;border-radius:50%;background:var(--ib-action)}
+.event-notifications__list time,.event-notifications__detail time{color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-regular)}
+.event-notifications__state{display:grid;place-items:center;gap:var(--ib-2);min-height:125px;margin:0;padding:var(--ib-5);color:var(--ib-dim);font-size:var(--ib-fs-13);text-align:center}
+.event-notifications__error{margin:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-12)}
+.event-notifications__detail{display:grid;align-content:start;gap:var(--ib-4);padding:var(--ib-5);font-size:var(--ib-fs-14);overflow-wrap:anywhere}
+.event-notifications__detail a{justify-self:start;font-size:var(--ib-fs-14)}
+.event-notifications__popins{position:fixed;top:64px;right:16px;z-index:90;display:grid;gap:var(--ib-3);max-height:calc(100dvh - 80px);overflow-y:auto}
+.event-notification-popin{position:relative;display:grid;grid-template-columns:20px minmax(0,1fr);gap:var(--ib-3);width:min(360px,calc(100vw - 32px));padding:var(--ib-4) var(--ib-8) var(--ib-5) var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink);box-shadow:var(--ib-shadow-overlay)}
+.event-notification-popin strong{font-size:var(--ib-fs-14)}
+.event-notification-popin p{margin:var(--ib-1) 0 0;color:var(--ib-dim);font-size:var(--ib-fs-13);overflow-wrap:anywhere}
+.event-notification-popin button:not(.event-notification-popin__close){margin-top:var(--ib-3);padding:0;font-size:var(--ib-fs-13)}
+.event-notification-popin__close{position:absolute;top:var(--ib-2);right:var(--ib-2);display:grid;place-items:center;width:25px;height:25px;padding:0;border:0;border-radius:var(--ib-r);background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-notification-popin__close:hover{background:var(--ib-soft);color:var(--ib-ink)}
+.event-notification-popin__track{position:absolute;right:var(--ib-4);bottom:var(--ib-2);left:var(--ib-4);height:3px;overflow:hidden;border-radius:var(--ib-r-pill);background:var(--ib-soft)}
+.event-notification-popin__track span{display:block;width:100%;height:100%;transform-origin:left;animation:event-notification-countdown linear forwards}
+@keyframes event-notification-countdown{to{transform:scaleX(0)}}
+@media(prefers-reduced-motion:reduce){.event-notification-popin__track span{animation:none}}
 .event-account__trigger{border-radius:50%;background:var(--ib-soft);color:var(--ib-ink)}
 .event-account__avatar{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;overflow:hidden;background:var(--ib-brand);color:var(--ib-on-brand);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-account__avatar img{display:block;width:100%;height:100%;object-fit:cover}
