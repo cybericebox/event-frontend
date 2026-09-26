@@ -19,7 +19,7 @@ export function createPageBlock(type: PageBlockType, landing = false): ContentBl
         case "section": return {id, type, label: ""};
         case "text": return {id, type, markdown: ""};
         case "hero": return {id, type, by: "Подія CyberICEBox", title: "{{event.name}}", kicker: "", note: "", items: [], variant: landing ? "mass" : "plain", variables: [{name: "event.name", format: "text"}]};
-        case "facts": return {id, type, title: "", items: [{label: "", value: ""}]};
+        case "facts": return {id, type, title: "", variant: "strip", items: [{label: "", value: ""}]};
         case "timeline": return {id, type, title: "", items: [{label: "", value: ""}]};
         case "doc": return {id, type, title: "", tocTitle: "Зміст", items: [{label: "", value: ""}]};
         case "faq": return {id, type, title: "", items: [{label: "", value: ""}]};

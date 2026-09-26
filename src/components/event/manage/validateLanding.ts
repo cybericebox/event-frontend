@@ -16,6 +16,9 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
         if (block.type === "cta" && (!block.title?.trim() || !block.action?.label.trim() || !block.action?.href.trim())) return `Блок ${index + 1}: додайте заголовок і кнопку.`;
         if (block.type === "cta" && block.action && !/^(\/(?!\/)|#|https:\/\/)/.test(block.action.href)) return `Блок ${index + 1}: посилання має бути внутрішнім або HTTPS.`;
+        if (block.type === "cta" && block.variant && !["plain", "mass"].includes(block.variant)) return `Блок ${index + 1}: невідоме оформлення дії.`;
+        if (block.type === "cta" && block.secondaryAction && (!block.secondaryAction.label.trim() || !/^(\/(?!\/)|#|https:\/\/)/.test(block.secondaryAction.href))) return `Блок ${index + 1}: заповніть другу дію та її посилання.`;
+        if (block.type === "facts" && block.variant && !["strip", "rows"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка фактів.`;
         if (block.type === "hero") {
             if (index !== 0) return `Блок ${index + 1}: герой має бути першим блоком.`;
             if (!block.title?.trim()) return `Блок ${index + 1}: вкажіть назву героя.`;

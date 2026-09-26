@@ -165,6 +165,7 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
                 {inputField("by", "Рядок організатора", "Подія CyberICEBox")}
                 {inputField("kicker", "Надзаголовок", "Необов’язково")}
             </>}
+            {block.type === "facts" && <div className="event-manage-field"><FieldLabel label="Розкладка" help="Смуга показує великі значення; рядки зручні для коротких правил." /><EventSelect ariaLabel="Розкладка фактів" value={block.variant ?? "strip"} options={[{value: "strip", label: "Смуга"}, {value: "rows", label: "Рядки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {["hero", "facts", "timeline", "faq"].includes(block.type) && <>
                 {block.type !== "hero" && inputField("sub", "Пояснення", "Необов’язково")}
                 {(block.items ?? []).map((item, itemIndex) => <div className={`event-content-editor__item${block.type === "faq" ? " event-content-editor__item--faq" : ""}`} key={itemIndex}>
@@ -197,6 +198,8 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
             {block.type === "cta" && <>
                 {inputField("action:label", "Текст кнопки", "Перейти", false, true)}
                 <label className="event-manage-field"><FieldLabel label="Посилання кнопки" required help="Внутрішній шлях від / або повне посилання HTTPS." /><input className="event-manage-input" value={block.action?.href ?? ""} required disabled={!canEdit} onChange={event => onUpdate({...block, action: {...(block.action ?? {label: ""}), href: event.target.value}})} placeholder="/p/rules або https://…" /></label>
+                {inputField("secondaryAction:label", "Друга дія", "Необов’язково")}
+                <label className="event-manage-field"><FieldLabel label="Посилання другої дії" /><input className="event-manage-input" value={block.secondaryAction?.href ?? ""} disabled={!canEdit} onChange={event => {const secondaryAction = {...(block.secondaryAction ?? {label: ""}), href: event.target.value}; onUpdate({...block, secondaryAction: !secondaryAction.label && !secondaryAction.href ? undefined : secondaryAction});}} placeholder="/p/rules" /></label>
                 <div className="event-manage-field"><FieldLabel label="Оформлення" /><EventSelect value={block.variant ?? "plain"} ariaLabel="Оформлення блока" options={[{value: "plain", label: "Звичайне"}, {value: "mass", label: "Брендове"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
             </>}
             {block.type === "countdown" && <div className="event-manage-field"><FieldLabel label="Дата, до якої рахувати" required help="Відлік може використовувати будь-яку дозволену цій сторінці змінну дати." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата зворотного відліку" placeholder="Оберіть змінну дати" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {
