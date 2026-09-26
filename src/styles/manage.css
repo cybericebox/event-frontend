@@ -157,12 +157,11 @@
 .event-brand-current--preview{min-height:96px}
 .event-brand-current--preview>img{height:96px;max-height:96px}
 .event-brand-current--favicon>img{height:64px}
-.event-brand-current__actions{display:flex;align-items:center;gap:var(--ib-2);flex:none}
+.event-brand-current__actions{display:flex;align-items:center;gap:var(--ib-2);flex:none;opacity:0;transition:opacity var(--ib-dur-fast) var(--ib-ease)}
+.event-brand-current:hover .event-brand-current__actions,.event-brand-current:focus-within .event-brand-current__actions{opacity:1}
 .event-brand-change,.event-brand-remove{display:grid;place-items:center;width:40px;min-width:40px;height:40px;aspect-ratio:1;padding:0}
-.event-brand-remove{opacity:0;transition:opacity var(--ib-dur-fast) var(--ib-ease),background-color var(--ib-dur-fast) var(--ib-ease),border-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease)}
-.event-brand-current:hover .event-brand-remove,.event-brand-current:focus-within .event-brand-remove{opacity:1}
 .event-brand-remove:hover,.event-brand-remove:focus-visible{border-color:var(--ib-danger);background:var(--ib-danger-bg);color:var(--ib-danger)}
-@media(hover:none){.event-brand-remove{opacity:1}}
+@media(hover:none){.event-brand-current__actions{opacity:1}}
 .event-brand-field>small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-brand-field>small.event-brand-field__error{color:var(--ib-danger)}
 .event-brand-reset{justify-self:start;align-self:start}
