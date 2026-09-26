@@ -75,7 +75,7 @@ export default function ManageSchedulePage() {
         if (draft.ScheduledEnd) {
             if (finish === null || withdraw === null) return "Для завершення за розкладом вкажіть обидва часи.";
             if (finish <= start) return "Завершення має бути після початку.";
-            if (withdraw <= finish) return "Закриття доступу має бути після завершення.";
+            if (withdraw <= finish) return "Закриття має бути після завершення.";
         }
         return "";
     }, [draft]);
@@ -113,7 +113,7 @@ export default function ManageSchedulePage() {
         {config.data?.Participation === null && <div className="event-manage-notice" role="status"><Info size={18} />Спочатку виберіть <Link href="/manage/participation-settings">формат участі</Link>.</div>}
         {!lifecycle.data.Infrastructure.CanStart && <div className="event-manage-feedback event-manage-feedback--error" role="status">Інфраструктура поки не готова до старту{lifecycle.data.Infrastructure.Reason ? `: ${lifecycle.data.Infrastructure.Reason}` : "."} Перевірте її перед початком.</div>}
         <form className="event-manage-section" onSubmit={save}>
-            <div className="event-manage-section__head"><h2>Ключові дати</h2><p>Спочатку сайт стане доступним гостям, потім відкриються завдання. Завершення й закриття доступу можна запланувати окремо.</p></div>
+            <div className="event-manage-section__head"><h2>Ключові дати</h2><p>Спочатку сайт стане доступним гостям, потім відкриються завдання. Завершення й закриття можна запланувати окремо.</p></div>
             <div className="event-manage-fields-two">
                 <ManageDateField id="publish-at" title="Публікація" help={lifecycle.data.Status === "not_published" ? "У цей час гості побачать сайт події.\n\nПісля публікації дату змінити не можна." : "Сайт уже опубліковано.\n\nЧас першої публікації зафіксовано."} value={draft.PublishAt} onChange={value => setDraft({...draft, PublishAt: value})} disabled={!canManage || saving || lifecycle.data.Status !== "not_published"} required />
                 <ManageDateField id="start-at" title="Початок" help={"У цей час відкриється проходження завдань.\n\nПочаток не може бути раніше публікації."} value={draft.StartAt} onChange={value => setDraft({...draft, StartAt: value})} disabled={!canManage || saving} required />
@@ -121,7 +121,7 @@ export default function ManageSchedulePage() {
             <div className="event-manage-field"><ManageFieldLabel title="Завершення за розкладом" help={"Увімкніть, щоб встановити час завершення й закриття доступу.\n\nЯкщо вимкнено, подія триватиме до ручного завершення."} /><label className="event-manage-check"><input type="checkbox" checked={draft.ScheduledEnd} onChange={event => setDraft({...draft, ScheduledEnd: event.target.checked})} disabled={!canManage || saving} /><span><strong>Запланувати завершення</strong></span></label></div>
             {draft.ScheduledEnd && <div className="event-manage-fields-two">
                 <ManageDateField id="finish-at" title="Завершення" help={"Після цього часу відповіді на завдання більше не прийматимуться.\n\nДата потрібна, якщо заплановане завершення увімкнено."} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
-                <ManageDateField id="withdraw-at" title="Закриття доступу" help={"Після цього часу сайт події перестане бути публічним.\n\nЗакриття має бути пізніше завершення."} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
+                <ManageDateField id="withdraw-at" title="Закриття" help={"Після цього часу сайт події перестане бути публічним.\n\nЗакриття має бути пізніше завершення."} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
             </div>}
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)}>{saving ? "Зберігаємо…" : "Зберегти розклад"}</button></div>
