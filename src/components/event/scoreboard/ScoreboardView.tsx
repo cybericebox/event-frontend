@@ -5,7 +5,7 @@ import { useEvent } from "@/hooks/useEvent"
 import { useTeam } from "@/hooks/useTeam"
 import { ScoreboardVisibilityTypeEnum } from "@/types/event"
 import { CountdownTimer } from "@/components/Countdown"
-import { Spinner } from "@/components/ui/spinner"
+import { EventLoading } from "@/components/event/EventLoading"
 import { ScoreChart } from "./ScoreChart"
 import { ScoreTable } from "./ScoreTable"
 
@@ -26,15 +26,14 @@ function GateCard({ title, sub }: { title: string; sub?: string }) {
 export function ScoreboardView() {
   const { GetEventInfoResponse, GetEventInfoRequest } = useEvent().useGetEventInfo()
   const event = GetEventInfoResponse?.Data
-  const now = Date.now()
+  const [now, setNow] = useState(() => Date.now())
   const started = !!event && new Date(event.StartTime).getTime() <= now
   const hidden = event?.ScoreboardAvailability === ScoreboardVisibilityTypeEnum.Hidden
 
   // Re-render each second until the event starts so the gate auto-advances at StartTime.
-  const [, forceTick] = useState(0)
   useEffect(() => {
     if (started) return
-    const id = setInterval(() => forceTick((n) => n + 1), 1000)
+    const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [started])
 
@@ -48,11 +47,7 @@ export function ScoreboardView() {
 
   // 1. Event loading.
   if (GetEventInfoRequest.isLoading || !event)
-    return (
-      <Centered>
-        <Spinner size="md" className="text-primary" />
-      </Centered>
-    )
+    return <EventLoading label="Завантажуємо рейтинг…" />
   // 2. Hidden.
   if (hidden)
     return (
@@ -69,11 +64,7 @@ export function ScoreboardView() {
     )
   // 4. Score states.
   if (GetScoreRequest.isLoading)
-    return (
-      <Centered>
-        <Spinner size="md" className="text-primary" />
-      </Centered>
-    )
+    return <EventLoading label="Завантажуємо результати…" />
   if (GetScoreRequest.isError)
     return (
       <Centered>

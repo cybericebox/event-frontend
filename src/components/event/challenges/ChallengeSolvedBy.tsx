@@ -1,6 +1,6 @@
 "use client"
 import { useChallenge } from "@/hooks/useChallenge"
-import { Spinner } from "@/components/ui/spinner"
+import { EventLoading } from "@/components/event/EventLoading"
 
 // "Розв'язали" tab content: list of teams that solved this challenge, newest
 // data refetched by useChallengeSolvedBy on its own polling interval.
@@ -10,11 +10,7 @@ export function ChallengeSolvedBy({ challengeID }: { challengeID: string }) {
     const solutions = ChallengeSolvedByResponse?.Data ?? []
 
     if (ChallengeSolvedByRequest.isLoading)
-        return (
-            <div className="flex justify-center py-6">
-                <Spinner size="sm" className="text-primary" />
-            </div>
-        )
+        return <EventLoading label="Завантажуємо розв’язання…" />
     if (!solutions.length)
         return <p className="py-6 text-center text-sm text-muted-foreground">Ще ніхто не розв&apos;язав це завдання.</p>
 

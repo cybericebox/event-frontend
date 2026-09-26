@@ -6,6 +6,7 @@ import {useQuery} from "@tanstack/react-query";
 import {ArrowUpRight, Check, Copy, Download, Network} from "lucide-react";
 import {getVPNStatus, issueVPNConfig, VPNApiError} from "@/api/vpn";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
+import {EventLoading} from "@/components/event/EventLoading";
 
 export default function VPNPage() {
     const [issuing, setIssuing] = useState(false);
@@ -52,7 +53,7 @@ export default function VPNPage() {
     if (!access) return <div className="event-vpn-page">{intro}<div className="event-vpn-state" role="alert"><h2>Підтвердьте участь</h2><p>VPN доступний після підтвердження участі в події.</p><Link className="ib-btn" href="/">На головну</Link></div></div>;
     if (!access.participantInfo.UseVPN) return <div className="event-vpn-page">{intro}<div className="event-vpn-state"><h2>VPN не заплановано</h2><p>Для цієї події підключення до лабораторій зараз не потрібне.</p></div></div>;
     if (!access.ownTeam) return <div className="event-vpn-page">{intro}<div className="event-vpn-state"><h2>Спочатку приєднайтеся до команди</h2><p>Особиста VPN-конфігурація доступна після вступу до команди.</p><Link className="ib-btn ib-btn--primary" href="/team">Моя команда</Link></div></div>;
-    if (status.isPending) return <div className="event-vpn-page" role="status">Готуємо перевірочний шлюз…</div>;
+    if (status.isPending) return <EventLoading label="Готуємо перевірочний шлюз…" />;
     if (status.isError) {
         const preparing = status.error instanceof VPNApiError && status.error.status === 404;
         return <div className="event-vpn-page">{intro}<div className="event-vpn-state" role="status"><h2>{preparing ? "Група лабораторій готується" : "Не вдалося отримати адресу шлюзу"}</h2><p>{preparing ? "VPN-сервер ще запускається. Спробуйте повторити перевірку трохи пізніше." : "Перевірте з’єднання із сайтом і повторіть запит."}</p><button className="ib-btn" onClick={() => void status.refetch()}>Повторити</button></div></div>;

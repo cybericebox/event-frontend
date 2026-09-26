@@ -7,7 +7,7 @@ import { useTeam } from "@/hooks/useTeam"
 import { useChallenge } from "@/hooks/useChallenge"
 import { ParticipationTypeEnum } from "@/types/event"
 import { CountdownTimer } from "@/components/Countdown"
-import { Spinner } from "@/components/ui/spinner"
+import { EventLoading } from "@/components/event/EventLoading"
 import { Button } from "@/components/ui/button"
 import { ChallengeCategorySection } from "./ChallengeCategorySection"
 import { ChallengeModal } from "./ChallengeModal"
@@ -28,7 +28,7 @@ export function ChallengesBoard() {
 
     const { GetEventInfoResponse, GetEventInfoRequest } = useEvent().useGetEventInfo()
     const event = GetEventInfoResponse?.Data
-    const now = Date.now()
+    const [now, setNow] = useState(() => Date.now())
     const started = !!event && new Date(event.StartTime).getTime() <= now
     const finished = !!event && new Date(event.FinishTime).getTime() < now
     const needsTeam = event?.Participation === ParticipationTypeEnum.Team
@@ -37,12 +37,11 @@ export function ChallengesBoard() {
     // are computed once per render, so the board never re-renders when the countdown
     // reaches StartTime and CountdownTimer (no `show` prop) blanks to null at the CTF
     // start until a manual refresh. Tick once a second only while not yet started; the
-    // moment `started` flips true (recomputed from Date.now() above) the effect clears
+    // moment `started` flips true the effect clears
     // itself. Hooks must not be conditional, so this runs before any early return.
-    const [, forceTick] = useState(0)
     useEffect(() => {
         if (started) return
-        const id = setInterval(() => forceTick((n) => n + 1), 1000)
+        const id = setInterval(() => setNow(Date.now()), 1000)
         return () => clearInterval(id)
     }, [started])
 
@@ -56,11 +55,7 @@ export function ChallengesBoard() {
 
     // 1. Event loading.
     if (GetEventInfoRequest.isLoading || !event)
-        return (
-            <Centered>
-                <Spinner size="md" className="text-primary" />
-            </Centered>
-        )
+        return <EventLoading label="Завантажуємо завдання…" />
 
     // 2. Before start.
     if (!started)
@@ -73,11 +68,7 @@ export function ChallengesBoard() {
     // 3. Team required but no team (only for Team participation).
     if (needsTeam && !hasTeam) {
         if (GetTeamRequest.isLoading)
-            return (
-                <Centered>
-                    <Spinner size="md" className="text-primary" />
-                </Centered>
-            )
+            return <EventLoading label="Перевіряємо команду…" />
         return (
             <Centered>
                 <div className="rounded-lg border border-border bg-card p-8 text-center">
@@ -93,11 +84,7 @@ export function ChallengesBoard() {
 
     // 4. Board states.
     if (GetChallengesRequest.isLoading)
-        return (
-            <Centered>
-                <Spinner size="md" className="text-primary" />
-            </Centered>
-        )
+        return <EventLoading label="Завантажуємо завдання…" />
     if (GetChallengesRequest.isError)
         return (
             <Centered>
