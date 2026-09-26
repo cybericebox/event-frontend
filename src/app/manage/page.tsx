@@ -66,6 +66,7 @@ export default function ManageIndex() {
                     MaxTeamSize: participation === 1 ? maxSize : current.MaxTeamSize,
                     MinTeamSize: participation === 1 ? minSize : current.MinTeamSize,
                     MaxTeams: current.MaxTeams,
+                    UseVPN: current.UseVPN,
                 };
                 client.setQueryData(["event-management-config", eventID], await putManageConfig(eventID, input));
             }
