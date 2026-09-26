@@ -12,6 +12,9 @@ export function validateLanding(document: ContentDocument): string | null {
         if (!text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
         if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
+        for (const variable of block.variables ?? []) {
+            if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для головної сторінки.`;
+        }
         for (const [, variable] of text.matchAll(tokenPattern)) {
             if (!bindings.has(variable)) return `Блок ${index + 1}: змінну ${variable} потрібно додати через список.`;
         }

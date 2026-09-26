@@ -70,7 +70,7 @@ export function LandingBlockEditor({block, index, count, values, canEdit, onUpda
     }
 
     function addRule() {
-        const variable = contentVariableByName.get("event.isPublished")!;
+        const variable = contentVariableByName.get("event.isStarted")!;
         const nextBlock = withBinding(block, variable);
         onUpdate({...nextBlock, visibility: [...(nextBlock.visibility ?? []), {variable: variable.name, operator: "equals", value: true}]});
         setRulesOpen(true);
