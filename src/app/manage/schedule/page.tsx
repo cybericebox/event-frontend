@@ -7,6 +7,8 @@ import {CalendarDays, Info} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageLifecycle, type ManageLifecycle} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {ManageDateField} from "@/components/event/manage/ManageDateField";
+import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 
 type ScheduleDraft = {
@@ -115,18 +117,19 @@ export default function ManageSchedulePage() {
         <form className="event-manage-section" onSubmit={save}>
             <div className="event-manage-section__head"><h2>Ключові дати</h2><p>Спочатку сайт стане доступним гостям, потім відкриються завдання. Завершення й закриття доступу можна запланувати окремо.</p></div>
             <div className="event-manage-fields-two">
-                <label className="event-manage-field"><span>Публікація</span><input className="event-manage-input" type="datetime-local" value={draft.PublishAt} onChange={event => setDraft({...draft, PublishAt: event.target.value})} disabled={!canManage || saving || lifecycle.data.Status !== "not_published"} required /><small>{lifecycle.data.Status === "not_published" ? "Гості побачать сайт події." : "Після першої публікації цей час зафіксовано."}</small></label>
-                <label className="event-manage-field"><span>Початок</span><input className="event-manage-input" type="datetime-local" value={draft.StartAt} onChange={event => setDraft({...draft, StartAt: event.target.value})} disabled={!canManage || saving} required /><small>Відкриється проходження завдань.</small></label>
+                <ManageDateField id="publish-at" title="Публікація" help={lifecycle.data.Status === "not_published" ? "У цей час гості побачать сайт події.\n\nПісля публікації дату змінити не можна." : "Сайт уже опубліковано.\n\nЧас першої публікації зафіксовано."} value={draft.PublishAt} onChange={value => setDraft({...draft, PublishAt: value})} disabled={!canManage || saving || lifecycle.data.Status !== "not_published"} required />
+                <ManageDateField id="start-at" title="Початок" help={"У цей час відкриється проходження завдань.\n\nПочаток не може бути раніше публікації."} value={draft.StartAt} onChange={value => setDraft({...draft, StartAt: value})} disabled={!canManage || saving} required />
             </div>
-            <label className="event-manage-check"><input type="checkbox" checked={draft.ScheduledEnd} onChange={event => setDraft({...draft, ScheduledEnd: event.target.checked})} disabled={!canManage || saving} /><span><strong>Запланувати завершення</strong><small>Якщо вимкнено, подія триватиме до ручного завершення.</small></span></label>
+            <div className="event-manage-field"><ManageFieldLabel title="Завершення за розкладом" help={"Увімкніть, щоб встановити час завершення й закриття доступу.\n\nЯкщо вимкнено, подія триватиме до ручного завершення."} /><label className="event-manage-check"><input type="checkbox" checked={draft.ScheduledEnd} onChange={event => setDraft({...draft, ScheduledEnd: event.target.checked})} disabled={!canManage || saving} /><span><strong>Запланувати завершення</strong></span></label></div>
             <div className="event-manage-fields-two">
-                <label className="event-manage-field"><span>Завершення</span><input className="event-manage-input" type="datetime-local" value={draft.FinishAt} onChange={event => setDraft({...draft, FinishAt: event.target.value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} /><small>Проходження завдань закриється.</small></label>
-                <label className="event-manage-field"><span>Закриття доступу</span><input className="event-manage-input" type="datetime-local" value={draft.WithdrawAt} onChange={event => setDraft({...draft, WithdrawAt: event.target.value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} /><small>Сайт події перестане бути публічним.</small></label>
+                <ManageDateField id="finish-at" title="Завершення" help={"Після цього часу відповіді на завдання більше не прийматимуться.\n\nДата потрібна, якщо заплановане завершення увімкнено."} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
+                <ManageDateField id="withdraw-at" title="Закриття доступу" help={"Після цього часу сайт події перестане бути публічним.\n\nЗакриття має бути пізніше завершення."} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
             </div>
-            <div className="event-manage-section__head"><h2>Приєднання</h2><p>Спосіб реєстрації — відкрита, за схваленням або закрита — налаштовується в основних параметрах.</p></div>
+            <div className="event-manage-section__head"><h2>Приєднання</h2></div>
+            <ManageFieldLabel title="Період приєднання" help={"Визначає, до якого часу можна приєднатися до події або змінити команду.\n\n• До початку — приєднання закриється на старті.\n• Протягом події — буде доступне до завершення.\n\nСпосіб реєстрації налаштовується на сторінці «Видимість»."} required />
             <div className="event-manage-choice-group" role="radiogroup" aria-label="Період приєднання">
-                <label><input type="radio" name="join-policy" checked={draft.JoinPolicy === 0} onChange={() => setDraft({...draft, JoinPolicy: 0})} disabled={!canManage || saving} /><span><strong>До початку</strong><small>Реєстрація та зміна команди завершаться на старті.</small></span></label>
-                <label><input type="radio" name="join-policy" checked={draft.JoinPolicy === 1} onChange={() => setDraft({...draft, JoinPolicy: 1})} disabled={!canManage || saving} /><span><strong>Протягом події</strong><small>Приєднання буде доступне до завершення.</small></span></label>
+                <label><input type="radio" name="join-policy" checked={draft.JoinPolicy === 0} onChange={() => setDraft({...draft, JoinPolicy: 0})} disabled={!canManage || saving} /><span><strong>До початку</strong></span></label>
+                <label><input type="radio" name="join-policy" checked={draft.JoinPolicy === 1} onChange={() => setDraft({...draft, JoinPolicy: 1})} disabled={!canManage || saving} /><span><strong>Протягом події</strong></span></label>
             </div>
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)}>{saving ? "Зберігаємо…" : "Зберегти розклад"}</button></div>

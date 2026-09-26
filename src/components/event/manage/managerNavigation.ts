@@ -31,6 +31,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/settings") return "Загальне";
     if (pathname === "/manage/appearance") return "Вигляд";
     if (pathname === "/manage/participation-settings") return "Формат участі";
+    if (pathname === "/manage/participation-rules") return "Правила участі";
     if (pathname === "/manage/visibility") return "Видимість";
     if (pathname === "/manage/schedule") return "Публікація і час";
     if (pathname === "/manage/content/landing") return "Головна сторінка";

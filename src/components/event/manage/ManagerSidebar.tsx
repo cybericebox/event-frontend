@@ -40,6 +40,7 @@ const groups: Group[] = [
         {href: "/manage/attempts", label: "Правила спроб", icon: ListChecks},
     ]},
     {id: "participation", label: "Участь", items: [
+        {href: "/manage/participation-rules", label: "Правила участі", icon: ListChecks},
         {href: "/manage/applications", label: "Заявки", icon: ClipboardCheck},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
