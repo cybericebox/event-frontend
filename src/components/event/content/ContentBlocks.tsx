@@ -53,7 +53,7 @@ export function ContentBlocks({document, variables, title}: {
         compare(variables[rule.variable], rule.operator, rule.value)));
     return <div className="ib-blocks">
         {title && !blocks.some(block => block.type === "hero") && <section className="ib-block event-content-heading"><div className="ib-block__in"><h1 className="ib-block__title ib-block__title--page">{title}</h1></div></section>}
-        {blocks.map(block => {
+        {blocks.map((block, blockIndex) => {
             const declared = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
             const render = (value = "") => replaceVariables(value, variables, declared);
             const heading = block.title || block.sub ? <div className="ib-block__head">
@@ -90,6 +90,15 @@ export function ContentBlocks({document, variables, title}: {
             if (block.type === "text") return <section className="ib-block ib-block-text" key={block.id} id={block.id}>
                 <div className="ib-block__in"><div className="ib-block-prose">
                     <ReactMarkdown>{replaceVariables(block.markdown ?? "", variables, declared, true)}</ReactMarkdown>
+                </div></div>
+            </section>;
+            if (block.type === "doc") return <section className="ib-block ib-block-doc" key={block.id} id={block.id}>
+                <div className="ib-block__in">{heading}<div className="ib-block-doc__grid">
+                    <article className="ib-block-prose">{(block.items ?? []).map((item, index) => {
+                        const sectionID = `doc-${blockIndex}-${index}`;
+                        return <section key={sectionID} aria-labelledby={sectionID}><h3 id={sectionID}>{render(item.label)}</h3><ReactMarkdown>{replaceVariables(item.value ?? "", variables, declared, true)}</ReactMarkdown></section>;
+                    })}</article>
+                    <nav className="ib-toc" aria-label={render(block.tocTitle || "Зміст")}><p className="ib-toc__title">{render(block.tocTitle || "Зміст")}</p><ol className="ib-toc__list">{(block.items ?? []).map((item, index) => <li key={index}><a className="ib-toc__link" href={`#doc-${blockIndex}-${index}`}>{render(item.label)}</a></li>)}</ol></nav>
                 </div></div>
             </section>;
             if (block.type === "facts") return <section className="ib-block ib-block-facts" key={block.id} id={block.id}><div className="ib-block__in">{heading}<dl className="ib-block-facts__list">{(block.items ?? []).map((item, index) => <div className="ib-block-facts__item" key={index}><dt>{render(item.label)}</dt><dd>{render(item.value)}</dd></div>)}</dl></div></section>;

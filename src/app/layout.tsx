@@ -15,6 +15,7 @@ import "@/styles/select.css";
 import "@/styles/block-facts.css";
 import "@/styles/block-timeline.css";
 import "@/styles/block-faq.css";
+import "@/styles/block-doc.css";
 import "@/styles/block-cta.css";
 import "@/styles/block-countdown.css";
 import "@/styles/block-divider.css";

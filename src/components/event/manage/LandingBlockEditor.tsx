@@ -88,7 +88,7 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
         }
         if (field === "action:label") return block.action?.label ?? "";
         if (field === "secondaryAction:label") return block.secondaryAction?.label ?? "";
-        return block[field as "label" | "markdown" | "title" | "sub" | "text" | "by" | "kicker" | "note"] ?? "";
+        return block[field as "label" | "markdown" | "title" | "sub" | "text" | "by" | "kicker" | "note" | "tocTitle"] ?? "";
     }
 
     function changeField(field: string, value: string, base = block): ContentBlock {
@@ -159,7 +159,7 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
         <div className="event-content-editor__block-body">
             {block.type === "section" && inputField("label", "Заголовок розділу", "Назва розділу", false, true)}
             {block.type === "text" && inputField("markdown", "Вміст (Markdown)", "Напишіть текст сторінки…", true, true, "Підтримуються заголовки, списки, посилання, цитати й код. HTML не підтримується.")}
-            {["hero", "facts", "timeline", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : "Заголовок", "Назва блока", false, block.type === "hero" || block.type === "cta")}
+            {["hero", "facts", "timeline", "doc", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : "Заголовок", "Назва блока", false, block.type === "hero" || block.type === "cta")}
             {block.type === "hero" && <>
                 <div className="event-manage-field"><FieldLabel label="Оформлення" /><EventSelect ariaLabel="Оформлення героя" value={landing ? block.variant ?? "mass" : "plain"} options={landing ? [{value: "mass", label: "Брендове"}, {value: "plain", label: "Звичайне"}] : [{value: "plain", label: "Звичайне"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {inputField("by", "Рядок організатора", "Подія CyberICEBox")}
@@ -174,6 +174,16 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
                     {canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><X size={16} /></button>}
                 </div>)}
                 {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
+            </>}
+            {block.type === "doc" && <>
+                {inputField("tocTitle", "Назва змісту", "Зміст", false, false, "Підпис переліку розділів праворуч від тексту.")}
+                {inputField("sub", "Пояснення", "Необов’язково")}
+                {(block.items ?? []).map((item, itemIndex) => <div className="event-content-editor__item event-content-editor__item--faq" key={itemIndex}>
+                    <div className="event-content-editor__item-head"><strong>Розділ {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити розділ ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><Trash2 size={15} /></button>}</div>
+                    {inputField(`item:${itemIndex}:label`, "Назва розділу", "", false, true)}
+                    {inputField(`item:${itemIndex}:value`, "Текст розділу", "Markdown", true, true, "Підтримуються списки, посилання й виділення. HTML не підтримується.", true)}
+                </div>)}
+                {canEdit && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> Додати розділ</button>}
             </>}
             {block.type === "hero" && <>
                 <div className="event-manage-field"><FieldLabel label="Відлік" help="Дата береться зі змінної події. Відлік можна вимкнути." /><EventSelect ariaLabel="Дата відліку героя" value={block.targetVariable ?? ""} placeholder="Без відліку" options={[{value: "", label: "Без відліку"}, ...catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))]} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name} : {...block, targetVariable: ""});}} /></div>
