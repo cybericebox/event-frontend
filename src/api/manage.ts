@@ -26,6 +26,9 @@ export const ManageConfigSchema = z.object({
 export type ManageConfig = z.infer<typeof ManageConfigSchema>;
 export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt">;
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;
+export type BrandAssetChange = {Action: "keep" | "remove" | "replace"; FileID?: string};
+export type ManageGeneralInput = {Name: string; Description: string; Preview: BrandAssetChange};
+export type ManageAppearanceInput = ManageThemeInput & {Logo: BrandAssetChange; Favicon: BrandAssetChange};
 
 export const ManageLifecycleSchema = z.object({
     Configured: z.boolean(),
@@ -81,6 +84,9 @@ let mockConfig: ManageConfig = {
     UpdatedAt: "2026-09-26T00:00:00Z",
 };
 let mockName = "Winter Arena CTF";
+const mockBrandDrafts = new Map<string, string>();
+let mockLogoURL = "";
+let mockFaviconURL = "";
 let mockLifecycle: ManageLifecycle = {
     Configured: false, JoinPolicy: 0, PublishAt: null, StartAt: null, FinishAt: null, WithdrawAt: null,
     Status: "not_published", UpdatedAt: "2026-09-26T00:00:00Z",
@@ -119,6 +125,21 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
                 mockConfig = {...mockConfig, Theme: theme};
             }
             return schema.parse(mockConfig);
+        }
+        if (path === "general" && method === "PUT") {
+            const input = payload as ManageGeneralInput;
+            mockName = input.Name;
+            mockConfig = {...mockConfig, PreviewDescription: input.Description, PreviewPicture: input.Preview.Action === "replace" ? mockBrandDrafts.get(input.Preview.FileID ?? "") ?? "" : input.Preview.Action === "remove" ? "" : mockConfig.PreviewPicture};
+            return schema.parse({Name: mockName, Config: mockConfig});
+        }
+        if (path === "appearance" && method === "PUT") {
+            const input = payload as ManageAppearanceInput;
+            const theme = deriveTheme(input.Brand, input.Accent, mockConfig.Theme.Version + 1);
+            if (!theme) throw new ManageApiError(400);
+            mockConfig = {...mockConfig, Theme: theme};
+            if (input.Logo.Action !== "keep") mockLogoURL = input.Logo.Action === "remove" ? "" : mockBrandDrafts.get(input.Logo.FileID ?? "") ?? "";
+            if (input.Favicon.Action !== "keep") mockFaviconURL = input.Favicon.Action === "remove" ? "" : mockBrandDrafts.get(input.Favicon.FileID ?? "") ?? "";
+            return schema.parse({Config: mockConfig, LogoURL: mockLogoURL, FaviconURL: mockFaviconURL});
         }
         if (path === "lifecycle") {
             if (method === "PUT") {
@@ -185,6 +206,29 @@ export const putManageName = (eventID: string, name: string) => request(eventID,
 export const getManageConfig = (eventID: string) => request(eventID, "config", ManageConfigSchema);
 export const putManageConfig = (eventID: string, config: ManageConfigInput) => request(eventID, "config", ManageConfigSchema, "PUT", config);
 export const putManageTheme = (eventID: string, theme: ManageThemeInput) => request(eventID, "theme", ManageConfigSchema, "PUT", theme);
+
+const generalResultSchema = z.object({Name: z.string(), Config: ManageConfigSchema});
+const appearanceResultSchema = z.object({Config: ManageConfigSchema, LogoURL: z.string(), FaviconURL: z.string()});
+export const putManageGeneral = (eventID: string, input: ManageGeneralInput) => request(eventID, "general", generalResultSchema, "PUT", input);
+export const putManageAppearance = (eventID: string, input: ManageAppearanceInput) => request(eventID, "appearance", appearanceResultSchema, "PUT", input);
+
+export async function uploadManageBrandDraft(eventID: string, kind: "preview" | "logo" | "favicon", file: File): Promise<string> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
+        const id = crypto.randomUUID();
+        mockBrandDrafts.set(id, URL.createObjectURL(file));
+        return id;
+    }
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/brand-drafts/${kind}`, {
+        method: "POST", credentials: "include", cache: "no-store", body,
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+    const envelope = z.object({Data: z.object({FileID: z.string().uuid()})}).parse(await response.json());
+    return envelope.Data.FileID;
+}
 
 export async function uploadManageLogo(eventID: string, file: File): Promise<string> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return URL.createObjectURL(file);

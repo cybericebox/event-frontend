@@ -5,7 +5,7 @@ import Image from "next/image";
 import crest from "@/styles/assets/crest-128.png";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 
-function logoSource(logoURL: string): string | null {
+export function resolveEventLogoURL(logoURL: string): string | null {
     if (!logoURL) return null;
     if (/^https:\/\//.test(logoURL)) return logoURL;
     if (!logoURL.startsWith("/api/events/")) return null;
@@ -25,7 +25,7 @@ export function EventBrandLogo({event, className = "", size = 32}: {
     size?: number;
 }) {
     const inheritedLogoURL = useContext(EventBrandContext);
-    const source = logoSource(event?.LogoURL || inheritedLogoURL);
+    const source = resolveEventLogoURL(event?.LogoURL || inheritedLogoURL);
     const [failedSource, setFailedSource] = useState<string | null>(null);
     if (source && failedSource !== source) {
         // The backend streams only the active logo reference; a deleted or

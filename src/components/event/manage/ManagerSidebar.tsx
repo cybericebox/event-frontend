@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
     ArrowLeft, Bell, BookOpenText, ChevronDown, ClipboardCheck,
     ClipboardList, FileCheck2, FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
-    ListChecks, Mail, MessageSquareText, MonitorPlay, Plus, Send, Settings2,
+    ListChecks, Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, X,
     type LucideIcon,
 } from "lucide-react";
@@ -19,8 +19,11 @@ type Group = {id: string; label: string; items: Item[]};
 
 const groups: Group[] = [
     {id: "event", label: "Захід", items: [
-        {href: "/manage", label: "Огляд і підготовка", icon: LayoutDashboard},
-        {href: "/manage/settings", label: "Налаштування", icon: Settings2},
+        {href: "/manage/settings", label: "Загальне", icon: Settings2},
+        {href: "/manage/appearance", label: "Вигляд", icon: Palette},
+    ]},
+    {id: "access", label: "Доступ", items: [
+        {href: "/manage/participation-settings", label: "Правила участі", icon: ClipboardCheck},
     ]},
     {id: "pages", label: "Сторінки", items: [
         {href: "/manage/content/landing", label: "Головна сторінка", icon: FileText},
@@ -76,6 +79,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, o
             <button className="ib-admin-side__close" type="button" aria-label="Закрити меню" onClick={onNavigate}><X size={18} /></button>
         </div>
         <nav className="ib-admin-side__nav" aria-label="Розділи керування">
+            <Link className="ib-admin-side__item event-manage-sidebar__overview" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">Огляд і підготовка</span></Link>
             {groups.map(group => {
                 const isOpen = openGroups[group.id] ?? true;
                 const items = group.items.filter(showItem);

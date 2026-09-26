@@ -41,12 +41,13 @@ export async function generateMetadata(): Promise<Metadata> {
         const event = await getPublicEventInfo();
         const name = event?.Name;
         if (!name) {
-            return {title: FALLBACK_TITLE};
+            return {title: FALLBACK_TITLE, icons: {icon: "/platform-favicon.ico"}};
         }
         const eventUrl = `https://${(await headers()).get("host")}`
         return {
             title: name,
             description: `${name} | Cyber ICE Box Platform`,
+            icons: {icon: event.FaviconURL && process.env.NEXT_PUBLIC_DOMAIN ? `https://api.${process.env.NEXT_PUBLIC_DOMAIN}${event.FaviconURL}` : "/platform-favicon.ico"},
             openGraph: {
                 title: name,
                 description: `${name} | Cyber ICE Box Platform`,
@@ -56,7 +57,7 @@ export async function generateMetadata(): Promise<Metadata> {
             },
         }
     } catch {
-        return {title: FALLBACK_TITLE};
+        return {title: FALLBACK_TITLE, icons: {icon: "/platform-favicon.ico"}};
     }
 }
 
@@ -90,6 +91,9 @@ export default async function RootLayout({
             <link rel="stylesheet" href="/event-inbox-v1.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
             <link rel="stylesheet" href="/event-navbar-v2.css" />
+            {/* The development edge caches Next's CSS chunk; keep new management controls current. */}
+            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
+            <link rel="stylesheet" href="/event-manage-brand-v11.css" />
         </head>
         <body className="event-root">
         <Providers>

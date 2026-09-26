@@ -27,6 +27,11 @@ function contrast(a: RGB, b: RGB): number {
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 
+export function whiteTextContrast(brandInput: string): number | null {
+    const brand = parseColor(brandInput);
+    return brand ? contrast(brand, [255, 255, 255]) : null;
+}
+
 function mix(a: RGB, b: RGB, share: number): RGB {
     return a.map((value, index) => Math.floor(value * (1 - share) + b[index] * share + 0.5)) as RGB;
 }
@@ -44,7 +49,7 @@ function readable(accent: RGB, background: RGB): string {
 // response is authoritative after Save, including its version.
 export function deriveTheme(brandInput: string, accentInput: string, version: number): Theme | null {
     const brand = parseColor(brandInput);
-    if (!brand || contrast(brand, [255, 255, 255]) < 4.5) return null;
+    if (!brand) return null;
     const accentText = accentInput.trim();
     const accent = accentText ? parseColor(accentText) : null;
     if (accentText && !accent) return null;

@@ -15,6 +15,7 @@ export const PublicEventInfoSchema = z.object({
     PreviewDescription: z.string(),
     PreviewPicture: z.string(),
     LogoURL: z.string().default(""),
+    FaviconURL: z.string().default(""),
     Theme: EventThemeSchema,
 });
 
