@@ -83,7 +83,12 @@ export default async function RootLayout({
     } as React.CSSProperties : undefined;
     return (
         <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} suppressHydrationWarning>
-        <head><script dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} /></head>
+        <head>
+            <script dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} />
+            {/* The development edge caches Next's stable CSS chunk URL; this versioned asset keeps inbox styles current. */}
+            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS is required behind the development edge cache. */}
+            <link rel="stylesheet" href="/event-inbox-v1.css" />
+        </head>
         <body className="event-root">
         <Providers>
             <EventBrandProvider logoURL={event?.LogoURL ?? ""}>
