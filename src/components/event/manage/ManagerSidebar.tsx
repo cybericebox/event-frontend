@@ -3,10 +3,10 @@
 import {useState} from "react";
 import Link from "next/link";
 import {
-    ArrowLeft, Bell, BookOpenText, ChevronDown, ClipboardCheck,
+    ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown, ClipboardCheck, Eye,
     ClipboardList, FileCheck2, FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
     ListChecks, Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
-    SlidersHorizontal, Trophy, UserRound, Users, X,
+    SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
     type LucideIcon,
 } from "lucide-react";
 import type {ManagePage} from "@/api/manage";
@@ -21,9 +21,12 @@ const groups: Group[] = [
     {id: "event", label: "Захід", items: [
         {href: "/manage/settings", label: "Загальне", icon: Settings2},
         {href: "/manage/appearance", label: "Вигляд", icon: Palette},
+        {href: "/manage/participation-settings", label: "Формат участі", icon: UsersRound},
     ]},
     {id: "access", label: "Доступ", items: [
-        {href: "/manage/participation-settings", label: "Правила участі", icon: ClipboardCheck},
+        {href: "/manage/visibility", label: "Видимість", icon: Eye},
+        {href: "/manage/schedule", label: "Публікація і час", icon: CalendarDays},
+        // Пауза: додати окремий пункт, коли з'явиться механізм призупинення події.
     ]},
     {id: "pages", label: "Сторінки", items: [
         {href: "/manage/content/landing", label: "Головна сторінка", icon: FileText},

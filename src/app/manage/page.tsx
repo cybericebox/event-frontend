@@ -117,6 +117,6 @@ export default function ManageIndex() {
             {participation === 1 && minSize !== null && minSize > maxSize && <p className="event-manage-validation" role="alert">Мінімум у команді не може перевищувати максимум.</p>}
             <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !valid || saving}>{saving ? "Зберігаємо…" : "Зберегти й запланувати"}</button></div>
         </form>}
-        {configured && <div className="event-manage-setup__links"><Link className="ib-btn" href="/manage/settings">Основні налаштування</Link><Link className="ib-btn" href="/manage/schedule">Розклад</Link><Link className="ib-btn ib-btn--primary" href="/manage/content/landing">Конструктор головної</Link></div>}
+        {configured && <div className="event-manage-setup__links"><Link className="ib-btn" href="/manage/settings">Основні налаштування</Link><Link className="ib-btn" href="/manage/schedule">Публікація і час</Link><Link className="ib-btn ib-btn--primary" href="/manage/content/landing">Конструктор головної</Link></div>}
     </div>;
 }

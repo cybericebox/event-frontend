@@ -30,8 +30,9 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage") return "Огляд і підготовка";
     if (pathname === "/manage/settings") return "Загальне";
     if (pathname === "/manage/appearance") return "Вигляд";
-    if (pathname === "/manage/participation-settings") return "Правила участі";
-    if (pathname === "/manage/schedule") return "Розклад";
+    if (pathname === "/manage/participation-settings") return "Формат участі";
+    if (pathname === "/manage/visibility") return "Видимість";
+    if (pathname === "/manage/schedule") return "Публікація і час";
     if (pathname === "/manage/content/landing") return "Головна сторінка";
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
