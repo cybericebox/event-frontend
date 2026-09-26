@@ -45,7 +45,7 @@ export default function ParticipationSettingsPage() {
     if (configQuery.isError || lifecycleQuery.isError || !config) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити формат події</h1><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>Повторити</button></div>;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
-        <header className="event-manage-heading"><div><h1>Формат події</h1><p>Визначте, хто бере участь і чи будуть динамічні завдання.</p></div></header>
+        <header className="event-manage-heading"><div><h1>Формат події</h1><p>Визначте, хто бере участь і чи будуть завдання з інфраструктурою.</p></div></header>
         <section className="event-manage-section">
             <ManageFieldLabel title="Формат участі" help={"Оберіть, хто проходить завдання та отримує бали: окремий учасник або команда.\n\nФормат можна змінити лише до публікації."} required />
             <div className="event-manage-choice-group" role="radiogroup" aria-label="Тип участі">
@@ -59,12 +59,12 @@ export default function ParticipationSettingsPage() {
             <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>Після публікації змінити формат участі неможливо.</span></div>
         </section>
         <section className="event-manage-section">
-            <ManageFieldLabel title="Наявність динамічних завдань" help={"Визначає, чи використовуватимуться динамічні завдання з окремою лабораторією для учасника або команди.\n\nДля таких завдань потрібна підключена інфраструктура. Цей вибір можна змінити лише до публікації."} required />
-            <div className="event-manage-choice-group" role="radiogroup" aria-label="Наявність динамічних завдань">
-                <label><input type="radio" name="dynamic-labs" checked={!config.DynamicLabsPlanned} onChange={() => update({DynamicLabsPlanned: false})} disabled={disabled || locked} /><div className="event-manage-choice-content"><strong>Без динамічних завдань</strong><small>Окрема інфраструктура для учасників не створюється.</small></div></label>
-                <label className={!lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable ? "is-unavailable" : undefined}><input type="radio" name="dynamic-labs" checked={config.DynamicLabsPlanned} onChange={() => update({DynamicLabsPlanned: true})} disabled={disabled || locked || !lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable} /><div className="event-manage-choice-content"><strong>З динамічними завданнями</strong><small>{lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable ? "Для учасника або команди створюється окрема лабораторія." : "Інфраструктура не підключена. Зверніться до адміністратора."}</small></div></label>
+            <ManageFieldLabel title="Наявність завдань з інфраструктурою" help={"Визначає, чи використовуватимуться завдання з окремою лабораторією для учасника або команди.\n\nДля таких завдань потрібна підключена інфраструктура. Цей вибір можна змінити лише до публікації."} required />
+            <div className="event-manage-choice-group" role="radiogroup" aria-label="Наявність завдань з інфраструктурою">
+                <label><input type="radio" name="dynamic-labs" checked={!config.DynamicLabsPlanned} onChange={() => update({DynamicLabsPlanned: false})} disabled={disabled || locked} /><div className="event-manage-choice-content"><strong>Без завдань з інфраструктурою</strong><small>Окрема інфраструктура для учасників не створюється.</small></div></label>
+                <label className={!lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable ? "is-unavailable" : undefined}><input type="radio" name="dynamic-labs" checked={config.DynamicLabsPlanned} onChange={() => update({DynamicLabsPlanned: true})} disabled={disabled || locked || !lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable} /><div className="event-manage-choice-content"><strong>Із завданнями з інфраструктурою</strong><small>{lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable ? "Для учасника або команди створюється окрема лабораторія." : "Інфраструктура не підключена. Зверніться до адміністратора."}</small></div></label>
             </div>
-            <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>Після публікації змінити наявність динамічних завдань неможливо.</span></div>
+            <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>Після публікації змінити наявність завдань з інфраструктурою неможливо.</span></div>
         </section>
         {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
     </form>;
