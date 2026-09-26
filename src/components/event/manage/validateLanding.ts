@@ -14,7 +14,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
         for (const variable of block.variables ?? []) {
-            if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для головної сторінки.`;
+            if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для цієї сторінки.`;
         }
         for (const [, variable] of text.matchAll(tokenPattern)) {
             if (!bindings.has(variable)) return `Блок ${index + 1}: змінну ${variable} потрібно додати через список.`;

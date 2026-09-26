@@ -47,9 +47,14 @@ export const ManageContentSchema = z.object({
     Variables: z.record(z.string(), ContentValueSchema),
 });
 export type ManageContent = z.infer<typeof ManageContentSchema>;
-const ManagePageSchema = z.object({
-    Slug: z.string(), Title: z.string(), Document: ContentDocumentSchema,
+export const ManagePageSchema = z.object({
+    ID: z.string().uuid(), Slug: z.string(), Title: z.string(), Document: ContentDocumentSchema,
+    Visibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+    Navigation: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+    NavigationOrder: z.number().int(),
 });
+export type ManagePage = z.infer<typeof ManagePageSchema>;
+export type ManagePageInput = Pick<ManagePage, "Slug" | "Title" | "Document" | "Visibility" | "Navigation" | "NavigationOrder">;
 
 export class ManageApiError extends Error {
     constructor(readonly status: number) {
@@ -89,6 +94,11 @@ let mockContent: ManageContent = {
     Live: {Profile: "scoreboard", Slots: {}},
     Variables: {"event.name": "Winter Arena CTF", "event.tag": "winter-arena-2026", "event.approvedTeamCount": 0, "event.approvedParticipantCount": 0, "event.isPublished": false},
 };
+let mockPages: ManagePage[] = [{
+    ID: "01900000-0000-7000-8000-000000000002", Slug: "faq", Title: "Питання та відповіді",
+    Document: {blocks: [{id: "sample", type: "text", markdown: "Вміст цієї сторінки налаштовується організаторами події."}]},
+    Visibility: 0, Navigation: 1, NavigationOrder: 1,
+}];
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
@@ -130,10 +140,29 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
             {name: "event.approvedTeamCount", label: "Схвалені команди", format: "number", audience: 0},
             {name: "event.publishAt", label: "Час публікації", format: "date-time", audience: 2},
         ]);
-        if (path.startsWith("pages/")) return schema.parse({
-            Slug: decodeURIComponent(path.slice(6)), Title: "Питання та відповіді",
-            Document: {blocks: [{id: "sample", type: "text", markdown: "Вміст цієї сторінки налаштовується організаторами події."}]},
-        });
+        if (path === "pages") {
+            if (method === "POST") {
+                const page = {ID: crypto.randomUUID(), ...(payload as ManagePageInput)};
+                mockPages = [...mockPages, ManagePageSchema.parse(page)];
+                return schema.parse(page);
+            }
+            return schema.parse(mockPages);
+        }
+        if (path.startsWith("pages/")) {
+            const key = decodeURIComponent(path.slice(6));
+            const page = mockPages.find(item => item.ID === key || item.Slug === key);
+            if (!page) throw new ManageApiError(404);
+            if (method === "DELETE") {
+                mockPages = mockPages.filter(item => item.ID !== page.ID);
+                return schema.parse(undefined);
+            }
+            if (method === "PUT") {
+                const updated = ManagePageSchema.parse({...page, ...(payload as ManagePageInput)});
+                mockPages = mockPages.map(item => item.ID === page.ID ? updated : item);
+                return schema.parse(updated);
+            }
+            return schema.parse(page);
+        }
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
     if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
@@ -145,6 +174,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         body: payload === undefined ? undefined : JSON.stringify(payload),
     });
     if (!response.ok) throw new ManageApiError(response.status);
+    if (response.status === 204) return schema.parse(undefined);
     const envelope = z.object({Data: schema}).parse(await response.json());
     return envelope.Data;
 }
@@ -160,6 +190,10 @@ export const putManageLifecycle = (eventID: string, input: ManageLifecycleInput)
 export const getManageContent = (eventID: string) => request(eventID, "content", ManageContentSchema);
 export const getManageContentVariables = (eventID: string) => request(eventID, "content/variables", ContentVariableCatalogSchema);
 export const getManagePage = (eventID: string, slug: string) => request(eventID, `pages/${encodeURIComponent(slug)}`, ManagePageSchema);
+export const getManagePages = (eventID: string) => request(eventID, "pages", z.array(ManagePageSchema));
+export const createManagePage = (eventID: string, page: ManagePageInput) => request(eventID, "pages", ManagePageSchema, "POST", page);
+export const updateManagePage = (eventID: string, pageID: string, page: ManagePageInput) => request(eventID, `pages/${encodeURIComponent(pageID)}`, ManagePageSchema, "PUT", page);
+export const deleteManagePage = (eventID: string, pageID: string) => request(eventID, `pages/${encodeURIComponent(pageID)}`, z.undefined(), "DELETE");
 
 export async function putManageLanding(eventID: string, document: ContentDocument): Promise<void> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
