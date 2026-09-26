@@ -2,7 +2,7 @@
 
 import {type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {getCurrentUser, getJoinStatus} from "@/api/clientAuth";
+import {getCurrentUser, getJoinStatus, getOwnTeam} from "@/api/clientAuth";
 import {getParticipantEventInfo} from "@/api/participantEventInfo";
 import {ParticipationStatusEnum} from "@/types/event";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -36,6 +36,11 @@ export function AppShell({children, event, unavailable}: {
         enabled: approved && !!event && !unavailable && !isManagement,
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
+    const ownTeam = useQuery({
+        queryKey: ["event-own-team", event?.EventID], queryFn: () => getOwnTeam(event!.EventID),
+        enabled: approved && !!event && !unavailable && !isManagement,
+        retry: false, refetchInterval: false, refetchOnWindowFocus: false,
+    });
 
     if (unavailable) {
         return <div className="event-shell-state" role="status">
@@ -50,14 +55,14 @@ export function AppShell({children, event, unavailable}: {
         return <div className="event-shell-state"><h1>Подію не знайдено</h1></div>;
     }
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
-    if (currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && participantInfo.isPending)) {
+    if (currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending))) {
         return <div className="event-shell-state" role="status" aria-label="Завантаження події" />;
     }
-    if (currentUser.isError || joinStatus.isError || (approved && participantInfo.isError)) {
+    if (currentUser.isError || joinStatus.isError || (approved && (participantInfo.isError || ownTeam.isError))) {
         return <div className="event-shell-state" role="status">
             <h1>Не вдалося перевірити доступ</h1>
             <p>Ваші дані збережені. Спробуйте повторити запит.</p>
-            <button className="ib-btn" onClick={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.refetch())}>Повторити</button>
+            <button className="ib-btn" onClick={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.isError ? participantInfo.refetch() : ownTeam.refetch())}>Повторити</button>
         </div>;
     }
     const authenticated = !!currentUser.data;
@@ -65,6 +70,6 @@ export function AppShell({children, event, unavailable}: {
         return <div className="event-shell-state" role="alert"><h1>Не вдалося перевірити подію</h1></div>;
     }
     return approved && !!participantInfo.data
-        ? <ParticipantShell event={event}>{children}</ParticipantShell>
+        ? <ParticipantShell event={event} participantInfo={participantInfo.data} ownTeam={ownTeam.data ?? null}>{children}</ParticipantShell>
         : <GuestShell event={event} authenticated={authenticated}>{children}</GuestShell>;
 }

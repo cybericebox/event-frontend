@@ -9,7 +9,7 @@ import {ArrowLeft, CalendarDays, ExternalLink, FileText, LayoutDashboard, Menu, 
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getManageAccess, ManageApiError} from "@/api/manage";
 import crest from "@/styles/assets/crest-128.png";
-import {ThemeToggle} from "../ThemeToggle";
+import {EventNavbar} from "../EventNavbar";
 
 function signInHref(event: PublicEventInfo): string {
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
@@ -46,7 +46,9 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         </div>;
     }
 
-    return <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
+    return <div className="event-manage-frame">
+        <EventNavbar event={event} authenticated management />
+        <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <div className="ib-admin-shell__layout">
             <aside className="ib-admin-side ib-mass" aria-label="Керування подією">
                 <div className="ib-admin-side__head">
@@ -67,11 +69,12 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
                 <header className="ib-topbar">
                     <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label="Відкрити меню" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>
                     <ol className="ib-topbar__crumbs"><li><Link href="/manage">Керування</Link></li><li aria-current="page">{pathname === "/manage" ? "Огляд і підготовка" : pathname === "/manage/schedule" ? "Розклад" : pathname === "/manage/content/landing" ? "Головна сторінка" : "Налаштування"}</li></ol>
-                    <div className="ib-topbar__actions"><span className="event-manage-mode">{access.data.CanManage ? "Редагування" : "Лише перегляд"}</span><ThemeToggle /><Link className="ib-topbar__icon-btn" href="/" aria-label="Відкрити сайт події"><ExternalLink size={18} /></Link></div>
+                    <div className="ib-topbar__actions"><span className="event-manage-mode">{access.data.CanManage ? "Редагування" : "Лише перегляд"}</span><Link className="ib-topbar__icon-btn" href="/" aria-label="Відкрити сайт події"><ExternalLink size={18} /></Link></div>
                 </header>
                 <main className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
             </div>
         </div>
         <button className="ib-admin-shell__backdrop" type="button" aria-label="Закрити меню" onClick={() => setDrawerOpen(false)} />
+        </div>
     </div>;
 }

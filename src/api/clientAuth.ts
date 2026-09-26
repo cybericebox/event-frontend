@@ -2,6 +2,8 @@ import {z} from "zod";
 
 const meSchema = z.object({ID: z.string().uuid()});
 const joinSchema = z.object({Status: z.number().int()});
+const ownTeamSchema = z.object({ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int()});
+export type OwnTeam = z.infer<typeof ownTeamSchema>;
 
 export class ClientAuthError extends Error {
     constructor(readonly status: number) {
@@ -33,4 +35,11 @@ export async function getJoinStatus(): Promise<number> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return 0;
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
     return (await readData(response, joinSchema)).Status;
+}
+
+export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return null;
+    const response = await fetch(apiUrl(`/events/${encodeURIComponent(eventID)}/teams/mine`), {credentials: "include", cache: "no-store"});
+    if (response.status === 404) return null;
+    return readData(response, ownTeamSchema);
 }

@@ -12,6 +12,9 @@
 
 **2026-09-26 product correction (supersedes older `UseVPN` setting references below):** Management has one `DynamicLabsPlanned` setting. The approved participant may receive a derived `UseVPN` capability, while guest/applicant responses omit both. Every team, including an individual's internal team, queues creation of its own LabGroup at team creation. The group starts both VPN and internet gateway before the event starts or any Lab exists; later challenge Labs join this group. Closed runtime keeps the group's services running and grants no client-to-Lab routes. An explicit pause stops task Lab devices and closes their routes, while the group VPN and internet gateway remain running. The personal config request creates only that participant's VPN client. Tasks 1–4 below record the original approved sequence and must be reconciled to this corrected contract before Tasks 5–9 are considered complete. Future batch actions on Labs in selected groups, chosen by caller-owned key/value labels, are recorded in the site spec and deferred from this plan.
 
+**2026-09-26 probe UX correction:** The tunnel-only probe uses a fixed platform palette with indigo held in one CSS variable, shared short Ukrainian text, the platform-style three-icon theme switch at bottom right and a footer link to `SUPPORT_EMAIL` (default `support@cybericebox.com`). The operator forwards this environment value to every VPN pod. The HTTPS event page cannot use browser `fetch` against an internal HTTP gateway due to mixed-content blocking. The agreed «Перевірити VPN» button opens the gateway page in a new tab; the event page also supplies a copyable ping command. Do not show an in-page automatic success state until an internal HTTPS probe exists.
+
+
 ## Global Constraints
 
 - The API session cookie stays on `api.<domain>`; authenticated browser requests use `credentials: "include"`.
@@ -95,7 +98,7 @@
 - [ ] Test that the settings checkbox can be enabled with zero exercises, persists after reload and is not tied to `Infrastructure.RequiresVPN`.
 - [ ] Add a team-membership query rather than treating approved participation alone as sufficient. Test team mode with and without membership, individual mode after internal team creation, and disabled VPN.
 - [ ] Place «Підключення VPN» in the avatar menu, with a post-join prompt and a link from «Моя команда» / «Моя участь». Use the agreed common navbar design; do not add a permanent top-level VPN tab or retain a competing participant sidebar.
-- [ ] On `/vpn`, offer personal config download, «Перевірити VPN», test address and copyable `ping` command. Automatic check must reach the tunnel-only endpoint from the participant's browser; a public API health check is not sufficient. Show explicit states for no tunnel, pending group, denied access and API outage without exposing config in logs or local storage.
+- [ ] On `/vpn`, offer personal config download, «Перевірити VPN», test address and copyable `ping` command. The check button opens the tunnel-only HTTP probe as a top-level page in a new tab; never report a public API response as tunnel success. Show explicit states for no tunnel, pending group, denied access and API outage without exposing config in logs or local storage.
 - [ ] Run frontend type check, lint and focused tests. Manually verify the route on desktop and narrow viewport after an approved team joins, before any exercise is attached.
 - [ ] Commit only reviewed task files in `event-frontend`.
 
