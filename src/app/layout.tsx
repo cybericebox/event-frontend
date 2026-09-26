@@ -1,5 +1,15 @@
 import type {Metadata} from "next";
 import "./globals.css";
+import "@/styles/tokens.css";
+import "@/styles/base.css";
+import "@/styles/button.css";
+import "@/styles/navbar.css";
+import "@/styles/tower.css";
+import "@/styles/footer.css";
+import "@/styles/blocks.css";
+import "@/styles/hero.css";
+import "@/styles/event.css";
+import "@/styles/manage.css";
 import type React from "react";
 import {GeistSans} from "geist/font/sans";
 import {GeistMono} from "geist/font/mono";
@@ -7,7 +17,7 @@ import {Providers} from "@/utils/providers";
 import {AppShell} from "@/components/event/AppShell";
 import {Toaster} from "react-hot-toast";
 import {headers} from "next/headers";
-import {getEventInfoOnServerFn} from "@/api/serverAPI";
+import {getPublicEventInfo} from "@/api/publicEventInfo";
 
 const FALLBACK_TITLE = "Cyber ICE Box";
 
@@ -15,8 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
     // Robustness: an unreachable backend (or empty response) must not crash the render of
     // every route. On any failure fall back to a static title.
     try {
-        const data = await getEventInfoOnServerFn();
-        const name = data?.Data?.Name;
+        const event = await getPublicEventInfo();
+        const name = event?.Name;
         if (!name) {
             return {title: FALLBACK_TITLE};
         }
@@ -29,14 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
                 description: `${name} | Cyber ICE Box Platform`,
                 type: "website",
                 url: eventUrl,
-                images: [
-                    {
-                        url: data.Data.Picture || "",
-                        width: 1200,
-                        height: 600,
-                        alt: name,
-                    }
-                ],
+                ...(event.PreviewPicture ? {images: [{url: event.PreviewPicture, width: 1200, height: 600, alt: name}]} : {}),
             },
         }
     } catch {
@@ -46,16 +49,30 @@ export async function generateMetadata(): Promise<Metadata> {
 
 
 
-export default function RootLayout({
+export default async function RootLayout({
                                        children,
                                    }: Readonly<{
     children: React.ReactNode;
 }>) {
+    let event: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
+    let unavailable = false;
+    try {
+        event = await getPublicEventInfo();
+    } catch {
+        unavailable = true;
+    }
+    const theme = event?.Theme;
+    const themeStyle = theme ? {
+        "--ev-brand": theme.Brand,
+        "--ev-accent-light": theme.AccentLight,
+        "--ev-accent-dark": theme.AccentDark,
+        "--ev-accent-live": theme.AccentLive,
+    } as React.CSSProperties : undefined;
     return (
-        <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-        <body>
+        <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle}>
+        <body className="event-root">
         <Providers>
-            <AppShell>
+            <AppShell event={event} unavailable={unavailable}>
                 {children}
             </AppShell>
             <Toaster position={"top-center"}/>

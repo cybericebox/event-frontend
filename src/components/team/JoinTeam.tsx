@@ -33,7 +33,7 @@ export type Props = {
 export default function JoinTeam({setIsJoinTeam}: Props) {
     const [showPassword, setShowPassword] = useState(false);
 
-    const {JoinTeam, JoinTeamResponse} = useTeam().useJoinTeam()
+    const {JoinTeam, JoinTeamIsError, JoinTeamError} = useTeam().useJoinTeam()
 
     const handleShowClick = () => setShowPassword(!showPassword);
 
@@ -80,21 +80,19 @@ export default function JoinTeam({setIsJoinTeam}: Props) {
                 >
                     Вступ до команди
                 </Text>
-                {
-                    JoinTeamResponse?.data && (
-                        JoinTeamResponse?.data.Status.Code === 0 ? (
-                            <Alert status="error">
-                                <AlertIcon/>
-                                <AlertDescription>Неправильна назва команди чи код</AlertDescription>
-                            </Alert>
-                        ) : (
-                            <Alert status="error">
-                                <AlertIcon/>
-                                <AlertDescription>Помилка на стороні сервера</AlertDescription>
-                            </Alert>
-                        )
+                {JoinTeamIsError && (
+                    (JoinTeamError as any)?.response?.status < 500 ? (
+                        <Alert status="error">
+                            <AlertIcon/>
+                            <AlertDescription>Неправильна назва команди чи код</AlertDescription>
+                        </Alert>
+                    ) : (
+                        <Alert status="error">
+                            <AlertIcon/>
+                            <AlertDescription>Помилка на стороні сервера</AlertDescription>
+                        </Alert>
                     )
-                }
+                )}
 
                 <Box minW={{base: "90%", md: "468px"}}>
                     <form onSubmit={handleSubmit}>
@@ -115,6 +113,7 @@ export default function JoinTeam({setIsJoinTeam}: Props) {
                                         name="name"
                                         required={true}
                                         placeholder="Назва команди"
+                                        _placeholder={{ color: "hsl(var(--placeholder))", opacity: 1 }}
                                         onChange={changeHandler}
                                         tabIndex={1}
                                     />
@@ -129,6 +128,7 @@ export default function JoinTeam({setIsJoinTeam}: Props) {
                                     <Input
                                         type={showPassword ? "text" : "password"}
                                         placeholder="Код"
+                                        _placeholder={{ color: "hsl(var(--placeholder))", opacity: 1 }}
                                         name="code"
                                         required={true}
                                         onChange={changeHandler}

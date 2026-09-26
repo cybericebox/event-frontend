@@ -1,0 +1,27 @@
+/* Base layer: reset, typography, focus, utilities. Depends on tokens.css. */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ib-paper);color:var(--ib-body);font:var(--ib-w-regular) var(--ib-fs-14)/var(--ib-lh-body) var(--ib-font);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+[data-theme]{background:var(--ib-paper);color:var(--ib-body)}
+h1,h2,h3,h4{color:var(--ib-ink);margin:0;line-height:var(--ib-lh-tight);font-weight:var(--ib-w-semibold);letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:var(--ib-fs-32)}h2{font-size:var(--ib-fs-24)}h3{font-size:var(--ib-fs-20)}h4{font-size:var(--ib-fs-16)}
+p{margin:0}
+a{color:var(--ib-action);text-decoration:none;font-weight:var(--ib-w-medium)}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+code,kbd,.ib-mono{font-family:var(--ib-mono)}
+code{font-size:.92em;background:var(--ib-soft);padding:1px 5px;border-radius:var(--ib-r-sm);color:var(--ib-ink)}
+.ib-num{font-family:var(--ib-mono);font-variant-numeric:tabular-nums}
+.ib-dim{color:var(--ib-dim)}
+.ib-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+[hidden]{display:none!important}
+::selection{background:var(--ib-soft);color:var(--ib-ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* brand mass — deepest surface in both themes */
+.ib-mass{background:var(--ib-brand);color:var(--ib-on-brand);position:relative;isolation:isolate}
+.ib-mass .ib-dim{color:var(--ib-on-brand-3)}
+.ib-mass-waves::before{content:"";position:absolute;inset:0;z-index:-1;background:url("assets/waves.png") center/cover no-repeat;filter:var(--ib-wave-filter);opacity:var(--ib-wave-opacity);pointer-events:none}
+/* waves on a quiet light zone (hero left side, empty panels). Tokens --ib-wave-quiet-* per theme. */
+.ib-waves-quiet{position:relative;isolation:isolate}
+.ib-waves-quiet::before{content:"";position:absolute;inset:0;z-index:-1;background:url("assets/waves.png") left center/cover no-repeat;filter:var(--ib-wave-quiet-filter);opacity:var(--ib-wave-quiet-opacity);pointer-events:none}

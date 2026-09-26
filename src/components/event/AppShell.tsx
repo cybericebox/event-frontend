@@ -1,18 +1,61 @@
-import type { ReactNode } from "react"
-import { TopBand } from "./TopBand"
-import { Sidebar } from "./Sidebar"
+"use client";
 
-// App shell wrapper (participant "App" context, REDESIGN §2): the top band spans the full
-// width, the sidebar fills the left column, and `children` render in the scrollable main
-// area. Wired into layout.tsx by the next (layout-wiring) task.
-export function AppShell({ children }: { children: ReactNode }) {
-    return (
-        <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-            <TopBand />
-            <div className="flex min-h-0 flex-1">
-                <Sidebar />
-                <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
-            </div>
-        </div>
-    )
+import {type ReactNode} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {getCurrentUser, getJoinStatus} from "@/api/clientAuth";
+import {ParticipationStatusEnum} from "@/types/event";
+import type {PublicEventInfo} from "@/api/publicEventInfo";
+import {usePathname} from "next/navigation";
+import {GuestShell} from "./GuestShell";
+import {ParticipantShell} from "./ParticipantShell";
+import {ManagerShell} from "./manage/ManagerShell";
+import {ManagerBootstrap} from "./manage/ManagerBootstrap";
+import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
+
+export function AppShell({children, event, unavailable}: {
+    children: ReactNode;
+    event: PublicEventInfo | null;
+    unavailable: boolean;
+}) {
+    const pathname = usePathname();
+    const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
+    const currentUser = useQuery({
+        queryKey: ["event-current-user"], queryFn: getCurrentUser,
+        enabled: !!event && !unavailable && !isManagement,
+        retry: false, refetchInterval: false, refetchOnWindowFocus: false,
+    });
+    const joinStatus = useQuery({
+        queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus,
+        enabled: !!currentUser.data && !!event && !unavailable && !isManagement,
+        retry: false, refetchInterval: false, refetchOnWindowFocus: false,
+    });
+
+    if (unavailable) {
+        return <div className="event-shell-state" role="status">
+            <h1>Сервер події тимчасово недоступний</h1>
+            <p>Спробуйте відновити сторінку трохи пізніше.</p>
+            <button className="ib-btn" onClick={() => window.location.reload()}>Повторити</button>
+        </div>;
+    }
+    if (!event) {
+        if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
+        if (pathname === "/" || pathname.startsWith("/p/")) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
+        return <div className="event-shell-state"><h1>Подію не знайдено</h1></div>;
+    }
+    if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
+    if (currentUser.isPending || (!!currentUser.data && joinStatus.isPending)) {
+        return <div className="event-shell-state" role="status" aria-label="Завантаження події" />;
+    }
+    if (currentUser.isError || joinStatus.isError) {
+        return <div className="event-shell-state" role="status">
+            <h1>Не вдалося перевірити доступ</h1>
+            <p>Ваші дані збережені. Спробуйте повторити запит.</p>
+            <button className="ib-btn" onClick={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.refetch())}>Повторити</button>
+        </div>;
+    }
+    const authenticated = !!currentUser.data;
+    const approved = authenticated && joinStatus.data === ParticipationStatusEnum.ApprovedParticipationStatus;
+    return approved
+        ? <ParticipantShell event={event}>{children}</ParticipantShell>
+        : <GuestShell event={event} authenticated={authenticated}>{children}</GuestShell>;
 }

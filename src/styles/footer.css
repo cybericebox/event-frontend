@@ -1,0 +1,33 @@
+/* Footer — platform footer (default) and event footer (--event).
+   Source: proto/platform3.html (.ft) and proto/event3.html (.lfoot).
+   Platform: brand + links row, then «© 2026 ХНУРЕ» + support line. Event: organizer line + links.
+   Narrow container (<640px): rows stack. */
+
+.ib-footer{container:ib-footer/inline-size;background:var(--ib-surface);border-top:1px solid var(--ib-line);color:var(--ib-dim)}
+.ib-footer__inner{max-width:1280px;margin:0 auto;padding:0 var(--ib-10)}
+.ib-footer__row{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-6);padding:var(--ib-8) 0}
+.ib-footer__row+.ib-footer__row{padding:var(--ib-5) 0 var(--ib-6);border-top:1px solid var(--ib-line);font-size:var(--ib-fs-13)}
+.ib-footer__brand{display:flex;align-items:center;gap:var(--ib-3);color:var(--ib-ink);font-size:var(--ib-fs-16);font-weight:var(--ib-w-semibold);letter-spacing:-.015em;text-decoration:none}
+.ib-footer__brand:hover{text-decoration:none}
+.ib-footer__brand img{width:32px;height:32px;object-fit:contain}
+.ib-footer__links{display:flex;flex-wrap:wrap;gap:var(--ib-2) var(--ib-6)}
+.ib-footer__links a{color:var(--ib-dim);font-size:var(--ib-fs-14);font-weight:var(--ib-w-regular)}
+.ib-footer__links a:hover{color:var(--ib-ink)}
+.ib-footer__legal{color:var(--ib-dim)}
+.ib-footer__support a{color:var(--ib-dim);font-weight:var(--ib-w-regular);text-decoration:underline;text-underline-offset:3px}
+.ib-footer__support a:hover{color:var(--ib-ink)}
+
+/* event footer: one row, organizer line left, links right */
+.ib-footer--event .ib-footer__inner{max-width:none;padding:0 var(--ib-12)}
+.ib-footer--event .ib-footer__row{padding:var(--ib-5) 0;font-size:var(--ib-fs-13)}
+.ib-footer__org b{color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.ib-footer__org span{margin-left:var(--ib-2)}
+.ib-footer--event .ib-footer__links a{font-size:var(--ib-fs-13)}
+
+@container ib-footer (max-width: 639px){
+  .ib-footer__inner,.ib-footer--event .ib-footer__inner{padding:0 var(--ib-4)}
+  .ib-footer__row{flex-direction:column;align-items:flex-start;gap:var(--ib-4);padding:var(--ib-6) 0}
+  .ib-footer__row+.ib-footer__row{gap:var(--ib-2)}
+  .ib-footer--event .ib-footer__row{gap:var(--ib-3)}
+  .ib-footer__org span{display:block;margin:var(--ib-1) 0 0}
+}

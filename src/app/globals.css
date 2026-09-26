@@ -1,10 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 @layer base {
     :root {
@@ -25,6 +20,7 @@
 
         --muted: 208 74% 93%;
         --muted-foreground: 212 30% 38%;
+        --placeholder: 212 20% 47%;
 
         --accent: 209 85% 90%;
         --accent-foreground: 203 83% 16%;
@@ -61,6 +57,7 @@
 
         --muted: 208 74% 93%;
         --muted-foreground: 212 30% 38%;
+        --placeholder: 212 20% 47%;
 
         --accent: 209 85% 90%;
         --accent-foreground: 203 83% 16%;
@@ -80,6 +77,12 @@
 
     * {
         @apply border-border;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: hsl(var(--placeholder));
+        opacity: 1;
     }
 
     body {
@@ -382,4 +385,3 @@ main {
 .ProseMirror h4, .ProseMirror h5, .ProseMirror h6 {
     font-size: 1rem;
 }
-

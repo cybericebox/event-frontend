@@ -1,0 +1,107 @@
+/* Navbar — guest event navbar (default) + platform landing variant (--platform).
+   Source: proto/event3.html (.gnav) and proto/platform3.html (.hd).
+   Responsive by container query on the navbar itself, so it also works inside preview frames.
+   Overflow of custom pages into «Ще» is handled by navbar.js (window.IB.Navbar). */
+
+.ib-navbar{
+  container:ib-navbar/inline-size;
+  position:sticky;top:0;z-index:40;
+  background:var(--ib-surface);color:var(--ib-ink);
+  border-bottom:1px solid var(--ib-line);
+}
+.ib-navbar__bar{
+  display:flex;align-items:center;gap:var(--ib-5);
+  height:calc(var(--ib-12) + var(--ib-3));          /* 60 */
+  padding:0 var(--ib-8);margin:0 auto;
+}
+
+/* brand: crest + event name → event landing */
+.ib-navbar__brand{display:flex;align-items:center;gap:var(--ib-3);flex:none;color:var(--ib-ink);font-weight:var(--ib-w-semibold);text-decoration:none;min-width:0}
+.ib-navbar__brand:hover{text-decoration:none}
+.ib-navbar__crest{width:32px;height:32px;object-fit:contain;flex:none}
+.ib-navbar__name{display:flex;flex-direction:column;min-width:0;font-size:var(--ib-fs-14);line-height:var(--ib-lh-tight);letter-spacing:-.01em;white-space:nowrap}
+.ib-navbar__sub{font-size:var(--ib-fs-12);font-weight:var(--ib-w-regular);color:var(--ib-faint);letter-spacing:0;margin-top:2px}
+
+/* tabs */
+.ib-navbar__nav{display:flex;align-items:stretch;flex:1;min-width:0;height:100%;margin-left:var(--ib-3)}
+.ib-navbar__tabs{display:flex;align-items:stretch;gap:2px;list-style:none;margin:0;padding:0;min-width:0;overflow:hidden}
+.ib-navbar__tabs>li{display:flex;flex:none}
+.ib-navbar__link,
+.ib-navbar__more-btn{
+  position:relative;display:inline-flex;align-items:center;gap:var(--ib-1);
+  height:100%;padding:0 var(--ib-3);border:0;background:none;
+  color:var(--ib-dim);font:var(--ib-w-medium) var(--ib-fs-14)/1 var(--ib-font);
+  white-space:nowrap;text-decoration:none;cursor:pointer;
+}
+.ib-navbar__link:hover,.ib-navbar__more-btn:hover{color:var(--ib-ink);text-decoration:none}
+.ib-navbar__link:focus-visible,.ib-navbar__more-btn:focus-visible{outline-offset:-4px;border-radius:var(--ib-r)}
+.ib-navbar__link[aria-current="page"],
+.ib-navbar__more-btn.is-current{color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.ib-navbar__link[aria-current="page"]::after,
+.ib-navbar__more-btn.is-current::after{
+  content:"";position:absolute;left:var(--ib-3);right:var(--ib-3);bottom:-1px;height:2px;background:var(--ib-action);
+}
+.ib-navbar__more-btn .ib-icon{width:14px;height:14px;transition:transform var(--ib-dur) var(--ib-ease)}
+.ib-navbar__more-btn[aria-expanded="true"] .ib-icon{transform:rotate(180deg)}
+
+/* «Ще ▾» dropdown (overlay → shadow allowed) */
+.ib-navbar__more{position:relative;display:flex;flex:none}
+.ib-navbar__menu{
+  position:absolute;top:calc(100% + var(--ib-1));left:0;z-index:60;
+  min-width:200px;margin:0;padding:var(--ib-1);list-style:none;
+  background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);
+  box-shadow:var(--ib-shadow-overlay);
+}
+.ib-navbar__menu a{
+  display:flex;align-items:center;min-height:var(--ib-control-h);padding:0 var(--ib-3);
+  border-radius:var(--ib-r-sm);color:var(--ib-body);font-weight:var(--ib-w-medium);text-decoration:none;white-space:nowrap;
+}
+.ib-navbar__menu a:hover{background:var(--ib-soft);color:var(--ib-ink);text-decoration:none}
+.ib-navbar__menu a:focus-visible{outline-offset:-2px}
+.ib-navbar__menu a[aria-current="page"]{color:var(--ib-ink);font-weight:var(--ib-w-semibold);background:var(--ib-soft)}
+
+/* actions */
+.ib-navbar__actions{display:flex;align-items:center;gap:var(--ib-2);flex:none;margin-left:auto}
+.ib-navbar__toggle{
+  display:none;align-items:center;justify-content:center;
+  width:var(--ib-control-h-lg);height:var(--ib-control-h-lg);
+  border:0;border-radius:var(--ib-r);background:transparent;color:var(--ib-ink);cursor:pointer;
+}
+.ib-navbar__toggle:hover{background:var(--ib-soft)}
+.ib-navbar__toggle .ib-icon{width:20px;height:20px}
+.ib-navbar__toggle .ib-navbar__icon-close{display:none}
+.ib-navbar.is-open .ib-navbar__toggle .ib-navbar__icon-open{display:none}
+.ib-navbar.is-open .ib-navbar__toggle .ib-navbar__icon-close{display:block}
+
+/* mobile panel */
+.ib-navbar__panel{display:none;border-top:1px solid var(--ib-line);padding:var(--ib-2) var(--ib-4) var(--ib-4)}
+.ib-navbar__panel a{
+  display:flex;align-items:center;min-height:var(--ib-12);
+  border-bottom:1px solid var(--ib-line);color:var(--ib-ink);font-weight:var(--ib-w-medium);text-decoration:none;
+}
+.ib-navbar__panel a:last-child{border-bottom:0}
+.ib-navbar__panel a[aria-current="page"]{font-weight:var(--ib-w-semibold)}
+.ib-navbar__panel a:focus-visible{outline-offset:-2px}
+
+/* ---------- platform landing variant ---------- */
+.ib-navbar--platform .ib-navbar__bar{height:var(--ib-16);max-width:1280px;padding:0 var(--ib-10);gap:var(--ib-8)}
+.ib-navbar--platform .ib-navbar__name{font-size:var(--ib-fs-16);letter-spacing:-.015em}
+.ib-navbar--platform .ib-navbar__nav{margin-left:0}
+.ib-navbar--platform .ib-navbar__link{height:auto;padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);align-self:center}
+.ib-navbar--platform .ib-navbar__link:hover{background:var(--ib-soft)}
+.ib-navbar--platform .ib-navbar__link[aria-current="page"]{background:var(--ib-soft)}
+.ib-navbar--platform .ib-navbar__link[aria-current="page"]::after{display:none}
+
+/* ---------- narrow: menu button + panel ---------- */
+@container ib-navbar (max-width: 760px){
+  .ib-navbar__bar,.ib-navbar--platform .ib-navbar__bar{padding:0 var(--ib-4);gap:var(--ib-3);height:calc(var(--ib-12) + var(--ib-2))}
+  .ib-navbar__nav{display:none}
+  .ib-navbar__toggle{display:inline-flex}
+  .ib-navbar__signin{display:none}
+  .ib-navbar.is-open .ib-navbar__panel{display:block}
+}
+@container ib-navbar (max-width: 400px){
+  .ib-navbar__sub{display:none}
+  .ib-navbar--platform .ib-navbar__name{display:none}
+}
+@media (prefers-reduced-motion:reduce){.ib-navbar__more-btn .ib-icon{transition:none}}

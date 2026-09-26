@@ -78,9 +78,10 @@ const useGetVPNConfig = () => {
 const useCreateTeam = () => {
     const client = useQueryClient()
     const {
-        data: CreateTeamResponse,
         mutate: CreateTeam,
-        isPending: PendingCreate
+        isPending: PendingCreate,
+        isError: CreateTeamIsError,
+        error: CreateTeamError,
     } = useMutation({
         mutationKey: ["createTeam"],
         mutationFn: async (data: ICreateTeam) => await createTeamFn(data),
@@ -88,7 +89,7 @@ const useCreateTeam = () => {
             client.invalidateQueries({queryKey: ['selfTeam']}).catch((e) => console.log(e))
         }
     })
-    return {CreateTeamResponse, CreateTeam, PendingCreate}
+    return {CreateTeam, PendingCreate, CreateTeamIsError, CreateTeamError}
 }
 
 const useJoinTeam = () => {
@@ -96,7 +97,8 @@ const useJoinTeam = () => {
     const {
         mutate: JoinTeam,
         isPending: PendingJoin,
-        data: JoinTeamResponse
+        isError: JoinTeamIsError,
+        error: JoinTeamError,
     } = useMutation({
         mutationKey: ["joinTeam"],
         mutationFn: async (data: IJoinTeam) => await joinTeamFn(data),
@@ -105,7 +107,7 @@ const useJoinTeam = () => {
         }
     })
 
-    return {JoinTeam, PendingJoin, JoinTeamResponse}
+    return {JoinTeam, PendingJoin, JoinTeamIsError, JoinTeamError}
 }
 
 export const useTeam = () => {

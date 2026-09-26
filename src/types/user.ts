@@ -2,7 +2,7 @@ import {z} from "zod";
 
 export const TeamSchema = z.object({
     ID: z.string().uuid().optional(),
-    Name: z.string().min(2).max(255),
+    Name: z.string().min(3, {message: "Назва має складатися хоча б з 3 символів"}).max(50, {message: "Назва має складатися не більше ніж з 50 символів"}),
     JoinCode: z.string().optional(),
     CreatedAt: z.coerce.date().optional(),
 })

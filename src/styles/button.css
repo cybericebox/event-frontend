@@ -1,0 +1,61 @@
+/* Button — .ib-btn
+   Variants: --primary (action) · default = secondary (outline, control border) · --ghost · --danger (outline)
+             --danger-solid (confirm destructive) · --mass (on brand mass: --ib-mass-btn fill, brand text)
+   Sizes: default 40 (--ib-control-h-lg) · --sm 32 (--ib-control-h)
+   Modifiers: --block (full width) · .is-loading (+ aria-busy) · [disabled] / [aria-disabled=true]
+   Hover look can be forced in previews with .is-hover. */
+
+:root,[data-theme="light"]{
+  --ib-btn-mass-hover:#EDEDF1;   /* light: white mass button hover */
+  --ib-btn-on-danger:#FFFFFF;    /* text on solid danger (6.57:1) */
+}
+[data-theme="dark"]{
+  --ib-btn-mass-hover:#F5F5F9;   /* dark: #E6E6EE mass button hover */
+  --ib-btn-on-danger:var(--ib-brand); /* brand text on #FDA69E */
+}
+
+.ib-btn{
+  --_bg:transparent;--_fg:var(--ib-ink);--_bd:var(--ib-control);--_hover:color-mix(in srgb,var(--ib-ink) 6%,transparent);
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:var(--ib-2);
+  height:var(--ib-control-h-lg);padding:0 var(--ib-4);
+  border:1px solid var(--_bd);border-radius:var(--ib-r);background:var(--_bg);color:var(--_fg);
+  font:var(--ib-w-medium) var(--ib-fs-14)/1 var(--ib-font);white-space:nowrap;text-decoration:none;
+  cursor:pointer;user-select:none;
+  transition:background-color var(--ib-dur-fast) var(--ib-ease),border-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease);
+}
+.ib-btn:hover,.ib-btn.is-hover{background:var(--_hover);text-decoration:none}
+.ib-btn:focus-visible,.ib-btn.is-focus{outline:2px solid var(--ib-action);outline-offset:2px}
+.ib-btn svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* sizes */
+.ib-btn--sm{height:var(--ib-control-h);padding:0 var(--ib-3);font-size:var(--ib-fs-13);gap:6px}
+.ib-btn--block{display:flex;width:100%}
+
+/* primary — action colour */
+.ib-btn--primary{--_bg:var(--ib-action);--_fg:var(--ib-on-action);--_bd:var(--ib-action);--_hover:var(--ib-action-hover)}
+.ib-btn--primary:hover,.ib-btn--primary.is-hover{border-color:var(--ib-action-hover)}
+
+/* ghost */
+.ib-btn--ghost{--_bd:transparent}
+
+/* danger outline — border = danger 70% over surface (>=3.5:1 both themes) */
+.ib-btn--danger{--_fg:var(--ib-danger);--_bd:color-mix(in srgb,var(--ib-danger) 70%,var(--ib-surface));--_hover:var(--ib-danger-bg)}
+.ib-btn--danger-solid{--_bg:var(--ib-danger);--_fg:var(--ib-btn-on-danger);--_bd:var(--ib-danger);--_hover:color-mix(in srgb,var(--ib-danger) 88%,var(--ib-ink))}
+
+/* on brand mass: white (light) / #E6E6EE (dark) fill, brand text */
+.ib-btn--mass{--_bg:var(--ib-mass-btn);--_fg:var(--ib-brand);--_bd:var(--ib-mass-btn);--_hover:var(--ib-btn-mass-hover)}
+.ib-btn--mass:hover,.ib-btn--mass.is-hover{border-color:var(--ib-btn-mass-hover)}
+.ib-btn--mass:focus-visible,.ib-btn--mass.is-focus{outline-color:var(--ib-on-brand)}
+/* quiet outline on the mass (secondary next to a --mass button); border #A6A3BA on brand ≥4.8:1 */
+.ib-btn--mass-outline{--_fg:var(--ib-on-brand);--_bd:var(--ib-on-brand-3);--_hover:var(--ib-brand-hover)}
+.ib-mass .ib-btn:focus-visible,.ib-mass .ib-btn.is-focus{outline-color:var(--ib-on-brand)}
+
+/* loading: keeps width, hides label visually, shows ring */
+.ib-btn.is-loading{cursor:progress;pointer-events:none;color:transparent}
+.ib-btn__spin{display:none;position:absolute;inset:0;margin:auto;width:16px;height:16px;border-radius:50%;border:2px solid var(--_fg);border-right-color:transparent;animation:ib-btn-spin .7s linear infinite}
+.ib-btn.is-loading .ib-btn__spin{display:block}
+@keyframes ib-btn-spin{to{transform:rotate(1turn)}}
+
+/* disabled */
+.ib-btn:disabled,.ib-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;background:var(--_bg)}
+.ib-btn--primary:disabled,.ib-btn--primary[aria-disabled="true"]{border-color:var(--ib-action)}

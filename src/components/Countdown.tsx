@@ -1,10 +1,8 @@
 'use client'
 
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import Countdown from "react-countdown";
 import {cn} from "@/utils/cn";
-
-let intervalId: NodeJS.Timeout;
 
 export interface CountdownTimerProps {
     text: string;
@@ -18,6 +16,7 @@ export interface CountdownTimerProps {
 
 export function CountdownTimer({text, textAfter, ...props}: CountdownTimerProps) {
     const [timeNow, setTimeNow] = useState(Date.now())
+    const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
     const showTimer = (timeNow: number) => {
         return new Date(props.from || 0).getTime() < timeNow && new Date(props.until).getTime() > timeNow
@@ -25,12 +24,12 @@ export function CountdownTimer({text, textAfter, ...props}: CountdownTimerProps)
 
     useEffect(() => {
         if(showTimer(timeNow)) {
-            intervalId = setInterval(() => {
+            intervalRef.current = setInterval(() => {
                 setTimeNow(Date.now())
             }, 1000);
         }
         return () => {
-            clearInterval(intervalId);
+            clearInterval(intervalRef.current);
         };
     }, [props, timeNow]);
 
@@ -54,9 +53,6 @@ export function CountdownTimer({text, textAfter, ...props}: CountdownTimerProps)
     }
 
     if (!showTimer(timeNow)) {
-        if (!!intervalId) {
-            clearInterval(intervalId)
-        }
         return null
     }
 

@@ -14,7 +14,7 @@ export function useInView({onInView, onNotInView, isLoading, deps = [], ...optio
         ref: (node: any) => void
     } {
 
-    const observer = useRef<IntersectionObserver>();
+    const observer = useRef<IntersectionObserver | null>(null);
 
     const lastElementRef = useCallback((node: any) => {
         if (isLoading) return;

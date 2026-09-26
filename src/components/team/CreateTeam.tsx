@@ -24,7 +24,7 @@ export type Props = {
 }
 
 export default function CreateTeam({setIsJoinTeam}: Props) {
-    const {CreateTeam, CreateTeamResponse} = useTeam().useCreateTeam()
+    const {CreateTeam, CreateTeamIsError, CreateTeamError} = useTeam().useCreateTeam()
     const [name, setName] = useState("");
 
     const handleSubmit = (e: FormEvent) => {
@@ -58,20 +58,18 @@ export default function CreateTeam({setIsJoinTeam}: Props) {
                 >
                     Реєстрація команди
                 </Text>
-                {CreateTeamResponse?.data && (
-                    CreateTeamResponse?.data.Status.Code === 0 ?
-                        (<Alert status="error">
+                {CreateTeamIsError && (
+                    (CreateTeamError as any)?.response?.status < 500 ? (
+                        <Alert status="error">
                             <AlertIcon/>
-                            <AlertDescription>
-                                Команда з такою назвою вже існує
-                            </AlertDescription>
-                        </Alert>) :
-                        (
-                            <Alert status="error">
-                                <AlertIcon/>
-                                <AlertDescription>Помилка на стороні сервера</AlertDescription>
-                            </Alert>
-                        ))}
+                            <AlertDescription>Команда з такою назвою вже існує</AlertDescription>
+                        </Alert>
+                    ) : (
+                        <Alert status="error">
+                            <AlertIcon/>
+                            <AlertDescription>Помилка на стороні сервера</AlertDescription>
+                        </Alert>
+                    ))}
 
                 <Box minW={{base: "90%", md: "468px"}}>
                     <form onSubmit={handleSubmit}>
@@ -92,6 +90,7 @@ export default function CreateTeam({setIsJoinTeam}: Props) {
                                         name="name"
                                         required={true}
                                         placeholder="Назва команди"
+                                        _placeholder={{ color: "hsl(var(--placeholder))", opacity: 1 }}
                                         onChange={changeHandler}
                                         tabIndex={1}
                                     />
