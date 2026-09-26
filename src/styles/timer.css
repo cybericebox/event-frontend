@@ -1,0 +1,53 @@
+/* Timer — event countdown in mono. Four sizes: tower (sidebar on brand mass),
+   header (page head, on surface), hero (landing event panel on brand mass), screen (big screen / live band on brand mass).
+   Phase is always words: «До старту / Наживо / Остання година / Фініш». No dots, no pulse. */
+
+:root{
+  --ib-timer-warn-on-mass:#E8B45E; /* «Остання година» on #211A52 — 8.3:1, same in both themes */
+}
+
+.ib-timer{display:flex;flex-direction:column;gap:var(--ib-1);min-width:0;color:var(--ib-ink)}
+.ib-timer__phase{font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);color:var(--ib-dim);line-height:var(--ib-lh-ui);white-space:nowrap}
+.ib-timer__meta{font-size:var(--ib-fs-12);color:var(--ib-dim);line-height:var(--ib-lh-ui);white-space:nowrap}
+.ib-timer__meta .ib-num{font-size:inherit}
+.ib-timer__value{font-family:var(--ib-mono);font-weight:var(--ib-w-medium);font-variant-numeric:tabular-nums;line-height:1;
+  letter-spacing:-.04em;white-space:nowrap}
+.ib-timer__days{font-family:var(--ib-font);font-size:.55em;letter-spacing:0;color:var(--ib-dim);margin-right:.25em}
+
+/* phases */
+.ib-timer[data-phase="last-hour"] .ib-timer__phase{color:var(--ib-warn)}
+.ib-timer[data-phase="finish"] .ib-timer__value{color:var(--ib-dim)}
+
+/* size: page header — right aligned, 26px */
+.ib-timer--header{align-items:flex-end;text-align:right;gap:2px}
+.ib-timer--header .ib-timer__value{font-size:26px;line-height:1.05}
+.ib-timer--header .ib-timer__head{display:flex;gap:var(--ib-1);font-size:var(--ib-fs-12)}
+.ib-timer__head{display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.ib-timer__head .ib-timer__meta::before{content:"·";margin-right:6px}
+
+/* size: hero — landing «Найближча подія» on brand mass, 60 / 50 / 40px */
+.ib-timer--hero{gap:var(--ib-3)}
+.ib-timer--hero .ib-timer__head,.ib-timer--hero .ib-timer__phase,.ib-timer--hero .ib-timer__meta{font-size:var(--ib-fs-14)}
+.ib-timer--hero .ib-timer__value{font-size:60px;letter-spacing:-.05em}
+@media (max-width:1100px){.ib-timer--hero .ib-timer__value{font-size:50px}}
+@media (max-width:640px){.ib-timer--hero .ib-timer__value{font-size:40px}}
+
+/* size: tower — sits in the brand-mass sidebar, 28px */
+.ib-timer--tower{padding:14px var(--ib-4);color:var(--ib-on-brand)}
+.ib-timer--tower .ib-timer__value{font-size:28px;margin-top:2px}
+
+/* size: screen — projector / live band, scales with viewport height */
+.ib-timer--screen{align-items:flex-end;text-align:right;color:var(--ib-on-brand);gap:var(--ib-2)}
+.ib-timer--screen .ib-timer__head{font-size:clamp(14px,2vh,22px)}
+.ib-timer--screen .ib-timer__phase,.ib-timer--screen .ib-timer__meta{font-size:inherit}
+.ib-timer--screen .ib-timer__value{font-size:clamp(48px,11vh,120px);letter-spacing:-.055em;line-height:.9}
+
+/* on brand mass (tower, screen, or any .ib-mass parent) */
+.ib-timer--tower .ib-timer__phase,.ib-timer--screen .ib-timer__phase,.ib-mass .ib-timer__phase{color:var(--ib-on-brand-2)}
+.ib-timer--tower .ib-timer__meta,.ib-timer--screen .ib-timer__meta,.ib-mass .ib-timer__meta,
+.ib-timer--tower .ib-timer__days,.ib-timer--screen .ib-timer__days,.ib-mass .ib-timer__days{color:var(--ib-on-brand-2)}
+.ib-timer--tower[data-phase="last-hour"] .ib-timer__phase,.ib-timer--screen[data-phase="last-hour"] .ib-timer__phase,
+.ib-mass .ib-timer[data-phase="last-hour"] .ib-timer__phase{color:var(--ib-timer-warn-on-mass)}
+.ib-timer--tower[data-phase="finish"] .ib-timer__value,.ib-timer--screen[data-phase="finish"] .ib-timer__value,
+.ib-mass .ib-timer[data-phase="finish"] .ib-timer__value{color:var(--ib-on-brand-3)}
+.ib-mass .ib-timer{color:var(--ib-on-brand)}

@@ -1,0 +1,33 @@
+/* Accordion — questions & answers on native <details>/<summary> (keyboard: Tab to a question, Enter/Space toggles).
+   Source: prototypes/platform.html (FAQ). No JS. For «one open at a time» give every <details> the same name="…".
+   <div class="ib-accordion">
+     <details class="ib-accordion__item" open>
+       <summary class="ib-accordion__q">Що таке лабораторія?<svg class="ib-icon ib-accordion__icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg></summary>
+       <div class="ib-accordion__a"><p>…</p></div>
+     </details>
+   </div>
+   Hairlines between items, no boxes, no chevrons in circles. The plus turns into × when open.
+   --lg = landing size (17px questions, 20px padding); default = in-app size (14px). */
+
+.ib-accordion{border-top:1px solid var(--ib-line)}
+.ib-accordion__item{border-bottom:1px solid var(--ib-line)}
+.ib-accordion__q{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-6);padding:var(--ib-3) 0;
+  list-style:none;cursor:pointer;color:var(--ib-ink);font:var(--ib-w-semibold) var(--ib-fs-14)/var(--ib-lh-ui) var(--ib-font);
+  border-radius:var(--ib-r-sm);transition:color var(--ib-dur-fast) var(--ib-ease)}
+.ib-accordion__q::-webkit-details-marker{display:none}
+.ib-accordion__q::marker{content:""}
+.ib-accordion__q:hover,.ib-accordion__q.is-hover{color:var(--ib-action)}
+.ib-accordion__q:focus-visible,.ib-accordion__q.is-focus{outline:2px solid var(--ib-action);outline-offset:2px}
+.ib-accordion__icon{width:18px;height:18px;flex:none;color:var(--ib-dim);transition:transform var(--ib-dur) var(--ib-ease)}
+.ib-accordion__item[open]>.ib-accordion__q .ib-accordion__icon{transform:rotate(45deg)}
+.ib-accordion__a{padding:0 var(--ib-12) var(--ib-4) 0;color:var(--ib-dim);max-width:62ch}
+.ib-accordion__a p+p{margin-top:var(--ib-2)}
+.ib-accordion__item[aria-disabled="true"]>.ib-accordion__q{color:var(--ib-faint);cursor:not-allowed}
+
+.ib-accordion--lg .ib-accordion__q{padding:var(--ib-5) 0;font-size:17px}
+.ib-accordion--lg .ib-accordion__a{padding-bottom:22px;font-size:var(--ib-fs-16)}
+
+@media (max-width:640px){
+  .ib-accordion--lg .ib-accordion__q{font-size:var(--ib-fs-16)}
+  .ib-accordion__a{padding-right:0}
+}

@@ -10,13 +10,13 @@ export function GuestShell({event, authenticated, children}: {
     authenticated: boolean;
     children: ReactNode;
 }) {
-    const links = [{href: "/", label: "Головна"}, ...(event.CanViewResults ? [{href: "/scoreboard", label: "Результати"}] : [])];
+    const links = event.CanViewResults ? [{href: "/scoreboard", label: "Результати"}] : [];
     return <div className="event-guest-shell">
         <EventNavbar event={event} authenticated={authenticated} />
         <main className="event-guest-main">{children}</main>
         <footer className="ib-footer ib-footer--event"><div className="ib-footer__inner"><div className="ib-footer__row">
             <span className="ib-footer__org"><b>{event.Name}</b><span>CyberICEBox</span></span>
-            <nav className="ib-footer__links" aria-label="Посилання події">{links.map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav>
+            {links.length > 0 && <nav className="ib-footer__links" aria-label="Посилання події">{links.map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav>}
         </div></div></footer>
     </div>;
 }

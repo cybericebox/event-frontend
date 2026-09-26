@@ -1,0 +1,15 @@
+/* Block «timeline» — the day schedule: time + short label; the current step is marked with action colour.
+   Fields: {type:'timeline', title, sub, split, items:[{time:'08:00', label:'Старт', now:false}]}
+   Wraps into rows on narrow stacks; each step keeps its own top rule and tick. */
+
+.ib-block-timeline__list{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));row-gap:var(--ib-6);margin:0;padding:0;list-style:none}
+.ib-block-timeline__step{position:relative;padding:14px var(--ib-4) 0 0;border-top:2px solid var(--ib-ink)}
+.ib-block-timeline__step::before{content:"";position:absolute;left:0;top:-2px;width:2px;height:12px;background:var(--ib-ink)}
+.ib-block-timeline__time{display:block;padding-left:10px;font:var(--ib-w-medium) var(--ib-fs-20) var(--ib-mono);letter-spacing:-.03em;color:var(--ib-ink)}
+.ib-block-timeline__label{margin-top:var(--ib-1);padding-left:10px;font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-block-timeline__step.is-now .ib-block-timeline__time{color:var(--ib-action)}
+.ib-block-timeline__step.is-now .ib-block-timeline__label{color:var(--ib-ink);font-weight:var(--ib-w-medium)}
+.ib-mass .ib-block-timeline__step{border-color:var(--ib-on-brand)}
+.ib-mass .ib-block-timeline__step::before{background:var(--ib-on-brand)}
+.ib-mass .ib-block-timeline__time{color:var(--ib-on-brand)}
+.ib-mass .ib-block-timeline__label{color:var(--ib-on-brand-2)}

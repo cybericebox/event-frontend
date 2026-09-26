@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import type {ContentDocument} from "@/types/eventContent";
+import {CountdownValue} from "./CountdownValue";
 
 type Value = string | number | boolean | null;
 
@@ -37,6 +38,12 @@ function replaceVariables(text: string, variables: Record<string, Value>, declar
     });
 }
 
+function safeHref(href: string): string | undefined {
+    if (href.startsWith("/") && !href.startsWith("//")) return href;
+    if (href.startsWith("#")) return href;
+    try { const url = new URL(href); return url.protocol === "https:" ? url.href : undefined; } catch { return undefined; }
+}
+
 export function ContentBlocks({document, variables, title}: {
     document: ContentDocument;
     variables: Record<string, Value>;
@@ -48,14 +55,31 @@ export function ContentBlocks({document, variables, title}: {
         {title && <section className="ib-block event-content-heading"><div className="ib-block__in"><h1 className="ib-block__title ib-block__title--page">{title}</h1></div></section>}
         {blocks.map(block => {
             const declared = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
+            const render = (value = "") => replaceVariables(value, variables, declared);
+            const heading = block.title || block.sub ? <div className="ib-block__head">
+                {block.title && <h2 className="ib-block__title">{render(block.title)}</h2>}
+                {block.sub && <p className="ib-block__sub">{render(block.sub)}</p>}
+            </div> : null;
             if (block.type === "section") return <section className="ib-block" key={block.id} id={block.id}>
                 <div className="ib-block__in"><h2 className="ib-block__title">{replaceVariables(block.label ?? "", variables, declared)}</h2></div>
             </section>;
-            return <section className="ib-block ib-block-text" key={block.id} id={block.id}>
+            if (block.type === "text") return <section className="ib-block ib-block-text" key={block.id} id={block.id}>
                 <div className="ib-block__in"><div className="ib-block-prose">
                     <ReactMarkdown>{replaceVariables(block.markdown ?? "", variables, declared, true)}</ReactMarkdown>
                 </div></div>
             </section>;
+            if (block.type === "facts") return <section className="ib-block ib-block-facts" key={block.id} id={block.id}><div className="ib-block__in">{heading}<dl className="ib-block-facts__list">{(block.items ?? []).map((item, index) => <div className="ib-block-facts__item" key={index}><dt>{render(item.label)}</dt><dd>{render(item.value)}</dd></div>)}</dl></div></section>;
+            if (block.type === "timeline") return <section className="ib-block ib-block-timeline" key={block.id} id={block.id}><div className="ib-block__in">{heading}<ol className="ib-block-timeline__list">{(block.items ?? []).map((item, index) => <li className="ib-block-timeline__step" key={index}><span className="ib-block-timeline__time">{render(item.label)}</span><p className="ib-block-timeline__label">{render(item.value)}</p></li>)}</ol></div></section>;
+            if (block.type === "faq") return <section className="ib-block ib-block-faq" key={block.id} id={block.id}><div className="ib-block__in">{heading}<div className="ib-accordion ib-accordion--lg">{(block.items ?? []).map((item, index) => <details className="ib-accordion__item" key={index}><summary className="ib-accordion__q">{render(item.label)}</summary><div className="ib-accordion__a ib-block-prose"><ReactMarkdown>{replaceVariables(item.value ?? "", variables, declared, true)}</ReactMarkdown></div></details>)}</div></div></section>;
+            if (block.type === "cta") {
+                const href = safeHref(block.action?.href ?? "");
+                return <section className={`ib-block ib-block-cta${block.variant === "mass" ? " ib-mass" : ""}`} key={block.id} id={block.id}><div className="ib-block__in"><div><h2 className="ib-block-cta__title">{render(block.title)}</h2>{block.text && <p className="ib-block-cta__text">{render(block.text)}</p>}</div><div className="ib-block-cta__acts">{href && block.action?.label && <a className={`ib-btn ${block.variant === "mass" ? "ib-btn--mass" : "ib-btn--primary"}`} href={href}>{render(block.action.label)}</a>}</div></div></section>;
+            }
+            if (block.type === "countdown") {
+                const target = variables[block.targetVariable ?? ""];
+                return <section className="ib-block ib-block-countdown" key={block.id} id={block.id}><div className="ib-block__in"><div><h2 className="ib-block-countdown__title">{render(block.title)}</h2>{block.text && <p className="ib-block-countdown__text">{render(block.text)}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} /></div></div></section>;
+            }
+            return <section className={`ib-block ib-block-divider${block.size === "sm" ? " ib-block-divider--sm" : block.size === "lg" ? " ib-block-divider--lg" : ""}${block.line ? " ib-block-divider--line" : ""}`} key={block.id} id={block.id}><div className="ib-block__in" /></section>;
         })}
         {blocks.length === 0 && <section className="ib-block"><div className="ib-block__in"><p className="event-content-empty">Організатори ще готують вміст цієї сторінки.</p></div></section>}
     </div>;

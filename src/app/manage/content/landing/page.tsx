@@ -8,9 +8,10 @@ import {getManageContent, getManageContentVariables, ManageApiError, putManageLa
 import {ContentBlocks} from "@/components/event/content/ContentBlocks";
 import {LandingHero} from "@/components/event/content/LandingHero";
 import {LandingBlockEditor} from "@/components/event/manage/LandingBlockEditor";
+import {blockPalette, createPageBlock} from "@/components/event/manage/blockPalette";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {validateLanding} from "@/components/event/manage/validateLanding";
-import type {ContentBlock, ContentDocument} from "@/types/eventContent";
+import type {ContentBlock, ContentDocument, PageBlockType} from "@/types/eventContent";
 
 function blockCountLabel(count: number): string {
     if (count % 10 === 1 && count % 100 !== 11) return `${count} блок`;
@@ -61,10 +62,9 @@ export default function ManageLandingPage() {
         change({blocks});
     }
 
-    function addBlock(type: "section" | "text") {
+    function addBlock(type: PageBlockType) {
         if (!draft) return;
-        const id = `block-${crypto.randomUUID()}`;
-        const block: ContentBlock = type === "section" ? {id, type, label: ""} : {id, type, markdown: ""};
+        const block = createPageBlock(type);
         change({blocks: [...draft.blocks, block]});
     }
 
@@ -86,7 +86,7 @@ export default function ManageLandingPage() {
     if (content.isPending || variables.isPending || !draft) return <div className="event-manage-loading" role="status">Завантажуємо головну сторінку…</div>;
 
     return <div className="event-manage-content">
-        <header className="event-manage-heading"><div><h1>Головна сторінка</h1><p>Побудуйте сторінку з розділів і текстових блоків.</p></div>{event.Status !== 0 && event.Status !== 4 && <Link className="ib-btn" href="/">Відкрити сайт <ArrowUpRight size={16} /></Link>}</header>
+        <header className="event-manage-heading"><div><h1>Головна сторінка</h1><p>Побудуйте сторінку з блоків у потрібному порядку.</p></div>{event.Status !== 0 && event.Status !== 4 && <Link className="ib-btn" href="/">Відкрити сайт <ArrowUpRight size={16} /></Link>}</header>
         {!canManage && <div className="event-manage-notice" role="status">Доступний лише перегляд. Змінювати головну сторінку може менеджер події.</div>}
         {event.Status === 0 && <div className="event-manage-notice" role="status">Сайт ще не опубліковано. Попередній перегляд праворуч показує вміст до публікації.</div>}
         {error && <div className="event-manage-feedback event-manage-feedback--error" role="alert">{error}</div>}
@@ -95,9 +95,9 @@ export default function ManageLandingPage() {
         <div className="event-manage-content__layout">
             <div className="event-content-editor">
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Порядок блоків відповідає їхньому порядку на сайті.</p></div><span>{blockCountLabel(draft.blocks.length)}</span></div>
-                {draft.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте розділ або текст, щоб почати.</span></div>}
+                {draft.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
                 <div className="event-content-editor__stack">{draft.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.blocks.length} values={publicValues} catalog={catalog} canEdit={canManage && !saving} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onDelete={() => change({blocks: draft.blocks.filter((_, position) => position !== index)})} />)}</div>
-                {canManage && <div className="event-content-editor__add"><button className="ib-btn" type="button" onClick={() => addBlock("section")}><Plus size={16} /> Розділ</button><button className="ib-btn" type="button" onClick={() => addBlock("text")}><Plus size={16} /> Текст</button></div>}
+                {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setMessage(""); setError("");}}><RotateCcw size={16} /> Скасувати зміни</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти сторінку"}</button></div></div>
             </div>

@@ -7,8 +7,10 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, Check, Eye, Plus, RotateCcw, Trash2, Type} from "lucide-react";
 import {createManagePage, deleteManagePage, getManageContent, getManageContentVariables, getManagePage, ManageApiError, type ManagePageInput, updateManagePage} from "@/api/manage";
 import {ContentBlocks} from "@/components/event/content/ContentBlocks";
-import type {ContentBlock} from "@/types/eventContent";
+import type {ContentBlock, PageBlockType} from "@/types/eventContent";
 import {LandingBlockEditor} from "./LandingBlockEditor";
+import {EventSelect} from "@/components/ui/EventSelect";
+import {blockPalette, createPageBlock} from "./blockPalette";
 import {useManager} from "./ManagerShell";
 import {validateLanding} from "./validateLanding";
 
@@ -58,10 +60,8 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         [blocks[index], blocks[index + direction]] = [blocks[index + direction], blocks[index]];
         change({...draft, Document: {blocks}});
     }
-    function addBlock(type: "section" | "text") {
-        const block: ContentBlock = type === "section"
-            ? {id: `block-${crypto.randomUUID()}`, type, label: ""}
-            : {id: `block-${crypto.randomUUID()}`, type, markdown: ""};
+    function addBlock(type: PageBlockType) {
+        const block = createPageBlock(type);
         change({...draft, Document: {blocks: [...draft.Document.blocks, block]}});
     }
 
@@ -114,14 +114,14 @@ export function CustomPageEditor({slug}: {slug?: string}) {
                     <h2>Налаштування сторінки</h2>
                     <label className="event-manage-field"><span>Назва сторінки</span><input className="event-manage-input" value={draft.Title} disabled={!canManage || saving} onChange={e => change({...draft, Title: e.target.value})} maxLength={255} /></label>
                     <label className="event-manage-field"><span>Адреса</span><div className="event-manage-page-slug"><span>/p/</span><input className="event-manage-input" value={draft.Slug} disabled={!canManage || saving} onChange={e => change({...draft, Slug: e.target.value.toLowerCase()})} maxLength={128} /></div></label>
-                    <label className="event-manage-field"><span>Доступ</span><select className="event-manage-input" value={draft.Visibility} disabled={!canManage || saving} onChange={e => {const visibility = Number(e.target.value) as 0 | 1 | 2; change({...draft, Visibility: visibility, Navigation: visibility === 2 ? 0 : draft.Navigation});}}><option value={0}>Публічна</option><option value={1}>Підтверджені учасники</option><option value={2}>Лише модератори</option></select></label>
-                    <label className="event-manage-field"><span>У навігації</span><select className="event-manage-input" value={draft.Visibility === 2 ? 0 : draft.Navigation === 0 ? 0 : 1} disabled={!canManage || saving || draft.Visibility === 2} onChange={e => change({...draft, Navigation: e.target.value === "1" ? 1 : 0})}><option value={1}>Показувати</option><option value={0}>Не показувати</option></select></label>
+                    <div className="event-manage-field"><span>Доступ</span><EventSelect ariaLabel="Доступ до сторінки" value={String(draft.Visibility)} disabled={!canManage || saving} options={[{value: "0", label: "Публічна"}, {value: "1", label: "Підтверджені учасники"}, {value: "2", label: "Лише модератори"}]} onValueChange={value => {const visibility = Number(value) as 0 | 1 | 2; change({...draft, Visibility: visibility, Navigation: visibility === 2 ? 0 : draft.Navigation});}} /></div>
+                    <div className="event-manage-field"><span>У навігації</span><EventSelect ariaLabel="Показ у навігації" value={draft.Visibility === 2 || draft.Navigation === 0 ? "0" : "1"} disabled={!canManage || saving || draft.Visibility === 2} options={[{value: "1", label: "Показувати"}, {value: "0", label: "Не показувати"}]} onValueChange={value => change({...draft, Navigation: value === "1" ? 1 : 0})} /></div>
                     <label className="event-manage-field"><span>Порядок у навігації</span><input className="event-manage-input" type="number" value={draft.NavigationOrder} disabled={!canManage || saving || draft.Navigation === 0} onChange={e => change({...draft, NavigationOrder: Number(e.target.value)})} /></label>
                 </div>
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Порядок блоків відповідає порядку на сайті.</p></div><span>{draft.Document.blocks.length}</span></div>
-                {draft.Document.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте розділ або текст, щоб почати.</span></div>}
+                {draft.Document.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
                 <div className="event-content-editor__stack">{draft.Document.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.Document.blocks.length} values={values} catalog={catalog} canEdit={canManage && !saving} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onDelete={() => change({...draft, Document: {blocks: draft.Document.blocks.filter((_, position) => position !== index)}})} />)}</div>
-                {canManage && <div className="event-content-editor__add"><button className="ib-btn" type="button" onClick={() => addBlock("section")}><Plus size={16} /> Розділ</button><button className="ib-btn" type="button" onClick={() => addBlock("text")}><Plus size={16} /> Текст</button></div>}
+                {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && !isNew && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setError("");}}><RotateCcw size={16} /> Скасувати</button>}{!isNew && canManage && <button className="ib-btn event-content-editor__delete" type="button" disabled={saving} onClick={() => void remove()}><Trash2 size={16} /> Видалити</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div></div>
             </div>

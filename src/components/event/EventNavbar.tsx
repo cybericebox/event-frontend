@@ -85,7 +85,6 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         retry: false, refetchOnWindowFocus: false,
     });
     const links = useMemo(() => [
-        {href: "/", label: "Головна"},
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
         ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
         ...(pages.data ?? []).map(page => ({href: `/p/${page.Slug}`, label: page.Title})),

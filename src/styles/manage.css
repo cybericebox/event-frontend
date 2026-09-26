@@ -221,6 +221,12 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__block-actions .event-content-editor__danger:hover{background:var(--ib-danger-bg);color:var(--ib-danger)}
 .event-content-editor__block-body{display:grid;gap:var(--ib-3);padding:var(--ib-4)}
 .event-content-editor__textarea{min-height:170px;line-height:var(--ib-lh-body)}
+.event-content-editor__textarea--compact{min-height:84px;line-height:var(--ib-lh-body)}
+.event-content-editor__field-label{display:inline-flex;align-items:center;gap:3px}
+.event-content-editor__field-label abbr{color:var(--ib-danger);text-decoration:none;font-weight:var(--ib-w-semibold)}
+.event-content-editor__help{display:inline-flex;margin-left:3px;color:var(--ib-dim)}
+.event-content-editor__help button{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--ib-dim);cursor:help}
+.event-content-editor__help button:hover{color:var(--ib-ink);background:var(--ib-soft)}
 .event-content-editor__tools{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);flex-wrap:wrap}
 .event-content-editor__picker{position:relative}
 .event-content-editor__picker>.ib-btn{display:inline-flex;align-items:center;gap:var(--ib-2)}
@@ -237,7 +243,18 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__rules>p{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-content-editor__rule{display:grid;grid-template-columns:minmax(145px,1.3fr) minmax(112px,.8fr) minmax(120px,1fr) 30px;gap:var(--ib-2);align-items:center}
 .event-content-editor__rule>.event-manage-input{min-height:38px}
-.event-content-editor__add{display:flex;gap:var(--ib-2);margin-top:var(--ib-4)}
+.event-content-editor__add{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:var(--ib-2);min-width:0;margin-top:var(--ib-4)}
+.event-content-editor__add .ib-btn{display:inline-flex;align-items:center;justify-content:flex-start;gap:var(--ib-2);min-width:0;min-height:40px;white-space:normal;text-align:left}
+.event-content-editor__add .ib-btn svg{flex:none}
+.event-content-editor__item{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto;gap:var(--ib-2);align-items:end;min-width:0}
+.event-content-editor__item>.event-manage-field{min-width:0}
+.event-content-editor__item--faq{grid-template-columns:minmax(0,1fr);gap:var(--ib-2);padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-paper)}
+.event-content-editor__item-head{display:flex;align-items:center;justify-content:space-between;min-height:24px;color:var(--ib-ink);font-size:var(--ib-fs-13)}
+.event-content-editor__item-head button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-content-editor__item-head button:hover{background:var(--ib-danger-bg);color:var(--ib-danger)}
+.event-select{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-2)}
+.event-select__menu{z-index:80;min-width:var(--radix-dropdown-menu-trigger-width);max-width:min(380px,calc(100vw - 24px));outline:0}
+@media(max-width:640px){.event-content-editor__item{grid-template-columns:minmax(0,1fr)}.event-content-editor__rule{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.event-content-editor__rule>.event-manage-input:first-child{grid-column:1/-1}}
 .event-content-editor__empty{display:grid;justify-items:center;gap:var(--ib-2);padding:var(--ib-10);border:1px dashed var(--ib-line);border-radius:var(--ib-r-lg);color:var(--ib-dim);text-align:center;font-size:var(--ib-fs-13)}
 .event-content-editor__empty strong{color:var(--ib-ink);font-size:var(--ib-fs-14)}
 .event-content-editor__footer{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-4);margin-top:var(--ib-6);padding-top:var(--ib-4);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}

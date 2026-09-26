@@ -9,15 +9,23 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
     for (const [index, block] of document.blocks.entries()) {
         if (!block.id.trim() || ids.has(block.id)) return `Блок ${index + 1}: некоректний або повторний ідентифікатор.`;
         ids.add(block.id);
-        const text = block.type === "section" ? block.label ?? "" : block.markdown ?? "";
-        if (!text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
+        const text = block.type === "section" ? block.label ?? "" : block.type === "text" ? block.markdown ?? "" : "";
+        if ((block.type === "section" || block.type === "text") && !text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
         if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
+        if (["facts", "timeline", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
+        if (block.type === "cta" && (!block.title?.trim() || !block.action?.label.trim() || !block.action?.href.trim())) return `Блок ${index + 1}: додайте заголовок і кнопку.`;
+        if (block.type === "cta" && block.action && !/^(\/(?!\/)|#|https:\/\/)/.test(block.action.href)) return `Блок ${index + 1}: посилання має бути внутрішнім або HTTPS.`;
+        if (block.type === "countdown" && (!block.targetVariable || !catalog.some(item => item.name === block.targetVariable && item.format === "date-time"))) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
         for (const variable of block.variables ?? []) {
             if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для цієї сторінки.`;
         }
-        for (const [, variable] of text.matchAll(tokenPattern)) {
-            if (!bindings.has(variable)) return `Блок ${index + 1}: змінну ${variable} потрібно додати через список.`;
+        if (block.type === "countdown" && !bindings.has(block.targetVariable ?? "")) return `Блок ${index + 1}: змінну дати потрібно додати до блока.`;
+        const fields = [text, block.title ?? "", block.sub ?? "", block.text ?? "", block.action?.label ?? "", ...(block.items ?? []).flatMap(item => [item.label ?? "", item.value ?? ""])];
+        for (const field of fields) {
+            for (const [, variable] of field.matchAll(tokenPattern)) {
+                if (!bindings.has(variable)) return `Блок ${index + 1}: змінну ${variable} потрібно додати через список.`;
+            }
         }
         for (const rule of block.visibility ?? []) {
             const format = bindings.get(rule.variable);
