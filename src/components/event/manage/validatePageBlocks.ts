@@ -18,9 +18,9 @@ export function blockValidationField(error: string | undefined, block: ContentBl
     if (message === "заповніть назву.") return "label";
     if (message === "заповніть текст.") return "markdown";
     if (message === "вкажіть назву героя.") return "title";
-    if (message === "додайте заголовок і кнопку.") return !block.title?.trim() ? "title" : !block.action?.label.trim() ? "action:label" : "action:href";
-    if (message === "посилання має бути внутрішнім або HTTPS.") return "action:href";
-    if (message === "заповніть другу дію та її посилання.") return !block.secondaryAction?.label.trim() ? "secondaryAction:label" : "secondaryAction:href";
+    if (message === "вкажіть заголовок дії.") return "title";
+    if (message === "вкажіть текст кнопки.") return "action:label";
+    if (message === "вкажіть посилання кнопки." || message === "посилання кнопки має бути внутрішнім або HTTPS.") return "action:href";
     if (message === "вкажіть текст головної дії.") return "action:label";
     if (message === "вкажіть посилання головної дії." || message === "посилання головної дії має бути внутрішнім або HTTPS.") return "action:href";
     if (message === "вкажіть текст другої дії.") return "secondaryAction:label";
@@ -93,10 +93,14 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         }
         if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
-        if (block.type === "cta" && (!block.title?.trim() || !block.action?.label.trim() || !block.action?.href.trim())) return `Блок ${index + 1}: додайте заголовок і кнопку.`;
-        if (block.type === "cta" && block.action && !validHref(block.action.href)) return `Блок ${index + 1}: посилання має бути внутрішнім або HTTPS.`;
+        if (block.type === "cta" && !block.title?.trim()) return `Блок ${index + 1}: вкажіть заголовок дії.`;
+        if (block.type === "cta" && !block.action?.label.trim()) return `Блок ${index + 1}: вкажіть текст кнопки.`;
+        if (block.type === "cta" && !block.action?.href.trim()) return `Блок ${index + 1}: вкажіть посилання кнопки.`;
+        if (block.type === "cta" && block.action && !validHref(block.action.href)) return `Блок ${index + 1}: посилання кнопки має бути внутрішнім або HTTPS.`;
         if (block.type === "cta" && block.variant && !["plain", "mass"].includes(block.variant)) return `Блок ${index + 1}: невідоме оформлення дії.`;
-        if (block.type === "cta" && block.secondaryAction && (!block.secondaryAction.label.trim() || !validHref(block.secondaryAction.href))) return `Блок ${index + 1}: заповніть другу дію та її посилання.`;
+        if (block.type === "cta" && block.secondaryAction && !block.secondaryAction.label.trim()) return `Блок ${index + 1}: вкажіть текст другої дії.`;
+        if (block.type === "cta" && block.secondaryAction && !block.secondaryAction.href.trim()) return `Блок ${index + 1}: вкажіть посилання другої дії.`;
+        if (block.type === "cta" && block.secondaryAction && !validHref(block.secondaryAction.href)) return `Блок ${index + 1}: посилання другої дії має бути внутрішнім або HTTPS.`;
         if (block.type === "facts" && block.variant && !["strip", "rows"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка фактів.`;
         if (block.type === "hero") {
             if (!block.title?.trim()) return `Блок ${index + 1}: вкажіть назву героя.`;

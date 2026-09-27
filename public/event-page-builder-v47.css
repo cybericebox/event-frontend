@@ -1,0 +1,5 @@
+@import url("/event-page-builder-v46.css");
+.ib-block-cta__acts{width:100%}
+.ib-block-cta--actions-start .ib-block-cta__acts{margin-right:0;justify-content:flex-start}
+.ib-block-cta--actions-center .ib-block-cta__acts{justify-content:center}
+.ib-block-cta--actions-end .ib-block-cta__acts{justify-content:flex-end}
