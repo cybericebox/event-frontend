@@ -50,7 +50,7 @@ function markdownHTML(value: string) {
 }
 
 function serializedMarkdown(html: string) {
-    return turndown.turndown(html).trim().replaceAll("<", "&lt;");
+    return turndown.turndown(html).replaceAll("\u200b", "").trim().replaceAll("<", "&lt;");
 }
 
 function highlightVariables(root: HTMLElement) {
@@ -73,6 +73,7 @@ function highlightVariables(root: HTMLElement) {
             token.contentEditable = "false";
             token.textContent = token.dataset.variable;
             fragment.append(token);
+            fragment.append(document.createTextNode("\u200b"));
             position = start + match[0].length;
         }
         if (position < source.length) fragment.append(document.createTextNode(source.slice(position)));
@@ -290,7 +291,9 @@ export function RichMarkdownField({label, value, required = true, error, disable
         token.textContent = variable.name;
         range.deleteContents();
         range.insertNode(token);
-        range.setStartAfter(token);
+        const spacer = document.createTextNode("\u200b");
+        token.after(spacer);
+        range.setStartAfter(spacer);
         range.collapse(true);
         current?.removeAllRanges();
         current?.addRange(range);

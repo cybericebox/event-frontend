@@ -71,6 +71,7 @@ function renderBadges(editor: HTMLElement, raw: string) {
             const start = match.index ?? 0;
             if (start > position) nodes.push(document.createTextNode(line.slice(position, start)));
             nodes.push(badge(match[1]));
+            nodes.push(document.createTextNode("\u200b"));
             position = start + match[0].length;
         }
         if (position < line.length) nodes.push(document.createTextNode(line.slice(position)));
@@ -146,7 +147,9 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
         const token = badge(variable.name);
         range.deleteContents();
         range.insertNode(token);
-        range.setStartAfter(token);
+        const spacer = document.createTextNode("\u200b");
+        token.after(spacer);
+        range.setStartAfter(spacer);
         range.collapse(true);
         const current = window.getSelection();
         current?.removeAllRanges();
