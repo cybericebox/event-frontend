@@ -14,6 +14,7 @@ import {FieldLabel} from "./FieldLabel";
 import {RichMarkdownField} from "./RichMarkdownField";
 import {blockValidationField} from "./validatePageBlocks";
 import {replaceVariables} from "@/components/event/content/ContentBlocks";
+import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {useEventLinkOptions} from "./useEventLinkOptions";
 
 export {FieldLabel} from "./FieldLabel";
@@ -365,6 +366,32 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         return <div className="event-manage-field"><FieldLabel label="Вигляд лічильника" required help="Оберіть спосіб показу часу до вибраної дати.\n• Числа з підписами — дні, години, хвилини й секунди окремо.\n• Компактний — один рядок із часом.\n• Плитки — кожна частина часу в окремій комірці." /><EventSelect ariaLabel="Вигляд лічильника" value={block.timerDisplay ?? "segments"} options={[{value: "segments", label: "Числа з підписами"}, {value: "compact", label: "Компактний рядок"}, {value: "tiles", label: "Числа в плитках"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerDisplay: value as NonNullable<ContentBlock["timerDisplay"]>})} /></div>;
     }
 
+    function timelineTimeField(item: NonNullable<ContentBlock["items"]>[number], itemIndex: number) {
+        const source = item.dateSource === "custom" ? "custom" : item.dateVariable ?? "";
+        const currentDate = item.dateSource === "custom" ? item.dateValue ?? "" : String(values[item.dateVariable ?? ""] ?? "");
+        const format = item.dateFormat ?? "date-time";
+        const example = currentDate && (format !== "custom" || validDatePattern(item.datePattern ?? "")) ? formatDateTime(currentDate, format, item.datePattern) : "";
+        const fieldPrefix = "item:" + itemIndex + ":";
+        const updateItem = (update: Partial<typeof item>, base = block) => ({...base, items: (base.items ?? []).map((entry, position) => position === itemIndex ? {...entry, ...update} : entry)});
+        return <div className="event-content-editor__time-settings">
+            <div className={"event-manage-field" + (errorField === fieldPrefix + "dateVariable" ? " is-invalid" : "")}>
+                <FieldLabel label="Час" required help="Оберіть дату й час із розкладу події або вкажіть власний момент.\nДата з розкладу оновлюється разом із подією." />
+                <EventSelect ariaLabel={"Час етапу " + (itemIndex + 1)} value={source} placeholder="Оберіть дату й час" options={[...catalog.filter(variable => variable.format === "date-time").map(variable => ({value: variable.name, label: variable.label})), {value: "custom", label: "Своя дата й час"}]} disabled={!canEdit} onValueChange={next => {
+                    const variable = contentVariableByName.get(next);
+                    const base = variable ? withBinding(block, variable) : block;
+                    onUpdate(updateItem(next === "custom" ? {dateSource: "custom", dateVariable: "", dateValue: ""} : {dateSource: "event", dateVariable: next, dateValue: ""}, base));
+                }} />
+            </div>
+            {item.dateSource === "custom" && <div className={"event-manage-field" + (errorField === fieldPrefix + "dateValue" ? " is-invalid" : "")}>
+                <FieldLabel label="Своя дата й час" required help="Фіксовані дата й час для цього пункту розкладу.\nВкажіть дату перед зміною часу." />
+                <EventDateTimePicker ariaLabel={"Своя дата й час етапу " + (itemIndex + 1)} value={localDateTime(item.dateValue ?? "")} disabled={!canEdit} onChange={value => onUpdate(updateItem({dateValue: value ? new Date(value).toISOString() : ""}))} />
+            </div>}
+            <div className="event-manage-field"><FieldLabel label="Формат часу" required help="Виберіть вигляд дати та часу в цьому пункті.\nСвій формат використовує: dd — день, MM — місяць, yyyy — рік, HH — години, mm — хвилини, ss — секунди." /><EventSelect ariaLabel={"Формат часу етапу " + (itemIndex + 1)} value={format} options={[...dateDisplayOptions]} disabled={!canEdit} onValueChange={value => onUpdate(updateItem({dateFormat: value as typeof format}))} /></div>
+            {format === "custom" && <div className={"event-manage-field" + (errorField === fieldPrefix + "datePattern" ? " is-invalid" : "")}><FieldLabel label="Свій формат" required help="Приклад: dd.MM.yyyy HH:mm.\nТекст у квадратних дужках показується без змін, наприклад [о] HH:mm." /><input className={"event-manage-input" + (errorField === fieldPrefix + "datePattern" ? " is-invalid" : "")} aria-label={"Свій формат часу етапу " + (itemIndex + 1)} value={item.datePattern ?? ""} placeholder="dd.MM.yyyy HH:mm" disabled={!canEdit} onChange={event => onUpdate(updateItem({datePattern: event.target.value}))} /></div>}
+            {example && <small className="event-content-editor__hint">На сторінці: {example}</small>}
+        </div>;
+    }
+
     function setRule(ruleIndex: number, update: NonNullable<ContentBlock["visibility"]>[number]) {
         const variable = contentVariableByName.get(update.variable);
         const nextBlock = variable ? withBinding(block, variable) : block;
@@ -419,14 +446,14 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             {["hero", "facts", "timeline", "faq"].includes(block.type) && <>
                 {block.type !== "hero" && inputField("sub", "Пояснення", "Необов’язково")}
                 {block.type === "faq" && <div className="event-manage-field"><FieldLabel label="Відкрите питання" help="Яка відповідь видима під час першого відкриття сторінки.\nУчасник може сам відкривати й закривати інші питання." /><EventSelect ariaLabel="Питання, відкрите спочатку" value={block.openItem === undefined ? "none" : String(block.openItem)} options={[{value: "none", label: "Жодне"}, ...(block.items ?? []).map((_, position) => ({value: String(position), label: `Питання ${position + 1}`}))]} disabled={!canEdit} onValueChange={value => onUpdate({...block, openItem: value === "none" ? undefined : Number(value)})} /></div>}
-                {(block.items ?? []).map((item, itemIndex) => <div className={`event-content-editor__item${block.type === "faq" ? " event-content-editor__item--faq" : ""}`} key={itemIndex}>
+                {(block.items ?? []).map((item, itemIndex) => <div className={`event-content-editor__item${block.type === "faq" ? " event-content-editor__item--faq" : block.type === "timeline" ? " event-content-editor__item--timeline" : ""}`} key={itemIndex}>
                     {block.type === "faq" && <div className="event-content-editor__item-head"><strong>Питання {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити питання ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex), openItem: block.openItem === undefined || block.openItem === itemIndex ? undefined : block.openItem > itemIndex ? block.openItem - 1 : block.openItem})}><Trash2 size={15} /></button>}</div>}
-                    {inputField(`item:${itemIndex}:label`, block.type === "timeline" ? "Час" : block.type === "faq" ? "Питання" : "Підпис", "", false, true)}
+                    {block.type === "timeline" ? timelineTimeField(item, itemIndex) : inputField(`item:${itemIndex}:label`, block.type === "faq" ? "Питання" : "Підпис", "", false, true)}
                     {block.type === "faq" ? richField(`item:${itemIndex}:value`, "Відповідь") : inputField(`item:${itemIndex}:value`, block.type === "timeline" ? "Подія" : "Значення", "", false, true)}
                     {canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><X size={16} /></button>}
                     {block.type !== "faq" && errorField?.startsWith(`item:${itemIndex}:`) && <p className="event-content-editor__field-error event-content-editor__item-error" id={`item-${block.id}-${itemIndex}-error`} role="alert">{errorMessage}</p>}
                 </div>)}
-                {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
+                {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), block.type === "timeline" ? {dateSource: "event", dateVariable: "", dateFormat: "date-time", value: ""} : {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
             </>}
             {block.type === "doc" && <>
                 {inputField("tocTitle", "Назва змісту", "Зміст", false, false, "Підпис переліку розділів праворуч від тексту.")}

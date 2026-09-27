@@ -1,5 +1,6 @@
 import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
+import {validDatePattern} from "@/components/event/content/dateDisplay";
 
 const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
 
@@ -25,6 +26,19 @@ export function blockValidationField(error: string | undefined, block: ContentBl
     if (message === "заповніть усі пункти або видаліть порожні." || message === "додайте розділ із назвою та безпечним текстом." || message === "заповніть факти героя, не більше чотирьох.") {
         const itemIndex = block.items?.findIndex(item => !item.label?.trim() || !item.value?.trim()) ?? -1;
         if (itemIndex >= 0) return `item:${itemIndex}:${block.items?.[itemIndex].label?.trim() ? "value" : "label"}`;
+    }
+    if (block.type === "timeline" && message.startsWith("етап розкладу:")) {
+        const index = block.items?.findIndex(item => {
+            if (message.includes("назву події")) return !item.value?.trim();
+            if (message.includes("свою дату")) return item.dateSource === "custom" && (!item.dateValue || Number.isNaN(Date.parse(item.dateValue)));
+            if (message.includes("формат")) return item.dateFormat === "custom" && !validDatePattern(item.datePattern ?? "");
+            return item.dateSource !== "custom" && !item.dateVariable;
+        }) ?? -1;
+        const itemIndex = index < 0 ? 0 : index;
+        if (message.includes("назву події")) return `item:${itemIndex}:value`;
+        if (message.includes("свою дату")) return `item:${itemIndex}:dateValue`;
+        if (message.includes("формат")) return `item:${itemIndex}:datePattern`;
+        return `item:${itemIndex}:dateVariable`;
     }
     return null;
 }
@@ -54,7 +68,17 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "banner" && block.widthPercent !== undefined && (block.widthPercent < 50 || block.widthPercent > 100 || block.widthPercent % 5 !== 0)) return `Блок ${index + 1}: ширина банера має бути від 50% до 100% із кроком 5%.`;
         if (block.type === "banner" && block.imageSource === "custom" && !block.imageURL?.trim()) return `Блок ${index + 1}: прикріпіть окреме зображення банера.`;
         if (block.type === "banner" && block.imageSource !== "custom" && !coverImage) return `Блок ${index + 1}: обкладинку події не завантажено. Прикріпіть окреме зображення банера.`;
-        if (["facts", "timeline", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
+        if (["facts", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
+        if (block.type === "timeline") {
+            if (!block.items?.length) return `Блок ${index + 1}: додайте етап розкладу.`;
+            for (const item of block.items) {
+                if (!item.value?.trim()) return `Блок ${index + 1}: етап розкладу: вкажіть назву події.`;
+                if (item.dateSource === "custom") {
+                    if (!item.dateValue || Number.isNaN(Date.parse(item.dateValue))) return `Блок ${index + 1}: етап розкладу: вкажіть свою дату й час.`;
+                } else if (item.dateSource !== "event" || !!item.dateValue || !catalog.some(variable => variable.name === item.dateVariable && variable.format === "date-time") || !block.variables?.some(binding => binding.name === item.dateVariable && binding.format === "date-time")) return `Блок ${index + 1}: етап розкладу: оберіть дату події.`;
+                if (item.dateFormat === "custom" && !validDatePattern(item.datePattern ?? "")) return `Блок ${index + 1}: етап розкладу: вкажіть коректний формат дати.`;
+            }
+        }
         if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
         if (block.type === "cta" && (!block.title?.trim() || !block.action?.label.trim() || !block.action?.href.trim())) return `Блок ${index + 1}: додайте заголовок і кнопку.`;

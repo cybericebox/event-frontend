@@ -94,3 +94,6 @@
 @container ib-blocks (max-width:480px){.ib-timer--tiles .ib-timer__part{min-width:0;padding:8px}.ib-timer--tiles .ib-timer__part strong{font-size:clamp(26px,7cqi,42px)}.ib-timer--tiles .ib-timer__part span{font-size:var(--ib-fs-12)}}
 .event-content-editor__link-target{display:grid;gap:var(--ib-2);min-width:0}
 .event-content-editor__item-error{grid-column:1/-1}
+.event-content-editor__item--timeline{align-items:start}
+.event-content-editor__time-settings{display:grid;gap:var(--ib-2);min-width:0}
+.event-content-editor__item--timeline>.event-content-editor__rule-remove{margin-top:24px}

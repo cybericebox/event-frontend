@@ -3,6 +3,7 @@ import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {AlignedMarkdown} from "./AlignedMarkdown";
 import {CountdownValue} from "./CountdownValue";
 import {ProportionalBannerImage} from "./ProportionalBannerImage";
+import {formatDateTime} from "./dateDisplay";
 
 type Value = string | number | boolean | null;
 
@@ -128,7 +129,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 </div></div>
             </section>;
             if (block.type === "facts") return <section className={`ib-block ib-block-facts${block.variant === "rows" ? " ib-block-facts--rows" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<dl className="ib-block-facts__list">{(block.items ?? []).map((item, index) => <div className="ib-block-facts__item" key={index}><dt>{render(item.label)}</dt><dd>{render(item.value)}</dd></div>)}</dl></div></section>;
-            if (block.type === "timeline") return <section className={`ib-block ib-block-timeline${block.variant === "list" ? " ib-block-timeline--list" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<ol className="ib-block-timeline__list">{(block.items ?? []).map((item, index) => <li className="ib-block-timeline__step" key={index}><span className="ib-block-timeline__time">{render(item.label)}</span><p className="ib-block-timeline__label">{render(item.value)}</p></li>)}</ol></div></section>;
+            if (block.type === "timeline") return <section className={`ib-block ib-block-timeline${block.variant === "list" ? " ib-block-timeline--list" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<ol className="ib-block-timeline__list">{(block.items ?? []).map((item, index) => <li className="ib-block-timeline__step" key={index}><time className="ib-block-timeline__time" dateTime={item.dateSource === "custom" ? item.dateValue : String(variables[item.dateVariable ?? ""] ?? "")}>{formatDateTime(item.dateSource === "custom" ? item.dateValue ?? "" : String(variables[item.dateVariable ?? ""] ?? ""), item.dateFormat, item.datePattern)}</time><p className="ib-block-timeline__label">{render(item.value)}</p></li>)}</ol></div></section>;
             if (block.type === "faq") return <section className="ib-block ib-block-faq" key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<div className="ib-accordion ib-accordion--lg">{(block.items ?? []).map((item, index) => <details className="ib-accordion__item" key={index} open={index === block.openItem}><summary className="ib-accordion__q">{render(item.label)}</summary><div className="ib-accordion__a ib-block-prose"><AlignedMarkdown>{replaceVariables(item.value ?? "", variables, declared, true)}</AlignedMarkdown></div></details>)}</div></div></section>;
             if (block.type === "cta") {
                 const href = safeHref(render(block.action?.href));
