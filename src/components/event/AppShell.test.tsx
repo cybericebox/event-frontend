@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import {afterEach, expect, it, vi} from "vitest";
 import {cleanup, render, screen} from "@testing-library/react";
+import {renderToString} from "react-dom/server";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {AppShell} from "./AppShell";
 
@@ -15,7 +16,9 @@ afterEach(cleanup);
 
 it("keeps server-rendered public content visible during browser-only auth checks", () => {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    render(<QueryClientProvider client={client}><AppShell event={{EventID: "event-1"} as never} unavailable={false}><h1>Публічна сторінка</h1></AppShell></QueryClientProvider>);
+    const page = <QueryClientProvider client={client}><AppShell event={{EventID: "event-1"} as never} unavailable={false}><h1>Публічна сторінка</h1></AppShell></QueryClientProvider>;
+    expect(renderToString(page)).toContain("Публічна сторінка");
+    render(page);
     expect(screen.getByRole("heading", {name: "Публічна сторінка"})).toBeTruthy();
     expect(screen.queryByText("Завантаження події")).toBeNull();
 });
