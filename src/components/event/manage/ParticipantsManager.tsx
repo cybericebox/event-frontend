@@ -35,7 +35,10 @@ export function ParticipantsManager({applicationsOnly}: {applicationsOnly: boole
         setBusyID(participant.UserID);
         try {
             await decideManageParticipant(eventID, participant.UserID, action);
-            await queryClient.invalidateQueries({queryKey: ["event-management-participants", eventID]});
+            await Promise.all([
+                queryClient.invalidateQueries({queryKey: ["event-management-participants", eventID]}),
+                queryClient.invalidateQueries({queryKey: ["event-management-team-participants", eventID], refetchType: "all"}),
+            ]);
             toast.success(action === "approve" ? "Участь підтверджено" : "Заявку відхилено");
         } catch {toast.error("Не вдалося змінити статус заявки.");}
         finally {setBusyID(null);}
@@ -52,7 +55,7 @@ export function ParticipantsManager({applicationsOnly}: {applicationsOnly: boole
     if (query.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити учасників</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>Повторити</button></div>;
 
     return <div className="event-manage-settings event-manage-participants">
-        <header className="event-manage-heading"><div><h1>{applicationsOnly ? "Заявки" : "Учасники"}</h1><p>{applicationsOnly ? "Розгляньте заявки на участь у події." : "Перегляньте статуси реєстрації учасників події."}</p></div><span className="event-attempts-manager__total">{query.data.Total} {applicationsOnly ? "очікують рішення" : "у списку"}</span></header>
+        <header className="event-manage-heading"><div><h1>{applicationsOnly ? "Заявки" : "Учасники"}</h1><p>{applicationsOnly ? "Розгляньте заявки на участь у події." : "Перегляньте статуси реєстрації учасників події."}</p></div><span className="event-attempts-manager__total">{applicationsOnly ? "На розгляді" : "Усього"}: {query.data.Total}</span></header>
         {!applicationsOnly && <div className="event-manage-participants__filter"><EventSelect ariaLabel="Статус учасника" value={status === null ? "all" : String(status)} options={[{value: "all", label: "Усі статуси"}, {value: "1", label: "Очікують рішення"}, {value: "2", label: "Підтверджені"}, {value: "3", label: "Відхилені"}]} onValueChange={changeFilter} /></div>}
         <section className="event-manage-section event-manage-participants__list">
             {query.data.Items.length === 0 ? <p className="event-challenge-manager__empty">{applicationsOnly ? "Нових заявок поки немає." : "Учасників із цим статусом поки немає."}</p> : query.data.Items.map(participant => <article className="event-manage-participants__row" key={participant.UserID}>

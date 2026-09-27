@@ -17,16 +17,23 @@ let mockParticipants: ManageParticipant[] = [
     {UserID: "01900000-0000-7000-8000-000000000031", Name: "Марія Сокол", Email: "maria@example.test", TeamID: null, Status: 3, CreatedAt: "2026-09-26T08:45:00Z", DecidedAt: "2026-09-26T08:50:00Z"},
 ];
 
-export async function getManageParticipants(eventID: string, status: ParticipantStatus | null, cursor: string | null): Promise<ManageParticipantsPage> {
+export function setMockParticipantTeam(userID: string, teamID: string | null) {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") mockParticipants = mockParticipants.map(item => item.UserID === userID ? {...item, TeamID: teamID} : item);
+}
+
+export function clearMockParticipantTeam(teamID: string) {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") mockParticipants = mockParticipants.map(item => item.TeamID === teamID ? {...item, TeamID: null} : item);
+}
+
+export async function getManageParticipants(eventID: string, status: ParticipantStatus | null, cursor: string | null, pageSize = 20): Promise<ManageParticipantsPage> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
         const filtered = mockParticipants.filter(item => status === null || item.Status === status);
         const start = cursor ? Math.max(0, filtered.findIndex(item => item.UserID === cursor) + 1) : 0;
-        const pageSize = 20;
         return pageSchema.parse({Items: filtered.slice(start, start + pageSize), Total: filtered.length, NextCursor: filtered.length > start + pageSize ? filtered[start + pageSize - 1].UserID : undefined});
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
     if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const params = new URLSearchParams({pageSize: "20"});
+    const params = new URLSearchParams({pageSize: String(pageSize)});
     if (status !== null) params.set("status", String(status));
     if (cursor) params.set("cursor", cursor);
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/participants?${params}`, {

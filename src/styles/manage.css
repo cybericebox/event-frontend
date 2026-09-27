@@ -298,6 +298,7 @@ textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
 .event-manage-participants{display:grid;gap:var(--ib-4);max-width:1100px}
 .event-manage-participants__filter{width:min(100%,260px)}
 .event-manage-participants__list{gap:0;padding:0;overflow:hidden}
+.event-manage-participants__list>.event-challenge-manager__empty{padding:var(--ib-6)}
 .event-manage-participants__row{display:flex;align-items:center;gap:var(--ib-4);padding:var(--ib-4);border-bottom:1px solid var(--ib-line)}
 .event-manage-participants__row:last-child{border-bottom:0}
 .event-manage-participants__identity{display:grid;gap:var(--ib-1);flex:1;min-width:0}
@@ -308,6 +309,23 @@ textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
 .event-manage-participants__status.is-2{color:var(--ib-ok)}
 .event-manage-participants__status.is-3{color:var(--ib-danger)}
 .event-manage-participants__actions{display:flex;gap:var(--ib-2);flex:none}
+.event-manage-teams{display:grid;gap:var(--ib-4);max-width:1100px}
+.event-manage-teams__list{display:grid;gap:var(--ib-4)}
+.event-manage-teams__card{gap:var(--ib-4)}
+.event-manage-teams__head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--ib-4)}
+.event-manage-teams__head h2,.event-manage-teams__members h3{margin:0;font-size:var(--ib-fs-16)}
+.event-manage-teams__head p,.event-manage-teams__members p{margin:var(--ib-1) 0 0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-manage-teams__head-actions{display:flex;gap:var(--ib-2)}
+.event-manage-teams__edit{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:end;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-soft)}
+.event-manage-teams__members{display:grid;gap:var(--ib-2);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
+.event-manage-teams__member{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);min-height:42px}
+.event-manage-teams__member>span{display:flex;align-items:center;gap:var(--ib-2);min-width:0;font-size:var(--ib-fs-13)}
+.event-manage-teams__member small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-manage-teams__member>div{display:flex;gap:var(--ib-2)}
+.event-manage-teams__assign{display:flex;align-items:end;gap:var(--ib-3);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
+.event-manage-teams__assign>.event-manage-field{flex:1;max-width:420px}
+.event-manage-teams__load-more{justify-self:center}
+@media(max-width:760px){.event-manage-teams__edit{grid-template-columns:minmax(0,1fr)}.event-manage-teams__head,.event-manage-teams__member,.event-manage-teams__assign{align-items:stretch;flex-direction:column}.event-manage-teams__head-actions,.event-manage-teams__member>div{flex-wrap:wrap}.event-manage-teams__assign>.event-manage-field{max-width:none}}
 @media(max-width:760px){.event-manage-participants__row{align-items:flex-start;flex-wrap:wrap}.event-manage-participants__identity{flex-basis:100%}.event-manage-participants__actions{width:100%;flex-wrap:wrap}}
 @media(max-width:760px){.event-manage-results__summary{grid-template-columns:minmax(0,1fr)}.event-manage-results__table-head{display:none}.event-manage-results__row{grid-template-columns:42px minmax(0,1fr) auto;gap:var(--ib-3)}.event-manage-results__time{grid-column:2/-1}.event-manage-results__rank{align-self:start}.event-manage-results__points{align-self:start}}
 @media(max-width:760px){.event-challenge-manager__group,.event-challenge-manager__task{flex-wrap:wrap}.event-challenge-manager__group-main,.event-challenge-manager__rename,.event-challenge-manager__task-name{flex-basis:100%}.event-challenge-manager__task .event-select{width:min(100%,260px)}.event-challenge-manager__actions{margin-left:0}.event-challenge-manager__create{align-items:stretch;flex-direction:column}.event-challenge-manager__create .event-manage-field{width:100%;max-width:none}}
