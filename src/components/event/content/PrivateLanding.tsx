@@ -9,7 +9,7 @@ import {EventLoading} from "../EventLoading";
 export function PrivateLanding() {
     const event = usePrivateEvent();
     const content = useQuery({
-        queryKey: ["event-manager-content", event?.EventID],
+        queryKey: ["event-management-content", event?.EventID],
         queryFn: () => getManageContent(event!.EventID),
         enabled: !!event,
         retry: false,

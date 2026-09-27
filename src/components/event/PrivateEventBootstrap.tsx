@@ -20,7 +20,7 @@ export function usePrivateEvent(): PublicEventInfo | null {
 export function PrivateEventBootstrap({children}: {children: ReactNode}) {
     const pathname = usePathname();
     const identity = useQuery({
-        queryKey: ["event-private-identity"], queryFn: getClientEventInfo,
+        queryKey: ["event-manager-public-info"], queryFn: getClientEventInfo,
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
     const access = useQuery({
