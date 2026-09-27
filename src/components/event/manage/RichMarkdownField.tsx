@@ -6,26 +6,27 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import TurndownService from "turndown";
 import * as Popover from "@radix-ui/react-popover";
-import {Bold, Braces, Code, Code2, Heading1, Heading2, Heading3, Italic, Link2, List, ListOrdered, Pilcrow, Quote, RemoveFormatting, Strikethrough} from "lucide-react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import {Bold, Braces, ChevronDown, Code, Code2, Heading1, Heading2, Heading3, Italic, Link2, List, ListOrdered, Pilcrow, Quote, RemoveFormatting, Strikethrough} from "lucide-react";
 import type {ContentValue} from "@/types/eventContent";
 import {insertableContentVariable, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {FieldLabel} from "./FieldLabel";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const turndown = new TurndownService({headingStyle: "atx", bulletListMarker: "-"});
 turndown.addRule("strikethrough", {filter: node => ["DEL", "S", "STRIKE"].includes(node.nodeName), replacement: content => `~~${content}~~`});
-const formattingTools = [
+const inlineTools = [
     {label: "Жирний", icon: Bold, command: "bold"},
     {label: "Курсив", icon: Italic, command: "italic"},
     {label: "Закреслений", icon: Strikethrough, command: "strikeThrough"},
-    {label: "Заголовок 1", icon: Heading1, command: "formatBlock", argument: "h1"},
-    {label: "Заголовок 2", icon: Heading2, command: "formatBlock", argument: "h2"},
-    {label: "Заголовок 3", icon: Heading3, command: "formatBlock", argument: "h3"},
-    {label: "Звичайний абзац", icon: Pilcrow, command: "formatBlock", argument: "p"},
+];
+const listTools = [
     {label: "Маркований список", icon: List, command: "insertUnorderedList"},
     {label: "Нумерований список", icon: ListOrdered, command: "insertOrderedList"},
+];
+const blockTools = [
     {label: "Цитата", icon: Quote, command: "formatBlock", argument: "blockquote"},
     {label: "Блок коду", icon: Code2, command: "formatBlock", argument: "pre"},
-    {label: "Очистити форматування", icon: RemoveFormatting, command: "removeFormat"},
 ];
 
 function markdownHTML(value: string) {
@@ -131,6 +132,17 @@ export function RichMarkdownField({label, value, required = true, error, disable
         document.execCommand(name, false, argument);
         emit();
     }
+    function clearFormatting() {
+        restoreSelection();
+        document.execCommand("removeFormat");
+        document.execCommand("unlink");
+        document.execCommand("formatBlock", false, "p");
+        emit();
+    }
+    function toolButton(tool: {label: string; icon: typeof Bold; command: string; argument?: string}) {
+        const Icon = tool.icon;
+        return <EventTooltip key={tool.label} content={tool.label}>{tipID => <button type="button" aria-label={tool.label} aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => command(tool.command, tool.argument)}><Icon size={16} /></button>}</EventTooltip>;
+    }
     function inlineCode() {
         restoreSelection();
         const selected = window.getSelection()?.toString();
@@ -154,17 +166,28 @@ export function RichMarkdownField({label, value, required = true, error, disable
         <FieldLabel label={label} required={required} help="Виділіть текст і скористайтеся кнопками форматування.\n• Доступні заголовки, списки, посилання, цитати й код.\n• Вставлений Markdown одразу стане форматованим текстом.\n• Усі зміни відразу видно в попередньому перегляді." />
         <div className={`event-rich-markdown__frame${error ? " is-invalid" : ""}`}>
             <div className="event-rich-markdown__toolbar" role="toolbar" aria-label="Форматування тексту">
-                {formattingTools.map(tool => <button key={tool.label} type="button" title={tool.label} aria-label={tool.label} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => command(tool.command, tool.argument)}><tool.icon size={16} /></button>)}
-                <button type="button" title="Код у рядку" aria-label="Код у рядку" disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={inlineCode}><Code size={16} /></button>
-                <button type="button" title="Посилання" aria-label="Посилання" disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => {rememberSelection(); setLinkOpen(open => !open);}}><Link2 size={16} /></button>
-                <Popover.Root open={variablesOpen} onOpenChange={open => {setVariablesOpen(open); if (!open) setSearch("");}} modal={false}>
-                    <Popover.Trigger asChild><button type="button" title="Вставити змінну" aria-label="Вставити змінну у вміст" disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={rememberSelection}><Braces size={16} /></button></Popover.Trigger>
+                <span className="event-rich-markdown__tool-group">{inlineTools.map(toolButton)}</span>
+                <span className="event-rich-markdown__tool-group">
+                    <DropdownMenu.Root modal={false}><EventTooltip content="Заголовки першого, другого й третього рівня">{tipID => <DropdownMenu.Trigger asChild><button type="button" className="event-rich-markdown__heading-trigger" aria-label="Вибрати рівень заголовка" aria-describedby={tipID} disabled={disabled} onPointerDown={rememberSelection}><Heading1 size={16} /><ChevronDown size={12} /></button></DropdownMenu.Trigger>}</EventTooltip><DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-rich-markdown__heading-menu" align="start" sideOffset={5} collisionPadding={12}>{[{label: "Заголовок 1", icon: Heading1, tag: "h1"}, {label: "Заголовок 2", icon: Heading2, tag: "h2"}, {label: "Заголовок 3", icon: Heading3, tag: "h3"}].map(item => <DropdownMenu.Item className="ib-listbox__opt" key={item.tag} onSelect={() => command("formatBlock", item.tag)}><item.icon size={16} />{item.label}</DropdownMenu.Item>)}</DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>
+                    <EventTooltip content="Звичайний абзац">{tipID => <button type="button" aria-label="Звичайний абзац" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => command("formatBlock", "p")}><Pilcrow size={16} /></button>}</EventTooltip>
+                </span>
+                <span className="event-rich-markdown__tool-group">{listTools.map(toolButton)}</span>
+                <span className="event-rich-markdown__tool-group">{blockTools.map(toolButton)}</span>
+                <span className="event-rich-markdown__tool-group">
+                    <EventTooltip content="Код у рядку">{tipID => <button type="button" aria-label="Код у рядку" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={inlineCode}><Code size={16} /></button>}</EventTooltip>
+                    <EventTooltip content="Додати посилання до виділеного тексту">{tipID => <button type="button" aria-label="Посилання" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => {rememberSelection(); setLinkOpen(open => !open);}}><Link2 size={16} /></button>}</EventTooltip>
+                </span>
+                <span className="event-rich-markdown__tool-group event-rich-markdown__tool-group--end">
+                    <EventTooltip content="Прибрати форматування з виділеного тексту">{tipID => <button type="button" aria-label="Очистити форматування" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={clearFormatting}><RemoveFormatting size={16} /></button>}</EventTooltip>
+                    <Popover.Root open={variablesOpen} onOpenChange={open => {setVariablesOpen(open); if (!open) setSearch("");}} modal={false}>
+                    <EventTooltip content="Вставити змінну події">{tipID => <Popover.Trigger asChild><button type="button" aria-label="Вставити змінну у вміст" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={rememberSelection}><Braces size={16} /></button></Popover.Trigger>}</EventTooltip>
                     <Popover.Portal><Popover.Content className="event-rich-markdown__variable-popover" side="bottom" align="end" sideOffset={6} collisionPadding={12} onCloseAutoFocus={event => event.preventDefault()}>
                         <div className="event-rich-markdown__variable-heading"><strong>Змінні події</strong><Popover.Close type="button" aria-label="Закрити вибір змінної">×</Popover.Close></div>
                         <input className="event-manage-input" value={search} onChange={event => setSearch(event.target.value)} placeholder="Знайти змінну" aria-label="Знайти змінну" />
                         <div className="event-rich-markdown__variables">{catalog.filter(variable => insertableContentVariable(variable) && `${variable.label} ${variable.name}`.toLocaleLowerCase("uk").includes(search.toLocaleLowerCase("uk"))).map(variable => <button key={variable.name} type="button" onClick={() => insertVariable(variable)}><strong>{variable.label}</strong><code>{variable.name}</code><small>Зараз: {String(values[variable.name] ?? "Немає значення")}</small></button>)}</div>
                     </Popover.Content></Popover.Portal>
-                </Popover.Root>
+                    </Popover.Root>
+                </span>
             </div>
             {linkOpen && <div className="event-rich-markdown__inline"><input className="event-manage-input" aria-label="Адреса посилання" placeholder="https://… або /rules" value={href} onChange={event => setHref(event.target.value)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); if (/^(https?:\/\/|\/)/.test(href)) {command("createLink", href); setLinkOpen(false); setHref("");}}}} /><button className="ib-btn ib-btn--sm" type="button" disabled={!/^(https?:\/\/|\/)/.test(href)} onClick={() => {command("createLink", href); setLinkOpen(false); setHref("");}}>Додати</button></div>}
             <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
