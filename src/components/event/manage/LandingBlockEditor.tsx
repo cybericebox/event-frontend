@@ -240,6 +240,8 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     }
 
     function clearDropTarget() {
+        document.removeEventListener("pointerup", clearDropTarget);
+        document.removeEventListener("pointercancel", clearDropTarget);
         dropTarget.current?.classList.remove("is-drop-target");
         dropTarget.current = null;
         document.querySelector<HTMLElement>(`[data-editor-block-id="${block.id}"]`)?.classList.remove("is-dragging");
@@ -269,6 +271,8 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         source.classList.add("is-dragging");
         pointerID.current = event.pointerId;
         event.currentTarget.setPointerCapture(event.pointerId);
+        document.addEventListener("pointerup", clearDropTarget);
+        document.addEventListener("pointercancel", clearDropTarget);
     }
 
     function moveDrag(event: React.PointerEvent<HTMLButtonElement>) {
