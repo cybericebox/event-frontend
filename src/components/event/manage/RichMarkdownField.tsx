@@ -70,6 +70,7 @@ function highlightVariables(root: HTMLElement) {
             const token = document.createElement("span");
             token.className = "event-rich-markdown__variable-token";
             token.dataset.variable = match[0].slice(2, -2);
+            token.contentEditable = "false";
             token.textContent = token.dataset.variable;
             fragment.append(token);
             position = start + match[0].length;
@@ -157,8 +158,57 @@ export function RichMarkdownField({label, value, required = true, error, disable
         onChange(next);
         rememberSelection();
     }
+    function selectedVariableToken(): HTMLElement | null {
+        const range = window.getSelection()?.rangeCount ? window.getSelection()?.getRangeAt(0) : null;
+        if (!range || range.startContainer !== range.endContainer || range.endOffset !== range.startOffset + 1) return null;
+        const node = range.startContainer.childNodes[range.startOffset];
+        return node instanceof HTMLElement && node.classList.contains("event-rich-markdown__variable-token") && editor.current?.contains(node) ? node : null;
+    }
+    function formatVariableToken(token: HTMLElement, toggle?: "bold" | "italic" | "strikeThrough" | "code") {
+        const tags = {bold: ["B", "STRONG"], italic: ["I", "EM"], strikeThrough: ["S", "STRIKE", "DEL"], code: ["CODE"]};
+        token.textContent = token.dataset.variable ?? token.textContent;
+        const active = new Set<keyof typeof tags>();
+        for (let parent = token.parentElement; parent && parent !== editor.current; parent = parent.parentElement) {
+            for (const [format, names] of Object.entries(tags)) if (names.includes(parent.tagName)) active.add(format as keyof typeof tags);
+            if (["P", "H1", "H2", "H3", "BLOCKQUOTE", "PRE"].includes(parent.tagName)) break;
+        }
+        if (toggle) {
+            if (active.has(toggle)) active.delete(toggle);
+            else active.add(toggle);
+            if (toggle === "code" && active.has("code")) {
+                active.clear();
+                active.add("code");
+            } else if (toggle !== "code") active.delete("code");
+        } else active.clear();
+        while (token.parentElement && Object.values(tags).some(names => names.includes(token.parentElement!.tagName))) {
+            const wrapper = token.parentElement;
+            const before = wrapper.cloneNode(false) as HTMLElement;
+            const after = wrapper.cloneNode(false) as HTMLElement;
+            while (wrapper.firstChild && wrapper.firstChild !== token) before.append(wrapper.firstChild);
+            while (token.nextSibling) after.append(token.nextSibling);
+            wrapper.replaceWith(...(before.hasChildNodes() ? [before] : []), token, ...(after.hasChildNodes() ? [after] : []));
+        }
+        for (const format of (["code", "strikeThrough", "italic", "bold"] as const)) {
+            if (!active.has(format)) continue;
+            const wrapper = document.createElement(({code: "code", strikeThrough: "del", italic: "em", bold: "strong"} as const)[format]);
+            token.replaceWith(wrapper);
+            wrapper.append(token);
+        }
+        const range = document.createRange();
+        range.selectNode(token);
+        const current = window.getSelection();
+        current?.removeAllRanges();
+        current?.addRange(range);
+        selection.current = range.cloneRange();
+        emit();
+    }
     function command(name: string, argument?: string) {
         restoreSelection();
+        const token = selectedVariableToken();
+        if (token && (name === "bold" || name === "italic" || name === "strikeThrough")) {
+            formatVariableToken(token, name);
+            return;
+        }
         const range = window.getSelection()?.rangeCount ? window.getSelection()?.getRangeAt(0) : null;
         const start = range?.startContainer;
         const element = start?.nodeType === Node.ELEMENT_NODE ? start as Element : start?.parentElement;
@@ -189,6 +239,11 @@ export function RichMarkdownField({label, value, required = true, error, disable
     }
     function clearFormatting() {
         restoreSelection();
+        const token = selectedVariableToken();
+        if (token) {
+            formatVariableToken(token);
+            return;
+        }
         document.execCommand("removeFormat");
         document.execCommand("unlink");
         document.execCommand("formatBlock", false, "p");
@@ -200,6 +255,11 @@ export function RichMarkdownField({label, value, required = true, error, disable
     }
     function inlineCode() {
         restoreSelection();
+        const token = selectedVariableToken();
+        if (token) {
+            formatVariableToken(token, "code");
+            return;
+        }
         const current = window.getSelection();
         const range = current?.rangeCount ? current.getRangeAt(0) : null;
         const selected = current?.toString();
@@ -226,6 +286,7 @@ export function RichMarkdownField({label, value, required = true, error, disable
         const token = document.createElement("span");
         token.className = "event-rich-markdown__variable-token";
         token.dataset.variable = variable.name;
+        token.contentEditable = "false";
         token.textContent = variable.name;
         range.deleteContents();
         range.insertNode(token);
@@ -270,7 +331,7 @@ export function RichMarkdownField({label, value, required = true, error, disable
                 </span>
             </div>
             {linkOpen && <div className="event-rich-markdown__inline"><input className="event-manage-input" aria-label="Адреса посилання" placeholder="https://… або /rules" value={href} onChange={event => setHref(event.target.value)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); if (/^(https?:\/\/|\/)/.test(href)) {command("createLink", href); setLinkOpen(false); setHref("");}}}} /><button className="ib-btn ib-btn--sm" type="button" disabled={!/^(https?:\/\/|\/)/.test(href)} onClick={() => {command("createLink", href); setLinkOpen(false); setHref("");}}>Додати</button></div>}
-            <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
+            <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onMouseDown={event => {const token = (event.target as HTMLElement).closest(".event-rich-markdown__variable-token"); if (!token || !editor.current?.contains(token)) return; event.preventDefault(); editor.current.focus(); const range = document.createRange(); range.selectNode(token); const current = window.getSelection(); current?.removeAllRanges(); current?.addRange(range); selection.current = range.cloneRange();}} onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
         </div>
         {error && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
     </div>;
