@@ -72,5 +72,5 @@ export function AppShell({children, event, unavailable}: {
     }
     return approved && !!participantInfo.data
         ? <ParticipantShell event={event} participantInfo={participantInfo.data} ownTeam={ownTeam.data ?? null}>{children}</ParticipantShell>
-        : <GuestShell event={event} authenticated={authenticated}>{children}</GuestShell>;
+        : <GuestShell event={event} authenticated={authenticated} joinStatus={joinStatus.data}>{children}</GuestShell>;
 }
