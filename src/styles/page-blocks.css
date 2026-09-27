@@ -19,6 +19,7 @@
 .ib-visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 .ib-block-section--center{text-align:center}
 .ib-block-section--right{text-align:right}
+.ib-block-section--justify{text-align:justify}
 .ib-block-text--wide .ib-block-prose{max-width:none}
 .ib-block-text--center .ib-block-prose{text-align:center}
 .ib-block-text--right .ib-block-prose{text-align:right}

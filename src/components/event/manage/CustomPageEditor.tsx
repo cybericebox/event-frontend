@@ -4,7 +4,8 @@ import {useEffect, useId, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ArrowUpRight, Check, ChevronDown, Eye, Plus, RotateCcw, Trash2, Type} from "lucide-react";
+import {ArrowUpRight, ChevronDown, Eye, Plus, RotateCcw, Trash2, Type} from "lucide-react";
+import toast from "react-hot-toast";
 import {createManagePage, deleteManagePage, getManageContent, getManageContentVariables, getManagePage, getManagePages, ManageApiError, type ManagePageInput, putManagePageOrder, updateManagePage} from "@/api/manage";
 import {ContentBlocks, contentBlockVisible} from "@/components/event/content/ContentBlocks";
 import type {ContentBlock, PageBlockType} from "@/types/eventContent";
@@ -37,8 +38,6 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const detailsID = useId();
     const previewRef = useRef<HTMLDivElement>(null);
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
 
     const existingPages = pages.data ?? [];
     const orderedPages = [...existingPages].filter(item => item.Navigation !== 0).sort((a, b) => a.NavigationOrder - b.NavigationOrder || a.Slug.localeCompare(b.Slug));
@@ -74,16 +73,12 @@ export function CustomPageEditor({slug}: {slug?: string}) {
 
     function change(next: ManagePageInput) {
         setEdited({key, value: next});
-        setMessage("");
-        setError("");
     }
     function updateBlock(blockID: string, value: ContentBlock | ((current: ContentBlock) => ContentBlock)) {
         setEdited(previous => {
             const current = previous?.key === key ? previous.value : saved;
             return {key, value: {...current, Document: {blocks: current.Document.blocks.map(block => block.id === blockID ? typeof value === "function" ? value(block) : value : block)}}};
         });
-        setMessage("");
-        setError("");
     }
     function moveBlock(index: number, direction: -1 | 1) {
         const blocks = [...draft.Document.blocks];
@@ -120,7 +115,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
 
     async function save() {
         if (!canManage || validation || !dirty || saving) return;
-        setSaving(true); setError(""); setMessage("");
+        setSaving(true);
         let stored = false;
         try {
             const payload: ManagePageInput = {...draft, Navigation: draft.Visibility === 2 ? 0 : draft.Navigation === 0 ? 0 : 1};
@@ -140,27 +135,28 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             ]);
             setEdited(null);
             setAfterChoice(null);
+            toast.success(isNew ? "Сторінку створено" : "Сторінку збережено");
             if (isNew || result.Slug !== slug) router.replace(`/manage/content/pages/${result.Slug}`);
-            else setMessage("Сторінку збережено");
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
             if (stored && isNew && draft.Slug) router.replace(`/manage/content/pages/${draft.Slug}`);
-            setError(stored ? "Сторінку збережено, але порядок навігації не оновився. Повторіть збереження." : status === 400 ? "Сервер відхилив поля або змінні сторінки." : status === 409 ? "Така адреса сторінки вже зайнята." : "Не вдалося зберегти сторінку. Повторіть запит.");
+            toast.error(stored ? "Сторінку збережено, але порядок навігації не оновився. Повторіть збереження." : status === 400 ? "Сервер відхилив поля або змінні сторінки." : status === 409 ? "Така адреса сторінки вже зайнята." : "Не вдалося зберегти сторінку. Повторіть запит.");
         } finally { setSaving(false); }
     }
 
     async function remove() {
         if (!page.data || !canManage || !window.confirm("Видалити цю сторінку?")) return;
-        setSaving(true); setError("");
+        setSaving(true);
         try {
             await deleteManagePage(eventID, page.data.ID);
             await Promise.all([
                 queryClient.invalidateQueries({queryKey: ["event-management-pages", eventID]}),
                 queryClient.invalidateQueries({queryKey: ["event-navigation-pages", eventID]}),
             ]);
+            toast.success("Сторінку видалено");
             router.replace("/manage/content/landing");
         } catch {
-            setError("Не вдалося видалити сторінку. Повторіть спробу.");
+            toast.error("Не вдалося видалити сторінку. Повторіть спробу.");
             setSaving(false);
         }
     }
@@ -170,8 +166,6 @@ export function CustomPageEditor({slug}: {slug?: string}) {
 
     return <div className="event-manage-content">
         <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Сторінки</p><h1>{isNew ? "Нова сторінка" : draft.Title}</h1><p>Той самий конструктор блоків, що й на головній сторінці.</p></div>{!isNew && <Link className="ib-btn" href={`/p/${draft.Slug}`} target="_blank">Відкрити <ArrowUpRight size={16} /></Link>}</header>
-        {error && <div className="event-manage-feedback event-manage-feedback--error" role="alert">{error}</div>}
-        {message && <div className="event-manage-feedback" role="status"><Check size={16} />{message}</div>}
         <div className="event-manage-content__layout">
             <div className="event-content-editor">
                 <div className={`event-manage-page-details${detailsOpen ? "" : " is-collapsed"}`} aria-label="Налаштування сторінки">
@@ -181,7 +175,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
                     <label className="event-manage-field"><FieldLabel label="Адреса" required help="Частина адреси сторінки після /p/.\n• Латинські літери, цифри та дефіси.\n• Не більше 128 символів.\nПісля зміни старе посилання перестане працювати." /><div className="event-manage-page-slug"><span>/p/</span><input className="event-manage-input" value={draft.Slug} required disabled={!canManage || saving} onChange={e => change({...draft, Slug: e.target.value.toLowerCase()})} maxLength={128} /></div></label>
                     <div className="event-manage-field"><FieldLabel label="Доступ" required help="Хто може відкрити сторінку.\n• Публічна — усі відвідувачі.\n• Підтверджені учасники — лише учасники події.\n• Лише модератори — сторінка не з’являється в меню сайту." /><EventSelect ariaLabel="Доступ до сторінки" value={String(draft.Visibility)} disabled={!canManage || saving} options={[{value: "0", label: "Публічна"}, {value: "1", label: "Підтверджені учасники"}, {value: "2", label: "Лише модератори"}]} onValueChange={value => {const visibility = Number(value) as 0 | 1 | 2; change({...draft, Visibility: visibility, Navigation: visibility === 2 ? 0 : draft.Navigation});}} /></div>
                     <div className="event-manage-field"><FieldLabel label="У навігації" required help="Чи показувати посилання на сторінку в меню події.\n• Показувати — пункт видно тим, хто має доступ до сторінки.\n• Не показувати — сторінка відкривається за прямим посиланням.\nДля сторінки лише модераторів пункт меню недоступний." /><EventSelect ariaLabel="Показ у навігації" value={draft.Visibility === 2 || draft.Navigation === 0 ? "0" : "1"} disabled={!canManage || saving || draft.Visibility === 2} options={[{value: "1", label: "Показувати"}, {value: "0", label: "Не показувати"}]} onValueChange={value => change({...draft, Navigation: value === "1" ? 1 : 0})} /></div>
-                    <div className="event-manage-field"><FieldLabel label="Після якої сторінки" required={draft.Navigation !== 0 && draft.Visibility !== 2} help="Місце серед додаткових сторінок у меню події.\n• Першою — перед іншими додатковими сторінками.\n• Після сторінки — безпосередньо після обраної.\nСтандартні вкладки події стоять перед додатковими сторінками." /><EventSelect ariaLabel="Після якої сторінки в навігації" value={afterPageID} disabled={!canManage || saving || draft.Navigation === 0 || draft.Visibility === 2} options={[{value: "first", label: "Першою серед додаткових"}, ...otherPages.map(item => ({value: item.ID, label: `Після «${item.Title}»`}))]} onValueChange={pageID => {setAfterChoice({key, pageID}); setMessage(""); setError("");}} /></div>
+                    <div className="event-manage-field"><FieldLabel label="Після якої сторінки" required={draft.Navigation !== 0 && draft.Visibility !== 2} help="Місце серед додаткових сторінок у меню події.\n• Першою — перед іншими додатковими сторінками.\n• Після сторінки — безпосередньо після обраної.\nСтандартні вкладки події стоять перед додатковими сторінками." /><EventSelect ariaLabel="Після якої сторінки в навігації" value={afterPageID} disabled={!canManage || saving || draft.Navigation === 0 || draft.Visibility === 2} options={[{value: "first", label: "Першою серед додаткових"}, ...otherPages.map(item => ({value: item.ID, label: `Після «${item.Title}»`}))]} onValueChange={pageID => setAfterChoice({key, pageID})} /></div>
                     </div>}
                 </div>
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Перетягніть блок за ручку або скористайтеся стрілками. Так само вони з’являться на сайті.</p></div><span>{draft.Document.blocks.length}</span></div>
@@ -189,7 +183,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
                 <div className="event-content-editor__stack">{draft.Document.blocks.map((block, index) => <LandingBlockEditor key={block.id} eventID={eventID} coverImage={event.PreviewPicture ?? ""} block={block} index={index} count={draft.Document.blocks.length} values={values} catalog={catalog} canEdit={canManage && !saving} selected={selectedBlockID === block.id} onSelect={() => selectBlock(block.id)} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDelete={() => change({...draft, Document: {blocks: draft.Document.blocks.filter((_, position) => position !== index)}})} />)}</div>
                 {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !draft.Document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
-                <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && !isNew && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setAfterChoice(null); setError("");}}><RotateCcw size={16} /> Скасувати</button>}{!isNew && canManage && <button className="ib-btn event-content-editor__delete" type="button" disabled={saving} onClick={() => void remove()}><Trash2 size={16} /> Видалити</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div></div>
+                <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && !isNew && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setAfterChoice(null);}}><RotateCcw size={16} /> Скасувати</button>}{!isNew && canManage && <button className="ib-btn event-content-editor__delete" type="button" disabled={saving} onClick={() => void remove()}><Trash2 size={16} /> Видалити</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div></div>
             </div>
 
             <aside className="event-manage-content__preview" aria-label="Попередній перегляд сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вся сторінка у поточному порядку блоків."}</p></div></div><div className="event-manage-content__preview-window" ref={previewRef}><ContentBlocks document={draft.Document} variables={values} title={draft.Title || "Нова сторінка"} selectedBlockId={selectedBlockID ?? undefined} coverImage={event.PreviewPicture ?? ""} /></div></aside>

@@ -19,7 +19,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         const text = block.type === "section" ? block.label ?? "" : block.type === "text" ? block.markdown ?? "" : "";
         if ((block.type === "section" || block.type === "text") && !text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
         if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
-        if (block.type === "section" && block.variant && !["left", "center", "right"].includes(block.variant)) return `Блок ${index + 1}: невідоме розташування заголовка.`;
+        if (block.type === "section" && block.variant && !["left", "center", "right", "justify"].includes(block.variant)) return `Блок ${index + 1}: невідоме вирівнювання заголовка.`;
         if (block.type === "text" && block.variant && !["narrow", "wide"].includes(block.variant)) return `Блок ${index + 1}: невідома ширина тексту.`;
         if (block.type === "text" && block.layout && !["left", "center", "right", "justify"].includes(block.layout)) return `Блок ${index + 1}: невідоме вирівнювання тексту.`;
         if (block.type === "timeline" && block.variant && !["grid", "list"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка розкладу.`;

@@ -111,7 +111,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                     </div>
                 </section>;
             }
-            if (block.type === "section") return <section className={`ib-block${block.variant === "center" ? " ib-block-section--center" : block.variant === "right" ? " ib-block-section--right" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
+            if (block.type === "section") return <section className={`ib-block${block.variant === "center" ? " ib-block-section--center" : block.variant === "right" ? " ib-block-section--right" : block.variant === "justify" ? " ib-block-section--justify" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block__in"><h2 className="ib-block__title">{replaceVariables(block.label ?? "", variables, declared)}</h2></div>
             </section>;
             if (block.type === "text") return <section className={`ib-block ib-block-text${block.variant === "wide" ? " ib-block-text--wide" : ""}${block.layout === "center" ? " ib-block-text--center" : block.layout === "right" ? " ib-block-text--right" : block.layout === "justify" ? " ib-block-text--justify" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>

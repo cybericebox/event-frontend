@@ -2,8 +2,9 @@
 
 import {useEffect, useMemo, useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ArrowUpRight, Check, Eye, Plus, RotateCcw, Type} from "lucide-react";
+import {ArrowUpRight, Eye, Plus, RotateCcw, Type} from "lucide-react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import {getManageContent, getManageContentVariables, ManageApiError, putManageLanding} from "@/api/manage";
 import {ContentBlocks, contentBlockVisible} from "@/components/event/content/ContentBlocks";
 import {LandingBlockEditor} from "@/components/event/manage/LandingBlockEditor";
@@ -37,8 +38,6 @@ export default function ManageLandingPage() {
     const [selected, setSelected] = useState<{eventID: string; blockID: string} | null>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
 
     const draft = edited?.eventID === eventID ? edited.draft : content.data?.Landing ?? null;
     const selectedBlockID = selected?.eventID === eventID && draft?.blocks.some(block => block.id === selected.blockID) ? selected.blockID : null;
@@ -60,8 +59,6 @@ export default function ManageLandingPage() {
 
     function change(next: ContentDocument) {
         setEdited({eventID, draft: next});
-        setMessage("");
-        setError("");
     }
 
     function updateBlock(blockID: string, value: ContentBlock | ((current: ContentBlock) => ContentBlock)) {
@@ -70,8 +67,6 @@ export default function ManageLandingPage() {
             if (!current) return previous;
             return {eventID, draft: {blocks: current.blocks.map(block => block.id === blockID ? typeof value === "function" ? value(block) : value : block)}};
         });
-        setMessage("");
-        setError("");
     }
 
     function moveBlock(index: number, direction: -1 | 1) {
@@ -105,15 +100,15 @@ export default function ManageLandingPage() {
 
     async function save() {
         if (!canManage || !draft || !dirty || validation || saving) return;
-        setSaving(true); setError(""); setMessage("");
+        setSaving(true);
         try {
             await putManageLanding(eventID, draft);
             queryClient.setQueryData(["event-management-content", eventID], {...content.data!, Landing: draft});
             setEdited(null);
-            setMessage("Головну сторінку збережено");
+            toast.success("Головну сторінку збережено");
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
-            setError(status === 403 ? "Немає права змінювати сторінку." : status === 400 ? "Сервер відхилив вміст. Перевірте блоки та умови показу." : "Не вдалося зберегти сторінку. Повторіть запит.");
+            toast.error(status === 403 ? "Немає права змінювати сторінку." : status === 400 ? "Сервер відхилив вміст. Перевірте блоки та умови показу." : "Не вдалося зберегти сторінку. Повторіть запит.");
         } finally { setSaving(false); }
     }
 
@@ -124,8 +119,6 @@ export default function ManageLandingPage() {
         <header className="event-manage-heading"><div><h1>Головна сторінка</h1><p>Побудуйте сторінку з блоків у потрібному порядку.</p></div>{event.Status !== 0 && event.Status !== 4 && <Link className="ib-btn" href="/">Відкрити сайт <ArrowUpRight size={16} /></Link>}</header>
         {!canManage && <div className="event-manage-notice" role="status">Доступний лише перегляд. Змінювати головну сторінку може менеджер події.</div>}
         {event.Status === 0 && <div className="event-manage-notice" role="status">Сайт ще не опубліковано. Попередній перегляд праворуч показує сторінку до публікації.</div>}
-        {error && <div className="event-manage-feedback event-manage-feedback--error" role="alert">{error}</div>}
-        {message && <div className="event-manage-feedback" role="status"><Check size={16} />{message}</div>}
 
         <div className="event-manage-content__layout">
             <div className="event-content-editor">
@@ -134,7 +127,7 @@ export default function ManageLandingPage() {
                 <div className="event-content-editor__stack">{draft.blocks.map((block, index) => <LandingBlockEditor key={block.id} eventID={eventID} coverImage={event.PreviewPicture ?? ""} block={block} index={index} count={draft.blocks.length} values={publicValues} catalog={catalog} canEdit={canManage && !saving} selected={selectedBlockID === block.id} onSelect={() => setSelected({eventID, blockID: block.id})} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDelete={() => change({blocks: draft.blocks.filter((_, position) => position !== index)})} />)}</div>
                 {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !draft.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
-                <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setMessage(""); setError("");}}><RotateCcw size={16} /> Скасувати зміни</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти сторінку"}</button></div></div>
+                <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && canManage && <button className="ib-btn" type="button" onClick={() => setEdited(null)}><RotateCcw size={16} /> Скасувати зміни</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти сторінку"}</button></div></div>
             </div>
 
             <aside className="event-manage-content__preview" aria-label="Попередній перегляд головної сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вся сторінка у поточному порядку блоків."}</p></div></div><div className="event-manage-content__preview-window" ref={previewRef}><div className="event-landing ib-blocks">{draft.blocks.length === 0 && <div className="event-content-editor__empty">Додайте блок, щоб побачити сторінку.</div>}{draft.blocks.length > 0 && !draft.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}<ContentBlocks document={draft} variables={publicValues} selectedBlockId={selectedBlockID ?? undefined} coverImage={event.PreviewPicture ?? ""} /></div></div></aside>
