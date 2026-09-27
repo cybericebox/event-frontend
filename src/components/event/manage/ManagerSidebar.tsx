@@ -4,8 +4,8 @@ import {useState} from "react";
 import Link from "next/link";
 import {
     ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown, ClipboardCheck,
-    ClipboardList, FileCheck2, FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
-    ListChecks, Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
+    FileCheck2, FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
+    Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
     type LucideIcon,
 } from "lucide-react";
@@ -34,7 +34,6 @@ const groups: Group[] = [
     ]},
     {id: "scoring", label: "Бали", items: [
         {href: "/manage/scoring", label: "Профіль балів", icon: SlidersHorizontal},
-        {href: "/manage/attempts", label: "Правила спроб", icon: ListChecks},
     ]},
     {id: "participation", label: "Участь", items: [
         {href: "/manage/registration", label: "Реєстрація", icon: UserRound},
@@ -51,7 +50,6 @@ const groups: Group[] = [
     ]},
     {id: "forms", label: "Форми", items: [
         {href: "/manage/participant-form", label: "Анкета учасника", icon: FilePenLine},
-        {href: "/manage/team-form", label: "Анкета команди", icon: ClipboardList, teamsOnly: true},
         {href: "/manage/surveys", label: "Опитування", icon: MessageSquareText},
         {href: "/manage/form-responses", label: "Відповіді на форми", icon: BookOpenText},
     ]},

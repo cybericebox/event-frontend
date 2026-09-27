@@ -1,16 +1,5 @@
 import type {ManagePage} from "@/api/manage";
 
-export const plannedManagerPages = {
-    attempts: {title: "Правила спроб", description: "Тут можна буде визначати обмеження та поведінку спроб."},
-    "team-form": {title: "Анкета команди", description: "Тут можна буде налаштовувати анкету під час створення команди."},
-} as const;
-
-export type PlannedManagerPage = keyof typeof plannedManagerPages;
-
-export function plannedManagerPage(slug: string) {
-    return Object.hasOwn(plannedManagerPages, slug) ? plannedManagerPages[slug as PlannedManagerPage] : null;
-}
-
 export function managerLocationTitle(pathname: string, pages: ManagePage[]): string {
     if (pathname === "/manage") return "Огляд і підготовка";
     if (pathname === "/manage/settings") return "Загальне";
@@ -38,6 +27,5 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Title;
-    const slug = pathname.startsWith("/manage/") ? pathname.slice("/manage/".length) : "";
-    return plannedManagerPage(slug)?.title ?? "Сторінки";
+    return "Сторінки";
 }
