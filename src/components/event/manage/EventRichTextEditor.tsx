@@ -69,14 +69,20 @@ export function insertEventVariable(editor: LexicalEditor, selection: BaseSelect
 }
 function Sync({value, emittedRef}: {value: ContentRichText | null; emittedRef: React.RefObject<string | null>}) {
     const [editor] = useLexicalComposerContext();
+    const incomingRef = useRef<string | null>(null);
     useEffect(() => {
         const serialized = value ? JSON.stringify(value) : null;
-        if (serialized === emittedRef.current) return;
-        emittedRef.current = serialized;
+        if (serialized === emittedRef.current || serialized === incomingRef.current) return;
+        incomingRef.current = serialized;
         queueMicrotask(() => {
             try {
-                if (serialized) editor.setEditorState(editor.parseEditorState(serialized));
-                else editor.update(() => $getRoot().clear().append($createParagraphNode()));
+                if (serialized) {
+                    const state = editor.parseEditorState(serialized);
+                    emittedRef.current = JSON.stringify(state.toJSON());
+                    editor.setEditorState(state);
+                } else {
+                    editor.update(() => $getRoot().clear().append($createParagraphNode()));
+                }
             } catch { /* Preserve editor if a malformed external value slips through. */ }
         });
     }, [editor, value, emittedRef]);
@@ -101,8 +107,8 @@ function MarkdownPaste() {
 function Tool({label, active = false, onClick, icon}: {label: string; active?: boolean; onClick: () => void; icon: JSX.Element}) {
     return <EventTooltip content={label}>{id => <button type="button" aria-label={label} aria-describedby={id} aria-pressed={active} className={`event-lexical__tool${active ? " is-active" : ""}`} onMouseDown={event => event.preventDefault()} onClick={onClick}>{icon}</button>}</EventTooltip>;
 }
-function Menu({label, icon, options, onSelect}: {label: string; icon: JSX.Element; options: {value: string; label: string; icon: JSX.Element}[]; onSelect: (value: string) => void}) {
-    return <Dropdown.Root modal={false}><Dropdown.Trigger asChild><button type="button" aria-label={label} className="event-lexical__tool" onMouseDown={event => event.preventDefault()}>{icon}</button></Dropdown.Trigger>
+function Menu({label, icon, options, onSelect, onOpen}: {label: string; icon: JSX.Element; options: {value: string; label: string; icon: JSX.Element}[]; onSelect: (value: string) => void; onOpen: () => void}) {
+    return <Dropdown.Root modal={false}><Dropdown.Trigger asChild><button type="button" aria-label={label} className="event-lexical__tool" onPointerDown={onOpen} onMouseDown={event => event.preventDefault()}>{icon}</button></Dropdown.Trigger>
         <Dropdown.Portal><Dropdown.Content className="ib-listbox event-lexical__menu" sideOffset={5} align="start" collisionPadding={12} onCloseAutoFocus={event => event.preventDefault()}>{options.map(option => <Dropdown.Item key={option.value} className="ib-listbox__opt" onSelect={() => onSelect(option.value)}>{option.icon}{option.label}</Dropdown.Item>)}</Dropdown.Content></Dropdown.Portal>
     </Dropdown.Root>;
 }
@@ -159,8 +165,8 @@ function Toolbar({variables, onInsertVariable, onEditLink}: Pick<EventRichTextEd
     const AlignIcon = ({left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify} as const)[alignment as "left" | "center" | "right" | "justify"] ?? AlignLeft;
     return <div className="event-lexical__toolbar-wrap"><div className="event-lexical__toolbar" role="toolbar" aria-label="Форматування тексту">
         <span className="event-lexical__group"><Tool label="Жирний" active={formats.has("bold")} onClick={() => formatText("bold")} icon={<Bold size={16} />} /><Tool label="Курсив" active={formats.has("italic")} onClick={() => formatText("italic")} icon={<Italic size={16} />} /><Tool label="Підкреслений" active={formats.has("underline")} onClick={() => formatText("underline")} icon={<Underline size={16} />} /><Tool label="Закреслений" active={formats.has("strikethrough")} onClick={() => formatText("strikethrough")} icon={<Strikethrough size={16} />} /></span>
-        <span className="event-lexical__group"><Menu label="Заголовок" icon={<Heading1 size={16} />} options={headingOptions} onSelect={value => restore(() => formatBlock(value))} /><Tool label="Звичайний абзац" active={block === "paragraph"} onClick={() => formatBlock("paragraph")} icon={<Pilcrow size={16} />} /></span>
-        <span className="event-lexical__group"><Menu label="Вирівнювання" icon={<AlignIcon size={16} />} options={alignmentOptions} onSelect={value => restore(() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value as "left" | "center" | "right" | "justify"))} /></span>
+        <span className="event-lexical__group"><Menu label="Заголовок" icon={<Heading1 size={16} />} options={headingOptions} onOpen={remember} onSelect={value => restore(() => formatBlock(value))} /><Tool label="Звичайний абзац" active={block === "paragraph"} onClick={() => formatBlock("paragraph")} icon={<Pilcrow size={16} />} /></span>
+        <span className="event-lexical__group"><Menu label="Вирівнювання" icon={<AlignIcon size={16} />} options={alignmentOptions} onOpen={remember} onSelect={value => restore(() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value as "left" | "center" | "right" | "justify"))} /></span>
         <span className="event-lexical__group"><Tool label="Маркований список" active={block === "ul"} onClick={() => list("ul")} icon={<List size={16} />} /><Tool label="Нумерований список" active={block === "ol"} onClick={() => list("ol")} icon={<ListOrdered size={16} />} /></span>
         <span className="event-lexical__group"><Tool label="Цитата" active={block === "quote"} onClick={() => formatBlock(block === "quote" ? "paragraph" : "quote")} icon={<Quote size={16} />} /><Tool label="Блок коду" active={block === "code"} onClick={() => formatBlock(block === "code" ? "paragraph" : "code")} icon={<Code2 size={16} />} /><Tool label="Код у рядку" active={formats.has("code")} onClick={() => formatText("code")} icon={<Code size={16} />} /></span>
         <span className="event-lexical__group"><Tool label="Посилання" active={linkOpen} onClick={() => {remember(); if (onEditLink) onEditLink(insertLink); else setLinkOpen(!linkOpen);}} icon={<Link2 size={16} />} /></span>
