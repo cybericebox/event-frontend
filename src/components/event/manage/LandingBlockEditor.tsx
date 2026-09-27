@@ -496,10 +496,10 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             {block.type === "hero" && <>
                 {countdownSource(true)}
                 {(block.targetVariable || block.targetDate) && <>{countdownDisplay()}<div className="event-manage-field"><FieldLabel label="Розмір відліку" required help="Розмір чисел у відліку.\n• Великий — помітний поруч з іншим вмістом.\n• Дуже великий — головний акцент секції." /><EventSelect ariaLabel="Розмір відліку героя" value={block.timerSize ?? "xl"} options={[{value: "large", label: "Великий"}, {value: "xl", label: "Дуже великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div></>}
-                {inputField("action:label", "Головна дія", "Текст кнопки")}
-                {inputField("action:href", "Посилання головної дії", "/challenges")}
-                {inputField("secondaryAction:label", "Друга дія", "Необов’язково")}
-                {inputField("secondaryAction:href", "Посилання другої дії", "/rules")}
+                {inputField("action:label", "Головна дія", "Текст кнопки", false, !!block.action?.href)}
+                {inputField("action:href", "Посилання головної дії", "/challenges", false, !!block.action?.label)}
+                {inputField("secondaryAction:label", "Друга дія", "Необов’язково", false, !!block.secondaryAction?.href)}
+                {inputField("secondaryAction:href", "Посилання другої дії", "/rules", false, !!block.secondaryAction?.label)}
                 {((block.action?.label && block.action?.href) || (block.secondaryAction?.label && block.secondaryAction?.href)) && actionPosition()}
                 {inputField("note", "Примітка", "Необов’язково")}
             </>}

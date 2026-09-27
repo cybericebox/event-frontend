@@ -21,7 +21,10 @@ export function blockValidationField(error: string | undefined, block: ContentBl
     if (message === "додайте заголовок і кнопку.") return !block.title?.trim() ? "title" : !block.action?.label.trim() ? "action:label" : "action:href";
     if (message === "посилання має бути внутрішнім або HTTPS.") return "action:href";
     if (message === "заповніть другу дію та її посилання.") return !block.secondaryAction?.label.trim() ? "secondaryAction:label" : "secondaryAction:href";
-    if (message === "заповніть текст і посилання дії.") return !block.action?.label.trim() ? "action:label" : "action:href";
+    if (message === "вкажіть текст головної дії.") return "action:label";
+    if (message === "вкажіть посилання головної дії." || message === "посилання головної дії має бути внутрішнім або HTTPS.") return "action:href";
+    if (message === "вкажіть текст другої дії.") return "secondaryAction:label";
+    if (message === "вкажіть посилання другої дії." || message === "посилання другої дії має бути внутрішнім або HTTPS.") return "secondaryAction:href";
     if (message === "заповніть кнопку відліку та її посилання.") return !block.action?.label.trim() ? "action:label" : "action:href";
     if (message === "прикріпіть окреме зображення банера.") return "imageURL";
     if (message.startsWith("обкладинку події не завантажено.")) return "imageSource";
@@ -101,9 +104,12 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
             if (block.layout && !["split", "center"].includes(block.layout)) return `Блок ${index + 1}: невідоме розташування героя.`;
             if (block.timerSize && !["large", "xl"].includes(block.timerSize)) return `Блок ${index + 1}: невідомий розмір відліку героя.`;
             if ((block.items?.length ?? 0) > 4 || block.items?.some(item => !item.label?.trim() || !item.value?.trim())) return `Блок ${index + 1}: заповніть факти героя, не більше чотирьох.`;
-            for (const action of [block.action, block.secondaryAction]) {
-                if (action && (!action.label.trim() || !validHref(action.href))) return `Блок ${index + 1}: заповніть текст і посилання дії.`;
-            }
+            if (block.action && !block.action.label.trim()) return `Блок ${index + 1}: вкажіть текст головної дії.`;
+            if (block.action && !block.action.href.trim()) return `Блок ${index + 1}: вкажіть посилання головної дії.`;
+            if (block.action && !validHref(block.action.href)) return `Блок ${index + 1}: посилання головної дії має бути внутрішнім або HTTPS.`;
+            if (block.secondaryAction && !block.secondaryAction.label.trim()) return `Блок ${index + 1}: вкажіть текст другої дії.`;
+            if (block.secondaryAction && !block.secondaryAction.href.trim()) return `Блок ${index + 1}: вкажіть посилання другої дії.`;
+            if (block.secondaryAction && !validHref(block.secondaryAction.href)) return `Блок ${index + 1}: посилання другої дії має бути внутрішнім або HTTPS.`;
             if (block.targetVariable && !catalog.some(item => item.name === block.targetVariable && item.format === "date-time")) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
         }
         if ((block.type === "hero" || block.type === "countdown") && block.targetVariable && block.targetDate) return `Блок ${index + 1}: оберіть лише одне джерело дати.`;
