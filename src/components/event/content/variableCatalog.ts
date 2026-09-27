@@ -10,6 +10,12 @@ export const ContentVariableDefinitionSchema = z.object({
 export type ContentVariableDefinition = z.infer<typeof ContentVariableDefinitionSchema>;
 export const ContentVariableCatalogSchema = z.array(ContentVariableDefinitionSchema);
 
+const readableTextVariables = new Set(["event.name", "event.tag", "event.previewDescription"]);
+
+export function insertableContentVariable(variable: ContentVariableDefinition) {
+    return variable.format === "number" || variable.format === "date-time" || readableTextVariables.has(variable.name);
+}
+
 export function visibilityOperators(format: ContentVariableFormat) {
     if (format === "boolean" || format === "text") return [{value: "equals", label: "Дорівнює"}, {value: "not_equals", label: "Не дорівнює"}];
     if (format === "date-time") return [{value: "before", label: "До"}, {value: "after", label: "Після"}, {value: "equals", label: "Дорівнює"}, {value: "not_equals", label: "Не дорівнює"}];

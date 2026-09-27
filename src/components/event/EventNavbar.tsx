@@ -15,6 +15,7 @@ import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
 import {ManagerEntry} from "./manage/ManagerEntry";
 import {NotificationsPopover} from "./NotificationsPopover";
+import {beforeChallenges} from "./content/pageNavigationOrder";
 
 type Props = {
     event: PublicEventInfo;
@@ -112,8 +113,9 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         ? [...managedPages.data].filter(page => page.Navigation !== 0).sort((a, b) => a.NavigationOrder - b.NavigationOrder || a.Slug.localeCompare(b.Slug))
         : pages.data ?? [], [managedPages.data, pages.data]);
     const links = useMemo(() => [
+        ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
-        ...navigationPages.filter(page => page.NavigationOrder < 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
+        ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
     ], [approved, canViewResults, event.CanViewResults, navigationPages]);

@@ -5,10 +5,10 @@ import {renderToStaticMarkup} from "react-dom/server";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import TurndownService from "turndown";
-import {Dialog, DialogContent, DialogDescription, DialogTitle} from "@/components/ui/dialog";
+import * as Popover from "@radix-ui/react-popover";
 import {Bold, Braces, Code, Code2, Heading1, Heading2, Heading3, Italic, Link2, List, ListOrdered, Pilcrow, Quote, RemoveFormatting, Strikethrough} from "lucide-react";
 import type {ContentValue} from "@/types/eventContent";
-import type {ContentVariableDefinition} from "@/components/event/content/variableCatalog";
+import {insertableContentVariable, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {FieldLabel} from "./FieldLabel";
 
 const turndown = new TurndownService({headingStyle: "atx", bulletListMarker: "-"});
@@ -75,7 +75,6 @@ export function RichMarkdownField({label, value, required = true, disabled, cata
     const editor = useRef<HTMLDivElement>(null);
     const lastEmitted = useRef(value);
     const selection = useRef<Range | null>(null);
-    const pendingVariable = useRef<ContentVariableDefinition | null>(null);
     const [variablesOpen, setVariablesOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [linkOpen, setLinkOpen] = useState(false);
@@ -140,21 +139,15 @@ export function RichMarkdownField({label, value, required = true, disabled, cata
         emit();
     }
     function insertVariable(variable: ContentVariableDefinition) {
-        pendingVariable.current = variable;
-        setVariablesOpen(false);
-        setSearch("");
-    }
-    function afterVariableDialogClose(event: Event) {
-        event.preventDefault();
-        const variable = pendingVariable.current;
-        pendingVariable.current = null;
         restoreSelection();
-        if (!variable || !editor.current) return;
+        if (!editor.current) return;
         if (!/^[a-z][a-zA-Z0-9.]*$/.test(variable.name)) return;
         document.execCommand("insertHTML", false, `<span class="event-rich-markdown__variable-token">{{${variable.name}}}</span>`);
         const next = serializedMarkdown(editor.current.innerHTML);
         lastEmitted.current = next;
         onInsertVariable(variable, next);
+        setVariablesOpen(false);
+        setSearch("");
     }
     return <div className="event-manage-field event-rich-markdown">
         <FieldLabel label={label} required={required} help="Виділіть текст і скористайтеся кнопками форматування.\n• Доступні заголовки, списки, посилання, цитати й код.\n• Вставлений Markdown одразу стане форматованим текстом.\n• Усі зміни відразу видно в попередньому перегляді." />
@@ -163,18 +156,17 @@ export function RichMarkdownField({label, value, required = true, disabled, cata
                 {formattingTools.map(tool => <button key={tool.label} type="button" title={tool.label} aria-label={tool.label} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => command(tool.command, tool.argument)}><tool.icon size={16} /></button>)}
                 <button type="button" title="Код у рядку" aria-label="Код у рядку" disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={inlineCode}><Code size={16} /></button>
                 <button type="button" title="Посилання" aria-label="Посилання" disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => {rememberSelection(); setLinkOpen(open => !open);}}><Link2 size={16} /></button>
-                <button type="button" title="Вставити змінну" aria-label="Вставити змінну у вміст" aria-haspopup="dialog" aria-expanded={variablesOpen} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => {rememberSelection(); setVariablesOpen(open => !open);}}><Braces size={16} /></button>
+                <Popover.Root open={variablesOpen} onOpenChange={open => {setVariablesOpen(open); if (!open) setSearch("");}} modal={false}>
+                    <Popover.Trigger asChild><button type="button" title="Вставити змінну" aria-label="Вставити змінну у вміст" disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={rememberSelection}><Braces size={16} /></button></Popover.Trigger>
+                    <Popover.Portal><Popover.Content className="event-rich-markdown__variable-popover" side="bottom" align="end" sideOffset={6} collisionPadding={12} onCloseAutoFocus={event => event.preventDefault()}>
+                        <div className="event-rich-markdown__variable-heading"><strong>Змінні події</strong><Popover.Close type="button" aria-label="Закрити вибір змінної">×</Popover.Close></div>
+                        <input className="event-manage-input" value={search} onChange={event => setSearch(event.target.value)} placeholder="Знайти змінну" aria-label="Знайти змінну" />
+                        <div className="event-rich-markdown__variables">{catalog.filter(variable => insertableContentVariable(variable) && `${variable.label} ${variable.name}`.toLocaleLowerCase("uk").includes(search.toLocaleLowerCase("uk"))).map(variable => <button key={variable.name} type="button" onClick={() => insertVariable(variable)}><strong>{variable.label}</strong><code>{variable.name}</code><small>Зараз: {String(values[variable.name] ?? "Немає значення")}</small></button>)}</div>
+                    </Popover.Content></Popover.Portal>
+                </Popover.Root>
             </div>
             {linkOpen && <div className="event-rich-markdown__inline"><input className="event-manage-input" aria-label="Адреса посилання" placeholder="https://… або /rules" value={href} onChange={event => setHref(event.target.value)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); if (/^(https?:\/\/|\/)/.test(href)) {command("createLink", href); setLinkOpen(false); setHref("");}}}} /><button className="ib-btn ib-btn--sm" type="button" disabled={!/^(https?:\/\/|\/)/.test(href)} onClick={() => {command("createLink", href); setLinkOpen(false); setHref("");}}>Додати</button></div>}
             <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
         </div>
-        <Dialog open={variablesOpen} onOpenChange={open => {setVariablesOpen(open); if (!open) setSearch("");}}>
-            <DialogContent className="event-rich-markdown__variable-dialog" onCloseAutoFocus={afterVariableDialogClose}>
-                <DialogTitle>Змінні події</DialogTitle>
-                <DialogDescription className="sr-only">Оберіть змінну, щоб вставити її в поточне місце тексту.</DialogDescription>
-                <input className="event-manage-input" value={search} onChange={event => setSearch(event.target.value)} placeholder="Знайти змінну" aria-label="Знайти змінну" />
-                <div className="event-rich-markdown__variables">{catalog.filter(variable => `${variable.label} ${variable.name}`.toLocaleLowerCase("uk").includes(search.toLocaleLowerCase("uk"))).map(variable => <button key={variable.name} type="button" onClick={() => insertVariable(variable)}><strong>{variable.label}</strong><code>{variable.name}</code><small>Зараз: {String(values[variable.name] ?? "Немає значення")}</small></button>)}</div>
-            </DialogContent>
-        </Dialog>
     </div>;
 }

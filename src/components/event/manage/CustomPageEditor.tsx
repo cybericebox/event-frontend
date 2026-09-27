@@ -16,6 +16,7 @@ import {useManager} from "./ManagerShell";
 import {EventLoading} from "../EventLoading";
 import {validateLanding} from "./validatePageBlocks";
 import {reservedPageSlugs} from "../content/pageSlugs";
+import {beforeChallenges} from "../content/pageNavigationOrder";
 
 const emptyPage: ManagePageInput = {
     Slug: "", Title: "", Document: {blocks: []}, Visibility: 0, Navigation: 1, NavigationOrder: 0,
@@ -48,9 +49,11 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const currentPage = currentIndex < 0 ? null : orderedPages[currentIndex];
     const previousPage = currentIndex <= 0 ? null : orderedPages[currentIndex - 1];
     const savedPredecessor = !currentPage ? (config.data?.ScoreboardVisibility ? otherPages.filter(item => item.NavigationOrder >= 0).at(-1)?.ID ?? "results" : otherPages.filter(item => item.NavigationOrder < 0).at(-1)?.ID ?? "challenges")
-        : !previousPage || (previousPage.NavigationOrder < 0 && currentPage.NavigationOrder >= 0)
-            ? currentPage.NavigationOrder < 0 ? "challenges" : "results"
-            : previousPage.ID;
+        : beforeChallenges(currentPage.NavigationOrder)
+            ? previousPage && beforeChallenges(previousPage.NavigationOrder) ? previousPage.ID : "first"
+            : currentPage.NavigationOrder < 0
+                ? previousPage && previousPage.NavigationOrder < 0 && !beforeChallenges(previousPage.NavigationOrder) ? previousPage.ID : "challenges"
+                : previousPage && previousPage.NavigationOrder >= 0 ? previousPage.ID : "results";
     const predecessor = afterChoice?.key === key ? afterChoice.predecessor : savedPredecessor;
     const defaultOrder = Math.max(0, ...existingPages.map(item => item.NavigationOrder)) + 1;
     const saved: ManagePageInput = page.data ? {
@@ -129,14 +132,17 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             const result = isNew ? await createManagePage(eventID, payload) : await updateManagePage(eventID, page.data!.ID, payload);
             stored = true;
             const ids = otherPages.map(item => item.ID);
+            let challengesPosition = otherPages.filter(item => beforeChallenges(item.NavigationOrder)).length;
             let resultsPosition = otherPages.filter(item => item.NavigationOrder < 0).length;
             if (payload.Navigation !== 0) {
-                const insertion = predecessor === "challenges" ? 0 : predecessor === "results" ? resultsPosition : otherPages.findIndex(item => item.ID === predecessor) + 1;
-                if (insertion < 0 || (predecessor !== "challenges" && predecessor !== "results" && insertion === 0)) throw new Error("Navigation predecessor is unavailable");
+                const insertion = predecessor === "first" ? 0 : predecessor === "challenges" ? challengesPosition : predecessor === "results" ? resultsPosition : otherPages.findIndex(item => item.ID === predecessor) + 1;
+                if (insertion < 0 || (predecessor !== "first" && predecessor !== "challenges" && predecessor !== "results" && insertion === 0)) throw new Error("Navigation predecessor is unavailable");
                 ids.splice(insertion, 0, result.ID);
-                if (predecessor === "challenges" || (predecessor !== "results" && (otherPages.find(item => item.ID === predecessor)?.NavigationOrder ?? 0) < 0)) resultsPosition++;
+                const precedingPage = otherPages.find(item => item.ID === predecessor);
+                if (predecessor === "first" || (precedingPage && beforeChallenges(precedingPage.NavigationOrder))) challengesPosition++;
+                if (predecessor === "first" || predecessor === "challenges" || (precedingPage && precedingPage.NavigationOrder < 0)) resultsPosition++;
             }
-            await putManagePageOrder(eventID, ids, resultsPosition);
+            await putManagePageOrder(eventID, ids, challengesPosition, resultsPosition);
             await Promise.all([
                 queryClient.invalidateQueries({queryKey: ["event-management-pages", eventID]}),
                 queryClient.invalidateQueries({queryKey: ["event-navigation-pages", eventID]}),
@@ -184,7 +190,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
                     <label className="event-manage-field"><FieldLabel label="Адреса" required help="Частина адреси сторінки після /.\n• Латинські літери, цифри та дефіси.\n• Не більше 128 символів.\n• Системні адреси зайняті.\nПісля зміни старе посилання перестане працювати." /><div className="event-manage-page-slug"><span>/</span><input className="event-manage-input" value={draft.Slug} required disabled={!canManage || saving} onChange={e => change({...draft, Slug: e.target.value.toLowerCase()})} maxLength={128} /></div></label>
                     <div className="event-manage-field"><FieldLabel label="Доступ" required help="Хто може відкрити сторінку.\n• Публічна — усі відвідувачі.\n• Підтверджені учасники — лише учасники події.\n• Лише модератори — сторінка не з’являється в меню сайту." /><EventSelect ariaLabel="Доступ до сторінки" value={String(draft.Visibility)} disabled={!canManage || saving} options={[{value: "0", label: "Публічна"}, {value: "1", label: "Підтверджені учасники"}, {value: "2", label: "Лише модератори"}]} onValueChange={value => {const visibility = Number(value) as 0 | 1 | 2; change({...draft, Visibility: visibility, Navigation: visibility === 2 ? 0 : draft.Navigation});}} /></div>
                     <div className="event-manage-field"><FieldLabel label="У навігації" required help="Чи показувати посилання на сторінку в меню події.\n• Показувати — пункт видно тим, хто має доступ до сторінки.\n• Не показувати — сторінка відкривається за прямим посиланням.\nДля сторінки лише модераторів пункт меню недоступний." /><EventSelect ariaLabel="Показ у навігації" value={draft.Visibility === 2 || draft.Navigation === 0 ? "0" : "1"} disabled={!canManage || saving || draft.Visibility === 2} options={[{value: "1", label: "Показувати"}, {value: "0", label: "Не показувати"}]} onValueChange={value => change({...draft, Navigation: value === "1" ? 1 : 0})} /></div>
-                    <div className="event-manage-field"><FieldLabel label="Після якої сторінки" required={draft.Navigation !== 0 && draft.Visibility !== 2} help="Визначає місце сторінки в меню цієї події.\n• Після «Завдання» — перед результатами.\n• Після «Результати» — якщо їх показ увімкнено для цієї події.\n• Після додаткової сторінки — безпосередньо за нею.\nПункти, недоступні окремому відвідувачу, для нього не відображаються." /><EventSelect ariaLabel="Після якої сторінки в навігації" value={predecessor} disabled={!canManage || saving || draft.Navigation === 0 || draft.Visibility === 2} options={[{value: "challenges", label: "Після «Завдання»"}, {value: "results", label: "Після «Результати»", disabled: config.data?.ScoreboardVisibility === 0}, ...otherPages.map(item => ({value: item.ID, label: `Після «${item.Title}»`}))]} onValueChange={value => setAfterChoice({key, predecessor: value})} /></div>
+                    <div className="event-manage-field"><FieldLabel label="Після якої сторінки" required={draft.Navigation !== 0 && draft.Visibility !== 2} help="Визначає місце сторінки в меню цієї події.\n• Першою — перед стандартними й додатковими сторінками.\n• Після «Завдання» — перед результатами.\n• Після «Результати» — якщо їх показ увімкнено для цієї події.\n• Після додаткової сторінки — безпосередньо за нею.\nНедоступні позиції мають пояснення у списку." /><EventSelect ariaLabel="Після якої сторінки в навігації" value={predecessor} disabled={!canManage || saving || draft.Navigation === 0 || draft.Visibility === 2} options={[{value: "first", label: "Першою"}, {value: "challenges", label: "Після «Завдання»"}, {value: "results", label: "Після «Результати»", disabled: config.data?.ScoreboardVisibility === 0, disabledReason: config.data?.ScoreboardVisibility === 0 ? "Показ результатів вимкнено для цієї події." : undefined}, ...existingPages.filter(item => item.ID !== page.data?.ID).map(item => ({value: item.ID, label: `Після «${item.Title}»`, disabled: item.Navigation === 0, disabledReason: item.Visibility === 2 ? "Ця сторінка доступна лише модераторам і не показується в меню." : item.Navigation === 0 ? "Цю сторінку вимкнено в навігації." : undefined}))]} onValueChange={value => setAfterChoice({key, predecessor: value})} /></div>
                     </div>}
                 </div>
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Перетягніть блок за ручку або скористайтеся стрілками. Так само вони з’являться на сайті.</p></div><span>{draft.Document.blocks.length}</span></div>

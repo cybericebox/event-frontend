@@ -1,9 +1,9 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {Check, ChevronDown} from "lucide-react";
+import {ChevronDown, Circle} from "lucide-react";
 
-type Option = {value: string; label: string; disabled?: boolean};
+type Option = {value: string; label: string; disabled?: boolean; disabledReason?: string};
 
 export function EventSelect({value, options, onValueChange, disabled = false, ariaLabel, placeholder = "Оберіть значення", className = ""}: {
     value: string; options: Option[]; onValueChange: (value: string) => void;
@@ -14,11 +14,16 @@ export function EventSelect({value, options, onValueChange, disabled = false, ar
         <DropdownMenu.Trigger className={`event-select ib-select__trigger event-manage-input ${className}`} type="button" disabled={disabled} aria-label={ariaLabel}>
             <span className={selected ? "" : "ib-select__ph"}>{selected?.label ?? placeholder}</span><ChevronDown size={16} aria-hidden="true" />
         </DropdownMenu.Trigger>
-        <DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-select__menu" sideOffset={4} align="start" collisionPadding={8}>
+        <DropdownMenu.Portal><DropdownMenu.Content className={`ib-listbox event-select__menu${options.some(option => option.disabledReason) ? " event-select__menu--reasons" : ""}`} sideOffset={4} align="start" collisionPadding={8}>
             <DropdownMenu.RadioGroup value={value} onValueChange={onValueChange}>
-                {options.map(option => <DropdownMenu.RadioItem className="ib-listbox__opt" key={option.value} value={option.value} disabled={option.disabled}>
-                    <span>{option.label}</span><Check size={16} aria-hidden="true" />
-                </DropdownMenu.RadioItem>)}
+                {options.map(option => option.disabled && option.disabledReason
+                    ? <div className="event-select__unavailable" key={option.value} title={option.disabledReason} aria-label={`${option.label}. ${option.disabledReason}`}>
+                        <DropdownMenu.RadioItem className="ib-listbox__opt event-select__option" value={option.value} disabled><DropdownMenu.ItemIndicator className="event-select__indicator"><Circle size={8} fill="currentColor" aria-hidden="true" /></DropdownMenu.ItemIndicator><span>{option.label}</span></DropdownMenu.RadioItem>
+                        <small>{option.disabledReason}</small>
+                    </div>
+                    : <DropdownMenu.RadioItem className="ib-listbox__opt event-select__option" key={option.value} value={option.value} disabled={option.disabled}>
+                        <DropdownMenu.ItemIndicator className="event-select__indicator"><Circle size={8} fill="currentColor" aria-hidden="true" /></DropdownMenu.ItemIndicator><span>{option.label}</span>
+                    </DropdownMenu.RadioItem>)}
             </DropdownMenu.RadioGroup>
         </DropdownMenu.Content></DropdownMenu.Portal>
     </DropdownMenu.Root>;

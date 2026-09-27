@@ -57,6 +57,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if ((block.type === "hero" || block.type === "countdown") && block.targetDate && (Number.isNaN(Date.parse(block.targetDate)) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(block.targetDate))) return `Блок ${index + 1}: вкажіть коректну дату й час.`;
         if (block.type === "countdown" && !block.targetDate && (!block.targetVariable || !catalog.some(item => item.name === block.targetVariable && item.format === "date-time"))) return `Блок ${index + 1}: оберіть дату події або задайте її вручну.`;
         if (block.type === "countdown" && block.variant && !["split", "center"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка відліку.`;
+        if (block.type === "countdown" && block.verticalAlignment && !["start", "center", "end"].includes(block.verticalAlignment)) return `Блок ${index + 1}: невідоме положення тексту відліку.`;
         if (block.type === "countdown" && block.timerSize && !["large", "xl"].includes(block.timerSize)) return `Блок ${index + 1}: невідомий розмір відліку.`;
         if (block.type === "countdown" && block.surface && !["plain", "frame"].includes(block.surface)) return `Блок ${index + 1}: невідоме оформлення відліку.`;
         if (block.type === "countdown" && block.action && (!block.action.label.trim() || !validHref(block.action.href))) return `Блок ${index + 1}: заповніть кнопку відліку та її посилання.`;

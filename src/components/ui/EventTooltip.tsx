@@ -12,9 +12,13 @@ export function EventTooltip({content, children, placement = "top"}: {content: R
         const node = bubble.current;
         if (!node) return;
         const rect = node.getBoundingClientRect();
-        const corrected = rect.left < 12 ? 12 - rect.left : rect.right > window.innerWidth - 12 ? window.innerWidth - 12 - rect.right : 0;
+        const scrollBounds = node.closest(".ib-admin-shell__scroll")?.getBoundingClientRect();
+        const left = Math.max(12, (scrollBounds?.left ?? 0) + 12);
+        const right = Math.min(window.innerWidth - 12, (scrollBounds?.right ?? window.innerWidth) - 12);
+        const top = Math.max(12, (scrollBounds?.top ?? 0) + 12);
+        const corrected = rect.left < left ? left - rect.left : rect.right > right ? right - rect.right : 0;
         setShift(previous => previous + corrected);
-        setBelow(placement === "top" && rect.top < 12);
+        setBelow(placement === "top" && rect.top < top);
     }
     const copy = typeof content === "string" ? content.replaceAll("\\n", "\n") : content;
     const formatted = typeof copy === "string" && copy.includes("\n")
