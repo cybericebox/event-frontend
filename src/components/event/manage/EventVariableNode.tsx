@@ -1,6 +1,7 @@
 "use client";
 
 import {createContext, useContext, type JSX, type ReactNode} from "react";
+import {useLexicalNodeSelection} from "@lexical/react/useLexicalNodeSelection";
 import {DecoratorNode, $getSelection, $isRangeSelection, type DOMConversionMap, type DOMConversionOutput, type DOMExportOutput, type NodeKey, type SerializedLexicalNode, type Spread, type TextFormatType} from "lexical";
 import {formatDateTime} from "../content/dateDisplay";
 
@@ -14,14 +15,16 @@ export function EventVariableProvider({children, values, labels = {}, dateDispla
     return <Context.Provider value={{values, labels, dateDisplays}}>{children}</Context.Provider>;
 }
 
-function EventVariablePreview({name, formats}: {name: string; formats: TextFormatType[]}) {
+function EventVariablePreview({name, formats, nodeKey}: {name: string; formats: TextFormatType[]; nodeKey: NodeKey}) {
+    const [isSelected, setSelected, clearSelection] = useLexicalNodeSelection(nodeKey);
     const {values, labels, dateDisplays} = useContext(Context);
     const value = values[name];
     const display = dateDisplays?.[name];
     const rendered = typeof value === "string" && display && !Number.isNaN(Date.parse(value))
         ? formatDateTime(value, display.format, display.pattern)
         : typeof value === "boolean" ? value ? "Так" : "Ні" : value == null ? labels[name] ?? name : String(value);
-    return <span className="event-lexical__variable" data-event-variable={name} contentEditable={false} title={labels[name] ?? name}
+    return <span className={`event-lexical__variable${isSelected ? " is-selected" : ""}`} data-event-variable={name} contentEditable={false} title={labels[name] ?? name}
+        onMouseDown={event => { event.preventDefault(); clearSelection(); setSelected(true); }}
         style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,
             textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined,
             fontFamily: formats.includes("code") ? "monospace" : undefined}}>{rendered}</span>;
@@ -64,7 +67,7 @@ export class EventVariableNode extends DecoratorNode<JSX.Element> {
     static importJSON(serialized: SerializedEventVariableNode): EventVariableNode {
         return $createEventVariableNode(serialized.varName, serialized.formats ?? []);
     }
-    decorate(): JSX.Element { return <EventVariablePreview name={this.__varName} formats={this.__formats} />; }
+    decorate(): JSX.Element { return <EventVariablePreview name={this.__varName} formats={this.__formats} nodeKey={this.__key} />; }
 }
 
 export function $createEventVariableNode(name: string, formats: TextFormatType[] = []): EventVariableNode {
