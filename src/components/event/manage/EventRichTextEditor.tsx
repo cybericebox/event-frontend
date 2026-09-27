@@ -69,11 +69,9 @@ export function insertEventVariable(editor: LexicalEditor, selection: BaseSelect
 }
 function Sync({value, emittedRef}: {value: ContentRichText | null; emittedRef: React.RefObject<string | null>}) {
     const [editor] = useLexicalComposerContext();
-    const incomingRef = useRef<string | null>(null);
     useEffect(() => {
         const serialized = value ? JSON.stringify(value) : null;
-        if (serialized === emittedRef.current || serialized === incomingRef.current) return;
-        incomingRef.current = serialized;
+        if (serialized === emittedRef.current) return;
         queueMicrotask(() => {
             try {
                 if (serialized) {
