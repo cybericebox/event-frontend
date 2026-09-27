@@ -5,7 +5,7 @@ const attachmentSchema = z.object({file_id: id, name: z.string()});
 const snapshotSchema = z.object({
     name: z.string(),
     description: z.unknown().optional(),
-    difficulty: z.number().optional(),
+    difficulty: z.enum(["trivial", "easy", "medium", "hard", "insane"]),
     attachments: z.array(attachmentSchema).default([]),
 });
 const challengeSchema = z.object({
@@ -38,9 +38,9 @@ function baseUrl(eventID: string): string {
 
 const mockID = (n: string) => `00000000-0000-4000-8000-${n.padStart(12, "0")}`;
 const mockChallenges = challengeSchema.array().parse([
-    {ID: mockID("901"), EventChallengeID: mockID("101"), Snapshot: {name: "IceWall", description: {root: {children: [{type: "paragraph", children: [{type: "text", text: "Знайдіть прапор у панелі керування крижаної фортеці."}]}]}}, attachments: [{file_id: mockID("1011"), name: "icewall.txt"}]}, Readiness: 2, SolvedAt: null, Points: 100, Order: 0, GroupID: mockID("1"), GroupName: "Web", GroupOrder: 0},
-    {ID: mockID("902"), EventChallengeID: mockID("102"), Snapshot: {name: "SQL Frostbite", description: {root: {children: [{type: "paragraph", children: [{type: "text", text: "Дістаньте облікові дані адміністратора."}]}]}}, attachments: []}, Readiness: 2, SolvedAt: "2026-09-26T14:00:00Z", Points: 250, Order: 1, GroupID: mockID("1"), GroupName: "Web", GroupOrder: 0},
-    {ID: mockID("903"), EventChallengeID: mockID("201"), Snapshot: {name: "Glacier Cipher", description: {root: {children: [{type: "paragraph", children: [{type: "text", text: "Розшифруйте повідомлення, вкарбоване у лід."}]}]}}, attachments: []}, Readiness: 2, SolvedAt: null, Points: 400, Order: 0, GroupID: mockID("2"), GroupName: "Crypto", GroupOrder: 1},
+    {ID: mockID("901"), EventChallengeID: mockID("101"), Snapshot: {name: "IceWall", difficulty: "easy", description: {root: {children: [{type: "paragraph", children: [{type: "text", text: "Знайдіть прапор у панелі керування крижаної фортеці."}]}]}}, attachments: [{file_id: mockID("1011"), name: "icewall.txt"}]}, Readiness: 2, SolvedAt: null, Points: 100, Order: 0, GroupID: mockID("1"), GroupName: "Web", GroupOrder: 0},
+    {ID: mockID("902"), EventChallengeID: mockID("102"), Snapshot: {name: "SQL Frostbite", difficulty: "medium", description: {root: {children: [{type: "paragraph", children: [{type: "text", text: "Дістаньте облікові дані адміністратора."}]}]}}, attachments: []}, Readiness: 2, SolvedAt: "2026-09-26T14:00:00Z", Points: 250, Order: 1, GroupID: mockID("1"), GroupName: "Web", GroupOrder: 0},
+    {ID: mockID("903"), EventChallengeID: mockID("201"), Snapshot: {name: "Glacier Cipher", difficulty: "hard", description: {root: {children: [{type: "paragraph", children: [{type: "text", text: "Розшифруйте повідомлення, вкарбоване у лід."}]}]}}, attachments: []}, Readiness: 2, SolvedAt: null, Points: 400, Order: 0, GroupID: mockID("2"), GroupName: "Crypto", GroupOrder: 1},
 ]);
 
 export async function getOwnChallenges(eventID: string): Promise<OwnChallenge[]> {
