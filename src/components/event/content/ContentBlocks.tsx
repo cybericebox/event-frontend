@@ -28,7 +28,7 @@ export function contentBlockVisible(block: ContentBlock, variables: Record<strin
 const dateFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 const numberFormat = new Intl.NumberFormat("uk-UA");
 
-function replaceVariables(text: string, variables: Record<string, Value>, declared: Map<string, string>, inMarkdown = false): string {
+export function replaceVariables(text: string, variables: Record<string, Value>, declared: Map<string, string>, inMarkdown = false): string {
     return text.replace(/\{\{([a-z][a-zA-Z0-9.]*)\}\}/g, (token, name: string) => {
         const format = declared.get(name);
         if (!format) return token;

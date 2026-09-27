@@ -13,6 +13,7 @@ import {uploadManageBannerImage} from "@/api/manage";
 import {FieldLabel} from "./FieldLabel";
 import {RichMarkdownField} from "./RichMarkdownField";
 import {blockValidationField} from "./validatePageBlocks";
+import {replaceVariables} from "@/components/event/content/ContentBlocks";
 
 export {FieldLabel} from "./FieldLabel";
 
@@ -353,7 +354,8 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     }
 
     const blockLabel = blockPalette.find(item => item.type === block.type)?.label ?? block.type;
-    const blockSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? block.markdown : "");
+    const rawSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? block.markdown : "");
+    const blockSummary = replaceVariables(rawSummary ?? "", values, new Map((block.variables ?? []).map(variable => [variable.name, variable.format])));
     return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={selected && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect();}}}>
         <div className="event-content-editor__block-head">
             <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</div>
