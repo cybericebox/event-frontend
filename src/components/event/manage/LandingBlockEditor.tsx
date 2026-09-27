@@ -14,6 +14,7 @@ import {FieldLabel} from "./FieldLabel";
 import {RichMarkdownField} from "./RichMarkdownField";
 import {blockValidationField} from "./validatePageBlocks";
 import {replaceVariables} from "@/components/event/content/ContentBlocks";
+import {useEventLinkOptions} from "./useEventLinkOptions";
 
 export {FieldLabel} from "./FieldLabel";
 
@@ -98,12 +99,13 @@ function serializeBadges(editor: HTMLElement): string {
     return readChildren(editor);
 }
 
-function EditorTextField({label, value, placeholder, multiline, compact, required, help, error, disabled, catalog, values, variableFormats, variableNames, onInsertVariable, onChangeValue}: {
+function EditorTextField({label, value, placeholder, multiline, compact, required, help, error, disabled, catalog, values, variableFormats, variableNames, hideLabel = false, onInsertVariable, onChangeValue}: {
     label: string; value: string; placeholder: string; multiline: boolean; compact: boolean; required: boolean; help?: string; disabled: boolean;
     error?: string;
     catalog: ContentVariableDefinition[]; values: Record<string, ContentValue>;
     variableFormats?: ContentVariableDefinition["format"][];
     variableNames?: string[];
+    hideLabel?: boolean;
     onInsertVariable: (variable: ContentVariableDefinition, next: string) => void;
     onChangeValue: (value: string) => void;
 }) {
@@ -163,7 +165,7 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
         requestAnimationFrame(() => { editor.focus(); remember(); });
     }
     return <div className="event-manage-field">
-        <FieldLabel label={label} required={required} help={help} />
+        {!hideLabel && <FieldLabel label={label} required={required} help={help} />}
         <div className={`event-content-editor__field-control${multiline ? " event-content-editor__field-control--multiline" : ""}`}>
             <div id={id} ref={inputRef} role="textbox" aria-label={label} aria-multiline={multiline} aria-required={required} aria-readonly={disabled} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}
                 className={`event-manage-input event-content-editor__badge-input${multiline ? compact ? " event-content-editor__textarea--compact" : " event-content-editor__textarea" : ""}${error ? " is-invalid" : ""}`}
@@ -182,6 +184,22 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
             </Popover.Root>
         </div>
         {error && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
+    </div>;
+}
+
+function EditorLinkField({eventID, label, value, placeholder, required, help, error, disabled, catalog, values, onInsertVariable, onChangeValue}: {
+    eventID: string; label: string; value: string; placeholder: string; required: boolean; help?: string; error?: string; disabled: boolean;
+    catalog: ContentVariableDefinition[]; values: Record<string, ContentValue>;
+    onInsertVariable: (variable: ContentVariableDefinition, next: string) => void;
+    onChangeValue: (value: string) => void;
+}) {
+    const {options, pagesError} = useEventLinkOptions(eventID, values);
+    const preset = options.some(option => option.value === value) ? value : "custom";
+    return <div className="event-content-editor__link-target">
+        <div className="event-manage-field"><FieldLabel label={label} required={required} help={help} /><EventSelect ariaLabel={`${label}: сторінка або своя адреса`} value={preset} options={[...options, {value: "custom", label: "Своя адреса"}]} disabled={disabled} onValueChange={next => onChangeValue(next === "custom" ? "" : next)} /></div>
+        {preset === "custom" && <EditorTextField label={`Адреса для ${label.toLocaleLowerCase("uk")}`} value={value} placeholder={placeholder} multiline={false} compact={false} required={required} error={error} disabled={disabled} catalog={catalog} values={values} variableNames={["event.tag"]} hideLabel onInsertVariable={onInsertVariable} onChangeValue={onChangeValue} />}
+        {preset !== "custom" && error && <p className="event-content-editor__field-error" role="alert">{error}</p>}
+        {pagesError && <small className="event-content-editor__hint">Додаткові сторінки не завантажилися. Адресу можна ввести вручну.</small>}
     </div>;
 }
 
@@ -297,10 +315,11 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         const itemHelp = itemPart === "label"
             ? block.type === "timeline" ? "Час або дата цього етапу.\nПоказується перед назвою події." : block.type === "faq" ? "Питання, яке учасник бачить у списку." : block.type === "doc" ? "Назва розділу.\nПоказується в тексті та у змісті." : "Короткий підпис поруч зі значенням."
             : block.type === "timeline" ? "Назва події в розкладі.\nПоказується поруч із часом." : block.type === "faq" ? "Відповідь, яка відкривається під питанням.\nПідтримує Markdown." : "Значення цього пункту.\nДля фактів і героя може містити змінні події.";
+        if (field === "action:href" || field === "secondaryAction:href") return <EditorLinkField eventID={eventID} label={label} value={fieldValue(field)} placeholder={placeholder} required={required} help={help ?? textHelp[field]} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
+            onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))} onChangeValue={value => onUpdate(changeField(field, value))} />;
         return <EditorTextField label={label} value={fieldValue(field)} placeholder={placeholder}
             multiline={multiline} compact={compact} required={required} help={help ?? (itemPart ? itemHelp : textHelp[field])} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
             variableFormats={block.type === "timeline" && itemPart === "label" ? ["date-time"] : undefined}
-            variableNames={field === "action:href" || field === "secondaryAction:href" ? ["event.tag"] : undefined}
             onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))}
             onChangeValue={value => onUpdate(changeField(field, value))} />;
     }

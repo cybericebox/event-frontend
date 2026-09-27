@@ -92,3 +92,4 @@
 .ib-timer--tiles .ib-timer__part strong{font-size:clamp(30px,4cqi,54px)}
 .ib-block-hero.ib-mass .ib-timer--tiles .ib-timer__part{border-color:color-mix(in srgb,var(--ib-on-brand) 26%,transparent);background:color-mix(in srgb,var(--ib-on-brand) 9%,transparent)}
 @container ib-blocks (max-width:480px){.ib-timer--tiles .ib-timer__part{min-width:0;padding:8px}.ib-timer--tiles .ib-timer__part strong{font-size:clamp(26px,7cqi,42px)}.ib-timer--tiles .ib-timer__part span{font-size:var(--ib-fs-12)}}
+.event-content-editor__link-target{display:grid;gap:var(--ib-2);min-width:0}

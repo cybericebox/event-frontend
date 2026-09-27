@@ -468,6 +468,7 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-rich-markdown__inline>.event-select,.event-rich-markdown__inline>input{flex:1 1 180px;min-width:0}
 .event-rich-markdown__inline>button{flex:none}
 .event-rich-markdown__inline>small{flex-basis:100%;color:var(--ib-dim)}
+.event-content-editor__link-target{display:grid;gap:var(--ib-2);min-width:0}
 .event-content-editor__badge-input{min-height:var(--ib-control-h-lg);padding-top:9px!important;padding-bottom:9px!important;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text}
 .event-content-editor__badge-input:not(.event-content-editor__textarea):not(.event-content-editor__textarea--compact){white-space:nowrap;overflow-x:auto;scrollbar-width:thin}
 .event-content-editor__badge-input:empty::before{content:attr(data-placeholder);color:var(--ib-dim);pointer-events:none}
