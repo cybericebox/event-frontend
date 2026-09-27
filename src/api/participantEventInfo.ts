@@ -12,7 +12,7 @@ export async function getParticipantEventInfo(): Promise<ParticipantEventInfo> {
         return ParticipantEventInfoSchema.parse({
             EventID: "01900000-0000-7000-8000-000000000001",
             UseVPN: false,
-            CanViewResults: false,
+            CanViewResults: process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1",
             CanViewParticipants: false,
         });
     }

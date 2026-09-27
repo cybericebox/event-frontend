@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/styles/event.css"
+        ],
+        "createdAt": "2026-09-27T03:27:34.933Z",
+        "reason": "Line 97 is a uniform 1px neutral border on all sides; the reported side-tab accent is absent, and detect reports no finding"
+      }
+    ]
+  }
+}

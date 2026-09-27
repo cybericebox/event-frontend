@@ -32,7 +32,9 @@ async function readData<T>(response: Response, schema: z.ZodType<T>): Promise<T>
 
 // Browser requests are the only place the host-only api.<domain> cookie exists.
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return null;
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1"
+        ? meSchema.parse({ID: "01900000-0000-7000-8000-000000000031", FirstName: "Олена", LastName: "Коваль", Email: "participant@example.test"})
+        : null;
     const response = await fetch(apiUrl("/auth/me"), {credentials: "include", cache: "no-store"});
     if (response.status === 401) return null;
     return readData(response, meSchema);
@@ -48,13 +50,15 @@ export function profilePictureUrl(picture: string): string | undefined {
 }
 
 export async function getJoinStatus(): Promise<number> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return 0;
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1" ? 2 : 0;
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
     return (await readData(response, joinSchema)).Status;
 }
 
 export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return null;
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1"
+        ? ownTeamSchema.parse({ID: "01900000-0000-7000-8000-000000000022", Name: "Blue Team", JoinCode: "MOCK-TEAM", MemberCount: 3})
+        : null;
     const response = await fetch(apiUrl(`/events/${encodeURIComponent(eventID)}/teams/mine`), {credentials: "include", cache: "no-store"});
     if (response.status === 404) return null;
     return readData(response, ownTeamSchema);

@@ -1,82 +1,38 @@
-"use client"
-import { useState } from "react"
-import { Check } from "lucide-react"
-import toast from "react-hot-toast"
-import { useChallenge } from "@/hooks/useChallenge"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+"use client";
 
-// Flag submission form for the challenge modal. Renders one of three states:
-// already solved (accepted banner), event finished (submissions closed banner),
-// or the active input + submit button.
-export function FlagSubmit({
-    challengeID,
-    solved,
-    eventFinished,
-}: {
-    challengeID: string
-    solved: boolean
-    eventFinished: boolean
+import {useState} from "react";
+import {Check} from "lucide-react";
+import {useMutation} from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import {submitChallenge} from "@/api/participantChallenges";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+
+export function FlagSubmit({eventID, challengeID, solved, eventFinished, onSubmitted}: {
+    eventID: string;
+    challengeID: string;
+    solved: boolean;
+    eventFinished: boolean;
+    onSubmitted: () => void;
 }) {
-    const [flag, setFlag] = useState("")
-    const { SolveChallenge, PendingSolveChallenge } = useChallenge().useSolveChallenge(challengeID)
-
-    // Already solved — show the accepted state instead of an input.
-    if (solved) {
-        return (
-            <div className="flex items-center gap-2 rounded-lg border border-success/40 bg-success/[0.09] px-4 py-3 text-success">
-                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-success text-white">
-                    <Check className="size-[11px]" strokeWidth={3} />
-                </span>
-                <span className="text-sm font-semibold">Прапор уже прийнято — завдання вирішено вашою командою.</span>
-            </div>
-        )
-    }
-
-    // Event finished — submissions closed.
-    if (eventFinished) {
-        return (
-            <div className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
-                Відповіді більше не приймаються.
-            </div>
-        )
-    }
-
-    const submit = () => {
-        const value = flag.trim()
-        if (!value) return
-        SolveChallenge(
-            { Solution: value },
-            {
-                onSuccess: (res) => {
-                    const ok = res.data?.Data?.Solved
-                    if (ok) {
-                        toast.success("Прапор прийнято!")
-                        setFlag("")
-                    } else {
-                        toast.error("Невірний прапор")
-                    }
-                },
-                onError: () => toast.error("Помилка надсилання прапора"),
+    const [answer, setAnswer] = useState("");
+    const submission = useMutation({
+        mutationFn: (value: string) => submitChallenge(eventID, challengeID, value, crypto.randomUUID()),
+        onSuccess: result => {
+            if (result.Correct) {
+                toast.success("Прапор прийнято!");
+                setAnswer("");
+                onSubmitted();
+            } else {
+                toast.error("Невірний прапор");
             }
-        )
-    }
-
-    return (
-        <div className="flex gap-2">
-            <Input
-                value={flag}
-                onChange={(e) => setFlag(e.target.value)}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter") submit()
-                }}
-                placeholder="CTF{...}"
-                className="font-mono"
-                disabled={PendingSolveChallenge}
-            />
-            <Button onClick={submit} disabled={PendingSolveChallenge || !flag.trim()}>
-                Здати
-            </Button>
-        </div>
-    )
+        },
+        onError: () => toast.error("Не вдалося надіслати прапор"),
+    });
+    if (solved) return <div className="flex items-center gap-2 rounded-lg border border-success/40 bg-success/[0.09] px-4 py-3 text-success"><Check className="size-4 shrink-0" /><span className="text-sm font-semibold">Прапор уже прийнято — завдання вирішено вашою командою.</span></div>;
+    if (eventFinished) return <div className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">Відповіді більше не приймаються.</div>;
+    return <form className="flex flex-col gap-2 sm:flex-row" onSubmit={event => {event.preventDefault(); const value = answer.trim(); if (value && !submission.isPending) submission.mutate(value);}}>
+        <Input value={answer} onChange={event => setAnswer(event.target.value)} placeholder="CTF{...}" aria-label="Прапор" className="min-w-0 font-mono" disabled={submission.isPending} />
+        <Button type="submit" disabled={submission.isPending || !answer.trim()}>Здати</Button>
+    </form>;
 }
