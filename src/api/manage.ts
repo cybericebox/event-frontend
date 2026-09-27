@@ -44,6 +44,14 @@ export const ManageLifecycleSchema = z.object({
 export type ManageLifecycle = z.infer<typeof ManageLifecycleSchema>;
 export type ManageLifecycleInput = Pick<ManageLifecycle, "JoinPolicy" | "PublishAt" | "StartAt" | "FinishAt" | "WithdrawAt">;
 
+export const ManageScoringSchema = z.object({
+    Mode: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+    MinPoints: z.number().int(), MaxPoints: z.number().int(), FloorAtPercent: z.number().int(),
+    ForceEventScoring: z.boolean(), UpdatedAt: z.string(),
+});
+export type ManageScoring = z.infer<typeof ManageScoringSchema>;
+export type ManageScoringInput = Omit<ManageScoring, "UpdatedAt">;
+
 export const ManageContentSchema = z.object({
     Landing: ContentDocumentSchema,
     Live: z.unknown(),
@@ -92,6 +100,7 @@ let mockLifecycle: ManageLifecycle = {
     Status: "not_published", UpdatedAt: "2026-09-26T00:00:00Z",
     Infrastructure: {HasDynamicLabs: false, LaboratoriesAvailable: false, RequiresVPN: false, CanStart: true, Reason: null},
 };
+let mockScoring: ManageScoring = {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, ForceEventScoring: false, UpdatedAt: "2026-09-26T00:00:00Z"};
 let mockContent: ManageContent = {
     Landing: {blocks: [
         {id: "intro", type: "section", label: "Про подію"},
@@ -152,6 +161,10 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
                 mockLifecycle = {...mockLifecycle, ...input, Configured: true, Status: status, UpdatedAt: new Date().toISOString()};
             }
             return schema.parse(mockLifecycle);
+        }
+        if (path === "scoring") {
+            if (method === "PUT") mockScoring = {...(payload as ManageScoringInput), UpdatedAt: new Date().toISOString()};
+            return schema.parse(mockScoring);
         }
         if (path === "content") return schema.parse(mockContent);
         if (path === "content/variables") return schema.parse([
@@ -285,6 +298,8 @@ export async function removeManagePreviewPicture(eventID: string): Promise<void>
 }
 export const getManageLifecycle = (eventID: string) => request(eventID, "lifecycle", ManageLifecycleSchema);
 export const putManageLifecycle = (eventID: string, input: ManageLifecycleInput) => request(eventID, "lifecycle", ManageLifecycleSchema, "PUT", input);
+export const getManageScoring = (eventID: string) => request(eventID, "scoring", ManageScoringSchema);
+export const putManageScoring = (eventID: string, input: ManageScoringInput) => request(eventID, "scoring", ManageScoringSchema, "PUT", input);
 export const getManageContent = (eventID: string) => request(eventID, "content", ManageContentSchema);
 export const getManageContentVariables = (eventID: string) => request(eventID, "content/variables", ContentVariableCatalogSchema);
 export const getManagePage = (eventID: string, slug: string) => request(eventID, `pages/${encodeURIComponent(slug)}`, ManagePageSchema);

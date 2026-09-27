@@ -1,7 +1,6 @@
 import type {ManagePage} from "@/api/manage";
 
 export const plannedManagerPages = {
-    scoring: {title: "Профіль балів", description: "Тут можна буде налаштовувати бали за завдання й правила оцінювання."},
     attempts: {title: "Правила спроб", description: "Тут можна буде визначати обмеження та поведінку спроб."},
     applications: {title: "Заявки", description: "Тут можна буде переглядати й опрацьовувати заявки на участь."},
     participants: {title: "Учасники", description: "Тут можна буде керувати учасниками події."},
@@ -35,6 +34,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/content/landing") return "Головна сторінка";
     if (pathname === "/manage/exercise-groups") return "Групи й порядок";
     if (pathname === "/manage/exercises") return "Завдання";
+    if (pathname === "/manage/scoring") return "Профіль балів";
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Title;
