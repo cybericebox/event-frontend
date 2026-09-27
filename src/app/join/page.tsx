@@ -65,7 +65,7 @@ export default function JoinPage() {
             }
             router.push("/");
         } catch {
-            setError("Не вдалося надіслати анкету або приєднатися. Перевірте відповіді та спробуйте ще раз.");
+            setError("Не вдалося зберегти додаткові поля або приєднатися. Перевірте відповіді та спробуйте ще раз.");
         } finally {setWorking(false);}
     }
 
@@ -81,7 +81,7 @@ export default function JoinPage() {
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>Заявку відхилено. Зверніться до організаторів події.</p>
             : event.Registration === 0 ? <p>Реєстрацію на подію закрито.</p>
             : <>
-                {form.data?.Enabled && <div className="event-join-form"><h2>Анкета учасника</h2><p>{form.data.Required ? "Заповніть анкету перед приєднанням." : "Анкета необов’язкова. Можете відповісти на запитання перед приєднанням."}</p>
+                {form.data?.Enabled && <div className="event-join-form"><h2>Додаткові поля учасника</h2><p>{form.data.Required ? "Заповніть поля перед приєднанням." : "Ці поля необов’язкові. Можете заповнити їх перед приєднанням."}</p>
                     {form.data.Document.blocks.map(block => {
                         if (isFormField(block)) {
                             if (!visible(block.condition, answers)) return null;

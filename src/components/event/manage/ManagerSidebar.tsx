@@ -3,9 +3,9 @@
 import {useState} from "react";
 import Link from "next/link";
 import {
-    ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown,
+    ArrowLeft, Bell, CalendarDays, ChevronDown,
     FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
-    Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
+    Mail, MonitorPlay, Palette, Plus, Send, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
     type LucideIcon,
 } from "lucide-react";
@@ -27,6 +27,7 @@ const groups: Group[] = [
     ]},
     {id: "participation", label: "Участь", items: [
         {href: "/manage/registration", label: "Налаштування реєстрації", icon: Settings2},
+        {href: "/manage/participant-form", label: "Додаткові поля учасника", icon: FilePenLine},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
     ]},
@@ -43,11 +44,6 @@ const groups: Group[] = [
         {href: "/manage/results-settings", label: "Налаштування результатів", icon: SlidersHorizontal},
         {href: "/manage/results", label: "Таблиця результатів", icon: Trophy},
         {href: "/manage/live", label: "Live", icon: MonitorPlay},
-    ]},
-    {id: "forms", label: "Форми", items: [
-        {href: "/manage/participant-form", label: "Анкета учасника", icon: FilePenLine},
-        {href: "/manage/surveys", label: "Опитування", icon: MessageSquareText},
-        {href: "/manage/form-responses", label: "Відповіді на форми", icon: BookOpenText},
     ]},
     {id: "notifications", label: "Сповіщення", items: [
         {href: "/manage/notifications", label: "На сайті", icon: Bell},
