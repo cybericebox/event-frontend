@@ -1,6 +1,6 @@
 "use client";
 
-import {useId, useRef, useState, type ChangeEvent} from "react";
+import {useEffect, useId, useRef, useState, type ChangeEvent} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import {ArrowDown, ArrowUp, Braces, GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
@@ -49,7 +49,52 @@ function withBinding(block: ContentBlock, variable: ContentVariableDefinition): 
     return {...block, variables: [...(block.variables ?? []), {name: variable.name, format: variable.format}]};
 }
 
-type EditableInput = HTMLInputElement | HTMLTextAreaElement;
+const variableToken = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
+
+function badge(name: string): HTMLSpanElement {
+    const node = document.createElement("span");
+    node.className = "event-content-editor__variable-token";
+    node.dataset.variable = name;
+    node.contentEditable = "false";
+    node.textContent = name;
+    return node;
+}
+
+function renderBadges(editor: HTMLElement, raw: string) {
+    const lines = raw.split("\n");
+    const nodes: Node[] = [];
+    lines.forEach((line, lineIndex) => {
+        if (lineIndex) nodes.push(document.createElement("br"));
+        let position = 0;
+        for (const match of line.matchAll(variableToken)) {
+            const start = match.index ?? 0;
+            if (start > position) nodes.push(document.createTextNode(line.slice(position, start)));
+            nodes.push(badge(match[1]));
+            position = start + match[0].length;
+        }
+        if (position < line.length) nodes.push(document.createTextNode(line.slice(position)));
+    });
+    editor.replaceChildren(...nodes);
+}
+
+function serializeBadges(editor: HTMLElement): string {
+    function read(node: Node): string {
+        if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? "").replaceAll("\u00a0", " ").replaceAll("\u200b", "");
+        if (!(node instanceof HTMLElement)) return "";
+        if (node.dataset.variable) return `{{${node.dataset.variable}}}`;
+        if (node.tagName === "BR") return "\n";
+        return readChildren(node);
+    }
+    function readChildren(parent: Node): string {
+        let result = "";
+        for (const child of parent.childNodes) {
+            if (child instanceof HTMLElement && (child.tagName === "DIV" || child.tagName === "P") && result && !result.endsWith("\n")) result += "\n";
+            result += read(child);
+        }
+        return result;
+    }
+    return readChildren(editor);
+}
 
 function EditorTextField({label, value, placeholder, multiline, compact, required, help, error, disabled, catalog, values, variableFormats, variableNames, onInsertVariable, onChangeValue}: {
     label: string; value: string; placeholder: string; multiline: boolean; compact: boolean; required: boolean; help?: string; disabled: boolean;
@@ -61,48 +106,70 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
     onChangeValue: (value: string) => void;
 }) {
     const id = useId();
-    const inputRef = useRef<EditableInput | null>(null);
-    const selection = useRef({start: value.length, end: value.length});
+    const inputRef = useRef<HTMLDivElement | null>(null);
+    const selection = useRef<Range | null>(null);
+    const lastEmitted = useRef(value);
     const [variableOpen, setVariableOpen] = useState(false);
     const [variableSearch, setVariableSearch] = useState("");
     const filteredVariables = catalog.filter(variable => insertableContentVariable(variable) && (!variableFormats || variableFormats.includes(variable.format)) && (!variableNames || variableNames.includes(variable.name)) && `${variable.label} ${variable.name}`.toLocaleLowerCase("uk").includes(variableSearch.toLocaleLowerCase("uk")));
-    function remember(input: EditableInput) {
-        selection.current = {start: input.selectionStart ?? input.value.length, end: input.selectionEnd ?? input.value.length};
+    useEffect(() => {
+        if (!inputRef.current || value === lastEmitted.current) return;
+        renderBadges(inputRef.current, value);
+        lastEmitted.current = value;
+    }, [value]);
+    useEffect(() => {
+        if (inputRef.current) renderBadges(inputRef.current, value);
+        // Initial DOM content only; later external values use the effect above.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    function remember() {
+        const current = window.getSelection();
+        const range = current?.rangeCount ? current.getRangeAt(0) : null;
+        if (range && inputRef.current?.contains(range.commonAncestorContainer)) selection.current = range.cloneRange();
+    }
+    function emit() {
+        if (!inputRef.current) return;
+        const next = serializeBadges(inputRef.current);
+        lastEmitted.current = next;
+        onChangeValue(next);
+        remember();
     }
     function insert(variable: ContentVariableDefinition) {
-        const {start, end} = selection.current;
-        const token = `{{${variable.name}}}`;
-        const next = value.slice(0, Math.min(start, value.length)) + token + value.slice(Math.min(end, value.length));
+        const editor = inputRef.current;
+        if (!editor) return;
+        editor.focus();
+        const range = selection.current && editor.contains(selection.current.commonAncestorContainer)
+            ? selection.current.cloneRange() : document.createRange();
+        if (!editor.contains(range.commonAncestorContainer)) range.selectNodeContents(editor);
+        if (!selection.current || !editor.contains(selection.current.commonAncestorContainer)) range.collapse(false);
+        const token = badge(variable.name);
+        range.deleteContents();
+        range.insertNode(token);
+        range.setStartAfter(token);
+        range.collapse(true);
+        const current = window.getSelection();
+        current?.removeAllRanges();
+        current?.addRange(range);
+        selection.current = range.cloneRange();
+        const next = serializeBadges(editor);
+        lastEmitted.current = next;
         onInsertVariable(variable, next);
         setVariableOpen(false);
         setVariableSearch("");
-        requestAnimationFrame(() => {
-            inputRef.current?.focus();
-            inputRef.current?.setSelectionRange(start + token.length, start + token.length);
-            selection.current = {start: start + token.length, end: start + token.length};
-        });
+        requestAnimationFrame(() => { editor.focus(); remember(); });
     }
-    const common = {
-        id,
-        "aria-label": label,
-        className: `event-manage-input${multiline ? compact ? " event-content-editor__textarea--compact" : " event-content-editor__textarea" : ""}${error ? " is-invalid" : ""}`,
-        "aria-invalid": !!error,
-        "aria-describedby": error ? `${id}-error` : undefined,
-        value, disabled, placeholder, required,
-        onSelect: (event: React.SyntheticEvent<EditableInput>) => remember(event.currentTarget),
-        onClick: (event: React.MouseEvent<EditableInput>) => remember(event.currentTarget),
-        onKeyUp: (event: React.KeyboardEvent<EditableInput>) => remember(event.currentTarget),
-        onChange: (event: React.ChangeEvent<EditableInput>) => {
-            remember(event.target);
-            onChangeValue(event.target.value);
-        },
-    };
     return <div className="event-manage-field">
         <FieldLabel label={label} required={required} help={help} />
         <div className={`event-content-editor__field-control${multiline ? " event-content-editor__field-control--multiline" : ""}`}>
-            {multiline ? <textarea {...common} ref={node => {inputRef.current = node;}} rows={compact ? 3 : 7} /> : <input {...common} ref={node => {inputRef.current = node;}} />}
+            <div id={id} ref={inputRef} role="textbox" aria-label={label} aria-multiline={multiline} aria-required={required} aria-readonly={disabled} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}
+                className={`event-manage-input event-content-editor__badge-input${multiline ? compact ? " event-content-editor__textarea--compact" : " event-content-editor__textarea" : ""}${error ? " is-invalid" : ""}`}
+                contentEditable={!disabled} suppressContentEditableWarning data-placeholder={placeholder}
+                onInput={emit} onKeyUp={remember} onMouseUp={remember} onBlur={remember}
+                onMouseDown={event => {const token = (event.target as HTMLElement).closest(".event-content-editor__variable-token"); if (!token || !inputRef.current?.contains(token)) return; event.preventDefault(); inputRef.current.focus(); const range = document.createRange(); range.selectNode(token); const current = window.getSelection(); current?.removeAllRanges(); current?.addRange(range); selection.current = range.cloneRange();}}
+                onKeyDown={event => {if (!multiline && event.key === "Enter") event.preventDefault();}}
+                onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); document.execCommand("insertText", false, multiline ? plain : plain.replace(/[\r\n]+/g, " ")); emit();}} />
             <Popover.Root open={variableOpen} onOpenChange={open => {setVariableOpen(open); if (!open) setVariableSearch("");}} modal={false}>
-                <div className="event-content-editor__picker"><Popover.Trigger asChild><button className="event-content-editor__field-variable" type="button" aria-label={`Вставити змінну в поле «${label}»`} title="Вставити змінну" disabled={disabled} onClick={() => {if (inputRef.current) remember(inputRef.current);}}><Braces size={16} /></button></Popover.Trigger></div>
+                <div className="event-content-editor__picker"><Popover.Trigger asChild><button className="event-content-editor__field-variable" type="button" aria-label={`Вставити змінну в поле «${label}»`} title="Вставити змінну" disabled={disabled} onMouseDown={remember}><Braces size={16} /></button></Popover.Trigger></div>
                 <Popover.Portal><Popover.Content className="event-content-editor__variable-menu" side="bottom" align="end" sideOffset={7} collisionPadding={12} onCloseAutoFocus={event => event.preventDefault()}>
                     <div className="event-content-editor__variable-head"><strong>Змінні для поля «{label}»</strong><Popover.Close type="button" aria-label="Закрити список змінних"><X size={15} /></Popover.Close></div>
                     <input className="event-manage-input" value={variableSearch} onChange={event => setVariableSearch(event.target.value)} placeholder="Знайти змінну" aria-label="Знайти змінну" />
