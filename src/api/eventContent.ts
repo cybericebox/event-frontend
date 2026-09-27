@@ -8,6 +8,22 @@ import {defaultMockLanding} from "./mockLanding";
 
 export type {EventContent, EventPageContent} from "@/types/eventContent";
 
+async function publicPageAvailable(slug: string): Promise<boolean> {
+    const event = await getPublicEventInfo();
+    if (!event) return false;
+    const host = (await headers()).get("host");
+    if (!host) return false;
+    const apiHost = `api.${process.env.NEXT_PUBLIC_DOMAIN}`;
+    const internalOrigin = process.env.INTERNAL_API_ORIGIN;
+    const response = await fetch(`${internalOrigin ?? `https://${apiHost}`}/api/events/${event.EventID}/content/pages/${encodeURIComponent(slug)}/access`, {
+        headers: {Origin: `https://${host}`, ...(internalOrigin ? {Host: apiHost} : {})},
+        cache: "no-store",
+    });
+    if (response.status === 404) return false;
+    if (!response.ok) throw new Error(`Event page access request failed: ${response.status}`);
+    return true;
+}
+
 async function fetchContent(path: string, revalidate?: number): Promise<unknown | null> {
     const event = await getPublicEventInfo();
     if (!event) return null;
@@ -56,6 +72,12 @@ export async function getEventPageContent(slug: string): Promise<EventPageConten
             {id: "sample", type: "text", richText: plainTextRichText("Вміст цієї сторінки налаштовується організаторами події.")},
         ]}}, Variables: {}};
     }
-    const data = await fetchContent(`/pages/${encodeURIComponent(slug)}`);
-    return data === null ? null : EventPageContentSchema.parse(data);
+    if (!await publicPageAvailable(slug)) return null;
+    const path = `/pages/${encodeURIComponent(slug)}`;
+    const [document, values] = await Promise.all([
+        fetchContent(`${path}/document`, 300),
+        fetchContent(`${path}/values`, 60),
+    ]);
+    if (document === null || values === null) return null;
+    return EventPageContentSchema.parse({...z.object({Page: z.unknown()}).parse(document), ...z.object({Variables: z.unknown()}).parse(values)});
 }
