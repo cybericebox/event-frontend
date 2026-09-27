@@ -1,4 +1,5 @@
 import type {FormBlock, FormDocument, FormField} from "@/api/manageParticipantForm";
+import {richTextHasContent} from "../content/richTextState";
 
 export function isFormField(block: FormBlock): block is FormField { return block.type === "field"; }
 
@@ -15,8 +16,7 @@ export function validateParticipantForm(document: FormDocument): string | null {
         ids.add(block.id);
         if (!isFormField(block)) {
             if (block.type === "section" && !block.label?.trim()) return `Блок ${index + 1}: додайте заголовок.`;
-            if (block.type === "text" && !block.markdown?.trim()) return `Блок ${index + 1}: додайте текст.`;
-            if (block.type === "text" && block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
+            if (block.type === "text" && !richTextHasContent(block.richText)) return `Блок ${index + 1}: додайте текст.`;
             continue;
         }
         if (!block.key.trim() || keys.has(block.key)) return `Питання ${index + 1}: некоректний або повторний ключ.`;

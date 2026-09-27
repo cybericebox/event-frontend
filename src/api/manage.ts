@@ -1,3 +1,4 @@
+import {plainTextRichText} from "@/components/event/content/richTextState";
 import {z} from "zod";
 import {deriveTheme} from "@/components/event/manage/deriveTheme";
 import {EventThemeSchema} from "@/types/eventTheme";
@@ -109,7 +110,7 @@ let mockContent: ManageContent = {
 };
 let mockPages: ManagePage[] = [{
     ID: "01900000-0000-7000-8000-000000000002", Slug: "faq", Title: "Питання та відповіді",
-    Document: {blocks: [{id: "sample", type: "text", markdown: "Вміст цієї сторінки налаштовується організаторами події."}]},
+    Document: {blocks: [{id: "sample", type: "text", richText: plainTextRichText("Вміст цієї сторінки налаштовується організаторами події.")}]},
     Visibility: 0, Navigation: 1, NavigationOrder: 1,
 }];
 

@@ -4,6 +4,7 @@ import {useEffect, useId, useRef, useState, type ChangeEvent} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import {ArrowDown, ArrowUp, Braces, GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
+import {emptyRichText, richTextPlainText, type ContentRichText} from "@/components/event/content/richTextState";
 import {initialVisibilityValue, insertableContentVariable, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -11,18 +12,18 @@ import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {blockPalette} from "./blockPalette";
 import {uploadManageBannerImage} from "@/api/manage";
 import {FieldLabel} from "./FieldLabel";
-import {RichMarkdownField} from "./RichMarkdownField";
+import {EventRichTextField} from "./EventRichTextField";
 import {blockValidationField} from "./validatePageBlocks";
 import {replaceVariables} from "@/components/event/content/ContentBlocks";
 import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {useEventLinkOptions} from "./useEventLinkOptions";
 import {DateVariableFormatControls} from "./DateVariableFormatControls";
+import {updateBlockRichText} from "./richTextBlockUpdate";
 
 export {FieldLabel} from "./FieldLabel";
 
 const textHelp: Record<string, string> = {
     label: "Заголовок відділяє наступний вміст на сторінці.",
-    markdown: "Основний текст сторінки.\n• Підтримуються заголовки, списки, посилання, цитати й код.\n• HTML не підтримується.",
     title: "Назва блока.\n• У банері показується поверх зображення.\n• У герої стає головним заголовком сторінки.",
     sub: "Короткий опис під заголовком блока.",
     text: "Пояснення поруч із кнопкою або відліком.",
@@ -297,7 +298,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
         if (field === "action:href") return block.action?.href ?? "";
         if (field === "secondaryAction:label") return block.secondaryAction?.label ?? "";
         if (field === "secondaryAction:href") return block.secondaryAction?.href ?? "";
-        return block[field as "label" | "markdown" | "title" | "sub" | "text" | "by" | "kicker" | "note" | "tocTitle"] ?? "";
+        return block[field as "label" | "title" | "sub" | "text" | "by" | "kicker" | "note" | "tocTitle"] ?? "";
     }
 
     function changeField(field: string, value: string, base = block): ContentBlock {
@@ -322,7 +323,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
 
     function removeItem(itemIndex: number) {
         const dateDisplays = Object.fromEntries(Object.entries(block.dateDisplays ?? {}).flatMap(([field, formats]) => {
-            const match = /^item:(\d+):(label|value)$/.exec(field);
+            const match = /^item:(\d+):(label|value|richText)$/.exec(field);
             if (!match) return [[field, formats]];
             const position = Number(match[1]);
             if (position === itemIndex) return [];
@@ -351,16 +352,18 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
             <DateVariableFormatControls field={field} value={fieldValue(field)} block={block} catalog={catalog} values={values} disabled={!canEdit} onUpdate={onUpdate} /></>;
     }
 
+    function richValue(field: string): ContentRichText {
+        if (!field.startsWith("item:")) return block.richText ?? emptyRichText();
+        const index = Number(field.split(":")[1]);
+        return block.items?.[index]?.richText ?? emptyRichText();
+    }
+
+
     function richField(field: string, label: string) {
-        let itemError: string | undefined;
-        if (field.startsWith("item:") && errorField === field) {
-            if (block.type === "doc") itemError = fieldValue(field).includes("<") ? "HTML у тексті розділу не підтримується." : "Заповніть текст розділу.";
-            if (block.type === "faq") itemError = "Заповніть відповідь.";
-        }
-        return <><RichMarkdownField eventID={eventID} label={label} value={fieldValue(field)} error={errorField === field ? itemError ?? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
-            onChange={value => onUpdate(changeField(field, value))}
-            onInsertVariable={(variable, value) => onUpdate(changeField(field, value, withBinding(block, variable)))} />
-            <DateVariableFormatControls field={field} value={fieldValue(field)} block={block} catalog={catalog} values={values} disabled={!canEdit} onUpdate={onUpdate} /></>;
+        const fieldError = errorField === field ? field.startsWith("item:") ? block.type === "doc" ? "Заповніть текст розділу." : "Заповніть відповідь." : errorMessage : undefined;
+        return <><EventRichTextField eventID={eventID} label={label} value={richValue(field)} error={fieldError} disabled={!canEdit} catalog={catalog} values={values} dateDisplays={block.dateDisplays?.[field]}
+            onChange={value => onUpdate(updateBlockRichText(block, field, value, catalog))} />
+            <DateVariableFormatControls field={field} value={richValue(field)} block={block} catalog={catalog} values={values} disabled={!canEdit} onUpdate={onUpdate} /></>;
     }
 
     async function uploadBanner(file: File | undefined) {
@@ -447,9 +450,9 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
     }
 
     const blockLabel = blockPalette.find(item => item.type === block.type)?.label ?? block.type;
-    const rawSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? block.markdown : "");
-    const summaryField = block.type === "section" ? "label" : block.type === "text" && !block.title ? "markdown" : "title";
-    const blockSummary = replaceVariables(rawSummary ?? "", values, new Map((block.variables ?? []).map(variable => [variable.name, variable.format])), false, block.dateDisplays?.[summaryField]);
+    const rawSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? richTextPlainText(block.richText, values) : "");
+    const summaryField = block.type === "section" ? "label" : "title";
+    const blockSummary = block.type === "text" && !block.title ? rawSummary ?? "" : replaceVariables(rawSummary ?? "", values, new Map((block.variables ?? []).map(variable => [variable.name, variable.format])), false, block.dateDisplays?.[summaryField]);
     return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={selected && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect();}}}>
         <div className="event-content-editor__block-head">
             <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</div>
@@ -464,7 +467,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
         {selected && <div className="event-content-editor__block-body">
             {block.type === "section" && inputField("label", "Заголовок розділу", "Назва розділу", false, true)}
             {block.type === "section" && <div className="event-manage-field"><FieldLabel label="Вирівнювання заголовка" required help="Вирівнює текст заголовка в межах секції: ліворуч, по центру, праворуч або по ширині." /><EventSelect ariaLabel="Вирівнювання заголовка" value={block.variant ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}, {value: "justify", label: "По ширині"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
-            {block.type === "text" && richField("markdown", "Вміст")}
+            {block.type === "text" && richField("richText", "Вміст")}
             {block.type === "text" && <div className="event-manage-field"><FieldLabel label="Ширина тексту" required help="Визначає максимальну ширину вмісту.\n• Для читання — коротші рядки, зручні для довгого тексту.\n• На всю ширину — для таблиць і широкого вмісту." /><EventSelect ariaLabel="Ширина тексту" value={block.variant ?? "narrow"} options={[{value: "narrow", label: "Для читання"}, {value: "wide", label: "На всю ширину"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {["hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : block.type === "banner" ? "Підпис поверх фото" : "Заголовок", block.type === "banner" ? "Необов’язково" : "Назва блока", false, block.type === "hero" || block.type === "cta", block.type === "faq" ? "Назва переліку питань.\nПоказується над поясненням і відповідями.\nПоле можна залишити порожнім." : block.type === "cta" ? "Головний заголовок блока дії.\nПоказується над описом і кнопками." : block.type === "countdown" ? "Заголовок поруч із відліком або над ним у центральній розкладці.\nПоле можна залишити порожнім." : undefined)}
             {block.type === "banner" && <>
@@ -488,9 +491,9 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
                 {(block.items ?? []).map((item, itemIndex) => <div className={`event-content-editor__item${block.type === "faq" ? " event-content-editor__item--faq" : block.type === "timeline" ? " event-content-editor__item--timeline" : ""}`} key={itemIndex}>
                     {block.type === "faq" && <div className="event-content-editor__item-head"><strong>Питання {itemIndex + 1}</strong>{canEdit && <button className="event-content-editor__item-delete" type="button" aria-label={`Видалити питання ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><Trash2 size={15} /></button>}</div>}
                     {block.type === "timeline" && <div className="event-content-editor__item-head"><strong>Пункт {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><X size={16} /></button>}</div>}
-                    {block.type === "timeline" ? <><div className="event-content-editor__timeline-row">{timelineTimeField(item, itemIndex)}{inputField(`item:${itemIndex}:value`, "Подія", "", false, true)}</div>{timelineFormatField(item, itemIndex)}</> : <>{inputField(`item:${itemIndex}:label`, block.type === "faq" ? "Питання" : "Підпис", "", false, true)}{block.type === "faq" ? richField(`item:${itemIndex}:value`, "Відповідь") : inputField(`item:${itemIndex}:value`, "Значення", "", false, true)}{canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><X size={16} /></button>}</>}
+                    {block.type === "timeline" ? <><div className="event-content-editor__timeline-row">{timelineTimeField(item, itemIndex)}{inputField(`item:${itemIndex}:value`, "Подія", "", false, true)}</div>{timelineFormatField(item, itemIndex)}</> : <>{inputField(`item:${itemIndex}:label`, block.type === "faq" ? "Питання" : "Підпис", "", false, true)}{block.type === "faq" ? richField(`item:${itemIndex}:richText`, "Відповідь") : inputField(`item:${itemIndex}:value`, "Значення", "", false, true)}{canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><X size={16} /></button>}</>}
                 </div>)}
-                {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), block.type === "timeline" ? {dateSource: "event", dateVariable: "", dateFormat: "date-time", value: ""} : {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
+                {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), block.type === "timeline" ? {dateSource: "event", dateVariable: "", dateFormat: "date-time", value: ""} : block.type === "faq" ? {label: "", richText: emptyRichText()} : {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
             </>}
             {block.type === "doc" && <>
                 {inputField("tocTitle", "Назва змісту", "Зміст", false, false, "Підпис переліку розділів праворуч від тексту.")}
@@ -498,9 +501,9 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
                 {(block.items ?? []).map((item, itemIndex) => <div className="event-content-editor__item event-content-editor__item--faq" key={itemIndex}>
                     <div className="event-content-editor__item-head"><strong>Розділ {itemIndex + 1}</strong>{canEdit && <button className="event-content-editor__item-delete" type="button" aria-label={`Видалити розділ ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><Trash2 size={15} /></button>}</div>
                     {inputField(`item:${itemIndex}:label`, "Назва розділу", "", false, true)}
-                    {richField(`item:${itemIndex}:value`, "Текст розділу")}
+                    {richField(`item:${itemIndex}:richText`, "Текст розділу")}
                 </div>)}
-                {canEdit && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> Додати розділ</button>}
+                {canEdit && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", richText: emptyRichText()}]})}><Plus size={15} /> Додати розділ</button>}
             </>}
             {block.type === "hero" && <>
                 {countdownSource(true)}

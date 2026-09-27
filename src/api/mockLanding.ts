@@ -1,3 +1,4 @@
+import {plainTextRichText} from "@/components/event/content/richTextState";
 import {ContentDocumentSchema, type ContentDocument} from "@/types/eventContent";
 
 const key = "cybericebox-event-mock-landing";
@@ -9,7 +10,7 @@ export function mockLandingSnapshot(): string | null {
 
 export const defaultMockLanding: ContentDocument = {blocks: [
     {id: "intro", type: "section", label: "Про подію"},
-    {id: "description", type: "text", markdown: "Командне змагання з кібербезпеки на CyberICEBox. Розв'язуйте завдання, співпрацюйте з командою та стежте за результатами."},
+    {id: "description", type: "text", richText: plainTextRichText("Командне змагання з кібербезпеки на CyberICEBox. Розв'язуйте завдання, співпрацюйте з командою та стежте за результатами.")},
 ]};
 
 export function readMockLanding(fallback: ContentDocument): ContentDocument {

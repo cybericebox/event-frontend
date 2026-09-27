@@ -48,3 +48,7 @@ export function richTextPlainText(value: unknown, values: Record<string, unknown
     }
     return plain(asNode(value)?.root).trim();
 }
+
+export function plainTextRichText(text: string): ContentRichText {
+    return {root: {type: "root", version: 1, children: text.split("\n").map(line => ({type: "paragraph", version: 1, children: line ? [{type: "text", version: 1, text: line}] : []}))}};
+}

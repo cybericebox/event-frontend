@@ -1,4 +1,5 @@
 import type {ContentBlock, PageBlockType} from "@/types/eventContent";
+import {emptyRichText} from "../content/richTextState";
 
 export const blockPalette: {type: PageBlockType; label: string}[] = [
     {type: "section", label: "Заголовок"},
@@ -18,13 +19,13 @@ export function createPageBlock(type: PageBlockType, landing = false): ContentBl
     const id = `block-${crypto.randomUUID()}`;
     switch (type) {
         case "section": return {id, type, label: "", variant: "left"};
-        case "text": return {id, type, markdown: "", variant: "narrow"};
+        case "text": return {id, type, richText: emptyRichText(), variant: "narrow"};
         case "hero": return {id, type, by: "Подія CyberICEBox", title: "{{event.name}}", kicker: "", note: "", items: [], variant: landing ? "mass" : "plain", layout: "split", timerSize: "xl", timerDisplay: "segments", variables: [{name: "event.name", format: "text"}]};
         case "banner": return {id, type, title: "", variant: "frame", widthPercent: 100, imageSource: "preview"};
         case "facts": return {id, type, title: "", variant: "strip", items: [{label: "", value: ""}]};
         case "timeline": return {id, type, title: "", variant: "grid", items: [{dateSource: "event", dateVariable: "", dateFormat: "date-time", value: ""}]};
-        case "doc": return {id, type, title: "", tocTitle: "Зміст", items: [{label: "", value: ""}]};
-        case "faq": return {id, type, title: "", items: [{label: "", value: ""}]};
+        case "doc": return {id, type, title: "", tocTitle: "Зміст", items: [{label: "", richText: emptyRichText()}]};
+        case "faq": return {id, type, title: "", items: [{label: "", richText: emptyRichText()}]};
         case "cta": return {id, type, title: "", text: "", action: {label: "", href: ""}, variant: "plain"};
         case "countdown": return {id, type, title: "", text: "", dateSource: "event", targetVariable: "", variant: "split", timerSize: "large", timerDisplay: "segments", surface: "plain"};
         case "divider": return {id, type, size: "md", line: false};

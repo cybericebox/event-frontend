@@ -1,4 +1,5 @@
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
+import {richTextVariableNames, type ContentRichText} from "../content/richTextState";
 import type {ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -6,14 +7,14 @@ import {FieldLabel} from "./FieldLabel";
 
 export function DateVariableFormatControls({field, value, block, catalog, values, disabled, onUpdate}: {
     field: string;
-    value: string;
+    value: string | ContentRichText;
     block: ContentBlock;
     catalog: ContentVariableDefinition[];
     values: Record<string, ContentValue>;
     disabled: boolean;
     onUpdate: (block: ContentBlock) => void;
 }) {
-    const names = [...new Set([...value.matchAll(/\{\{([a-z][a-zA-Z0-9.]*)\}\}/g)].map(match => match[1]))]
+    const names = (typeof value === "string" ? [...new Set([...value.matchAll(/\{\{([a-z][a-zA-Z0-9.]*)\}\}/g)].map(match => match[1]))] : [...richTextVariableNames(value)])
         .filter(name => catalog.some(variable => variable.name === name && variable.format === "date-time"));
     if (!names.length) return null;
     function setDisplay(name: string, update: {format?: "date-time" | "date" | "time" | "short" | "custom"; pattern?: string}) {

@@ -1,3 +1,4 @@
+import {plainTextRichText} from "@/components/event/content/richTextState";
 import {headers} from "next/headers";
 import {z} from "zod";
 import {getPublicEventInfo} from "./publicEventInfo";
@@ -50,7 +51,7 @@ export async function getLiveContent(): Promise<LiveLayout | null> {
 export async function getEventPageContent(slug: string): Promise<EventPageContent | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
         return {Page: {Slug: slug, Title: slug === "faq" ? "Питання та відповіді" : "Інформація", Document: {blocks: [
-            {id: "sample", type: "text", markdown: "Вміст цієї сторінки налаштовується організаторами події."},
+            {id: "sample", type: "text", richText: plainTextRichText("Вміст цієї сторінки налаштовується організаторами події.")},
         ]}}, Variables: {}};
     }
     const data = await fetchContent(`/pages/${encodeURIComponent(slug)}`);

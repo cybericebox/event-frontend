@@ -1,6 +1,7 @@
-import type {ContentBlock, ContentDocument} from "@/types/eventContent";
-import {visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
-import {validDatePattern} from "@/components/event/content/dateDisplay";
+import type {ContentBlock, ContentDocument} from "../../../types/eventContent";
+import {visibilityOperators, type ContentVariableDefinition} from "../content/variableCatalog";
+import {validDatePattern} from "../content/dateDisplay";
+import {richTextHasContent, richTextVariableNames} from "../content/richTextState";
 
 const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
 
@@ -16,7 +17,7 @@ export function blockValidationField(error: string | undefined, block: ContentBl
         return field ? `dateDisplays:${field}` : null;
     }
     if (message === "заповніть назву.") return "label";
-    if (message === "заповніть текст.") return "markdown";
+    if (message === "заповніть текст.") return "richText";
     if (message === "вкажіть назву героя.") return "title";
     if (message === "вкажіть заголовок дії.") return "title";
     if (message === "вкажіть текст кнопки.") return "action:label";
@@ -32,8 +33,8 @@ export function blockValidationField(error: string | undefined, block: ContentBl
     if (message === "вкажіть свою дату й час відліку." || message === "вкажіть коректну дату й час.") return "targetDate";
     if (message === "оберіть дату події для відліку." || message === "оберіть дату події або задайте її вручну." || message === "оберіть доступну змінну дати.") return "targetVariable";
     if (message === "заповніть усі пункти або видаліть порожні." || message === "додайте розділ із назвою та безпечним текстом." || message === "заповніть факти героя, не більше чотирьох.") {
-        const itemIndex = block.items?.findIndex(item => !item.label?.trim() || !item.value?.trim() || (block.type === "doc" && item.value.includes("<"))) ?? -1;
-        if (itemIndex >= 0) return `item:${itemIndex}:${block.items?.[itemIndex].label?.trim() ? "value" : "label"}`;
+        const itemIndex = block.items?.findIndex(item => !item.label?.trim() || (block.type === "faq" || block.type === "doc" ? !richTextHasContent(item.richText) : !item.value?.trim())) ?? -1;
+        if (itemIndex >= 0) return `item:${itemIndex}:${block.items?.[itemIndex].label?.trim() ? block.type === "faq" || block.type === "doc" ? "richText" : "value" : "label"}`;
     }
     if (block.type === "timeline" && message.startsWith("етап розкладу:")) {
         const index = block.items?.findIndex(item => {
@@ -68,9 +69,9 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
     for (const [index, block] of document.blocks.entries()) {
         if (!block.id.trim() || ids.has(block.id)) return `Блок ${index + 1}: некоректний або повторний ідентифікатор.`;
         ids.add(block.id);
-        const text = block.type === "section" ? block.label ?? "" : block.type === "text" ? block.markdown ?? "" : "";
-        if ((block.type === "section" || block.type === "text") && !text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
-        if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
+        const text = block.type === "section" ? block.label ?? "" : "";
+        if (block.type === "section" && !text.trim()) return `Блок ${index + 1}: заповніть назву.`;
+        if (block.type === "text" && !richTextHasContent(block.richText)) return `Блок ${index + 1}: заповніть текст.`;
         if (block.type === "section" && block.variant && !["left", "center", "right", "justify"].includes(block.variant)) return `Блок ${index + 1}: невідоме вирівнювання заголовка.`;
         if (block.type === "text" && block.variant && !["narrow", "wide"].includes(block.variant)) return `Блок ${index + 1}: невідома ширина тексту.`;
         if (block.type === "text" && block.layout && !["left", "center", "right", "justify"].includes(block.layout)) return `Блок ${index + 1}: невідоме вирівнювання тексту.`;
@@ -80,7 +81,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "banner" && block.widthPercent !== undefined && (block.widthPercent < 50 || block.widthPercent > 100 || block.widthPercent % 5 !== 0)) return `Блок ${index + 1}: ширина банера має бути від 50% до 100% із кроком 5%.`;
         if (block.type === "banner" && block.imageSource === "custom" && !block.imageURL?.trim()) return `Блок ${index + 1}: прикріпіть окреме зображення банера.`;
         if (block.type === "banner" && block.imageSource !== "custom" && !coverImage) return `Блок ${index + 1}: обкладинку події не завантажено. Прикріпіть окреме зображення банера.`;
-        if (["facts", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
+        if (["facts", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || (block.type === "faq" ? !richTextHasContent(item.richText) : !item.value?.trim())))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
         if (block.type === "timeline") {
             if (!block.items?.length) return `Блок ${index + 1}: додайте етап розкладу.`;
             for (const item of block.items) {
@@ -93,7 +94,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
             }
         }
         if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
-        if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
+        if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !richTextHasContent(item.richText)))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
         if (block.type === "cta" && !block.title?.trim()) return `Блок ${index + 1}: вкажіть заголовок дії.`;
         if (block.type === "cta" && !block.action?.label.trim()) return `Блок ${index + 1}: вкажіть текст кнопки.`;
         if (block.type === "cta" && !block.action?.href.trim()) return `Блок ${index + 1}: вкажіть посилання кнопки.`;
@@ -150,6 +151,8 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
                 if (!bindings.has(variable)) return `Блок ${index + 1}: змінну ${variable} потрібно додати через список.`;
             }
         }
+        const richFields = [block.richText, ...(block.items ?? []).map(item => item.richText)];
+        for (const rich of richFields) for (const name of richTextVariableNames(rich)) if (!bindings.has(name)) return `Блок ${index + 1}: змінну ${name} потрібно додати через список.`;
         for (const rule of block.visibility ?? []) {
             const format = bindings.get(rule.variable);
             if (!format) return `Блок ${index + 1}: змінна умови не додана до блоку.`;
