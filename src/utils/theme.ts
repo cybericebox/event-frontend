@@ -50,6 +50,7 @@ export function setThemeChoice(choice: ThemeChoice): void {
   if (location.protocol === "https:") parts.push("Secure")
   document.cookie = parts.join("; ")
   applyTheme(choice)
+  window.dispatchEvent(new CustomEvent<ThemeChoice>("ib-theme-change", {detail: choice}))
 }
 
 /** Re-apply when the OS theme changes while the choice is `system`. Returns an unsubscribe. */

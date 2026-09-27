@@ -19,7 +19,13 @@ export function ThemeToggle() {
         current.current = saved;
         const frame = requestAnimationFrame(() => setChoice(saved));
         const stopWatching = watchSystemTheme(() => current.current);
-        return () => { cancelAnimationFrame(frame); stopWatching(); };
+        const sync = (event: Event) => {
+            const next = (event as CustomEvent<ThemeChoice>).detail;
+            current.current = next;
+            setChoice(next);
+        };
+        window.addEventListener("ib-theme-change", sync);
+        return () => { cancelAnimationFrame(frame); stopWatching(); window.removeEventListener("ib-theme-change", sync); };
     }, []);
 
     const select = (next: ThemeChoice) => {

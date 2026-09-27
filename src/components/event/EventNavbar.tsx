@@ -154,6 +154,7 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         <nav className="ib-navbar__panel" id="event-menu" aria-label="Мобільне меню">
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
             {authenticated && <ManagerEntry eventID={event.EventID} variant="panel" />}
+            <div className="event-navbar__mobile-theme"><span>Тема оформлення</span><ThemeToggle /></div>
         </nav>
     </header>;
 }

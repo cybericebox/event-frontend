@@ -22,8 +22,7 @@ export function ScoreboardView() {
     const [now, setNow] = useState(() => Date.now());
     const started = !!event && Date.parse(event.StartTime) <= now;
     useEffect(() => {
-        if (started) return;
-        const id = setInterval(() => setNow(Date.now()), 1000);
+        const id = setInterval(() => setNow(Date.now()), started ? 30000 : 1000);
         return () => clearInterval(id);
     }, [started]);
     const results = useQuery({
@@ -40,11 +39,12 @@ export function ScoreboardView() {
     if (results.isPending) return <EventLoading label="Завантажуємо результати…" />;
     if (results.isError) return <Centered><p className="text-sm text-destructive">Не вдалося завантажити рейтинг.</p></Centered>;
     if (!results.data.Scoreboard.length) return <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">Ще немає результатів</p></Centered>;
+    const chartEnd = Math.max(Date.parse(event.StartTime) + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now));
 
     return <div className="mx-auto w-full max-w-screen-2xl">
         <div className="mb-4 rounded-lg border border-border bg-card p-4">
             <p className="mb-2 text-sm font-semibold text-foreground">Динаміка балів · топ-5</p>
-            <ScoreChart snapshot={results.data} startTime={new Date(event.StartTime)} finishTime={event.FinishTime ? new Date(event.FinishTime) : new Date(Math.max(now, Date.parse(event.StartTime) + 3600000))} />
+            <ScoreChart snapshot={results.data} startTime={new Date(event.StartTime)} finishTime={new Date(chartEnd)} />
         </div>
         <ScoreTable snapshot={results.data} ownTeamID={participant?.ownTeam?.ID} />
     </div>;
