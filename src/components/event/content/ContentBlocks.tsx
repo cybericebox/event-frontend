@@ -1,7 +1,7 @@
 import type {CSSProperties} from "react";
 import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {AlignedMarkdown} from "./AlignedMarkdown";
-import {CountdownValue} from "./CountdownValue";
+import {CountdownValue} from "./CountdownDisplay";
 import {ProportionalBannerImage} from "./ProportionalBannerImage";
 import {formatDateTime} from "./dateDisplay";
 
