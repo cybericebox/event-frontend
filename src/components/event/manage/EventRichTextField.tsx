@@ -6,7 +6,7 @@ import {insertableContentVariable, type ContentVariableDefinition} from "@/compo
 import {type ContentRichText} from "@/components/event/content/richTextState";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {FieldLabel} from "./FieldLabel";
-import {EventRichTextEditor} from "./EventRichTextEditor";
+import {EventRichTextEditor} from "./EventLexicalEditor";
 import {useEventLinkOptions} from "./useEventLinkOptions";
 
 function validLink(value: string) {

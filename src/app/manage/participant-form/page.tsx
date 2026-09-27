@@ -3,7 +3,7 @@
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowDown, ArrowUp, Eye, Plus, Trash2, X} from "lucide-react";
-import {EventRichTextEditor} from "@/components/event/manage/EventRichTextEditor";
+import {EventRichTextEditor} from "@/components/event/manage/EventLexicalEditor";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {emptyRichText} from "@/components/event/content/richTextState";
 import {toast} from "react-hot-toast";

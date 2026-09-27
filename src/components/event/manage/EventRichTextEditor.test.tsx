@@ -2,7 +2,7 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {useState} from "react";
-import {EventRichTextEditor, eventRichTextNodes, MARKDOWN_TRANSFORMERS} from "./EventRichTextEditor";
+import {EventRichTextEditor, eventRichTextNodes, MARKDOWN_TRANSFORMERS} from "./EventLexicalEditor";
 import {emptyRichText, type ContentRichText} from "../content/richTextState";
 import {createEditor} from "lexical";
 import {$convertFromMarkdownString} from "@lexical/markdown";
