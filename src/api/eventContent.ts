@@ -2,6 +2,7 @@ import {headers} from "next/headers";
 import {z} from "zod";
 import {getPublicEventInfo} from "./publicEventInfo";
 import {EventContentSchema, EventPageContentSchema, type EventContent, type EventPageContent} from "@/types/eventContent";
+import {defaultLiveLayout, liveLayoutSchema, type LiveLayout} from "./manageLive";
 
 export type {EventContent, EventPageContent} from "@/types/eventContent";
 
@@ -40,6 +41,12 @@ export async function getLandingContent(): Promise<EventContent | null> {
     }
     const data = await fetchContent("", true);
     return data === null ? null : EventContentSchema.parse(data);
+}
+
+export async function getLiveContent(): Promise<LiveLayout | null> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return defaultLiveLayout;
+    const data = await fetchContent("");
+    return data === null ? null : liveLayoutSchema.parse(z.object({Live: z.unknown()}).parse(data).Live);
 }
 
 export async function getEventPageContent(slug: string): Promise<EventPageContent | null> {

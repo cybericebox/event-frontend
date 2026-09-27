@@ -2,7 +2,6 @@ import type {ManagePage} from "@/api/manage";
 
 export const plannedManagerPages = {
     attempts: {title: "Правила спроб", description: "Тут можна буде визначати обмеження та поведінку спроб."},
-    live: {title: "Live", description: "Тут можна буде налаштовувати окремий екран Live та його попередній перегляд."},
     "team-form": {title: "Анкета команди", description: "Тут можна буде налаштовувати анкету під час створення команди."},
 } as const;
 
@@ -27,6 +26,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/submissions") return "Надсилання";
     if (pathname === "/manage/solves") return "Розв’язання";
     if (pathname === "/manage/results") return "Таблиця результатів";
+    if (pathname === "/manage/live") return "Live";
     if (pathname === "/manage/applications") return "Заявки";
     if (pathname === "/manage/participants") return "Учасники";
     if (pathname === "/manage/teams") return "Команди";

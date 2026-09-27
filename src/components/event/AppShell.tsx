@@ -21,25 +21,26 @@ export function AppShell({children, event, unavailable}: {
 }) {
     const pathname = usePathname();
     const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
+    const isLive = pathname === "/live";
     const currentUser = useQuery({
         queryKey: ["event-current-user"], queryFn: getCurrentUser,
-        enabled: !!event && !unavailable && !isManagement,
+        enabled: !!event && !unavailable && !isManagement && !isLive,
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
     const joinStatus = useQuery({
         queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus,
-        enabled: !!currentUser.data && !!event && !unavailable && !isManagement,
+        enabled: !!currentUser.data && !!event && !unavailable && !isManagement && !isLive,
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
     const approved = !!currentUser.data && joinStatus.data === ParticipationStatusEnum.ApprovedParticipationStatus;
     const participantInfo = useQuery({
         queryKey: ["event-participant-info", event?.EventID], queryFn: getParticipantEventInfo,
-        enabled: approved && !!event && !unavailable && !isManagement,
+        enabled: approved && !!event && !unavailable && !isManagement && !isLive,
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
     const ownTeam = useQuery({
         queryKey: ["event-own-team", event?.EventID], queryFn: () => getOwnTeam(event!.EventID),
-        enabled: approved && !!event && !unavailable && !isManagement,
+        enabled: approved && !!event && !unavailable && !isManagement && !isLive,
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
 
@@ -55,6 +56,7 @@ export function AppShell({children, event, unavailable}: {
         if (pathname === "/" || pathname.startsWith("/p/")) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
         return <div className="event-shell-state"><h1>Подію не знайдено</h1></div>;
     }
+    if (isLive) return children;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
     if (currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending))) {
         return <EventLoading event={event} full label="Завантаження події…" />;
