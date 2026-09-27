@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useRef, useState, type JSX} from "react";
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
-import {AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Braces, Code, Code2, Heading1, Heading2, Heading3, Italic, Link2, List, ListOrdered, Pilcrow, Quote, RemoveFormatting, Strikethrough, Underline} from "lucide-react";
+import {AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Braces, Code, Code2, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, Italic, Link2, List, ListOrdered, Pilcrow, Quote, RemoveFormatting, Strikethrough, Underline} from "lucide-react";
 import {$createParagraphNode, $createTextNode, $getRoot, $getSelection, $isRangeSelection, $isTextNode, $setSelection, COMMAND_PRIORITY_LOW, FORMAT_ELEMENT_COMMAND, FORMAT_TEXT_COMMAND, PASTE_COMMAND, SELECTION_CHANGE_COMMAND, TextNode, type BaseSelection, type EditorState, type LexicalEditor, type TextFormatType} from "lexical";
 import {$createCodeNode, $isCodeNode, CodeNode} from "@lexical/code";
 import {$createHeadingNode, $createQuoteNode, $isHeadingNode, $isQuoteNode, HeadingNode, QuoteNode} from "@lexical/rich-text";
@@ -40,14 +40,14 @@ export type EventRichTextEditorProps = {
 const theme = {
     paragraph: "event-lexical__paragraph",
     text: {bold: "event-lexical__bold", italic: "event-lexical__italic", underline: "event-lexical__underline", strikethrough: "event-lexical__strike", code: "event-lexical__inline-code"},
-    heading: {h1: "event-lexical__h1", h2: "event-lexical__h2", h3: "event-lexical__h3"},
+    heading: {h1: "event-lexical__h1", h2: "event-lexical__h2", h3: "event-lexical__h3", h4: "event-lexical__h4", h5: "event-lexical__h5", h6: "event-lexical__h6"},
     quote: "event-lexical__quote", code: "event-lexical__code",
     list: {ul: "event-lexical__ul", ol: "event-lexical__ol", listitem: "event-lexical__li"},
     link: "event-lexical__link",
 };
 export const eventRichTextNodes = [HeadingNode, QuoteNode, CodeNode, ListNode, ListItemNode, LinkNode, EventVariableNode];
 export const eventRichTextTheme = theme;
-const MARKDOWN_TRANSFORMERS: Transformer[] = [HEADING, QUOTE, CODE, UNORDERED_LIST, ORDERED_LIST, INLINE_CODE, BOLD_ITALIC_STAR, BOLD_ITALIC_UNDERSCORE, BOLD_STAR, BOLD_UNDERSCORE, ITALIC_STAR, ITALIC_UNDERSCORE, STRIKETHROUGH, LINK];
+export const MARKDOWN_TRANSFORMERS: Transformer[] = [HEADING, QUOTE, CODE, UNORDERED_LIST, ORDERED_LIST, INLINE_CODE, BOLD_ITALIC_STAR, BOLD_ITALIC_UNDERSCORE, BOLD_STAR, BOLD_UNDERSCORE, ITALIC_STAR, ITALIC_UNDERSCORE, STRIKETHROUGH, LINK];
 const MARKDOWN_HINT = /(^|\n)\s{0,3}(#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?|```)|\*\*\S|__\S|~~\S|`[^`\n]+`|\[[^\]\n]+\]\([^)\s]+\)/;
 function validHref(href: string) {
     if (!href || /[\\\r\n\t]/.test(href) || href.startsWith("//")) return false;
@@ -152,13 +152,13 @@ function Toolbar({variables, onInsertVariable, onEditLink}: Pick<EventRichTextEd
         if (type === "paragraph") $setBlocksType(selection, () => $createParagraphNode());
         else if (type === "quote") $setBlocksType(selection, () => $createQuoteNode());
         else if (type === "code") $setBlocksType(selection, () => $createCodeNode());
-        else if (type === "h1" || type === "h2" || type === "h3") $setBlocksType(selection, () => $createHeadingNode(type));
+        else if (/^h[1-6]$/.test(type)) $setBlocksType(selection, () => $createHeadingNode(type as "h1" | "h2" | "h3" | "h4" | "h5" | "h6"));
     });
     const list = (type: "ol" | "ul") => editor.dispatchCommand(block === type ? REMOVE_LIST_COMMAND : type === "ol" ? INSERT_ORDERED_LIST_COMMAND : INSERT_UNORDERED_LIST_COMMAND, undefined);
     const clear = () => editor.update(() => {const selection = $getSelection(); if ($isRangeSelection(selection)) selection.getNodes().forEach(node => {if (node instanceof TextNode) node.setFormat(0); else if ($isEventVariableNode(node)) node.setFormats([]);});});
     const insertVar = (name: string) => {insertEventVariable(editor, saved.current, name); setVariableOpen(false); setSearch(""); editor.focus();};
     const insertLink = (href: string) => {if (!validHref(href)) return; restore(() => editor.dispatchCommand(TOGGLE_LINK_COMMAND, href)); setLinkOpen(false); setLink("");};
-    const headingOptions = [{value: "h1", label: "Заголовок 1", icon: <Heading1 size={16} />}, {value: "h2", label: "Заголовок 2", icon: <Heading2 size={16} />}, {value: "h3", label: "Заголовок 3", icon: <Heading3 size={16} />}];
+    const headingOptions = [{value: "h1", label: "Заголовок 1", icon: <Heading1 size={16} />}, {value: "h2", label: "Заголовок 2", icon: <Heading2 size={16} />}, {value: "h3", label: "Заголовок 3", icon: <Heading3 size={16} />}, {value: "h4", label: "Заголовок 4", icon: <Heading4 size={16} />}, {value: "h5", label: "Заголовок 5", icon: <Heading5 size={16} />}, {value: "h6", label: "Заголовок 6", icon: <Heading6 size={16} />}];
     const alignmentOptions = [{value: "left", label: "Ліворуч", icon: <AlignLeft size={16} />}, {value: "center", label: "По центру", icon: <AlignCenter size={16} />}, {value: "right", label: "Праворуч", icon: <AlignRight size={16} />}, {value: "justify", label: "По ширині", icon: <AlignJustify size={16} />}];
     const AlignIcon = ({left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify} as const)[alignment as "left" | "center" | "right" | "justify"] ?? AlignLeft;
     return <div className="event-lexical__toolbar-wrap"><div className="event-lexical__toolbar" role="toolbar" aria-label="Форматування тексту">

@@ -61,6 +61,9 @@ export function EventRichTextView({value, variables = {}, dateDisplays, emptyFal
                 if (node.tag === "h1") return <h1 key={key} className="event-lexical__h1" style={alignment(node)}>{children}</h1>;
                 if (node.tag === "h2") return <h2 key={key} className="event-lexical__h2" style={alignment(node)}>{children}</h2>;
                 if (node.tag === "h3") return <h3 key={key} className="event-lexical__h3" style={alignment(node)}>{children}</h3>;
+                if (node.tag === "h4") return <h4 key={key} className="event-lexical__h4" style={alignment(node)}>{children}</h4>;
+                if (node.tag === "h5") return <h5 key={key} className="event-lexical__h5" style={alignment(node)}>{children}</h5>;
+                if (node.tag === "h6") return <h6 key={key} className="event-lexical__h6" style={alignment(node)}>{children}</h6>;
                 return null;
             }
             case "quote": return <blockquote key={key} className="event-lexical__quote" style={alignment(node)}>{children}</blockquote>;

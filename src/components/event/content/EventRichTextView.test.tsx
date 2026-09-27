@@ -19,4 +19,9 @@ describe("EventRichTextView", () => {
         expect(html).not.toContain("href=");
         expect(html).not.toContain("bad");
     });
+    it("renders H4 through H6 with their own heading styles", () => {
+        const children = ["h4", "h5", "h6"].map(tag => ({type: "heading", tag, children: [{type: "text", text: tag}]}));
+        const html = renderToStaticMarkup(<EventRichTextView value={{root: {type: "root", children}}} />);
+        for (const tag of ["h4", "h5", "h6"]) expect(html).toContain(`<${tag} class="event-lexical__${tag}"><span>${tag}</span></${tag}>`);
+    });
 });

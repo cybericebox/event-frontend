@@ -708,6 +708,9 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-lexical__h1{margin:.65em 0 .3em;font-size:1.65em;font-weight:700}
 .event-lexical__h2{margin:.65em 0 .3em;font-size:1.35em;font-weight:700}
 .event-lexical__h3{margin:.65em 0 .3em;font-size:1.12em;font-weight:650}
+.event-lexical__h4{margin:.65em 0 .3em;font-size:1.05em;font-weight:650}
+.event-lexical__h5{margin:.65em 0 .3em;font-size:1em;font-weight:650}
+.event-lexical__h6{margin:.65em 0 .3em;font-size:.92em;font-weight:650}
 .event-lexical__bold{font-weight:700}.event-lexical__italic{font-style:italic}.event-lexical__underline{text-decoration:underline}.event-lexical__strike{text-decoration:line-through}
 .event-lexical__inline-code{padding:1px 4px;border-radius:3px;background:var(--ib-soft);font-family:monospace}
 .event-lexical__quote{margin:.7em 0;padding:.3em 0 .3em 14px;border-left:2px solid var(--ib-line);color:var(--ib-dim)}

@@ -2,8 +2,10 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {useState} from "react";
-import {EventRichTextEditor} from "./EventRichTextEditor";
+import {EventRichTextEditor, eventRichTextNodes, MARKDOWN_TRANSFORMERS} from "./EventRichTextEditor";
 import {emptyRichText, type ContentRichText} from "../content/richTextState";
+import {createEditor} from "lexical";
+import {$convertFromMarkdownString} from "@lexical/markdown";
 
 afterEach(cleanup);
 describe("EventRichTextEditor", () => {
@@ -54,5 +56,13 @@ describe("EventRichTextEditor", () => {
         render(<EventRichTextEditor value={value as Parameters<typeof EventRichTextEditor>[0]["value"]} onChange={vi.fn()} variables={[]} values={{}} disabled />);
         expect(await screen.findByText("Збережений текст")).toBeTruthy();
         expect(screen.queryByRole("toolbar")).toBeNull();
+    });
+    it("keeps all six pasted Markdown heading levels", () => {
+        const editor = createEditor({nodes: eventRichTextNodes});
+        editor.update(() => $convertFromMarkdownString("### Three\n#### Four\n###### Six", MARKDOWN_TRANSFORMERS), {discrete: true});
+        const state = JSON.stringify(editor.getEditorState().toJSON());
+        expect(state).toContain('"tag":"h3"');
+        expect(state).toContain('"tag":"h4"');
+        expect(state).toContain('"tag":"h6"');
     });
 });
