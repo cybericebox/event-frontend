@@ -73,4 +73,4 @@
 .event-page-delete-dialog__actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:var(--ib-2)}
 .event-manage-icon-action{display:grid;place-items:center;width:var(--ib-control-h);height:var(--ib-control-h);padding:0}
 .event-content-editor__block-actions .event-content-editor__danger{color:var(--ib-danger)}
-.event-content-editor__block-actions .event-content-editor__danger:hover{background:var(--ib-danger-bg);color:var(--ib-danger)}
+.event-content-editor__block-actions button.event-content-editor__danger:hover:not(:disabled){background:var(--ib-danger-bg);color:var(--ib-danger)}
