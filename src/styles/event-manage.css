@@ -245,6 +245,9 @@ textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
 .event-exercise-editor__task-head strong,.event-exercise-editor__choice strong{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
 .event-exercise-editor__task-head span,.event-exercise-editor__choice p{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-exercise-editor__controls{display:flex;align-items:end;gap:var(--ib-4);flex-wrap:wrap}
+.event-exercise-editor__scoring{display:grid;gap:var(--ib-3);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
+.event-exercise-editor__scoring>.event-manage-field{max-width:280px}
+.event-exercise-editor__scoring>.ib-btn{justify-self:start}
 .event-exercise-editor__controls>.event-manage-field{width:110px}
 .event-exercise-editor__check{display:inline-flex;align-items:center;gap:var(--ib-2);min-height:var(--ib-control-h-lg);font-size:var(--ib-fs-13);cursor:pointer}
 .event-exercise-editor__check input{accent-color:var(--ib-action)}

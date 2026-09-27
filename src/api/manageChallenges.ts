@@ -2,6 +2,10 @@ import {z} from "zod";
 import {ManageApiError} from "@/api/manage";
 
 const id = z.string().uuid();
+const scoringOverrideSchema = z.object({
+    Mode: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+    MinPoints: z.number().int(), MaxPoints: z.number().int(), FloorAtPercent: z.number().int(),
+});
 const attachmentSchema = z.object({
     ID: id, ExerciseID: id, ExerciseName: z.string(), ExerciseVersionID: id, VariantMode: z.number().int(),
     FixedVariantIndex: z.number().int().nullable(), Revision: z.number().int(),
@@ -9,7 +13,7 @@ const attachmentSchema = z.object({
 });
 const challengeSchema = z.object({
     ID: id, TaskID: id, GroupID: id.nullable(), PrerequisiteIDs: z.array(id).nullable().transform(value => value ?? []),
-    Order: z.number().int(), Points: z.number().int(), HintsEnabled: z.boolean(), Published: z.boolean(),
+    Order: z.number().int(), Points: z.number().int(), ScoringOverride: scoringOverrideSchema.nullable(), HintsEnabled: z.boolean(), Published: z.boolean(),
     Snapshot: z.object({name: z.string()}),
 });
 const groupSchema = z.object({ID: id, Name: z.string(), Order: z.number().int(), CreatedAt: z.string()});
@@ -19,6 +23,7 @@ export type EventExerciseAttachment = z.infer<typeof attachmentSchema>;
 export type EventBoardChallenge = z.infer<typeof challengeSchema>;
 export type EventChallengeGroup = z.infer<typeof groupSchema>;
 export type PublishedExerciseChoice = z.infer<typeof catalogChoiceSchema>;
+export type ChallengeScoringOverride = z.infer<typeof scoringOverrideSchema>;
 
 const mockAttachmentID = "01900000-0000-7000-8000-000000000010";
 const mockTaskIDs = ["01900000-0000-7000-8000-000000000011", "01900000-0000-7000-8000-000000000012"];
@@ -29,7 +34,7 @@ let mockAttachments: EventExerciseAttachment[] = [{
 }];
 const mockChallenges: EventBoardChallenge[] = mockTaskIDs.map((taskID, index) => ({
     ID: taskID, TaskID: taskID, GroupID: null, PrerequisiteIDs: [], Order: index,
-    Points: 100, HintsEnabled: false, Published: false, Snapshot: {name: index ? "Фінальне завдання" : "Перший крок"},
+    Points: 100, ScoringOverride: null, HintsEnabled: false, Published: false, Snapshot: {name: index ? "Фінальне завдання" : "Перший крок"},
 }));
 const mockBoardByAttachment = new Map<string, EventBoardChallenge[]>([[mockAttachmentID, mockChallenges]]);
 const mockCatalog: PublishedExerciseChoice[] = [
@@ -72,13 +77,18 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
                 if (!choice || mockAttachments.some(item => item.ExerciseID === choice.ID && item.Status === 0)) throw new ManageApiError(409);
                 const attachment = attachmentSchema.parse({ID: crypto.randomUUID(), ExerciseID: choice.ID, ExerciseName: choice.Name, ...input, Revision: 1, Status: 0, ReplacesID: null, SupersededAt: null, CreatedAt: new Date().toISOString()});
                 mockAttachments = [...mockAttachments, attachment];
-                mockBoardByAttachment.set(attachment.ID, [{ID: crypto.randomUUID(), TaskID: crypto.randomUUID(), GroupID: null, PrerequisiteIDs: [], Order: 0, Points: 100, HintsEnabled: false, Published: false, Snapshot: {name: "Перше завдання набору"}}]);
+                mockBoardByAttachment.set(attachment.ID, [{ID: crypto.randomUUID(), TaskID: crypto.randomUUID(), GroupID: null, PrerequisiteIDs: [], Order: 0, Points: 100, ScoringOverride: null, HintsEnabled: false, Published: false, Snapshot: {name: "Перше завдання набору"}}]);
                 return schema.parse(attachment);
             }
             return schema.parse(mockAttachments);
         }
         const attachmentID = path.split("/")[1];
         if (path.endsWith("/challenges")) return schema.parse(mockBoardByAttachment.get(attachmentID) ?? []);
+        if (path.endsWith("/challenges/scoring") && method === "PUT") {
+            const input = payload as {ChallengeIDs: string[]; Override: ChallengeScoringOverride | null};
+            mockBoardByAttachment.set(attachmentID, (mockBoardByAttachment.get(attachmentID) ?? []).map(item => input.ChallengeIDs.includes(item.ID) ? {...item, ScoringOverride: input.Override} : item));
+            return schema.parse({updated: input.ChallengeIDs.length});
+        }
         if (method === "PUT" && /\/challenges\/[^/]+$/.test(path)) {
             const challengeID = path.split("/").at(-1);
             const input = payload as {Points: number; HintsEnabled: boolean; Published: boolean};
@@ -121,3 +131,4 @@ export const reorderEventBoardChallenges = (eventID: string, attachmentID: strin
 export const getPublishedExerciseChoices = (eventID: string, search: string) => request(eventID, `exercise-catalog?search=${encodeURIComponent(search)}`, z.array(catalogChoiceSchema));
 export const attachEventExercise = (eventID: string, versionID: string, variantMode: 0 | 1, fixedVariantIndex: number | null) => request(eventID, "exercises", attachmentSchema, "POST", {ExerciseVersionID: versionID, VariantMode: variantMode, FixedVariantIndex: fixedVariantIndex});
 export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean; Published: boolean}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
+export const updateEventChallengeScoring = (eventID: string, attachmentID: string, challengeID: string, override: ChallengeScoringOverride | null) => request(eventID, `exercises/${attachmentID}/challenges/scoring`, z.object({updated: z.number().int()}), "PUT", {ChallengeIDs: [challengeID], Override: override});
