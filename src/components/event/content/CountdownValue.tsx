@@ -5,7 +5,7 @@ import {useEffect, useState, type CSSProperties} from "react";
 const pad = (value: number) => String(value).padStart(2, "0");
 const unit = (value: number, one: string, few: string, many: string) => value % 10 === 1 && value % 100 !== 11 ? one : value % 10 >= 2 && value % 10 <= 4 && (value % 100 < 12 || value % 100 > 14) ? few : many;
 
-export type CountdownDisplay = "segments" | "compact" | "tiles" | "focus" | "dial" | "ledger" | "poster" | "tracks" | "flip";
+export type CountdownDisplay = "segments" | "compact" | "tiles" | "focus" | "dial" | "ledger" | "poster" | "tracks" | "flip" | "ticker" | "stairs" | "orbits";
 
 export function CountdownValue({target, display = "segments"}: {target: string | null; display?: CountdownDisplay}) {
     const [now, setNow] = useState(0);
@@ -46,6 +46,9 @@ export function CountdownValue({target, display = "segments"}: {target: string |
             return <div className="ib-timer ib-timer--tracks" role="timer" aria-label={ariaLabel} aria-live="off">{daysPart && <p className="ib-timer__tracks-days" aria-hidden="true"><strong>{daysPart.value}</strong> {daysPart.label}</p>}<div className="ib-timer__tracks-list" aria-hidden="true">{trackParts.map((part, index) => <div className="ib-timer__tracks-row" key={part.label}><span>{part.label}</span><div className="ib-timer__tracks-bar" style={{"--ib-track-progress": `${remaining === null ? 0 : Number(part.value) / (index === 0 ? 24 : 60) * 100}%`} as CSSProperties} /><strong>{part.value}</strong></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
         }
         if (display === "flip") return <div className="ib-timer ib-timer--flip" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__flip-parts" aria-hidden="true">{parts.map(part => <div className="ib-timer__flip-part" key={part.label}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
+        if (display === "ticker") return <div className="ib-timer ib-timer--ticker" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__ticker-parts" aria-hidden="true">{parts.map(part => <div className="ib-timer__ticker-part" key={part.label}><span>{part.label}</span><strong>{part.value}</strong></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
+        if (display === "stairs") return <div className="ib-timer ib-timer--stairs" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__stairs-list" aria-hidden="true">{parts.map((part, index) => <div className="ib-timer__stairs-step" key={part.label} style={{"--ib-step": index} as CSSProperties}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
+        if (display === "orbits") return <div className="ib-timer ib-timer--orbits" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__orbits-list" aria-hidden="true">{parts.map(part => <div className="ib-timer__orbits-unit" key={part.label}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
         return <div className={`ib-timer ib-timer--segments${display === "tiles" ? " ib-timer--tiles" : ""}`} role="timer" aria-label={ariaLabel} aria-live="off">
             <div className="ib-timer__parts" aria-hidden="true">{parts.map(part => <div className="ib-timer__part" key={part.label}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>
             {meta && <span className="ib-timer__meta">{meta}</span>}
