@@ -15,6 +15,13 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const turndown = new TurndownService({headingStyle: "atx", bulletListMarker: "-"});
 turndown.addRule("strikethrough", {filter: node => ["DEL", "S", "STRIKE"].includes(node.nodeName), replacement: content => `~~${content}~~`});
+turndown.addRule("event-variable", {
+    filter: node => node.nodeName === "SPAN" && (node as HTMLElement).classList.contains("event-rich-markdown__variable-token"),
+    replacement: (_, node) => {
+        const name = (node as HTMLElement).dataset.variable;
+        return name ? `{{${name}}}` : "";
+    },
+});
 const inlineTools = [
     {label: "Жирний", icon: Bold, command: "bold"},
     {label: "Курсив", icon: Italic, command: "italic"},
@@ -53,7 +60,8 @@ function highlightVariables(root: HTMLElement) {
             if (start > position) fragment.append(document.createTextNode(source.slice(position, start)));
             const token = document.createElement("span");
             token.className = "event-rich-markdown__variable-token";
-            token.textContent = match[0];
+            token.dataset.variable = match[0].slice(2, -2);
+            token.textContent = token.dataset.variable;
             fragment.append(token);
             position = start + match[0].length;
         }
@@ -155,7 +163,19 @@ export function RichMarkdownField({label, value, required = true, error, disable
         restoreSelection();
         if (!editor.current) return;
         if (!/^[a-z][a-zA-Z0-9.]*$/.test(variable.name)) return;
-        document.execCommand("insertHTML", false, `<span class="event-rich-markdown__variable-token">{{${variable.name}}}</span>`);
+        const current = window.getSelection();
+        const range = current?.rangeCount ? current.getRangeAt(0) : null;
+        if (!range || !editor.current.contains(range.commonAncestorContainer)) return;
+        const token = document.createElement("span");
+        token.className = "event-rich-markdown__variable-token";
+        token.dataset.variable = variable.name;
+        token.textContent = variable.name;
+        range.deleteContents();
+        range.insertNode(token);
+        range.setStartAfter(token);
+        range.collapse(true);
+        current?.removeAllRanges();
+        current?.addRange(range);
         const next = serializedMarkdown(editor.current.innerHTML);
         lastEmitted.current = next;
         onInsertVariable(variable, next);
