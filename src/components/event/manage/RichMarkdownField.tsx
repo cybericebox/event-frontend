@@ -102,6 +102,19 @@ function alignedBlock(node: Node, root: HTMLElement): HTMLElement | null {
     return block && root.contains(block) ? block as HTMLElement : null;
 }
 
+function selectedTextBlocks(range: Range, root: HTMLElement): HTMLElement[] {
+    if (range.collapsed) return [alignedBlock(range.startContainer, root)].filter((block): block is HTMLElement => !!block);
+    return [...root.querySelectorAll<HTMLElement>("p,h1,h2,h3")].filter(block => {
+        if (!range.intersectsNode(block)) return false;
+        const overlap = range.cloneRange();
+        const contents = document.createRange();
+        contents.selectNodeContents(block);
+        if (overlap.compareBoundaryPoints(Range.START_TO_START, contents) < 0) overlap.setStart(contents.startContainer, contents.startOffset);
+        if (overlap.compareBoundaryPoints(Range.END_TO_END, contents) > 0) overlap.setEnd(contents.endContainer, contents.endOffset);
+        return !overlap.collapsed && overlap.toString().trim().length > 0;
+    });
+}
+
 function validLink(href: string) {
     if (!href || /[\\\r\n\t]/.test(href) || href.startsWith("//")) return false;
     if (href.startsWith("/") || href.startsWith("#")) return true;
@@ -264,9 +277,7 @@ export function RichMarkdownField({eventID, label, value, required = true, error
         const current = window.getSelection();
         const range = current?.rangeCount ? current.getRangeAt(0) : null;
         if (!range || !editor.current.contains(range.commonAncestorContainer)) return;
-        const blocks = range.collapsed
-            ? [alignedBlock(range.startContainer, editor.current)].filter((block): block is HTMLElement => !!block)
-            : [...editor.current.querySelectorAll<HTMLElement>("p,h1,h2,h3")].filter(block => range.intersectsNode(block));
+        const blocks = selectedTextBlocks(range, editor.current);
         for (const block of blocks) {
             if (alignment === "left") {
                 delete block.dataset.align;
@@ -285,6 +296,15 @@ export function RichMarkdownField({eventID, label, value, required = true, error
         if (token) {
             formatVariableToken(token);
             return;
+        }
+        const range = window.getSelection()?.rangeCount ? window.getSelection()?.getRangeAt(0) : null;
+        if (range && editor.current?.contains(range.commonAncestorContainer)) {
+            const blocks = selectedTextBlocks(range, editor.current);
+            for (const block of blocks) {
+                delete block.dataset.align;
+                block.style.removeProperty("text-align");
+            }
+            setTextAlignment("left");
         }
         document.execCommand("removeFormat");
         document.execCommand("unlink");
