@@ -4,13 +4,14 @@ export const ContentValueSchema = z.union([z.string(), z.number(), z.boolean(), 
 export const ContentVariableSchema = z.object({name: z.string(), format: z.enum(["text", "number", "date-time", "boolean"])});
 export const ContentDateDisplaySchema = z.object({format: z.enum(["date-time", "date", "time", "short", "custom"]), pattern: z.string().optional()});
 export const ContentVisibilitySchema = z.object({variable: z.string(), operator: z.string(), value: ContentValueSchema});
+export const ContentRichTextSchema = z.object({root: z.object({type: z.literal("root"), children: z.array(z.unknown())}).passthrough()}).passthrough();
 export const PageBlockTypes = ["section", "text", "hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "divider"] as const;
 export type PageBlockType = typeof PageBlockTypes[number];
 export const ContentBlockSchema = z.object({
     id: z.string(),
     type: z.enum(PageBlockTypes),
     label: z.string().optional(),
-    markdown: z.string().optional(),
+    richText: ContentRichTextSchema.optional(),
     title: z.string().optional(),
     sub: z.string().optional(),
     text: z.string().optional(),
@@ -19,7 +20,7 @@ export const ContentBlockSchema = z.object({
     note: z.string().optional(),
     tocTitle: z.string().optional(),
     items: z.array(z.object({
-        label: z.string().optional(), value: z.string().optional(),
+        label: z.string().optional(), value: z.string().optional(), richText: ContentRichTextSchema.optional(),
         dateSource: z.enum(["event", "custom"]).optional(),
         dateVariable: z.string().optional(), dateValue: z.string().optional(),
         dateFormat: z.enum(["date-time", "date", "time", "short", "custom"]).optional(),
