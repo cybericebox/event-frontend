@@ -4,7 +4,7 @@ import {useState} from "react";
 import Link from "next/link";
 import {
     ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown,
-    FileCheck2, FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
+    FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
     Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
     type LucideIcon,
@@ -25,26 +25,23 @@ const groups: Group[] = [
         {href: "/manage/participation-settings", label: "Формат події", icon: UsersRound},
         {href: "/manage/schedule", label: "Публікація і час", icon: CalendarDays},
     ]},
-    {id: "pages", label: "Сторінки", items: [
-        {href: "/manage/content/landing", label: "Головна сторінка", icon: FileText},
-    ]},
-    {id: "challenges", label: "Завдання", items: [
-        {href: "/manage/exercise-groups", label: "Групи й порядок", icon: Layers3},
-        {href: "/manage/exercises", label: "Завдання", icon: Flag},
-    ]},
-    {id: "scoring", label: "Бали", items: [
-        {href: "/manage/scoring", label: "Профіль балів", icon: SlidersHorizontal},
-    ]},
     {id: "participation", label: "Участь", items: [
         {href: "/manage/registration", label: "Налаштування реєстрації", icon: Settings2},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
     ]},
+    {id: "challenges", label: "Завдання", items: [
+        {href: "/manage/exercise-groups", label: "Групи й порядок", icon: Layers3},
+        {href: "/manage/exercises", label: "Завдання", icon: Flag},
+        {href: "/manage/scoring", label: "Профіль балів", icon: SlidersHorizontal},
+        {href: "/manage/submissions", label: "Спроби розв’язання", icon: Send},
+    ]},
+    {id: "pages", label: "Сторінки", items: [
+        {href: "/manage/content/landing", label: "Головна сторінка", icon: FileText},
+    ]},
     {id: "results", label: "Результати", items: [
         {href: "/manage/results-settings", label: "Налаштування результатів", icon: SlidersHorizontal},
         {href: "/manage/results", label: "Таблиця результатів", icon: Trophy},
-        {href: "/manage/submissions", label: "Надсилання", icon: Send},
-        {href: "/manage/solves", label: "Розв’язання", icon: FileCheck2},
         {href: "/manage/live", label: "Live", icon: MonitorPlay},
     ]},
     {id: "forms", label: "Форми", items: [

@@ -20,6 +20,12 @@ function renderSidebar(participation: 0 | 1) {
 }
 
 describe("participation navigation", () => {
+    it("places participation and challenges immediately after event settings", () => {
+        renderSidebar(0);
+        const headings = screen.getAllByRole("button", {name: /^(Подія|Участь|Завдання|Сторінки)$/});
+        expect(headings.map(heading => heading.textContent?.trim())).toEqual(["Подія", "Участь", "Завдання", "Сторінки"]);
+    });
+
     it("keeps requests inside participants and hides teams for an individual event", () => {
         renderSidebar(0);
         expect(screen.getByRole("link", {name: "Налаштування реєстрації"})).toBeTruthy();

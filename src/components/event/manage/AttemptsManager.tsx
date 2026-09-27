@@ -34,7 +34,7 @@ export function AttemptsManager({solvedOnly}: {solvedOnly: boolean}) {
     const [draft, setDraft] = useState<{id: string; decision: AttemptDecision; reason: string} | null>(null);
     const [showExpected, setShowExpected] = useState(false);
     const [saving, setSaving] = useState(false);
-    const correct = solvedOnly ? true : null;
+    const [correct, setCorrect] = useState<boolean | null>(solvedOnly ? true : null);
     const cursor = cursors[pageIndex] ?? null;
     const pageQuery = useQuery({queryKey: ["event-manage-attempts", eventID, correct, cursor], queryFn: () => getManageAttempts(eventID, correct, cursor), enabled: canManage, refetchOnWindowFocus: false});
     const namesQuery = useQuery({
@@ -55,6 +55,14 @@ export function AttemptsManager({solvedOnly}: {solvedOnly: boolean}) {
         setSelectedID(attempt.ID);
         setDraft({id: attempt.ID, decision: attempt.Decision, reason: attempt.DecisionReason ?? ""});
         setShowExpected(false);
+    }
+
+    function changeFilter(value: boolean | null) {
+        setCorrect(value);
+        setCursors([null]);
+        setPageIndex(0);
+        setSelectedID(null);
+        setDraft(null);
     }
 
     function nextPage() {
@@ -91,9 +99,12 @@ export function AttemptsManager({solvedOnly}: {solvedOnly: boolean}) {
     if (pageQuery.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити відповіді</h1><button className="ib-btn" onClick={() => void pageQuery.refetch()}>Повторити</button></div>;
 
     return <div className="event-manage-settings event-attempts-manager">
-        <header className="event-manage-heading"><div><h1>{solvedOnly ? "Розв’язання" : "Надсилання"}</h1><p>{solvedOnly ? "Зараховані відповіді учасників і команд." : "Історія всіх надісланих відповідей та рішень модератора."}</p></div><span className="event-attempts-manager__total">{recordCount(pageQuery.data?.Total ?? 0)}</span></header>
-        {items.length === 0 ? <section className="event-manage-section"><p className="event-challenge-manager__empty">{solvedOnly ? "Зарахованих розв’язань поки немає." : "Відповідей поки немає."}</p></section> : <div className="event-attempts-manager__layout">
-            <section className="event-manage-section event-attempts-manager__list" aria-label={solvedOnly ? "Зараховані розв’язання" : "Надіслані відповіді"}>
+        <header className="event-manage-heading"><div><h1>Спроби розв’язання</h1><p>Усі відповіді учасників і команд та рішення модератора в одному журналі.</p></div><span className="event-attempts-manager__total">{recordCount(pageQuery.data?.Total ?? 0)}</span></header>
+        <div className="event-manage-participants__filters" role="group" aria-label="Фільтр спроб">
+            {[{value: null, label: "Усі"}, {value: true, label: "Зараховані"}, {value: false, label: "Не зараховані"}].map(option => <button className="event-manage-participants__filter" key={option.label} type="button" aria-pressed={correct === option.value} onClick={() => changeFilter(option.value)}>{option.label}</button>)}
+        </div>
+        {items.length === 0 ? <section className="event-manage-section"><p className="event-challenge-manager__empty">Спроб за цим фільтром поки немає.</p></section> : <div className="event-attempts-manager__layout">
+            <section className="event-manage-section event-attempts-manager__list" aria-label="Спроби розв’язання">
                 {items.map(attempt => <button className={`event-attempts-manager__row${selectedID === attempt.ID ? " is-selected" : ""}`} type="button" key={attempt.ID} aria-pressed={selectedID === attempt.ID} onClick={() => select(attempt)}>
                     <span className="event-attempts-manager__row-title"><strong>{namesQuery.data?.[attempt.EventChallengeID] ?? "Завдання"}</strong><span className={attempt.Correct ? "is-correct" : "is-incorrect"}>{attemptStatus(attempt)}</span></span>
                     <span className="event-attempts-manager__row-meta">{attempt.ParticipantName || "Учасник"}{attempt.TeamName ? ` · ${attempt.TeamName}` : ""}</span>
