@@ -18,11 +18,16 @@ const challengeSchema = z.object({
 });
 const groupSchema = z.object({ID: id, Name: z.string(), Order: z.number().int(), CreatedAt: z.string()});
 const catalogChoiceSchema = z.object({ID: id, Name: z.string(), Description: z.string(), PublishedVersionID: id});
+const catalogPreviewSchema = z.object({
+    ID: id, Name: z.string(), Description: z.string(), VersionID: id, VariantCount: z.number().int(),
+    Tasks: z.array(z.object({Name: z.string(), Difficulty: z.string()})),
+});
 
 export type EventExerciseAttachment = z.infer<typeof attachmentSchema>;
 export type EventBoardChallenge = z.infer<typeof challengeSchema>;
 export type EventChallengeGroup = z.infer<typeof groupSchema>;
 export type PublishedExerciseChoice = z.infer<typeof catalogChoiceSchema>;
+export type PublishedExercisePreview = z.infer<typeof catalogPreviewSchema>;
 export type ChallengeScoringOverride = z.infer<typeof scoringOverrideSchema>;
 
 const mockAttachmentID = "01900000-0000-7000-8000-000000000010";
@@ -65,6 +70,12 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
             const updated = groupSchema.parse({...group, ...(payload as {Name: string; Order: number})});
             mockGroups = mockGroups.map(item => item.ID === groupID ? updated : item);
             return schema.parse(updated);
+        }
+        if (path.startsWith("exercise-catalog/")) {
+            const versionID = path.slice("exercise-catalog/".length);
+            const choice = mockCatalog.find(item => item.PublishedVersionID === versionID);
+            if (!choice) throw new ManageApiError(404);
+            return schema.parse({ID: choice.ID, Name: choice.Name, Description: choice.Description, VersionID: versionID, VariantCount: 1, Tasks: choice.ID === mockCatalog[0].ID ? [{Name: "Перший крок", Difficulty: "easy"}, {Name: "Фінальне завдання", Difficulty: "medium"}] : [{Name: "Перше завдання набору", Difficulty: "easy"}]});
         }
         if (path.startsWith("exercise-catalog")) {
             const search = new URLSearchParams(path.split("?")[1] ?? "").get("search")?.toLocaleLowerCase() ?? "";
@@ -129,6 +140,7 @@ export const getEventBoardChallenges = (eventID: string, attachmentID: string) =
 export const setEventChallengeGroup = (eventID: string, attachmentID: string, challenge: EventBoardChallenge, groupID: string | null) => request(eventID, `exercises/${attachmentID}/challenges/${challenge.ID}/relations`, z.null(), "PUT", {GroupID: groupID, PrerequisiteIDs: challenge.PrerequisiteIDs});
 export const reorderEventBoardChallenges = (eventID: string, attachmentID: string, challengeIDs: string[]) => request(eventID, `exercises/${attachmentID}/challenges/order`, z.null(), "PUT", {ChallengeIDs: challengeIDs});
 export const getPublishedExerciseChoices = (eventID: string, search: string) => request(eventID, `exercise-catalog?search=${encodeURIComponent(search)}`, z.array(catalogChoiceSchema));
+export const getPublishedExercisePreview = (eventID: string, versionID: string) => request(eventID, `exercise-catalog/${encodeURIComponent(versionID)}`, catalogPreviewSchema);
 export const attachEventExercise = (eventID: string, versionID: string, variantMode: 0 | 1, fixedVariantIndex: number | null) => request(eventID, "exercises", attachmentSchema, "POST", {ExerciseVersionID: versionID, VariantMode: variantMode, FixedVariantIndex: fixedVariantIndex});
 export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean; Published: boolean}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
 export const updateEventChallengeScoring = (eventID: string, attachmentID: string, challengeID: string, override: ChallengeScoringOverride | null) => request(eventID, `exercises/${attachmentID}/challenges/scoring`, z.object({updated: z.number().int()}), "PUT", {ChallengeIDs: [challengeID], Override: override});

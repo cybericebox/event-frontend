@@ -2,10 +2,10 @@
 
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {Plus, Search} from "lucide-react";
+import {Eye, Plus, Search, X} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
-    attachEventExercise, getEventBoardChallenges, getEventExerciseAttachments, getPublishedExerciseChoices,
+    attachEventExercise, getEventBoardChallenges, getEventExerciseAttachments, getPublishedExerciseChoices, getPublishedExercisePreview,
     updateEventBoardChallenge, updateEventChallengeScoring, type ChallengeScoringOverride, type EventBoardChallenge, type EventExerciseAttachment,
 } from "@/api/manageChallenges";
 import {getManageLifecycle, getManageScoring, type ManageLifecycle} from "@/api/manage";
@@ -74,10 +74,12 @@ export default function EventExercisesPage() {
     const queryClient = useQueryClient();
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
+    const [previewVersionID, setPreviewVersionID] = useState<string | null>(null);
     const [drafts, setDrafts] = useState<Record<string, ChallengeDraft>>({});
     const [busy, setBusy] = useState(false);
     const attachmentsQuery = useQuery({queryKey: ["event-exercise-attachments", eventID], queryFn: () => getEventExerciseAttachments(eventID), refetchOnWindowFocus: false});
     const catalogQuery = useQuery({queryKey: ["event-exercise-catalog", eventID, search], queryFn: () => getPublishedExerciseChoices(eventID, search), refetchOnWindowFocus: false});
+    const previewQuery = useQuery({queryKey: ["event-exercise-preview", eventID, previewVersionID], queryFn: () => getPublishedExercisePreview(eventID, previewVersionID!), enabled: !!previewVersionID, refetchOnWindowFocus: false});
     const scoringQuery = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const lifecycleQuery = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
     const boardKey = ["event-exercise-boards", eventID, attachmentsQuery.data?.map(item => item.ID).join("|") ?? ""];
@@ -158,8 +160,12 @@ export default function EventExercisesPage() {
                 : (catalogQuery.data?.length ?? 0) === 0 ? <p className="event-challenge-manager__empty">Опублікованих наборів за цим запитом немає.</p>
                     : <ul className="event-challenge-manager__list">{catalogQuery.data?.map(choice => <li className="event-exercise-editor__choice" key={choice.ID}>
                         <div><strong>{choice.Name}</strong>{choice.Description && <p>{choice.Description}</p>}</div>
-                        <button className="ib-btn ib-btn--sm" type="button" disabled={busy || attachedVersions.has(choice.PublishedVersionID)} onClick={() => void attach(choice.PublishedVersionID)}>{attachedVersions.has(choice.PublishedVersionID) ? "Додано" : <><Plus />Додати</>}</button>
+                        <div className="event-exercise-editor__choice-actions"><button className="ib-btn ib-btn--sm" type="button" aria-label={`Переглянути ${choice.Name}`} aria-expanded={previewVersionID === choice.PublishedVersionID} onClick={() => setPreviewVersionID(current => current === choice.PublishedVersionID ? null : choice.PublishedVersionID)}><Eye />Переглянути</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy || attachedVersions.has(choice.PublishedVersionID)} onClick={() => void attach(choice.PublishedVersionID)}>{attachedVersions.has(choice.PublishedVersionID) ? "Додано" : <><Plus />Додати</>}</button></div>
                     </li>)}</ul>}
+            {previewVersionID && <div className="event-exercise-editor__preview" aria-live="polite">
+                <div className="event-exercise-editor__preview-head"><strong>Попередній перегляд набору</strong><button className="ib-btn ib-btn--sm" type="button" aria-label="Закрити попередній перегляд" onClick={() => setPreviewVersionID(null)}><X size={16} /></button></div>
+                {previewQuery.isPending ? <p>Завантажуємо…</p> : previewQuery.isError ? <p role="alert">Не вдалося завантажити попередній перегляд.</p> : <><h3>{previewQuery.data.Name}</h3>{previewQuery.data.Description && <p>{previewQuery.data.Description}</p>}<p>{previewQuery.data.VariantCount} варіантів · {previewQuery.data.Tasks.length} завдань</p><ol>{previewQuery.data.Tasks.map((task, index) => <li key={`${index}-${task.Name}`}><strong>{task.Name}</strong><span>{task.Difficulty}</span></li>)}</ol></>}
+            </div>}
         </section>}
     </div>;
 }
