@@ -24,12 +24,14 @@ body.event-root main{overflow-x:visible}
 .event-account__menu{z-index:70;width:220px;padding:var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);box-shadow:var(--ib-shadow-overlay)}
 .event-account__menu a,.event-account__menu button{display:flex;align-items:center;gap:var(--ib-2);width:100%;min-height:40px;padding:0 var(--ib-3);border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-body);font:var(--ib-w-medium) var(--ib-fs-13)/1 var(--ib-font);text-align:left;text-decoration:none;cursor:pointer}
 .event-account__menu a:hover,.event-account__menu button:hover{background:var(--ib-soft);color:var(--ib-ink);text-decoration:none}
+.event-account__theme{display:none}
+@media(max-width:640px){.event-account__menu{width:min(290px,calc(100vw - 24px))}.event-account__theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}.event-account__theme .event-theme-toggle{flex:none}.event-account__theme .event-theme-toggle button{width:32px;height:32px;min-height:0;padding:0;justify-content:center}.event-header-theme--account{display:none}}
 .event-account__error{margin:var(--ib-2) var(--ib-3);color:var(--ib-danger);font-size:var(--ib-fs-12)}
 .event-manage-frame{display:flex;flex-direction:column;height:100dvh;min-height:0}
 .event-manage-frame>.event-navbar{flex:none}
 .event-manage-frame>.event-manage-shell{flex:1;min-height:0;height:auto}
 @container ib-navbar (max-width: 760px){.event-navbar .ib-navbar__bar{padding-inline:var(--ib-4)}.event-navbar .event-manage-entry{display:none}}
-@container ib-navbar (max-width: 480px){.event-navbar .ib-navbar__actions .event-theme-toggle{display:none}.event-navbar .ib-navbar__brand{flex:1;overflow:hidden}.event-navbar .ib-navbar__name{min-width:0;max-width:none}.event-navbar .ib-navbar__actions{margin-left:0}}
+@container ib-navbar (max-width: 480px){.event-navbar .ib-navbar__actions .event-header-theme:not(.event-header-theme--account){display:none}.event-navbar .ib-navbar__brand{flex:1;overflow:hidden}.event-navbar .ib-navbar__name{min-width:0;max-width:none}.event-navbar .ib-navbar__actions{margin-left:0}}
 .event-navbar__mobile-theme{display:none}
 @container ib-navbar (max-width: 480px){.event-navbar__mobile-theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding-top:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}}
 .event-vpn-page{display:grid;gap:var(--ib-5);max-width:900px;margin:0 auto;padding:var(--ib-10) var(--ib-6) var(--ib-16)}

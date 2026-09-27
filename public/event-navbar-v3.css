@@ -1,0 +1,4 @@
+@import url("/event-navbar-v2.css");
+.event-account__theme{display:none}
+@media(max-width:640px){.event-account__menu{width:min(290px,calc(100vw - 24px))}.event-account__theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}.event-account__theme .event-theme-toggle{flex:none}.event-account__theme .event-theme-toggle button{width:32px;height:32px;min-height:0;padding:0;justify-content:center}.event-header-theme--account{display:none}}
+@container ib-navbar (max-width:480px){.event-navbar .ib-navbar__actions .event-header-theme:not(.event-header-theme--account){display:none}}

@@ -66,6 +66,7 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
             <a href={identityHref("/profile", event)}><UserRound size={16} />Профіль</a>
             {approved && <Link href="/team" onClick={() => setOpen(false)}><Users size={16} />{event.Participation === 0 ? "Моя участь" : "Моя команда"}</Link>}
             {approved && hasTeam && useVPN && <Link href="/vpn" onClick={() => setOpen(false)}><Network size={16} />Підключення VPN</Link>}
+            <div className="event-account__theme"><span>Тема оформлення</span><ThemeToggle /></div>
             <button type="button" onClick={() => void leave()}><LogOut size={16} />Вийти</button>
             {signOutError && <p className="event-account__error" role="alert">Не вдалося вийти. Повторіть спробу.</p>}
         </PopoverContent>
@@ -74,7 +75,7 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
 
 export function EventHeaderActions({event, authenticated, approved = false, hasTeam = false, useVPN = false}: Omit<Props, "canViewResults">) {
     return <>
-        <ThemeToggle />
+        <div className={authenticated ? "event-header-theme event-header-theme--account" : "event-header-theme"}><ThemeToggle /></div>
         {authenticated && <>
             <span className="event-header-divider" aria-hidden="true" />
             <NotificationsPopover />
@@ -173,7 +174,7 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         <nav className="ib-navbar__panel" id="event-menu" aria-label="Мобільне меню">
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
             {authenticated && <ManagerEntry eventID={event.EventID} variant="panel" />}
-            <div className="event-navbar__mobile-theme"><span>Тема оформлення</span><ThemeToggle /></div>
+            {!authenticated && <div className="event-navbar__mobile-theme"><span>Тема оформлення</span><ThemeToggle /></div>}
         </nav>
     </header>;
 }
