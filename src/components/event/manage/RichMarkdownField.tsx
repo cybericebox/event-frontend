@@ -14,6 +14,19 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const turndown = new TurndownService({headingStyle: "atx", bulletListMarker: "-"});
 turndown.addRule("strikethrough", {filter: node => ["DEL", "S", "STRIKE"].includes(node.nodeName), replacement: content => `~~${content}~~`});
+turndown.addRule("code-block", {
+    filter: node => node.nodeName === "PRE",
+    replacement: (_, node) => {
+        function plain(child: Node): string {
+            if (child.nodeType === Node.TEXT_NODE) return child.textContent ?? "";
+            if (child instanceof HTMLElement && child.dataset.variable) return `{{${child.dataset.variable}}}`;
+            return Array.from(child.childNodes, plain).join("");
+        }
+        const code = plain(node).replaceAll("\u200b", "").replace(/\n+$/, "");
+        const fence = "`".repeat([...code.matchAll(/`+/g)].reduce((length, match) => Math.max(length, match[0].length + 1), 3));
+        return `\n\n${fence}\n${code}\n${fence}\n\n`;
+    },
+});
 turndown.addRule("aligned-block", {
     filter: node => ["P", "H1", "H2", "H3"].includes(node.nodeName) && ["center", "right", "justify"].includes((node as HTMLElement).dataset.align ?? ""),
     replacement: (content, node) => {
@@ -213,7 +226,21 @@ export function RichMarkdownField({label, value, required = true, error, disable
         const range = window.getSelection()?.rangeCount ? window.getSelection()?.getRangeAt(0) : null;
         const start = range?.startContainer;
         const element = start?.nodeType === Node.ELEMENT_NODE ? start as Element : start?.parentElement;
-        const currentBlock = argument && name === "formatBlock" ? element?.closest(argument) : null;
+        const end = range?.endContainer;
+        const endElement = end?.nodeType === Node.ELEMENT_NODE ? end as Element : end?.parentElement;
+        const currentBlock = argument && name === "formatBlock" ? element?.closest(argument) ?? endElement?.closest(argument) : null;
+        if (currentBlock?.tagName === "PRE" && argument === "pre" && editor.current?.contains(currentBlock)) {
+            const paragraph = document.createElement("p");
+            paragraph.append(...currentBlock.childNodes);
+            currentBlock.replaceWith(paragraph);
+            const restored = document.createRange();
+            restored.selectNodeContents(paragraph);
+            const current = window.getSelection();
+            current?.removeAllRanges();
+            current?.addRange(restored);
+            emit();
+            return;
+        }
         document.execCommand(name, false, currentBlock && editor.current?.contains(currentBlock) && argument !== "p" ? "p" : argument);
         emit();
     }
@@ -269,12 +296,25 @@ export function RichMarkdownField({label, value, required = true, error, disable
             ? [...editor.current.querySelectorAll("code")].find(element => !element.closest("pre") && range.intersectsNode(element) && element.textContent === selected)
             : null;
         if (code) {
-            code.replaceWith(...code.childNodes);
+            const plain = document.createTextNode(code.textContent ?? "");
+            code.replaceWith(plain);
+            const restored = document.createRange();
+            restored.selectNodeContents(plain);
+            current?.removeAllRanges();
+            current?.addRange(restored);
             emit();
             return;
         }
         const safe = selected.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-        document.execCommand("insertHTML", false, `<code>${safe}</code>`);
+        document.execCommand("insertHTML", false, `<code data-new-inline-code="true">${safe}</code>`);
+        const inserted = editor.current?.querySelector<HTMLElement>("code[data-new-inline-code]");
+        if (inserted) {
+            delete inserted.dataset.newInlineCode;
+            const restored = document.createRange();
+            restored.selectNodeContents(inserted);
+            current?.removeAllRanges();
+            current?.addRange(restored);
+        }
         emit();
     }
     function insertVariable(variable: ContentVariableDefinition) {
