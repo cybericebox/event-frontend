@@ -36,6 +36,8 @@
 .ib-timer__part span{font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .ib-timer--segments .ib-timer__meta{align-self:center;font-size:var(--ib-fs-13)}
 .ib-timer--compact .ib-timer__value{font-size:clamp(34px,5cqi,64px)}
+.ib-timer--compact .ib-timer__value{display:inline-flex;flex-wrap:wrap;align-items:baseline;column-gap:.35em;row-gap:.1em;max-width:100%;white-space:normal}
+.ib-timer__compact-days,.ib-timer__compact-clock{white-space:nowrap}
 .ib-block-hero.ib-mass .ib-timer--compact .ib-timer__value{color:var(--ib-on-brand)}
 .ib-block-hero--timer-xl .ib-timer--compact .ib-timer__value,.ib-block-countdown--timer-xl .ib-timer--compact .ib-timer__value{font-size:clamp(42px,7cqi,88px)}
 .ib-timer--tiles .ib-timer__parts{align-items:stretch;gap:clamp(6px,1cqi,12px)}

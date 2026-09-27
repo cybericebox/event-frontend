@@ -69,6 +69,6 @@ export function CountdownValue({target, display = "segments"}: {target: string |
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return <div className="ib-timer ib-timer--compact" role="timer" aria-live="off" aria-label={`${days} ${unit(days, "день", "дні", "днів")}, ${hours} ${unit(hours, "година", "години", "годин")}, ${minutes} ${unit(minutes, "хвилина", "хвилини", "хвилин")}, ${seconds % 60} ${unit(seconds % 60, "секунда", "секунди", "секунд")}`}>
-        <span className="ib-timer__value">{days ? `${days} дн. ` : ""}{pad(hours)}:{pad(minutes)}:{pad(seconds % 60)}</span>
+        <span className="ib-timer__value">{days > 0 && <span className="ib-timer__compact-days">{days} дн.</span>}<span className="ib-timer__compact-clock">{pad(hours)}:{pad(minutes)}:{pad(seconds % 60)}</span></span>
     </div>;
 }

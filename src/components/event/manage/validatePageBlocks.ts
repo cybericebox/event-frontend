@@ -21,11 +21,12 @@ export function blockValidationField(error: string | undefined, block: ContentBl
     if (message === "вкажіть заголовок дії.") return "title";
     if (message === "вкажіть текст кнопки.") return "action:label";
     if (message === "вкажіть посилання кнопки." || message === "посилання кнопки має бути внутрішнім або HTTPS.") return "action:href";
+    if (message === "вкажіть текст кнопки відліку.") return "action:label";
+    if (message === "вкажіть посилання кнопки відліку." || message === "посилання кнопки відліку має бути внутрішнім або HTTPS.") return "action:href";
     if (message === "вкажіть текст головної дії.") return "action:label";
     if (message === "вкажіть посилання головної дії." || message === "посилання головної дії має бути внутрішнім або HTTPS.") return "action:href";
     if (message === "вкажіть текст другої дії.") return "secondaryAction:label";
     if (message === "вкажіть посилання другої дії." || message === "посилання другої дії має бути внутрішнім або HTTPS.") return "secondaryAction:href";
-    if (message === "заповніть кнопку відліку та її посилання.") return !block.action?.label.trim() ? "action:label" : "action:href";
     if (message === "прикріпіть окреме зображення банера.") return "imageURL";
     if (message.startsWith("обкладинку події не завантажено.")) return "imageSource";
     if (message === "вкажіть свою дату й час відліку." || message === "вкажіть коректну дату й час.") return "targetDate";
@@ -130,7 +131,9 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "countdown" && block.verticalAlignment && !["start", "center", "end"].includes(block.verticalAlignment)) return `Блок ${index + 1}: невідоме положення тексту відліку.`;
         if (block.type === "countdown" && block.timerSize && !["large", "xl"].includes(block.timerSize)) return `Блок ${index + 1}: невідомий розмір відліку.`;
         if (block.type === "countdown" && block.surface && !["plain", "frame"].includes(block.surface)) return `Блок ${index + 1}: невідоме оформлення відліку.`;
-        if (block.type === "countdown" && block.action && (!block.action.label.trim() || !validHref(block.action.href))) return `Блок ${index + 1}: заповніть кнопку відліку та її посилання.`;
+        if (block.type === "countdown" && block.action && !block.action.label.trim()) return `Блок ${index + 1}: вкажіть текст кнопки відліку.`;
+        if (block.type === "countdown" && block.action && !block.action.href.trim()) return `Блок ${index + 1}: вкажіть посилання кнопки відліку.`;
+        if (block.type === "countdown" && block.action && !validHref(block.action.href)) return `Блок ${index + 1}: посилання кнопки відліку має бути внутрішнім або HTTPS.`;
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
         for (const variable of block.variables ?? []) {
             if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для цієї сторінки.`;
