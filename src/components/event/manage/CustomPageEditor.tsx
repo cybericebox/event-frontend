@@ -11,6 +11,7 @@ import {ContentBlocks, contentBlockVisible} from "@/components/event/content/Con
 import type {ContentBlock, PageBlockType} from "@/types/eventContent";
 import {FieldLabel, LandingBlockEditor} from "./LandingBlockEditor";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {blockPalette, createPageBlock} from "./blockPalette";
 import {useManager} from "./ManagerShell";
 import {EventLoading} from "../EventLoading";
@@ -41,6 +42,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const detailsID = useId();
     const previewRef = useRef<HTMLDivElement>(null);
     const [saving, setSaving] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
 
     const existingPages = pages.data ?? [];
     const orderedPages = [...existingPages].filter(item => item.Navigation !== 0).sort((a, b) => a.NavigationOrder - b.NavigationOrder || a.Slug.localeCompare(b.Slug));
@@ -161,7 +163,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     }
 
     async function remove() {
-        if (!page.data || !canManage || !window.confirm("Видалити цю сторінку?")) return;
+        if (!page.data || !canManage) return;
         setSaving(true);
         try {
             await deleteManagePage(eventID, page.data.ID);
@@ -181,7 +183,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     if ((!isNew && page.isPending) || pages.isPending || config.isPending || content.isPending || definitions.isPending) return <EventLoading event={event} label="Завантажуємо редактор…" />;
 
     return <div className="event-manage-content">
-        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Сторінки</p><h1>{isNew ? "Нова сторінка" : draft.Title}</h1><p>Той самий конструктор блоків, що й на головній сторінці.</p></div>{!isNew && <Link className="ib-btn" href={`/${draft.Slug}`} target="_blank">Відкрити <ArrowUpRight size={16} /></Link>}</header>
+        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Сторінки</p><h1>{isNew ? "Нова сторінка" : draft.Title}</h1><p>Той самий конструктор блоків, що й на головній сторінці.</p></div>{!isNew && <div className="event-manage-heading__actions"><Link className="ib-btn" href={`/${draft.Slug}`} target="_blank">Відкрити <ArrowUpRight size={16} /></Link>{canManage && <button className="ib-btn ib-btn--danger" type="button" disabled={saving} onClick={() => setDeleteOpen(true)}><Trash2 size={16} /> Видалити</button>}</div>}</header>
         <div className="event-manage-content__layout">
             <div className="event-content-editor">
                 <div className={`event-manage-page-details${detailsOpen ? "" : " is-collapsed"}`} aria-label="Налаштування сторінки">
@@ -200,10 +202,11 @@ export function CustomPageEditor({slug}: {slug?: string}) {
                 {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !draft.Document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && validation !== documentError && <p className="event-manage-validation" role="alert">{validation}</p>}
                 {documentError && invalidBlockIndex === null && <p className="event-manage-validation" role="alert">{documentError}</p>}
-                <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && !isNew && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setAfterChoice(null);}}><RotateCcw size={16} /> Скасувати</button>}{!isNew && canManage && <button className="ib-btn event-content-editor__delete" type="button" disabled={saving} onClick={() => void remove()}><Trash2 size={16} /> Видалити</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div></div>
+                <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && !isNew && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setAfterChoice(null);}}><RotateCcw size={16} /> Скасувати</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div></div>
             </div>
 
             <aside className="event-manage-content__preview" aria-label="Попередній перегляд сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вся сторінка у поточному порядку блоків."}</p></div></div><div className="event-manage-content__preview-window" ref={previewRef}><ContentBlocks document={draft.Document} variables={values} title={draft.Title || "Нова сторінка"} selectedBlockId={selectedBlockID ?? undefined} coverImage={event.PreviewPicture ?? ""} /></div></aside>
         </div>
+        <Dialog open={deleteOpen} onOpenChange={open => {if (!saving) setDeleteOpen(open);}}><DialogContent className="event-page-delete-dialog"><DialogHeader><DialogTitle>Видалити сторінку «{page.data?.Title}»?</DialogTitle><DialogDescription>Сторінка зникне із сайту та навігації. Усі її блоки буде видалено. Цю дію не можна скасувати.</DialogDescription></DialogHeader><div className="event-page-delete-dialog__actions"><button className="ib-btn" type="button" disabled={saving} onClick={() => setDeleteOpen(false)}>Залишити сторінку</button><button className="ib-btn ib-btn--danger-solid" type="button" disabled={saving} onClick={() => void remove()}>{saving ? "Видаляємо…" : "Видалити сторінку"}</button></div></DialogContent></Dialog>
     </div>;
 }
