@@ -167,8 +167,8 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         if (path === "content") return schema.parse({...mockContent, Landing: readMockLanding(mockContent.Landing)});
         if (path === "content/variables") return schema.parse([
             {name: "event.name", label: "Назва події", format: "text", audience: 0},
-            {name: "event.startAt", label: "Час початку", format: "date-time", audience: 0},
-            {name: "event.finishAt", label: "Час завершення", format: "date-time", audience: 0},
+            {name: "event.startAt", label: "Початок", format: "date-time", audience: 0},
+            {name: "event.finishAt", label: "Завершення за розкладом", format: "date-time", audience: 0},
             {name: "event.isStarted", label: "Розпочато", format: "boolean", audience: 0},
             {name: "event.approvedTeamCount", label: "Схвалені команди", format: "number", audience: 0},
             {name: "event.publishAt", label: "Час публікації", format: "date-time", audience: 2},
@@ -180,6 +180,14 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
                 return schema.parse(page);
             }
             return schema.parse(mockPages);
+        }
+        if (path === "pages/order" && method === "PUT") {
+            const pageIDs = (payload as {PageIDs: string[]}).PageIDs;
+            mockPages = mockPages.map(page => {
+                const order = pageIDs.indexOf(page.ID);
+                return order < 0 ? page : {...page, NavigationOrder: order};
+            });
+            return schema.parse(undefined);
         }
         if (path.startsWith("pages/")) {
             const key = decodeURIComponent(path.slice(6));
@@ -319,6 +327,7 @@ export const getManagePage = (eventID: string, slug: string) => request(eventID,
 export const getManagePages = (eventID: string) => request(eventID, "pages", z.array(ManagePageSchema));
 export const createManagePage = (eventID: string, page: ManagePageInput) => request(eventID, "pages", ManagePageSchema, "POST", page);
 export const updateManagePage = (eventID: string, pageID: string, page: ManagePageInput) => request(eventID, `pages/${encodeURIComponent(pageID)}`, ManagePageSchema, "PUT", page);
+export const putManagePageOrder = (eventID: string, pageIDs: string[]) => request(eventID, "pages/order", z.undefined(), "PUT", {PageIDs: pageIDs});
 export const deleteManagePage = (eventID: string, pageID: string) => request(eventID, `pages/${encodeURIComponent(pageID)}`, z.undefined(), "DELETE");
 
 export async function putManageLanding(eventID: string, document: ContentDocument): Promise<void> {

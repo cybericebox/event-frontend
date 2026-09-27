@@ -98,6 +98,8 @@ export default async function RootLayout({
             <link rel="stylesheet" href="/event-manage-access-v5.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
             <link rel="stylesheet" href="/event-action-toast-v1.css" />
+            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS avoids stale constructor styles behind the development edge. */}
+            <link rel="stylesheet" href="/event-page-builder-v2.css" />
         </head>
         <body className="event-root">
         <Providers>

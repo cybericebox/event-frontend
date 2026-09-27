@@ -9,7 +9,7 @@
 .ib-toc__link{display:block;padding:6px var(--ib-3);border-radius:var(--ib-r);color:var(--ib-dim);font-weight:var(--ib-w-regular);line-height:var(--ib-lh-ui);text-decoration:none;transition:background-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease)}
 .ib-toc__link:hover{background:var(--ib-hover);color:var(--ib-ink);text-decoration:none}
 .ib-toc__link:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
-@container ib-blocks (max-width:860px){
+@container ib-blocks (max-width:600px){
   .ib-block-doc__grid{grid-template-columns:minmax(0,1fr)}
   .ib-block-doc .ib-toc{order:-1;position:static}
 }

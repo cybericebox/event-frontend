@@ -7,13 +7,17 @@
    Esc dismisses (WCAG 1.4.13) via tooltip.js → .is-dismissed until pointer leaves / focus moves. */
 
 .ib-tip{position:relative;display:inline-flex}
-.ib-tip__bubble{position:absolute;z-index:70;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
+.ib-tip__bubble{position:absolute;z-index:70;left:50%;bottom:calc(100% + 6px);transform:translateX(calc(-50% + var(--ib-tip-shift,0px)));
   display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:240px;padding:5px 8px;
   background:var(--ib-raised);color:var(--ib-ink);border:1px solid var(--ib-line);border-radius:var(--ib-r);box-shadow:var(--ib-shadow-overlay);
   font:var(--ib-w-medium) var(--ib-fs-12)/var(--ib-lh-ui) var(--ib-font);white-space:normal;text-align:left;pointer-events:none;
   opacity:0;visibility:hidden;transition:opacity var(--ib-dur-fast) var(--ib-ease),visibility 0s linear var(--ib-dur-fast)}
 .ib-tip__bubble .ib-kbd{height:16px;min-width:16px;font-size:10px}
 .ib-tip__bubble small{display:block;color:var(--ib-dim);font-weight:var(--ib-w-regular)}
+.ib-tip__bubble:has(.ib-tip__copy){max-width:min(320px,calc(100vw - 24px));padding:10px 12px;line-height:1.45}
+.ib-tip__copy{display:grid;gap:6px;min-width:0;white-space:normal}
+.ib-tip__point{position:relative;padding-left:12px;font-weight:var(--ib-w-regular)}
+.ib-tip__point::before{content:"•";position:absolute;left:0}
 .ib-tip:hover>.ib-tip__bubble{opacity:1;visibility:visible;transition-delay:300ms,300ms}
 .ib-tip:has(:focus-visible)>.ib-tip__bubble,.ib-tip.is-open>.ib-tip__bubble{opacity:1;visibility:visible;transition-delay:0s,0s}
 .ib-tip--bottom>.ib-tip__bubble{bottom:auto;top:calc(100% + 6px)}

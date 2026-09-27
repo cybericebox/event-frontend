@@ -1,0 +1,41 @@
+/* Versioned constructor styles for the development edge, which can cache Next's CSS chunk. */
+.event-manage-page-details{display:block;margin-bottom:var(--ib-8);padding:var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
+.event-manage-page-details.is-collapsed{padding:var(--ib-3) var(--ib-5)}
+.event-manage-page-details__toggle{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);width:100%;padding:0;border:0;background:none;color:var(--ib-ink);font:inherit;text-align:left;cursor:pointer}
+.event-manage-page-details__toggle>span{display:grid;gap:2px;min-width:0}
+.event-manage-page-details__toggle strong{font-size:var(--ib-fs-16)}
+.event-manage-page-details__toggle small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-manage-page-details__toggle svg{flex:none;margin-left:auto;transition:transform var(--ib-dur-fast) var(--ib-ease)}
+.event-manage-page-details:not(.is-collapsed) .event-manage-page-details__toggle svg{transform:rotate(180deg)}
+.event-manage-page-details__fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ib-4);margin-top:var(--ib-5)}
+@media(max-width:640px){.event-manage-page-details__fields{grid-template-columns:minmax(0,1fr)}}
+.ib-block-section--right{text-align:right}
+.ib-block-text--center .ib-block-prose{text-align:center}
+.ib-block-text--right .ib-block-prose{text-align:right}
+.ib-block-text--justify .ib-block-prose{text-align:justify}
+.ib-block-banner--caption-center .ib-block-banner__caption{text-align:center}
+.ib-block-banner--caption-center .ib-block-banner__caption h2{margin-inline:auto}
+.ib-block-banner--caption-right .ib-block-banner__caption{text-align:right}
+.ib-block-banner--caption-right .ib-block-banner__caption h2{margin-left:auto}
+@container ib-blocks (min-width:601px) and (max-width:840px){.ib-block-countdown:not(.ib-block-countdown--center):not(.ib-block-countdown--timer-only) .ib-block__in{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}.ib-block-countdown__side,.ib-block-countdown__side .ib-timer{align-items:flex-end;text-align:right}}
+@container ib-blocks (min-width:601px) and (max-width:860px){.ib-block-doc__grid{grid-template-columns:minmax(0,1fr) 220px}.ib-block-doc .ib-toc{order:initial;position:sticky}}
+@container ib-blocks (max-width:980px){.ib-block-hero--timer-xl .ib-block-hero__row{grid-template-columns:minmax(0,1fr)}}
+.ib-tip__bubble:has(.ib-tip__copy){max-width:min(320px,calc(100vw - 24px));padding:10px 12px;line-height:1.45}
+.ib-tip__bubble{transform:translateX(calc(-50% + var(--ib-tip-shift,0px)))}
+.ib-tip__copy{display:grid;gap:6px;min-width:0;white-space:normal}
+.ib-tip__point{position:relative;padding-left:12px;font-weight:var(--ib-w-regular)}
+.ib-tip__point::before{content:"•";position:absolute;left:0}
+.event-rich-markdown__frame{border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);min-width:0}
+.event-rich-markdown__frame:focus-within{border-color:var(--ib-action);box-shadow:0 0 0 2px color-mix(in srgb,var(--ib-action) 18%,transparent)}
+.event-rich-markdown__toolbar{display:flex;flex-wrap:wrap;gap:2px;padding:6px;border-bottom:1px solid var(--ib-line)}
+.event-rich-markdown__toolbar button{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-ink);cursor:pointer}
+.event-rich-markdown__toolbar button:hover:not(:disabled){background:var(--ib-hover)}
+.event-rich-markdown__toolbar button:disabled{opacity:.4;cursor:default}
+.event-rich-markdown__editor{min-height:180px;max-height:420px;overflow:auto;padding:var(--ib-4);outline:0;white-space:pre-wrap}
+.event-rich-markdown__editor:empty::before{content:attr(data-placeholder);color:var(--ib-dim);pointer-events:none}
+.event-rich-markdown__inline{display:flex;gap:var(--ib-2);padding:var(--ib-2);border-bottom:1px solid var(--ib-line)}
+.event-rich-markdown__inline input{min-width:0;flex:1}
+.event-rich-markdown__variables{display:grid;gap:var(--ib-2);max-height:240px;overflow:auto;padding:var(--ib-2);border-bottom:1px solid var(--ib-line)}
+.event-rich-markdown__variables>button{display:grid;gap:2px;width:100%;padding:var(--ib-2);border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-ink);text-align:left;cursor:pointer}
+.event-rich-markdown__variables>button:hover{background:var(--ib-hover)}
+.event-rich-markdown__variables code,.event-rich-markdown__variables small{font-size:var(--ib-fs-12);color:var(--ib-dim)}

@@ -1,7 +1,7 @@
 "use client";
 
 import {useId, useRef, useState, type ChangeEvent} from "react";
-import {ArrowDown, ArrowUp, Braces, CircleHelp, GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react";
+import {ArrowDown, ArrowUp, Braces, GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
 import {initialVisibilityValue, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -9,21 +9,25 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {blockPalette} from "./blockPalette";
 import {uploadManageBannerImage} from "@/api/manage";
+import {FieldLabel} from "./FieldLabel";
+import {RichMarkdownField} from "./RichMarkdownField";
+
+export {FieldLabel} from "./FieldLabel";
 
 const textHelp: Record<string, string> = {
     label: "Заголовок відділяє наступний вміст на сторінці.",
-    markdown: "Основний текст сторінки. Підтримуються заголовки, списки, посилання, цитати й код; HTML не підтримується.",
-    title: "Назва блока. Для банера — текст поверх зображення; для героя — головний заголовок сторінки.",
+    markdown: "Основний текст сторінки.\n• Підтримуються заголовки, списки, посилання, цитати й код.\n• HTML не підтримується.",
+    title: "Назва блока.\n• У банері показується поверх зображення.\n• У герої стає головним заголовком сторінки.",
     sub: "Короткий опис під заголовком блока.",
     text: "Пояснення поруч із кнопкою або відліком.",
     by: "Рядок організатора над назвою події.",
     kicker: "Короткий надзаголовок перед назвою події.",
     note: "Дрібна примітка під діями героя.",
-    tocTitle: "Підпис змісту праворуч від тексту.",
+    tocTitle: "Підпис навігації за розділами.\n• На широкому екрані зміст стоїть праворуч від тексту.\n• На вузькому екрані переміщується над текстом.",
     "action:label": "Текст основної кнопки блока.",
-    "action:href": "Внутрішній шлях від / або повне посилання HTTPS. Змінні можна вставляти в шлях адреси.",
-    "secondaryAction:label": "Текст додаткової кнопки; для її показу також потрібне посилання.",
-    "secondaryAction:href": "Внутрішній шлях від / або повне посилання HTTPS. Друга кнопка потребує тексту й адреси.",
+    "action:href": "Куди веде основна кнопка.\n• Внутрішній шлях починається з /.\n• Зовнішнє посилання має починатися з https://.\n• У шлях можна вставити змінну.",
+    "secondaryAction:label": "Текст додаткової кнопки.\nДля показу потрібне також її посилання.",
+    "secondaryAction:href": "Куди веде додаткова кнопка.\n• Внутрішній шлях починається з /.\n• Зовнішнє посилання має починатися з https://.",
 };
 
 function localDateTime(value: ContentValue): string {
@@ -44,10 +48,6 @@ function withBinding(block: ContentBlock, variable: ContentVariableDefinition): 
 }
 
 type EditableInput = HTMLInputElement | HTMLTextAreaElement;
-
-export function FieldLabel({label, required = false, help}: {label: string; required?: boolean; help?: string}) {
-    return <span className="event-content-editor__field-label">{label}{required && <span className="event-content-editor__required" aria-label="Обов’язкове поле">*</span>}{help && <EventTooltip content={help}>{id => <button className="event-content-editor__help" type="button" aria-label={`Пояснення: ${label}`} aria-describedby={id} onClick={event => event.preventDefault()}><CircleHelp size={14} aria-hidden="true" /></button>}</EventTooltip>}</span>;
-}
 
 function EditorTextField({label, value, placeholder, multiline, compact, required, help, disabled, catalog, values, onInsertVariable, onChangeValue}: {
     label: string; value: string; placeholder: string; multiline: boolean; compact: boolean; required: boolean; help?: string; disabled: boolean;
@@ -211,10 +211,20 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     }
 
     function inputField(field: string, label: string, placeholder = "", multiline = false, required = false, help?: string, compact = false) {
+        const itemPart = field.startsWith("item:") ? field.split(":")[2] : "";
+        const itemHelp = itemPart === "label"
+            ? block.type === "timeline" ? "Час або дата цього етапу.\nПоказується перед назвою події." : block.type === "faq" ? "Питання, яке учасник бачить у списку." : block.type === "doc" ? "Назва розділу.\nПоказується в тексті та у змісті." : "Короткий підпис поруч зі значенням."
+            : block.type === "timeline" ? "Назва події в розкладі.\nПоказується поруч із часом." : block.type === "faq" ? "Відповідь, яка відкривається під питанням.\nПідтримує Markdown." : "Значення цього пункту.\nДля фактів і героя може містити змінні події.";
         return <EditorTextField label={label} value={fieldValue(field)} placeholder={placeholder}
-            multiline={multiline} compact={compact} required={required} help={help ?? (field.startsWith("item:") ? `Це поле показується в пункті ${Number(field.split(":")[1]) + 1} блока.` : textHelp[field])} disabled={!canEdit} catalog={catalog} values={values}
+            multiline={multiline} compact={compact} required={required} help={help ?? (itemPart ? itemHelp : textHelp[field])} disabled={!canEdit} catalog={catalog} values={values}
             onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))}
             onChangeValue={value => onUpdate(changeField(field, value))} />;
+    }
+
+    function richField(field: string, label: string) {
+        return <RichMarkdownField label={label} value={fieldValue(field)} disabled={!canEdit} catalog={catalog} values={values}
+            onChange={value => onUpdate(changeField(field, value))}
+            onInsertVariable={(variable, value) => onUpdate(changeField(field, value, withBinding(block, variable)))} />;
     }
 
     async function uploadBanner(file: File | undefined) {
@@ -234,15 +244,15 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     }
 
     function actionPosition() {
-        return <div className="event-manage-field"><FieldLabel label="Розташування кнопок" required help="Розміщення основної та додаткової кнопок усередині блока. На вузьких екранах кнопки переносяться на новий рядок." /><EventSelect ariaLabel="Розташування кнопок" value={block.actionAlignment ?? "end"} options={[{value: "start", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "end", label: "Праворуч"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, actionAlignment: value})} /></div>;
+        return <div className="event-manage-field"><FieldLabel label="Розташування кнопок" required help="Положення кнопок у блоці.\n• Ліворуч — поруч із текстом або біля лівого краю відліку.\n• По центру — посередині секції.\n• Праворуч — біля правого краю.\nНа вузьких екранах кнопки можуть переноситися." /><EventSelect ariaLabel="Розташування кнопок" value={block.actionAlignment ?? "end"} options={[{value: "start", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "end", label: "Праворуч"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, actionAlignment: value})} /></div>;
     }
 
     function countdownSource(optional: boolean) {
         const source = block.dateSource ?? (block.targetDate ? "custom" : block.targetVariable ? "event" : optional ? "none" : "event");
         return <>
-            <div className="event-manage-field"><FieldLabel label="Джерело дати відліку" required={!optional} help="Використайте дату із розкладу події або встановіть окрему дату й час вручну. У герої відлік можна вимкнути." /><EventSelect ariaLabel="Джерело дати відліку" value={source} options={[...(optional ? [{value: "none", label: "Без відліку"}] : []), {value: "event", label: "Дата події"}, {value: "custom", label: "Своя дата й час"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, dateSource: value, targetVariable: value === "event" ? block.targetVariable : "", targetDate: value === "custom" ? block.targetDate : ""})} /></div>
-            {source === "event" && <div className="event-manage-field"><FieldLabel label="Дата події" required={!optional} help="Виберіть опубліковану дату події. Відлік буде оновлюватися разом із розкладом." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата події для відліку" placeholder="Оберіть дату події" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name, targetDate: ""} : {...block, targetVariable: ""});}} /></div>}
-            {source === "custom" && <div className="event-manage-field"><FieldLabel label="Своя дата й час" required help="Час задається за вашим місцевим часовим поясом і зберігається як точний момент часу." /><EventDateTimePicker ariaLabel="Своя дата й час відліку" value={localDateTime(block.targetDate ?? "")} disabled={!canEdit} onChange={value => onUpdate({...block, targetVariable: "", targetDate: value ? new Date(value).toISOString() : ""})} /></div>}
+            <div className="event-manage-field"><FieldLabel label="Джерело дати відліку" required={!optional} help="Оберіть, до якого моменту рахувати час.\n• За розкладом — дата оновлюється разом із налаштуваннями події.\n• Своя дата й час — фіксований момент, незалежний від розкладу." /><EventSelect ariaLabel="Джерело дати відліку" value={source} options={[...(optional ? [{value: "none", label: "Без відліку"}] : []), {value: "event", label: "За розкладом події"}, {value: "custom", label: "Своя дата й час"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, dateSource: value, targetVariable: value === "event" ? block.targetVariable : "", targetDate: value === "custom" ? block.targetDate : ""})} /></div>
+            {source === "event" && <div className="event-manage-field"><FieldLabel label="Дата з розкладу" required help="Оберіть момент із розділу «Публікація і час».\nВідлік оновиться, якщо цей момент у розкладі зміниться." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата з розкладу для відліку" placeholder="Оберіть дату" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name, targetDate: ""} : {...block, targetVariable: ""});}} /></div>}
+            {source === "custom" && <div className="event-manage-field"><FieldLabel label="Своя дата й час" required help="Вкажіть фіксовані дату й час.\nЧас вводиться у вашому місцевому часовому поясі та зберігається як точний момент." /><EventDateTimePicker ariaLabel="Своя дата й час відліку" value={localDateTime(block.targetDate ?? "")} disabled={!canEdit} onChange={value => onUpdate({...block, targetVariable: "", targetDate: value ? new Date(value).toISOString() : ""})} /></div>}
         </>;
     }
 
@@ -276,32 +286,34 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         </div>
         {selected && <div className="event-content-editor__block-body">
             {block.type === "section" && inputField("label", "Заголовок розділу", "Назва розділу", false, true)}
-            {block.type === "section" && <div className="event-manage-field"><FieldLabel label="Розташування" required help="Заголовок можна вирівняти ліворуч або по центру секції." /><EventSelect ariaLabel="Розташування заголовка" value={block.variant ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
-            {block.type === "text" && inputField("markdown", "Вміст (Markdown)", "Напишіть текст сторінки…", true, true, "Підтримуються заголовки, списки, посилання, цитати й код. HTML не підтримується.")}
+            {block.type === "section" && <div className="event-manage-field"><FieldLabel label="Розташування" required help="Вирівнює заголовок розділу ліворуч, по центру або праворуч у межах секції." /><EventSelect ariaLabel="Розташування заголовка" value={block.variant ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
+            {block.type === "text" && richField("markdown", "Вміст")}
             {block.type === "text" && <div className="event-manage-field"><FieldLabel label="Ширина тексту" required help="Для читання обмежує довжину рядка. На всю ширину підходить для таблиць та широкого вмісту." /><EventSelect ariaLabel="Ширина тексту" value={block.variant ?? "narrow"} options={[{value: "narrow", label: "Для читання"}, {value: "wide", label: "На всю ширину"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
+            {block.type === "text" && <div className="event-manage-field"><FieldLabel label="Вирівнювання тексту" required help="Вирівнює весь вміст цього блока.\n• Ліворуч, по центру або праворуч — відносно секції.\n• По ширині — розтягує рядки між обома краями." /><EventSelect ariaLabel="Вирівнювання тексту" value={block.layout ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}, {value: "justify", label: "По ширині"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>}
             {["hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : block.type === "banner" ? "Підпис поверх фото" : "Заголовок", block.type === "banner" ? "Необов’язково" : "Назва блока", false, block.type === "hero" || block.type === "cta")}
             {block.type === "banner" && <>
-                <div className="event-manage-field"><FieldLabel label="Зображення банера" required help="Можна повторно використати обкладинку з розділу «Загальне» або прикріпити окреме зображення. Зміна банера не змінює обкладинку події." /><EventSelect ariaLabel="Джерело зображення банера" value={block.imageSource ?? "preview"} options={[{value: "preview", label: coverImage ? "Обкладинка події" : "Обкладинка події (не завантажена)", disabled: !coverImage}, {value: "custom", label: "Окреме зображення"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, imageSource: value})} /></div>
+                <div className="event-manage-field"><FieldLabel label="Зображення банера" required help="Джерело зображення для цього блока.\n• Обкладинка події — повторно використовує файл із розділу «Загальне».\n• Окреме зображення — власний файл лише для цього банера.\nЗміна банера не змінює обкладинку події." /><EventSelect ariaLabel="Джерело зображення банера" value={block.imageSource ?? "preview"} options={[{value: "preview", label: coverImage ? "Обкладинка події" : "Обкладинка події (не завантажена)", disabled: !coverImage}, {value: "custom", label: "Окреме зображення"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, imageSource: value})} /></div>
                 {block.imageSource === "custom" && <div className="event-manage-field"><FieldLabel label="Окреме зображення" required help="PNG, JPEG або WebP до 5 МБ. Перетягніть файл у поле або виберіть з пристрою. Зображення показується лише в цьому банері." /><label className={`event-brand-drop event-content-editor__upload${imageDragOver ? " is-over" : ""}`} onDragOver={event => {event.preventDefault(); setImageDragOver(true);}} onDragLeave={() => setImageDragOver(false)} onDrop={event => {event.preventDefault(); setImageDragOver(false); if (canEdit && !uploadingImage) void uploadBanner(event.dataTransfer.files[0]);}}><ImagePlus size={22} /><span className="event-brand-drop__action"><strong>{uploadingImage ? "Завантажуємо…" : block.imageURL ? "Замінити зображення" : "Прикріпити зображення"}</strong><small>або перетягніть сюди</small></span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={!canEdit || uploadingImage} onChange={event => void uploadBanner(event.target.files?.[0])} /></label>{block.imageURL && <p className="event-content-editor__hint">Окреме зображення прикріплено.</p>}{imageError && <p className="event-manage-validation" role="alert">{imageError}</p>}</div>}
-                <div className="event-manage-field"><FieldLabel label="Розмір банера" required help="На всю ширину — зображення торкається країв секції. У рамці — з відступами сторінки." /><EventSelect ariaLabel="Розмір банера" value={block.variant ?? "frame"} options={[{value: "edge", label: "На всю ширину"}, {value: "frame", label: "У рамці сторінки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
+                <div className="event-manage-field"><FieldLabel label="Поля навколо банера" required help="Як банер стоїть у секції.\n• Без полів — банер доходить до країв секції.\n• У рамці — банер має відступи та заокруглені кути.\nФактичну ширину задає повзунок нижче." /><EventSelect ariaLabel="Поля навколо банера" value={block.variant ?? "frame"} options={[{value: "edge", label: "Без полів"}, {value: "frame", label: "У рамці сторінки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
+                {block.title && <div className="event-manage-field"><FieldLabel label="Розташування підпису" required help="Вирівнює підпис поверх фото.\nОберіть сторону, де підпис не закриває важливу частину зображення." /><EventSelect ariaLabel="Розташування підпису банера" value={block.layout ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>}
                 <label className="event-manage-field"><FieldLabel label="Ширина банера" required help="Частка ширини сторінки. Висота зображення змінюється пропорційно його власним розмірам. На вузьких екранах банер займає всю доступну ширину." /><span className="event-content-editor__range"><input type="range" min="50" max="100" step="5" value={block.widthPercent ?? 100} disabled={!canEdit} aria-label="Ширина банера у відсотках" onChange={event => onUpdate({...block, widthPercent: Number(event.target.value)})} /><output>{block.widthPercent ?? 100}%</output></span></label>
             </>}
             {block.type === "hero" && <>
                 <div className="event-manage-field"><FieldLabel label="Оформлення" required help="Брендове використовує основний колір події; звичайне — фон сторінки." /><EventSelect ariaLabel="Оформлення героя" value={block.variant ?? "mass"} options={[{value: "mass", label: "Брендове"}, {value: "plain", label: "Звичайне"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
-                <div className="event-manage-field"><FieldLabel label="Композиція" required help="Розділена композиція ставить факти ліворуч, а відлік і дії праворуч. Центральна розміщує вміст по осі сторінки." /><EventSelect ariaLabel="Композиція героя" value={block.layout ?? "split"} options={[{value: "split", label: "Факти ліворуч, відлік праворуч"}, {value: "center", label: "Усе по центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>
-                <div className="event-manage-field"><FieldLabel label="Розмір відліку" required help="Великий розмір підходить для композиції з фактами; дуже великий робить відлік головним акцентом." /><EventSelect ariaLabel="Розмір відліку героя" value={block.timerSize ?? "xl"} options={[{value: "large", label: "Великий"}, {value: "xl", label: "Дуже великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div>
+                <div className="event-manage-field"><FieldLabel label="Композиція" required help="Розташування фактів, відліку й дій.\n• Дві зони — на широкому екрані факти ліворуч, відлік праворуч. На вузькому екрані вони йдуть один під одним.\n• По центру — увесь вміст вирівняний по центральній осі." /><EventSelect ariaLabel="Композиція героя" value={block.layout ?? "split"} options={[{value: "split", label: "Дві зони"}, {value: "center", label: "Усе по центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>
+                {(block.targetVariable || block.targetDate) && <div className="event-manage-field"><FieldLabel label="Розмір відліку" required help="Розмір чисел у відліку.\n• Великий — помітний поруч з іншим вмістом.\n• Дуже великий — головний акцент секції." /><EventSelect ariaLabel="Розмір відліку героя" value={block.timerSize ?? "xl"} options={[{value: "large", label: "Великий"}, {value: "xl", label: "Дуже великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div>}
                 {inputField("by", "Рядок організатора", "Подія CyberICEBox")}
                 {inputField("kicker", "Надзаголовок", "Необов’язково")}
             </>}
-            {block.type === "facts" && <div className="event-manage-field"><FieldLabel label="Розкладка" required help="Смуга показує великі значення; рядки зручні для коротких правил." /><EventSelect ariaLabel="Розкладка фактів" value={block.variant ?? "strip"} options={[{value: "strip", label: "Смуга"}, {value: "rows", label: "Рядки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
-            {block.type === "timeline" && <div className="event-manage-field"><FieldLabel label="Розкладка" required help="Картки розміщують події в ряд, список — одну під одною." /><EventSelect ariaLabel="Розкладка розкладу" value={block.variant ?? "grid"} options={[{value: "grid", label: "Картки в ряд"}, {value: "list", label: "Вертикальний список"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
+            {block.type === "facts" && <div className="event-manage-field"><FieldLabel label="Розкладка" required help="Як розташувати підписи та значення.\n• Смуга — факти у кількох колонках, значення більші.\n• Рядки — підпис ліворуч, значення праворуч. На вузькому екрані вони стають один під одним." /><EventSelect ariaLabel="Розкладка фактів" value={block.variant ?? "strip"} options={[{value: "strip", label: "Смуга"}, {value: "rows", label: "Рядки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
+            {block.type === "timeline" && <div className="event-manage-field"><FieldLabel label="Розкладка" required help="Як показати етапи розкладу.\n• Картки в ряд — етапи розміщуються поруч, доки вистачає місця.\n• Вертикальний список — кожен етап на окремому рядку." /><EventSelect ariaLabel="Розкладка розкладу" value={block.variant ?? "grid"} options={[{value: "grid", label: "Картки в ряд"}, {value: "list", label: "Вертикальний список"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {["hero", "facts", "timeline", "faq"].includes(block.type) && <>
                 {block.type !== "hero" && inputField("sub", "Пояснення", "Необов’язково")}
-                {block.type === "faq" && <div className="event-manage-field"><FieldLabel label="Відкрите питання" help="Питання, відповідь на яке видно одразу після відкриття сторінки." /><EventSelect ariaLabel="Питання, відкрите спочатку" value={block.openItem === undefined ? "none" : String(block.openItem)} options={[{value: "none", label: "Жодне"}, ...(block.items ?? []).map((_, position) => ({value: String(position), label: `Питання ${position + 1}`}))]} disabled={!canEdit} onValueChange={value => onUpdate({...block, openItem: value === "none" ? undefined : Number(value)})} /></div>}
+                {block.type === "faq" && <div className="event-manage-field"><FieldLabel label="Відкрите питання" help="Яка відповідь видима під час першого відкриття сторінки.\nУчасник може сам відкривати й закривати інші питання." /><EventSelect ariaLabel="Питання, відкрите спочатку" value={block.openItem === undefined ? "none" : String(block.openItem)} options={[{value: "none", label: "Жодне"}, ...(block.items ?? []).map((_, position) => ({value: String(position), label: `Питання ${position + 1}`}))]} disabled={!canEdit} onValueChange={value => onUpdate({...block, openItem: value === "none" ? undefined : Number(value)})} /></div>}
                 {(block.items ?? []).map((item, itemIndex) => <div className={`event-content-editor__item${block.type === "faq" ? " event-content-editor__item--faq" : ""}`} key={itemIndex}>
                     {block.type === "faq" && <div className="event-content-editor__item-head"><strong>Питання {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити питання ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex), openItem: block.openItem === undefined || block.openItem === itemIndex ? undefined : block.openItem > itemIndex ? block.openItem - 1 : block.openItem})}><Trash2 size={15} /></button>}</div>}
                     {inputField(`item:${itemIndex}:label`, block.type === "timeline" ? "Час" : block.type === "faq" ? "Питання" : "Підпис", "", false, true)}
-                    {inputField(`item:${itemIndex}:value`, block.type === "timeline" ? "Подія" : block.type === "faq" ? "Відповідь" : "Значення", "", block.type === "faq", true, block.type === "faq" ? "Можна використовувати Markdown для списків і посилань." : undefined, block.type === "faq")}
+                    {block.type === "faq" ? richField(`item:${itemIndex}:value`, "Відповідь") : inputField(`item:${itemIndex}:value`, block.type === "timeline" ? "Подія" : "Значення", "", false, true)}
                     {canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><X size={16} /></button>}
                 </div>)}
                 {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
@@ -312,7 +324,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 {(block.items ?? []).map((item, itemIndex) => <div className="event-content-editor__item event-content-editor__item--faq" key={itemIndex}>
                     <div className="event-content-editor__item-head"><strong>Розділ {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити розділ ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><Trash2 size={15} /></button>}</div>
                     {inputField(`item:${itemIndex}:label`, "Назва розділу", "", false, true)}
-                    {inputField(`item:${itemIndex}:value`, "Текст розділу", "Markdown", true, true, "Підтримуються списки, посилання й виділення. HTML не підтримується.", true)}
+                    {richField(`item:${itemIndex}:value`, "Текст розділу")}
                 </div>)}
                 {canEdit && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> Додати розділ</button>}
             </>}
@@ -322,7 +334,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 {inputField("action:href", "Посилання головної дії", "/challenges")}
                 {inputField("secondaryAction:label", "Друга дія", "Необов’язково")}
                 {inputField("secondaryAction:href", "Посилання другої дії", "/p/rules")}
-                {actionPosition()}
+                {((block.action?.label && block.action?.href) || (block.secondaryAction?.label && block.secondaryAction?.href)) && actionPosition()}
                 {inputField("note", "Примітка", "Необов’язково")}
             </>}
             {["cta", "countdown"].includes(block.type) && inputField("text", "Опис", "Необов’язково")}
@@ -346,7 +358,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 <div className="event-manage-field"><FieldLabel label="Відступ" required help="За замовчуванням блоки йдуть без проміжків. Додайте роздільник між ними, щоб задати малий, середній або великий відступ." /><EventSelect value={block.size ?? "md"} ariaLabel="Відступ роздільника" options={[{value: "sm", label: "Малий"}, {value: "md", label: "Середній"}, {value: "lg", label: "Великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, size: value})} /></div>
                 <label className="event-manage-field"><FieldLabel label="Лінія" help="Показати тонкий роздільник посередині відступу." /><input type="checkbox" checked={!!block.line} disabled={!canEdit} onChange={event => onUpdate({...block, line: event.target.checked})} /></label>
             </div>}
-            <div className="event-content-editor__tools"><FieldLabel label="Показ блока" help="Блок видно завжди, якщо умов немає. Додайте умови, щоб показувати його лише за певних значень події. Усі додані умови мають виконуватися одночасно." /><button className="event-content-editor__rules-toggle" type="button" aria-expanded={rulesOpen} onClick={() => setRulesOpen(!rulesOpen)}>{block.visibility?.length ? `За умовами: ${block.visibility.length}` : "Завжди"}</button></div>
+            <div className="event-content-editor__tools"><FieldLabel label="Показ блока" help="Коли блок видно на сторінці.\n• Завжди — без додаткових умов.\n• За умовами — показується лише за вибраних значень події.\nЯкщо умов кілька, виконатися мають усі." /><button className="event-content-editor__rules-toggle" type="button" aria-expanded={rulesOpen} onClick={() => setRulesOpen(!rulesOpen)}>{block.visibility?.length ? `За умовами: ${block.visibility.length}` : "Завжди"}</button></div>
             {rulesOpen && <div className="event-content-editor__rules">
                 <p>Блок з’явиться, лише коли виконуються всі умови.</p>
                 {(block.visibility ?? []).map((rule, ruleIndex) => {

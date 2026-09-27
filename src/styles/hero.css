@@ -40,7 +40,7 @@
 .ib-block-hero.ib-mass .ib-timer__part span{color:var(--ib-on-brand-2)}
 
 @container ib-blocks (max-width:980px){
-  .ib-block-hero__row{grid-template-columns:minmax(0,1fr);gap:var(--ib-8)}
+  .ib-block-hero__row,.ib-block-hero--timer-xl .ib-block-hero__row{grid-template-columns:minmax(0,1fr);gap:var(--ib-8)}
   .ib-block-hero__aside{align-items:flex-start}
   .ib-block-hero__aside .ib-timer{align-items:flex-start;text-align:left}
   .ib-block-hero__cta{justify-content:flex-start}

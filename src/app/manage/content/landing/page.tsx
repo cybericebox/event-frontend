@@ -10,7 +10,7 @@ import {LandingBlockEditor} from "@/components/event/manage/LandingBlockEditor";
 import {blockPalette, createPageBlock} from "@/components/event/manage/blockPalette";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
-import {validateLanding} from "@/components/event/manage/validateLanding";
+import {validateLanding} from "@/components/event/manage/validatePageBlocks";
 import type {ContentBlock, ContentDocument, PageBlockType} from "@/types/eventContent";
 
 function blockCountLabel(count: number): string {

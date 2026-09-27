@@ -19,10 +19,12 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         const text = block.type === "section" ? block.label ?? "" : block.type === "text" ? block.markdown ?? "" : "";
         if ((block.type === "section" || block.type === "text") && !text.trim()) return `Блок ${index + 1}: заповніть ${block.type === "section" ? "назву" : "текст"}.`;
         if (block.markdown?.includes("<")) return `Блок ${index + 1}: HTML у тексті не підтримується.`;
-        if (block.type === "section" && block.variant && !["left", "center"].includes(block.variant)) return `Блок ${index + 1}: невідоме розташування заголовка.`;
+        if (block.type === "section" && block.variant && !["left", "center", "right"].includes(block.variant)) return `Блок ${index + 1}: невідоме розташування заголовка.`;
         if (block.type === "text" && block.variant && !["narrow", "wide"].includes(block.variant)) return `Блок ${index + 1}: невідома ширина тексту.`;
+        if (block.type === "text" && block.layout && !["left", "center", "right", "justify"].includes(block.layout)) return `Блок ${index + 1}: невідоме вирівнювання тексту.`;
         if (block.type === "timeline" && block.variant && !["grid", "list"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка розкладу.`;
         if (block.type === "banner" && block.variant && !["edge", "frame"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка банера.`;
+        if (block.type === "banner" && block.layout && !["left", "center", "right"].includes(block.layout)) return `Блок ${index + 1}: невідоме розташування підпису банера.`;
         if (block.type === "banner" && block.widthPercent !== undefined && (block.widthPercent < 50 || block.widthPercent > 100 || block.widthPercent % 5 !== 0)) return `Блок ${index + 1}: ширина банера має бути від 50% до 100% із кроком 5%.`;
         if (block.type === "banner" && block.imageSource === "custom" && !block.imageURL?.trim()) return `Блок ${index + 1}: прикріпіть окреме зображення банера.`;
         if (block.type === "banner" && block.imageSource !== "custom" && !coverImage) return `Блок ${index + 1}: обкладинку події не завантажено. Прикріпіть окреме зображення банера.`;
