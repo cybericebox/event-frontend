@@ -40,6 +40,7 @@
 .ib-mass .ib-block-hero__facts dt{color:var(--ib-on-brand-3)}
 .ib-mass .ib-block-hero .ib-timer__part strong,.ib-block-hero.ib-mass .ib-timer__part strong{color:var(--ib-on-brand)}
 .ib-block-hero.ib-mass .ib-timer__part span{color:var(--ib-on-brand-2)}
+.ib-block-hero.ib-mass .ib-block-hero__cta .ib-btn:not(.ib-btn--mass){--_fg:var(--ib-on-brand);--_bd:var(--ib-on-brand-3);--_hover:var(--ib-brand-hover)}
 
 @container ib-blocks (max-width:980px){
   .ib-block-hero__row,.ib-block-hero--timer-xl .ib-block-hero__row{grid-template-columns:minmax(0,1fr);gap:var(--ib-8)}
