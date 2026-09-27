@@ -17,6 +17,38 @@ export type ManageEmailTemplate = z.infer<typeof templateSchema>;
 export type ManageEmailBlock = ManageEmailTemplate["Body"][number];
 export type ManageEmailTemplateInput = Pick<ManageEmailTemplate, "NotificationType" | "Subject" | "Preheader" | "Body" | "Styling">;
 export type ManageEmailPreview = z.infer<typeof previewSchema>;
+const imageUploadSchema = z.object({FileID: id, Url: z.string()});
+const mockImages = new Map<string, string>();
+
+export function getManageEmailImageURL(eventID: string, fileID: string): string {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockImages.get(fileID) ?? "";
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    return domain ? `https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email/images/${encodeURIComponent(fileID)}` : "";
+}
+
+export async function uploadManageEmailImage(eventID: string, templateID: string, file: File): Promise<{FileID: string; Url: string}> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
+        if (!(["image/png", "image/jpeg", "image/gif"].includes(file.type)) || file.size > 10 * 1024 * 1024) throw new Error("invalid image");
+        const uri = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+        });
+        const FileID = crypto.randomUUID();
+        mockImages.set(FileID, uri);
+        return {FileID, Url: uri};
+    }
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email/${encodeURIComponent(templateID)}/images`, {
+        method: "POST", credentials: "include", body,
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+    return imageUploadSchema.parse(z.object({Data: imageUploadSchema}).parse(await response.json()).Data);
+}
 
 const sampleBody = (description: string): ManageEmailBlock[] => [{type: "rich_text", content: {root: {type: "root", children: [{type: "paragraph", children: [{type: "text", text: description, format: 0}]}]}}}];
 const mockDate = "2026-09-26T08:00:00Z";
@@ -107,7 +139,7 @@ export async function resetManageEmailTemplate(eventID: string, notificationType
 
 export async function previewManageEmailTemplate(eventID: string, input: ManageEmailTemplateInput): Promise<ManageEmailPreview> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        const html = `<html><body style="font-family:Arial,sans-serif;color:#292841;padding:32px"><main style="max-width:600px;margin:auto"><h1 style="font-size:20px">${escapeHTML(input.Subject.replaceAll("{{.event_name}}", "Winter Arena CTF"))}</h1>${input.Body.map(block => block.type === "rich_text" ? `<p>${escapeHTML(plainText(block).replaceAll("{{event_name}}", "Winter Arena CTF"))}</p>` : block.type === "divider" ? "<hr>" : block.type === "button" ? `<p><a href="#">${escapeHTML(String(block.label ?? "Перейти"))}</a></p>` : "").join("")}</main></body></html>`;
+        const html = `<html><body style="font-family:Arial,sans-serif;color:#292841;padding:32px"><main style="max-width:600px;margin:auto"><h1 style="font-size:20px">${escapeHTML(input.Subject.replaceAll("{{.event_name}}", "Winter Arena CTF"))}</h1>${input.Body.map(block => block.type === "rich_text" ? `<p>${escapeHTML(plainText(block).replaceAll("{{event_name}}", "Winter Arena CTF"))}</p>` : block.type === "divider" ? "<hr>" : block.type === "button" ? `<p><a href="#">${escapeHTML(String(block.label ?? "Перейти"))}</a></p>` : block.type === "image" ? `<p><img style="max-width:100%" src="${mockImages.get(String(block.file_id ?? "")) ?? ""}" alt="${escapeHTML(String(block.alt ?? ""))}" /></p>` : "").join("")}</main></body></html>`;
         return {Subject: input.Subject, Preheader: input.Preheader, HTML: html};
     }
     return request(eventID, "/preview", previewSchema, "POST", input);

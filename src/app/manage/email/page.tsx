@@ -6,6 +6,7 @@ import {Mail, RotateCcw} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
     createManageEmailTemplate, customizeManageEmailTemplate, getManageEmailTemplates,
+    getManageEmailImageURL, uploadManageEmailImage,
     previewManageEmailTemplate, publishManageEmailTemplate, resetManageEmailTemplate,
     rollbackManageEmailTemplate, updateManageEmailTemplate,
     type ManageEmailTemplate, type ManageEmailTemplateInput,
@@ -72,6 +73,21 @@ export default function ManageEmailPage() {
         setDrafts(current => ({...current, [template.ID]: input}));
     }
 
+    async function addImage(file: File) {
+        if (!template || !editable) return;
+        const target = template;
+        setBusy(true);
+        try {
+            const uploaded = await uploadManageEmailImage(eventID, target.ID, file);
+            setDrafts(current => {
+                const input = current[target.ID] ?? inputOf(target);
+                return {...current, [target.ID]: {...input, Body: [...input.Body, {type: "image", file_id: uploaded.FileID, alt: file.name.replace(/\.[^.]+$/, ""), width_pct: 100}]}};
+            });
+            toast.success("Зображення додано до чернетки");
+        } catch {toast.error("Не вдалося додати зображення. Використайте PNG, JPEG або GIF до 10 МБ.");}
+        finally {setBusy(false);}
+    }
+
     async function run(action: () => Promise<unknown>, success: string, failure: string) {
         if (!canManage || busy) return;
         setBusy(true);
@@ -111,7 +127,7 @@ export default function ManageEmailPage() {
                     {versions.length > 1 && <div className="event-manage-notifications__versions" aria-label="Версії шаблону">{versions.map(item => <button className={`event-manage-notifications__version${template?.ID === item.ID ? " is-selected" : ""}`} type="button" key={item.ID} onClick={() => {setSelectedTemplateID(item.ID); setPreviewDraft(null);}}>{statuses[item.Status]} · {new Date(item.UpdatedAt).toLocaleDateString("uk-UA")}</button>)}</div>}
                     {template && draft ? <><div className="event-manage-notifications__state"><span>{template.Source === "platform" ? "Типовий шаблон платформи" : statuses[template.Status]}</span>{template.Source === "platform" && canManage && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void mutateTemplate(() => customizeManageEmailTemplate(eventID, template), "Створено чернетку для події")}>Налаштувати для події</button>}{template.Source === "event" && template.Status !== "draft" && canManage && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void mutateTemplate(() => rollbackManageEmailTemplate(eventID, template), "Створено чернетку з вибраної версії")}>{template.Status === "published" ? "Редагувати копію" : "Відновити як чернетку"}</button>}</div>
                         <div className="event-manage-fields-two"><div className="event-manage-field"><ManageFieldLabel title="Тема листа" help="Рядок, який учасник побачить у списку вхідних листів. Можна використати змінну {{.event_name}} для назви події." htmlFor="event-email-subject" required /><input className="event-manage-input" id="event-email-subject" value={draft.Subject} disabled={!editable} onChange={e => change({...draft, Subject: e.target.value})} /></div><div className="event-manage-field"><ManageFieldLabel title="Короткий опис" help="Показується після теми в деяких поштових програмах. Поле можна залишити порожнім." htmlFor="event-email-preheader" /><input className="event-manage-input" id="event-email-preheader" value={draft.Preheader} disabled={!editable} onChange={e => change({...draft, Preheader: e.target.value})} placeholder="Необов’язково" /></div></div>
-                        <EmailBlocksEditor blocks={draft.Body} disabled={!editable} onChange={blocks => change({...draft, Body: blocks})} />
+                        <EmailBlocksEditor blocks={draft.Body} disabled={!editable} onChange={blocks => change({...draft, Body: blocks})} onUploadImage={addImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />
                         {editable && validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                         <EmailStylingEditor styling={draft.Styling} disabled={!editable} onChange={styling => change({...draft, Styling: styling})} />
                         <div className="event-email-preview"><div className="event-email-preview__head"><div><h3>Попередній вигляд листа</h3><p>Змінні показано на прикладі. Після редагування натисніть «Оновити вигляд».</p></div><button className="ib-btn ib-btn--sm" type="button" disabled={preview.isFetching || !valid} onClick={() => setPreviewDraft({templateID: template.ID, input: draft})}>Оновити вигляд</button></div>{previewStale && <p className="event-email-preview__stale">Зміни ще не відображено в перегляді.</p>}{preview.isPending || preview.isFetching ? <p>Готуємо попередній вигляд…</p> : preview.isError ? <div className="event-manage-feedback event-manage-feedback--error" role="alert">Не вдалося показати лист. Перевірте його вміст і повторіть спробу.</div> : <iframe title="Попередній вигляд електронного листа" sandbox="" srcDoc={preview.data.HTML} />}</div>
