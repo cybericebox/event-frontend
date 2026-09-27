@@ -340,6 +340,10 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         </>;
     }
 
+    function countdownDisplay() {
+        return <div className="event-manage-field"><FieldLabel label="Вигляд лічильника" required help="Оберіть спосіб показу часу до вибраної дати.\n• Числа з підписами — дні, години, хвилини й секунди окремо.\n• Компактний — один рядок із часом.\n• Плитки — кожна частина часу в окремій комірці." /><EventSelect ariaLabel="Вигляд лічильника" value={block.timerDisplay ?? "segments"} options={[{value: "segments", label: "Числа з підписами"}, {value: "compact", label: "Компактний рядок"}, {value: "tiles", label: "Числа в плитках"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerDisplay: value as NonNullable<ContentBlock["timerDisplay"]>})} /></div>;
+    }
+
     function setRule(ruleIndex: number, update: NonNullable<ContentBlock["visibility"]>[number]) {
         const variable = contentVariableByName.get(update.variable);
         const nextBlock = variable ? withBinding(block, variable) : block;
@@ -386,7 +390,6 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             {block.type === "hero" && <>
                 <div className="event-manage-field"><FieldLabel label="Оформлення" required help="Брендове використовує основний колір події; звичайне — фон сторінки." /><EventSelect ariaLabel="Оформлення героя" value={block.variant ?? "mass"} options={[{value: "mass", label: "Брендове"}, {value: "plain", label: "Звичайне"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 <div className="event-manage-field"><FieldLabel label="Композиція" required help="Розташування фактів, відліку й дій.\n• Дві зони — на широкому екрані факти ліворуч, відлік праворуч. На вузькому екрані вони йдуть один під одним.\n• По центру — увесь вміст вирівняний по центральній осі." /><EventSelect ariaLabel="Композиція героя" value={block.layout ?? "split"} options={[{value: "split", label: "Дві зони"}, {value: "center", label: "Усе по центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>
-                {(block.targetVariable || block.targetDate) && <div className="event-manage-field"><FieldLabel label="Розмір відліку" required help="Розмір чисел у відліку.\n• Великий — помітний поруч з іншим вмістом.\n• Дуже великий — головний акцент секції." /><EventSelect ariaLabel="Розмір відліку героя" value={block.timerSize ?? "xl"} options={[{value: "large", label: "Великий"}, {value: "xl", label: "Дуже великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div>}
                 {inputField("by", "Рядок організатора", "Подія CyberICEBox")}
                 {inputField("kicker", "Надзаголовок", "Необов’язково")}
             </>}
@@ -415,6 +418,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             </>}
             {block.type === "hero" && <>
                 {countdownSource(true)}
+                {(block.targetVariable || block.targetDate) && <>{countdownDisplay()}<div className="event-manage-field"><FieldLabel label="Розмір відліку" required help="Розмір чисел у відліку.\n• Великий — помітний поруч з іншим вмістом.\n• Дуже великий — головний акцент секції." /><EventSelect ariaLabel="Розмір відліку героя" value={block.timerSize ?? "xl"} options={[{value: "large", label: "Великий"}, {value: "xl", label: "Дуже великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div></>}
                 {inputField("action:label", "Головна дія", "Текст кнопки")}
                 {inputField("action:href", "Посилання головної дії", "/challenges")}
                 {inputField("secondaryAction:label", "Друга дія", "Необов’язково")}
@@ -431,7 +435,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 <div className="event-manage-field"><FieldLabel label="Оформлення" required help="Звичайне використовує фон сторінки, брендове — колір події." /><EventSelect value={block.variant ?? "plain"} ariaLabel="Оформлення блока" options={[{value: "plain", label: "Звичайне"}, {value: "mass", label: "Брендове"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {(block.action?.label && block.action?.href) && actionPosition()}
             </>}
-            {block.type === "countdown" && <>{countdownSource(false)}
+            {block.type === "countdown" && <>{countdownSource(false)}{countdownDisplay()}
                 <div className="event-manage-field"><FieldLabel label="Розкладка" required help="Розмістити пояснення ліворуч від відліку або всю секцію по центру." /><EventSelect ariaLabel="Розкладка відліку" value={block.variant ?? "split"} options={[{value: "split", label: "Текст ліворуч, відлік праворуч"}, {value: "center", label: "Усе по центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {block.variant !== "center" && (block.title || block.text) && <div className="event-manage-field"><FieldLabel label="Положення тексту за висотою" required help="Розміщення лівої частини відносно відліку й кнопки праворуч.\n• Зверху — біля верхнього краю.\n• По центру — посередині.\n• Знизу — біля нижнього краю.\nНа вузькому екрані частини стають одна під одною." /><EventSelect ariaLabel="Положення тексту за висотою" value={block.verticalAlignment ?? "center"} options={[{value: "start", label: "Зверху"}, {value: "center", label: "По центру"}, {value: "end", label: "Знизу"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, verticalAlignment: value})} /></div>}
                 <div className="event-manage-field"><FieldLabel label="Розмір відліку" required help="Великий підходить для звичайної секції, дуже великий сильніше виділяє числа." /><EventSelect ariaLabel="Розмір окремого відліку" value={block.timerSize ?? "large"} options={[{value: "large", label: "Великий"}, {value: "xl", label: "Дуже великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div>

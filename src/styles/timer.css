@@ -35,6 +35,14 @@
 .ib-timer__part strong{font:var(--ib-w-semibold) clamp(34px,5cqi,64px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.05em;color:var(--ib-ink)}
 .ib-timer__part span{font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .ib-timer--segments .ib-timer__meta{align-self:center;font-size:var(--ib-fs-13)}
+.ib-timer--compact .ib-timer__value{font-size:clamp(34px,5cqi,64px)}
+.ib-block-hero.ib-mass .ib-timer--compact .ib-timer__value{color:var(--ib-on-brand)}
+.ib-block-hero--timer-xl .ib-timer--compact .ib-timer__value,.ib-block-countdown--timer-xl .ib-timer--compact .ib-timer__value{font-size:clamp(42px,7cqi,88px)}
+.ib-timer--tiles .ib-timer__parts{align-items:stretch;gap:clamp(6px,1cqi,12px)}
+.ib-timer--tiles .ib-timer__part{align-content:center;min-width:clamp(62px,8cqi,100px);padding:clamp(8px,1.4cqi,16px);border:1px solid var(--ib-line);border-radius:var(--ib-r-md);background:var(--ib-surface)}
+.ib-timer--tiles .ib-timer__part strong{font-size:clamp(30px,4cqi,54px)}
+.ib-block-hero.ib-mass .ib-timer--tiles .ib-timer__part{border-color:color-mix(in srgb,var(--ib-on-brand) 26%,transparent);background:color-mix(in srgb,var(--ib-on-brand) 9%,transparent)}
+@container ib-blocks (max-width:480px){.ib-timer--tiles .ib-timer__part{min-width:0;padding:8px}.ib-timer--tiles .ib-timer__part strong{font-size:clamp(26px,7cqi,42px)}.ib-timer--tiles .ib-timer__part span{font-size:var(--ib-fs-12)}}
 @media (max-width:1100px){.ib-timer--hero .ib-timer__value{font-size:50px}}
 @media (max-width:640px){.ib-timer--hero .ib-timer__value{font-size:40px}}
 
