@@ -3,7 +3,7 @@
 import {useState} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
+import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {toast} from "react-hot-toast";
 import {getOwnEventForm, getPendingEventForms, submitEventForm, type EventFormAnswers} from "@/api/participantEventForms";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
@@ -71,7 +71,7 @@ export default function FormsPage() {
                             : <input id={fieldID} className="event-join-input" type="text" value={String(answers[key] ?? "")} onChange={e => update(key, e.target.value)} />}</div>;
                 }
                 if (block.type === "section") return <h3 key={block.id}>{block.label}</h3>;
-                if (block.type === "text") return <div className="event-join-markdown" key={block.id}><ReactMarkdown>{block.markdown}</ReactMarkdown></div>;
+                if (block.type === "text") return <div className="event-join-markdown" key={block.id}><EventRichTextView value={block.richText} /></div>;
                 if (block.type === "divider") return <hr key={block.id} />;
                 return null;
             })}</div>{error && <p className="event-join-error" role="alert">{error}</p>}<button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? "Надсилаємо…" : "Надіслати відповідь"}</button></>}</section></div>}

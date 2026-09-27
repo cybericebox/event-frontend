@@ -4,6 +4,7 @@ import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowDown, ArrowUp, Eye, Plus, Trash2, X} from "lucide-react";
 import {EventRichTextEditor} from "@/components/event/manage/EventRichTextEditor";
+import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {emptyRichText} from "@/components/event/content/richTextState";
 import {toast} from "react-hot-toast";
 import {getManageParticipantForm, putManageParticipantForm, type FormBlock, type FormField, type ParticipantFormInput} from "@/api/manageParticipantForm";
@@ -33,7 +34,7 @@ function initialConditionValue(source: FormField): string | number | boolean {
 function FormPreview({blocks, selectedID}: {blocks: FormBlock[]; selectedID: string}) {
     return <div className="event-form-preview">{blocks.map(block => <div className={`event-form-preview__block${block.id === selectedID ? " is-selected" : ""}`} key={block.id}>
         {block.type === "section" && <h3>{block.label || "Заголовок"}</h3>}
-        {block.type === "text" && <div className="event-form-preview__text"><EventRichTextEditor value={block.richText ?? emptyRichText()} onChange={() => {}} variables={[]} values={{}} disabled /></div>}
+        {block.type === "text" && <div className="event-form-preview__text"><EventRichTextView value={block.richText} emptyFallback="Текст" /></div>}
         {block.type === "divider" && <hr />}
         {isFormField(block) && <div className="event-manage-field"><strong>{block.label || "Нове питання"}{block.required && <span className="event-field-required">*</span>}</strong>{block.condition && <small className="event-form-preview__condition">Умовне питання · показується залежно від відповіді на «{blocks.find(item => isFormField(item) && item.key === block.condition?.fieldKey)?.label || "попереднє питання"}».</small>}{block.help && <small>{block.help}</small>}
             {block.input === "long_text" ? <textarea className="event-manage-input" rows={3} disabled placeholder="Відповідь учасника" /> :

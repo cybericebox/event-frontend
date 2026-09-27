@@ -4,7 +4,7 @@ import {useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
+import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {getCurrentUser, getJoinStatus} from "@/api/clientAuth";
 import {getSelfParticipantForm, joinSelfEvent, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
@@ -97,7 +97,7 @@ export default function JoinPage() {
                             </div>;
                         }
                         if (block.type === "section") return <h3 key={block.id}>{block.label}</h3>;
-                        if (block.type === "text") return <div className="event-join-markdown" key={block.id}><ReactMarkdown>{block.markdown}</ReactMarkdown></div>;
+                        if (block.type === "text") return <div className="event-join-markdown" key={block.id}><EventRichTextView value={block.richText} /></div>;
                         if (block.type === "divider") return <hr key={block.id} />;
                         return null;
                     })}

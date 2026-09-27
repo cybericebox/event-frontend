@@ -4,6 +4,7 @@ import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowDown, ArrowUp, Eye, Plus, Send, Trash2, X} from "lucide-react";
 import {EventRichTextEditor} from "@/components/event/manage/EventRichTextEditor";
+import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {emptyRichText} from "@/components/event/content/richTextState";
 import {toast} from "react-hot-toast";
 import {createManageGenericForm, getManageGenericForms, sendManageGenericForm, updateManageGenericForm, type ManageGenericFormInput} from "@/api/manageFormResponses";
@@ -24,7 +25,7 @@ const inputOptions: {value: FormField["input"]; label: string}[] = [
 function Preview({blocks, selectedID}: {blocks: FormBlock[]; selectedID: string}) {
     return <div className="event-form-preview">{blocks.map(block => <div className={`event-form-preview__block${block.id === selectedID ? " is-selected" : ""}`} key={block.id}>
         {block.type === "section" && <h3>{block.label || "Заголовок"}</h3>}
-        {block.type === "text" && <div className="event-form-preview__text"><EventRichTextEditor value={block.richText ?? emptyRichText()} onChange={() => {}} variables={[]} values={{}} disabled /></div>}
+        {block.type === "text" && <div className="event-form-preview__text"><EventRichTextView value={block.richText} emptyFallback="Текст" /></div>}
         {block.type === "divider" && <hr />}
         {isFormField(block) && <div className="event-manage-field"><strong>{block.label || "Нове питання"}{block.required && <span className="event-field-required">*</span>}</strong>{block.help && <small>{block.help}</small>}{block.input === "long_text" ? <textarea className="event-manage-input" rows={3} disabled placeholder="Відповідь учасника" /> : block.input === "checkbox" ? <label className="event-form-preview__choice"><input type="checkbox" disabled /> Так</label> : block.input === "select" || block.input === "multi_select" ? <div className="event-form-preview__choices">{(block.options ?? []).map((option, index) => <label className="event-form-preview__choice" key={index}><input type={block.input === "select" ? "radio" : "checkbox"} disabled />{option || `Варіант ${index + 1}`}</label>)}</div> : <input className="event-manage-input" type={block.input === "number" ? "number" : "text"} disabled placeholder="Відповідь учасника" />}</div>}
     </div>)}</div>;
