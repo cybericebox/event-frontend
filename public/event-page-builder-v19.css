@@ -14,9 +14,6 @@
 @media(max-width:640px){.event-manage-page-details__fields{grid-template-columns:minmax(0,1fr)}}
 .ib-block-section--right{text-align:right}
 .ib-block-section--justify{text-align:justify}
-.ib-block-text--center .ib-block-prose{text-align:center}
-.ib-block-text--right .ib-block-prose{text-align:right}
-.ib-block-text--justify .ib-block-prose{text-align:justify}
 .ib-block-banner--caption-center .ib-block-banner__caption{text-align:center}
 .ib-block-banner--caption-center .ib-block-banner__caption h2{margin-inline:auto}
 .ib-block-banner--caption-right .ib-block-banner__caption{text-align:right}
@@ -41,6 +38,8 @@
 .event-rich-markdown__heading-menu{z-index:130;min-width:160px;max-height:min(240px,calc(100vh - 24px))}
 .event-rich-markdown__heading-menu .ib-listbox__opt>svg{visibility:visible;margin:0}
 .event-rich-markdown__editor{min-height:180px;max-height:420px;overflow:auto;padding:var(--ib-4);outline:0;white-space:pre-wrap}
+.event-rich-markdown__editor::selection,.event-rich-markdown__editor *::selection{background:#b5b0d1;color:#1f1b3a}
+[data-theme="dark"] .event-rich-markdown__editor::selection,[data-theme="dark"] .event-rich-markdown__editor *::selection{background:#766d99;color:#fff}
 .event-rich-markdown__editor:empty::before{content:attr(data-placeholder);color:var(--ib-dim);pointer-events:none}
 .event-rich-markdown__inline{display:flex;gap:var(--ib-2);padding:var(--ib-2);border-bottom:1px solid var(--ib-line)}
 .event-rich-markdown__inline input{min-width:0;flex:1}

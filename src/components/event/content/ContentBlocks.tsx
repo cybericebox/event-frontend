@@ -1,7 +1,6 @@
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import type {CSSProperties} from "react";
 import type {ContentBlock, ContentDocument} from "@/types/eventContent";
+import {AlignedMarkdown} from "./AlignedMarkdown";
 import {CountdownValue} from "./CountdownValue";
 import {ProportionalBannerImage} from "./ProportionalBannerImage";
 
@@ -114,23 +113,23 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
             if (block.type === "section") return <section className={`ib-block${block.variant === "center" ? " ib-block-section--center" : block.variant === "right" ? " ib-block-section--right" : block.variant === "justify" ? " ib-block-section--justify" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block__in"><h2 className="ib-block__title">{replaceVariables(block.label ?? "", variables, declared)}</h2></div>
             </section>;
-            if (block.type === "text") return <section className={`ib-block ib-block-text${block.variant === "wide" ? " ib-block-text--wide" : ""}${block.layout === "center" ? " ib-block-text--center" : block.layout === "right" ? " ib-block-text--right" : block.layout === "justify" ? " ib-block-text--justify" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
+            if (block.type === "text") return <section className={`ib-block ib-block-text${block.variant === "wide" ? " ib-block-text--wide" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block__in"><div className="ib-block-prose">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{replaceVariables(block.markdown ?? "", variables, declared, true)}</ReactMarkdown>
+                    <AlignedMarkdown>{replaceVariables(block.markdown ?? "", variables, declared, true)}</AlignedMarkdown>
                 </div></div>
             </section>;
             if (block.type === "doc") return <section className="ib-block ib-block-doc" key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block__in">{heading}<div className="ib-block-doc__grid">
                     <article className="ib-block-prose">{(block.items ?? []).map((item, index) => {
                         const sectionID = `doc-${blockIndex}-${index}`;
-                        return <section key={sectionID} aria-labelledby={sectionID}><h3 id={sectionID}>{render(item.label)}</h3><ReactMarkdown remarkPlugins={[remarkGfm]}>{replaceVariables(item.value ?? "", variables, declared, true)}</ReactMarkdown></section>;
+                        return <section key={sectionID} aria-labelledby={sectionID}><h3 id={sectionID}>{render(item.label)}</h3><AlignedMarkdown>{replaceVariables(item.value ?? "", variables, declared, true)}</AlignedMarkdown></section>;
                     })}</article>
                     <nav className="ib-toc" aria-label={render(block.tocTitle || "Зміст")}><p className="ib-toc__title">{render(block.tocTitle || "Зміст")}</p><ol className="ib-toc__list">{(block.items ?? []).map((item, index) => <li key={index}><a className="ib-toc__link" href={`#doc-${blockIndex}-${index}`}>{render(item.label)}</a></li>)}</ol></nav>
                 </div></div>
             </section>;
             if (block.type === "facts") return <section className={`ib-block ib-block-facts${block.variant === "rows" ? " ib-block-facts--rows" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<dl className="ib-block-facts__list">{(block.items ?? []).map((item, index) => <div className="ib-block-facts__item" key={index}><dt>{render(item.label)}</dt><dd>{render(item.value)}</dd></div>)}</dl></div></section>;
             if (block.type === "timeline") return <section className={`ib-block ib-block-timeline${block.variant === "list" ? " ib-block-timeline--list" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<ol className="ib-block-timeline__list">{(block.items ?? []).map((item, index) => <li className="ib-block-timeline__step" key={index}><span className="ib-block-timeline__time">{render(item.label)}</span><p className="ib-block-timeline__label">{render(item.value)}</p></li>)}</ol></div></section>;
-            if (block.type === "faq") return <section className="ib-block ib-block-faq" key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<div className="ib-accordion ib-accordion--lg">{(block.items ?? []).map((item, index) => <details className="ib-accordion__item" key={index} open={index === block.openItem}><summary className="ib-accordion__q">{render(item.label)}</summary><div className="ib-accordion__a ib-block-prose"><ReactMarkdown remarkPlugins={[remarkGfm]}>{replaceVariables(item.value ?? "", variables, declared, true)}</ReactMarkdown></div></details>)}</div></div></section>;
+            if (block.type === "faq") return <section className="ib-block ib-block-faq" key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<div className="ib-accordion ib-accordion--lg">{(block.items ?? []).map((item, index) => <details className="ib-accordion__item" key={index} open={index === block.openItem}><summary className="ib-accordion__q">{render(item.label)}</summary><div className="ib-accordion__a ib-block-prose"><AlignedMarkdown>{replaceVariables(item.value ?? "", variables, declared, true)}</AlignedMarkdown></div></details>)}</div></div></section>;
             if (block.type === "cta") {
                 const href = safeHref(render(block.action?.href));
                 const secondaryHref = safeHref(render(block.secondaryAction?.href));

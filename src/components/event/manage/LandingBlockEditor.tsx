@@ -236,8 +236,6 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
 
     function richField(field: string, label: string) {
         return <RichMarkdownField label={label} value={fieldValue(field)} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
-            alignment={block.type === "text" ? block.layout : undefined}
-            onAlignmentChange={block.type === "text" ? alignment => onUpdate({...block, layout: alignment}) : undefined}
             onChange={value => onUpdate(changeField(field, value))}
             onInsertVariable={(variable, value) => onUpdate(changeField(field, value, withBinding(block, variable)))} />;
     }
