@@ -23,6 +23,8 @@ export function AppShell({children, event, unavailable}: {
     const pathname = usePathname();
     const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
     const isLive = pathname === "/live";
+    const slug = pathname.slice(1);
+    const isContentPage = pathname === "/" || pathname.startsWith("/p/") || (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && !reservedPageSlugs.has(slug));
     const currentUser = useQuery({
         queryKey: ["event-current-user"], queryFn: getCurrentUser,
         enabled: !!event && !unavailable && !isManagement && !isLive,
@@ -54,12 +56,16 @@ export function AppShell({children, event, unavailable}: {
     }
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
-        const slug = pathname.slice(1);
-        if (pathname === "/" || pathname.startsWith("/p/") || (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && !reservedPageSlugs.has(slug))) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
+        if (isContentPage) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
         return <div className="event-shell-state"><h1>Подію не знайдено</h1></div>;
     }
     if (isLive) return children;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
+    // Public content is already in the server response. Keep it visible while
+    // browser-only account and team requests finish.
+    if (isContentPage && (!approved || participantInfo.isPending || ownTeam.isPending || currentUser.isError || joinStatus.isError || participantInfo.isError || ownTeam.isError)) {
+        return <GuestShell event={event} authenticated={!!currentUser.data} joinStatus={joinStatus.data}>{children}</GuestShell>;
+    }
     if (currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending))) {
         return <EventLoading event={event} full label="Завантаження події…" />;
     }

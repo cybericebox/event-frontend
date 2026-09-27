@@ -3,7 +3,8 @@
    Fields: {type:'cta', variant:'mass'|'plain', title, text, action:{label, href, act}, secondary:{label, href, act}} */
 
 .ib-block-cta{--ib-block-py:var(--ib-10)}
-.ib-block-cta:not(.ib-mass){background:var(--ib-surface)}
+.ib-block-cta:not(.ib-mass){background:var(--ib-paper)}
+.ib-block-cta--buttons-only.ib-block{--ib-block-py:var(--ib-4)}
 .ib-block-cta .ib-block__in{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4) var(--ib-10);flex-wrap:wrap}
 .ib-block-cta__title{margin:0;font-size:var(--ib-fs-24);font-weight:var(--ib-w-semibold);letter-spacing:-.02em;color:var(--ib-ink)}
 .ib-block-cta__text{margin-top:var(--ib-1);max-width:56ch;color:var(--ib-dim)}

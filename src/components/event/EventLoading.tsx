@@ -8,7 +8,7 @@ export function EventLoading({event, label, message, full = false}: {
     full?: boolean;
 }) {
     return <div className={full ? "event-shell-state" : "event-content-loading"} role="status" aria-label={label ?? message ?? "Завантаження"}>
-        <EventBrandLogo event={event} className="event-loading-logo" size={64} />
-        {message && <span className="event-loading-label" aria-hidden="true">{message}</span>}
+        {event && <EventBrandLogo event={event} className="event-loading-logo" size={64} />}
+        {(message || !event && label) && <span className="event-loading-label" aria-hidden="true">{message ?? label}</span>}
     </div>;
 }

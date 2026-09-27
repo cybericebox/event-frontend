@@ -26,8 +26,8 @@ export function createPageBlock(type: PageBlockType, landing = false): ContentBl
         case "timeline": return {id, type, title: "", variant: "grid", items: [{dateSource: "event", dateVariable: "", dateFormat: "date-time", value: ""}]};
         case "doc": return {id, type, title: "", tocTitle: "Зміст", items: [{label: "", richText: emptyRichText()}]};
         case "faq": return {id, type, title: "", items: [{label: "", richText: emptyRichText()}]};
-        case "cta": return {id, type, title: "", text: "", action: {label: "", href: ""}, variant: "plain"};
-        case "countdown": return {id, type, title: "", text: "", dateSource: "event", targetVariable: "", variant: "split", timerSize: "large", timerDisplay: "segments", surface: "plain"};
+        case "cta": return {id, type, title: "", text: "", action: {label: "", kind: "link", href: ""}, variant: "plain"};
+        case "countdown": return {id, type, title: "", text: "", dateSource: "event", targetVariable: "", showFromSource: "none", hideAfterFinish: false, variant: "split", timerSize: "large", timerDisplay: "segments", surface: "plain"};
         case "divider": return {id, type, size: "md", line: false};
     }
 }

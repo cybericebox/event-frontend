@@ -22,6 +22,6 @@ export function PrivateLanding() {
     </div>;
     return <div className="event-landing ib-blocks">
         {content.data.Landing.blocks.length > 0 && !content.data.Landing.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}
-        <ContentBlocks document={content.data.Landing} variables={content.data.Variables} coverImage={event.PreviewPicture} />
+        <ContentBlocks document={content.data.Landing} variables={content.data.Variables} coverImage={event.PreviewPicture} eventID={event.EventID} />
     </div>;
 }

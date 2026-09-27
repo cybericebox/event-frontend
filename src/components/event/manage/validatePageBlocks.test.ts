@@ -26,3 +26,20 @@ describe("Lexical content validation", () => {
         expect(validateLanding({blocks: [block]}, [{name: "event.name", label: "Назва", format: "text", audience: 0}])).toBeNull();
     });
 });
+
+describe("registration actions and countdown windows", () => {
+    it("accepts a button-only registration action and rejects a link without an address", () => {
+        const join: ContentBlock = {id: "join", type: "cta", action: {label: "Приєднатися", kind: "join_event"}};
+        const link: ContentBlock = {id: "link", type: "cta", action: {label: "Правила", kind: "link"}};
+        expect(validateLanding({blocks: [join]}, [])).toBeNull();
+        const error = validateLanding({blocks: [link]}, []);
+        expect(blockValidationField(error ?? undefined, link)).toBe("action:href");
+    });
+
+    it("requires a valid show-from date before a fixed countdown target", () => {
+        const block: ContentBlock = {id: "timer", type: "countdown", dateSource: "custom", targetDate: "2026-10-01T12:00:00Z", showFromSource: "custom", showFromDate: "2026-10-02T12:00:00Z"};
+        const error = validateLanding({blocks: [block]}, []);
+        expect(blockValidationField(error ?? undefined, block)).toBe("showFromDate");
+        expect(validateLanding({blocks: [{...block, showFromDate: "2026-09-30T12:00:00Z"}]}, [])).toBeNull();
+    });
+});

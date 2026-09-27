@@ -31,5 +31,6 @@ export function LiveContentBlocks({eventID, document, initialVariables, coverIma
         refetchOnReconnect: true,
         retry: false,
     });
-    return <ContentBlocks document={document} variables={values.data ?? initialVariables} coverImage={coverImage} title={title} />;
+    const currentValues = values.isError ? {...(values.data ?? initialVariables), "event.registrationOpen": false} : values.data ?? initialVariables;
+    return <ContentBlocks document={document} variables={currentValues} coverImage={coverImage} title={title} eventID={eventID} />;
 }

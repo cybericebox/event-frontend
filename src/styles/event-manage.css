@@ -491,6 +491,7 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__help{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--ib-dim);cursor:help}
 .event-content-editor__help:hover,.event-content-editor__help:focus-visible{color:var(--ib-ink);background:var(--ib-soft)}
 .event-content-editor__tools{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);flex-wrap:wrap}
+.event-content-editor__checkbox{display:inline-flex;align-items:center;gap:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-ink)}
 .event-content-editor__picker{position:absolute;z-index:2;top:50%;right:7px;transform:translateY(-50%)}
 .event-content-editor__field-control--multiline .event-content-editor__picker{top:8px;transform:none}
 .event-content-editor__variable-menu{z-index:120;display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:var(--ib-2);width:min(360px,calc(100vw - 24px));max-height:min(430px,var(--radix-popover-content-available-height));min-height:0;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);box-shadow:0 16px 40px rgba(23,19,50,.16)}
@@ -557,6 +558,7 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-manage-content__preview-window{max-height:calc(100vh - var(--ib-topbar-h) - 100px);overflow:auto;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-paper)}
 .event-manage-content__preview-window .ib-blocks{gap:0}
 .event-manage-content__preview-window .ib-block{--ib-block-px:var(--ib-5);--ib-block-py:var(--ib-6)}
+.event-manage-content__preview-window .ib-block-cta--buttons-only{--ib-block-py:var(--ib-4)}
 .event-manage-content__preview-window .ib-block-banner__inner{width:var(--ib-banner-width,100%)}
 .event-manage-content__preview-window .ib-block-hero__title{font-size:clamp(30px,6cqi,52px)}
 .event-manage-content__preview-window .ib-block-hero__row{margin-top:var(--ib-6)}

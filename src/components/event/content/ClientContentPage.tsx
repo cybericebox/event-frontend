@@ -47,5 +47,5 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
             {!missing && <button className="ib-btn" onClick={() => void page.refetch()}>Повторити</button>}
         </div>;
     }
-    return <ContentBlocks document={page.data.Page.Document} variables={page.data.Variables} title={page.data.Page.Title} coverImage={privateEvent?.PreviewPicture} />;
+    return <ContentBlocks document={page.data.Page.Document} variables={page.data.Variables} title={page.data.Page.Title} coverImage={privateEvent?.PreviewPicture} eventID={eventID} />;
 }
