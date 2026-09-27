@@ -78,7 +78,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 const imageURL = bannerImageURL(block.imageSource === "custom" ? block.imageURL : coverImage);
                 return <section className={`ib-block ib-block-banner${block.variant === "frame" ? " ib-block-banner--frame" : ""}${block.layout === "center" ? " ib-block-banner--caption-center" : block.layout === "right" ? " ib-block-banner--caption-right" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block-banner__inner" style={{"--ib-banner-width": `${block.widthPercent ?? 100}%`} as CSSProperties}>
-                    {imageURL ? <ProportionalBannerImage src={imageURL} alt={render(block.title, "title") || "Банер події"} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title, "title") || String(variables["event.name"] ?? "")}</strong></div>}
+                    {imageURL ? <ProportionalBannerImage src={imageURL} alt={render(block.title, "title") || "Банер події"} eager={blockIndex === 0} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title, "title") || String(variables["event.name"] ?? "")}</strong></div>}
                     {imageURL && block.title && <div className="ib-block-banner__caption"><h2>{render(block.title, "title")}</h2></div>}
                 </div>
             </section>;
