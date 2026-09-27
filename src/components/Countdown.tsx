@@ -1,6 +1,6 @@
 'use client'
 
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useState} from "react";
 import Countdown from "react-countdown";
 import {cn} from "@/utils/cn";
 
@@ -15,26 +15,20 @@ export interface CountdownTimerProps {
 }
 
 export function CountdownTimer({text, textAfter, ...props}: CountdownTimerProps) {
-    const [timeNow, setTimeNow] = useState(Date.now())
-    const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
-
-    const showTimer = (timeNow: number) => {
-        return new Date(props.from || 0).getTime() < timeNow && new Date(props.until).getTime() > timeNow
-    }
+    const [timeNow, setTimeNow] = useState(() => Date.now())
+    const from = new Date(props.from || 0).getTime()
+    const until = new Date(props.until).getTime()
+    const visible = from < timeNow && until > timeNow
+    const pending = timeNow < until
 
     useEffect(() => {
-        if(showTimer(timeNow)) {
-            intervalRef.current = setInterval(() => {
-                setTimeNow(Date.now())
-            }, 1000);
-        }
-        return () => {
-            clearInterval(intervalRef.current);
-        };
-    }, [props, timeNow]);
+        if (!pending) return
+        const interval = setInterval(() => setTimeNow(Date.now()), 1000)
+        return () => clearInterval(interval)
+    }, [pending]);
 
     // if time over, but show is true
-    if (!showTimer(timeNow) && !!props.show) {
+    if (!visible && !!props.show) {
         return (
             <div
                 className={cn("flex flex-col md:min-w-[400px] min-w-80", textAfter?.length ? "space-y-5" : "" ,props.className)}
@@ -52,7 +46,7 @@ export function CountdownTimer({text, textAfter, ...props}: CountdownTimerProps)
         )
     }
 
-    if (!showTimer(timeNow)) {
+    if (!visible) {
         return null
     }
 
