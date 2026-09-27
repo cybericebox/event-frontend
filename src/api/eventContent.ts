@@ -3,6 +3,7 @@ import {z} from "zod";
 import {getPublicEventInfo} from "./publicEventInfo";
 import {EventContentSchema, EventPageContentSchema, type EventContent, type EventPageContent} from "@/types/eventContent";
 import {defaultLiveLayout, liveLayoutSchema, type LiveLayout} from "./manageLive";
+import {defaultMockLanding} from "./mockLanding";
 
 export type {EventContent, EventPageContent} from "@/types/eventContent";
 
@@ -34,10 +35,7 @@ async function fetchContent(path: string, cacheLanding = false): Promise<unknown
 
 export async function getLandingContent(): Promise<EventContent | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        return {Landing: {blocks: [
-            {id: "intro", type: "section", label: "Про подію"},
-            {id: "description", type: "text", markdown: "Командне змагання з кібербезпеки на CyberICEBox. Розв'язуйте завдання, співпрацюйте з командою та стежте за результатами."},
-        ]}, Variables: {"event.name": "Winter Arena CTF"}};
+        return {Landing: defaultMockLanding, Variables: {"event.name": "Winter Arena CTF", "event.finishAt": new Date(Date.now() + 18 * 3_600_000).toISOString()}};
     }
     const data = await fetchContent("", true);
     return data === null ? null : EventContentSchema.parse(data);

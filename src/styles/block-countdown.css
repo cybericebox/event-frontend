@@ -1,14 +1,13 @@
-/* Block «countdown» — a standalone countdown section (before start / to finish), .ib-timer--hero driven by IB.Timer.
-   Variants: brand mass (.ib-mass .ib-mass-waves) · plain.
-   Fields: {type:'countdown', variant:'mass'|'plain', title, text, timer:{start, end, startLabel, endLabel}, action:{label, href, act}} */
+/* Standalone countdown block; its segments share one responsive row. */
 
-.ib-block-countdown .ib-block__in{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--ib-6) var(--ib-10);flex-wrap:wrap}
+.ib-block-countdown .ib-block__in{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--ib-6) var(--ib-10)}
 .ib-block-countdown__title{margin:0;font-size:var(--ib-fs-24);font-weight:var(--ib-w-semibold);letter-spacing:-.02em;color:var(--ib-ink)}
 .ib-block-countdown__text{margin-top:var(--ib-1);max-width:48ch;color:var(--ib-dim)}
 .ib-block-countdown__side{display:flex;flex-direction:column;align-items:flex-end;gap:var(--ib-4)}
 .ib-block-countdown__side .ib-timer{align-items:flex-end;text-align:right}
-.ib-block-countdown--center .ib-block__in{display:flex;flex-direction:column;align-items:center;text-align:center}
+.ib-block-countdown--center .ib-block__in,.ib-block-countdown--timer-only .ib-block__in{display:flex;flex-direction:column;align-items:center;text-align:center}
 .ib-block-countdown--center .ib-block-countdown__side,.ib-block-countdown--center .ib-block-countdown__side .ib-timer{align-items:center;text-align:center}
+.ib-block-countdown--timer-only .ib-block-countdown__side,.ib-block-countdown--timer-only .ib-timer{align-items:center;text-align:center}
 .ib-mass .ib-block-countdown__title{color:var(--ib-on-brand)}
 .ib-mass .ib-block-countdown__text{color:var(--ib-on-brand-2)}
-@container ib-blocks (max-width:620px){.ib-block-countdown__side{align-items:flex-start}.ib-block-countdown__side .ib-timer{align-items:flex-start;text-align:left}}
+@container ib-blocks (max-width:840px){.ib-block-countdown .ib-block__in{display:flex;flex-direction:column;align-items:flex-start}.ib-block-countdown--center .ib-block__in,.ib-block-countdown--timer-only .ib-block__in{align-items:center}.ib-block-countdown__side,.ib-block-countdown__side .ib-timer{align-items:flex-start;text-align:left}}

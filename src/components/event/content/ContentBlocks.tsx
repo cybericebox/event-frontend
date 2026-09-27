@@ -1,7 +1,8 @@
 import ReactMarkdown from "react-markdown";
-import Image from "next/image";
+import type {CSSProperties} from "react";
 import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {CountdownValue} from "./CountdownValue";
+import {ProportionalBannerImage} from "./ProportionalBannerImage";
 
 type Value = string | number | boolean | null;
 
@@ -67,9 +68,9 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 {block.sub && <p className="ib-block__sub">{render(block.sub)}</p>}
             </div> : null;
             if (block.type === "banner") return <section className={`ib-block ib-block-banner${block.variant === "frame" ? " ib-block-banner--frame" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
-                <div className="ib-block-banner__inner">
-                    {coverImage ? <Image className="ib-block-banner__image" src={coverImage} alt={block.title || "Обкладинка події"} fill sizes="100vw" unoptimized /> : <div className="ib-block-banner__placeholder">{selectedBlockId && "Обкладинку події ще не додано"}</div>}
-                    {block.title && <div className="ib-block-banner__caption"><h2>{render(block.title)}</h2></div>}
+                <div className="ib-block-banner__inner" style={{"--ib-banner-width": `${block.widthPercent ?? 100}%`} as CSSProperties}>
+                    {coverImage ? <ProportionalBannerImage src={coverImage} alt={block.title || "Обкладинка події"} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title) || String(variables["event.name"] ?? "")}</strong></div>}
+                    {coverImage && block.title && <div className="ib-block-banner__caption"><h2>{render(block.title)}</h2></div>}
                 </div>
             </section>;
             if (block.type === "hero") {
@@ -124,10 +125,9 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
             if (block.type === "countdown") {
                 const target = variables[block.targetVariable ?? ""];
                 const actionHref = safeHref(block.action?.href ?? "");
-                return <section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div><h2 className="ib-block-countdown__title">{render(block.title)}</h2>{block.text && <p className="ib-block-countdown__text">{render(block.text)}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} />{actionHref && block.action?.label && <a className="ib-btn ib-btn--primary" href={actionHref}>{render(block.action.label)}</a>}</div></div></section>;
+                return <section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}${!block.title && !block.text ? " ib-block-countdown--timer-only" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div>{block.title && <h2 className="ib-block-countdown__title">{render(block.title)}</h2>}{block.text && <p className="ib-block-countdown__text">{render(block.text)}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} segments />{actionHref && block.action?.label && <a className="ib-btn ib-btn--primary" href={actionHref}>{render(block.action.label)}</a>}</div></div></section>;
             }
             return <section className={`ib-block ib-block-divider${block.size === "sm" ? " ib-block-divider--sm" : block.size === "lg" ? " ib-block-divider--lg" : ""}${block.line ? " ib-block-divider--line" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in" /></section>;
         })}
-        {blocks.length === 0 && <section className="ib-block"><div className="ib-block__in"><p className="event-content-empty">Організатори ще готують вміст цієї сторінки.</p></div></section>}
     </div>;
 }

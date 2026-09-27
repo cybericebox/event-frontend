@@ -23,6 +23,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "text" && block.variant && !["narrow", "wide"].includes(block.variant)) return `Блок ${index + 1}: невідома ширина тексту.`;
         if (block.type === "timeline" && block.variant && !["grid", "list"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка розкладу.`;
         if (block.type === "banner" && block.variant && !["edge", "frame"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка банера.`;
+        if (block.type === "banner" && block.widthPercent !== undefined && (block.widthPercent < 50 || block.widthPercent > 100 || block.widthPercent % 5 !== 0)) return `Блок ${index + 1}: ширина банера має бути від 50% до 100% із кроком 5%.`;
         if (["facts", "timeline", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
         if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;

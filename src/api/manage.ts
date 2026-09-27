@@ -2,6 +2,7 @@ import {z} from "zod";
 import {deriveTheme} from "@/components/event/manage/deriveTheme";
 import {EventThemeSchema} from "@/types/eventTheme";
 import {ContentDocumentSchema, ContentValueSchema, type ContentDocument} from "@/types/eventContent";
+import {defaultMockLanding, readMockLanding, writeMockLanding} from "@/api/mockLanding";
 import {ContentVariableCatalogSchema} from "@/components/event/content/variableCatalog";
 
 const themeSchema = EventThemeSchema;
@@ -83,7 +84,7 @@ let mockConfig: ManageConfig = {
     ScoreboardVisibility: 0,
     ParticipantsVisibility: 0,
     PreviewDescription: "",
-    PreviewPicture: "",
+    PreviewPicture: "/assets/background.png",
     MaxTeamSize: 5,
     MinTeamSize: null,
     MaxTeams: null,
@@ -102,12 +103,9 @@ let mockLifecycle: ManageLifecycle = {
 };
 let mockScoring: ManageScoring = {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, ForceEventScoring: false, UpdatedAt: "2026-09-26T00:00:00Z"};
 let mockContent: ManageContent = {
-    Landing: {blocks: [
-        {id: "intro", type: "section", label: "Про подію"},
-        {id: "description", type: "text", markdown: "Командне змагання з кібербезпеки на CyberICEBox. Розв'язуйте завдання, співпрацюйте з командою та стежте за результатами."},
-    ]},
+    Landing: defaultMockLanding,
     Live: {Profile: "scoreboard", Slots: {}},
-    Variables: {"event.name": "Winter Arena CTF", "event.tag": "winter-arena-2026", "event.approvedTeamCount": 0, "event.approvedParticipantCount": 0, "event.isPublished": false},
+    Variables: {"event.name": "Winter Arena CTF", "event.tag": "winter-arena-2026", "event.finishAt": new Date(Date.now() + 18 * 3_600_000).toISOString(), "event.approvedTeamCount": 0, "event.approvedParticipantCount": 0, "event.isPublished": false},
 };
 let mockPages: ManagePage[] = [{
     ID: "01900000-0000-7000-8000-000000000002", Slug: "faq", Title: "Питання та відповіді",
@@ -166,10 +164,11 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
             if (method === "PUT") mockScoring = {...(payload as ManageScoringInput), UpdatedAt: new Date().toISOString()};
             return schema.parse(mockScoring);
         }
-        if (path === "content") return schema.parse(mockContent);
+        if (path === "content") return schema.parse({...mockContent, Landing: readMockLanding(mockContent.Landing)});
         if (path === "content/variables") return schema.parse([
             {name: "event.name", label: "Назва події", format: "text", audience: 0},
             {name: "event.startAt", label: "Час початку", format: "date-time", audience: 0},
+            {name: "event.finishAt", label: "Час завершення", format: "date-time", audience: 0},
             {name: "event.isStarted", label: "Розпочато", format: "boolean", audience: 0},
             {name: "event.approvedTeamCount", label: "Схвалені команди", format: "number", audience: 0},
             {name: "event.publishAt", label: "Час публікації", format: "date-time", audience: 2},
@@ -311,6 +310,7 @@ export const deleteManagePage = (eventID: string, pageID: string) => request(eve
 export async function putManageLanding(eventID: string, document: ContentDocument): Promise<void> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
         mockContent = {...mockContent, Landing: ContentDocumentSchema.parse(document)};
+        writeMockLanding(document);
         return;
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;

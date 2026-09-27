@@ -6,7 +6,6 @@ import {ArrowUpRight, Check, Eye, Plus, RotateCcw, Type, X} from "lucide-react";
 import Link from "next/link";
 import {getManageContent, getManageContentVariables, ManageApiError, putManageLanding} from "@/api/manage";
 import {ContentBlocks, contentBlockVisible} from "@/components/event/content/ContentBlocks";
-import {LandingHero} from "@/components/event/content/LandingHero";
 import {LandingBlockEditor} from "@/components/event/manage/LandingBlockEditor";
 import {blockPalette, createPageBlock} from "@/components/event/manage/blockPalette";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -50,6 +49,7 @@ export default function ManageLandingPage() {
     const publicValues = useMemo(() => Object.fromEntries(catalog.map(variable => [variable.name, content.data?.Variables[variable.name] ?? null])), [content.data?.Variables, catalog]);
     const selectedBlock = draft?.blocks.find(block => block.id === selectedBlockID);
     const selectedHidden = selectedBlock ? !contentBlockVisible(selectedBlock, publicValues) : false;
+    const showPreview = !!selectedBlockID && draft?.blocks.some(block => contentBlockVisible(block, publicValues));
 
     useEffect(() => {
         if (!selectedBlockID || !previewRef.current) return;
@@ -122,7 +122,7 @@ export default function ManageLandingPage() {
         {error && <div className="event-manage-feedback event-manage-feedback--error" role="alert">{error}</div>}
         {message && <div className="event-manage-feedback" role="status"><Check size={16} />{message}</div>}
 
-        <div className={`event-manage-content__layout${selectedBlockID ? "" : " event-manage-content__layout--single"}`}>
+        <div className={`event-manage-content__layout${showPreview ? "" : " event-manage-content__layout--single"}`}>
             <div className="event-content-editor">
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Перетягніть блок за ручку або скористайтеся стрілками. Так само вони з’являться на сайті.</p></div><span>{blockCountLabel(draft.blocks.length)}</span></div>
                 {draft.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
@@ -131,7 +131,8 @@ export default function ManageLandingPage() {
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setMessage(""); setError("");}}><RotateCcw size={16} /> Скасувати зміни</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти сторінку"}</button></div></div>
             </div>
-            {selectedBlockID && <aside className="event-manage-content__preview" aria-label="Попередній перегляд головної сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вибраний блок виділено в макеті всієї сторінки."}</p></div><button className="event-manage-content__preview-close" type="button" aria-label="Закрити попередній перегляд" onClick={() => setSelected(null)}><X size={17} /></button></div><div className="event-manage-content__preview-window" ref={previewRef}><div className="event-landing ib-blocks">{draft.blocks.length === 0 && <LandingHero event={event} preview />}{draft.blocks.length > 0 && !draft.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}<ContentBlocks document={draft} variables={publicValues} selectedBlockId={selectedBlockID} coverImage={event.PreviewPicture} /></div></div></aside>}
+            {selectedBlockID && !showPreview && <p className="event-content-editor__hidden-note" role="status">На сторінці зараз немає видимих блоків.</p>}
+            {showPreview && <aside className="event-manage-content__preview" aria-label="Попередній перегляд головної сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вибраний блок виділено в макеті всієї сторінки."}</p></div><button className="event-manage-content__preview-close" type="button" aria-label="Закрити попередній перегляд" onClick={() => setSelected(null)}><X size={17} /></button></div><div className="event-manage-content__preview-window" ref={previewRef}><div className="event-landing ib-blocks">{draft.blocks.length > 0 && !draft.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}<ContentBlocks document={draft} variables={publicValues} selectedBlockId={selectedBlockID} coverImage={event.PreviewPicture} /></div></div></aside>}
         </div>
     </div>;
 }

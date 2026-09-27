@@ -21,14 +21,16 @@
 .ib-block-section--center{text-align:center}
 .ib-block-text--wide .ib-block-prose{max-width:none}
 .ib-block-banner{padding:0;overflow:hidden}
-.ib-block-banner__inner{position:relative;width:100%;aspect-ratio:2/1;min-height:240px;max-height:70vh;background:var(--ib-brand)}
+.ib-block-banner__inner{position:relative;width:var(--ib-banner-width,100%);max-width:1600px;margin-inline:auto;overflow:hidden;background:var(--ib-brand)}
 .ib-block-banner--frame{padding:var(--ib-block-py) var(--ib-block-px)}
-.ib-block-banner--frame .ib-block-banner__inner{max-width:var(--ib-block-max);margin:auto;aspect-ratio:16/9;border-radius:var(--ib-r-lg);overflow:hidden}
-.ib-block-banner__image{object-fit:cover}
-.ib-block-banner__placeholder{display:grid;place-items:center;width:100%;height:100%;padding:var(--ib-6);color:var(--ib-on-brand-2);font-size:var(--ib-fs-14);text-align:center}
+.ib-block-banner--frame .ib-block-banner__inner{max-width:var(--ib-block-max);border-radius:var(--ib-r-lg)}
+.ib-block-banner__media{position:relative;width:100%;max-height:70vh;overflow:hidden}
+.ib-block-banner__image{object-fit:contain}
+.ib-block-banner__placeholder{display:grid;place-items:center;aspect-ratio:2/1;min-height:200px;padding:var(--ib-6);color:var(--ib-on-brand);text-align:center}
+.ib-block-banner__placeholder strong{max-width:20ch;font-size:clamp(24px,5cqi,54px);line-height:1.05;letter-spacing:-.03em}
 .ib-block-banner__caption{position:absolute;inset:auto 0 0;z-index:1;padding:var(--ib-12);background:linear-gradient(transparent,rgba(14,12,38,.72));color:#fff}
 .ib-block-banner__caption h2{margin:0;max-width:900px;font-size:clamp(28px,5cqi,58px);line-height:1.04;letter-spacing:-.035em}
-@container ib-blocks (max-width:520px){.ib-block-banner__inner{min-height:200px}.ib-block-banner__caption{padding:var(--ib-5)}}
+@container ib-blocks (max-width:700px){.ib-block-banner__inner{width:100%}.ib-block-banner__caption{padding:var(--ib-5)}}
 
 /* heading: above the content, or on the left (--split) */
 .ib-block__head{margin-bottom:var(--ib-6);min-width:0}

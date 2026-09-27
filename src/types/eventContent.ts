@@ -22,6 +22,7 @@ export const ContentBlockSchema = z.object({
     action: z.object({label: z.string(), href: z.string()}).optional(),
     secondaryAction: z.object({label: z.string(), href: z.string()}).optional(),
     variant: z.string().optional(),
+    widthPercent: z.number().int().min(50).max(100).multipleOf(5).optional(),
     size: z.string().optional(),
     line: z.boolean().optional(),
     openItem: z.number().int().optional(),

@@ -482,6 +482,10 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 @media(max-width:640px){.event-content-editor__item{grid-template-columns:minmax(0,1fr)}.event-content-editor__rule{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.event-content-editor__rule>.event-manage-input:first-child{grid-column:1/-1}}
 .event-content-editor__empty{display:grid;justify-items:center;gap:var(--ib-2);padding:var(--ib-10);border:1px dashed var(--ib-line);border-radius:var(--ib-r-lg);color:var(--ib-dim);text-align:center;font-size:var(--ib-fs-13)}
 .event-content-editor__empty strong{color:var(--ib-ink);font-size:var(--ib-fs-14)}
+.event-content-editor__range{display:flex;align-items:center;gap:var(--ib-3)}
+.event-content-editor__range input{flex:1;min-width:0;accent-color:var(--ib-action)}
+.event-content-editor__range output{min-width:4ch;color:var(--ib-ink);font-variant-numeric:tabular-nums;text-align:right}
+.event-content-editor__hidden-note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-content-editor__footer{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-4);margin-top:var(--ib-6);padding-top:var(--ib-4);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-content-editor__footer>div{display:flex;gap:var(--ib-2);flex-wrap:wrap}
 .event-manage-content__preview{position:sticky;top:0;min-width:0}
@@ -492,6 +496,7 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-manage-content__preview-close:hover{background:var(--ib-soft);color:var(--ib-ink)}
 .event-manage-content__preview-window{max-height:calc(100vh - var(--ib-topbar-h) - 100px);overflow:auto;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-paper)}
 .event-manage-content__preview-window .ib-block{--ib-block-px:var(--ib-5);--ib-block-py:var(--ib-6)}
+.event-manage-content__preview-window .ib-block-banner__inner{width:var(--ib-banner-width,100%)}
 .event-manage-content__preview-window .ib-block-hero__title{font-size:clamp(30px,6cqi,52px)}
 .event-manage-content__preview-window .ib-block-hero__row{margin-top:var(--ib-6)}
 .event-manage-content__preview-window .ib-block-hero__facts dd{font-size:var(--ib-fs-16)}
