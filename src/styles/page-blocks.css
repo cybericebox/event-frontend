@@ -20,6 +20,7 @@
 .ib-block-section--center{text-align:center}
 .ib-block-section--right{text-align:right}
 .ib-block-section--justify{text-align:justify}
+.ib-block-text .ib-block-prose{max-width:60ch}
 .ib-block-text--wide .ib-block-prose{max-width:none}
 .ib-block-text--center .ib-block-prose{text-align:center}
 .ib-block-text--right .ib-block-prose{text-align:right}
