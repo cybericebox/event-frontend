@@ -1,4 +1,4 @@
-import type {ContentDocument} from "@/types/eventContent";
+import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 
 const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
@@ -6,6 +6,27 @@ const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
 export function blockValidationIndex(error: string | null): number | null {
     const match = /^Блок (\d+): /.exec(error ?? "");
     return match ? Number(match[1]) - 1 : null;
+}
+
+export function blockValidationField(error: string | undefined, block: ContentBlock): string | null {
+    const message = error?.replace(/^Блок \d+: /, "") ?? "";
+    if (message === "заповніть назву.") return "label";
+    if (message === "заповніть текст.") return "markdown";
+    if (message === "вкажіть назву героя.") return "title";
+    if (message === "додайте заголовок і кнопку.") return !block.title?.trim() ? "title" : !block.action?.label.trim() ? "action:label" : "action:href";
+    if (message === "посилання має бути внутрішнім або HTTPS.") return "action:href";
+    if (message === "заповніть другу дію та її посилання.") return !block.secondaryAction?.label.trim() ? "secondaryAction:label" : "secondaryAction:href";
+    if (message === "заповніть текст і посилання дії.") return !block.action?.label.trim() ? "action:label" : "action:href";
+    if (message === "заповніть кнопку відліку та її посилання.") return !block.action?.label.trim() ? "action:label" : "action:href";
+    if (message === "прикріпіть окреме зображення банера.") return "imageURL";
+    if (message.startsWith("обкладинку події не завантажено.")) return "imageSource";
+    if (message === "вкажіть свою дату й час відліку." || message === "вкажіть коректну дату й час.") return "targetDate";
+    if (message === "оберіть дату події для відліку." || message === "оберіть дату події або задайте її вручну." || message === "оберіть доступну змінну дати.") return "targetVariable";
+    if (message === "заповніть усі пункти або видаліть порожні." || message === "додайте розділ із назвою та безпечним текстом." || message === "заповніть факти героя, не більше чотирьох.") {
+        const itemIndex = block.items?.findIndex(item => !item.label?.trim() || !item.value?.trim()) ?? -1;
+        if (itemIndex >= 0) return `item:${itemIndex}:${block.items?.[itemIndex].label?.trim() ? "value" : "label"}`;
+    }
+    return null;
 }
 
 function validHref(href: string): boolean {

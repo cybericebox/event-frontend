@@ -61,10 +61,11 @@ function highlightVariables(root: HTMLElement) {
     }
 }
 
-export function RichMarkdownField({label, value, required = true, disabled, catalog, values, onChange, onInsertVariable}: {
+export function RichMarkdownField({label, value, required = true, error, disabled, catalog, values, onChange, onInsertVariable}: {
     label: string;
     value: string;
     required?: boolean;
+    error?: string;
     disabled: boolean;
     catalog: ContentVariableDefinition[];
     values: Record<string, ContentValue>;
@@ -151,7 +152,7 @@ export function RichMarkdownField({label, value, required = true, disabled, cata
     }
     return <div className="event-manage-field event-rich-markdown">
         <FieldLabel label={label} required={required} help="Виділіть текст і скористайтеся кнопками форматування.\n• Доступні заголовки, списки, посилання, цитати й код.\n• Вставлений Markdown одразу стане форматованим текстом.\n• Усі зміни відразу видно в попередньому перегляді." />
-        <div className="event-rich-markdown__frame">
+        <div className={`event-rich-markdown__frame${error ? " is-invalid" : ""}`}>
             <div className="event-rich-markdown__toolbar" role="toolbar" aria-label="Форматування тексту">
                 {formattingTools.map(tool => <button key={tool.label} type="button" title={tool.label} aria-label={tool.label} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => command(tool.command, tool.argument)}><tool.icon size={16} /></button>)}
                 <button type="button" title="Код у рядку" aria-label="Код у рядку" disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={inlineCode}><Code size={16} /></button>
@@ -166,7 +167,8 @@ export function RichMarkdownField({label, value, required = true, disabled, cata
                 </Popover.Root>
             </div>
             {linkOpen && <div className="event-rich-markdown__inline"><input className="event-manage-input" aria-label="Адреса посилання" placeholder="https://… або /rules" value={href} onChange={event => setHref(event.target.value)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); if (/^(https?:\/\/|\/)/.test(href)) {command("createLink", href); setLinkOpen(false); setHref("");}}}} /><button className="ib-btn ib-btn--sm" type="button" disabled={!/^(https?:\/\/|\/)/.test(href)} onClick={() => {command("createLink", href); setLinkOpen(false); setHref("");}}>Додати</button></div>}
-            <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
+            <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
         </div>
+        {error && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
     </div>;
 }

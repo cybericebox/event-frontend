@@ -12,6 +12,7 @@ import {blockPalette} from "./blockPalette";
 import {uploadManageBannerImage} from "@/api/manage";
 import {FieldLabel} from "./FieldLabel";
 import {RichMarkdownField} from "./RichMarkdownField";
+import {blockValidationField} from "./validatePageBlocks";
 
 export {FieldLabel} from "./FieldLabel";
 
@@ -50,8 +51,9 @@ function withBinding(block: ContentBlock, variable: ContentVariableDefinition): 
 
 type EditableInput = HTMLInputElement | HTMLTextAreaElement;
 
-function EditorTextField({label, value, placeholder, multiline, compact, required, help, disabled, catalog, values, variableFormats, variableNames, onInsertVariable, onChangeValue}: {
+function EditorTextField({label, value, placeholder, multiline, compact, required, help, error, disabled, catalog, values, variableFormats, variableNames, onInsertVariable, onChangeValue}: {
     label: string; value: string; placeholder: string; multiline: boolean; compact: boolean; required: boolean; help?: string; disabled: boolean;
+    error?: string;
     catalog: ContentVariableDefinition[]; values: Record<string, ContentValue>;
     variableFormats?: ContentVariableDefinition["format"][];
     variableNames?: string[];
@@ -83,7 +85,9 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
     const common = {
         id,
         "aria-label": label,
-        className: `event-manage-input${multiline ? compact ? " event-content-editor__textarea--compact" : " event-content-editor__textarea" : ""}`,
+        className: `event-manage-input${multiline ? compact ? " event-content-editor__textarea--compact" : " event-content-editor__textarea" : ""}${error ? " is-invalid" : ""}`,
+        "aria-invalid": !!error,
+        "aria-describedby": error ? `${id}-error` : undefined,
         value, disabled, placeholder, required,
         onSelect: (event: React.SyntheticEvent<EditableInput>) => remember(event.currentTarget),
         onClick: (event: React.MouseEvent<EditableInput>) => remember(event.currentTarget),
@@ -106,6 +110,7 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
                 </Popover.Content></Popover.Portal>
             </Popover.Root>
         </div>
+        {error && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
     </div>;
 }
 
@@ -136,6 +141,8 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     const [imageError, setImageError] = useState("");
     const [imageDragOver, setImageDragOver] = useState(false);
     const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
+    const errorField = error ? blockValidationField(error, block) : null;
+    const errorMessage = error?.replace(/^Блок \d+: /, "").replace(/^./, first => first.toLocaleUpperCase("uk"));
 
     function blockAt(clientX: number, clientY: number): HTMLElement | null {
         return document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-editor-block-id]") ?? null;
@@ -220,7 +227,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             ? block.type === "timeline" ? "Час або дата цього етапу.\nПоказується перед назвою події." : block.type === "faq" ? "Питання, яке учасник бачить у списку." : block.type === "doc" ? "Назва розділу.\nПоказується в тексті та у змісті." : "Короткий підпис поруч зі значенням."
             : block.type === "timeline" ? "Назва події в розкладі.\nПоказується поруч із часом." : block.type === "faq" ? "Відповідь, яка відкривається під питанням.\nПідтримує Markdown." : "Значення цього пункту.\nДля фактів і героя може містити змінні події.";
         return <EditorTextField label={label} value={fieldValue(field)} placeholder={placeholder}
-            multiline={multiline} compact={compact} required={required} help={help ?? (itemPart ? itemHelp : textHelp[field])} disabled={!canEdit} catalog={catalog} values={values}
+            multiline={multiline} compact={compact} required={required} help={help ?? (itemPart ? itemHelp : textHelp[field])} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
             variableFormats={block.type === "timeline" && itemPart === "label" ? ["date-time"] : undefined}
             variableNames={field === "action:href" || field === "secondaryAction:href" ? ["event.tag"] : undefined}
             onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))}
@@ -228,7 +235,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     }
 
     function richField(field: string, label: string) {
-        return <RichMarkdownField label={label} value={fieldValue(field)} disabled={!canEdit} catalog={catalog} values={values}
+        return <RichMarkdownField label={label} value={fieldValue(field)} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
             onChange={value => onUpdate(changeField(field, value))}
             onInsertVariable={(variable, value) => onUpdate(changeField(field, value, withBinding(block, variable)))} />;
     }
@@ -257,8 +264,8 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         const source = block.dateSource ?? (block.targetDate ? "custom" : block.targetVariable ? "event" : optional ? "none" : "event");
         return <>
             <div className="event-manage-field"><FieldLabel label="Джерело дати відліку" required={!optional} help="Оберіть, до якого моменту рахувати час.\n• За розкладом — дата оновлюється разом із налаштуваннями події.\n• Своя дата й час — фіксований момент, незалежний від розкладу." /><EventSelect ariaLabel="Джерело дати відліку" value={source} options={[...(optional ? [{value: "none", label: "Без відліку"}] : []), {value: "event", label: "За розкладом події"}, {value: "custom", label: "Своя дата й час"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, dateSource: value, targetVariable: value === "event" ? block.targetVariable : "", targetDate: value === "custom" ? block.targetDate : ""})} /></div>
-            {source === "event" && <div className="event-manage-field"><FieldLabel label="Дата з розкладу" required help="Оберіть момент із розділу «Публікація і час».\nВідлік оновиться, якщо цей момент у розкладі зміниться." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата з розкладу для відліку" placeholder="Оберіть дату" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name, targetDate: ""} : {...block, targetVariable: ""});}} /></div>}
-            {source === "custom" && <div className="event-manage-field"><FieldLabel label="Своя дата й час" required help="Вкажіть фіксовані дату й час.\nЧас вводиться у вашому місцевому часовому поясі та зберігається як точний момент." /><EventDateTimePicker ariaLabel="Своя дата й час відліку" value={localDateTime(block.targetDate ?? "")} disabled={!canEdit} onChange={value => onUpdate({...block, targetVariable: "", targetDate: value ? new Date(value).toISOString() : ""})} /></div>}
+            {source === "event" && <div className={`event-manage-field${errorField === "targetVariable" ? " is-invalid" : ""}`}><FieldLabel label="Дата з розкладу" required help="Оберіть момент із розділу «Публікація і час».\nВідлік оновиться, якщо цей момент у розкладі зміниться." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата з розкладу для відліку" placeholder="Оберіть дату" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name, targetDate: ""} : {...block, targetVariable: ""});}} />{errorField === "targetVariable" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>}
+            {source === "custom" && <div className={`event-manage-field${errorField === "targetDate" ? " is-invalid" : ""}`}><FieldLabel label="Своя дата й час" required help="Вкажіть фіксовані дату й час.\nЧас вводиться у вашому місцевому часовому поясі та зберігається як точний момент." /><EventDateTimePicker ariaLabel="Своя дата й час відліку" value={localDateTime(block.targetDate ?? "")} disabled={!canEdit} onChange={value => onUpdate({...block, targetVariable: "", targetDate: value ? new Date(value).toISOString() : ""})} />{errorField === "targetDate" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>}
         </>;
     }
 
@@ -280,7 +287,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
 
     const blockLabel = blockPalette.find(item => item.type === block.type)?.label ?? block.type;
     const blockSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? block.markdown : "");
-    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={error ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect();}}}>
+    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={selected && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect();}}}>
         <div className="event-content-editor__block-head">
             <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</div>
             {canEdit && <div className="event-content-editor__block-actions">
@@ -290,7 +297,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 <EventTooltip content="Видалити блок">{id => <button type="button" className="event-content-editor__danger" aria-label={`Видалити блок ${index + 1}`} aria-describedby={id} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
         </div>
-        {error && <p className="event-content-editor__block-error" id={`block-error-${block.id}`} role="alert">{error}</p>}
+        {error && selected && !errorField && <p className="event-content-editor__block-error" id={`block-error-${block.id}`} role="alert">{errorMessage}</p>}
         {selected && <div className="event-content-editor__block-body">
             {block.type === "section" && inputField("label", "Заголовок розділу", "Назва розділу", false, true)}
             {block.type === "section" && <div className="event-manage-field"><FieldLabel label="Вирівнювання заголовка" required help="Вирівнює текст заголовка в межах секції: ліворуч, по центру, праворуч або по ширині." /><EventSelect ariaLabel="Вирівнювання заголовка" value={block.variant ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}, {value: "justify", label: "По ширині"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
@@ -299,8 +306,8 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             {block.type === "text" && <div className="event-manage-field"><FieldLabel label="Вирівнювання тексту" required help="Вирівнює весь вміст цього блока.\n• Ліворуч, по центру або праворуч — відносно секції.\n• По ширині — розтягує рядки між обома краями." /><EventSelect ariaLabel="Вирівнювання тексту" value={block.layout ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}, {value: "justify", label: "По ширині"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>}
             {["hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : block.type === "banner" ? "Підпис поверх фото" : "Заголовок", block.type === "banner" ? "Необов’язково" : "Назва блока", false, block.type === "hero" || block.type === "cta")}
             {block.type === "banner" && <>
-                <div className="event-manage-field"><FieldLabel label="Зображення банера" required help="Джерело зображення для цього блока.\n• Обкладинка події — повторно використовує файл із розділу «Загальне».\n• Окреме зображення — власний файл лише для цього банера.\nЗміна банера не змінює обкладинку події." /><EventSelect ariaLabel="Джерело зображення банера" value={block.imageSource ?? "preview"} options={[{value: "preview", label: coverImage ? "Обкладинка події" : "Обкладинка події (не завантажена)", disabled: !coverImage}, {value: "custom", label: "Окреме зображення"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, imageSource: value})} /></div>
-                {block.imageSource === "custom" && <div className="event-manage-field"><FieldLabel label="Окреме зображення" required help="PNG, JPEG або WebP до 5 МБ. Перетягніть файл у поле або виберіть з пристрою. Зображення показується лише в цьому банері." /><label className={`event-brand-drop event-content-editor__upload${imageDragOver ? " is-over" : ""}`} onDragOver={event => {event.preventDefault(); setImageDragOver(true);}} onDragLeave={() => setImageDragOver(false)} onDrop={event => {event.preventDefault(); setImageDragOver(false); if (canEdit && !uploadingImage) void uploadBanner(event.dataTransfer.files[0]);}}><ImagePlus size={22} /><span className="event-brand-drop__action"><strong>{uploadingImage ? "Завантажуємо…" : block.imageURL ? "Замінити зображення" : "Прикріпити зображення"}</strong><small>або перетягніть сюди</small></span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={!canEdit || uploadingImage} onChange={event => void uploadBanner(event.target.files?.[0])} /></label>{block.imageURL && <p className="event-content-editor__hint">Окреме зображення прикріплено.</p>}{imageError && <p className="event-manage-validation" role="alert">{imageError}</p>}</div>}
+                <div className={`event-manage-field${errorField === "imageSource" ? " is-invalid" : ""}`}><FieldLabel label="Зображення банера" required help="Джерело зображення для цього блока.\n• Обкладинка події — повторно використовує файл із розділу «Загальне».\n• Окреме зображення — власний файл лише для цього банера.\nЗміна банера не змінює обкладинку події." /><EventSelect ariaLabel="Джерело зображення банера" value={block.imageSource ?? "preview"} options={[{value: "preview", label: coverImage ? "Обкладинка події" : "Обкладинка події (не завантажена)", disabled: !coverImage}, {value: "custom", label: "Окреме зображення"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, imageSource: value})} />{errorField === "imageSource" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>
+                {block.imageSource === "custom" && <div className={`event-manage-field${errorField === "imageURL" ? " is-invalid" : ""}`}><FieldLabel label="Окреме зображення" required help="PNG, JPEG або WebP до 5 МБ. Перетягніть файл у поле або виберіть з пристрою. Зображення показується лише в цьому банері." /><label className={`event-brand-drop event-content-editor__upload${imageDragOver ? " is-over" : ""}`} onDragOver={event => {event.preventDefault(); setImageDragOver(true);}} onDragLeave={() => setImageDragOver(false)} onDrop={event => {event.preventDefault(); setImageDragOver(false); if (canEdit && !uploadingImage) void uploadBanner(event.dataTransfer.files[0]);}}><ImagePlus size={22} /><span className="event-brand-drop__action"><strong>{uploadingImage ? "Завантажуємо…" : block.imageURL ? "Замінити зображення" : "Прикріпити зображення"}</strong><small>або перетягніть сюди</small></span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={!canEdit || uploadingImage} onChange={event => void uploadBanner(event.target.files?.[0])} /></label>{block.imageURL && <p className="event-content-editor__hint">Окреме зображення прикріплено.</p>}{errorField === "imageURL" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}{imageError && <p className="event-manage-validation" role="alert">{imageError}</p>}</div>}
                 <div className="event-manage-field"><FieldLabel label="Поля навколо банера" required help="Як банер стоїть у секції.\n• Без полів — банер доходить до країв секції.\n• У рамці — банер має відступи та заокруглені кути.\nФактичну ширину задає повзунок нижче." /><EventSelect ariaLabel="Поля навколо банера" value={block.variant ?? "frame"} options={[{value: "edge", label: "Без полів"}, {value: "frame", label: "У рамці сторінки"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {block.title && <div className="event-manage-field"><FieldLabel label="Розташування підпису" required help="Вирівнює підпис поверх фото.\nОберіть сторону, де підпис не закриває важливу частину зображення." /><EventSelect ariaLabel="Розташування підпису банера" value={block.layout ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>}
                 <label className="event-manage-field"><FieldLabel label="Ширина банера" required help="Частка ширини сторінки. Висота зображення змінюється пропорційно його власним розмірам. На вузьких екранах банер займає всю доступну ширину." /><span className="event-content-editor__range"><input type="range" min="50" max="100" step="5" value={block.widthPercent ?? 100} disabled={!canEdit} aria-label="Ширина банера у відсотках" onChange={event => onUpdate({...block, widthPercent: Number(event.target.value)})} /><output>{block.widthPercent ?? 100}%</output></span></label>
