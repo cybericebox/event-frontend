@@ -592,6 +592,7 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-manage-notifications__preview small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 @media(max-width:1000px){.event-manage-notifications__layout{grid-template-columns:minmax(0,1fr)}.event-manage-notifications__list{display:flex;overflow:auto}.event-manage-notifications__group{flex:none;min-width:210px}.event-manage-notifications__group+.event-manage-notifications__group{border-top:0;border-left:1px solid var(--ib-line)}}
 @media(max-width:680px){.event-manage-notifications__editor{grid-template-columns:minmax(0,1fr)}.event-manage-notifications__template-head,.event-manage-notifications__delivery{align-items:flex-start;flex-direction:column}.event-manage-notifications__footer{align-items:stretch;flex-direction:column}.event-manage-notifications__footer>div{justify-content:flex-end}}
+@media(max-width:600px){.event-manage-notifications__list{display:block;max-height:260px;overflow-y:auto;overflow-x:hidden}.event-manage-notifications__group{min-width:0}.event-manage-notifications__group+.event-manage-notifications__group{border-top:1px solid var(--ib-line);border-left:0}.event-manage-notifications__item span{min-width:0;overflow-wrap:anywhere}}
 .event-manage-email{max-width:1280px}
 .event-email-blocks{display:grid;gap:var(--ib-4)}
 .event-email-blocks__list{display:grid;gap:var(--ib-3)}
