@@ -11,6 +11,8 @@ import {insertableContentVariable, type ContentVariableDefinition} from "@/compo
 import {AlignedMarkdown, type TextAlignment} from "@/components/event/content/AlignedMarkdown";
 import {FieldLabel} from "./FieldLabel";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {EventSelect} from "@/components/ui/EventSelect";
+import {useEventLinkOptions} from "./useEventLinkOptions";
 
 const turndown = new TurndownService({headingStyle: "atx", bulletListMarker: "-"});
 turndown.addRule("strikethrough", {filter: node => ["DEL", "S", "STRIKE"].includes(node.nodeName), replacement: content => `~~${content}~~`});
@@ -100,7 +102,17 @@ function alignedBlock(node: Node, root: HTMLElement): HTMLElement | null {
     return block && root.contains(block) ? block as HTMLElement : null;
 }
 
-export function RichMarkdownField({label, value, required = true, error, disabled, catalog, values, onChange, onInsertVariable}: {
+function validLink(href: string) {
+    if (!href || /[\\\r\n\t]/.test(href) || href.startsWith("//")) return false;
+    if (href.startsWith("/") || href.startsWith("#")) return true;
+    try {
+        const url = new URL(href);
+        return url.protocol === "https:" && !url.username && !url.password;
+    } catch { return false; }
+}
+
+export function RichMarkdownField({eventID, label, value, required = true, error, disabled, catalog, values, onChange, onInsertVariable}: {
+    eventID: string;
     label: string;
     value: string;
     required?: boolean;
@@ -120,6 +132,8 @@ export function RichMarkdownField({label, value, required = true, error, disable
     const [linkOpen, setLinkOpen] = useState(false);
     const [href, setHref] = useState("");
     const [textAlignment, setTextAlignment] = useState<TextAlignment>("left");
+    const {options: linkOptions, pagesError} = useEventLinkOptions(eventID, values);
+    const linkPreset = linkOptions.some(option => option.value === href) ? href : "custom";
 
     useEffect(() => {
         if (!editor.current || value === lastEmitted.current) return;
@@ -373,7 +387,12 @@ export function RichMarkdownField({label, value, required = true, error, disable
                     </Popover.Root>
                 </span>
             </div>
-            {linkOpen && <div className="event-rich-markdown__inline"><input className="event-manage-input" aria-label="Адреса посилання" placeholder="https://… або /rules" value={href} onChange={event => setHref(event.target.value)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); if (/^(https?:\/\/|\/)/.test(href)) {command("createLink", href); setLinkOpen(false); setHref("");}}}} /><button className="ib-btn ib-btn--sm" type="button" disabled={!/^(https?:\/\/|\/)/.test(href)} onClick={() => {command("createLink", href); setLinkOpen(false); setHref("");}}>Додати</button></div>}
+            {linkOpen && <div className="event-rich-markdown__inline">
+                <EventSelect ariaLabel="Сторінка для посилання" value={linkPreset} options={[...linkOptions, {value: "custom", label: "Своя адреса"}]} disabled={disabled} onValueChange={next => setHref(next === "custom" ? "" : next)} />
+                {linkPreset === "custom" && <input className="event-manage-input" aria-label="Адреса посилання" placeholder="https://… або /rules" value={href} onChange={event => setHref(event.target.value)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); if (validLink(href.trim())) {command("createLink", href.trim()); setLinkOpen(false); setHref("");}}}} />}
+                <button className="ib-btn ib-btn--sm" type="button" disabled={!validLink(href.trim())} onClick={() => {command("createLink", href.trim()); setLinkOpen(false); setHref("");}}>Додати</button>
+                {pagesError && <small>Не вдалося завантажити додаткові сторінки. Власну адресу можна ввести вручну.</small>}
+            </div>}
             <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onMouseDown={event => {const token = (event.target as HTMLElement).closest(".event-rich-markdown__variable-token"); if (!token || !editor.current?.contains(token)) return; event.preventDefault(); editor.current.focus(); const range = document.createRange(); range.selectNode(token); const current = window.getSelection(); current?.removeAllRanges(); current?.addRange(range); selection.current = range.cloneRange();}} onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
         </div>
         {error && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
