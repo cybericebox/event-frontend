@@ -113,8 +113,9 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         : pages.data ?? [], [managedPages.data, pages.data]);
     const links = useMemo(() => [
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
+        ...navigationPages.filter(page => page.NavigationOrder < 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
-        ...navigationPages.map(page => ({href: `/p/${page.Slug}`, label: page.Title})),
+        ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
     ], [approved, canViewResults, event.CanViewResults, navigationPages]);
 
     useLayoutEffect(() => {

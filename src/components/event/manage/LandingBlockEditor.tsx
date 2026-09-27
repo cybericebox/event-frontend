@@ -333,21 +333,22 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 {inputField("action:label", "Головна дія", "Текст кнопки")}
                 {inputField("action:href", "Посилання головної дії", "/challenges")}
                 {inputField("secondaryAction:label", "Друга дія", "Необов’язково")}
-                {inputField("secondaryAction:href", "Посилання другої дії", "/p/rules")}
+                {inputField("secondaryAction:href", "Посилання другої дії", "/rules")}
                 {((block.action?.label && block.action?.href) || (block.secondaryAction?.label && block.secondaryAction?.href)) && actionPosition()}
                 {inputField("note", "Примітка", "Необов’язково")}
             </>}
             {["cta", "countdown"].includes(block.type) && inputField("text", "Опис", "Необов’язково")}
             {block.type === "cta" && <>
                 {inputField("action:label", "Текст кнопки", "Перейти", false, true)}
-                {inputField("action:href", "Посилання кнопки", "/p/rules або https://…", false, true)}
+                {inputField("action:href", "Посилання кнопки", "/rules або https://…", false, true)}
                 {inputField("secondaryAction:label", "Друга дія", "Необов’язково")}
-                {inputField("secondaryAction:href", "Посилання другої дії", "/p/rules")}
+                {inputField("secondaryAction:href", "Посилання другої дії", "/rules")}
                 <div className="event-manage-field"><FieldLabel label="Оформлення" required help="Звичайне використовує фон сторінки, брендове — колір події." /><EventSelect value={block.variant ?? "plain"} ariaLabel="Оформлення блока" options={[{value: "plain", label: "Звичайне"}, {value: "mass", label: "Брендове"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {actionPosition()}
             </>}
             {block.type === "countdown" && <>{countdownSource(false)}
                 <div className="event-manage-field"><FieldLabel label="Розкладка" required help="Розмістити пояснення ліворуч від відліку або всю секцію по центру." /><EventSelect ariaLabel="Розкладка відліку" value={block.variant ?? "split"} options={[{value: "split", label: "Текст ліворуч, відлік праворуч"}, {value: "center", label: "Усе по центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
+                {block.variant !== "center" && (block.title || block.text) && <div className="event-manage-field"><FieldLabel label="Положення тексту за висотою" required help="Розміщення лівої частини відносно відліку й кнопки праворуч.\n• Зверху — біля верхнього краю.\n• По центру — посередині.\n• Знизу — біля нижнього краю.\nНа вузькому екрані частини стають одна під одною." /><EventSelect ariaLabel="Положення тексту за висотою" value={block.verticalAlignment ?? "center"} options={[{value: "start", label: "Зверху"}, {value: "center", label: "По центру"}, {value: "end", label: "Знизу"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, verticalAlignment: value})} /></div>}
                 <div className="event-manage-field"><FieldLabel label="Розмір відліку" required help="Великий підходить для звичайної секції, дуже великий сильніше виділяє числа." /><EventSelect ariaLabel="Розмір окремого відліку" value={block.timerSize ?? "large"} options={[{value: "large", label: "Великий"}, {value: "xl", label: "Дуже великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div>
                 <div className="event-manage-field"><FieldLabel label="Оформлення" required help="Без рамки — секція йде безперервно зі сторінкою. У рамці — відлік виділений усередині секції, як у попередньому вигляді головної сторінки." /><EventSelect ariaLabel="Оформлення окремого відліку" value={block.surface ?? "plain"} options={[{value: "plain", label: "Без рамки"}, {value: "frame", label: "У рамці"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, surface: value})} /></div>
                 {inputField("action:label", "Кнопка під відліком", "Необов’язково")}

@@ -55,7 +55,7 @@ Goal: rebuild the **participant-facing** event frontend to the new "Indigo Frost
 - **Avatar menu** (popover, not page): Профіль ↗ · Форма фідбеку · Вийти. **Notifications**: 🔔 popover (not page).
 - **Routing (App Router):**
   - `/` landing (public) — redirects to `/challenges` when in-event
-  - `/challenges` · `/scoreboard` · `/teams` · `/teams/[id]` · `/cabinet` (my team) · `/p/[slug]` (custom pages incl. rules) · `/profile` (external id-domain link)
+  - `/challenges` · `/scoreboard` · `/teams` · `/teams/[id]` · `/cabinet` (my team) · `/[slug]` (custom pages incl. rules) · `/profile` (external id-domain link)
 - Keep `layout.tsx` providers (react-query) + Toaster; swap `NavBar`/`Footer` for the new shell.
 
 ## 3. Pages & data contracts (participant)
@@ -68,7 +68,7 @@ Goal: rebuild the **participant-facing** event frontend to the new "Indigo Frost
 | Команди | `/teams` | teams Fn | teams list schema (extend) |
 | Деталь команди | `/teams/[id]` | team-by-id Fn | team detail schema (members + solved) |
 | Кабінет команди | `/cabinet` | `useTeam` | my-team schema (members, invite code, submits) |
-| Правила / custom | `/p/[slug]` | pages Fn | page (markdown) schema |
+| Правила / custom | `/[slug]` | pages Fn | page (markdown) schema |
 | Сповіщення | 🔔 popover | notifications Fn | announcement schema |
 
 Map to existing `types/*.ts` first; extend with new schemas where missing (scoreboard timeline, teams list, team detail, my-team submits, pages, notifications).
@@ -87,7 +87,7 @@ Map to existing `types/*.ts` first; extend with new schemas where missing (score
 4. **Результати** — ECharts time-series + ranked table + freeze note.
 5. **Команди** + **Деталь команди** (row → page).
 6. **Кабінет команди** — summary, member contribution, submit history, invite/settings.
-7. **Custom pages** (`/p/[slug]`) + **Правила**.
+7. **Custom pages** (`/[slug]`) + **Правила**.
 8. **Сповіщення** popover · **Landing** (public).
 
 Admin (`/admin`) is a later phase — see prototype; mirror the same shell+mock approach.

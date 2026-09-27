@@ -1,4 +1,7 @@
 /* Versioned constructor styles for the development edge, which can cache Next's CSS chunk. */
+.ib-block-countdown--text-start:not(.ib-block-countdown--center):not(.ib-block-countdown--timer-only) .ib-block__in>div:first-child{align-self:start}
+.ib-block-countdown--text-end:not(.ib-block-countdown--center):not(.ib-block-countdown--timer-only) .ib-block__in>div:first-child{align-self:end}
+@container ib-blocks (max-width:600px){.ib-block-countdown--text-start .ib-block__in>div:first-child,.ib-block-countdown--text-end .ib-block__in>div:first-child{align-self:stretch}}
 .event-manage-page-details{display:block;margin-bottom:var(--ib-8);padding:var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
 .event-manage-page-details.is-collapsed{padding:var(--ib-3) var(--ib-5)}
 .event-manage-page-details__toggle{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);width:100%;padding:0;border:0;background:none;color:var(--ib-ink);font:inherit;text-align:left;cursor:pointer}

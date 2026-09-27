@@ -13,6 +13,7 @@ import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 import {EventLoading} from "./EventLoading";
+import {reservedPageSlugs} from "./content/pageSlugs";
 
 export function AppShell({children, event, unavailable}: {
     children: ReactNode;
@@ -53,7 +54,8 @@ export function AppShell({children, event, unavailable}: {
     }
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
-        if (pathname === "/" || pathname.startsWith("/p/")) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
+        const slug = pathname.slice(1);
+        if (pathname === "/" || pathname.startsWith("/p/") || (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && !reservedPageSlugs.has(slug))) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
         return <div className="event-shell-state"><h1>Подію не знайдено</h1></div>;
     }
     if (isLive) return children;

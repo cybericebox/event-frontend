@@ -22,6 +22,7 @@ export const ContentBlockSchema = z.object({
     targetDate: z.string().optional(),
     dateSource: z.string().optional(),
     layout: z.string().optional(),
+    verticalAlignment: z.string().optional(),
     actionAlignment: z.string().optional(),
     timerSize: z.string().optional(),
     surface: z.string().optional(),
