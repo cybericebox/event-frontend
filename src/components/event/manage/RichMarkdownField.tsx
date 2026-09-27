@@ -159,7 +159,11 @@ export function RichMarkdownField({label, value, required = true, error, disable
     }
     function command(name: string, argument?: string) {
         restoreSelection();
-        document.execCommand(name, false, argument);
+        const range = window.getSelection()?.rangeCount ? window.getSelection()?.getRangeAt(0) : null;
+        const start = range?.startContainer;
+        const element = start?.nodeType === Node.ELEMENT_NODE ? start as Element : start?.parentElement;
+        const currentBlock = argument && name === "formatBlock" ? element?.closest(argument) : null;
+        document.execCommand(name, false, currentBlock && editor.current?.contains(currentBlock) && argument !== "p" ? "p" : argument);
         emit();
     }
     function alignSelection(alignment: TextAlignment) {
@@ -196,8 +200,18 @@ export function RichMarkdownField({label, value, required = true, error, disable
     }
     function inlineCode() {
         restoreSelection();
-        const selected = window.getSelection()?.toString();
+        const current = window.getSelection();
+        const range = current?.rangeCount ? current.getRangeAt(0) : null;
+        const selected = current?.toString();
         if (!selected) return;
+        const code = range && editor.current
+            ? [...editor.current.querySelectorAll("code")].find(element => !element.closest("pre") && range.intersectsNode(element) && element.textContent === selected)
+            : null;
+        if (code) {
+            code.replaceWith(...code.childNodes);
+            emit();
+            return;
+        }
         const safe = selected.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
         document.execCommand("insertHTML", false, `<code>${safe}</code>`);
         emit();
