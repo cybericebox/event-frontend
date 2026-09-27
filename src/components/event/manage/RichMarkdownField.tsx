@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import TurndownService from "turndown";
 import * as Popover from "@radix-ui/react-popover";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {Bold, Braces, ChevronDown, Code, Code2, Heading1, Heading2, Heading3, Italic, Link2, List, ListOrdered, Pilcrow, Quote, RemoveFormatting, Strikethrough} from "lucide-react";
+import {AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Braces, ChevronDown, Circle, Code, Code2, Heading1, Heading2, Heading3, Italic, Link2, List, ListOrdered, Pilcrow, Quote, RemoveFormatting, Strikethrough} from "lucide-react";
 import type {ContentValue} from "@/types/eventContent";
 import {insertableContentVariable, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {FieldLabel} from "./FieldLabel";
@@ -70,7 +70,7 @@ function highlightVariables(root: HTMLElement) {
     }
 }
 
-export function RichMarkdownField({label, value, required = true, error, disabled, catalog, values, onChange, onInsertVariable}: {
+export function RichMarkdownField({label, value, required = true, error, disabled, catalog, values, alignment, onAlignmentChange, onChange, onInsertVariable}: {
     label: string;
     value: string;
     required?: boolean;
@@ -78,6 +78,8 @@ export function RichMarkdownField({label, value, required = true, error, disable
     disabled: boolean;
     catalog: ContentVariableDefinition[];
     values: Record<string, ContentValue>;
+    alignment?: string;
+    onAlignmentChange?: (alignment: string) => void;
     onChange: (next: string) => void;
     onInsertVariable: (variable: ContentVariableDefinition, next: string) => void;
 }) {
@@ -89,6 +91,7 @@ export function RichMarkdownField({label, value, required = true, error, disable
     const [search, setSearch] = useState("");
     const [linkOpen, setLinkOpen] = useState(false);
     const [href, setHref] = useState("");
+    const textAlignment = alignment === "center" || alignment === "right" || alignment === "justify" ? alignment : "left";
 
     useEffect(() => {
         if (!editor.current || value === lastEmitted.current) return;
@@ -183,9 +186,10 @@ export function RichMarkdownField({label, value, required = true, error, disable
         setSearch("");
     }
     return <div className="event-manage-field event-rich-markdown">
-        <FieldLabel label={label} required={required} help="Виділіть текст і скористайтеся кнопками форматування.\n• Доступні заголовки, списки, посилання, цитати й код.\n• Вставлений Markdown одразу стане форматованим текстом.\n• Усі зміни відразу видно в попередньому перегляді." />
+        <FieldLabel label={label} required={required} help="Виділіть текст і скористайтеся кнопками форматування.\n• Доступні заголовки, списки, посилання, цитати й код.\n• Вирівнювання змінює весь текст цього блока.\n• Вставлений Markdown одразу стане форматованим текстом.\n• Усі зміни відразу видно в попередньому перегляді." />
         <div className={`event-rich-markdown__frame${error ? " is-invalid" : ""}`}>
             <div className="event-rich-markdown__toolbar" role="toolbar" aria-label="Форматування тексту">
+                <span className="event-rich-markdown__tool-group"><EventTooltip content="Прибрати форматування з виділеного тексту">{tipID => <button type="button" aria-label="Очистити форматування" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={clearFormatting}><RemoveFormatting size={16} /></button>}</EventTooltip></span>
                 <span className="event-rich-markdown__tool-group">{inlineTools.map(toolButton)}</span>
                 <span className="event-rich-markdown__tool-group">
                     <DropdownMenu.Root modal={false}><EventTooltip content="Заголовки першого, другого й третього рівня">{tipID => <DropdownMenu.Trigger asChild><button type="button" className="event-rich-markdown__heading-trigger" aria-label="Вибрати рівень заголовка" aria-describedby={tipID} disabled={disabled} onPointerDown={rememberSelection}><Heading1 size={16} /><ChevronDown size={12} /></button></DropdownMenu.Trigger>}</EventTooltip><DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-rich-markdown__heading-menu" align="start" sideOffset={5} collisionPadding={12}>{[{label: "Заголовок 1", icon: Heading1, tag: "h1"}, {label: "Заголовок 2", icon: Heading2, tag: "h2"}, {label: "Заголовок 3", icon: Heading3, tag: "h3"}].map(item => <DropdownMenu.Item className="ib-listbox__opt" key={item.tag} onSelect={() => command("formatBlock", item.tag)}><item.icon size={16} />{item.label}</DropdownMenu.Item>)}</DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>
@@ -197,8 +201,10 @@ export function RichMarkdownField({label, value, required = true, error, disable
                     <EventTooltip content="Код у рядку">{tipID => <button type="button" aria-label="Код у рядку" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={inlineCode}><Code size={16} /></button>}</EventTooltip>
                     <EventTooltip content="Додати посилання до виділеного тексту">{tipID => <button type="button" aria-label="Посилання" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={() => {rememberSelection(); setLinkOpen(open => !open);}}><Link2 size={16} /></button>}</EventTooltip>
                 </span>
+                {onAlignmentChange && <span className="event-rich-markdown__tool-group">
+                    <DropdownMenu.Root modal={false}><EventTooltip content="Вирівнювання всього тексту цього блока">{tipID => <DropdownMenu.Trigger asChild><button type="button" className="event-rich-markdown__heading-trigger" aria-label="Вирівнювання тексту" aria-describedby={tipID} disabled={disabled}>{textAlignment === "center" ? <AlignCenter size={16} /> : textAlignment === "right" ? <AlignRight size={16} /> : textAlignment === "justify" ? <AlignJustify size={16} /> : <AlignLeft size={16} />}<ChevronDown size={12} /></button></DropdownMenu.Trigger>}</EventTooltip><DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-rich-markdown__heading-menu" align="start" sideOffset={5} collisionPadding={12}><DropdownMenu.RadioGroup value={textAlignment} onValueChange={onAlignmentChange}>{[{value: "left", label: "Ліворуч", icon: AlignLeft}, {value: "center", label: "По центру", icon: AlignCenter}, {value: "right", label: "Праворуч", icon: AlignRight}, {value: "justify", label: "По ширині", icon: AlignJustify}].map(item => <DropdownMenu.RadioItem className="ib-listbox__opt event-select__option" key={item.value} value={item.value}><DropdownMenu.ItemIndicator className="event-select__indicator"><Circle size={8} fill="currentColor" aria-hidden="true" /></DropdownMenu.ItemIndicator><item.icon size={16} />{item.label}</DropdownMenu.RadioItem>)}</DropdownMenu.RadioGroup></DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>
+                </span>}
                 <span className="event-rich-markdown__tool-group event-rich-markdown__tool-group--end">
-                    <EventTooltip content="Прибрати форматування з виділеного тексту">{tipID => <button type="button" aria-label="Очистити форматування" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={clearFormatting}><RemoveFormatting size={16} /></button>}</EventTooltip>
                     <Popover.Root open={variablesOpen} onOpenChange={open => {setVariablesOpen(open); if (!open) setSearch("");}} modal={false}>
                     <EventTooltip content="Вставити змінну події">{tipID => <Popover.Trigger asChild><button type="button" aria-label="Вставити змінну у вміст" aria-describedby={tipID} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={rememberSelection}><Braces size={16} /></button></Popover.Trigger>}</EventTooltip>
                     <Popover.Portal><Popover.Content className="event-rich-markdown__variable-popover" side="bottom" align="end" sideOffset={6} collisionPadding={12} onCloseAutoFocus={event => event.preventDefault()}>
@@ -210,7 +216,7 @@ export function RichMarkdownField({label, value, required = true, error, disable
                 </span>
             </div>
             {linkOpen && <div className="event-rich-markdown__inline"><input className="event-manage-input" aria-label="Адреса посилання" placeholder="https://… або /rules" value={href} onChange={event => setHref(event.target.value)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); if (/^(https?:\/\/|\/)/.test(href)) {command("createLink", href); setLinkOpen(false); setHref("");}}}} /><button className="ib-btn ib-btn--sm" type="button" disabled={!/^(https?:\/\/|\/)/.test(href)} onClick={() => {command("createLink", href); setLinkOpen(false); setHref("");}}>Додати</button></div>}
-            <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" role="textbox" aria-label={label} aria-multiline="true" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
+            <div id={id} ref={editor} className="event-rich-markdown__editor ib-block-prose" style={{textAlign: textAlignment}} role="textbox" aria-label={label} aria-multiline="true" aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Напишіть текст…" onInput={emit} onKeyUp={rememberSelection} onMouseUp={rememberSelection} onBlur={rememberSelection} onPaste={event => {event.preventDefault(); const plain = event.clipboardData.getData("text/plain"); restoreSelection(); document.execCommand("insertHTML", false, markdownHTML(plain)); emit();}} />
         </div>
         {error && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
     </div>;
