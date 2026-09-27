@@ -5,7 +5,7 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {ParticipationStatusEnum} from "@/types/event";
-import {EventNavbar} from "./EventNavbar";
+import {EventNavbar} from "./EventNavigation";
 
 const GuestEventContext = createContext<PublicEventInfo | null>(null);
 export const useGuestEvent = () => useContext(GuestEventContext);

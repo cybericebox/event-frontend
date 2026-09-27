@@ -90,7 +90,7 @@ export default async function RootLayout({
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS is required behind the development edge cache. */}
             <link rel="stylesheet" href="/event-inbox-v1.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-navbar-v3.css" />
+            <link rel="stylesheet" href="/event-navbar-v5.css" />
             {/* The development edge caches Next's CSS chunk; keep new management controls current. */}
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
             <link rel="stylesheet" href="/event-manage-brand-v13.css" />

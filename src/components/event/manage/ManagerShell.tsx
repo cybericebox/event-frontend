@@ -7,7 +7,7 @@ import {Menu} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
 import {EventLoading} from "../EventLoading";
-import {EventHeaderActions} from "../EventNavbar";
+import {EventHeaderActions} from "../EventNavigation";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {managerLocationTitle} from "./managerNavigation";
 import Link from "next/link";

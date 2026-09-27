@@ -75,7 +75,7 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
 
 export function EventHeaderActions({event, authenticated, approved = false, hasTeam = false, useVPN = false}: Omit<Props, "canViewResults">) {
     return <>
-        <div className={authenticated ? "event-header-theme event-header-theme--account" : "event-header-theme"}><ThemeToggle /></div>
+        <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div>
         {authenticated && <>
             <span className="event-header-divider" aria-hidden="true" />
             <NotificationsPopover />

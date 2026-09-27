@@ -5,7 +5,7 @@ import Link from "next/link";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import type {OwnTeam} from "@/api/clientAuth";
 import type {ParticipantEventInfo} from "@/types/participantEventInfo";
-import {EventNavbar} from "./EventNavbar";
+import {EventNavbar} from "./EventNavigation";
 import {PendingEventFormsNotice} from "./PendingEventFormsNotice";
 
 type ParticipantContextValue = {event: PublicEventInfo; participantInfo: ParticipantEventInfo; ownTeam: OwnTeam | null};
