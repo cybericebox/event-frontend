@@ -108,7 +108,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         }
         if ((block.type === "hero" || block.type === "countdown") && block.targetVariable && block.targetDate) return `Блок ${index + 1}: оберіть лише одне джерело дати.`;
         if ((block.type === "hero" || block.type === "countdown") && block.dateSource && !["none", "event", "custom"].includes(block.dateSource)) return `Блок ${index + 1}: невідоме джерело дати відліку.`;
-        if ((block.type === "hero" || block.type === "countdown") && block.timerDisplay && !["segments", "compact", "tiles", "focus", "dial", "ledger"].includes(block.timerDisplay)) return `Блок ${index + 1}: невідомий вигляд лічильника.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.timerDisplay && !["segments", "compact", "tiles", "focus", "dial", "ledger", "poster", "tracks", "flip"].includes(block.timerDisplay)) return `Блок ${index + 1}: невідомий вигляд лічильника.`;
         if ((block.type === "hero" || block.type === "countdown") && block.dateSource === "none" && (block.type === "countdown" || block.targetVariable || block.targetDate)) return `Блок ${index + 1}: джерело дати відліку не відповідає налаштуванням.`;
         if ((block.type === "hero" || block.type === "countdown") && block.dateSource === "event" && block.targetDate) return `Блок ${index + 1}: джерело дати відліку не відповідає налаштуванням.`;
         if ((block.type === "hero" || block.type === "countdown") && block.dateSource === "custom" && block.targetVariable) return `Блок ${index + 1}: джерело дати відліку не відповідає налаштуванням.`;
