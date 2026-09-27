@@ -517,6 +517,9 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__item-error{grid-column:1/-1}
 .event-content-editor__item--timeline{align-items:start}
 .event-content-editor__time-settings{display:grid;gap:var(--ib-2);min-width:0}
+.event-content-editor__date-displays{display:grid;gap:var(--ib-2);min-width:0}
+.event-content-editor__date-display{display:grid;gap:var(--ib-2);min-width:0;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-soft)}
+.event-content-editor__date-display .event-manage-field{margin:0}
 .event-content-editor__item--timeline>.event-content-editor__rule-remove{margin-top:24px}
 .event-content-editor__item--faq{grid-template-columns:minmax(0,1fr);gap:var(--ib-2);padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-paper)}
 .event-content-editor__item-head{display:flex;align-items:center;justify-content:space-between;min-height:24px;color:var(--ib-ink);font-size:var(--ib-fs-13)}

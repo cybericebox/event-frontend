@@ -11,6 +11,10 @@ export function blockValidationIndex(error: string | null): number | null {
 
 export function blockValidationField(error: string | undefined, block: ContentBlock): string | null {
     const message = error?.replace(/^Блок \d+: /, "") ?? "";
+    if (message === "вкажіть коректний формат дати.") {
+        const field = Object.entries(block.dateDisplays ?? {}).find(([, formats]) => Object.values(formats).some(display => display.format === "custom" && !validDatePattern(display.pattern ?? "")))?.[0];
+        return field ? `dateDisplays:${field}` : null;
+    }
     if (message === "заповніть назву.") return "label";
     if (message === "заповніть текст.") return "markdown";
     if (message === "вкажіть назву героя.") return "title";
@@ -115,6 +119,11 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
         for (const variable of block.variables ?? []) {
             if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для цієї сторінки.`;
+        }
+        for (const displays of Object.values(block.dateDisplays ?? {})) {
+            for (const display of Object.values(displays)) {
+                if (display.format === "custom" && !validDatePattern(display.pattern ?? "")) return `Блок ${index + 1}: вкажіть коректний формат дати.`;
+            }
         }
         if ((block.type === "hero" || block.type === "countdown") && block.targetVariable && !bindings.has(block.targetVariable)) return `Блок ${index + 1}: змінну дати потрібно додати до блока.`;
         const fields = [text, block.title ?? "", block.sub ?? "", block.text ?? "", block.by ?? "", block.kicker ?? "", block.note ?? "", block.tocTitle ?? "", block.action?.label ?? "", block.action?.href ?? "", block.secondaryAction?.label ?? "", block.secondaryAction?.href ?? "", ...(block.items ?? []).flatMap(item => [item.label ?? "", item.value ?? ""])];

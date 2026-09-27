@@ -2,6 +2,7 @@ import {z} from "zod";
 
 export const ContentValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 export const ContentVariableSchema = z.object({name: z.string(), format: z.enum(["text", "number", "date-time", "boolean"])});
+export const ContentDateDisplaySchema = z.object({format: z.enum(["date-time", "date", "time", "short", "custom"]), pattern: z.string().optional()});
 export const ContentVisibilitySchema = z.object({variable: z.string(), operator: z.string(), value: ContentValueSchema});
 export const PageBlockTypes = ["section", "text", "hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "divider"] as const;
 export type PageBlockType = typeof PageBlockTypes[number];
@@ -43,6 +44,7 @@ export const ContentBlockSchema = z.object({
     line: z.boolean().optional(),
     openItem: z.number().int().optional(),
     variables: z.array(ContentVariableSchema).optional(),
+    dateDisplays: z.record(z.string(), z.record(z.string(), ContentDateDisplaySchema)).optional(),
     visibility: z.array(ContentVisibilitySchema).optional(),
 });
 export const ContentDocumentSchema = z.object({blocks: z.array(ContentBlockSchema)});

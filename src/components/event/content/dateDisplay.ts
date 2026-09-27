@@ -12,7 +12,7 @@ export function validDatePattern(pattern: string): boolean {
     return pattern.length > 0 && pattern.length <= 80 && !/[\r\n<>]/.test(pattern) && /yyyy|yy|MMMM|MMM|MM|M|dd|d|HH|H|mm|m|ss|s/.test(pattern);
 }
 
-export function formatDateTime(value: string, format: DateDisplayFormat = "date-time", pattern = "dd.MM.yyyy HH:mm"): string {
+export function formatDateTime(value: string, format: DateDisplayFormat = "date-time", pattern = ""): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "—";
     if (format === "date-time") return new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"}).format(date);

@@ -16,6 +16,7 @@ import {blockValidationField} from "./validatePageBlocks";
 import {replaceVariables} from "@/components/event/content/ContentBlocks";
 import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {useEventLinkOptions} from "./useEventLinkOptions";
+import {DateVariableFormatControls} from "./DateVariableFormatControls";
 
 export {FieldLabel} from "./FieldLabel";
 
@@ -35,10 +36,10 @@ const textHelp: Record<string, string> = {
     "secondaryAction:href": "Куди веде додаткова кнопка.\n• Внутрішній шлях починається з /.\n• Зовнішнє посилання має починатися з https://.",
 };
 
-function localDateTime(value: ContentValue): string {
+function localDateTime(value: ContentValue, seconds = false): string {
     if (typeof value !== "string" || !value || Number.isNaN(Date.parse(value))) return "";
     const date = new Date(value);
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, seconds ? 19 : 16);
 }
 
 function displayValue(value: ContentValue | undefined): string {
@@ -298,6 +299,10 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     }
 
     function changeField(field: string, value: string, base = block): ContentBlock {
+        const existing = base.dateDisplays?.[field];
+        const remaining = existing && Object.fromEntries(Object.entries(existing).filter(([name]) => value.includes(`{{${name}}}`)));
+        const dateDisplays = existing ? {...base.dateDisplays, [field]: remaining ?? {}} : base.dateDisplays;
+        base = {...base, dateDisplays};
         if (field.startsWith("item:")) {
             const [, index, key] = field.split(":");
             return {...base, items: (base.items ?? []).map((item, position) => position === Number(index) ? {...item, [key]: value} : item)};
@@ -313,6 +318,17 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         return {...base, [field]: value};
     }
 
+    function removeItem(itemIndex: number) {
+        const dateDisplays = Object.fromEntries(Object.entries(block.dateDisplays ?? {}).flatMap(([field, formats]) => {
+            const match = /^item:(\d+):(label|value)$/.exec(field);
+            if (!match) return [[field, formats]];
+            const position = Number(match[1]);
+            if (position === itemIndex) return [];
+            return [[`item:${position > itemIndex ? position - 1 : position}:${match[2]}`, formats]];
+        }));
+        onUpdate({...block, dateDisplays, items: (block.items ?? []).filter((_, position) => position !== itemIndex), openItem: block.openItem === undefined || block.openItem === itemIndex ? undefined : block.openItem > itemIndex ? block.openItem - 1 : block.openItem});
+    }
+
     function inputField(field: string, label: string, placeholder = "", multiline = false, required = false, help?: string, compact = false) {
         const itemPart = field.startsWith("item:") ? field.split(":")[2] : "";
         const itemHelp = itemPart === "label"
@@ -320,17 +336,19 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             : block.type === "timeline" ? "Назва події в розкладі.\nПоказується поруч із часом." : block.type === "faq" ? "Відповідь, яка відкривається під питанням.\nПідтримує Markdown." : "Значення цього пункту.\nДля фактів і героя може містити змінні події.";
         if (field === "action:href" || field === "secondaryAction:href") return <EditorLinkField eventID={eventID} label={label} value={fieldValue(field)} placeholder={placeholder} required={required} help={help ?? textHelp[field]} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
             onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))} onChangeValue={value => onUpdate(changeField(field, value))} />;
-        return <EditorTextField label={label} value={fieldValue(field)} placeholder={placeholder}
+        return <><EditorTextField label={label} value={fieldValue(field)} placeholder={placeholder}
             multiline={multiline} compact={compact} required={required} help={help ?? (itemPart ? itemHelp : textHelp[field])} error={errorField === field ? errorMessage : undefined} suppressErrorText={!!itemPart && block.type !== "faq"} errorTextId={itemPart ? `item-${block.id}-${field.split(":")[1]}-error` : undefined} disabled={!canEdit} catalog={catalog} values={values}
             variableFormats={block.type === "timeline" && itemPart === "label" ? ["date-time"] : undefined}
             onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))}
-            onChangeValue={value => onUpdate(changeField(field, value))} />;
+            onChangeValue={value => onUpdate(changeField(field, value))} />
+            <DateVariableFormatControls field={field} value={fieldValue(field)} block={block} catalog={catalog} values={values} disabled={!canEdit} onUpdate={onUpdate} /></>;
     }
 
     function richField(field: string, label: string) {
-        return <RichMarkdownField eventID={eventID} label={label} value={fieldValue(field)} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
+        return <><RichMarkdownField eventID={eventID} label={label} value={fieldValue(field)} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
             onChange={value => onUpdate(changeField(field, value))}
-            onInsertVariable={(variable, value) => onUpdate(changeField(field, value, withBinding(block, variable)))} />;
+            onInsertVariable={(variable, value) => onUpdate(changeField(field, value, withBinding(block, variable)))} />
+            <DateVariableFormatControls field={field} value={fieldValue(field)} block={block} catalog={catalog} values={values} disabled={!canEdit} onUpdate={onUpdate} /></>;
     }
 
     async function uploadBanner(file: File | undefined) {
@@ -358,7 +376,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         return <>
             <div className="event-manage-field"><FieldLabel label="Джерело дати відліку" required={!optional} help="Оберіть, до якого моменту рахувати час.\n• За розкладом — дата оновлюється разом із налаштуваннями події.\n• Своя дата й час — фіксований момент, незалежний від розкладу." /><EventSelect ariaLabel="Джерело дати відліку" value={source} options={[...(optional ? [{value: "none", label: "Без відліку"}] : []), {value: "event", label: "За розкладом події"}, {value: "custom", label: "Своя дата й час"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, dateSource: value, targetVariable: value === "event" ? block.targetVariable : "", targetDate: value === "custom" ? block.targetDate : ""})} /></div>
             {source === "event" && <div className={`event-manage-field${errorField === "targetVariable" ? " is-invalid" : ""}`}><FieldLabel label="Дата з розкладу" required help="Оберіть момент із розділу «Публікація і час».\nВідлік оновиться, якщо цей момент у розкладі зміниться." /><EventSelect value={block.targetVariable ?? ""} ariaLabel="Дата з розкладу для відліку" placeholder="Оберіть дату" options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), targetVariable: variable.name, targetDate: ""} : {...block, targetVariable: ""});}} />{errorField === "targetVariable" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>}
-            {source === "custom" && <div className={`event-manage-field${errorField === "targetDate" ? " is-invalid" : ""}`}><FieldLabel label="Своя дата й час" required help="Вкажіть фіксовані дату й час.\nЧас вводиться у вашому місцевому часовому поясі та зберігається як точний момент." /><EventDateTimePicker ariaLabel="Своя дата й час відліку" value={localDateTime(block.targetDate ?? "")} disabled={!canEdit} onChange={value => onUpdate({...block, targetVariable: "", targetDate: value ? new Date(value).toISOString() : ""})} />{errorField === "targetDate" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>}
+            {source === "custom" && <div className={`event-manage-field${errorField === "targetDate" ? " is-invalid" : ""}`}><FieldLabel label="Своя дата й час" required help="Вкажіть фіксовані дату й час.\nЧас вводиться у вашому місцевому часовому поясі та зберігається як точний момент." /><EventDateTimePicker ariaLabel="Своя дата й час відліку" value={localDateTime(block.targetDate ?? "", true)} showSeconds disabled={!canEdit} onChange={value => onUpdate({...block, targetVariable: "", targetDate: value ? new Date(value).toISOString() : ""})} />{errorField === "targetDate" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>}
         </>;
     }
 
@@ -384,7 +402,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
             </div>
             {item.dateSource === "custom" && <div className={"event-manage-field" + (errorField === fieldPrefix + "dateValue" ? " is-invalid" : "")}>
                 <FieldLabel label="Своя дата й час" required help="Фіксовані дата й час для цього пункту розкладу.\nВкажіть дату перед зміною часу." />
-                <EventDateTimePicker ariaLabel={"Своя дата й час етапу " + (itemIndex + 1)} value={localDateTime(item.dateValue ?? "")} disabled={!canEdit} onChange={value => onUpdate(updateItem({dateValue: value ? new Date(value).toISOString() : ""}))} />
+                <EventDateTimePicker ariaLabel={"Своя дата й час етапу " + (itemIndex + 1)} value={localDateTime(item.dateValue ?? "", true)} showSeconds disabled={!canEdit} onChange={value => onUpdate(updateItem({dateValue: value ? new Date(value).toISOString() : ""}))} />
             </div>}
             <div className="event-manage-field"><FieldLabel label="Формат часу" required help="Виберіть вигляд дати та часу в цьому пункті.\nСвій формат використовує: dd — день, MM — місяць, yyyy — рік, HH — години, mm — хвилини, ss — секунди." /><EventSelect ariaLabel={"Формат часу етапу " + (itemIndex + 1)} value={format} options={[...dateDisplayOptions]} disabled={!canEdit} onValueChange={value => onUpdate(updateItem({dateFormat: value as typeof format}))} /></div>
             {format === "custom" && <div className={"event-manage-field" + (errorField === fieldPrefix + "datePattern" ? " is-invalid" : "")}><FieldLabel label="Свій формат" required help="Приклад: dd.MM.yyyy HH:mm.\nТекст у квадратних дужках показується без змін, наприклад [о] HH:mm." /><input className={"event-manage-input" + (errorField === fieldPrefix + "datePattern" ? " is-invalid" : "")} aria-label={"Свій формат часу етапу " + (itemIndex + 1)} value={item.datePattern ?? ""} placeholder="dd.MM.yyyy HH:mm" disabled={!canEdit} onChange={event => onUpdate(updateItem({datePattern: event.target.value}))} /></div>}
@@ -410,7 +428,8 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
 
     const blockLabel = blockPalette.find(item => item.type === block.type)?.label ?? block.type;
     const rawSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? block.markdown : "");
-    const blockSummary = replaceVariables(rawSummary ?? "", values, new Map((block.variables ?? []).map(variable => [variable.name, variable.format])));
+    const summaryField = block.type === "section" ? "label" : block.type === "text" && !block.title ? "markdown" : "title";
+    const blockSummary = replaceVariables(rawSummary ?? "", values, new Map((block.variables ?? []).map(variable => [variable.name, variable.format])), false, block.dateDisplays?.[summaryField]);
     return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={selected && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect();}}}>
         <div className="event-content-editor__block-head">
             <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</div>
@@ -447,10 +466,10 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 {block.type !== "hero" && inputField("sub", "Пояснення", "Необов’язково")}
                 {block.type === "faq" && <div className="event-manage-field"><FieldLabel label="Відкрите питання" help="Яка відповідь видима під час першого відкриття сторінки.\nУчасник може сам відкривати й закривати інші питання." /><EventSelect ariaLabel="Питання, відкрите спочатку" value={block.openItem === undefined ? "none" : String(block.openItem)} options={[{value: "none", label: "Жодне"}, ...(block.items ?? []).map((_, position) => ({value: String(position), label: `Питання ${position + 1}`}))]} disabled={!canEdit} onValueChange={value => onUpdate({...block, openItem: value === "none" ? undefined : Number(value)})} /></div>}
                 {(block.items ?? []).map((item, itemIndex) => <div className={`event-content-editor__item${block.type === "faq" ? " event-content-editor__item--faq" : block.type === "timeline" ? " event-content-editor__item--timeline" : ""}`} key={itemIndex}>
-                    {block.type === "faq" && <div className="event-content-editor__item-head"><strong>Питання {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити питання ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex), openItem: block.openItem === undefined || block.openItem === itemIndex ? undefined : block.openItem > itemIndex ? block.openItem - 1 : block.openItem})}><Trash2 size={15} /></button>}</div>}
+                    {block.type === "faq" && <div className="event-content-editor__item-head"><strong>Питання {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити питання ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><Trash2 size={15} /></button>}</div>}
                     {block.type === "timeline" ? timelineTimeField(item, itemIndex) : inputField(`item:${itemIndex}:label`, block.type === "faq" ? "Питання" : "Підпис", "", false, true)}
                     {block.type === "faq" ? richField(`item:${itemIndex}:value`, "Відповідь") : inputField(`item:${itemIndex}:value`, block.type === "timeline" ? "Подія" : "Значення", "", false, true)}
-                    {canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><X size={16} /></button>}
+                    {canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><X size={16} /></button>}
                     {block.type !== "faq" && errorField?.startsWith(`item:${itemIndex}:`) && <p className="event-content-editor__field-error event-content-editor__item-error" id={`item-${block.id}-${itemIndex}-error`} role="alert">{errorMessage}</p>}
                 </div>)}
                 {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), block.type === "timeline" ? {dateSource: "event", dateVariable: "", dateFormat: "date-time", value: ""} : {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
@@ -459,7 +478,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                 {inputField("tocTitle", "Назва змісту", "Зміст", false, false, "Підпис переліку розділів праворуч від тексту.")}
                 {inputField("sub", "Пояснення", "Необов’язково")}
                 {(block.items ?? []).map((item, itemIndex) => <div className="event-content-editor__item event-content-editor__item--faq" key={itemIndex}>
-                    <div className="event-content-editor__item-head"><strong>Розділ {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити розділ ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><Trash2 size={15} /></button>}</div>
+                    <div className="event-content-editor__item-head"><strong>Розділ {itemIndex + 1}</strong>{canEdit && <button type="button" aria-label={`Видалити розділ ${itemIndex + 1}`} onClick={() => removeItem(itemIndex)}><Trash2 size={15} /></button>}</div>
                     {inputField(`item:${itemIndex}:label`, "Назва розділу", "", false, true)}
                     {richField(`item:${itemIndex}:value`, "Текст розділу")}
                 </div>)}
