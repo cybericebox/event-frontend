@@ -44,6 +44,10 @@ export function blockValidationField(error: string | undefined, block: ContentBl
         if (message.includes("формат")) return `item:${itemIndex}:datePattern`;
         return `item:${itemIndex}:dateVariable`;
     }
+    if (block.type === "timeline" && message === "у назві події не можна використовувати змінну дати.") {
+        const index = block.items?.findIndex(item => [...(item.value ?? "").matchAll(tokenPattern)].some(([, name]) => block.variables?.some(binding => binding.name === name && binding.format === "date-time"))) ?? -1;
+        return index >= 0 ? `item:${index}:value` : null;
+    }
     return null;
 }
 
@@ -77,6 +81,7 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
             if (!block.items?.length) return `Блок ${index + 1}: додайте етап розкладу.`;
             for (const item of block.items) {
                 if (!item.value?.trim()) return `Блок ${index + 1}: етап розкладу: вкажіть назву події.`;
+                if ([...item.value.matchAll(tokenPattern)].some(([, name]) => catalog.some(variable => variable.name === name && variable.format === "date-time"))) return `Блок ${index + 1}: у назві події не можна використовувати змінну дати.`;
                 if (item.dateSource === "custom") {
                     if (!item.dateValue || Number.isNaN(Date.parse(item.dateValue))) return `Блок ${index + 1}: етап розкладу: вкажіть свою дату й час.`;
                 } else if (item.dateSource !== "event" || !!item.dateValue || !catalog.some(variable => variable.name === item.dateVariable && variable.format === "date-time") || !block.variables?.some(binding => binding.name === item.dateVariable && binding.format === "date-time")) return `Блок ${index + 1}: етап розкладу: оберіть дату події.`;
