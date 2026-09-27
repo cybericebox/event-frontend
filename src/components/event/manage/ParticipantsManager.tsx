@@ -4,7 +4,7 @@ import {useState} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {decideManageParticipant, getManageParticipants, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
+import {decideManageParticipant, getManageParticipants, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
 import {EventLoading} from "@/components/event/EventLoading";
 import {useManager} from "./ManagerShell";
 
@@ -55,6 +55,17 @@ export function ParticipantsManager({initialFilter}: {initialFilter: Participant
         finally {setBusyID(null);}
     }
 
+    async function setHidden(participant: ManageParticipant) {
+        if (!canManage || busyID || teamMode || participant.Status !== 2 || !participant.TeamID) return;
+        setBusyID(participant.UserID);
+        try {
+            await setIndividualParticipantHidden(eventID, participant.UserID, !participant.Hidden);
+            await queryClient.invalidateQueries({queryKey: ["event-management-participants", eventID]});
+            toast.success(participant.Hidden ? "Учасника повернуто до рейтингу" : "Учасника приховано з рейтингу та підрахунків");
+        } catch {toast.error("Не вдалося змінити видимість учасника.");}
+        finally {setBusyID(null);}
+    }
+
     function nextPage() {
         const next = query.data?.NextCursor;
         if (!next) return;
@@ -71,7 +82,8 @@ export function ParticipantsManager({initialFilter}: {initialFilter: Participant
         <section className="event-manage-section event-manage-participants__list">
             {query.data.Items.length === 0 ? <p className="event-challenge-manager__empty">{filter === 1 ? "Нових заявок поки немає." : "Учасників із цим статусом поки немає."}</p> : query.data.Items.map(participant => <article className="event-manage-participants__row" key={participant.UserID}>
                 <div className="event-manage-participants__identity"><strong>{participant.Name || participant.Email || `Учасник ${participant.UserID.slice(0, 8)}`}</strong>{participant.Email && <span>{participant.Email}</span>}<small>Подано {date.format(new Date(participant.CreatedAt))} UTC</small>{teamMode && participant.Status === 2 && <small>{participant.TeamID ? <Link href="/manage/teams">У команді</Link> : "Без команди"}</small>}</div>
-                <span className={`event-manage-participants__status is-${participant.Status}`}>{statusNames[participant.Status]}</span>
+                <span className={`event-manage-participants__status is-${participant.Status}`}>{statusNames[participant.Status]}{!teamMode && participant.Hidden ? " · Приховано" : ""}</span>
+                {!teamMode && participant.Status === 2 && participant.TeamID && canManage && <button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => void setHidden(participant)}>{participant.Hidden ? "Показати в рейтингу" : "Приховати з рейтингу"}</button>}
                 {participant.Status === 1 && canManage && <div className="event-manage-participants__actions"><button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={!!busyID} onClick={() => void decide(participant, "approve")}>Підтвердити</button><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => void decide(participant, "reject")}>Відхилити</button></div>}
             </article>)}
             {(pageIndex > 0 || !!query.data.NextCursor) && <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={pageIndex === 0} onClick={() => setPageIndex(index => index - 1)}>Назад</button><span>Сторінка {pageIndex + 1}</span><button className="ib-btn ib-btn--sm" type="button" disabled={!query.data.NextCursor} onClick={nextPage}>Далі</button></div>}
