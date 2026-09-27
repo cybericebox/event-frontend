@@ -514,6 +514,7 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__add .ib-btn svg{flex:none}
 .event-content-editor__item{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto;gap:var(--ib-2);align-items:end;min-width:0}
 .event-content-editor__item>.event-manage-field{min-width:0}
+.event-content-editor__item-error{grid-column:1/-1}
 .event-content-editor__item--faq{grid-template-columns:minmax(0,1fr);gap:var(--ib-2);padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-paper)}
 .event-content-editor__item-head{display:flex;align-items:center;justify-content:space-between;min-height:24px;color:var(--ib-ink);font-size:var(--ib-fs-13)}
 .event-content-editor__item-head button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}

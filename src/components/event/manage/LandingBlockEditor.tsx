@@ -99,13 +99,15 @@ function serializeBadges(editor: HTMLElement): string {
     return readChildren(editor);
 }
 
-function EditorTextField({label, value, placeholder, multiline, compact, required, help, error, disabled, catalog, values, variableFormats, variableNames, hideLabel = false, onInsertVariable, onChangeValue}: {
+function EditorTextField({label, value, placeholder, multiline, compact, required, help, error, disabled, catalog, values, variableFormats, variableNames, hideLabel = false, suppressErrorText = false, errorTextId, onInsertVariable, onChangeValue}: {
     label: string; value: string; placeholder: string; multiline: boolean; compact: boolean; required: boolean; help?: string; disabled: boolean;
     error?: string;
     catalog: ContentVariableDefinition[]; values: Record<string, ContentValue>;
     variableFormats?: ContentVariableDefinition["format"][];
     variableNames?: string[];
     hideLabel?: boolean;
+    suppressErrorText?: boolean;
+    errorTextId?: string;
     onInsertVariable: (variable: ContentVariableDefinition, next: string) => void;
     onChangeValue: (value: string) => void;
 }) {
@@ -167,7 +169,7 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
     return <div className="event-manage-field">
         {!hideLabel && <FieldLabel label={label} required={required} help={help} />}
         <div className={`event-content-editor__field-control${multiline ? " event-content-editor__field-control--multiline" : ""}`}>
-            <div id={id} ref={inputRef} role="textbox" aria-label={label} aria-multiline={multiline} aria-required={required} aria-readonly={disabled} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}
+            <div id={id} ref={inputRef} role="textbox" aria-label={label} aria-multiline={multiline} aria-required={required} aria-readonly={disabled} aria-invalid={!!error} aria-describedby={error ? suppressErrorText ? errorTextId : `${id}-error` : undefined}
                 className={`event-manage-input event-content-editor__badge-input${multiline ? compact ? " event-content-editor__textarea--compact" : " event-content-editor__textarea" : ""}${error ? " is-invalid" : ""}`}
                 contentEditable={!disabled} suppressContentEditableWarning data-placeholder={placeholder}
                 onInput={emit} onKeyUp={remember} onMouseUp={remember} onBlur={remember}
@@ -183,7 +185,7 @@ function EditorTextField({label, value, placeholder, multiline, compact, require
                 </Popover.Content></Popover.Portal>
             </Popover.Root>
         </div>
-        {error && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
+        {error && !suppressErrorText && <p className="event-content-editor__field-error" id={`${id}-error`} role="alert">{error}</p>}
     </div>;
 }
 
@@ -318,7 +320,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
         if (field === "action:href" || field === "secondaryAction:href") return <EditorLinkField eventID={eventID} label={label} value={fieldValue(field)} placeholder={placeholder} required={required} help={help ?? textHelp[field]} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
             onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))} onChangeValue={value => onUpdate(changeField(field, value))} />;
         return <EditorTextField label={label} value={fieldValue(field)} placeholder={placeholder}
-            multiline={multiline} compact={compact} required={required} help={help ?? (itemPart ? itemHelp : textHelp[field])} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
+            multiline={multiline} compact={compact} required={required} help={help ?? (itemPart ? itemHelp : textHelp[field])} error={errorField === field ? errorMessage : undefined} suppressErrorText={!!itemPart && block.type !== "faq"} errorTextId={itemPart ? `item-${block.id}-${field.split(":")[1]}-error` : undefined} disabled={!canEdit} catalog={catalog} values={values}
             variableFormats={block.type === "timeline" && itemPart === "label" ? ["date-time"] : undefined}
             onInsertVariable={(variable, next) => onUpdate(changeField(field, next, withBinding(block, variable)))}
             onChangeValue={value => onUpdate(changeField(field, value))} />;
@@ -422,6 +424,7 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
                     {inputField(`item:${itemIndex}:label`, block.type === "timeline" ? "Час" : block.type === "faq" ? "Питання" : "Підпис", "", false, true)}
                     {block.type === "faq" ? richField(`item:${itemIndex}:value`, "Відповідь") : inputField(`item:${itemIndex}:value`, block.type === "timeline" ? "Подія" : "Значення", "", false, true)}
                     {canEdit && block.type !== "faq" && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити пункт ${itemIndex + 1}`} onClick={() => onUpdate({...block, items: (block.items ?? []).filter((_, position) => position !== itemIndex)})}><X size={16} /></button>}
+                    {block.type !== "faq" && errorField?.startsWith(`item:${itemIndex}:`) && <p className="event-content-editor__field-error event-content-editor__item-error" id={`item-${block.id}-${itemIndex}-error`} role="alert">{errorMessage}</p>}
                 </div>)}
                 {canEdit && (block.type !== "hero" || (block.items?.length ?? 0) < 4) && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate({...block, items: [...(block.items ?? []), {label: "", value: ""}]})}><Plus size={15} /> {block.type === "hero" ? "Додати факт" : "Додати пункт"}</button>}
             </>}
