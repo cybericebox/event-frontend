@@ -2,7 +2,7 @@ import {notFound} from "next/navigation";
 import type {Metadata} from "next";
 import {getPublicEventInfo} from "@/api/publicEventInfo";
 import {getLandingContent} from "@/api/eventContent";
-import {ContentBlocks} from "@/components/event/content/ContentBlocks";
+import {LiveContentBlocks} from "@/components/event/content/LiveContentBlocks";
 import {PrivateLanding} from "@/components/event/content/PrivateLanding";
 import {MockLanding} from "@/components/event/content/MockLanding";
 
@@ -20,6 +20,6 @@ export default async function LandingPage() {
 
     return <div className="event-landing ib-blocks">
         {content.Landing.blocks.length > 0 && !content.Landing.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}
-        <ContentBlocks document={content.Landing} variables={content.Variables} coverImage={event.PreviewPicture} />
+        <LiveContentBlocks eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} coverImage={event.PreviewPicture} />
     </div>;
 }

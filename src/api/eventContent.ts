@@ -8,7 +8,7 @@ import {defaultMockLanding} from "./mockLanding";
 
 export type {EventContent, EventPageContent} from "@/types/eventContent";
 
-async function fetchContent(path: string, cacheLanding = false): Promise<unknown | null> {
+async function fetchContent(path: string, revalidate?: number): Promise<unknown | null> {
     const event = await getPublicEventInfo();
     if (!event) return null;
     const host = (await headers()).get("host");
@@ -21,11 +21,9 @@ async function fetchContent(path: string, cacheLanding = false): Promise<unknown
             Origin: `https://${host}`,
             ...(internalOrigin ? {Host: apiHost} : {}),
         },
-        // The server reaches this fetch only after an uncached public-info
-        // check. Unpublished/withdrawn tenants return 404 before any landing
-        // content is cached. Keep per-event content fresh within one minute.
-        ...(cacheLanding
-            ? {next: {revalidate: 60, tags: [`event-landing:${event.EventID}`]}}
+        // The uncached public-info check above protects unpublished tenants.
+        ...(revalidate
+            ? {next: {revalidate, tags: [`event-content:${event.EventID}`]}}
             : {cache: "no-store" as const}),
     });
     if (response.status === 404) return null;
@@ -38,8 +36,12 @@ export async function getLandingContent(): Promise<EventContent | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
         return {Landing: defaultMockLanding, Variables: {"event.name": "Winter Arena CTF", "event.finishAt": new Date(Date.now() + 18 * 3_600_000).toISOString()}};
     }
-    const data = await fetchContent("", true);
-    return data === null ? null : EventContentSchema.parse(data);
+    const [document, values] = await Promise.all([
+        fetchContent("/document", 300),
+        fetchContent("/values", 60),
+    ]);
+    if (document === null || values === null) return null;
+    return EventContentSchema.parse({...z.object({Landing: z.unknown()}).parse(document), ...z.object({Variables: z.unknown()}).parse(values)});
 }
 
 export async function getLiveContent(): Promise<LiveLayout | null> {
