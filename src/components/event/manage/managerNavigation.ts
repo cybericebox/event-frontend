@@ -6,8 +6,6 @@ export const plannedManagerPages = {
     participants: {title: "Учасники", description: "Тут можна буде керувати учасниками події."},
     teams: {title: "Команди", description: "Тут можна буде керувати командами та їхнім складом."},
     results: {title: "Таблиця результатів", description: "Тут можна буде переглядати результати учасників і команд."},
-    submissions: {title: "Надсилання", description: "Тут можна буде переглядати надіслані відповіді."},
-    solves: {title: "Розв’язання", description: "Тут можна буде переглядати зараховані розв’язання."},
     live: {title: "Live", description: "Тут можна буде налаштовувати окремий екран Live та його попередній перегляд."},
     "participant-form": {title: "Анкета учасника", description: "Тут можна буде налаштовувати анкету під час реєстрації учасника."},
     "team-form": {title: "Анкета команди", description: "Тут можна буде налаштовувати анкету під час створення команди."},
@@ -35,6 +33,8 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/exercise-groups") return "Групи й порядок";
     if (pathname === "/manage/exercises") return "Завдання";
     if (pathname === "/manage/scoring") return "Профіль балів";
+    if (pathname === "/manage/submissions") return "Надсилання";
+    if (pathname === "/manage/solves") return "Розв’язання";
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Title;
