@@ -6,7 +6,7 @@ import "@/styles/button.css";
 import "@/styles/navbar.css";
 import "@/styles/tower.css";
 import "@/styles/footer.css";
-import "@/styles/page-blocks.css";
+import "@/styles/content-blocks.css";
 import "@/styles/hero.css";
 import "@/styles/accordion.css";
 import "@/styles/timer.css";
