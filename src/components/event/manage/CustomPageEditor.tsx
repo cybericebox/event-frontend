@@ -11,6 +11,7 @@ import {ContentBlocks, contentBlockVisible} from "@/components/event/content/Con
 import type {ContentBlock, PageBlockType} from "@/types/eventContent";
 import {FieldLabel, LandingBlockEditor} from "./LandingBlockEditor";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {blockPalette, createPageBlock} from "./blockPalette";
 import {useManager} from "./ManagerShell";
@@ -183,7 +184,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     if ((!isNew && page.isPending) || pages.isPending || config.isPending || content.isPending || definitions.isPending) return <EventLoading event={event} label="Завантажуємо редактор…" />;
 
     return <div className="event-manage-content">
-        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Сторінки</p><h1>{isNew ? "Нова сторінка" : draft.Title}</h1><p>Той самий конструктор блоків, що й на головній сторінці.</p></div>{!isNew && <div className="event-manage-heading__actions"><Link className="ib-btn" href={`/${draft.Slug}`} target="_blank">Відкрити <ArrowUpRight size={16} /></Link>{canManage && <button className="ib-btn ib-btn--danger" type="button" disabled={saving} onClick={() => setDeleteOpen(true)}><Trash2 size={16} /> Видалити</button>}</div>}</header>
+        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Сторінки</p><h1>{isNew ? "Нова сторінка" : draft.Title}</h1><p>Той самий конструктор блоків, що й на головній сторінці.</p></div>{!isNew && <div className="event-manage-heading__actions"><EventTooltip content="Відкрити сторінку на сайті">{tipID => <Link className="ib-btn event-manage-icon-action" href={`/${draft.Slug}`} target="_blank" aria-label="Відкрити сторінку" aria-describedby={tipID}><ArrowUpRight size={17} /></Link>}</EventTooltip>{canManage && <EventTooltip content="Видалити цю сторінку">{tipID => <button className="ib-btn ib-btn--danger event-manage-icon-action" type="button" aria-label="Видалити сторінку" aria-describedby={tipID} disabled={saving} onClick={() => setDeleteOpen(true)}><Trash2 size={17} /></button>}</EventTooltip>}</div>}</header>
         <div className="event-manage-content__layout">
             <div className="event-content-editor">
                 <div className={`event-manage-page-details${detailsOpen ? "" : " is-collapsed"}`} aria-label="Налаштування сторінки">
