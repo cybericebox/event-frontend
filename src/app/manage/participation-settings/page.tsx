@@ -35,6 +35,7 @@ export default function ParticipationSettingsPage() {
         try {
             const updated = await putManageConfig(eventID, config);
             queryClient.setQueryData(["event-management-config", eventID], updated);
+            queryClient.setQueryData<typeof event>(["event-manager-public-info"], current => current ? {...current, Participation: updated.Participation} : current);
             setEdit(null);
             toast.success("Формат події збережено");
         } catch (failure) {toast.error(failure instanceof ManageApiError && failure.status === 409 ? "Формат події вже зафіксовано після публікації." : "Не вдалося зберегти формат події.");}

@@ -5,7 +5,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/settings") return "Загальне";
     if (pathname === "/manage/appearance") return "Вигляд";
     if (pathname === "/manage/participation-settings") return "Формат події";
-    if (pathname === "/manage/registration") return "Реєстрація";
+    if (pathname === "/manage/registration") return "Налаштування реєстрації";
     if (pathname === "/manage/results-settings") return "Налаштування результатів";
     if (pathname === "/manage/schedule") return "Публікація і час";
     if (pathname === "/manage/content/landing") return "Головна сторінка";
@@ -16,7 +16,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/solves") return "Розв’язання";
     if (pathname === "/manage/results") return "Таблиця результатів";
     if (pathname === "/manage/live") return "Live";
-    if (pathname === "/manage/applications") return "Заявки";
+    if (pathname === "/manage/applications") return "Учасники";
     if (pathname === "/manage/participants") return "Учасники";
     if (pathname === "/manage/teams") return "Команди";
     if (pathname === "/manage/participant-form") return "Анкета учасника";

@@ -1,3 +1,3 @@
-import {ParticipantsManager} from "@/components/event/manage/ParticipantsManager";
+import {redirect} from "next/navigation";
 
-export default function ApplicationsPage() { return <ParticipantsManager applicationsOnly />; }
+export default function ApplicationsPage() { redirect("/manage/participants?status=pending"); }

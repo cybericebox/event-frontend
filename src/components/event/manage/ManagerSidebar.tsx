@@ -3,7 +3,7 @@
 import {useState} from "react";
 import Link from "next/link";
 import {
-    ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown, ClipboardCheck,
+    ArrowLeft, Bell, BookOpenText, CalendarDays, ChevronDown,
     FileCheck2, FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
     Mail, MessageSquareText, MonitorPlay, Palette, Plus, Send, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
@@ -36,8 +36,7 @@ const groups: Group[] = [
         {href: "/manage/scoring", label: "Профіль балів", icon: SlidersHorizontal},
     ]},
     {id: "participation", label: "Участь", items: [
-        {href: "/manage/registration", label: "Реєстрація", icon: UserRound},
-        {href: "/manage/applications", label: "Заявки", icon: ClipboardCheck},
+        {href: "/manage/registration", label: "Налаштування реєстрації", icon: Settings2},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
     ]},

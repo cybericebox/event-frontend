@@ -44,6 +44,7 @@ export default function RegistrationPage() {
             if (registrationDirty) {
                 const updated = await putManageConfig(eventID, {...asInput(config), Registration: registration, MaxTeams: maxTeams});
                 queryClient.setQueryData(["event-management-config", eventID], updated);
+                queryClient.setQueryData<typeof event>(["event-manager-public-info"], current => current ? {...current, Registration: updated.Registration} : current);
             }
             if (joinDirty) {
                 const updated = await putManageLifecycle(eventID, {
