@@ -18,7 +18,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/applications") return "Учасники";
     if (pathname === "/manage/participants") return "Учасники";
     if (pathname === "/manage/teams") return "Команди";
-    if (pathname === "/manage/participant-form") return "Додаткові поля учасника";
+    if (pathname === "/manage/participant-form") return "Додаткові поля";
     if (pathname === "/manage/surveys") return "Опитування";
     if (pathname === "/manage/notifications") return "Сповіщення на сайті";
     if (pathname === "/manage/email") return "Електронні листи";

@@ -3,12 +3,12 @@ import {ManageApiError} from "@/api/manage";
 import {clearMockParticipantTeam, setMockParticipantTeam} from "@/api/manageParticipants";
 
 const id = z.string().uuid();
-const teamSchema = z.object({ID: id, Name: z.string(), CaptainID: id, Hidden: z.boolean(), MemberCount: z.number().int(), CreatedAt: z.string()});
+const teamSchema = z.object({ID: id, Name: z.string(), CaptainID: id, Hidden: z.boolean(), MemberCount: z.number().int(), ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {}), CreatedAt: z.string()});
 const pageSchema = z.object({Items: z.array(teamSchema), Total: z.number().int(), NextCursor: id.optional()});
 export type ManageTeam = z.infer<typeof teamSchema>;
 export type ManageTeamsPage = z.infer<typeof pageSchema>;
 
-let mockTeams: ManageTeam[] = [{ID: "01900000-0000-7000-8000-000000000022", Name: "Blue Team", CaptainID: "01900000-0000-7000-8000-000000000024", Hidden: false, MemberCount: 1, CreatedAt: "2026-09-26T09:05:00Z"}];
+let mockTeams: ManageTeam[] = [{ID: "01900000-0000-7000-8000-000000000022", Name: "Blue Team", CaptainID: "01900000-0000-7000-8000-000000000024", Hidden: false, MemberCount: 1, ExtraFields: {}, CreatedAt: "2026-09-26T09:05:00Z"}];
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
@@ -33,13 +33,13 @@ export async function getManageTeams(eventID: string, cursor: string | null): Pr
     return request(eventID, `teams?${params}`, pageSchema);
 }
 
-export async function createManageTeam(eventID: string, name: string, captainID: string): Promise<ManageTeam> {
+export async function createManageTeam(eventID: string, name: string, captainID: string, fields: Record<string, string | number | boolean | string[]> = {}): Promise<ManageTeam> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        const team = teamSchema.parse({ID: crypto.randomUUID(), Name: name, CaptainID: captainID, Hidden: false, MemberCount: 1, CreatedAt: new Date().toISOString()});
+        const team = teamSchema.parse({ID: crypto.randomUUID(), Name: name, CaptainID: captainID, Hidden: false, MemberCount: 1, ExtraFields: fields, CreatedAt: new Date().toISOString()});
         mockTeams = [...mockTeams, team]; setMockParticipantTeam(captainID, team.ID);
         return team;
     }
-    return request(eventID, "teams", teamSchema, "POST", {Name: name, CaptainID: captainID});
+    return request(eventID, "teams", teamSchema, "POST", {Name: name, CaptainID: captainID, Fields: fields});
 }
 
 export async function updateManageTeam(eventID: string, teamID: string, name: string, hidden: boolean): Promise<ManageTeam> {

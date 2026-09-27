@@ -27,7 +27,7 @@ const groups: Group[] = [
     ]},
     {id: "participation", label: "Участь", items: [
         {href: "/manage/registration", label: "Налаштування реєстрації", icon: Settings2},
-        {href: "/manage/participant-form", label: "Додаткові поля учасника", icon: FilePenLine},
+        {href: "/manage/participant-form", label: "Додаткові поля", icon: FilePenLine},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
     ]},

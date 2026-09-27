@@ -9,7 +9,7 @@ const meSchema = z.object({
 });
 export type CurrentUser = z.infer<typeof meSchema>;
 const joinSchema = z.object({Status: z.number().int()});
-const ownTeamSchema = z.object({ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int()});
+const ownTeamSchema = z.object({ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int(), ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {})});
 export type OwnTeam = z.infer<typeof ownTeamSchema>;
 
 export class ClientAuthError extends Error {
