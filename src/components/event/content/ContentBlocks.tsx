@@ -103,7 +103,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                                 {(block.targetVariable || block.targetDate) && <CountdownValue target={typeof target === "string" ? target : null} display={block.timerDisplay} />}
                                 <div className={`ib-block-hero__cta ib-block-hero__cta--${block.actionAlignment ?? "end"}`}>
                                     {primaryHref && block.action?.label && <a className={`ib-btn ${mass ? "ib-btn--mass" : "ib-btn--primary"}`} href={primaryHref}>{render(block.action.label, "action:label")}</a>}
-                                    {secondaryHref && block.secondaryAction?.label && <a className="ib-btn" href={secondaryHref}>{render(block.secondaryAction.label, "secondaryAction:label")}</a>}
+                                    {secondaryHref && block.secondaryAction?.label && <a className={`ib-btn${mass ? " ib-btn--mass-outline" : ""}`} href={secondaryHref}>{render(block.secondaryAction.label, "secondaryAction:label")}</a>}
                                 </div>
                                 {block.note && <p className="ib-block-hero__note">{render(block.note, "note")}</p>}
                             </div>
@@ -134,7 +134,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
             if (block.type === "cta") {
                 const href = safeHref(render(block.action?.href));
                 const secondaryHref = safeHref(render(block.secondaryAction?.href));
-                return <section className={`ib-block ib-block-cta${block.variant === "mass" ? " ib-mass ib-mass-waves" : ""} ib-block-cta--actions-${block.actionAlignment ?? "end"}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div><h2 className="ib-block-cta__title">{render(block.title, "title")}</h2>{block.text && <p className="ib-block-cta__text">{render(block.text, "text")}</p>}</div><div className="ib-block-cta__acts">{href && block.action?.label && <a className={`ib-btn ${block.variant === "mass" ? "ib-btn--mass" : "ib-btn--primary"}`} href={href}>{render(block.action.label, "action:label")}</a>}{secondaryHref && block.secondaryAction?.label && <a className="ib-btn" href={secondaryHref}>{render(block.secondaryAction.label, "secondaryAction:label")}</a>}</div></div></section>;
+                return <section className={`ib-block ib-block-cta${block.variant === "mass" ? " ib-mass ib-mass-waves" : ""} ib-block-cta--actions-${block.actionAlignment ?? "end"}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div><h2 className="ib-block-cta__title">{render(block.title, "title")}</h2>{block.text && <p className="ib-block-cta__text">{render(block.text, "text")}</p>}</div><div className="ib-block-cta__acts">{href && block.action?.label && <a className={`ib-btn ${block.variant === "mass" ? "ib-btn--mass" : "ib-btn--primary"}`} href={href}>{render(block.action.label, "action:label")}</a>}{secondaryHref && block.secondaryAction?.label && <a className={`ib-btn${block.variant === "mass" ? " ib-btn--mass-outline" : ""}`} href={secondaryHref}>{render(block.secondaryAction.label, "secondaryAction:label")}</a>}</div></div></section>;
             }
             if (block.type === "countdown") {
                 const target = block.targetDate || variables[block.targetVariable ?? ""];
