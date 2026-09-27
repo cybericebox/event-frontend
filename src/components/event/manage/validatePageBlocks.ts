@@ -3,6 +3,11 @@ import {visibilityOperators, type ContentVariableDefinition} from "@/components/
 
 const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
 
+export function blockValidationIndex(error: string | null): number | null {
+    const match = /^Блок (\d+): /.exec(error ?? "");
+    return match ? Number(match[1]) - 1 : null;
+}
+
 function validHref(href: string): boolean {
     const value = href.trim();
     if (!value || /[\\\r\n\t]/.test(value) || value.startsWith("//")) return false;

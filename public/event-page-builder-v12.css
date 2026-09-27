@@ -59,3 +59,5 @@
 .event-select__unavailable .ib-listbox__opt{flex:none;min-width:0;height:auto;min-height:var(--ib-control-h);padding-right:2px;pointer-events:none}
 .event-select__unavailable .ib-listbox__opt>svg{display:none}
 .event-select__unavailable small{display:block;flex:1;min-width:0;padding:6px 8px;line-height:1.35;overflow-wrap:anywhere}
+.event-content-editor__block.is-invalid{border-color:var(--ib-danger);box-shadow:0 0 0 1px var(--ib-danger)}
+.event-content-editor__block-error{margin:0;padding:var(--ib-2) var(--ib-4);border-bottom:1px solid var(--ib-line);color:var(--ib-danger);font-size:var(--ib-fs-13);line-height:var(--ib-lh-body)}

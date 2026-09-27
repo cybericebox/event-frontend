@@ -438,6 +438,8 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__stack{display:grid;gap:var(--ib-3)}
 .event-content-editor__block{min-width:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
 .event-content-editor__block.is-selected{border-color:var(--ib-action);box-shadow:0 0 0 1px var(--ib-action)}
+.event-content-editor__block.is-invalid{border-color:var(--ib-danger);box-shadow:0 0 0 1px var(--ib-danger)}
+.event-content-editor__block-error{margin:0;padding:var(--ib-2) var(--ib-4);border-bottom:1px solid var(--ib-line);color:var(--ib-danger);font-size:var(--ib-fs-13);line-height:var(--ib-lh-body)}
 .event-content-editor__block.is-drop-target{border-color:var(--ib-action);box-shadow:0 0 0 2px var(--ib-action)}
 .event-content-editor__block.is-dragging{opacity:.35;border-style:dashed}
 .event-content-editor__drag-ghost{position:fixed;z-index:150;pointer-events:none;overflow:hidden;max-height:min(70vh,620px);border:1px solid var(--ib-action);border-radius:var(--ib-r-lg);background:var(--ib-surface);box-shadow:0 18px 50px rgba(23,19,50,.22);transform:rotate(-1deg)}
