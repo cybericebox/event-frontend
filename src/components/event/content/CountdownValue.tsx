@@ -5,7 +5,7 @@ import {useEffect, useState, type CSSProperties} from "react";
 const pad = (value: number) => String(value).padStart(2, "0");
 const unit = (value: number, one: string, few: string, many: string) => value % 10 === 1 && value % 100 !== 11 ? one : value % 10 >= 2 && value % 10 <= 4 && (value % 100 < 12 || value % 100 > 14) ? few : many;
 
-export type CountdownDisplay = "segments" | "compact" | "tiles" | "focus" | "dial" | "ledger" | "poster" | "tracks" | "flip" | "ticker" | "stairs" | "orbits";
+export type CountdownDisplay = "segments" | "compact" | "tiles" | "focus" | "dial" | "ledger" | "poster" | "tracks" | "flip" | "ticker" | "stairs" | "orbits" | "matrix" | "ribbon" | "rings";
 
 export function CountdownValue({target, display = "segments"}: {target: string | null; display?: CountdownDisplay}) {
     const [now, setNow] = useState(0);
@@ -49,6 +49,13 @@ export function CountdownValue({target, display = "segments"}: {target: string |
         if (display === "ticker") return <div className="ib-timer ib-timer--ticker" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__ticker-parts" aria-hidden="true">{parts.map(part => <div className="ib-timer__ticker-part" key={part.label}><span>{part.label}</span><strong>{part.value}</strong></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
         if (display === "stairs") return <div className="ib-timer ib-timer--stairs" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__stairs-list" aria-hidden="true">{parts.map((part, index) => <div className="ib-timer__stairs-step" key={part.label} style={{"--ib-step": index} as CSSProperties}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
         if (display === "orbits") return <div className="ib-timer ib-timer--orbits" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__orbits-list" aria-hidden="true">{parts.map(part => <div className="ib-timer__orbits-unit" key={part.label}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
+        if (display === "matrix") return <div className="ib-timer ib-timer--matrix" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__matrix-grid" aria-hidden="true">{parts.map(part => <div className="ib-timer__matrix-cell" key={part.label}><span>{part.label}</span><strong>{part.value}</strong></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
+        if (display === "ribbon") return <div className="ib-timer ib-timer--ribbon" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__ribbon-strip" aria-hidden="true">{parts.map(part => <div className="ib-timer__ribbon-unit" key={part.label}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
+        if (display === "rings") return <div className="ib-timer ib-timer--rings" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__rings-list" aria-hidden="true">{parts.map((part, index) => {
+            const maximum = days > 0 && index === 0 ? days : index === (days > 0 ? 1 : 0) ? 24 : 60;
+            const progress = Math.max(0, Math.min(100, Number(part.value) / maximum * 100)) || 0;
+            return <div className="ib-timer__rings-unit" key={part.label} style={{"--ib-ring-progress": `${progress}%`} as CSSProperties}><strong>{part.value}</strong><span>{part.label}</span></div>;
+        })}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
         return <div className={`ib-timer ib-timer--segments${display === "tiles" ? " ib-timer--tiles" : ""}`} role="timer" aria-label={ariaLabel} aria-live="off">
             <div className="ib-timer__parts" aria-hidden="true">{parts.map(part => <div className="ib-timer__part" key={part.label}><strong>{part.value}</strong><span>{part.label}</span></div>)}</div>
             {meta && <span className="ib-timer__meta">{meta}</span>}

@@ -32,7 +32,7 @@ export const ContentBlockSchema = z.object({
     verticalAlignment: z.string().optional(),
     actionAlignment: z.string().optional(),
     timerSize: z.string().optional(),
-    timerDisplay: z.enum(["segments", "compact", "tiles", "focus", "dial", "ledger", "poster", "tracks", "flip", "ticker", "stairs", "orbits"]).optional(),
+    timerDisplay: z.enum(["segments", "compact", "tiles", "focus", "dial", "ledger", "poster", "tracks", "flip", "ticker", "stairs", "orbits", "matrix", "ribbon", "rings"]).optional(),
     surface: z.string().optional(),
     imageSource: z.string().optional(),
     imageURL: z.string().optional(),

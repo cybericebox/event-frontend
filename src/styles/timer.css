@@ -123,6 +123,44 @@
 .ib-block-hero--timer-xl .ib-timer__orbits-unit,.ib-block-countdown--timer-xl .ib-timer__orbits-unit{width:clamp(94px,12cqi,148px)}
 .ib-block-hero--timer-xl .ib-timer__orbits-unit strong,.ib-block-countdown--timer-xl .ib-timer__orbits-unit strong{font-size:clamp(34px,5cqi,58px)}
 @container ib-blocks (max-width:480px){.ib-timer__ticker-parts{flex-wrap:wrap;row-gap:var(--ib-3)}.ib-timer__ticker-part{flex:0 0 50%;padding:var(--ib-1) var(--ib-2)}.ib-timer__ticker-part:nth-child(odd){padding-left:0;border-left:0}.ib-timer__ticker-part strong,.ib-block-hero--timer-xl .ib-timer__ticker-part strong,.ib-block-countdown--timer-xl .ib-timer__ticker-part strong{font-size:clamp(36px,10cqi,52px)}.ib-timer__stairs-step{margin-left:calc(var(--ib-step)*6px)}.ib-timer__orbits-unit,.ib-block-hero--timer-xl .ib-timer__orbits-unit,.ib-block-countdown--timer-xl .ib-timer__orbits-unit{width:clamp(70px,20cqi,92px)}.ib-timer__orbits-unit strong,.ib-block-hero--timer-xl .ib-timer__orbits-unit strong,.ib-block-countdown--timer-xl .ib-timer__orbits-unit strong{font-size:clamp(25px,7cqi,38px)}}
+/* Matrix reads as a single 2×2 panel rather than four separate tiles. */
+.ib-timer--matrix{width:min(100%,390px)}
+.ib-timer__matrix-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;overflow:hidden;border:1px solid var(--ib-line);border-radius:var(--ib-r-md);background:var(--ib-line)}
+.ib-timer__matrix-cell{display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:104px;padding:var(--ib-3) var(--ib-4);background:var(--ib-surface)}
+.ib-timer__matrix-cell:first-child{background:var(--ib-brand);color:var(--ib-on-brand)}
+.ib-timer__matrix-cell span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.ib-timer__matrix-cell:first-child span{color:var(--ib-on-brand-2)}
+.ib-timer__matrix-cell strong{align-self:flex-end;font:var(--ib-w-semibold) clamp(36px,6cqi,64px)/.92 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.ib-mass .ib-timer__matrix-grid{border-color:var(--ib-on-brand-3);background:var(--ib-on-brand-3)}
+.ib-mass .ib-timer__matrix-cell{background:color-mix(in srgb,var(--ib-on-brand) 12%,var(--ib-brand));color:var(--ib-on-brand)}
+.ib-mass .ib-timer__matrix-cell:first-child{background:var(--ib-on-brand);color:var(--ib-brand)}
+.ib-mass .ib-timer__matrix-cell span{color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__matrix-cell:first-child span{color:var(--ib-brand)}
+/* Ribbon uses one continuous high-contrast strip, with no individual cards. */
+.ib-timer--ribbon{max-width:100%}
+.ib-timer__ribbon-strip{display:flex;flex-wrap:wrap;width:max-content;max-width:100%;overflow:hidden;border-radius:var(--ib-r-md);background:var(--ib-brand);color:var(--ib-on-brand)}
+.ib-timer__ribbon-unit{display:grid;align-content:center;justify-items:center;gap:var(--ib-2);min-width:92px;padding:var(--ib-3) clamp(14px,2cqi,28px);text-align:center}
+.ib-timer__ribbon-unit+.ib-timer__ribbon-unit{border-left:1px solid var(--ib-on-brand-3)}
+.ib-timer__ribbon-unit strong{font:var(--ib-w-semibold) clamp(35px,5.5cqi,68px)/.92 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.ib-timer__ribbon-unit span{font-size:var(--ib-fs-12);color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__ribbon-strip{background:var(--ib-on-brand);color:var(--ib-brand)}
+.ib-mass .ib-timer__ribbon-unit+.ib-timer__ribbon-unit{border-color:color-mix(in srgb,var(--ib-brand) 25%,transparent)}
+.ib-mass .ib-timer__ribbon-unit span{color:var(--ib-brand)}
+/* Rings show the remaining fraction of the current hour, minute and second. */
+.ib-timer--rings{max-width:100%}
+.ib-timer__rings-list{display:flex;flex-wrap:wrap;gap:var(--ib-3);max-width:100%}
+.ib-timer__rings-unit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;width:clamp(90px,12cqi,132px);aspect-ratio:1;color:var(--ib-ink);text-align:center}
+.ib-timer__rings-unit::before{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--ib-action) var(--ib-ring-progress),var(--ib-line) 0);mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px));content:""}
+.ib-timer__rings-unit strong{font:var(--ib-w-semibold) clamp(30px,4.4cqi,52px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.ib-timer__rings-unit span{margin-top:var(--ib-1);font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-mass .ib-timer__rings-unit{color:var(--ib-on-brand)}
+.ib-mass .ib-timer__rings-unit::before{background:conic-gradient(var(--ib-on-brand) var(--ib-ring-progress),color-mix(in srgb,var(--ib-on-brand) 24%,transparent) 0)}
+.ib-mass .ib-timer__rings-unit span{color:var(--ib-on-brand-2)}
+.ib-block-hero--timer-xl .ib-timer__matrix-cell,.ib-block-countdown--timer-xl .ib-timer__matrix-cell{min-height:126px}
+.ib-block-hero--timer-xl .ib-timer__matrix-cell strong,.ib-block-countdown--timer-xl .ib-timer__matrix-cell strong{font-size:clamp(48px,7cqi,78px)}
+.ib-block-hero--timer-xl .ib-timer__ribbon-unit strong,.ib-block-countdown--timer-xl .ib-timer__ribbon-unit strong{font-size:clamp(48px,7cqi,88px)}
+.ib-block-hero--timer-xl .ib-timer__rings-unit,.ib-block-countdown--timer-xl .ib-timer__rings-unit{width:clamp(112px,15cqi,160px)}
+@container ib-blocks (max-width:480px){.ib-timer__matrix-cell{min-height:90px;padding:var(--ib-2) var(--ib-3)}.ib-timer__matrix-cell strong,.ib-block-hero--timer-xl .ib-timer__matrix-cell strong,.ib-block-countdown--timer-xl .ib-timer__matrix-cell strong{font-size:clamp(34px,10cqi,54px)}.ib-timer__ribbon-strip{width:100%}.ib-timer__ribbon-unit{flex:1 0 50%;min-width:0;padding:var(--ib-2)}.ib-timer__ribbon-unit:nth-child(odd){border-left:0}.ib-timer__ribbon-unit:nth-child(n+3){border-top:1px solid var(--ib-on-brand-3)}.ib-timer__ribbon-unit strong,.ib-block-hero--timer-xl .ib-timer__ribbon-unit strong,.ib-block-countdown--timer-xl .ib-timer__ribbon-unit strong{font-size:clamp(36px,10cqi,55px)}.ib-timer__rings-list{display:grid;grid-template-columns:repeat(2,max-content)}.ib-timer__rings-unit,.ib-block-hero--timer-xl .ib-timer__rings-unit,.ib-block-countdown--timer-xl .ib-timer__rings-unit{width:clamp(76px,24cqi,108px)}.ib-timer__rings-unit strong{font-size:clamp(28px,8cqi,40px)}}
 .ib-mass .ib-timer__focus-rest strong{color:var(--ib-on-brand)}
 .ib-mass .ib-timer__focus-rest,.ib-mass .ib-timer__ledger-rows>div{border-color:color-mix(in srgb,var(--ib-on-brand) 28%,transparent)}
 .ib-mass .ib-timer__dial-face::before{background:conic-gradient(var(--ib-on-brand) var(--ib-timer-progress),color-mix(in srgb,var(--ib-on-brand) 22%,transparent) 0)}
