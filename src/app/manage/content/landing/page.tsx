@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ArrowUpRight, Check, Eye, Plus, RotateCcw, Type, X} from "lucide-react";
+import {ArrowUpRight, Check, Eye, Plus, RotateCcw, Type} from "lucide-react";
 import Link from "next/link";
 import {getManageContent, getManageContentVariables, ManageApiError, putManageLanding} from "@/api/manage";
 import {ContentBlocks, contentBlockVisible} from "@/components/event/content/ContentBlocks";
@@ -45,11 +45,10 @@ export default function ManageLandingPage() {
     const blockOrder = draft?.blocks.map(block => block.id).join("|") ?? "";
     const dirty = !!draft && !!content.data && JSON.stringify(draft) !== JSON.stringify(content.data.Landing);
     const catalog = useMemo(() => (variables.data ?? []).filter(variable => variable.audience === 0), [variables.data]);
-    const validation = useMemo(() => draft && variables.data ? validateLanding(draft, catalog) : null, [draft, variables.data, catalog]);
+    const validation = useMemo(() => draft && variables.data ? validateLanding(draft, catalog, event.PreviewPicture ?? "") : null, [draft, variables.data, catalog, event.PreviewPicture]);
     const publicValues = useMemo(() => Object.fromEntries(catalog.map(variable => [variable.name, content.data?.Variables[variable.name] ?? null])), [content.data?.Variables, catalog]);
     const selectedBlock = draft?.blocks.find(block => block.id === selectedBlockID);
     const selectedHidden = selectedBlock ? !contentBlockVisible(selectedBlock, publicValues) : false;
-    const showPreview = !!selectedBlockID && draft?.blocks.some(block => contentBlockVisible(block, publicValues));
 
     useEffect(() => {
         if (!selectedBlockID || !previewRef.current) return;
@@ -65,9 +64,14 @@ export default function ManageLandingPage() {
         setError("");
     }
 
-    function updateBlock(index: number, block: ContentBlock) {
-        if (!draft) return;
-        change({blocks: draft.blocks.map((old, position) => position === index ? block : old)});
+    function updateBlock(blockID: string, value: ContentBlock | ((current: ContentBlock) => ContentBlock)) {
+        setEdited(previous => {
+            const current = previous?.eventID === eventID ? previous.draft : content.data?.Landing;
+            if (!current) return previous;
+            return {eventID, draft: {blocks: current.blocks.map(block => block.id === blockID ? typeof value === "function" ? value(block) : value : block)}};
+        });
+        setMessage("");
+        setError("");
     }
 
     function moveBlock(index: number, direction: -1 | 1) {
@@ -90,7 +94,8 @@ export default function ManageLandingPage() {
 
     function addBlock(type: PageBlockType) {
         if (!draft) return;
-        const block = createPageBlock(type, true);
+        const created = createPageBlock(type, true);
+        const block = type === "banner" && !event.PreviewPicture ? {...created, imageSource: "custom"} : created;
         const blocks = [...draft.blocks];
         const selectedIndex = blocks.findIndex(item => item.id === selectedBlockID);
         blocks.splice(selectedIndex < 0 ? blocks.length : selectedIndex + 1, 0, block);
@@ -118,21 +123,21 @@ export default function ManageLandingPage() {
     return <div className="event-manage-content">
         <header className="event-manage-heading"><div><h1>Головна сторінка</h1><p>Побудуйте сторінку з блоків у потрібному порядку.</p></div>{event.Status !== 0 && event.Status !== 4 && <Link className="ib-btn" href="/">Відкрити сайт <ArrowUpRight size={16} /></Link>}</header>
         {!canManage && <div className="event-manage-notice" role="status">Доступний лише перегляд. Змінювати головну сторінку може менеджер події.</div>}
-        {event.Status === 0 && <div className="event-manage-notice" role="status">Сайт ще не опубліковано. Оберіть блок, щоб переглянути сторінку до публікації.</div>}
+        {event.Status === 0 && <div className="event-manage-notice" role="status">Сайт ще не опубліковано. Попередній перегляд праворуч показує сторінку до публікації.</div>}
         {error && <div className="event-manage-feedback event-manage-feedback--error" role="alert">{error}</div>}
         {message && <div className="event-manage-feedback" role="status"><Check size={16} />{message}</div>}
 
-        <div className={`event-manage-content__layout${showPreview ? "" : " event-manage-content__layout--single"}`}>
+        <div className="event-manage-content__layout">
             <div className="event-content-editor">
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Перетягніть блок за ручку або скористайтеся стрілками. Так само вони з’являться на сайті.</p></div><span>{blockCountLabel(draft.blocks.length)}</span></div>
                 {draft.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
-                <div className="event-content-editor__stack">{draft.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.blocks.length} values={publicValues} catalog={catalog} canEdit={canManage && !saving} selected={selectedBlockID === block.id} onSelect={() => setSelected({eventID, blockID: block.id})} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDelete={() => change({blocks: draft.blocks.filter((_, position) => position !== index)})} />)}</div>
+                <div className="event-content-editor__stack">{draft.blocks.map((block, index) => <LandingBlockEditor key={block.id} eventID={eventID} coverImage={event.PreviewPicture ?? ""} block={block} index={index} count={draft.blocks.length} values={publicValues} catalog={catalog} canEdit={canManage && !saving} selected={selectedBlockID === block.id} onSelect={() => setSelected({eventID, blockID: block.id})} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDelete={() => change({blocks: draft.blocks.filter((_, position) => position !== index)})} />)}</div>
                 {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !draft.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setMessage(""); setError("");}}><RotateCcw size={16} /> Скасувати зміни</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти сторінку"}</button></div></div>
             </div>
-            {selectedBlockID && !showPreview && <p className="event-content-editor__hidden-note" role="status">На сторінці зараз немає видимих блоків.</p>}
-            {showPreview && <aside className="event-manage-content__preview" aria-label="Попередній перегляд головної сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вибраний блок виділено в макеті всієї сторінки."}</p></div><button className="event-manage-content__preview-close" type="button" aria-label="Закрити попередній перегляд" onClick={() => setSelected(null)}><X size={17} /></button></div><div className="event-manage-content__preview-window" ref={previewRef}><div className="event-landing ib-blocks">{draft.blocks.length > 0 && !draft.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}<ContentBlocks document={draft} variables={publicValues} selectedBlockId={selectedBlockID} coverImage={event.PreviewPicture} /></div></div></aside>}
+
+            <aside className="event-manage-content__preview" aria-label="Попередній перегляд головної сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вся сторінка у поточному порядку блоків."}</p></div></div><div className="event-manage-content__preview-window" ref={previewRef}><div className="event-landing ib-blocks">{draft.blocks.length === 0 && <div className="event-content-editor__empty">Додайте блок, щоб побачити сторінку.</div>}{draft.blocks.length > 0 && !draft.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}<ContentBlocks document={draft} variables={publicValues} selectedBlockId={selectedBlockID ?? undefined} coverImage={event.PreviewPicture ?? ""} /></div></div></aside>
         </div>
     </div>;
 }

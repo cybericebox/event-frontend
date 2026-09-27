@@ -5,7 +5,7 @@
    - every block is a full-width section, self-contained, stackable in any order;
    - .ib-blocks is the size container: blocks adapt to the width of the stack (tower main, guest main, card), not the viewport;
    - plain blocks sit on --ib-paper; add .ib-mass (+ .ib-mass-waves) for the brand-mass variant where the block allows it;
-   - two plain blocks in a row are divided by one hairline; the divider block replaces it with space;
+   - adjacent blocks have no automatic separator; the divider block adds space or an optional line;
    - inner width ≤ --ib-block-max (1200px), centred.
    Common fields (IB.Blocks.render, blocks.js): title, sub, level (1 = page title h1, default 2 = section h2),
    split (true = heading column on the left, 280px), id. Text fields are HTML from the CMS — sanitize server-side.
@@ -14,7 +14,6 @@
 .ib-blocks{display:flex;flex-direction:column;min-width:0;container:ib-blocks/inline-size}
 .ib-block{--ib-block-px:var(--ib-12);--ib-block-py:var(--ib-12);--ib-block-max:1200px;--ib-block-gap:56px;
   position:relative;min-width:0;padding:var(--ib-block-py) var(--ib-block-px);background:var(--ib-paper);color:var(--ib-body)}
-.ib-block:not(.ib-mass)+.ib-block:not(.ib-mass){border-top:1px solid var(--ib-line)}
 .ib-block.ib-mass{background:var(--ib-brand);color:var(--ib-on-brand-2)}
 .ib-block__in{max-width:var(--ib-block-max);margin:0 auto;min-width:0}
 .ib-visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}

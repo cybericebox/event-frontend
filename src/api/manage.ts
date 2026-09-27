@@ -242,6 +242,20 @@ export async function uploadManageBrandDraft(eventID: string, kind: "preview" | 
     return envelope.Data.FileID;
 }
 
+export async function uploadManageBannerImage(eventID: string, file: File): Promise<string> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return URL.createObjectURL(file);
+    const domain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/content-images`, {
+        method: "POST", credentials: "include", cache: "no-store", body,
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+    const envelope = z.object({Data: z.object({ImageURL: z.string()})}).parse(await response.json());
+    return envelope.Data.ImageURL;
+}
+
 export async function uploadManageLogo(eventID: string, file: File): Promise<string> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return URL.createObjectURL(file);
     const domain = process.env.NEXT_PUBLIC_DOMAIN;

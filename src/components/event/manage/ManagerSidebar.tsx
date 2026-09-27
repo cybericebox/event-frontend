@@ -68,10 +68,10 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, o
     onRetryPages: () => void;
     onNavigate: () => void;
 }) {
-    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+    const [openGroupID, setOpenGroupID] = useState<string | null>(null);
     const teamMode = event.Participation === 1;
     const showItem = (item: Item) => !item.teamsOnly || teamMode;
-    const openGroup = (groupID: string) => setOpenGroups(current => ({...current, [groupID]: true}));
+    const openGroup = (groupID: string) => setOpenGroupID(groupID);
 
     return <aside className="ib-admin-side ib-mass" aria-label="Керування подією">
         <div className="ib-admin-side__head">
@@ -81,10 +81,10 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, o
         <nav className="ib-admin-side__nav" aria-label="Розділи керування">
             <Link className="ib-admin-side__item event-manage-sidebar__overview" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">Огляд і підготовка</span></Link>
             {groups.map(group => {
-                const isOpen = openGroups[group.id] ?? true;
+                const isOpen = openGroupID === group.id;
                 const items = group.items.filter(showItem);
                 return <section className="event-manage-sidebar__group" key={group.id} aria-label={group.label}>
-                    <button className="event-manage-sidebar__heading" type="button" aria-expanded={isOpen} aria-controls={`event-manage-group-${group.id}`} onClick={() => setOpenGroups(current => ({...current, [group.id]: !isOpen}))}>
+                    <button className="event-manage-sidebar__heading" type="button" aria-expanded={isOpen} aria-controls={`event-manage-group-${group.id}`} onClick={() => setOpenGroupID(current => current === group.id ? null : group.id)}>
                         <span>{group.label}</span><ChevronDown size={15} aria-hidden="true" />
                     </button>
                     <div id={`event-manage-group-${group.id}`} className="event-manage-sidebar__items" hidden={!isOpen}>

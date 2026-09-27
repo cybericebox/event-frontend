@@ -10,7 +10,7 @@ function validHref(href: string): boolean {
     try {const url = new URL(value); return url.protocol === "https:" && !!url.host && !url.username && !url.password;} catch {return false;}
 }
 
-export function validateLanding(document: ContentDocument, catalog: ContentVariableDefinition[]): string | null {
+export function validateLanding(document: ContentDocument, catalog: ContentVariableDefinition[], coverImage = ""): string | null {
     const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const ids = new Set<string>();
     for (const [index, block] of document.blocks.entries()) {
@@ -24,6 +24,8 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "timeline" && block.variant && !["grid", "list"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка розкладу.`;
         if (block.type === "banner" && block.variant && !["edge", "frame"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка банера.`;
         if (block.type === "banner" && block.widthPercent !== undefined && (block.widthPercent < 50 || block.widthPercent > 100 || block.widthPercent % 5 !== 0)) return `Блок ${index + 1}: ширина банера має бути від 50% до 100% із кроком 5%.`;
+        if (block.type === "banner" && block.imageSource === "custom" && !block.imageURL?.trim()) return `Блок ${index + 1}: прикріпіть окреме зображення банера.`;
+        if (block.type === "banner" && block.imageSource !== "custom" && !coverImage) return `Блок ${index + 1}: обкладинку події не завантажено. Прикріпіть окреме зображення банера.`;
         if (["facts", "timeline", "faq"].includes(block.type) && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim()))) return `Блок ${index + 1}: заповніть усі пункти або видаліть порожні.`;
         if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
@@ -35,21 +37,33 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "hero") {
             if (!block.title?.trim()) return `Блок ${index + 1}: вкажіть назву героя.`;
             if (block.variant && !["mass", "plain"].includes(block.variant)) return `Блок ${index + 1}: невідоме оформлення героя.`;
+            if (block.layout && !["split", "center"].includes(block.layout)) return `Блок ${index + 1}: невідоме розташування героя.`;
+            if (block.timerSize && !["large", "xl"].includes(block.timerSize)) return `Блок ${index + 1}: невідомий розмір відліку героя.`;
             if ((block.items?.length ?? 0) > 4 || block.items?.some(item => !item.label?.trim() || !item.value?.trim())) return `Блок ${index + 1}: заповніть факти героя, не більше чотирьох.`;
             for (const action of [block.action, block.secondaryAction]) {
                 if (action && (!action.label.trim() || !validHref(action.href))) return `Блок ${index + 1}: заповніть текст і посилання дії.`;
             }
             if (block.targetVariable && !catalog.some(item => item.name === block.targetVariable && item.format === "date-time")) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
         }
-        if (block.type === "countdown" && (!block.targetVariable || !catalog.some(item => item.name === block.targetVariable && item.format === "date-time"))) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.targetVariable && block.targetDate) return `Блок ${index + 1}: оберіть лише одне джерело дати.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.dateSource && !["none", "event", "custom"].includes(block.dateSource)) return `Блок ${index + 1}: невідоме джерело дати відліку.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.dateSource === "none" && (block.type === "countdown" || block.targetVariable || block.targetDate)) return `Блок ${index + 1}: джерело дати відліку не відповідає налаштуванням.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.dateSource === "event" && block.targetDate) return `Блок ${index + 1}: джерело дати відліку не відповідає налаштуванням.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.dateSource === "custom" && block.targetVariable) return `Блок ${index + 1}: джерело дати відліку не відповідає налаштуванням.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.dateSource === "custom" && !block.targetDate) return `Блок ${index + 1}: вкажіть свою дату й час відліку.`;
+        if (block.type === "countdown" && block.dateSource === "event" && !block.targetVariable) return `Блок ${index + 1}: оберіть дату події для відліку.`;
+        if ((block.type === "hero" || block.type === "countdown") && block.targetDate && (Number.isNaN(Date.parse(block.targetDate)) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(block.targetDate))) return `Блок ${index + 1}: вкажіть коректну дату й час.`;
+        if (block.type === "countdown" && !block.targetDate && (!block.targetVariable || !catalog.some(item => item.name === block.targetVariable && item.format === "date-time"))) return `Блок ${index + 1}: оберіть дату події або задайте її вручну.`;
         if (block.type === "countdown" && block.variant && !["split", "center"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка відліку.`;
+        if (block.type === "countdown" && block.timerSize && !["large", "xl"].includes(block.timerSize)) return `Блок ${index + 1}: невідомий розмір відліку.`;
+        if (block.type === "countdown" && block.surface && !["plain", "frame"].includes(block.surface)) return `Блок ${index + 1}: невідоме оформлення відліку.`;
         if (block.type === "countdown" && block.action && (!block.action.label.trim() || !validHref(block.action.href))) return `Блок ${index + 1}: заповніть кнопку відліку та її посилання.`;
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
         for (const variable of block.variables ?? []) {
             if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для цієї сторінки.`;
         }
-        if ((block.type === "countdown" || (block.type === "hero" && block.targetVariable)) && !bindings.has(block.targetVariable ?? "")) return `Блок ${index + 1}: змінну дати потрібно додати до блока.`;
-        const fields = [text, block.title ?? "", block.sub ?? "", block.text ?? "", block.by ?? "", block.kicker ?? "", block.note ?? "", block.tocTitle ?? "", block.action?.label ?? "", block.secondaryAction?.label ?? "", ...(block.items ?? []).flatMap(item => [item.label ?? "", item.value ?? ""])];
+        if ((block.type === "hero" || block.type === "countdown") && block.targetVariable && !bindings.has(block.targetVariable)) return `Блок ${index + 1}: змінну дати потрібно додати до блока.`;
+        const fields = [text, block.title ?? "", block.sub ?? "", block.text ?? "", block.by ?? "", block.kicker ?? "", block.note ?? "", block.tocTitle ?? "", block.action?.label ?? "", block.action?.href ?? "", block.secondaryAction?.label ?? "", block.secondaryAction?.href ?? "", ...(block.items ?? []).flatMap(item => [item.label ?? "", item.value ?? ""])];
         for (const field of fields) {
             for (const [, variable] of field.matchAll(tokenPattern)) {
                 if (!bindings.has(variable)) return `Блок ${index + 1}: змінну ${variable} потрібно додати через список.`;

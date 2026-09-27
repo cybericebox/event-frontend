@@ -7,6 +7,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ChevronDown, LogOut, Menu, Network, UserRound, Users, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
+import {getManageAccess, getManagePages} from "@/api/manage";
 import {signOut} from "@/api/authAPI";
 import {getCurrentUser, profilePictureUrl} from "@/api/clientAuth";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
@@ -95,11 +96,26 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         queryFn: () => getNavigationPages(event.EventID),
         retry: false, refetchOnWindowFocus: false,
     });
+    const managementAccess = useQuery({
+        queryKey: ["event-management-access", event.EventID],
+        queryFn: () => getManageAccess(event.EventID),
+        enabled: authenticated,
+        retry: false, refetchOnWindowFocus: false,
+    });
+    const managedPages = useQuery({
+        queryKey: ["event-management-pages", event.EventID],
+        queryFn: () => getManagePages(event.EventID),
+        enabled: !!managementAccess.data,
+        retry: false, refetchOnWindowFocus: false,
+    });
+    const navigationPages = useMemo(() => managedPages.data
+        ? [...managedPages.data].filter(page => page.Navigation !== 0).sort((a, b) => a.NavigationOrder - b.NavigationOrder || a.Slug.localeCompare(b.Slug))
+        : pages.data ?? [], [managedPages.data, pages.data]);
     const links = useMemo(() => [
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
         ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
-        ...(pages.data ?? []).map(page => ({href: `/p/${page.Slug}`, label: page.Title})),
-    ], [approved, canViewResults, event.CanViewResults, pages.data]);
+        ...navigationPages.map(page => ({href: `/p/${page.Slug}`, label: page.Title})),
+    ], [approved, canViewResults, event.CanViewResults, navigationPages]);
 
     useLayoutEffect(() => {
         const nav = navRef.current;

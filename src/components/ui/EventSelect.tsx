@@ -3,7 +3,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {Check, ChevronDown} from "lucide-react";
 
-type Option = {value: string; label: string};
+type Option = {value: string; label: string; disabled?: boolean};
 
 export function EventSelect({value, options, onValueChange, disabled = false, ariaLabel, placeholder = "Оберіть значення", className = ""}: {
     value: string; options: Option[]; onValueChange: (value: string) => void;
@@ -16,7 +16,7 @@ export function EventSelect({value, options, onValueChange, disabled = false, ar
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-select__menu" sideOffset={4} align="start" collisionPadding={8}>
             <DropdownMenu.RadioGroup value={value} onValueChange={onValueChange}>
-                {options.map(option => <DropdownMenu.RadioItem className="ib-listbox__opt" key={option.value} value={option.value}>
+                {options.map(option => <DropdownMenu.RadioItem className="ib-listbox__opt" key={option.value} value={option.value} disabled={option.disabled}>
                     <span>{option.label}</span><Check size={16} aria-hidden="true" />
                 </DropdownMenu.RadioItem>)}
             </DropdownMenu.RadioGroup>

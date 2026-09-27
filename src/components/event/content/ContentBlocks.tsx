@@ -45,9 +45,19 @@ function replaceVariables(text: string, variables: Record<string, Value>, declar
 }
 
 function safeHref(href: string): string | undefined {
+    if (!href || /[\\\r\n\t]/.test(href) || href.startsWith("//")) return undefined;
     if (href.startsWith("/") && !href.startsWith("//")) return href;
     if (href.startsWith("#")) return href;
-    try { const url = new URL(href); return url.protocol === "https:" ? url.href : undefined; } catch { return undefined; }
+    try { const url = new URL(href); return url.protocol === "https:" && !url.username && !url.password ? url.href : undefined; } catch { return undefined; }
+}
+
+function bannerImageURL(source: string | undefined): string | undefined {
+    if (!source) return undefined;
+    if (source.startsWith("/api/events/") && process.env.NEXT_PUBLIC_DOMAIN) {
+        const version = source.includes("/content-images/") ? "?v=2" : "";
+        return `https://api.${process.env.NEXT_PUBLIC_DOMAIN}${source}${version}`;
+    }
+    return source;
 }
 
 export function ContentBlocks({document, variables, title, selectedBlockId, coverImage}: {
@@ -67,18 +77,21 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 {block.title && <h2 className="ib-block__title">{render(block.title)}</h2>}
                 {block.sub && <p className="ib-block__sub">{render(block.sub)}</p>}
             </div> : null;
-            if (block.type === "banner") return <section className={`ib-block ib-block-banner${block.variant === "frame" ? " ib-block-banner--frame" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
+            if (block.type === "banner") {
+                const imageURL = bannerImageURL(block.imageSource === "custom" ? block.imageURL : coverImage);
+                return <section className={`ib-block ib-block-banner${block.variant === "frame" ? " ib-block-banner--frame" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block-banner__inner" style={{"--ib-banner-width": `${block.widthPercent ?? 100}%`} as CSSProperties}>
-                    {coverImage ? <ProportionalBannerImage src={coverImage} alt={block.title || "Обкладинка події"} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title) || String(variables["event.name"] ?? "")}</strong></div>}
-                    {coverImage && block.title && <div className="ib-block-banner__caption"><h2>{render(block.title)}</h2></div>}
+                    {imageURL ? <ProportionalBannerImage src={imageURL} alt={render(block.title) || "Банер події"} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title) || String(variables["event.name"] ?? "")}</strong></div>}
+                    {imageURL && block.title && <div className="ib-block-banner__caption"><h2>{render(block.title)}</h2></div>}
                 </div>
             </section>;
+            }
             if (block.type === "hero") {
-                const target = variables[block.targetVariable ?? ""];
-                const primaryHref = safeHref(block.action?.href ?? "");
-                const secondaryHref = safeHref(block.secondaryAction?.href ?? "");
+                const target = block.targetDate || variables[block.targetVariable ?? ""];
+                const primaryHref = safeHref(render(block.action?.href));
+                const secondaryHref = safeHref(render(block.secondaryAction?.href));
                 const mass = block.variant === "mass";
-                return <section className={`ib-block ib-block-hero${mass ? " ib-mass ib-mass-waves" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
+                return <section className={`ib-block ib-block-hero${mass ? " ib-mass ib-mass-waves" : ""}${block.layout === "center" ? " ib-block-hero--center" : ""}${block.timerSize !== "large" ? " ib-block-hero--timer-xl" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}>
                     <div className="ib-block__in">
                         {block.by && <p className="ib-block-hero__by">{render(block.by)}</p>}
                         {block.kicker && <span className="ib-block-hero__kicker">{render(block.kicker)}</span>}
@@ -86,8 +99,8 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                         <div className="ib-block-hero__row">
                             <dl className="ib-block-hero__facts">{(block.items ?? []).map((item, index) => <div key={index}><dt>{render(item.label)}</dt><dd>{render(item.value)}</dd></div>)}</dl>
                             <div className="ib-block-hero__aside">
-                                {block.targetVariable && <CountdownValue target={typeof target === "string" ? target : null} />}
-                                <div className="ib-block-hero__cta">
+                                {(block.targetVariable || block.targetDate) && <CountdownValue target={typeof target === "string" ? target : null} segments />}
+                                <div className={`ib-block-hero__cta ib-block-hero__cta--${block.actionAlignment ?? "end"}`}>
                                     {primaryHref && block.action?.label && <a className={`ib-btn ${mass ? "ib-btn--mass" : "ib-btn--primary"}`} href={primaryHref}>{render(block.action.label)}</a>}
                                     {secondaryHref && block.secondaryAction?.label && <a className="ib-btn" href={secondaryHref}>{render(block.secondaryAction.label)}</a>}
                                 </div>
@@ -116,16 +129,16 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
             </section>;
             if (block.type === "facts") return <section className={`ib-block ib-block-facts${block.variant === "rows" ? " ib-block-facts--rows" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<dl className="ib-block-facts__list">{(block.items ?? []).map((item, index) => <div className="ib-block-facts__item" key={index}><dt>{render(item.label)}</dt><dd>{render(item.value)}</dd></div>)}</dl></div></section>;
             if (block.type === "timeline") return <section className={`ib-block ib-block-timeline${block.variant === "list" ? " ib-block-timeline--list" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<ol className="ib-block-timeline__list">{(block.items ?? []).map((item, index) => <li className="ib-block-timeline__step" key={index}><span className="ib-block-timeline__time">{render(item.label)}</span><p className="ib-block-timeline__label">{render(item.value)}</p></li>)}</ol></div></section>;
-            if (block.type === "faq") return <section className="ib-block ib-block-faq" key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<div className="ib-accordion ib-accordion--lg">{(block.items ?? []).map((item, index) => <details className="ib-accordion__item" key={index} open={index === block.openItem ? true : undefined}><summary className="ib-accordion__q">{render(item.label)}</summary><div className="ib-accordion__a ib-block-prose"><ReactMarkdown>{replaceVariables(item.value ?? "", variables, declared, true)}</ReactMarkdown></div></details>)}</div></div></section>;
+            if (block.type === "faq") return <section className="ib-block ib-block-faq" key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<div className="ib-accordion ib-accordion--lg">{(block.items ?? []).map((item, index) => <details className="ib-accordion__item" key={index} open={index === block.openItem}><summary className="ib-accordion__q">{render(item.label)}</summary><div className="ib-accordion__a ib-block-prose"><ReactMarkdown>{replaceVariables(item.value ?? "", variables, declared, true)}</ReactMarkdown></div></details>)}</div></div></section>;
             if (block.type === "cta") {
-                const href = safeHref(block.action?.href ?? "");
-                const secondaryHref = safeHref(block.secondaryAction?.href ?? "");
-                return <section className={`ib-block ib-block-cta${block.variant === "mass" ? " ib-mass ib-mass-waves" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div><h2 className="ib-block-cta__title">{render(block.title)}</h2>{block.text && <p className="ib-block-cta__text">{render(block.text)}</p>}</div><div className="ib-block-cta__acts">{href && block.action?.label && <a className={`ib-btn ${block.variant === "mass" ? "ib-btn--mass" : "ib-btn--primary"}`} href={href}>{render(block.action.label)}</a>}{secondaryHref && block.secondaryAction?.label && <a className="ib-btn" href={secondaryHref}>{render(block.secondaryAction.label)}</a>}</div></div></section>;
+                const href = safeHref(render(block.action?.href));
+                const secondaryHref = safeHref(render(block.secondaryAction?.href));
+                return <section className={`ib-block ib-block-cta${block.variant === "mass" ? " ib-mass ib-mass-waves" : ""} ib-block-cta--actions-${block.actionAlignment ?? "end"}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div><h2 className="ib-block-cta__title">{render(block.title)}</h2>{block.text && <p className="ib-block-cta__text">{render(block.text)}</p>}</div><div className="ib-block-cta__acts">{href && block.action?.label && <a className={`ib-btn ${block.variant === "mass" ? "ib-btn--mass" : "ib-btn--primary"}`} href={href}>{render(block.action.label)}</a>}{secondaryHref && block.secondaryAction?.label && <a className="ib-btn" href={secondaryHref}>{render(block.secondaryAction.label)}</a>}</div></div></section>;
             }
             if (block.type === "countdown") {
-                const target = variables[block.targetVariable ?? ""];
-                const actionHref = safeHref(block.action?.href ?? "");
-                return <section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}${!block.title && !block.text ? " ib-block-countdown--timer-only" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div>{block.title && <h2 className="ib-block-countdown__title">{render(block.title)}</h2>}{block.text && <p className="ib-block-countdown__text">{render(block.text)}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} segments />{actionHref && block.action?.label && <a className="ib-btn ib-btn--primary" href={actionHref}>{render(block.action.label)}</a>}</div></div></section>;
+                const target = block.targetDate || variables[block.targetVariable ?? ""];
+                const actionHref = safeHref(render(block.action?.href));
+                return <section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}${!block.title && !block.text ? " ib-block-countdown--timer-only" : ""}${block.timerSize === "xl" ? " ib-block-countdown--timer-xl" : ""}${block.surface === "frame" ? " ib-block-countdown--frame" : ""} ib-block-countdown--actions-${block.actionAlignment ?? "end"}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div>{block.title && <h2 className="ib-block-countdown__title">{render(block.title)}</h2>}{block.text && <p className="ib-block-countdown__text">{render(block.text)}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} segments />{actionHref && block.action?.label && <a className="ib-btn ib-btn--primary" href={actionHref}>{render(block.action.label)}</a>}</div></div></section>;
             }
             return <section className={`ib-block ib-block-divider${block.size === "sm" ? " ib-block-divider--sm" : block.size === "lg" ? " ib-block-divider--lg" : ""}${block.line ? " ib-block-divider--line" : ""}`} key={block.id} id={block.id} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in" /></section>;
         })}

@@ -64,11 +64,10 @@ body.event-root main{overflow-x:visible}
 .event-guest-main>.event-landing{max-width:1280px;margin-inline:auto}
 .event-guest-main>.ib-blocks{max-width:1280px;margin-inline:auto}
 .event-page-content:has(.ib-blocks){padding:0}
-.event-landing,.event-guest-main>.ib-blocks,.event-page-content>.ib-blocks{gap:var(--ib-4);padding:var(--ib-6) var(--ib-6) var(--ib-12)}
-.event-landing>.ib-blocks{gap:var(--ib-4);padding:0}
-.event-guest-main .ib-blocks>.ib-block,.event-landing>.ib-block{border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);overflow:hidden}
-.event-guest-main .ib-blocks>.ib-block:not(.ib-mass){background:var(--ib-surface)}
-.event-guest-main .ib-blocks>.ib-block+.ib-block{border-top:1px solid var(--ib-line)}
+.event-landing,.event-guest-main>.ib-blocks,.event-page-content>.ib-blocks{gap:0;padding:0 0 var(--ib-12)}
+.event-landing>.ib-blocks{gap:0;padding:0}
+.event-guest-main .ib-blocks>.ib-block,.event-landing>.ib-block{border:0;border-radius:0;overflow:hidden}
+.event-guest-main .ib-blocks>.ib-block:not(.ib-mass){background:var(--ib-paper)}
 .event-landing>.ib-blocks{container:ib-blocks/inline-size}
 .event-content-heading{padding-bottom:var(--ib-6)}
 .event-content-empty{color:var(--ib-dim)}
@@ -138,5 +137,5 @@ body.event-root main{overflow-x:visible}
 .ib-event-shell__backdrop{border:0;padding:0;cursor:pointer}
 @media(max-width:767px){.event-page-content{padding:var(--ib-4)}}
 @media(max-width:600px){.event-join-banner{align-items:flex-start;flex-direction:column;margin:var(--ib-4);padding:var(--ib-4)}.event-join-page{padding:var(--ib-4)}.event-join-card{padding:var(--ib-5)}}
-@media(max-width:767px){.event-landing,.event-guest-main>.ib-blocks,.event-page-content>.ib-blocks{padding:var(--ib-4) var(--ib-4) var(--ib-8);gap:var(--ib-3)}.event-landing>.ib-blocks{padding:0}}
+@media(max-width:767px){.event-landing,.event-guest-main>.ib-blocks,.event-page-content>.ib-blocks{padding:var(--ib-4) var(--ib-4) var(--ib-8);gap:0}.event-landing>.ib-blocks{padding:0}}
 .ib-footer--event .ib-footer__inner{max-width:1280px;padding-inline:var(--ib-6)}

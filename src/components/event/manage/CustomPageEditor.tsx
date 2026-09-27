@@ -4,11 +4,11 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ArrowUpRight, Check, Eye, Plus, RotateCcw, Trash2, Type, X} from "lucide-react";
+import {ArrowUpRight, Check, Eye, Plus, RotateCcw, Trash2, Type} from "lucide-react";
 import {createManagePage, deleteManagePage, getManageContent, getManageContentVariables, getManagePage, ManageApiError, type ManagePage, type ManagePageInput, updateManagePage} from "@/api/manage";
 import {ContentBlocks, contentBlockVisible} from "@/components/event/content/ContentBlocks";
 import type {ContentBlock, PageBlockType} from "@/types/eventContent";
-import {LandingBlockEditor} from "./LandingBlockEditor";
+import {FieldLabel, LandingBlockEditor} from "./LandingBlockEditor";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {blockPalette, createPageBlock} from "./blockPalette";
 import {useManager} from "./ManagerShell";
@@ -49,8 +49,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const values = useMemo(() => Object.fromEntries(catalog.map(item => [item.name, content.data?.Variables[item.name] ?? null])), [catalog, content.data?.Variables]);
     const selectedBlock = draft.Document.blocks.find(block => block.id === selectedBlockID);
     const selectedHidden = selectedBlock ? !contentBlockVisible(selectedBlock, values) : false;
-    const showPreview = !!selectedBlockID && draft.Document.blocks.some(block => contentBlockVisible(block, values));
-    const documentError = definitions.data ? validateLanding(draft.Document, catalog) : null;
+    const documentError = definitions.data ? validateLanding(draft.Document, catalog, event.PreviewPicture ?? "") : null;
     const validation = draft.Slug === "new" ? "Адреса new зарезервована для створення сторінки." :
         !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.Slug) || draft.Slug.length > 128 ? "Адреса сторінки: латинські літери, цифри й дефіси." :
         !draft.Title.trim() || draft.Title.length > 255 ? "Вкажіть назву сторінки до 255 символів." : documentError;
@@ -69,8 +68,13 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         setMessage("");
         setError("");
     }
-    function updateBlock(index: number, block: ContentBlock) {
-        change({...draft, Document: {blocks: draft.Document.blocks.map((old, position) => position === index ? block : old)}});
+    function updateBlock(blockID: string, value: ContentBlock | ((current: ContentBlock) => ContentBlock)) {
+        setEdited(previous => {
+            const current = previous?.key === key ? previous.value : saved;
+            return {key, value: {...current, Document: {blocks: current.Document.blocks.map(block => block.id === blockID ? typeof value === "function" ? value(block) : value : block)}}};
+        });
+        setMessage("");
+        setError("");
     }
     function moveBlock(index: number, direction: -1 | 1) {
         const blocks = [...draft.Document.blocks];
@@ -88,7 +92,8 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         setSelected({eventID, key, blockID: sourceID});
     }
     function addBlock(type: PageBlockType) {
-        const block = createPageBlock(type);
+        const created = createPageBlock(type);
+        const block = type === "banner" && !event.PreviewPicture ? {...created, imageSource: "custom"} : created;
         const blocks = [...draft.Document.blocks];
         const selectedIndex = blocks.findIndex(item => item.id === selectedBlockID);
         blocks.splice(selectedIndex < 0 ? blocks.length : selectedIndex + 1, 0, block);
@@ -139,25 +144,25 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         <header className="event-manage-heading"><div><p className="event-manage-eyebrow">Сторінки</p><h1>{isNew ? "Нова сторінка" : draft.Title}</h1><p>Той самий конструктор блоків, що й на головній сторінці.</p></div>{!isNew && <Link className="ib-btn" href={`/p/${draft.Slug}`} target="_blank">Відкрити <ArrowUpRight size={16} /></Link>}</header>
         {error && <div className="event-manage-feedback event-manage-feedback--error" role="alert">{error}</div>}
         {message && <div className="event-manage-feedback" role="status"><Check size={16} />{message}</div>}
-        <div className={`event-manage-content__layout${showPreview ? "" : " event-manage-content__layout--single"}`}>
+        <div className="event-manage-content__layout">
             <div className="event-content-editor">
                 <div className="event-manage-page-details" aria-label="Налаштування сторінки">
                     <h2>Налаштування сторінки</h2>
-                    <label className="event-manage-field"><span>Назва сторінки</span><input className="event-manage-input" value={draft.Title} disabled={!canManage || saving} onChange={e => change({...draft, Title: e.target.value})} maxLength={255} /></label>
-                    <label className="event-manage-field"><span>Адреса</span><div className="event-manage-page-slug"><span>/p/</span><input className="event-manage-input" value={draft.Slug} disabled={!canManage || saving} onChange={e => change({...draft, Slug: e.target.value.toLowerCase()})} maxLength={128} /></div></label>
-                    <div className="event-manage-field"><span>Доступ</span><EventSelect ariaLabel="Доступ до сторінки" value={String(draft.Visibility)} disabled={!canManage || saving} options={[{value: "0", label: "Публічна"}, {value: "1", label: "Підтверджені учасники"}, {value: "2", label: "Лише модератори"}]} onValueChange={value => {const visibility = Number(value) as 0 | 1 | 2; change({...draft, Visibility: visibility, Navigation: visibility === 2 ? 0 : draft.Navigation});}} /></div>
-                    <div className="event-manage-field"><span>У навігації</span><EventSelect ariaLabel="Показ у навігації" value={draft.Visibility === 2 || draft.Navigation === 0 ? "0" : "1"} disabled={!canManage || saving || draft.Visibility === 2} options={[{value: "1", label: "Показувати"}, {value: "0", label: "Не показувати"}]} onValueChange={value => change({...draft, Navigation: value === "1" ? 1 : 0})} /></div>
-                    <label className="event-manage-field"><span>Порядок у навігації</span><input className="event-manage-input" type="number" value={draft.NavigationOrder} disabled={!canManage || saving || draft.Navigation === 0} onChange={e => change({...draft, NavigationOrder: Number(e.target.value)})} /></label>
+                    <label className="event-manage-field"><FieldLabel label="Назва сторінки" required help="Назва відображається на самій сторінці та, якщо показ увімкнено, у навігації. До 255 символів." /><input className="event-manage-input" value={draft.Title} required disabled={!canManage || saving} onChange={e => change({...draft, Title: e.target.value})} maxLength={255} /></label>
+                    <label className="event-manage-field"><FieldLabel label="Адреса" required help="Частина адреси після /p/. Використовуйте латинські літери, цифри й дефіси; до 128 символів." /><div className="event-manage-page-slug"><span>/p/</span><input className="event-manage-input" value={draft.Slug} required disabled={!canManage || saving} onChange={e => change({...draft, Slug: e.target.value.toLowerCase()})} maxLength={128} /></div></label>
+                    <div className="event-manage-field"><FieldLabel label="Доступ" required help="Публічна — доступна всім. Для підтверджених учасників потрібна участь у події. Лише модератори — сторінка доступна тільки в керуванні й не потрапляє в навігацію сайту." /><EventSelect ariaLabel="Доступ до сторінки" value={String(draft.Visibility)} disabled={!canManage || saving} options={[{value: "0", label: "Публічна"}, {value: "1", label: "Підтверджені учасники"}, {value: "2", label: "Лише модератори"}]} onValueChange={value => {const visibility = Number(value) as 0 | 1 | 2; change({...draft, Visibility: visibility, Navigation: visibility === 2 ? 0 : draft.Navigation});}} /></div>
+                    <div className="event-manage-field"><FieldLabel label="У навігації" required help="Показувати — додати посилання на сторінку до меню події для тих, хто має до неї доступ. Модератори бачать це меню і до публікації події." /><EventSelect ariaLabel="Показ у навігації" value={draft.Visibility === 2 || draft.Navigation === 0 ? "0" : "1"} disabled={!canManage || saving || draft.Visibility === 2} options={[{value: "1", label: "Показувати"}, {value: "0", label: "Не показувати"}]} onValueChange={value => change({...draft, Navigation: value === "1" ? 1 : 0})} /></div>
+                    <label className="event-manage-field"><FieldLabel label="Порядок у навігації" required={draft.Navigation !== 0 && draft.Visibility !== 2} help="Менше число ставить посилання раніше серед додаткових сторінок. Використовується, коли показ у навігації увімкнено." /><input className="event-manage-input" type="number" value={draft.NavigationOrder} disabled={!canManage || saving || draft.Navigation === 0} onChange={e => change({...draft, NavigationOrder: Number(e.target.value)})} /></label>
                 </div>
                 <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Перетягніть блок за ручку або скористайтеся стрілками. Так само вони з’являться на сайті.</p></div><span>{draft.Document.blocks.length}</span></div>
                 {draft.Document.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
-                <div className="event-content-editor__stack">{draft.Document.blocks.map((block, index) => <LandingBlockEditor key={block.id} block={block} index={index} count={draft.Document.blocks.length} values={values} catalog={catalog} canEdit={canManage && !saving} selected={selectedBlockID === block.id} onSelect={() => setSelected({eventID, key, blockID: block.id})} onUpdate={value => updateBlock(index, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDelete={() => change({...draft, Document: {blocks: draft.Document.blocks.filter((_, position) => position !== index)}})} />)}</div>
+                <div className="event-content-editor__stack">{draft.Document.blocks.map((block, index) => <LandingBlockEditor key={block.id} eventID={eventID} coverImage={event.PreviewPicture ?? ""} block={block} index={index} count={draft.Document.blocks.length} values={values} catalog={catalog} canEdit={canManage && !saving} selected={selectedBlockID === block.id} onSelect={() => setSelected({eventID, key, blockID: block.id})} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDelete={() => change({...draft, Document: {blocks: draft.Document.blocks.filter((_, position) => position !== index)}})} />)}</div>
                 {canManage && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !draft.Document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <div className="event-content-editor__footer"><span>{dirty ? "Є незбережені зміни" : "Зміни збережено"}</span><div>{dirty && !isNew && canManage && <button className="ib-btn" type="button" onClick={() => {setEdited(null); setError("");}}><RotateCcw size={16} /> Скасувати</button>}{!isNew && canManage && <button className="ib-btn event-content-editor__delete" type="button" disabled={saving} onClick={() => void remove()}><Trash2 size={16} /> Видалити</button>}<button className="ib-btn ib-btn--primary" type="button" disabled={!canManage || !dirty || !!validation || saving} onClick={() => void save()}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div></div>
             </div>
-            {selectedBlockID && !showPreview && <p className="event-content-editor__hidden-note" role="status">На сторінці зараз немає видимих блоків.</p>}
-            {showPreview && <aside className="event-manage-content__preview" aria-label="Попередній перегляд сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вибраний блок виділено в макеті всієї сторінки."}</p></div><button className="event-manage-content__preview-close" type="button" aria-label="Закрити попередній перегляд" onClick={() => setSelected(null)}><X size={17} /></button></div><div className="event-manage-content__preview-window" ref={previewRef}><ContentBlocks document={draft.Document} variables={values} title={draft.Title || "Нова сторінка"} selectedBlockId={selectedBlockID} coverImage={event.PreviewPicture} /></div></aside>}
+
+            <aside className="event-manage-content__preview" aria-label="Попередній перегляд сторінки"><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок зараз приховано умовами показу." : "Вся сторінка у поточному порядку блоків."}</p></div></div><div className="event-manage-content__preview-window" ref={previewRef}><ContentBlocks document={draft.Document} variables={values} title={draft.Title || "Нова сторінка"} selectedBlockId={selectedBlockID ?? undefined} coverImage={event.PreviewPicture ?? ""} /></div></aside>
         </div>
     </div>;
 }
