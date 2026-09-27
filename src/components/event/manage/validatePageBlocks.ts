@@ -31,7 +31,7 @@ export function blockValidationField(error: string | undefined, block: ContentBl
     if (message === "вкажіть свою дату й час відліку." || message === "вкажіть коректну дату й час.") return "targetDate";
     if (message === "оберіть дату події для відліку." || message === "оберіть дату події або задайте її вручну." || message === "оберіть доступну змінну дати.") return "targetVariable";
     if (message === "заповніть усі пункти або видаліть порожні." || message === "додайте розділ із назвою та безпечним текстом." || message === "заповніть факти героя, не більше чотирьох.") {
-        const itemIndex = block.items?.findIndex(item => !item.label?.trim() || !item.value?.trim()) ?? -1;
+        const itemIndex = block.items?.findIndex(item => !item.label?.trim() || !item.value?.trim() || (block.type === "doc" && item.value.includes("<"))) ?? -1;
         if (itemIndex >= 0) return `item:${itemIndex}:${block.items?.[itemIndex].label?.trim() ? "value" : "label"}`;
     }
     if (block.type === "timeline" && message.startsWith("етап розкладу:")) {

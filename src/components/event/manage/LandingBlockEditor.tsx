@@ -348,7 +348,12 @@ export function LandingBlockEditor({eventID, coverImage, block, index, count, va
     }
 
     function richField(field: string, label: string) {
-        return <><RichMarkdownField eventID={eventID} label={label} value={fieldValue(field)} error={errorField === field ? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
+        let itemError: string | undefined;
+        if (field.startsWith("item:") && errorField === field) {
+            if (block.type === "doc") itemError = fieldValue(field).includes("<") ? "HTML у тексті розділу не підтримується." : "Заповніть текст розділу.";
+            if (block.type === "faq") itemError = "Заповніть відповідь.";
+        }
+        return <><RichMarkdownField eventID={eventID} label={label} value={fieldValue(field)} error={errorField === field ? itemError ?? errorMessage : undefined} disabled={!canEdit} catalog={catalog} values={values}
             onChange={value => onUpdate(changeField(field, value))}
             onInsertVariable={(variable, value) => onUpdate(changeField(field, value, withBinding(block, variable)))} />
             <DateVariableFormatControls field={field} value={fieldValue(field)} block={block} catalog={catalog} values={values} disabled={!canEdit} onUpdate={onUpdate} /></>;
