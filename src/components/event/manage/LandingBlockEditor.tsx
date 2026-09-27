@@ -160,9 +160,10 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
     }
 
     const blockLabel = blockPalette.find(item => item.type === block.type)?.label ?? block.type;
-    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__drag")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__drag")) onSelect();}}>
+    const blockSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? block.markdown : "");
+    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__drag")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__drag")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect();}}}>
         <div className="event-content-editor__block-head">
-            <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong></div>
+            <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</div>
             {canEdit && <div className="event-content-editor__block-actions">
                 <EventTooltip content="Перетягнути блок. Для клавіатури скористайтеся стрілками.">{id => <button type="button" className="event-content-editor__drag" aria-label={`Перетягнути блок ${index + 1}`} aria-describedby={id} onPointerDown={event => {if (event.button !== 0) return; event.preventDefault(); pointerID.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId);}} onPointerMove={event => {if (pointerID.current !== event.pointerId) return; const target = blockAt(event.clientX, event.clientY); const next = target?.dataset.editorBlockId !== block.id ? target : null; if (dropTarget.current === next) return; dropTarget.current?.classList.remove("is-drop-target"); next?.classList.add("is-drop-target"); dropTarget.current = next;}} onPointerUp={event => {if (pointerID.current !== event.pointerId) return; const targetID = blockAt(event.clientX, event.clientY)?.dataset.editorBlockId; clearDropTarget(); if (targetID && targetID !== block.id) onReorder(block.id, targetID);}} onPointerCancel={clearDropTarget}><GripVertical size={16} /></button>}</EventTooltip>
                 <EventTooltip content="Перемістити вище">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} вище`} aria-describedby={id} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
@@ -170,7 +171,7 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
                 <EventTooltip content="Видалити блок">{id => <button type="button" className="event-content-editor__danger" aria-label={`Видалити блок ${index + 1}`} aria-describedby={id} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
         </div>
-        <div className="event-content-editor__block-body">
+        {selected && <div className="event-content-editor__block-body">
             {block.type === "section" && inputField("label", "Заголовок розділу", "Назва розділу", false, true)}
             {block.type === "section" && <div className="event-manage-field"><FieldLabel label="Розташування" /><EventSelect ariaLabel="Розташування заголовка" value={block.variant ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {block.type === "text" && inputField("markdown", "Вміст (Markdown)", "Напишіть текст сторінки…", true, true, "Підтримуються заголовки, списки, посилання, цитати й код. HTML не підтримується.")}
@@ -266,6 +267,6 @@ export function LandingBlockEditor({block, index, count, values, catalog, canEdi
                 })}
                 {canEdit && <button className="ib-btn ib-btn--sm" type="button" onClick={addRule}><Plus size={15} /> Додати умову</button>}
             </div>}
-        </div>
+        </div>}
     </section>;
 }

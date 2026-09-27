@@ -3,6 +3,13 @@ import {visibilityOperators, type ContentVariableDefinition} from "@/components/
 
 const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
 
+function validHref(href: string): boolean {
+    const value = href.trim();
+    if (!value || /[\\\r\n\t]/.test(value) || value.startsWith("//")) return false;
+    if (value.startsWith("/") || value.startsWith("#")) return true;
+    try {const url = new URL(value); return url.protocol === "https:" && !!url.host && !url.username && !url.password;} catch {return false;}
+}
+
 export function validateLanding(document: ContentDocument, catalog: ContentVariableDefinition[]): string | null {
     const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const ids = new Set<string>();
@@ -20,22 +27,22 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
         if (block.type === "faq" && block.openItem !== undefined && (block.openItem < 0 || block.openItem >= (block.items?.length ?? 0))) return `Блок ${index + 1}: оберіть питання, яке відкрити.`;
         if (block.type === "doc" && (!block.items?.length || block.items.some(item => !item.label?.trim() || !item.value?.trim() || item.value.includes("<")))) return `Блок ${index + 1}: додайте розділ із назвою та безпечним текстом.`;
         if (block.type === "cta" && (!block.title?.trim() || !block.action?.label.trim() || !block.action?.href.trim())) return `Блок ${index + 1}: додайте заголовок і кнопку.`;
-        if (block.type === "cta" && block.action && !/^(\/(?!\/)|#|https:\/\/)/.test(block.action.href)) return `Блок ${index + 1}: посилання має бути внутрішнім або HTTPS.`;
+        if (block.type === "cta" && block.action && !validHref(block.action.href)) return `Блок ${index + 1}: посилання має бути внутрішнім або HTTPS.`;
         if (block.type === "cta" && block.variant && !["plain", "mass"].includes(block.variant)) return `Блок ${index + 1}: невідоме оформлення дії.`;
-        if (block.type === "cta" && block.secondaryAction && (!block.secondaryAction.label.trim() || !/^(\/(?!\/)|#|https:\/\/)/.test(block.secondaryAction.href))) return `Блок ${index + 1}: заповніть другу дію та її посилання.`;
+        if (block.type === "cta" && block.secondaryAction && (!block.secondaryAction.label.trim() || !validHref(block.secondaryAction.href))) return `Блок ${index + 1}: заповніть другу дію та її посилання.`;
         if (block.type === "facts" && block.variant && !["strip", "rows"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка фактів.`;
         if (block.type === "hero") {
             if (!block.title?.trim()) return `Блок ${index + 1}: вкажіть назву героя.`;
             if (block.variant && !["mass", "plain"].includes(block.variant)) return `Блок ${index + 1}: невідоме оформлення героя.`;
             if ((block.items?.length ?? 0) > 4 || block.items?.some(item => !item.label?.trim() || !item.value?.trim())) return `Блок ${index + 1}: заповніть факти героя, не більше чотирьох.`;
             for (const action of [block.action, block.secondaryAction]) {
-                if (action && (!action.label.trim() || !/^(\/(?!\/)|#|https:\/\/)/.test(action.href))) return `Блок ${index + 1}: заповніть текст і посилання дії.`;
+                if (action && (!action.label.trim() || !validHref(action.href))) return `Блок ${index + 1}: заповніть текст і посилання дії.`;
             }
             if (block.targetVariable && !catalog.some(item => item.name === block.targetVariable && item.format === "date-time")) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
         }
         if (block.type === "countdown" && (!block.targetVariable || !catalog.some(item => item.name === block.targetVariable && item.format === "date-time"))) return `Блок ${index + 1}: оберіть доступну змінну дати.`;
         if (block.type === "countdown" && block.variant && !["split", "center"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка відліку.`;
-        if (block.type === "countdown" && block.action && (!block.action.label.trim() || !/^(\/(?!\/)|#|https:\/\/)/.test(block.action.href))) return `Блок ${index + 1}: заповніть кнопку відліку та її посилання.`;
+        if (block.type === "countdown" && block.action && (!block.action.label.trim() || !validHref(block.action.href))) return `Блок ${index + 1}: заповніть кнопку відліку та її посилання.`;
         const bindings = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
         for (const variable of block.variables ?? []) {
             if (contentVariableByName.get(variable.name)?.format !== variable.format) return `Блок ${index + 1}: змінна ${variable.name} недоступна для цієї сторінки.`;

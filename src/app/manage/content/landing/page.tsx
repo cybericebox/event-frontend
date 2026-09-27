@@ -91,7 +91,10 @@ export default function ManageLandingPage() {
     function addBlock(type: PageBlockType) {
         if (!draft) return;
         const block = createPageBlock(type, true);
-        change({blocks: [...draft.blocks, block]});
+        const blocks = [...draft.blocks];
+        const selectedIndex = blocks.findIndex(item => item.id === selectedBlockID);
+        blocks.splice(selectedIndex < 0 ? blocks.length : selectedIndex + 1, 0, block);
+        change({blocks});
         setSelected({eventID, blockID: block.id});
     }
 

@@ -434,6 +434,8 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__block.is-drop-target{border-color:var(--ib-action);box-shadow:0 0 0 2px var(--ib-action)}
 .event-content-editor__block-head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
 .event-content-editor__block-title{display:flex;align-items:center;gap:var(--ib-3);font-size:var(--ib-fs-13)}
+.event-content-editor__block-title strong{flex:none}
+.event-content-editor__block-summary{min-width:0;max-width:32ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim)}
 .event-content-editor__order{display:grid;place-items:center;width:24px;height:24px;border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-content-editor__block-actions{display:flex;align-items:center;gap:var(--ib-1)}
 .event-content-editor__block-actions button,.event-content-editor__variable-head button,.event-content-editor__rule-remove{display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}

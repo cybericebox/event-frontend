@@ -88,7 +88,10 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     }
     function addBlock(type: PageBlockType) {
         const block = createPageBlock(type);
-        change({...draft, Document: {blocks: [...draft.Document.blocks, block]}});
+        const blocks = [...draft.Document.blocks];
+        const selectedIndex = blocks.findIndex(item => item.id === selectedBlockID);
+        blocks.splice(selectedIndex < 0 ? blocks.length : selectedIndex + 1, 0, block);
+        change({...draft, Document: {blocks}});
         setSelected({eventID, key, blockID: block.id});
     }
 
