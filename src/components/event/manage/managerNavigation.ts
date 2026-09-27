@@ -5,7 +5,6 @@ export const plannedManagerPages = {
     live: {title: "Live", description: "Тут можна буде налаштовувати окремий екран Live та його попередній перегляд."},
     "team-form": {title: "Анкета команди", description: "Тут можна буде налаштовувати анкету під час створення команди."},
     surveys: {title: "Опитування", description: "Тут можна буде налаштовувати опитування та зворотний зв’язок."},
-    "form-responses": {title: "Відповіді на форми", description: "Тут можна буде переглядати відповіді на анкети й опитування."},
     notifications: {title: "Сповіщення на сайті", description: "Тут можна буде налаштовувати сповіщення цієї події."},
     email: {title: "Електронні листи", description: "Тут можна буде налаштовувати листи цієї події."},
 } as const;
@@ -35,6 +34,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/participants") return "Учасники";
     if (pathname === "/manage/teams") return "Команди";
     if (pathname === "/manage/participant-form") return "Анкета учасника";
+    if (pathname === "/manage/form-responses") return "Відповіді на форми";
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Title;
