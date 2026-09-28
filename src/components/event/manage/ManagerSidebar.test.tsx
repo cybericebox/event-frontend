@@ -28,9 +28,9 @@ describe("participation navigation", () => {
 
     it("keeps requests inside participants and hides teams for an individual event", () => {
         renderSidebar(0);
-        expect(screen.getByRole("link", {name: "Налаштування реєстрації"})).toBeTruthy();
+        expect(screen.getByRole("link", {name: "Реєстрація"})).toBeTruthy();
         expect(screen.getByRole("link", {name: "Учасники"})).toBeTruthy();
-        expect(screen.getByRole("link", {name: "Додаткові поля"})).toBeTruthy();
+        expect(screen.queryByRole("link", {name: "Додаткові поля"})).toBeNull();
         expect(screen.queryByRole("link", {name: "Заявки"})).toBeNull();
         expect(screen.queryByRole("link", {name: "Команди"})).toBeNull();
         expect(screen.queryByRole("button", {name: "Форми"})).toBeNull();

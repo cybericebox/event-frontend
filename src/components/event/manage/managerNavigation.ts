@@ -4,8 +4,8 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage") return "Огляд і підготовка";
     if (pathname === "/manage/settings") return "Загальне";
     if (pathname === "/manage/appearance") return "Вигляд";
-    if (pathname === "/manage/participation-settings") return "Формат події";
-    if (pathname === "/manage/registration") return "Налаштування реєстрації";
+    if (pathname === "/manage/participation-settings") return "Формат участі";
+    if (pathname === "/manage/registration") return "Реєстрація";
     if (pathname === "/manage/results-settings") return "Налаштування результатів";
     if (pathname === "/manage/schedule") return "Публікація і час";
     if (pathname === "/manage/content/landing") return "Головна сторінка";
@@ -15,14 +15,11 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/submissions") return "Спроби розв’язання";
     if (pathname === "/manage/results") return "Таблиця результатів";
     if (pathname === "/manage/live") return "Live";
-    if (pathname === "/manage/applications") return "Учасники";
     if (pathname === "/manage/participants") return "Учасники";
     if (pathname === "/manage/teams") return "Команди";
-    if (pathname === "/manage/participant-form") return "Додаткові поля";
     if (pathname === "/manage/surveys") return "Опитування";
     if (pathname === "/manage/notifications") return "Сповіщення на сайті";
     if (pathname === "/manage/email") return "Електронні листи";
-    if (pathname === "/manage/form-responses") return "Відповіді на форми";
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Title;

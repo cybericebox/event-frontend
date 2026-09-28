@@ -71,6 +71,7 @@ export default function ManageIndex() {
                     MinTeamSize: participation === 1 ? minSize : current.MinTeamSize,
                     MaxTeams: current.MaxTeams,
                     DynamicLabsPlanned: current.DynamicLabsPlanned,
+                    AllowPseudonyms: current.AllowPseudonyms,
                 };
                 client.setQueryData(["event-management-config", eventID], await putManageConfig(eventID, input));
             }
@@ -104,14 +105,14 @@ export default function ManageIndex() {
             </div>
             {participation === 1 && <div className="event-manage-fields-two">
                 <div className="event-manage-field"><ManageFieldLabel htmlFor="setup-max-team-size" title="Максимум учасників у команді" help={"Найбільша кількість людей у команді.\n\nВкажіть до планування публікації; після публікації змінити не можна."} required /><input id="setup-max-team-size" className="event-manage-input" type="number" min={1} step={1} value={maxTeamSize} onChange={event => setMaxTeamSizeDraft(event.target.value)} disabled={!canManage || locked || saving} required /></div>
-                <div className="event-manage-field"><ManageFieldLabel htmlFor="setup-min-team-size" title="Мінімум учасників у команді" help={"Найменша дозволена кількість людей у команді.\n\nЗалиште порожнім, якщо обмеження не потрібне. Після публікації змінити не можна."} /><input id="setup-min-team-size" className="event-manage-input" type="number" min={1} max={maxTeamSize || undefined} step={1} value={minTeamSize} onChange={event => setMinTeamSizeDraft(event.target.value)} disabled={!canManage || locked || saving} placeholder="Без мінімуму" /></div>
+                <div className="event-manage-field"><ManageFieldLabel htmlFor="setup-min-team-size" title="Мінімум учасників у команді" help={"Команда з меншою кількістю учасників не допускається до завдань, доки її не допустить модератор.\n\nЯкщо поле порожнє, мінімум — 2 учасники (або максимум, якщо він менший). Після публікації змінити не можна."} /><input id="setup-min-team-size" className="event-manage-input" type="number" min={1} max={maxTeamSize || undefined} step={1} value={minTeamSize} onChange={event => setMinTeamSizeDraft(event.target.value)} disabled={!canManage || locked || saving} placeholder="2" /></div>
             </div>}
             <div className="event-manage-field"><ManageFieldLabel title="Реєстрація після публікації" help={"Визначає, як учасники приєднуються після публікації.\n\n• Закрита — нові заявки недоступні.\n• За схваленням — заявку перевіряє модератор.\n• Відкрита — учасники приєднуються самостійно.\n\nДо публікації реєстрація закрита незалежно від вибору."} required /><EventSelect ariaLabel="Реєстрація після публікації" value={String(registration)} options={[{value: "0", label: "Закрита"}, {value: "1", label: "За схваленням"}, {value: "2", label: "Відкрита"}]} onValueChange={value => setRegistrationDraft(Number(value) as 0 | 1 | 2)} disabled={!canManage || saving} /></div>
             <div className="event-manage-fields-two">
                 <ManageDateField id="setup-publish-at" title="Публікація" help={"Із цього часу сайт стане доступним гостям.\n\nДо публікації реєстрація закрита незалежно від вибраного режиму."} value={publishAt} onChange={setPublishAtDraft} disabled={!canManage || saving} required />
                 <ManageDateField id="setup-start-at" title="Початок" help={"Із цього часу учасники зможуть проходити завдання.\n\nПочаток не може бути раніше публікації."} value={startAt} onChange={setStartAtDraft} disabled={!canManage || saving} required />
             </div>
-            <ManageFieldLabel title="Період приєднання" help={"Визначає, доки учасники можуть приєднуватися або змінювати команду.\n\n• До початку — приєднання закриється на старті.\n• Протягом події — доступне до завершення."} required />
+            <ManageFieldLabel title="Період приєднання" help={"Визначає, доки учасники можуть приєднуватися до події.\n\n• До початку — приєднання закриється на старті.\n• Протягом події — доступне до завершення."} required />
             <div className="event-manage-choice-group" role="radiogroup" aria-label="Період приєднання">
                 <label><input type="radio" name="join-policy" checked={joinPolicy === 0} onChange={() => setJoinPolicyDraft(0)} disabled={!canManage || saving} /><span><strong>До початку</strong></span></label>
                 <label><input type="radio" name="join-policy" checked={joinPolicy === 1} onChange={() => setJoinPolicyDraft(1)} disabled={!canManage || saving} /><span><strong>Протягом події</strong></span></label>

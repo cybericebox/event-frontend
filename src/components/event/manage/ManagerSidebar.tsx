@@ -23,12 +23,11 @@ const groups: Group[] = [
     {id: "event", label: "Подія", items: [
         {href: "/manage/settings", label: "Загальне", icon: Settings2},
         {href: "/manage/appearance", label: "Вигляд", icon: Palette},
-        {href: "/manage/participation-settings", label: "Формат події", icon: UsersRound},
+        {href: "/manage/participation-settings", label: "Формат участі", icon: UsersRound},
         {href: "/manage/schedule", label: "Публікація і час", icon: CalendarDays},
     ]},
     {id: "participation", label: "Участь", items: [
-        {href: "/manage/registration", label: "Налаштування реєстрації", icon: Settings2},
-        {href: "/manage/participant-form", label: "Додаткові поля", icon: FilePenLine},
+        {href: "/manage/registration", label: "Реєстрація", icon: FilePenLine},
         {href: "/manage/participants", label: "Учасники", icon: UserRound},
         {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
     ]},
