@@ -5,9 +5,10 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
-import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
+import {getCurrentUser, getInvitationInfo, getJoinStatus, getRegistrationWindow} from "@/api/clientAuth";
 import {acceptSelfInvitation, getSelfParticipantForm, joinSelfEvent, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {registrationWindowOpen} from "@/components/event/content/ActionBlock";
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
@@ -34,7 +35,11 @@ export default function JoinPage() {
     const join = useQuery({queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus, enabled: !!identity.data && !!event, retry: false});
     const invitation = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event && join.data === 1, retry: false});
     const invited = invitation.data?.Invited === true;
-    const canJoin = join.data === 0 || (join.data === 1 && invited && !invitation.data?.TeamUnavailable);
+    const registration = useQuery({queryKey: ["event-registration-window", event?.EventID], queryFn: () => getRegistrationWindow(event!.EventID), enabled: !!identity.data && !!event, retry: false});
+    // Invitations bypass the registration switch but still respect the lifecycle window.
+    const windowOpen = (now: number) => !!registration.data && registrationWindowOpen(invited || registration.data.registrationOpen, registration.data.joinPolicy, registration.data.startAt, registration.data.finishAt, now);
+    const [openedAt] = useState(() => Date.now());
+    const canJoin = (join.data === 0 || (join.data === 1 && invited && !invitation.data?.TeamUnavailable)) && windowOpen(openedAt);
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(event!.EventID), enabled: !!identity.data && !!event && canJoin, retry: false});
     const [answers, setAnswers] = useState<ParticipantAnswers>({});
     const [working, setWorking] = useState(false);
@@ -43,6 +48,10 @@ export default function JoinPage() {
     async function submit() {
         if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;
         setError("");
+        if (!windowOpen(Date.now())) {
+            setError("Реєстрацію на подію закрито.");
+            return;
+        }
         const blocks = form.data?.Enabled ? form.data.Document.blocks : [];
         const sendForm = !!form.data?.Enabled && (form.data.Required || Object.values(answers).some(present));
         const sent: ParticipantAnswers = {};
@@ -77,14 +86,14 @@ export default function JoinPage() {
     return <div className="event-join-page"><div className="event-join-card">
         <Link className="event-join-back" href="/">← На головну</Link>
         <h1>Приєднатися до події</h1>
-        {!event || identity.isPending || (identity.data && (join.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) ? <p>Завантажуємо умови участі…</p>
-            : identity.isError || join.isError || invitation.isError || (canJoin && form.isError) ? <div role="alert"><p>Не вдалося завантажити умови участі.</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : invitation.isError ? invitation.refetch() : form.refetch())}>Повторити</button></div>
+        {!event || identity.isPending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) ? <p>Завантажуємо умови участі…</p>
+            : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <div role="alert"><p>Не вдалося завантажити умови участі.</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())}>Повторити</button></div>
             : !identity.data ? <p>Увійдіть до облікового запису, щоб приєднатися. Кнопка входу розташована вгорі сторінки.</p>
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>Ви вже берете участь у події.</p>
             : status === ParticipationStatusEnum.PendingParticipationStatus && !invited ? <p>Заявку на участь надіслано. Дочекайтеся рішення організаторів.</p>
             : status === ParticipationStatusEnum.PendingParticipationStatus && invitation.data?.TeamUnavailable ? <p>Команда, до якої вас запросили, більше недоступна. Зверніться до організаторів події.</p>
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>Заявку відхилено. Зверніться до організаторів події.</p>
-            : event.Registration === 0 && !invited ? <p>Реєстрацію на подію закрито.</p>
+            : !windowOpen(openedAt) ? <p>Реєстрацію на подію закрито.</p>
             : <>
                 {invitation.data?.InvitedTeamName && <p>Вас запросили до команди «{invitation.data.InvitedTeamName}».</p>}
                 {form.data?.Enabled && <div className="event-join-form"><h2>Додаткові поля учасника</h2><p>{form.data.Required ? "Заповніть поля перед приєднанням." : "Ці поля необов’язкові. Можете заповнити їх перед приєднанням."}</p>

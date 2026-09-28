@@ -61,6 +61,22 @@ export async function getInvitationInfo(): Promise<z.infer<typeof joinSchema>> {
     return readData(response, joinSchema);
 }
 
+export type RegistrationWindow = {registrationOpen: boolean; joinPolicy: string; startAt: string; finishAt: string};
+
+// The same public content values the join CTA reads, so /join agrees with it.
+export async function getRegistrationWindow(eventID: string): Promise<RegistrationWindow> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {registrationOpen: true, joinPolicy: "rolling", startAt: "", finishAt: ""};
+    const response = await fetch(`/api/content/values?${new URLSearchParams({eventId: eventID})}`, {cache: "no-store"});
+    if (!response.ok) throw new ClientAuthError(response.status);
+    const variables = z.object({Variables: z.record(z.string(), z.unknown())}).parse(await response.json()).Variables;
+    return {
+        registrationOpen: variables["event.registrationOpen"] === true,
+        joinPolicy: String(variables["event.joinPolicy"] ?? ""),
+        startAt: String(variables["event.startAt"] ?? ""),
+        finishAt: String(variables["event.effectiveFinishAt"] ?? ""),
+    };
+}
+
 export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1"
         ? ownTeamSchema.parse({ID: "01900000-0000-7000-8000-000000000022", Name: "Blue Team", JoinCode: "MOCK-TEAM", MemberCount: 3})
