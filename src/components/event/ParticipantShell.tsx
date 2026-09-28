@@ -6,6 +6,7 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import type {OwnTeam} from "@/api/clientAuth";
 import type {ParticipantEventInfo} from "@/types/participantEventInfo";
 import {EventNavbar} from "./EventNavigation";
+import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 
 type ParticipantContextValue = {event: PublicEventInfo; participantInfo: ParticipantEventInfo; ownTeam: OwnTeam | null};
 const ParticipantContext = createContext<ParticipantContextValue | null>(null);
@@ -18,7 +19,7 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
     children: ReactNode;
 }) {
     return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><div className="event-guest-shell">
-        <EventNavbar event={event} authenticated approved hasTeam={!!ownTeam} useVPN={participantInfo.UseVPN} canViewResults={participantInfo.CanViewResults} />
+        <EventNavbar event={event} authenticated approved hasTeam={!!ownTeam} useVPN={participantInfo.UseVPN} canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <main className="event-guest-main"><div className="event-page-content">{children}</div></main>
         <footer className="ib-footer ib-footer--event"><div className="ib-footer__inner"><div className="ib-footer__row"><span className="ib-footer__org"><b>{event.Name}</b><span>CyberICEBox</span></span><nav className="ib-footer__links" aria-label="Посилання події"><Link href="/challenges">Завдання</Link></nav></div></div></footer>
     </div></ParticipantContext.Provider>;

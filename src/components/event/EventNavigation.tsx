@@ -16,6 +16,7 @@ import {ThemeToggle} from "./ThemeToggle";
 import {ManagerEntry} from "./manage/ManagerEntry";
 import {NotificationsPopover} from "./NotificationsPopover";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
+import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 
 type Props = {
     event: PublicEventInfo;
@@ -120,9 +121,9 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
         ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-        ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
+        ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) ? [{href: "/scoreboard", label: "Результати"}] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-    ], [pending, approved, canViewResults, event.CanViewResults, navigationPages]);
+    ], [pending, approved, canViewResults, event, navigationPages]);
 
     useLayoutEffect(() => {
         const nav = navRef.current;

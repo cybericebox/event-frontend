@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {EventThemeSchema} from "@/types/eventTheme";
+import {ResultsAvailabilitySchema} from "@/types/resultsAvailability";
 
 export const PublicEventInfoSchema = z.object({
     EventID: z.string().uuid(),
@@ -11,6 +12,7 @@ export const PublicEventInfoSchema = z.object({
     Participation: z.number().int().nullable(),
     Registration: z.number().int(),
     CanViewResults: z.boolean(),
+    ResultsAvailability: ResultsAvailabilitySchema.optional(),
     CanViewParticipants: z.boolean(),
     PreviewDescription: z.string(),
     PreviewPicture: z.string(),

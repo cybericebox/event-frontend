@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {ManageApiError} from "@/api/manage";
+import type {ResultsAvailability} from "@/types/resultsAvailability";
 
 const id = z.string().uuid();
 const scoreboardEntrySchema = z.object({
@@ -9,6 +10,15 @@ const timelineEntrySchema = z.object({EventTeamID: id, EventChallengeID: id, Cha
 const snapshotSchema = z.object({Revision: z.number().int(), GeneratedAt: z.string(), Scoreboard: z.array(scoreboardEntrySchema), Timeline: z.array(timelineEntrySchema)});
 
 export type ManageResultsSnapshot = z.infer<typeof snapshotSchema>;
+
+const deniedReasons: Record<number, ResultsAvailability> = {61213: "hidden", 61214: "participants_only", 61215: "not_started"};
+
+// 403 on /results names why the board is closed to this viewer.
+export class ResultsUnavailableError extends ManageApiError {
+    constructor(readonly reason: ResultsAvailability) {
+        super(403);
+    }
+}
 
 export async function getManageResults(eventID: string): Promise<ManageResultsSnapshot> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
@@ -31,6 +41,11 @@ export async function getManageResults(eventID: string): Promise<ManageResultsSn
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/results`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
+    if (response.status === 403) {
+        const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
+        const reason = body.success ? deniedReasons[body.data.Status.Code] : undefined;
+        throw reason ? new ResultsUnavailableError(reason) : new ManageApiError(403);
+    }
     if (!response.ok) throw new ManageApiError(response.status);
     return z.object({Data: snapshotSchema}).parse(await response.json()).Data;
 }

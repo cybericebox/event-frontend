@@ -6,6 +6,7 @@ import {usePathname} from "next/navigation";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {ParticipationStatusEnum} from "@/types/event";
 import {EventNavbar} from "./EventNavigation";
+import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 
 const GuestEventContext = createContext<PublicEventInfo | null>(null);
 export const useGuestEvent = () => useContext(GuestEventContext);
@@ -18,7 +19,7 @@ export function GuestShell({event, authenticated, joinStatus, pending = false, c
     children: ReactNode;
 }) {
     const pathname = usePathname();
-    const links = event.CanViewResults ? [{href: "/scoreboard", label: "Результати"}] : [];
+    const links = resultsLinkVisible(resultsAvailability(event)) ? [{href: "/scoreboard", label: "Результати"}] : [];
     return <GuestEventContext.Provider value={event}><div className="event-guest-shell">
         <EventNavbar event={event} authenticated={authenticated} pending={pending} />
         <main className="event-guest-main">{authenticated && pathname !== "/join" && joinStatus === ParticipationStatusEnum.NoParticipationStatus && event.Registration !== 0 && <div className="event-join-banner"><span>Бажаєте взяти участь у події?</span><Link className="ib-btn ib-btn--primary" href="/join">Приєднатися</Link></div>}{authenticated && joinStatus === ParticipationStatusEnum.PendingParticipationStatus && <div className="event-join-banner" role="status">Заявка на участь очікує рішення організаторів.</div>}{authenticated && joinStatus === ParticipationStatusEnum.RejectedParticipationStatus && <div className="event-join-banner" role="status">Заявку відхилено. Зверніться до організаторів події.</div>}{children}</main>
