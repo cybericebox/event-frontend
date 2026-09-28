@@ -3,8 +3,7 @@
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {decideManageAttempt, getManageAttempts, type AttemptDecision, type ManageAttempt} from "@/api/manageAttempts";
-import {getEventBoardChallenges, getEventExerciseAttachments} from "@/api/manageChallenges";
+import {AttemptsCursorError, decideManageAttempt, getManageAttempts, type AttemptDecision, type ManageAttempt} from "@/api/manageAttempts";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {useManager} from "./ManagerShell";
@@ -37,14 +36,13 @@ export function AttemptsManager() {
     const [correct, setCorrect] = useState<boolean | null>(null);
     const cursor = cursors[pageIndex] ?? null;
     const pageQuery = useQuery({queryKey: ["event-manage-attempts", eventID, correct, cursor], queryFn: () => getManageAttempts(eventID, correct, cursor), enabled: canManage, refetchOnWindowFocus: false});
-    const namesQuery = useQuery({
-        queryKey: ["event-manage-attempt-names", eventID],
-        queryFn: async () => {
-            const attachments = await getEventExerciseAttachments(eventID);
-            const boards = await Promise.all(attachments.map(attachment => getEventBoardChallenges(eventID, attachment.ID)));
-            return Object.fromEntries(boards.flat().map(challenge => [challenge.ID, challenge.Snapshot.name]));
-        }, enabled: canManage, refetchOnWindowFocus: false,
-    });
+    // A stale cursor is rejected by the server: go back to the first page.
+    if (pageQuery.error instanceof AttemptsCursorError && cursor !== null) {
+        setCursors([null]);
+        setPageIndex(0);
+        setSelectedID(null);
+        setDraft(null);
+    }
     const items = pageQuery.data?.Items ?? [];
     const selected = items.find(item => item.ID === selectedID) ?? null;
     const decision = draft && selected && draft.id === selected.ID ? draft.decision : selected?.Decision ?? "automatic";
@@ -106,7 +104,7 @@ export function AttemptsManager() {
         {items.length === 0 ? <section className="event-manage-section"><p className="event-challenge-manager__empty">Спроб за цим фільтром поки немає.</p></section> : <div className="event-attempts-manager__layout">
             <section className="event-manage-section event-attempts-manager__list" aria-label="Спроби розв’язання">
                 {items.map(attempt => <button className={`event-attempts-manager__row${selectedID === attempt.ID ? " is-selected" : ""}`} type="button" key={attempt.ID} aria-pressed={selectedID === attempt.ID} onClick={() => select(attempt)}>
-                    <span className="event-attempts-manager__row-title"><strong>{namesQuery.data?.[attempt.EventChallengeID] ?? "Завдання"}</strong><span className={attempt.Correct ? "is-correct" : "is-incorrect"}>{attemptStatus(attempt)}</span></span>
+                    <span className="event-attempts-manager__row-title"><strong>{attempt.ChallengeName || "Завдання"}</strong><span className={attempt.Correct ? "is-correct" : "is-incorrect"}>{attemptStatus(attempt)}</span></span>
                     <span className="event-attempts-manager__row-meta">{attempt.ParticipantName || "Учасник"}{attempt.TeamName ? ` · ${attempt.TeamName}` : ""}</span>
                     <time dateTime={attempt.ReceivedAt}>{timestamp(attempt.ReceivedAt)} UTC</time>
                 </button>)}
@@ -114,7 +112,7 @@ export function AttemptsManager() {
             </section>
             <section className="event-manage-section event-attempts-manager__detail" aria-label="Деталі відповіді">
                 {!selected ? <p className="event-challenge-manager__empty">Оберіть відповідь у списку, щоб переглянути деталі.</p> : <>
-                    <div className="event-manage-section__head"><h2>{namesQuery.data?.[selected.EventChallengeID] ?? "Завдання"}</h2><p>{selected.ParticipantName || "Учасник"}{selected.TeamName ? ` · ${selected.TeamName}` : ""} · {timestamp(selected.ReceivedAt)} UTC</p></div>
+                    <div className="event-manage-section__head"><h2>{selected.ChallengeName || "Завдання"}</h2><p>{selected.ParticipantName || "Учасник"}{selected.TeamName ? ` · ${selected.TeamName}` : ""} · {timestamp(selected.ReceivedAt)} UTC</p></div>
                     <dl className="event-attempts-manager__facts"><div><dt>Надіслана відповідь</dt><dd><code>{selected.Answer}</code></dd></div><div><dt>Автоматична перевірка</dt><dd>{selected.AutomaticCorrect ? "Правильно" : "Неправильно"}</dd></div><div><dt>Поточний результат</dt><dd>{attemptStatus(selected)}</dd></div></dl>
                     {canManage && <div className="event-attempts-manager__expected"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setShowExpected(value => !value)}>{showExpected ? "Сховати еталон" : "Показати еталон"}</button>{showExpected && <code>{selected.ExpectedFlag}</code>}</div>}
                     {selected.DecisionReason && <p className="event-attempts-manager__reason"><strong>Причина попереднього рішення:</strong> {selected.DecisionReason}</p>}

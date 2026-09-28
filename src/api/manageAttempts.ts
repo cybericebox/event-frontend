@@ -3,7 +3,7 @@ import {ManageApiError} from "@/api/manage";
 
 const id = z.string().uuid();
 const attemptSchema = z.object({
-    ID: id, EventTeamID: id, TeamName: z.string(), TeamChallengeID: id, EventChallengeID: id,
+    ID: id, EventTeamID: id, TeamName: z.string(), TeamChallengeID: id, EventChallengeID: id, ChallengeName: z.string(),
     EventExerciseID: id, UserID: id, ParticipantName: z.string(), Answer: z.string(),
     ExpectedFlag: z.string(), AutomaticCorrect: z.boolean(), Decision: z.enum(["automatic", "accepted", "rejected"]),
     DecisionReason: z.string().nullable(), DecidedBy: id.nullable(), DecidedAt: z.string().nullable(),
@@ -16,9 +16,16 @@ export type ManageAttempt = z.infer<typeof attemptSchema>;
 export type ManageAttemptsPage = z.infer<typeof pageSchema>;
 export type AttemptDecision = ManageAttempt["Decision"];
 
+// 400 code 21929: the paging cursor no longer exists; start from the first page.
+export class AttemptsCursorError extends ManageApiError {
+    constructor() {
+        super(400);
+    }
+}
+
 let mockAttempts: ManageAttempt[] = [
-    {ID: "01900000-0000-7000-8000-000000000021", EventTeamID: "01900000-0000-7000-8000-000000000022", TeamName: "Blue Team", TeamChallengeID: "01900000-0000-7000-8000-000000000023", EventChallengeID: "01900000-0000-7000-8000-000000000011", EventExerciseID: "01900000-0000-7000-8000-000000000010", UserID: "01900000-0000-7000-8000-000000000024", ParticipantName: "Олена Коваль", Answer: "ICE{first_step}", ExpectedFlag: "ICE{first_step}", AutomaticCorrect: true, Decision: "automatic", DecisionReason: null, DecidedBy: null, DecidedAt: null, Correct: true, ReceivedAt: "2026-09-26T14:10:00Z"},
-    {ID: "01900000-0000-7000-8000-000000000025", EventTeamID: "01900000-0000-7000-8000-000000000026", TeamName: "Red Team", TeamChallengeID: "01900000-0000-7000-8000-000000000027", EventChallengeID: "01900000-0000-7000-8000-000000000012", EventExerciseID: "01900000-0000-7000-8000-000000000010", UserID: "01900000-0000-7000-8000-000000000028", ParticipantName: "Іван Мельник", Answer: "ICE{almost}", ExpectedFlag: "ICE{final_step}", AutomaticCorrect: false, Decision: "automatic", DecisionReason: null, DecidedBy: null, DecidedAt: null, Correct: false, ReceivedAt: "2026-09-26T14:04:00Z"},
+    {ID: "01900000-0000-7000-8000-000000000021", EventTeamID: "01900000-0000-7000-8000-000000000022", TeamName: "Blue Team", TeamChallengeID: "01900000-0000-7000-8000-000000000023", EventChallengeID: "01900000-0000-7000-8000-000000000011", ChallengeName: "Перший крок", EventExerciseID: "01900000-0000-7000-8000-000000000010", UserID: "01900000-0000-7000-8000-000000000024", ParticipantName: "Олена Коваль", Answer: "ICE{first_step}", ExpectedFlag: "ICE{first_step}", AutomaticCorrect: true, Decision: "automatic", DecisionReason: null, DecidedBy: null, DecidedAt: null, Correct: true, ReceivedAt: "2026-09-26T14:10:00Z"},
+    {ID: "01900000-0000-7000-8000-000000000025", EventTeamID: "01900000-0000-7000-8000-000000000026", TeamName: "Red Team", TeamChallengeID: "01900000-0000-7000-8000-000000000027", EventChallengeID: "01900000-0000-7000-8000-000000000012", ChallengeName: "Фінальне завдання", EventExerciseID: "01900000-0000-7000-8000-000000000010", UserID: "01900000-0000-7000-8000-000000000028", ParticipantName: "Іван Мельник", Answer: "ICE{almost}", ExpectedFlag: "ICE{final_step}", AutomaticCorrect: false, Decision: "automatic", DecisionReason: null, DecidedBy: null, DecidedAt: null, Correct: false, ReceivedAt: "2026-09-26T14:04:00Z"},
 ];
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
@@ -49,6 +56,10 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         headers: {Accept: "application/json", ...(payload === undefined ? {} : {"Content-Type": "application/json"})},
         body: payload === undefined ? undefined : JSON.stringify(payload),
     });
+    if (response.status === 400) {
+        const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
+        throw body.success && body.data.Status.Code === 21929 ? new AttemptsCursorError() : new ManageApiError(400);
+    }
     if (!response.ok) throw new ManageApiError(response.status);
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
