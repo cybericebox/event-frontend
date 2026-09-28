@@ -52,7 +52,7 @@ export async function getOwnChallenges(eventID: string): Promise<OwnChallenge[]>
 
 export async function submitChallenge(eventID: string, challengeID: string, answer: string, idempotencyKey: string): Promise<ChallengeSubmission> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        const correct = ({[mockID("101")]: "CTF{ice_wall_breached}", [mockID("201")]: "CTF{glacier_cipher_cracked}"} as Record<string, string>)[challengeID] === answer;
+        const correct = ({[mockID("101")]: "ICE{ice_wall_breached}", [mockID("201")]: "ICE{glacier_cipher_cracked}"} as Record<string, string>)[challengeID] === answer;
         if (correct) {
             const item = mockChallenges.find(value => value.EventChallengeID === challengeID);
             if (item) item.SolvedAt = new Date().toISOString();
