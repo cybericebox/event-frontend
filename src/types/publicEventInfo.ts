@@ -19,6 +19,8 @@ export const PublicEventInfoSchema = z.object({
     LogoURL: z.string().default(""),
     FaviconURL: z.string().default(""),
     Theme: EventThemeSchema,
+    // Admin-owned and immutable; read-only here. Missing in older API builds.
+    InfrastructureAllowed: z.boolean().default(false),
 });
 
 export type PublicEventInfo = z.infer<typeof PublicEventInfoSchema>;

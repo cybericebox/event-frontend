@@ -70,7 +70,6 @@ export default function ManageIndex() {
                     MaxTeamSize: participation === 1 ? maxSize : current.MaxTeamSize,
                     MinTeamSize: participation === 1 ? minSize : current.MinTeamSize,
                     MaxTeams: current.MaxTeams,
-                    DynamicLabsPlanned: current.DynamicLabsPlanned,
                     AllowPseudonyms: current.AllowPseudonyms,
                 };
                 client.setQueryData(["event-management-config", eventID], await putManageConfig(eventID, input));

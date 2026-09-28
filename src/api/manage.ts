@@ -21,14 +21,15 @@ export const ManageConfigSchema = z.object({
     MaxTeamSize: z.number().int().positive(),
     MinTeamSize: optionalLimit,
     MaxTeams: optionalLimit,
-    DynamicLabsPlanned: z.boolean(),
+    // Admin-owned at event creation; read-only for moderators.
+    InfrastructureAllowed: z.boolean().default(false),
     AllowPseudonyms: z.boolean().default(false),
     Theme: themeSchema,
     UpdatedAt: z.string(),
 });
 
 export type ManageConfig = z.infer<typeof ManageConfigSchema>;
-export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt">;
+export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt" | "InfrastructureAllowed">;
 
 // Every config PUT sends the full input so no setting is silently reset.
 export function manageConfigInput(config: ManageConfig): ManageConfigInput {
@@ -37,7 +38,7 @@ export function manageConfigInput(config: ManageConfig): ManageConfigInput {
         ScoreboardVisibility: config.ScoreboardVisibility, ParticipantsVisibility: config.ParticipantsVisibility,
         PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture,
         MaxTeamSize: config.MaxTeamSize, MinTeamSize: config.MinTeamSize, MaxTeams: config.MaxTeams,
-        DynamicLabsPlanned: config.DynamicLabsPlanned, AllowPseudonyms: config.AllowPseudonyms,
+        AllowPseudonyms: config.AllowPseudonyms,
     };
 }
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;
@@ -106,7 +107,7 @@ let mockConfig: ManageConfig = {
     MaxTeamSize: 5,
     MinTeamSize: null,
     MaxTeams: null,
-    DynamicLabsPlanned: false,
+    InfrastructureAllowed: false,
     AllowPseudonyms: false,
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
     UpdatedAt: "2026-09-26T00:00:00Z",

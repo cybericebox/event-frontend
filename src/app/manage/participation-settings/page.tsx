@@ -22,7 +22,7 @@ export default function ParticipationSettingsPage() {
     const update = (patch: Partial<ManageConfigInput>) => {if (config) setEdit({eventID, value: {...config, ...patch}});};
     const dirty = !!config && !!configQuery.data && JSON.stringify(config) !== JSON.stringify(manageConfigInput(configQuery.data));
     const locked = !!lifecycleQuery.data?.Configured && lifecycleQuery.data.Status !== "not_published";
-    const valid = !!config && config.Participation !== null && (config.Participation !== 1 || (config.MaxTeamSize >= 1 && (!config.MinTeamSize || config.MinTeamSize <= config.MaxTeamSize))) && (!config.DynamicLabsPlanned || !!lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable || !!configQuery.data?.DynamicLabsPlanned);
+    const valid = !!config && config.Participation !== null && (config.Participation !== 1 || (config.MaxTeamSize >= 1 && (!config.MinTeamSize || config.MinTeamSize <= config.MaxTeamSize)));
     const disabled = !canManage || saving;
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
@@ -43,7 +43,7 @@ export default function ParticipationSettingsPage() {
     if (configQuery.isError || lifecycleQuery.isError || !config) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити формат участі</h1><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>Повторити</button></div>;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
-        <header className="event-manage-heading"><div><h1>Формат участі</h1><p>Визначте, хто змагається і чи будуть завдання з інфраструктурою.</p></div></header>
+        <header className="event-manage-heading"><div><h1>Формат участі</h1><p>Визначте, хто змагається: окремі учасники чи команди.</p></div></header>
         <section className="event-manage-section">
             <ManageFieldLabel title="Формат участі" help={"Оберіть, хто проходить завдання та отримує бали: окремий учасник або команда.\n\nФормат можна змінити лише до публікації."} required />
             <div className="event-manage-choice-group" role="radiogroup" aria-label="Тип участі">
@@ -57,12 +57,8 @@ export default function ParticipationSettingsPage() {
             <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>Після публікації змінити формат участі неможливо.</span></div>
         </section>
         <section className="event-manage-section">
-            <ManageFieldLabel title="Наявність завдань з інфраструктурою" help={"Визначає, чи використовуватимуться завдання з окремою лабораторією для учасника або команди.\n\nДля таких завдань потрібна підключена інфраструктура. Цей вибір можна змінити лише до публікації."} required />
-            <div className="event-manage-choice-group" role="radiogroup" aria-label="Наявність завдань з інфраструктурою">
-                <label><input type="radio" name="dynamic-labs" checked={!config.DynamicLabsPlanned} onChange={() => update({DynamicLabsPlanned: false})} disabled={disabled || locked} /><div className="event-manage-choice-content"><strong>Без завдань з інфраструктурою</strong><small>Окрема інфраструктура для учасників не створюється.</small></div></label>
-                <label className={!lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable ? "is-unavailable" : undefined}><input type="radio" name="dynamic-labs" checked={config.DynamicLabsPlanned} onChange={() => update({DynamicLabsPlanned: true})} disabled={disabled || locked || !lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable} /><div className="event-manage-choice-content"><strong>Із завданнями з інфраструктурою</strong><small>{lifecycleQuery.data?.Infrastructure.LaboratoriesAvailable ? "Для учасника або команди створюється окрема лабораторія." : "Інфраструктура не підключена. Зверніться до адміністратора."}</small></div></label>
-            </div>
-            <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>Після публікації змінити наявність завдань з інфраструктурою неможливо.</span></div>
+            <ManageFieldLabel title="Завдання з інфраструктурою" help={"Дозвіл на завдання з окремою лабораторією для команди задає адміністратор під час створення події.\n\nЗмінити його після створення не можна."} />
+            <p className="event-manage-readonly-note">Завдання з інфраструктурою: {configQuery.data?.InfrastructureAllowed ? "дозволено" : "не дозволено"} адміністратором під час створення події.</p>
         </section>
         {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
     </form>;
