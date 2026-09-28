@@ -15,7 +15,7 @@ import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
 import {ManagerEntry} from "./manage/ManagerEntry";
 import {NotificationsPopover} from "./NotificationsPopover";
-import {beforeChallenges} from "./content/pageNavigationOrder";
+import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 
 type Props = {
     event: PublicEventInfo;
@@ -111,7 +111,7 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         retry: false, refetchOnWindowFocus: false,
     });
     const navigationPages = useMemo(() => managedPages.data
-        ? [...managedPages.data].filter(page => page.Navigation !== 0).sort((a, b) => a.NavigationOrder - b.NavigationOrder || a.Slug.localeCompare(b.Slug))
+        ? [...managedPages.data].filter(page => page.Navigation !== 0).sort(comparePageOrder)
         : pages.data ?? [], [managedPages.data, pages.data]);
     const links = useMemo(() => [
         ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),

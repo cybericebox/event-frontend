@@ -18,7 +18,7 @@ import {useManager} from "./ManagerShell";
 import {EventLoading} from "../EventLoading";
 import {blockValidationIndex, validateLanding} from "./validatePageBlocks";
 import {reservedPageSlugs} from "../content/pageSlugs";
-import {beforeChallenges} from "../content/pageNavigationOrder";
+import {beforeChallenges, comparePageOrder} from "../content/pageNavigationOrder";
 
 const emptyPage: ManagePageInput = {
     Slug: "", Title: "", Document: {blocks: []}, Visibility: 0, Navigation: 1, NavigationOrder: 0,
@@ -46,7 +46,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const [deleteOpen, setDeleteOpen] = useState(false);
 
     const existingPages = pages.data ?? [];
-    const orderedPages = [...existingPages].filter(item => item.Navigation !== 0).sort((a, b) => a.NavigationOrder - b.NavigationOrder || a.Slug.localeCompare(b.Slug));
+    const orderedPages = [...existingPages].filter(item => item.Navigation !== 0).sort(comparePageOrder);
     const otherPages = orderedPages.filter(item => item.ID !== page.data?.ID);
     const currentIndex = orderedPages.findIndex(item => item.ID === page.data?.ID);
     const currentPage = currentIndex < 0 ? null : orderedPages[currentIndex];
@@ -58,11 +58,10 @@ export function CustomPageEditor({slug}: {slug?: string}) {
                 ? previousPage && previousPage.NavigationOrder < 0 && !beforeChallenges(previousPage.NavigationOrder) ? previousPage.ID : "challenges"
                 : previousPage && previousPage.NavigationOrder >= 0 ? previousPage.ID : "results";
     const predecessor = afterChoice?.key === key ? afterChoice.predecessor : savedPredecessor;
-    const defaultOrder = Math.max(0, ...existingPages.map(item => item.NavigationOrder)) + 1;
     const saved: ManagePageInput = page.data ? {
         Slug: page.data.Slug, Title: page.data.Title, Document: page.data.Document,
         Visibility: page.data.Visibility, Navigation: page.data.Navigation, NavigationOrder: page.data.NavigationOrder,
-    } : {...emptyPage, NavigationOrder: defaultOrder};
+    } : emptyPage;
     const draft = edited?.key === key ? edited.value : saved;
     const selectedBlockID = selected?.eventID === eventID && selected.key === key && draft.Document.blocks.some(block => block.id === selected.blockID) ? selected.blockID : null;
     const blockOrder = draft.Document.blocks.map(block => block.id).join("|");
