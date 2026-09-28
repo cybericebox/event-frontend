@@ -3,15 +3,24 @@
 import {useEffect, useState} from "react";
 import QRCode from "qrcode";
 
+// Site paths such as /register are not scannable on their own: resolve them
+// against the event site the live screen is served from.
+export function absoluteLiveURL(url: string, origin: string): string {
+    if (!url) return "";
+    try { return new URL(url, origin).href; } catch { return url; }
+}
+
 export function LiveQR({url}: {url: string}) {
-    const [image, setImage] = useState("");
+    const [code, setCode] = useState({target: "", image: ""});
     useEffect(() => {
         let active = true;
         if (!url) return;
-        void QRCode.toDataURL(url, {width: 512, margin: 1, errorCorrectionLevel: "M", color: {dark: "#16152B", light: "#FFFFFFFF"}})
-            .then(value => {if (active) setImage(value);})
-            .catch(() => {if (active) setImage("");});
+        const target = absoluteLiveURL(url, window.location.origin);
+        void QRCode.toDataURL(target, {width: 512, margin: 1, errorCorrectionLevel: "M", color: {dark: "#16152B", light: "#FFFFFFFF"}})
+            .then(value => {if (active) setCode({target, image: value});})
+            .catch(() => {if (active) setCode({target, image: ""});});
         return () => {active = false;};
     }, [url]);
-    return <div className="live-qr">{image ? <img src={image} alt={`QR-код для ${url}`} /> : <strong>Додайте посилання для QR-коду</strong>}<span>{url}</span></div>;
+    const shown = url ? code.target || url : "";
+    return <div className="live-qr">{url && code.image ? <img src={code.image} alt={`QR-код для ${shown}`} /> : <strong>Додайте посилання для QR-коду</strong>}<span>{shown}</span></div>;
 }
