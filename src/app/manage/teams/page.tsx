@@ -110,7 +110,7 @@ export default function ManageTeamsPage() {
     }
 
     async function removeTeam(team: ManageTeam) {
-        if (!canManage || busy || !window.confirm(`Видалити команду «${team.Name}»? Учасники залишаться в події без команди, а результати цієї команди можуть бути втрачені.`)) return;
+        if (!canManage || busy || !window.confirm(`Видалити команду «${team.Name}»?\n\nУсі результати й розв’язання цієї команди буде втрачено без можливості відновлення. Учасники залишаться в події без команди.`)) return;
         setBusy(true);
         try {
             await deleteManageTeam(eventID, team.ID);
