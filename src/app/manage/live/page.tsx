@@ -4,7 +4,7 @@ import {useState, type CSSProperties, type PointerEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {ExternalLink, Eye, Save, Send, Trash2} from "lucide-react";
-import {getManageLive, publishManageLive, saveManageLiveDraft, type LiveLayout, type LiveWidget} from "@/api/manageLive";
+import {getManageLive, LiveDraftInvalidError, publishManageLive, saveManageLiveDraft, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import {getManageResults} from "@/api/manageResults";
 import {LiveCanvas} from "@/components/event/live/LiveCanvas";
 import {canPlace, firstFreeWidget, fitGrid, liveGridLimits, liveGridValid, liveLogoURL, livePresets, liveWidgetLabels, liveWidgetMinimums, presetLayout} from "@/components/event/live/liveLayout";
@@ -116,7 +116,7 @@ export default function ManageLivePage() {
             await queryClient.invalidateQueries({queryKey: ["event-live-editor", eventID]});
             setOverride(current => JSON.stringify(current) === JSON.stringify(layout) ? null : current);
             toast.success("Live-екран опубліковано");
-        } catch {toast.error("Не вдалося опублікувати Live-екран.");}
+        } catch (failure) {toast.error(failure instanceof LiveDraftInvalidError ? "Чернетка має сітку менше 3×3. Змініть сітку й збережіть чернетку перед публікацією." : "Не вдалося опублікувати Live-екран.");}
         finally {setBusy(false);}
     }
 

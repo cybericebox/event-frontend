@@ -29,6 +29,13 @@ export const defaultLiveLayout: LiveLayout = {
     ],
 };
 
+// 400 code 21122 on publish: the stored draft is invalid (legacy grid below 3×3).
+export class LiveDraftInvalidError extends ManageApiError {
+    constructor() {
+        super(400);
+    }
+}
+
 let mockEditor: LiveEditor = {Published: defaultLiveLayout, Draft: null};
 
 async function liveRequest<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
@@ -48,6 +55,10 @@ async function liveRequest<T>(eventID: string, path: string, schema: z.ZodType<T
         headers: {Accept: "application/json", ...(payload === undefined ? {} : {"Content-Type": "application/json"})},
         body: payload === undefined ? undefined : JSON.stringify(payload),
     });
+    if (response.status === 400) {
+        const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
+        throw body.success && body.data.Status.Code === 21122 ? new LiveDraftInvalidError() : new ManageApiError(400);
+    }
     if (!response.ok) throw new ManageApiError(response.status);
     if (response.status === 204) return schema.parse(undefined);
     return z.object({Data: schema}).parse(await response.json()).Data;
