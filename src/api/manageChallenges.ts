@@ -58,6 +58,12 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
             }
             return schema.parse([...mockGroups].sort((a, b) => a.Order - b.Order));
         }
+        if (path === "challenge-groups/order") {
+            const {GroupIDs} = payload as {GroupIDs: string[]};
+            if (GroupIDs.length !== mockGroups.length || mockGroups.some(item => !GroupIDs.includes(item.ID))) throw new ManageApiError(400);
+            mockGroups = mockGroups.map(item => ({...item, Order: GroupIDs.indexOf(item.ID)}));
+            return schema.parse(null);
+        }
         if (path.startsWith("challenge-groups/")) {
             const groupID = path.slice("challenge-groups/".length);
             const group = mockGroups.find(item => item.ID === groupID);
@@ -134,6 +140,8 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
 export const getEventChallengeGroups = (eventID: string) => request(eventID, "challenge-groups", z.array(groupSchema));
 export const createEventChallengeGroup = (eventID: string, Name: string, Order: number) => request(eventID, "challenge-groups", groupSchema, "POST", {Name, Order});
 export const updateEventChallengeGroup = (eventID: string, groupID: string, Name: string, Order: number) => request(eventID, `challenge-groups/${groupID}`, groupSchema, "PUT", {Name, Order});
+// Full ordered list of every group ID; the server reorders in one transaction.
+export const reorderEventChallengeGroups = (eventID: string, groupIDs: string[]) => request(eventID, "challenge-groups/order", z.null(), "PUT", {GroupIDs: groupIDs});
 export const deleteEventChallengeGroup = (eventID: string, groupID: string) => request(eventID, `challenge-groups/${groupID}`, z.null(), "DELETE");
 export const getEventExerciseAttachments = (eventID: string) => request(eventID, "exercises", z.array(attachmentSchema));
 export const getEventBoardChallenges = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/challenges`, z.array(challengeSchema));

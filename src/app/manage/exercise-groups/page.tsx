@@ -6,9 +6,10 @@ import {ArrowDown, ArrowUp, Plus, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
     createEventChallengeGroup, deleteEventChallengeGroup, getEventBoardChallenges, getEventChallengeGroups,
-    getEventExerciseAttachments, reorderEventBoardChallenges, setEventChallengeGroup, updateEventChallengeGroup,
+    getEventExerciseAttachments, reorderEventBoardChallenges, reorderEventChallengeGroups, setEventChallengeGroup, updateEventChallengeGroup,
     type EventBoardChallenge, type EventChallengeGroup, type EventExerciseAttachment,
 } from "@/api/manageChallenges";
+import {ManageApiError} from "@/api/manage";
 import {EventLoading} from "@/components/event/EventLoading";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -72,7 +73,7 @@ export default function ExerciseGroupsPage() {
             setEditing(null);
             await refresh();
             toast.success("Назву групи збережено");
-        } catch {toast.error("Не вдалося перейменувати групу.");}
+        } catch (failure) {toast.error(failure instanceof ManageApiError && failure.status === 409 ? "Група з такою назвою вже існує." : "Не вдалося перейменувати групу.");}
         finally {setBusy(false);}
     }
 
@@ -82,8 +83,9 @@ export default function ExerciseGroupsPage() {
         if (!canManage || !other || busy) return;
         setBusy(true);
         try {
-            await updateEventChallengeGroup(eventID, group.ID, group.Name, other.Order);
-            await updateEventChallengeGroup(eventID, other.ID, other.Name, group.Order);
+            const ids = groups.map(item => item.ID);
+            [ids[index], ids[index + direction]] = [ids[index + direction], ids[index]];
+            await reorderEventChallengeGroups(eventID, ids);
             await refresh();
         } catch {
             await refresh();
