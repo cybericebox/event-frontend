@@ -11,6 +11,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/content/landing") return "Головна сторінка";
     if (pathname === "/manage/exercise-groups") return "Групи й порядок";
     if (pathname === "/manage/exercises") return "Завдання";
+    if (pathname === "/manage/labs") return "Стенди";
     if (pathname === "/manage/scoring") return "Профіль балів";
     if (pathname === "/manage/submissions") return "Спроби розв’язання";
     if (pathname === "/manage/results") return "Таблиця результатів";

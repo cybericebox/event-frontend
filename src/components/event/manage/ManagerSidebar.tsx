@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
     ArrowLeft, Bell, CalendarDays, ChevronDown,
     FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
-    Mail, MonitorPlay, Palette, Plus, Send, Settings2,
+    Mail, MonitorPlay, Palette, Plus, Send, Server, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
     type LucideIcon,
 } from "lucide-react";
@@ -15,7 +15,7 @@ import {EventBrandLogo} from "../EventBrandLogo";
 import {comparePageOrder} from "../content/pageNavigationOrder";
 import "./managerSidebar.css";
 
-type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean};
+type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean};
 type Group = {id: string; label: string; items: Item[]};
 
 // Пауза: повернути до навігації, коли з'явиться механізм призупинення події.
@@ -34,6 +34,7 @@ const groups: Group[] = [
     {id: "challenges", label: "Завдання", items: [
         {href: "/manage/exercise-groups", label: "Групи й порядок", icon: Layers3},
         {href: "/manage/exercises", label: "Завдання", icon: Flag},
+        {href: "/manage/labs", label: "Стенди", icon: Server, infrastructureOnly: true},
         {href: "/manage/scoring", label: "Профіль балів", icon: SlidersHorizontal},
         {href: "/manage/submissions", label: "Спроби розв’язання", icon: Send},
     ]},
@@ -62,7 +63,8 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, o
 }) {
     const [openGroupID, setOpenGroupID] = useState<string | null>(null);
     const teamMode = event.Participation === 1;
-    const showItem = (item: Item) => !item.teamsOnly || teamMode;
+    const infrastructure = event.InfrastructureAllowed === true;
+    const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructure);
     const openGroup = (groupID: string) => setOpenGroupID(groupID);
 
     return <aside className="ib-admin-side ib-mass" aria-label="Керування подією">
