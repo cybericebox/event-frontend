@@ -12,17 +12,15 @@ import "./live.css";
 
 const palette = ["#9B9BFF", "#5CE0D8", "#FFCE77", "#FD929D", "#92D874", "#70B6FF"];
 
-function chartPath(results: ManageResultsSnapshot | undefined, teamID: string): string {
+// The time axis runs from the event start to now (or the finish), like the public chart.
+function chartPath(results: ManageResultsSnapshot | undefined, teamID: string, start: number, end: number): string {
     const timeline = (results?.Timeline ?? []).filter(point => point.EventTeamID === teamID).sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
     if (!timeline.length) return "M0 90H100";
-    const all = results?.Timeline ?? [];
-    const start = Math.min(...all.map(item => Date.parse(item.SolvedAt)));
-    const end = Math.max(start + 1, ...all.map(item => Date.parse(item.SolvedAt)));
     const max = Math.max(1, ...(results?.Scoreboard ?? []).map(item => item.Points));
     let sum = 0;
     const points = [[0, 90], ...timeline.map(item => {
         sum += item.Points;
-        return [Math.round((Date.parse(item.SolvedAt) - start) / (end - start) * 94 + 3), Math.round(90 - sum / max * 78)];
+        return [Math.round(Math.min(1, Math.max(0, (Date.parse(item.SolvedAt) - start) / (end - start))) * 94 + 3), Math.round(90 - sum / max * 78)];
     }), [100, Math.round(90 - sum / max * 78)]];
     return points.slice(1).reduce((path, point, index) => {
         const previous = points[index];
@@ -41,7 +39,11 @@ function WidgetContent({widget, event, results, now}: {widget: LiveWidget; event
         const label = Date.parse(event.StartTime) > now ? "До початку" : !target ? "Без часу завершення" : seconds > 0 ? "До завершення" : "Подію завершено";
         return <div className="live-timer"><small>{label}</small><strong>{String(Math.floor(seconds / 3600)).padStart(2, "0")}:{String(Math.floor(seconds / 60) % 60).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</strong></div>;
     }
-    if (widget.type === "chart") return <div className="live-chart"><h2>Динаміка балів</h2>{teams.length ? <><svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Графік балів команд"><path d="M0 90H100 M0 50H100 M0 10H100" className="live-chart__grid" />{teams.slice(0, Number(widget.props.lines) || 5).map((team, index) => <path key={team.TeamID} d={chartPath(results, team.TeamID)} fill="none" stroke={palette[index % palette.length]} strokeWidth="2.5" vectorEffect="non-scaling-stroke" />)}</svg><div className="live-chart__legend">{teams.slice(0, Number(widget.props.lines) || 5).map((team, index) => <span key={team.TeamID}><i style={{background: palette[index % palette.length]}} />{team.TeamName}</span>)}</div></> : <p>Результати з’являться після першого розв’язання.</p>}</div>;
+    if (widget.type === "chart") {
+        const chartStart = Date.parse(event.StartTime);
+        const chartEnd = Math.max(chartStart + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now));
+        return <div className="live-chart"><h2>Динаміка балів</h2>{teams.length ? <><svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Графік балів команд"><path d="M0 90H100 M0 50H100 M0 10H100" className="live-chart__grid" />{teams.slice(0, Number(widget.props.lines) || 5).map((team, index) => <path key={team.TeamID} d={chartPath(results, team.TeamID, chartStart, chartEnd)} fill="none" stroke={palette[index % palette.length]} strokeWidth="2.5" vectorEffect="non-scaling-stroke" />)}</svg><div className="live-chart__legend">{teams.slice(0, Number(widget.props.lines) || 5).map((team, index) => <span key={team.TeamID}><i style={{background: palette[index % palette.length]}} />{team.TeamName}</span>)}</div></> : <p>Результати з’являться після першого розв’язання.</p>}</div>;
+    }
     if (widget.type === "ad_table") return <div className="live-table"><h2>Таблиця A/D</h2><p>Дані A/D наразі недоступні.</p></div>;
     if (widget.type === "table") {
         const pageSize = Math.max(1, Number(widget.props.rowsPerPage) || 10);
