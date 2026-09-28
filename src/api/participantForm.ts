@@ -40,3 +40,9 @@ export async function joinSelfEvent(): Promise<number> {
     const response = await fetch(url("join"), {method: "POST", credentials: "include", cache: "no-store"});
     return (await data(response, z.object({Status: z.number().int()}))).Status;
 }
+
+export async function acceptSelfInvitation(): Promise<number> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return 2;
+    const response = await fetch(url("join/invitation/accept"), {method: "POST", credentials: "include", cache: "no-store"});
+    return (await data(response, z.object({Status: z.number().int()}))).Status;
+}

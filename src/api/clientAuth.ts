@@ -8,7 +8,7 @@ const meSchema = z.object({
     Picture: z.string().default(""),
 });
 export type CurrentUser = z.infer<typeof meSchema>;
-const joinSchema = z.object({Status: z.number().int()});
+const joinSchema = z.object({Status: z.number().int(), Invited: z.boolean().default(false)});
 const ownTeamSchema = z.object({ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int(), ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {})});
 export type OwnTeam = z.infer<typeof ownTeamSchema>;
 
@@ -53,6 +53,12 @@ export async function getJoinStatus(): Promise<number> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1" ? 2 : 0;
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
     return (await readData(response, joinSchema)).Status;
+}
+
+export async function getInvitationStatus(): Promise<boolean> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return false;
+    const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
+    return (await readData(response, joinSchema)).Invited;
 }
 
 export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {

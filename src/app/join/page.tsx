@@ -5,8 +5,8 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
-import {getCurrentUser, getJoinStatus} from "@/api/clientAuth";
-import {getSelfParticipantForm, joinSelfEvent, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
+import {getCurrentUser, getInvitationStatus, getJoinStatus} from "@/api/clientAuth";
+import {acceptSelfInvitation, getSelfParticipantForm, joinSelfEvent, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
@@ -32,13 +32,15 @@ export default function JoinPage() {
     const event = guestEvent ?? participant?.event;
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
     const join = useQuery({queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus, enabled: !!identity.data && !!event, retry: false});
-    const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(event!.EventID), enabled: !!identity.data && !!event && join.data === 0, retry: false});
+    const invitation = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationStatus, enabled: !!identity.data && !!event && join.data === 1, retry: false});
+    const canJoin = join.data === 0 || (join.data === 1 && invitation.data === true);
+    const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(event!.EventID), enabled: !!identity.data && !!event && canJoin, retry: false});
     const [answers, setAnswers] = useState<ParticipantAnswers>({});
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
 
     async function submit() {
-        if (!event || working || !identity.data || join.data !== 0 || form.isPending || form.isError) return;
+        if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;
         setError("");
         const blocks = form.data?.Enabled ? form.data.Document.blocks : [];
         const sendForm = !!form.data?.Enabled && (form.data.Required || Object.values(answers).some(present));
@@ -57,8 +59,9 @@ export default function JoinPage() {
             if (sendForm) {
                 await submitSelfParticipantForm(event.EventID, sent);
             }
-            const status = await joinSelfEvent();
+            const status = invitation.data ? await acceptSelfInvitation() : await joinSelfEvent();
             queryClient.setQueryData(["event-join-status", event.EventID], status);
+            void queryClient.invalidateQueries({queryKey: ["event-invitation-status", event.EventID]});
             if (status === ParticipationStatusEnum.ApprovedParticipationStatus) {
                 void queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]});
                 void queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]});
@@ -73,13 +76,13 @@ export default function JoinPage() {
     return <div className="event-join-page"><div className="event-join-card">
         <Link className="event-join-back" href="/">← На головну</Link>
         <h1>Приєднатися до події</h1>
-        {!event || identity.isPending || (identity.data && (join.isPending || (status === 0 && form.isPending))) ? <p>Завантажуємо умови участі…</p>
-            : identity.isError || join.isError || form.isError ? <div role="alert"><p>Не вдалося завантажити умови участі.</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : form.refetch())}>Повторити</button></div>
+        {!event || identity.isPending || (identity.data && (join.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) ? <p>Завантажуємо умови участі…</p>
+            : identity.isError || join.isError || invitation.isError || (canJoin && form.isError) ? <div role="alert"><p>Не вдалося завантажити умови участі.</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : invitation.isError ? invitation.refetch() : form.refetch())}>Повторити</button></div>
             : !identity.data ? <p>Увійдіть до облікового запису, щоб приєднатися. Кнопка входу розташована вгорі сторінки.</p>
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>Ви вже берете участь у події.</p>
-            : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>Заявку на участь надіслано. Дочекайтеся рішення організаторів.</p>
+            : status === ParticipationStatusEnum.PendingParticipationStatus && !invitation.data ? <p>Заявку на участь надіслано. Дочекайтеся рішення організаторів.</p>
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>Заявку відхилено. Зверніться до організаторів події.</p>
-            : event.Registration === 0 ? <p>Реєстрацію на подію закрито.</p>
+            : event.Registration === 0 && !invitation.data ? <p>Реєстрацію на подію закрито.</p>
             : <>
                 {form.data?.Enabled && <div className="event-join-form"><h2>Додаткові поля учасника</h2><p>{form.data.Required ? "Заповніть поля перед приєднанням." : "Ці поля необов’язкові. Можете заповнити їх перед приєднанням."}</p>
                     {form.data.Document.blocks.map(block => {
@@ -103,7 +106,7 @@ export default function JoinPage() {
                     })}
                 </div>}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
-                <button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? "Надсилаємо…" : "Приєднатися"}</button>
+                <button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? "Надсилаємо…" : invitation.data ? "Прийняти запрошення" : "Приєднатися"}</button>
             </>}
     </div></div>;
 }
