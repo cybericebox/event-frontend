@@ -1,5 +1,7 @@
 "use client";
 
+import {notFound} from "next/navigation";
+import {EVENT_FORMS_ENABLED} from "@/utils/features";
 import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {FileText, X} from "lucide-react";
@@ -26,7 +28,7 @@ function responseKey(answer: Answer, index: number): string {
     return `${answer.UserID}-${answer.SubmittedAt}-${index}`;
 }
 
-export default function FormResponsesPage() {
+function FormResponsesPage() {
     const {event} = useManager();
     const eventID = event.EventID;
     const [formID, setFormID] = useState("participant");
@@ -62,4 +64,9 @@ export default function FormResponsesPage() {
             {pageCount > 1 && <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={currentPage === 0} onClick={() => {setPage(value => value - 1); setSelected(null);}}>Назад</button><span>Сторінка {currentPage + 1} із {pageCount}</span><button className="ib-btn ib-btn--sm" type="button" disabled={currentPage + 1 === pageCount} onClick={() => {setPage(value => value + 1); setSelected(null);}}>Далі</button></div>}
         </section>{active && <aside className="event-manage-section event-form-responses__details" aria-label="Відповідь учасника"><div className="event-form-responses__details-head"><div><h2>{active.Name || active.Email || `Учасник ${active.UserID.slice(0, 8)}`}</h2><p>{active.Email}</p></div><button type="button" className="event-manage-content__preview-close" aria-label="Закрити відповідь" onClick={() => setSelected(null)}><X size={18} /></button></div><p className="event-form-responses__meta">Версія {"FormVersion" in active ? active.FormVersion : active.Version} · {dateTime.format(new Date(active.SubmittedAt))} (Київ)</p><dl className="event-form-responses__answers">{fields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{answerValue(active.Answers[field.key])}</dd></div>)}{Object.entries(active.Answers).filter(([key]) => !knownKeys.has(key)).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{answerValue(value)}</dd></div>)}{fields.length === 0 && Object.keys(active.Answers).length === 0 && <div><dd>У цій версії не було питань для відповіді.</dd></div>}</dl></aside>}</div>
     </div>;
+}
+
+export default function Page() {
+    if (!EVENT_FORMS_ENABLED) notFound();
+    return <FormResponsesPage />;
 }

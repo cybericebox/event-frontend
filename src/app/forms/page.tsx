@@ -1,5 +1,7 @@
 "use client";
 
+import {notFound} from "next/navigation";
+import {EVENT_FORMS_ENABLED} from "@/utils/features";
 import {useState} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -21,7 +23,7 @@ function present(value: EventFormAnswers[string] | undefined): boolean {
     return value !== undefined && value !== "" && (!Array.isArray(value) || value.length > 0);
 }
 
-export default function FormsPage() {
+function FormsPage() {
     const context = useParticipantContext();
     const eventID = context?.event.EventID ?? "";
     const queryClient = useQueryClient();
@@ -76,4 +78,9 @@ export default function FormsPage() {
                 return null;
             })}</div>{error && <p className="event-join-error" role="alert">{error}</p>}<button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? "Надсилаємо…" : "Надіслати відповідь"}</button></>}</section></div>}
     </div>;
+}
+
+export default function Page() {
+    if (!EVENT_FORMS_ENABLED) notFound();
+    return <FormsPage />;
 }

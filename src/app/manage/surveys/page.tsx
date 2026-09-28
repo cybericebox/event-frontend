@@ -1,5 +1,7 @@
 "use client";
 
+import {notFound} from "next/navigation";
+import {EVENT_FORMS_ENABLED} from "@/utils/features";
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowDown, ArrowUp, Eye, Plus, Send, Trash2, X} from "lucide-react";
@@ -45,7 +47,7 @@ function SurveyConditionEditor({block, preceding, index, disabled, onChange}: {
     return <div className="event-manage-form__condition"><label className="event-manage-form__switch"><input type="checkbox" checked={!!block.condition} disabled={disabled || preceding.length === 0} onChange={event => {const first = preceding[0]; onChange({...block, condition: event.target.checked && first ? {fieldKey: first.key, operator: "equals", value: conditionValue(first)} : undefined});}} />Показувати за умовою</label>{block.condition && <div className="event-manage-form__condition-fields"><EventSelect ariaLabel={`Попереднє питання для умови ${index + 1}`} value={block.condition.fieldKey} options={preceding.map(field => ({value: field.key, label: field.label || "Питання без назви"}))} disabled={disabled} onValueChange={value => {const next = preceding.find(field => field.key === value); if (next) onChange({...block, condition: {fieldKey: value, operator: "equals", value: conditionValue(next)}});}} /><EventSelect ariaLabel={`Порівняння для умови ${index + 1}`} value={block.condition.operator} options={[{value: "equals", label: "Дорівнює"}, {value: "not_equals", label: "Не дорівнює"}]} disabled={disabled} onValueChange={value => onChange({...block, condition: {...block.condition!, operator: value as "equals" | "not_equals"}})} />{source?.input === "checkbox" ? <EventSelect ariaLabel={`Значення умови ${index + 1}`} value={String(block.condition.value)} options={[{value: "true", label: "Так"}, {value: "false", label: "Ні"}]} disabled={disabled} onValueChange={value => onChange({...block, condition: {...block.condition!, value: value === "true"}})} /> : source?.input === "select" ? <EventSelect ariaLabel={`Значення умови ${index + 1}`} value={String(block.condition.value)} options={(source.options ?? []).filter(Boolean).map(value => ({value, label: value}))} disabled={disabled} onValueChange={value => onChange({...block, condition: {...block.condition!, value}})} /> : <input className="event-manage-input" aria-label={`Значення умови ${index + 1}`} type={source?.input === "number" ? "number" : "text"} value={String(block.condition.value)} onChange={event => onChange({...block, condition: {...block.condition!, value: source?.input === "number" ? Number(event.target.value) : event.target.value}})} disabled={disabled} placeholder="Значення" />}</div>}</div>;
 }
 
-export default function SurveysPage() {
+function SurveysPage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const queryClient = useQueryClient();
@@ -108,4 +110,9 @@ export default function SurveysPage() {
                 {form && <section className="event-manage-section event-manage-surveys__send"><div><h2>Надіслати поточним учасникам</h2><p>Учасники побачать форму в списку завдань. Після надсилання зможуть відповісти на збережену версію питань.</p></div><button className="ib-btn" type="button" disabled={!canManage || sending || dirty || !form.Enabled} onClick={() => void send()}><Send size={16} />{sending ? "Надсилаємо…" : "Надіслати зараз"}</button></section>}
             </div></div>
     </div>;
+}
+
+export default function Page() {
+    if (!EVENT_FORMS_ENABLED) notFound();
+    return <SurveysPage />;
 }
