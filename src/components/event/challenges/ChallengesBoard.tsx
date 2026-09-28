@@ -61,7 +61,7 @@ export function ChallengesBoard() {
     return <><div className="mx-auto w-full max-w-screen-2xl">
         {categories.map(category => <ChallengeCategorySection key={category.ID} category={category} onOpen={item => setSelectedID(item.EventChallengeID)} />)}
     </div><ChallengeModal
-        challenge={selected} eventID={event.EventID} eventFinished={finished}
+        challenge={selected} eventID={event.EventID} teamMode={event.Participation === 1} eventFinished={finished}
         open={!!selected} onOpenChange={open => {if (!open) setSelectedID(null);}}
         onSubmitted={() => void challenges.refetch()}
     /></>;

@@ -97,7 +97,7 @@ export function AttemptsManager() {
     if (pageQuery.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити відповіді</h1><button className="ib-btn" onClick={() => void pageQuery.refetch()}>Повторити</button></div>;
 
     return <div className="event-manage-settings event-attempts-manager">
-        <header className="event-manage-heading"><div><h1>Спроби розв’язання</h1><p>Усі відповіді учасників і команд та рішення модератора в одному журналі.</p></div><span className="event-attempts-manager__total">{recordCount(pageQuery.data?.Total ?? 0)}</span></header>
+        <header className="event-manage-heading"><div><h1>Спроби розв’язання</h1><p>{event.Participation === 1 ? "Усі відповіді учасників і команд та рішення модератора в одному журналі." : "Усі відповіді учасників і рішення модератора в одному журналі."}</p></div><span className="event-attempts-manager__total">{recordCount(pageQuery.data?.Total ?? 0)}</span></header>
         <div className="event-manage-participants__filters" role="group" aria-label="Фільтр спроб">
             {[{value: null, label: "Усі"}, {value: true, label: "Зараховані"}, {value: false, label: "Не зараховані"}].map(option => <button className="event-manage-participants__filter" key={option.label} type="button" aria-pressed={correct === option.value} onClick={() => changeFilter(option.value)}>{option.label}</button>)}
         </div>
@@ -105,14 +105,14 @@ export function AttemptsManager() {
             <section className="event-manage-section event-attempts-manager__list" aria-label="Спроби розв’язання">
                 {items.map(attempt => <button className={`event-attempts-manager__row${selectedID === attempt.ID ? " is-selected" : ""}`} type="button" key={attempt.ID} aria-pressed={selectedID === attempt.ID} onClick={() => select(attempt)}>
                     <span className="event-attempts-manager__row-title"><strong>{attempt.ChallengeName || "Завдання"}</strong><span className={attempt.Correct ? "is-correct" : "is-incorrect"}>{attemptStatus(attempt)}</span></span>
-                    <span className="event-attempts-manager__row-meta">{attempt.ParticipantName || "Учасник"}{attempt.TeamName ? ` · ${attempt.TeamName}` : ""}</span>
+                    <span className="event-attempts-manager__row-meta">{attempt.ParticipantName || "Учасник"}{event.Participation === 1 && attempt.TeamName ? ` · ${attempt.TeamName}` : ""}</span>
                     <time dateTime={attempt.ReceivedAt}>{timestamp(attempt.ReceivedAt)} UTC</time>
                 </button>)}
                 <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={pageIndex === 0} onClick={previousPage}>Назад</button><span>Сторінка {pageIndex + 1}</span><button className="ib-btn ib-btn--sm" type="button" disabled={!pageQuery.data?.NextCursor} onClick={nextPage}>Далі</button></div>
             </section>
             <section className="event-manage-section event-attempts-manager__detail" aria-label="Деталі відповіді">
                 {!selected ? <p className="event-challenge-manager__empty">Оберіть відповідь у списку, щоб переглянути деталі.</p> : <>
-                    <div className="event-manage-section__head"><h2>{selected.ChallengeName || "Завдання"}</h2><p>{selected.ParticipantName || "Учасник"}{selected.TeamName ? ` · ${selected.TeamName}` : ""} · {timestamp(selected.ReceivedAt)} UTC</p></div>
+                    <div className="event-manage-section__head"><h2>{selected.ChallengeName || "Завдання"}</h2><p>{selected.ParticipantName || "Учасник"}{event.Participation === 1 && selected.TeamName ? ` · ${selected.TeamName}` : ""} · {timestamp(selected.ReceivedAt)} UTC</p></div>
                     <dl className="event-attempts-manager__facts"><div><dt>Надіслана відповідь</dt><dd><code>{selected.Answer}</code></dd></div><div><dt>Автоматична перевірка</dt><dd>{selected.AutomaticCorrect ? "Правильно" : "Неправильно"}</dd></div><div><dt>Поточний результат</dt><dd>{attemptStatus(selected)}</dd></div></dl>
                     {canManage && <div className="event-attempts-manager__expected"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setShowExpected(value => !value)}>{showExpected ? "Сховати еталон" : "Показати еталон"}</button>{showExpected && <code>{selected.ExpectedFlag}</code>}</div>}
                     {selected.DecisionReason && <p className="event-attempts-manager__reason"><strong>Причина попереднього рішення:</strong> {selected.DecisionReason}</p>}

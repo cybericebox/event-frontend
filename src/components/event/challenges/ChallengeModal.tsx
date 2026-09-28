@@ -7,9 +7,10 @@ import {Badge} from "@/components/ui/badge";
 import {FlagSubmit} from "./FlagSubmit";
 import {ChallengeDescription} from "./ChallengeDescription";
 
-export function ChallengeModal({challenge, eventID, eventFinished, open, onOpenChange, onSubmitted}: {
+export function ChallengeModal({challenge, eventID, teamMode, eventFinished, open, onOpenChange, onSubmitted}: {
     challenge: OwnChallenge | null;
     eventID: string;
+    teamMode: boolean;
     eventFinished: boolean;
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -36,7 +37,7 @@ export function ChallengeModal({challenge, eventID, eventFinished, open, onOpenC
                 </a>)}</div>
         </section>}
         <section><h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Здати прапор</h3>
-            <FlagSubmit eventID={eventID} challengeID={challenge.EventChallengeID} solved={!!challenge.SolvedAt} eventFinished={eventFinished} onSubmitted={onSubmitted} />
+            <FlagSubmit eventID={eventID} challengeID={challenge.EventChallengeID} solved={!!challenge.SolvedAt} eventFinished={eventFinished} teamMode={teamMode} onSubmitted={onSubmitted} />
         </section>
     </DialogContent></Dialog>;
 }

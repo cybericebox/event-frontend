@@ -52,7 +52,7 @@ export default function VPNPage() {
 
     if (!access) return <div className="event-vpn-page">{intro}<div className="event-vpn-state" role="alert"><h2>Підтвердьте участь</h2><p>VPN доступний після підтвердження участі в події.</p><Link className="ib-btn" href="/">На головну</Link></div></div>;
     if (!access.participantInfo.UseVPN) return <div className="event-vpn-page">{intro}<div className="event-vpn-state"><h2>VPN не заплановано</h2><p>Для цієї події підключення до лабораторій зараз не потрібне.</p></div></div>;
-    if (!access.ownTeam) return <div className="event-vpn-page">{intro}<div className="event-vpn-state"><h2>Спочатку приєднайтеся до команди</h2><p>Особиста VPN-конфігурація доступна після вступу до команди.</p><Link className="ib-btn ib-btn--primary" href="/team">Моя команда</Link></div></div>;
+    if (!access.ownTeam) return <div className="event-vpn-page">{intro}<div className="event-vpn-state">{access.event.Participation === 1 ? <><h2>Спочатку приєднайтеся до команди</h2><p>Особиста VPN-конфігурація доступна після вступу до команди.</p><Link className="ib-btn ib-btn--primary" href="/team">Моя команда</Link></> : <><h2>Готуємо вашу участь</h2><p>VPN-конфігурація з’явиться після завершення реєстрації.</p></>}</div></div>;
     if (status.isPending) return <EventLoading label="Готуємо перевірочний шлюз…" />;
     if (status.isError) {
         const preparing = status.error instanceof VPNApiError && status.error.status === 404;

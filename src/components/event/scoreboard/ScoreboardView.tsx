@@ -51,6 +51,6 @@ export function ScoreboardView() {
             <p className="mb-2 text-sm font-semibold text-foreground">Динаміка балів · топ-5</p>
             <ScoreChart snapshot={results.data} startTime={new Date(event.StartTime)} finishTime={new Date(chartEnd)} />
         </div>
-        <ScoreTable snapshot={results.data} ownTeamID={participant?.ownTeam?.ID} />
+        <ScoreTable snapshot={results.data} ownTeamID={participant?.ownTeam?.ID} teamMode={event.Participation === 1} />
     </div>;
 }
