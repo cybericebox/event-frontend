@@ -13,7 +13,6 @@ export const signalLabels: Record<string, {title: string; description: string; g
     "participant.invitation.revoked": {title: "Запрошення скасовано", description: "Організатор скасував запрошення.", group: "Запрошення"},
     "participant.invitation.expired": {title: "Термін запрошення минув", description: "Запрошення більше не діє.", group: "Запрошення"},
     "participant.team_invitation.sent": {title: "Запрошення до команди", description: "Учасника запросили до команди.", group: "Запрошення"},
-    "participant.enrolled": {title: "Участь підтверджено", description: "Учасника зараховано до події.", group: "Участь"},
 };
 
 const audienceSchema = z.object({kind: z.string()}).passthrough();
