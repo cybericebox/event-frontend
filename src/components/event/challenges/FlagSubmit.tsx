@@ -30,7 +30,7 @@ export function FlagSubmit({eventID, challengeID, solved, eventFinished, onSubmi
         onError: () => toast.error("Не вдалося надіслати прапор"),
     });
     if (solved) return <div className="flex items-center gap-2 rounded-lg border border-success/40 bg-success/[0.09] px-4 py-3 text-success"><Check className="size-4 shrink-0" /><span className="text-sm font-semibold">Прапор уже прийнято — завдання вирішено вашою командою.</span></div>;
-    if (eventFinished) return <div className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">Відповіді більше не приймаються.</div>;
+    if (eventFinished) return <div className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground" role="status"><span className="font-semibold text-foreground">Подію завершено.</span> Відповіді більше не приймаються.</div>;
     return <form className="flex flex-col gap-2 sm:flex-row" onSubmit={event => {event.preventDefault(); const value = answer.trim(); if (value && !submission.isPending) submission.mutate(value);}}>
         <Input value={answer} onChange={event => setAnswer(event.target.value)} placeholder="ICE{…}" aria-label="Прапор" className="min-w-0 font-mono" disabled={submission.isPending} />
         <Button type="submit" disabled={submission.isPending || !answer.trim()}>Здати</Button>

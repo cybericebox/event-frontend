@@ -23,11 +23,13 @@ export function ChallengesBoard() {
     const [now, setNow] = useState(() => Date.now());
     const started = !!event && Date.parse(event.StartTime) <= now;
     const finished = !!event?.FinishTime && Date.parse(event.FinishTime) <= now;
+    // Keep ticking until the finish so flag submission closes on time.
+    const ticking = !!event && (!started || (!!event.FinishTime && !finished));
     useEffect(() => {
-        if (started) return;
+        if (!ticking) return;
         const timer = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(timer);
-    }, [started]);
+    }, [ticking]);
     const challenges = useQuery({
         queryKey: ["event-own-challenges", event?.EventID],
         queryFn: () => getOwnChallenges(event!.EventID),
