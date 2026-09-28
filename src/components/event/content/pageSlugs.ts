@@ -1,3 +1,3 @@
 export const reservedPageSlugs = new Set([
-    "api", "challenges", "scoreboard", "team", "teams", "vpn", "join", "forms", "live", "manage", "p", "cabinet",
+    "api", "challenges", "scoreboard", "team", "teams", "vpn", "join", "invite", "forms", "live", "manage", "p", "cabinet",
 ]);

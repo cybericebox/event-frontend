@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {getCurrentUser, getJoinStatus} from "@/api/clientAuth";
+import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
 
 type Action = {label: string; kind?: "link" | "join_event"; href?: string};
 
@@ -45,15 +45,20 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
         const timer = window.setInterval(() => setNow(Date.now()), 1000);
         return () => window.clearInterval(timer);
     }, [hasJoin, registrationOpen]);
-    const windowOpen = registrationWindowOpen(registrationOpen, joinPolicy, startAt, finishAt, now);
-    const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !preview && windowOpen, retry: false, refetchInterval: false});
-    const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !preview && windowOpen && !!eventID && !!identity.data, retry: false, refetchInterval: false});
+    // Invitations ignore the registration type but not the registration window.
+    const timeWindowOpen = registrationWindowOpen(true, joinPolicy, startAt, finishAt, now);
+    const windowOpen = registrationOpen && timeWindowOpen;
+    const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !preview && timeWindowOpen, retry: false, refetchInterval: false});
+    const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !preview && timeWindowOpen && !!eventID && !!identity.data, retry: false, refetchInterval: false});
+    const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !preview && timeWindowOpen && join.data === 1, retry: false, refetchInterval: false});
+    const invited = !preview && join.data === 1 && invitation.data?.Invited === true && !invitation.data.InvitationExpired;
     const canJoin = preview ? windowOpen : windowOpen && !identity.isPending && !identity.isError && (!identity.data || !join.isPending && !join.isError && join.data === 0);
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
     const joinHref = preview || identity.data ? "/join" : domain && eventTag
         ? `https://id.${domain}/sign-in?return_to=${encodeURIComponent(`https://${eventTag}.${domain}/join`)}`
         : "/join";
     const visible = actions.flatMap((action, index) => {
+        if (action.kind === "join_event" && invited) return [{href: "/invite", label: "Прийняти запрошення", index}];
         const href = action.kind === "join_event" ? canJoin ? joinHref : undefined : safeHref(action.href);
         return href && action.label ? [{href, label: action.label, index}] : [];
     });

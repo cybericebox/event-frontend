@@ -1,29 +1,17 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {EventRichTextView} from "@/components/event/content/EventRichTextView";
+import {apiErrorMessage} from "@/api/apiErrors";
 import {getCurrentUser, getInvitationInfo, getJoinStatus, getRegistrationWindow} from "@/api/clientAuth";
-import {acceptSelfInvitation, getSelfParticipantForm, joinSelfEvent, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
-import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {getSelfParticipantForm, joinSelfEvent, ParticipantJoinError, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
 import {registrationWindowOpen} from "@/components/event/content/ActionBlock";
+import {collectFormAnswers, ParticipantFormFields} from "@/components/event/ParticipantFormFields";
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
-
-function visible(condition: {fieldKey: string; operator: string; value: string | number | boolean} | undefined, answers: ParticipantAnswers): boolean {
-    if (!condition) return true;
-    const answer = answers[condition.fieldKey];
-    if (answer === undefined) return false;
-    const equals = String(answer) === String(condition.value);
-    return condition.operator === "equals" ? equals : !equals;
-}
-
-function present(value: ParticipantAnswers[string] | undefined): boolean {
-    return value !== undefined && value !== "" && (!Array.isArray(value) || value.length > 0);
-}
 
 export default function JoinPage() {
     const router = useRouter();
@@ -34,16 +22,18 @@ export default function JoinPage() {
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
     const join = useQuery({queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus, enabled: !!identity.data && !!event, retry: false});
     const invitation = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event && join.data === 1, retry: false});
-    const invited = invitation.data?.Invited === true;
+    // Invitations are accepted on /invite; this page only handles own applications.
+    const invited = invitation.data?.Invited === true && invitation.data.Status === ParticipationStatusEnum.PendingParticipationStatus;
     const registration = useQuery({queryKey: ["event-registration-window", event?.EventID], queryFn: () => getRegistrationWindow(event!.EventID), enabled: !!identity.data && !!event, retry: false});
-    // Invitations bypass the registration switch but still respect the lifecycle window.
-    const windowOpen = (now: number) => !!registration.data && registrationWindowOpen(invited || registration.data.registrationOpen, registration.data.joinPolicy, registration.data.startAt, registration.data.finishAt, now);
+    const windowOpen = (now: number) => !!registration.data && registrationWindowOpen(registration.data.registrationOpen, registration.data.joinPolicy, registration.data.startAt, registration.data.finishAt, now);
     const [openedAt] = useState(() => Date.now());
-    const canJoin = (join.data === 0 || (join.data === 1 && invited && !invitation.data?.TeamUnavailable)) && windowOpen(openedAt);
+    const canJoin = join.data === 0 && windowOpen(openedAt);
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(event!.EventID), enabled: !!identity.data && !!event && canJoin, retry: false});
     const [answers, setAnswers] = useState<ParticipantAnswers>({});
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {if (invited) router.replace("/invite");}, [invited, router]);
 
     async function submit() {
         if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;
@@ -52,33 +42,23 @@ export default function JoinPage() {
             setError("Реєстрацію на подію закрито.");
             return;
         }
-        const blocks = form.data?.Enabled ? form.data.Document.blocks : [];
-        const sendForm = !!form.data?.Enabled && (form.data.Required || Object.values(answers).some(present));
-        const sent: ParticipantAnswers = {};
-        for (const block of sendForm ? blocks : []) {
-            if (!isFormField(block) || !visible(block.condition, sent)) continue;
-            const answer = answers[block.key];
-            if (block.required && !present(answer)) {
-                setError(`Заповніть обов’язкове питання «${block.label}».`);
-                return;
-            }
-            if (present(answer)) sent[block.key] = answer!;
+        const collected = collectFormAnswers(form.data, answers);
+        if (collected.error) {
+            setError(collected.error);
+            return;
         }
         setWorking(true);
         try {
-            if (sendForm) {
-                await submitSelfParticipantForm(event.EventID, sent);
-            }
-            const status = invited ? await acceptSelfInvitation() : await joinSelfEvent();
+            if (collected.send) await submitSelfParticipantForm(event.EventID, collected.answers);
+            const status = await joinSelfEvent();
             queryClient.setQueryData(["event-join-status", event.EventID], status);
-            void queryClient.invalidateQueries({queryKey: ["event-invitation-status", event.EventID]});
             if (status === ParticipationStatusEnum.ApprovedParticipationStatus) {
                 void queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]});
                 void queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]});
             }
             router.push("/");
-        } catch {
-            setError("Не вдалося зберегти додаткові поля або приєднатися. Перевірте відповіді та спробуйте ще раз.");
+        } catch (failure) {
+            setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, "Не вдалося зберегти додаткові поля або приєднатися. Перевірте відповіді та спробуйте ще раз."));
         } finally {setWorking(false);}
     }
 
@@ -86,39 +66,17 @@ export default function JoinPage() {
     return <div className="event-join-page"><div className="event-join-card">
         <Link className="event-join-back" href="/">← На головну</Link>
         <h1>Приєднатися до події</h1>
-        {!event || identity.isPending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) ? <p>Завантажуємо умови участі…</p>
+        {!event || identity.isPending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <p>Завантажуємо умови участі…</p>
             : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <div role="alert"><p>Не вдалося завантажити умови участі.</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())}>Повторити</button></div>
             : !identity.data ? <p>Увійдіть до облікового запису, щоб приєднатися. Кнопка входу розташована вгорі сторінки.</p>
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>Ви вже берете участь у події.</p>
-            : status === ParticipationStatusEnum.PendingParticipationStatus && !invited ? <p>Заявку на участь надіслано. Дочекайтеся рішення організаторів.</p>
-            : status === ParticipationStatusEnum.PendingParticipationStatus && invitation.data?.TeamUnavailable ? <p>Команда, до якої вас запросили, більше недоступна. Зверніться до організаторів події.</p>
+            : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>Заявку на участь надіслано. Дочекайтеся рішення організаторів.</p>
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>Заявку відхилено. Зверніться до організаторів події.</p>
             : !windowOpen(openedAt) ? <p>Реєстрацію на подію закрито.</p>
             : <>
-                {invitation.data?.InvitedTeamName && <p>Вас запросили до команди «{invitation.data.InvitedTeamName}».</p>}
-                {form.data?.Enabled && <div className="event-join-form"><h2>Додаткові поля учасника</h2><p>{form.data.Required ? "Заповніть поля перед приєднанням." : "Ці поля необов’язкові. Можете заповнити їх перед приєднанням."}</p>
-                    {form.data.Document.blocks.map(block => {
-                        if (isFormField(block)) {
-                            if (!visible(block.condition, answers)) return null;
-                            const key = block.key;
-                            const update = (value: ParticipantAnswers[string]) => setAnswers(current => ({...current, [key]: value}));
-                            return <div className="event-join-question" key={block.id}><label htmlFor={`join-${block.id}`}><strong>{block.label}</strong>{block.required && <span className="event-field-required" aria-label="Обов’язкове питання">*</span>}</label>{block.help && <p>{block.help}</p>}
-                                {block.input === "long_text" ? <textarea id={`join-${block.id}`} className="event-join-input" rows={4} value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />
-                                    : block.input === "number" ? <input id={`join-${block.id}`} className="event-join-input" type="number" value={typeof answers[key] === "number" ? answers[key] as number : ""} onChange={e => update(e.target.value === "" ? "" : Number(e.target.value))} />
-                                    : block.input === "checkbox" ? <label className="event-join-choice"><input id={`join-${block.id}`} type="checkbox" checked={answers[key] === true} onChange={e => update(e.target.checked)} />Так</label>
-                                    : block.input === "select" ? <select id={`join-${block.id}`} className="event-join-input" value={String(answers[key] ?? "")} onChange={e => update(e.target.value)}><option value="">Оберіть варіант</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
-                                    : block.input === "multi_select" ? <div className="event-join-options" id={`join-${block.id}`}>{(block.options ?? []).map(option => <label className="event-join-choice" key={option}><input type="checkbox" checked={Array.isArray(answers[key]) && (answers[key] as string[]).includes(option)} onChange={e => {const previous = Array.isArray(answers[key]) ? answers[key] as string[] : []; update(e.target.checked ? [...previous, option] : previous.filter(item => item !== option));}} />{option}</label>)}</div>
-                                    : <input id={`join-${block.id}`} className="event-join-input" type="text" value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />}
-                            </div>;
-                        }
-                        if (block.type === "section") return <h3 key={block.id}>{block.label}</h3>;
-                        if (block.type === "text") return <div className="event-join-markdown" key={block.id}><EventRichTextView value={block.richText} /></div>;
-                        if (block.type === "divider") return <hr key={block.id} />;
-                        return null;
-                    })}
-                </div>}
+                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
-                <button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? "Надсилаємо…" : invited ? "Прийняти запрошення" : "Приєднатися"}</button>
+                <button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? "Надсилаємо…" : "Приєднатися"}</button>
             </>}
     </div></div>;
 }

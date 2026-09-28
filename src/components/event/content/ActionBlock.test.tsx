@@ -7,6 +7,7 @@ import {ActionBlock, registrationWindowOpen} from "./ActionBlock";
 vi.mock("@/api/clientAuth", () => ({
     getCurrentUser: vi.fn(async () => null),
     getJoinStatus: vi.fn(async () => 0),
+    getInvitationInfo: vi.fn(async () => ({Status: 0, Invited: false})),
 }));
 
 afterEach(cleanup);

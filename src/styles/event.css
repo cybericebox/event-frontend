@@ -97,6 +97,7 @@ body.event-root main{overflow-x:visible}
 .event-join-choice input{accent-color:var(--ib-action)}
 .event-join-markdown{font-size:var(--ib-fs-14);line-height:1.55}
 .event-join-error{color:var(--ib-danger);font-size:var(--ib-fs-13)}
+.event-join-actions{display:flex;flex-wrap:wrap;gap:var(--ib-3)}
 .event-forms-notice{display:flex;align-items:center;gap:var(--ib-3);margin-bottom:var(--ib-5);padding:var(--ib-3) var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-surface);font-size:var(--ib-fs-13)}
 .event-forms-notice>svg{flex:none;color:var(--ib-action)}
 .event-forms-notice>div{flex:1;min-width:0}
