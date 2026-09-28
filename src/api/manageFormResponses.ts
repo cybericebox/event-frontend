@@ -12,11 +12,9 @@ const baseAnswerSchema = z.object({
     UserID: id, Name: z.string(), Email: z.string(), Answers: z.record(z.string(), z.unknown()),
     Document: formDocumentSchema, SubmittedAt: z.string(),
 });
-const participantAnswerSchema = baseAnswerSchema.extend({FormVersion: z.number().int()});
 const genericAnswerSchema = baseAnswerSchema.extend({FormVersionID: id, Version: z.number().int()});
 
 export type ManageGenericForm = z.infer<typeof genericFormSchema>;
-export type ManageParticipantFormAnswer = z.infer<typeof participantAnswerSchema>;
 export type ManageGenericFormAnswer = z.infer<typeof genericAnswerSchema>;
 export type ManageGenericFormInput = Pick<ManageGenericForm, "Title" | "Enabled" | "Required" | "Document">;
 
@@ -91,11 +89,6 @@ export async function sendManageGenericForm(eventID: string, formID: string): Pr
         body: JSON.stringify({Rule: {Trigger: "manual", Audience: {kind: "all_participants"}, Presentation: "task", Dismissible: true, Gates: []}, IncludeFuture: false, Enabled: true}),
     });
     if (!response.ok) throw new ManageApiError(response.status);
-}
-
-export async function getManageParticipantFormAnswers(eventID: string): Promise<ManageParticipantFormAnswer[]> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return [];
-    return request(eventID, "participant-form/answers", z.array(participantAnswerSchema));
 }
 
 export async function getManageGenericFormAnswers(eventID: string, formID: string): Promise<ManageGenericFormAnswer[]> {
