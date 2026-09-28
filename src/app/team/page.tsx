@@ -33,7 +33,10 @@ export default function TeamPage() {
             await joinEventTeam(event.EventID, joinCode.trim());
             await queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]});
         } catch (error) {
-            setMessage(error instanceof EventTeamError && error.status === 409 ? "Таку назву вже зайнято або приєднання неможливе." : "Не вдалося зберегти. Перевірте дані й повторіть спробу.");
+            // JoinTeam: 404 = unknown code, 409 = team full or roster closed.
+            setMessage(error instanceof EventTeamError && error.status === 404 ? "Команду з таким кодом не знайдено. Перевірте код і спробуйте ще раз."
+                : error instanceof EventTeamError && error.status === 409 ? "Приєднатися неможливо: команда вже заповнена або склад команд закрито."
+                : "Не вдалося приєднатися. Перевірте код і повторіть спробу.");
         } finally {
             setPending(false);
         }
