@@ -91,7 +91,7 @@ export default function EventExercisesPage() {
         enabled: attachmentsQuery.isSuccess, refetchOnWindowFocus: false,
     });
     const boards = boardsQuery.data ?? [];
-    const attachedVersions = new Set(boards.map(board => board.attachment.ExerciseVersionID));
+    const attachedExercises = new Set(boards.map(board => board.attachment.ExerciseID));
 
     async function attach(versionID: string) {
         if (!canManage || busy) return;
@@ -160,7 +160,7 @@ export default function EventExercisesPage() {
                 : (catalogQuery.data?.length ?? 0) === 0 ? <p className="event-challenge-manager__empty">Опублікованих наборів за цим запитом немає.</p>
                     : <ul className="event-challenge-manager__list">{catalogQuery.data?.map(choice => <li className="event-exercise-editor__choice" key={choice.ID}>
                         <div><strong>{choice.Name}</strong>{choice.Description && <p>{choice.Description}</p>}</div>
-                        <div className="event-exercise-editor__choice-actions"><button className="ib-btn ib-btn--sm" type="button" aria-label={`Переглянути ${choice.Name}`} aria-expanded={previewVersionID === choice.PublishedVersionID} onClick={() => setPreviewVersionID(current => current === choice.PublishedVersionID ? null : choice.PublishedVersionID)}><Eye />Переглянути</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy || attachedVersions.has(choice.PublishedVersionID)} onClick={() => void attach(choice.PublishedVersionID)}>{attachedVersions.has(choice.PublishedVersionID) ? "Додано" : <><Plus />Додати</>}</button></div>
+                        <div className="event-exercise-editor__choice-actions"><button className="ib-btn ib-btn--sm" type="button" aria-label={`Переглянути ${choice.Name}`} aria-expanded={previewVersionID === choice.PublishedVersionID} onClick={() => setPreviewVersionID(current => current === choice.PublishedVersionID ? null : choice.PublishedVersionID)}><Eye />Переглянути</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy || attachedExercises.has(choice.ID)} onClick={() => void attach(choice.PublishedVersionID)}>{attachedExercises.has(choice.ID) ? "Додано" : <><Plus />Додати</>}</button></div>
                     </li>)}</ul>}
             {previewVersionID && <div className="event-exercise-editor__preview" aria-live="polite">
                 <div className="event-exercise-editor__preview-head"><strong>Попередній перегляд набору</strong><button className="ib-btn ib-btn--sm" type="button" aria-label="Закрити попередній перегляд" onClick={() => setPreviewVersionID(null)}><X size={16} /></button></div>
