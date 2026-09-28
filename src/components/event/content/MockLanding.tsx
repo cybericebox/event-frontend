@@ -11,7 +11,6 @@ export function MockLanding({initial, eventName, coverImage}: {initial: EventCon
     const saved = useSyncExternalStore(subscribe, mockLandingSnapshot, () => null);
     const document = saved === null ? initial.Landing : readMockLanding(initial.Landing);
     return <div className="event-landing ib-blocks">
-        {document.blocks.length > 0 && !document.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{eventName}</h1>}
-        <ContentBlocks document={document} variables={initial.Variables} coverImage={coverImage} preview />
+        <ContentBlocks document={document} variables={initial.Variables} title={eventName} coverImage={coverImage} preview />
     </div>;
 }

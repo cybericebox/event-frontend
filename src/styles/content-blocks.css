@@ -34,17 +34,16 @@
 .ib-block-banner__placeholder{display:grid;place-items:center;box-sizing:border-box;width:100%;min-width:0;aspect-ratio:2/1;min-height:200px;padding:var(--ib-6);color:var(--ib-on-brand);text-align:center}
 .ib-block-banner__placeholder strong{max-width:20ch;font-size:clamp(24px,5cqi,54px);line-height:1.05;letter-spacing:-.03em}
 .ib-block-banner__caption{position:absolute;inset:auto 0 0;z-index:1;padding:var(--ib-12);background:linear-gradient(transparent,rgba(14,12,38,.72));color:#fff}
-.ib-block-banner__caption h2{margin:0;max-width:900px;font-size:clamp(28px,5cqi,58px);line-height:1.04;letter-spacing:-.035em}
+.ib-block-banner__caption :is(h1,h2){margin:0;max-width:900px;font-size:clamp(28px,5cqi,58px);line-height:1.04;letter-spacing:-.035em}
 .ib-block-banner--caption-center .ib-block-banner__caption{text-align:center}
-.ib-block-banner--caption-center .ib-block-banner__caption h2{margin-inline:auto}
+.ib-block-banner--caption-center .ib-block-banner__caption :is(h1,h2){margin-inline:auto}
 .ib-block-banner--caption-right .ib-block-banner__caption{text-align:right}
-.ib-block-banner--caption-right .ib-block-banner__caption h2{margin-left:auto}
+.ib-block-banner--caption-right .ib-block-banner__caption :is(h1,h2){margin-left:auto}
 @container ib-blocks (max-width:700px){.ib-block-banner__inner{width:100%}.ib-block-banner__caption{padding:var(--ib-5)}}
 
 /* heading: above the content, or on the left (--split) */
 .ib-block__head{margin-bottom:var(--ib-6);min-width:0}
 .ib-block__title{margin:0;font-size:26px;font-weight:var(--ib-w-semibold);letter-spacing:-.025em;line-height:1.15;color:var(--ib-ink)}
-.ib-block__title--page{font-size:var(--ib-fs-32);letter-spacing:-.03em}
 .ib-block__sub{margin-top:var(--ib-2);color:var(--ib-dim);max-width:62ch}
 .ib-mass .ib-block__title{color:var(--ib-on-brand)}
 .ib-mass .ib-block__sub{color:var(--ib-on-brand-2)}
@@ -85,5 +84,4 @@
 @container ib-blocks (max-width:520px){
   .ib-block{--ib-block-px:var(--ib-4);--ib-block-py:var(--ib-8)}
   .ib-block__title{font-size:var(--ib-fs-24)}
-  .ib-block__title--page{font-size:28px}
 }

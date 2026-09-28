@@ -19,7 +19,6 @@ export default async function LandingPage() {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return <MockLanding initial={content} eventName={event.Name} coverImage={event.PreviewPicture} />;
 
     return <div className="event-landing ib-blocks">
-        {content.Landing.blocks.length > 0 && !content.Landing.blocks.some(block => block.type === "hero") && <h1 className="ib-visually-hidden">{event.Name}</h1>}
-        <LiveContentBlocks eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} coverImage={event.PreviewPicture} />
+        <LiveContentBlocks eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} title={event.Name} coverImage={event.PreviewPicture} />
     </div>;
 }

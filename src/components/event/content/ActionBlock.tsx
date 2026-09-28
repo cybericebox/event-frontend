@@ -21,13 +21,14 @@ export function registrationWindowOpen(registrationOpen: boolean, joinPolicy: st
     return true;
 }
 
-export function ActionBlock({id, title, text, variant, alignment, selected, preview, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID, eventTag}: {
+export function ActionBlock({id, title, text, variant, alignment, selected, primaryHeading, preview, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID, eventTag}: {
     id: string;
     title: string;
     text: string;
     variant?: string;
     alignment?: string;
     selected?: boolean;
+    primaryHeading?: boolean;
     preview?: boolean;
     actions: Action[];
     registrationOpen: boolean;
@@ -59,7 +60,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prev
     if (!visible.length && !title && !text) return null;
     const branded = variant === "mass";
     return <section className={`ib-block ib-block-cta${branded ? " ib-mass ib-mass-waves" : ""}${!title && !text ? " ib-block-cta--buttons-only" : ""} ib-block-cta--actions-${alignment ?? "end"}`} id={id} data-preview-selected={selected || undefined}>
-        <div className="ib-block__in"><div>{title && <h2 className="ib-block-cta__title">{title}</h2>}{text && <p className="ib-block-cta__text">{text}</p>}</div>
+        <div className="ib-block__in"><div>{title && (primaryHeading ? <h1 className="ib-block-cta__title">{title}</h1> : <h2 className="ib-block-cta__title">{title}</h2>)}{text && <p className="ib-block-cta__text">{text}</p>}</div>
             {visible.length > 0 && <div className="ib-block-cta__acts">{visible.map((action, position) => <a key={action.index} className={`ib-btn${position === 0 ? branded ? " ib-btn--mass" : " ib-btn--primary" : branded ? " ib-btn--mass-outline" : ""}`} href={action.href}>{action.label}</a>)}</div>}
         </div>
     </section>;

@@ -71,7 +71,6 @@ body.event-root main{overflow-x:visible}
 .event-guest-main .ib-blocks>.ib-block,.event-landing>.ib-block{border:0;border-radius:0;overflow:hidden}
 .event-guest-main .ib-blocks>.ib-block:not(.ib-mass){background:var(--ib-paper)}
 .event-landing>.ib-blocks{container:ib-blocks/inline-size}
-.event-content-heading{padding-bottom:var(--ib-6)}
 .event-content-empty{color:var(--ib-dim)}
 .event-landing .ib-block-hero__by{margin:0}
 .event-landing .ib-block-hero__title{max-width:14ch}
