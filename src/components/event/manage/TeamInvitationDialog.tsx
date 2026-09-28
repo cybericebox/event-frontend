@@ -8,11 +8,11 @@ import {invitationEmails, parseInvitationCsv} from "./participantInvitations";
 
 export function TeamInvitationDialog({eventID, team, onClose, onSent}: {
     eventID: string;
-    team: {ID: string; Name: string} | null;
+    team: {ID: string; Name: string; InitialEmails?: string[]} | null;
     onClose: () => void;
     onSent: () => Promise<void>;
 }) {
-    const [manual, setManual] = useState("");
+    const [manual, setManual] = useState(team?.InitialEmails?.join("\n") ?? "");
     const [csvEmails, setCsvEmails] = useState<string[]>([]);
     const [results, setResults] = useState<ParticipantInvitationResult[]>([]);
     const [busy, setBusy] = useState(false);

@@ -4,7 +4,7 @@ import {useState, type FormEvent} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
-import {getManageParticipants} from "@/api/manageParticipants";
+import {getManageParticipants, inviteManageParticipants} from "@/api/manageParticipants";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {changeManageTeamMember, createManageTeam, deleteManageTeam, getManageTeams, transferManageTeamCaptain, updateManageTeam, type ManageTeam} from "@/api/manageTeams";
@@ -12,6 +12,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {TeamInvitationDialog} from "@/components/event/manage/TeamInvitationDialog";
+import {invitationEmails, parseInvitationCsv} from "@/components/event/manage/participantInvitations";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
@@ -25,7 +26,9 @@ export default function ManageTeamsPage() {
     const [name, setName] = useState("");
     const [captainID, setCaptainID] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
-    const [inviteTeam, setInviteTeam] = useState<{ID: string; Name: string} | null>(null);
+    const [inviteTeam, setInviteTeam] = useState<{ID: string; Name: string; InitialEmails?: string[]} | null>(null);
+    const [createInviteManual, setCreateInviteManual] = useState("");
+    const [createInviteCsv, setCreateInviteCsv] = useState<string[]>([]);
     const [fieldAnswers, setFieldAnswers] = useState<ParticipantAnswers>({});
     const [editing, setEditing] = useState<{id: string; name: string; hidden: boolean} | null>(null);
     const [memberChoices, setMemberChoices] = useState<Record<string, string>>({});
@@ -58,15 +61,40 @@ export default function ManageTeamsPage() {
     async function create(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
         if (!canManage || busy || !name.trim() || !captainID) return;
+        const captainEmail = participantByID.get(captainID)?.Email.toLowerCase();
+        const emails = invitationEmails(createInviteManual, createInviteCsv).filter(email => email !== captainEmail);
+        if (emails.length > 200) return;
         setBusy(true);
+        let team: ManageTeam;
         try {
-            await createManageTeam(eventID, name.trim(), captainID, fieldAnswers);
-            setName(""); setCaptainID(""); setFieldAnswers({});
-            setCreateOpen(false);
-            await refresh();
+            team = await createManageTeam(eventID, name.trim(), captainID, fieldAnswers);
+        } catch {
+            toast.error("Не вдалося створити команду. Перевірте капітана й обмеження події.");
+            setBusy(false);
+            return;
+        }
+        setName(""); setCaptainID(""); setFieldAnswers({});
+        setCreateInviteManual(""); setCreateInviteCsv([]);
+        setCreateOpen(false);
+        try {await refresh();} catch {toast.error("Команду створено, але список не оновився.");}
+        if (emails.length === 0) {
             toast.success("Команду створено");
-        } catch {toast.error("Не вдалося створити команду. Перевірте капітана й обмеження події.");}
-        finally {setBusy(false);}
+            setBusy(false);
+            return;
+        }
+        try {
+            const results = await inviteManageParticipants(eventID, emails, team.ID);
+            const failed = results.filter(result => result.Error).map(result => result.Email);
+            const sent = results.length - failed.length;
+            if (failed.length) {
+                setInviteTeam({ID: team.ID, Name: team.Name, InitialEmails: failed});
+                toast.error(`Команду створено. Надіслано: ${sent}. Не вдалося: ${failed.length}.`);
+            } else toast.success(`Команду створено. Надіслано запрошень: ${sent}`);
+            try {await refresh();} catch {toast.error("Не вдалося оновити список учасників.");}
+        } catch {
+            setInviteTeam({ID: team.ID, Name: team.Name, InitialEmails: emails});
+            toast.error("Команду створено, але запрошення не надіслані. Спробуйте ще раз у відкритому вікні.");
+        } finally {setBusy(false);}
     }
 
     async function saveTeam(team: ManageTeam) {
@@ -122,7 +150,7 @@ export default function ManageTeamsPage() {
 
     return <div className="event-manage-settings event-manage-teams">
         <header className="event-manage-heading"><div><h1>Команди</h1><p>Створюйте команди, змінюйте їхній склад і видимість.</p></div><div className="event-manage-section__actions"><span className="event-attempts-manager__total">Усього: {teamsQuery.data.Total}</span>{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>Створити команду</button>}</div></header>
-        <Dialog open={createOpen} onOpenChange={open => {if (!busy) setCreateOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(480px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>Нова команда</DialogTitle><DialogDescription>Капітан має бути підтвердженим учасником без команди.</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={create}><label className="event-manage-field">Назва<input className="event-manage-input" value={name} onChange={e => setName(e.target.value)} maxLength={100} required disabled={busy} placeholder="Назва команди" /></label><div className="event-manage-field"><span>Капітан</span><EventSelect ariaLabel="Капітан нової команди" value={captainID} placeholder="Оберіть учасника" options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={setCaptainID} disabled={busy || available.length === 0} /></div>{fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}<div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setCreateOpen(false)}>Скасувати</button><button className="ib-btn ib-btn--primary" type="submit" disabled={busy || !name.trim() || !captainID}>Створити команду</button></div></form></DialogContent></Dialog>
+        <Dialog open={createOpen} onOpenChange={open => {if (!busy) setCreateOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(480px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>Нова команда</DialogTitle><DialogDescription>Капітан має бути підтвердженим учасником без команди. Іншим учасникам можна одразу надіслати запрошення.</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={create}><label className="event-manage-field">Назва<input className="event-manage-input" value={name} onChange={e => setName(e.target.value)} maxLength={100} required disabled={busy} placeholder="Назва команди" /></label><div className="event-manage-field"><span>Капітан</span><EventSelect ariaLabel="Капітан нової команди" value={captainID} placeholder="Оберіть учасника" options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={setCaptainID} disabled={busy || available.length === 0} /></div>{fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}<label className="event-manage-field"><span>Запросити учасників</span><textarea className="event-manage-input" rows={3} value={createInviteManual} onChange={e => setCreateInviteManual(e.target.value)} placeholder="Одна адреса на рядок (необов’язково)" disabled={busy} /></label><label className="event-manage-field"><span>Або додати CSV-файл</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={busy} onChange={async e => {const file = e.target.files?.[0]; if (file) {try {setCreateInviteCsv(parseInvitationCsv(await file.text()));} catch {toast.error("Не вдалося прочитати CSV-файл.");}}}} /><small>Колонка email або перша колонка. До 200 адрес за раз. Капітана повторно не запрошуємо.</small></label>{invitationEmails(createInviteManual, createInviteCsv).length > 200 && <p className="event-manage-validation" role="alert">За один раз можна запросити не більше 200 учасників.</p>}<div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setCreateOpen(false)}>Скасувати</button><button className="ib-btn ib-btn--primary" type="submit" disabled={busy || !name.trim() || !captainID || invitationEmails(createInviteManual, createInviteCsv).length > 200}>Створити команду</button></div></form></DialogContent></Dialog>
         <TeamInvitationDialog key={inviteTeam?.ID ?? "closed"} eventID={eventID} team={inviteTeam} onClose={() => setInviteTeam(null)} onSent={refresh} />
         {teams.length === 0 ? <section className="event-manage-section"><p className="event-challenge-manager__empty">Команд поки немає.</p></section> : <div className="event-manage-teams__list">{teams.map(team => {
             const members = participants.filter(person => person.TeamID === team.ID);
