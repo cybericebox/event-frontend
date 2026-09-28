@@ -24,7 +24,7 @@ function recordCount(count: number) {
     return `${count} ${ending}`;
 }
 
-export function AttemptsManager({solvedOnly}: {solvedOnly: boolean}) {
+export function AttemptsManager() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const queryClient = useQueryClient();
@@ -34,7 +34,7 @@ export function AttemptsManager({solvedOnly}: {solvedOnly: boolean}) {
     const [draft, setDraft] = useState<{id: string; decision: AttemptDecision; reason: string} | null>(null);
     const [showExpected, setShowExpected] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [correct, setCorrect] = useState<boolean | null>(solvedOnly ? true : null);
+    const [correct, setCorrect] = useState<boolean | null>(null);
     const cursor = cursors[pageIndex] ?? null;
     const pageQuery = useQuery({queryKey: ["event-manage-attempts", eventID, correct, cursor], queryFn: () => getManageAttempts(eventID, correct, cursor), enabled: canManage, refetchOnWindowFocus: false});
     const namesQuery = useQuery({
