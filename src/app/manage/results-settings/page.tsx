@@ -3,15 +3,12 @@
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {getManageConfig, putManageConfig, type ManageConfig, type ManageConfigInput} from "@/api/manage";
+import {getManageConfig, putManageConfig, manageConfigInput} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
 
-function asInput(config: ManageConfig): ManageConfigInput {
-    return {Participation: config.Participation, Registration: config.Registration, ScoreboardVisibility: config.ScoreboardVisibility, ParticipantsVisibility: config.ParticipantsVisibility, PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture, MaxTeamSize: config.MaxTeamSize, MinTeamSize: config.MinTeamSize, MaxTeams: config.MaxTeams, DynamicLabsPlanned: config.DynamicLabsPlanned};
-}
 
 export default function ResultsSettingsPage() {
     const {event, canManage} = useManager();
@@ -29,7 +26,7 @@ export default function ResultsSettingsPage() {
         if (!config || visibility === undefined || !canManage || saving || !dirty) return;
         setSaving(true);
         try {
-            const updated = await putManageConfig(eventID, {...asInput(config), ScoreboardVisibility: visibility});
+            const updated = await putManageConfig(eventID, {...manageConfigInput(config), ScoreboardVisibility: visibility});
             queryClient.setQueryData(["event-management-config", eventID], updated);
             setEdit(null);
             toast.success("Налаштування результатів збережено");

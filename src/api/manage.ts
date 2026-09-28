@@ -1,5 +1,6 @@
 import {plainTextRichText} from "@/components/event/content/richTextState";
 import {z} from "zod";
+import {readApiErrorCode} from "@/api/apiErrors";
 import {deriveTheme} from "@/components/event/manage/deriveTheme";
 import {EventThemeSchema} from "@/types/eventTheme";
 import {ContentDocumentSchema, ContentValueSchema, type ContentDocument} from "@/types/eventContent";
@@ -21,12 +22,24 @@ export const ManageConfigSchema = z.object({
     MinTeamSize: optionalLimit,
     MaxTeams: optionalLimit,
     DynamicLabsPlanned: z.boolean(),
+    AllowPseudonyms: z.boolean().default(false),
     Theme: themeSchema,
     UpdatedAt: z.string(),
 });
 
 export type ManageConfig = z.infer<typeof ManageConfigSchema>;
 export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt">;
+
+// Every config PUT sends the full input so no setting is silently reset.
+export function manageConfigInput(config: ManageConfig): ManageConfigInput {
+    return {
+        Participation: config.Participation, Registration: config.Registration,
+        ScoreboardVisibility: config.ScoreboardVisibility, ParticipantsVisibility: config.ParticipantsVisibility,
+        PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture,
+        MaxTeamSize: config.MaxTeamSize, MinTeamSize: config.MinTeamSize, MaxTeams: config.MaxTeams,
+        DynamicLabsPlanned: config.DynamicLabsPlanned, AllowPseudonyms: config.AllowPseudonyms,
+    };
+}
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;
 export type BrandAssetChange = {Action: "keep" | "remove" | "replace"; FileID?: string};
 export type ManageGeneralInput = {Name: string; Description: string; Preview: BrandAssetChange};
@@ -70,9 +83,13 @@ export type ManagePage = z.infer<typeof ManagePageSchema>;
 export type ManagePageInput = Pick<ManagePage, "Slug" | "Title" | "Document" | "Visibility" | "Navigation" | "NavigationOrder">;
 
 export class ManageApiError extends Error {
-    constructor(readonly status: number) {
+    constructor(readonly status: number, readonly code?: number) {
         super(`Event management request failed: ${status}`);
     }
+}
+
+export async function manageApiError(response: Response): Promise<ManageApiError> {
+    return new ManageApiError(response.status, await readApiErrorCode(response));
 }
 
 const accessSchema = z.object({CanManage: z.boolean()});
@@ -90,6 +107,7 @@ let mockConfig: ManageConfig = {
     MinTeamSize: null,
     MaxTeams: null,
     DynamicLabsPlanned: false,
+    AllowPseudonyms: false,
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
     UpdatedAt: "2026-09-26T00:00:00Z",
 };
@@ -215,7 +233,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         headers: {Accept: "application/json", ...(payload === undefined ? {} : {"Content-Type": "application/json"})},
         body: payload === undefined ? undefined : JSON.stringify(payload),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
     if (response.status === 204) return schema.parse(undefined);
     const envelope = z.object({Data: schema}).parse(await response.json());
     return envelope.Data;
@@ -246,7 +264,7 @@ export async function uploadManageBrandDraft(eventID: string, kind: "preview" | 
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/brand-drafts/${kind}`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
     const envelope = z.object({Data: z.object({FileID: z.string().uuid()})}).parse(await response.json());
     return envelope.Data.FileID;
 }
@@ -260,7 +278,7 @@ export async function uploadManageBannerImage(eventID: string, file: File): Prom
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/content-images`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
     const envelope = z.object({Data: z.object({ImageURL: z.string()})}).parse(await response.json());
     return envelope.Data.ImageURL;
 }
@@ -274,7 +292,7 @@ export async function uploadManageLogo(eventID: string, file: File): Promise<str
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
     const envelope = z.object({Data: z.object({LogoURL: z.string()})}).parse(await response.json());
     return envelope.Data.LogoURL;
 }
@@ -286,7 +304,7 @@ export async function removeManageLogo(eventID: string): Promise<void> {
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
         method: "DELETE", credentials: "include", cache: "no-store",
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
 }
 
 export async function uploadManagePreviewPicture(eventID: string, file: File): Promise<string> {
@@ -301,7 +319,7 @@ export async function uploadManagePreviewPicture(eventID: string, file: File): P
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
     const envelope = z.object({Data: z.object({PreviewPicture: z.string()})}).parse(await response.json());
     return envelope.Data.PreviewPicture;
 }
@@ -316,7 +334,7 @@ export async function removeManagePreviewPicture(eventID: string): Promise<void>
     const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
         method: "DELETE", credentials: "include", cache: "no-store",
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
 }
 export const getManageLifecycle = (eventID: string) => request(eventID, "lifecycle", ManageLifecycleSchema);
 export const putManageLifecycle = (eventID: string, input: ManageLifecycleInput) => request(eventID, "lifecycle", ManageLifecycleSchema, "PUT", input);
@@ -344,5 +362,5 @@ export async function putManageLanding(eventID: string, document: ContentDocumen
         headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify({Document: document}),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
 }

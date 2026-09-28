@@ -7,6 +7,8 @@ export const formFieldSchema = z.object({
     id: z.string(), type: z.literal("field"), key: z.string(), input: formInputSchema,
     label: z.string(), help: z.string().optional(), required: z.boolean().optional(),
     options: z.array(z.string()).optional(),
+    // Team fields only: the captain may change this answer after creation.
+    editable: z.boolean().optional(),
     condition: z.object({fieldKey: z.string(), operator: z.enum(["equals", "not_equals"]), value: z.union([z.string(), z.number(), z.boolean()])}).optional(),
 });
 export const formBlockSchema = z.union([formFieldSchema, ContentBlockSchema]);
@@ -18,7 +20,10 @@ export type FormDocument = z.infer<typeof formDocumentSchema>;
 export type ParticipantForm = z.infer<typeof participantFormSchema>;
 export type ParticipantFormInput = Pick<ParticipantForm, "Enabled" | "Required" | "Document">;
 
-let mockForm: ParticipantForm | null = null;
+let mockForm: ParticipantForm | null = {Version: 1, Enabled: true, Required: false, Document: {blocks: [
+    {id: "city", type: "field", key: "city", input: "text", label: "Місто"},
+    {id: "experience", type: "field", key: "experience", input: "select", label: "Досвід у CTF", options: ["Початковий", "Середній", "Високий"]},
+]}};
 
 export async function getManageParticipantForm(eventID: string): Promise<ParticipantForm | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockForm;
