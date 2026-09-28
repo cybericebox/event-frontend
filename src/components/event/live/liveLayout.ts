@@ -14,6 +14,13 @@ export function liveLogoURL(value: string): string | null {
     try {const url = new URL(value); return url.protocol === "https:" ? url.href : null;} catch {return null;}
 }
 
+// Mirrors the backend live layout limits (minimum 3×3).
+export const liveGridLimits = {minCols: 3, maxCols: 48, minRows: 3, maxRows: 32};
+
+export function liveGridValid(cols: number, rows: number): boolean {
+    return Number.isInteger(cols) && Number.isInteger(rows) && cols >= liveGridLimits.minCols && cols <= liveGridLimits.maxCols && rows >= liveGridLimits.minRows && rows <= liveGridLimits.maxRows;
+}
+
 export const liveWidgetMinimums: Record<LiveWidget["type"], {w: number; h: number}> = {
     title: {w: 3, h: 1}, timer: {w: 2, h: 1}, chart: {w: 4, h: 3}, table: {w: 3, h: 3},
     ad_table: {w: 6, h: 4}, logos: {w: 2, h: 1}, solves: {w: 3, h: 2},
