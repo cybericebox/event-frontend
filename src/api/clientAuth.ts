@@ -8,8 +8,19 @@ const meSchema = z.object({
     Picture: z.string().default(""),
 });
 export type CurrentUser = z.infer<typeof meSchema>;
-const joinSchema = z.object({Status: z.number().int(), Invited: z.boolean().default(false), InvitedTeamName: z.string().default(""), TeamUnavailable: z.boolean().default(false)});
-const ownTeamSchema = z.object({ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int(), ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {})});
+export const joinInfoSchema = z.object({
+    Status: z.number().int(), Invited: z.boolean().default(false),
+    InvitedTeamName: z.string().nullish().transform(value => value ?? ""),
+    InvitedTeamID: z.string().uuid().nullish().transform(value => value ?? null),
+    TeamUnavailable: z.boolean().default(false), InvitationExpired: z.boolean().default(false),
+});
+const joinSchema = joinInfoSchema;
+export type JoinInfo = z.infer<typeof joinInfoSchema>;
+const ownTeamSchema = z.object({
+    ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int(),
+    ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {}),
+    Admitted: z.boolean().optional(), MinTeamSize: z.number().int().nullish(), MaxTeamSize: z.number().int().nullish(),
+});
 export type OwnTeam = z.infer<typeof ownTeamSchema>;
 
 export class ClientAuthError extends Error {
@@ -50,13 +61,15 @@ export function profilePictureUrl(picture: string): string | undefined {
 }
 
 export async function getJoinStatus(): Promise<number> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1" ? 2 : 0;
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1" ? 2 : process.env.NEXT_PUBLIC_MOCK_INVITED === "1" ? 1 : 0;
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
     return (await readData(response, joinSchema)).Status;
 }
 
-export async function getInvitationInfo(): Promise<z.infer<typeof joinSchema>> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return joinSchema.parse({Status: 0, Invited: false});
+export async function getInvitationInfo(): Promise<JoinInfo> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_INVITED === "1"
+        ? joinSchema.parse({Status: 1, Invited: true, InvitedTeamName: "Blue Team", InvitedTeamID: "01900000-0000-7000-8000-000000000022"})
+        : joinSchema.parse({Status: process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1" ? 2 : 0, Invited: false});
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
     return readData(response, joinSchema);
 }

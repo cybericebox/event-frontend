@@ -5,6 +5,7 @@ import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Copy, Network, Users} from "lucide-react";
 import {createEventTeam, EventTeamError, getSelfTeamFields, joinEventTeam} from "@/api/eventTeams";
+import {apiErrorMessage} from "@/api/apiErrors";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
@@ -35,7 +36,7 @@ export default function TeamPage() {
         } catch (error) {
             // JoinTeam: 404 = unknown code, 409 = team full or roster closed.
             setMessage(error instanceof EventTeamError && error.status === 404 ? "Команду з таким кодом не знайдено. Перевірте код і спробуйте ще раз."
-                : error instanceof EventTeamError && error.status === 409 ? "Приєднатися неможливо: команда вже заповнена або склад команд закрито."
+                : error instanceof EventTeamError && error.status === 409 ? apiErrorMessage(error.code, "Приєднатися неможливо: команда вже заповнена або склад команд закрито.")
                 : "Не вдалося приєднатися. Перевірте код і повторіть спробу.");
         } finally {
             setPending(false);
@@ -53,7 +54,7 @@ export default function TeamPage() {
             setName(""); setFieldAnswers({});
             await queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]});
         } catch (error) {
-            setMessage(error instanceof EventTeamError && error.status === 409 ? "Створити команду зараз неможливо." : "Не вдалося створити команду. Перевірте додаткові поля.");
+            setMessage(error instanceof EventTeamError ? apiErrorMessage(error.code, error.status === 409 ? "Створити команду зараз неможливо." : "Не вдалося створити команду. Перевірте додаткові поля.") : "Не вдалося створити команду. Перевірте додаткові поля.");
         } finally {setPending(false);}
     };
 
