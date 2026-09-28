@@ -24,6 +24,9 @@ type Props = {
     hasTeam?: boolean;
     useVPN?: boolean;
     canViewResults?: boolean;
+    // Account and participation are still loading: show a neutral bar
+    // instead of guest navigation that would flash for signed-in users.
+    pending?: boolean;
 };
 
 function identityHref(path: string, event: PublicEventInfo) {
@@ -85,7 +88,7 @@ export function EventHeaderActions({event, authenticated, approved = false, hasT
     </>;
 }
 
-export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, canViewResults = false}: Props) {
+export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, canViewResults = false, pending = false}: Props) {
     const path = usePathname();
     const [open, setOpen] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
@@ -113,13 +116,13 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
     const navigationPages = useMemo(() => managedPages.data
         ? [...managedPages.data].filter(page => page.Navigation !== 0).sort(comparePageOrder)
         : pages.data ?? [], [managedPages.data, pages.data]);
-    const links = useMemo(() => [
+    const links = useMemo(() => pending ? [] : [
         ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
         ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         ...((approved ? canViewResults : event.CanViewResults) ? [{href: "/scoreboard", label: "Результати"}] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-    ], [approved, canViewResults, event.CanViewResults, navigationPages]);
+    ], [pending, approved, canViewResults, event.CanViewResults, navigationPages]);
 
     useLayoutEffect(() => {
         const nav = navRef.current;
@@ -153,7 +156,7 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
     }, [links]);
 
     const overflow = links.slice(visibleCount);
-    return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`}>
+    return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`} aria-busy={pending || undefined}>
         <div className="ib-navbar__bar">
             <Link className="ib-navbar__brand" href="/" aria-label={`${event.Name}, головна події`} onClick={() => setOpen(false)}>
                 <EventBrandLogo event={event} className="ib-navbar__crest" />
@@ -166,9 +169,11 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
                 <button className="ib-navbar__more-btn event-navbar__more-measure" type="button" ref={measureMoreRef} tabIndex={-1} aria-hidden="true">Ще <ChevronDown className="ib-icon" /></button>
             </nav>
             <div className="ib-navbar__actions">
+                {pending ? <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div> : <>
                 {authenticated && <ManagerEntry eventID={event.EventID} variant="nav" />}
                 <EventHeaderActions event={event} authenticated={authenticated} approved={approved} hasTeam={hasTeam} useVPN={useVPN} />
-                <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? "Закрити меню" : "Відкрити меню"} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>
+                </>}
+                {!pending && <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? "Закрити меню" : "Відкрити меню"} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>}
             </div>
         </div>
         <nav className="ib-navbar__panel" id="event-menu" aria-label="Мобільне меню">

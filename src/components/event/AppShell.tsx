@@ -63,10 +63,11 @@ export function AppShell({children, event, unavailable}: {
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
     // Public content is already in the server response. Keep it visible while
     // browser-only account and team requests finish.
+    const identityPending = currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending));
     if (isContentPage && (!approved || participantInfo.isPending || ownTeam.isPending || currentUser.isError || joinStatus.isError || participantInfo.isError || ownTeam.isError)) {
-        return <GuestShell event={event} authenticated={!!currentUser.data} joinStatus={joinStatus.data}>{children}</GuestShell>;
+        return <GuestShell event={event} authenticated={!!currentUser.data} joinStatus={joinStatus.data} pending={identityPending}>{children}</GuestShell>;
     }
-    if (currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending))) {
+    if (identityPending) {
         return <EventLoading event={event} full label="Завантаження події…" />;
     }
     if (currentUser.isError || joinStatus.isError || (approved && (participantInfo.isError || ownTeam.isError))) {
