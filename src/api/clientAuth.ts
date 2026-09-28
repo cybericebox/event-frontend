@@ -8,7 +8,7 @@ const meSchema = z.object({
     Picture: z.string().default(""),
 });
 export type CurrentUser = z.infer<typeof meSchema>;
-const joinSchema = z.object({Status: z.number().int(), Invited: z.boolean().default(false)});
+const joinSchema = z.object({Status: z.number().int(), Invited: z.boolean().default(false), InvitedTeamName: z.string().default(""), TeamUnavailable: z.boolean().default(false)});
 const ownTeamSchema = z.object({ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int(), ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {})});
 export type OwnTeam = z.infer<typeof ownTeamSchema>;
 
@@ -55,10 +55,10 @@ export async function getJoinStatus(): Promise<number> {
     return (await readData(response, joinSchema)).Status;
 }
 
-export async function getInvitationStatus(): Promise<boolean> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return false;
+export async function getInvitationInfo(): Promise<z.infer<typeof joinSchema>> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return joinSchema.parse({Status: 0, Invited: false});
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
-    return (await readData(response, joinSchema)).Invited;
+    return readData(response, joinSchema);
 }
 
 export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {

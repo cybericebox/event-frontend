@@ -4,6 +4,7 @@ import {ManageApiError} from "@/api/manage";
 const id = z.string().uuid();
 const participantSchema = z.object({
     UserID: id, Name: z.string(), Email: z.string(), TeamID: id.nullable(), Hidden: z.boolean(), Invited: z.boolean().default(false),
+    InvitedToTeam: z.boolean().default(false), InvitedTeamID: id.nullable().default(null),
     Status: z.union([z.literal(1), z.literal(2), z.literal(3)]), CreatedAt: z.string(), DecidedAt: z.string().nullable(),
 });
 const pageSchema = z.object({Items: z.array(participantSchema), Total: z.number().int(), NextCursor: id.optional()});
@@ -13,9 +14,9 @@ export type ParticipantStatus = ManageParticipant["Status"];
 export type ParticipantInvitationResult = {Email: string; UserID: string | null; Error: string};
 
 let mockParticipants: ManageParticipant[] = [
-    {UserID: "01900000-0000-7000-8000-000000000024", Name: "Олена Коваль", Email: "olena@example.test", TeamID: "01900000-0000-7000-8000-000000000022", Hidden: false, Invited: false, Status: 2, CreatedAt: "2026-09-26T09:00:00Z", DecidedAt: "2026-09-26T09:03:00Z"},
-    {UserID: "01900000-0000-7000-8000-000000000028", Name: "Іван Мельник", Email: "ivan@example.test", TeamID: null, Hidden: false, Invited: false, Status: 1, CreatedAt: "2026-09-26T09:30:00Z", DecidedAt: null},
-    {UserID: "01900000-0000-7000-8000-000000000031", Name: "Марія Сокол", Email: "maria@example.test", TeamID: null, Hidden: false, Invited: false, Status: 3, CreatedAt: "2026-09-26T08:45:00Z", DecidedAt: "2026-09-26T08:50:00Z"},
+    {UserID: "01900000-0000-7000-8000-000000000024", Name: "Олена Коваль", Email: "olena@example.test", TeamID: "01900000-0000-7000-8000-000000000022", Hidden: false, Invited: false, InvitedToTeam: false, InvitedTeamID: null, Status: 2, CreatedAt: "2026-09-26T09:00:00Z", DecidedAt: "2026-09-26T09:03:00Z"},
+    {UserID: "01900000-0000-7000-8000-000000000028", Name: "Іван Мельник", Email: "ivan@example.test", TeamID: null, Hidden: false, Invited: false, InvitedToTeam: false, InvitedTeamID: null, Status: 1, CreatedAt: "2026-09-26T09:30:00Z", DecidedAt: null},
+    {UserID: "01900000-0000-7000-8000-000000000031", Name: "Марія Сокол", Email: "maria@example.test", TeamID: null, Hidden: false, Invited: false, InvitedToTeam: false, InvitedTeamID: null, Status: 3, CreatedAt: "2026-09-26T08:45:00Z", DecidedAt: "2026-09-26T08:50:00Z"},
 ];
 
 export function setMockParticipantTeam(userID: string, teamID: string | null) {
@@ -74,15 +75,16 @@ export async function setIndividualParticipantHidden(eventID: string, userID: st
     if (!response.ok) throw new ManageApiError(response.status);
 }
 
-export async function inviteManageParticipants(eventID: string, emails: string[]): Promise<ParticipantInvitationResult[]> {
+export async function inviteManageParticipants(eventID: string, emails: string[], teamID?: string): Promise<ParticipantInvitationResult[]> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
         const results = emails.map(email => ({Email: email, UserID: crypto.randomUUID(), Error: ""}));
-        mockParticipants = [...results.map(result => ({UserID: result.UserID, Name: "", Email: result.Email, TeamID: null, Hidden: false, Invited: true, Status: 1 as const, CreatedAt: new Date().toISOString(), DecidedAt: null})), ...mockParticipants];
+        mockParticipants = [...results.map(result => ({UserID: result.UserID, Name: "", Email: result.Email, TeamID: null, Hidden: false, Invited: true, InvitedToTeam: !!teamID, InvitedTeamID: teamID ?? null, Status: 1 as const, CreatedAt: new Date().toISOString(), DecidedAt: null})), ...mockParticipants];
         return results;
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
     if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/participants/invitations`, {
+    const invitationPath = teamID ? `teams/${encodeURIComponent(teamID)}/invitations` : "participants/invitations";
+    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${invitationPath}`, {
         method: "POST", credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify({Entries: emails.map(Email => ({Email}))}),
