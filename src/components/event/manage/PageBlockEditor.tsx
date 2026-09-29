@@ -4,7 +4,7 @@ import {useEffect, useId, useRef, useState, type ChangeEvent} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import Image from "next/image";
 import Link from "next/link";
-import {AlertTriangle, ArrowDown, ArrowUp, Braces, Copy, GripVertical, ImagePlus, Plus, Trash2, Wand2, X} from "lucide-react";
+import {AlertTriangle, ArrowDown, ArrowUp, Braces, ChevronDown, Copy, GripVertical, ImagePlus, Plus, Trash2, Wand2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
 import {emptyRichText, richTextPlainText, type ContentRichText} from "@/components/event/content/richTextState";
 import {initialVisibilityValue, insertableContentVariable, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
@@ -218,7 +218,7 @@ function EditorLinkField({eventID, label, value, placeholder, required, help, er
     </div>;
 }
 
-export function PageBlockEditor({eventID, coverImage, block, index, count, anchorsInUse = [], values, catalog, canEdit, selected = false, error, onSelect, onUpdate, onMove, onReorder, onDuplicate, onDelete}: {
+export function PageBlockEditor({eventID, coverImage, block, index, count, anchorsInUse = [], values, catalog, canEdit, selected = false, open = selected, error, onSelect, onToggle, onDragStateChange, onUpdate, onMove, onReorder, onDuplicate, onDelete}: {
     eventID: string;
     coverImage: string;
     block: ContentBlock;
@@ -230,8 +230,13 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
     catalog: ContentVariableDefinition[];
     canEdit: boolean;
     selected?: boolean;
+    // Whether the settings body is shown; defaults to the selection.
+    open?: boolean;
     error?: string;
     onSelect: () => void;
+    onToggle?: () => void;
+    // Drag-and-drop start (true) and end (true on drop or cancel: false).
+    onDragStateChange?: (dragging: boolean) => void;
     onUpdate: (value: ContentBlock | ((current: ContentBlock) => ContentBlock)) => void;
     onMove: (direction: -1 | 1) => void;
     onReorder: (sourceID: string, targetID: string) => void;
@@ -266,6 +271,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
         dragGhost.current?.remove();
         dragGhost.current = null;
         lastHoverID.current = "";
+        if (pointerID.current !== null) onDragStateChange?.(false);
         pointerID.current = null;
     }
 
@@ -279,6 +285,9 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
         const ghost = source.cloneNode(true) as HTMLElement;
         ghost.removeAttribute("data-editor-block-id");
         ghost.querySelectorAll("[id]").forEach(node => node.removeAttribute("id"));
+        // Every block collapses while dragging, so the ghost shows the header only.
+        ghost.querySelectorAll(".event-content-editor__block-error,.event-content-editor__block-body").forEach(node => node.remove());
+        ghost.classList.remove("is-open");
         ghost.classList.add("event-content-editor__drag-ghost");
         ghost.setAttribute("aria-hidden", "true");
         ghost.style.width = `${bounds.width}px`;
@@ -291,6 +300,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
         event.currentTarget.setPointerCapture(event.pointerId);
         document.addEventListener("pointerup", clearDropTarget);
         document.addEventListener("pointercancel", clearDropTarget);
+        onDragStateChange?.(true);
     }
 
     function moveDrag(event: React.PointerEvent<HTMLButtonElement>) {
@@ -494,9 +504,13 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
     const rawSummary = block.type === "section" ? block.label : block.title || (block.type === "text" ? richTextPlainText(block.richText, values) : "");
     const summaryField = block.type === "section" ? "label" : "title";
     const blockSummary = block.type === "text" && !block.title ? rawSummary ?? "" : replaceVariables(rawSummary ?? "", values, new Map((block.variables ?? []).map(variable => [variable.name, variable.format])), false, block.dateDisplays?.[summaryField]);
-    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={selected && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect();}}}>
-        <div className="event-content-editor__block-head">
-            <div className="event-content-editor__block-title"><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</div>
+    const bodyID = `block-body-${block.id}`;
+    const toggleLabel = open ? t("manage.blocks.toggle.collapse") : t("manage.blocks.toggle.expand");
+    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${open ? " is-open" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={open && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect(); if (!open) onToggle?.();}}}>
+        {/* The whole row toggles the block except its action buttons; the title and
+            chevron buttons have no handlers of their own, their clicks bubble here. */}
+        <div className="event-content-editor__block-head" onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onToggle?.();}}>
+            <button type="button" className="event-content-editor__block-title" aria-expanded={open} aria-controls={bodyID} aria-label={toggleLabel}><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</button>
             {canEdit && <div className="event-content-editor__block-actions">
                 <EventTooltip content={t("manage.blocks.drag.tooltip")}>{id => <button type="button" className="event-content-editor__drag" aria-label={t("manage.blocks.drag.aria", {n: index + 1})} aria-describedby={id} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={clearDropTarget} onPointerCancel={clearDropTarget}><GripVertical size={16} /></button>}</EventTooltip>
                 <EventTooltip content={t("manage.blocks.move.up")}>{id => <button type="button" aria-label={t("manage.blocks.move.upAria", {n: index + 1})} aria-describedby={id} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
@@ -504,9 +518,10 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
                 {onDuplicate && <EventTooltip content={t("manage.blocks.duplicate")}>{id => <button type="button" aria-label={t("manage.blocks.duplicateAria", {n: index + 1})} aria-describedby={id} onClick={onDuplicate}><Copy size={16} /></button>}</EventTooltip>}
                 <EventTooltip content={t("manage.blocks.delete.tooltip")}>{id => <button type="button" className="event-content-editor__danger" aria-label={t("manage.blocks.delete.aria", {n: index + 1})} aria-describedby={id} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
+            <button type="button" className="event-content-editor__block-toggle" aria-expanded={open} aria-controls={bodyID} aria-label={toggleLabel}><ChevronDown size={18} aria-hidden="true" /></button>
         </div>
-        {error && selected && !errorField && <p className="event-content-editor__block-error" id={`block-error-${block.id}`} role="alert">{errorMessage}</p>}
-        {selected && <div className="event-content-editor__block-body">
+        {error && open && !errorField && <p className="event-content-editor__block-error" id={`block-error-${block.id}`} role="alert">{errorMessage}</p>}
+        {open && <div className="event-content-editor__block-body" id={bodyID}>
             {block.type === "section" && inputField("label", t("manage.blocks.section.heading"), t("manage.blocks.field.sectionTitle"), false, true)}
             {block.type === "section" && <div className="event-manage-field"><FieldLabel label={t("manage.blocks.section.align")} required help={t("manage.blocks.section.alignHelp")} /><EventSelect ariaLabel={t("manage.blocks.section.align")} value={block.variant ?? "left"} options={[{value: "left", label: t("manage.blocks.align.left")}, {value: "center", label: t("manage.blocks.align.center")}, {value: "right", label: t("manage.blocks.align.right")}, {value: "justify", label: t("manage.blocks.align.justify")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {block.type === "text" && richField("richText", t("manage.blocks.text.content"))}

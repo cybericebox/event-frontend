@@ -510,9 +510,17 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__block.is-drop-target{border-color:var(--ib-action);outline:2px solid var(--ib-action)}
 .event-content-editor__block.is-dragging{opacity:.35;border-style:dashed}
 .event-content-editor__drag-ghost{position:fixed;z-index:150;pointer-events:none;overflow:hidden;max-height:min(70vh,620px);border:1px solid var(--ib-action);border-radius:var(--ib-r-lg);background:var(--ib-surface);transform:rotate(-1deg)}
-.event-content-editor__block-head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
+.event-content-editor__block-head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);cursor:pointer}
+.event-content-editor__block:not(.is-open)>.event-content-editor__block-head{border-bottom:0}
 .event-content-editor__block-title{display:flex;align-items:center;gap:var(--ib-3);min-width:0;flex:1;font-size:var(--ib-fs-13)}
 .event-content-editor__block-title strong{flex:none}
+button.event-content-editor__block-title{padding:0;border:0;background:none;color:inherit;font-family:inherit;text-align:left;cursor:pointer}
+.event-content-editor__block-title:focus-visible,.event-content-editor__block-toggle:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}
+.event-content-editor__block-toggle{display:grid;place-items:center;flex:none;width:30px;height:30px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-content-editor__block-toggle:hover{background:var(--ib-soft);color:var(--ib-ink)}
+.event-content-editor__block-toggle svg{transition:transform .16s ease}
+.event-content-editor__block.is-open .event-content-editor__block-toggle svg{transform:rotate(180deg)}
+@media(prefers-reduced-motion:reduce){.event-content-editor__block-toggle svg{transition:none}}
 .event-content-editor__block-summary{min-width:0;max-width:32ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim)}
 .event-content-editor__order{display:grid;place-items:center;width:24px;height:24px;border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-content-editor__block-actions{display:flex;align-items:center;gap:var(--ib-1);flex:none}

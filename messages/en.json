@@ -2562,5 +2562,7 @@
   "manage.blocks.action.warning.scoreboardHidden": "The scoreboard is hidden. The link will open an unavailable page.",
   "manage.blocks.action.warning.registrationLink": "Registration settings",
   "manage.blocks.action.warning.scheduleLink": "Publishing and time",
-  "manage.blocks.action.warning.resultsLink": "Results settings"
+  "manage.blocks.action.warning.resultsLink": "Results settings",
+  "manage.blocks.toggle.expand": "Expand block",
+  "manage.blocks.toggle.collapse": "Collapse block"
 }

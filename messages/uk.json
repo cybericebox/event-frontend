@@ -2562,5 +2562,7 @@
   "manage.blocks.action.warning.scoreboardHidden": "Таблицю результатів приховано — посилання відкриє недоступну сторінку.",
   "manage.blocks.action.warning.registrationLink": "Налаштування реєстрації",
   "manage.blocks.action.warning.scheduleLink": "Публікація і час",
-  "manage.blocks.action.warning.resultsLink": "Налаштування результатів"
+  "manage.blocks.action.warning.resultsLink": "Налаштування результатів",
+  "manage.blocks.toggle.expand": "Розгорнути блок",
+  "manage.blocks.toggle.collapse": "Згорнути блок"
 }

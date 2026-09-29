@@ -38,6 +38,11 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
     onChange: (update: (document: ContentDocument) => ContentDocument) => void;
 }) {
     const [selected, setSelected] = useState<{key: string; blockID: string} | null>(null);
+    // Open blocks by id, so moving a block keeps its state. While a block is
+    // dragged every block renders collapsed; the set itself is kept and restored.
+    const [openBlocks, setOpenBlocks] = useState<{key: string; ids: string[]}>({key: editorKey, ids: []});
+    const [dragging, setDragging] = useState(false);
+    const [expandedError, setExpandedError] = useState("");
     const [viewer, setViewer] = useState<PreviewViewer>("guest");
     const [phase, setPhase] = useState<PreviewPhase | null>(null);
     // null follows the phase's registration window; reset on every phase change.
@@ -46,6 +51,15 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
     const selectedBlockID = selected?.key === editorKey && document.blocks.some(block => block.id === selected.blockID) ? selected.blockID : null;
     const blockOrder = document.blocks.map(block => block.id).join("|");
     const invalidBlockIndex = blockValidationIndex(validation);
+    const openIDs = openBlocks.key === editorKey ? openBlocks.ids : [];
+    // A block with a new validation error opens once; the author may close it
+    // again and its red outline stays as the indicator.
+    const invalidBlockID = invalidBlockIndex === null ? undefined : document.blocks[invalidBlockIndex]?.id;
+    const errorKey = invalidBlockID ? `${editorKey}|${invalidBlockID}|${validation}` : "";
+    if (errorKey !== expandedError) {
+        setExpandedError(errorKey);
+        if (invalidBlockID && !openIDs.includes(invalidBlockID)) setOpenBlocks({key: editorKey, ids: [...openIDs, invalidBlockID]});
+    }
     const activePhase = phase ?? currentPreviewPhase(values);
     const activeRegistration = activePhase === "after" ? "closed" : registration ?? defaultPreviewRegistration(values, activePhase);
     const shownValues = useMemo(() => previewValues(values, activePhase, viewer, activeRegistration), [values, activePhase, viewer, activeRegistration]);
@@ -64,6 +78,12 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
 
     function select(blockID: string) {
         setSelected({key: editorKey, blockID});
+    }
+    function setBlockOpen(blockID: string, open: boolean) {
+        setOpenBlocks(current => {
+            const ids = (current.key === editorKey ? current.ids : []).filter(id => id !== blockID);
+            return {key: editorKey, ids: open ? [...ids, blockID] : ids};
+        });
     }
     function updateBlock(blockID: string, value: ContentBlock | ((current: ContentBlock) => ContentBlock)) {
         onChange(current => ({blocks: current.blocks.map(block => block.id === blockID ? typeof value === "function" ? value(block) : value : block)}));
@@ -95,6 +115,7 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
             return {blocks};
         });
         select(block.id);
+        setBlockOpen(block.id, true);
     }
     function addBlock(type: PageBlockType) {
         const created = createPageBlock(type, landing);
@@ -124,8 +145,8 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
             {before}
             <div className="event-content-editor__top"><div><h2>{t("manage.blocks.stack.title")}</h2><p>{t("manage.blocks.stack.hint")}</p></div><span>{tPlural("manage.blocks.count", document.blocks.length)}</span></div>
             {document.blocks.length === 0 && <EmptyState message={t("manage.blocks.stack.emptyMessage")} />}
-            <div className="event-content-editor__stack">{document.blocks.map((block, index) => <PageBlockEditor key={block.id} eventID={eventID} coverImage={coverImage} block={block} index={index} count={document.blocks.length} anchorsInUse={document.blocks.filter(item => item.id !== block.id).flatMap(item => [item.id, item.anchor ?? ""])} values={values} catalog={catalog} canEdit={canEdit} selected={selectedBlockID === block.id} error={invalidBlockIndex === index ? validation ?? undefined : undefined}
-                onSelect={() => select(block.id)} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDuplicate={() => duplicateBlock(block)} onDelete={() => deleteBlock(block, index)} />)}</div>
+            <div className="event-content-editor__stack">{document.blocks.map((block, index) => <PageBlockEditor key={block.id} eventID={eventID} coverImage={coverImage} block={block} index={index} count={document.blocks.length} anchorsInUse={document.blocks.filter(item => item.id !== block.id).flatMap(item => [item.id, item.anchor ?? ""])} values={values} catalog={catalog} canEdit={canEdit} selected={selectedBlockID === block.id} open={!dragging && openIDs.includes(block.id)} error={invalidBlockIndex === index ? validation ?? undefined : undefined}
+                onSelect={() => select(block.id)} onToggle={() => setBlockOpen(block.id, !openIDs.includes(block.id))} onDragStateChange={setDragging} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDuplicate={() => duplicateBlock(block)} onDelete={() => deleteBlock(block, index)} />)}</div>
             {canEdit && <div className="event-content-editor__add" aria-label={t("manage.blocks.stack.add")}>{blockPalette.filter(item => item.type !== "hero" || !document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
             {validation && invalidBlockIndex === null && <p className="event-manage-validation" role="alert">{validation}</p>}
         </div>
