@@ -195,8 +195,6 @@
 .event-brand-preview-logo{display:flex;align-items:center;gap:var(--ib-2)}
 .event-brand-preview-logo img{width:24px;height:24px;object-fit:contain}
 .event-manage-savebar{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;justify-content:flex-end;gap:var(--ib-3);padding:var(--ib-3) 0;background:var(--ib-surface)}
-.event-manage-sidebar__overview{margin-bottom:var(--ib-2)}
-.event-manage-sidebar__overview::after{content:"";position:absolute;left:var(--ib-3);right:var(--ib-3);bottom:calc(-1 * var(--ib-2));border-bottom:1px solid var(--ib-brand-line)}
 .event-manage-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ib-5)}
 .event-manage-heading,.event-live-editor__heading,:is(.event-manage-heading,.event-live-editor__heading)~[role="tablist"]{margin-bottom:calc(var(--ib-6) - var(--event-manage-flow,0px))}
 .event-manage-heading h1{font-size:var(--ib-fs-24)}
@@ -471,6 +469,11 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-manage-setup__step strong{font-size:var(--ib-fs-13)}
 .event-manage-setup__step span{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
 a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:none}
+.event-manage-setup__facts{display:grid;gap:var(--ib-2);margin:0}
+.event-manage-setup__facts>div{display:flex;align-items:baseline;flex-wrap:wrap;gap:var(--ib-1) var(--ib-3);font-size:var(--ib-fs-13)}
+.event-manage-setup__facts dt{min-width:160px;color:var(--ib-dim)}
+.event-manage-setup__facts dd{margin:0;color:var(--ib-ink);font-weight:var(--ib-w-medium)}
+.event-manage-setup__facts a{color:var(--ib-action)}
 .event-manage-setup__links{display:flex;flex-wrap:wrap;gap:var(--ib-3)}
 @media(max-width:740px){.event-manage-setup__steps{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:640px){.event-manage-setup__summary{align-items:flex-start;flex-direction:column}.event-manage-setup__summary-progress{width:100%;grid-template-columns:auto 1fr;align-items:center}.event-manage-setup__summary-progress .event-manage-setup__progress-track{grid-column:1/-1}}
