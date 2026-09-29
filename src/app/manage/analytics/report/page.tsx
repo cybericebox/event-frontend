@@ -1,8 +1,7 @@
 "use client";
 
-import {AnalyticsPlaceholder} from "@/components/event/manage/analytics/AnalyticsPlaceholder";
+import {AnalyticsReport} from "@/components/event/manage/analytics/AnalyticsReport";
 
-// Replaced by the «report» report (docs/EVENT-ANALYTICS.md); until then a placeholder.
 export default function AnalyticsReportPage() {
-    return <AnalyticsPlaceholder section="report" />;
+    return <AnalyticsReport />;
 }

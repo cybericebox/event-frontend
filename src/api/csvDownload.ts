@@ -25,3 +25,11 @@ export async function downloadManageCSV(eventID: string, path: string, fileName:
     if (!response.ok) throw await manageApiError(response);
     saveBlob(await response.blob(), fileName);
 }
+
+// Downloads any manage file (a ZIP report, say) with the session cookie.
+export async function downloadManageFile(eventID: string, path: string, fileName: string, accept: string): Promise<void> {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {credentials: "include", cache: "no-store", headers: {Accept: accept}});
+    if (!response.ok) throw await manageApiError(response);
+    saveBlob(await response.blob(), fileName);
+}
