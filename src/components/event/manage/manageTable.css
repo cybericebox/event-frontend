@@ -78,8 +78,8 @@
 .event-live-status__body:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
 .event-live-status__state{display:inline-flex;align-items:center;gap:var(--ib-1);color:var(--ib-ink);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
 .event-live-status.is-live .event-live-status__state{color:var(--ib-ok)}
-.event-live-status.is-fallback .event-live-status__state{color:var(--ib-warn)}
-.event-live-status.is-connecting .event-live-status__state{color:var(--ib-dim)}
+.event-live-status.is-reconnecting .event-live-status__state{color:var(--ib-dim)}
+.event-live-status.is-offline .event-live-status__state{color:var(--ib-warn)}
 .event-live-status__updated{color:var(--ib-dim);font-size:var(--ib-fs-12);font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:640px){.event-live-status{align-self:flex-start}.event-live-status__body{justify-items:start;text-align:left}}
 .event-manage-heading__actions:has(.event-live-status){align-items:center;gap:var(--ib-4)}

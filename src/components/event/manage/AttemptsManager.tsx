@@ -12,7 +12,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {zoneLabel} from "@/components/ui/dateTimePicker";
 import {DialogModal} from "@/components/event/DialogModal";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
-import {useEventStream} from "@/utils/eventStream";
+import {useEventStream, type StreamMode} from "@/utils/eventStream";
 import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
 import {HintUnlocksLog} from "./HintUnlocksLog";
@@ -46,6 +46,16 @@ export function AttemptsManager({initialView = "attempts"}: {initialView?: Journ
     const teamMode = event.Participation === 1;
     // The open view reports how its data stays fresh; the header shows it.
     const [status, setStatus] = useState<{freshness: DataFreshness; updatedAt: number} | null>(null);
+    // One connection for the whole journal: it carries attempts and opened
+    // hints, whichever view is open (the other view's list is marked stale).
+    const queryClient = useQueryClient();
+    const [aliveAt, setAliveAt] = useState(0);
+    const stream = useEventStream({url: () => attemptsLiveURL(event.EventID), events: ["attempts-changed", "hints-changed"], onAlive: () => setAliveAt(Date.now()), enabled: true,
+        onChange: () => {
+            void queryClient.invalidateQueries({queryKey: ["event-manage-attempts", event.EventID]});
+            void queryClient.invalidateQueries({queryKey: ["event-hint-unlocks", event.EventID]});
+        }});
+    const live: JournalLive = {stream, aliveAt};
 
     function switchView(next: JournalView) {
         setView(next);
@@ -57,13 +67,16 @@ export function AttemptsManager({initialView = "attempts"}: {initialView?: Journ
         <div className="ib-seg event-journal__views" role="group" aria-label={t("manage.journal.views")}>
             {journalViews.map(item => <button key={item} type="button" aria-pressed={view === item} onClick={() => switchView(item)}>{t(`manage.journal.view.${item}`)}</button>)}
         </div>
-        {view === "attempts" ? <AttemptsLog onStatus={setStatus} /> : <HintUnlocksLog onStatus={setStatus} />}
+        {view === "attempts" ? <AttemptsLog live={live} onStatus={setStatus} /> : <HintUnlocksLog live={live} onStatus={setStatus} />}
     </div>;
 }
 
 const ATTEMPTS_POLL_SECONDS = 10;
 
-function AttemptsLog({onStatus}: {onStatus: (status: {freshness: DataFreshness; updatedAt: number}) => void}) {
+// The journal's one live connection, shared by both views.
+export type JournalLive = {stream: StreamMode; aliveAt: number};
+
+function AttemptsLog({live: {stream, aliveAt}, onStatus}: {live: JournalLive; onStatus: (status: {freshness: DataFreshness; updatedAt: number}) => void}) {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const teamMode = event.Participation === 1;
@@ -79,11 +92,10 @@ function AttemptsLog({onStatus}: {onStatus: (status: {freshness: DataFreshness; 
     const [annulling, setAnnulling] = useState(false);
     const [exporting, setExporting] = useState(false);
     // Realtime: the stream says "changed", the page refetches; polling when SSE fails.
-    const [aliveAt, setAliveAt] = useState(0);
-    const stream = useEventStream({url: () => attemptsLiveURL(eventID), events: ["attempts-changed"], onChange: () => void queryClient.invalidateQueries({queryKey: ["event-manage-attempts", eventID]}), onAlive: () => setAliveAt(Date.now()), enabled: true});
     const pageQuery = useQuery({queryKey: ["event-manage-attempts", eventID, filters, pages.cursor, pages.pageSize], queryFn: () => getManageAttempts(eventID, filters, pages.cursor, pages.pageSize), refetchOnWindowFocus: false, refetchInterval: stream === "fallback" ? ATTEMPTS_POLL_SECONDS * 1000 : false, placeholderData: previous => previous});
     const updatedAt = Math.max(pageQuery.dataUpdatedAt, aliveAt);
-    useEffect(() => {onStatus({freshness: {kind: "stream", mode: stream, pollSeconds: ATTEMPTS_POLL_SECONDS}, updatedAt});}, [onStatus, stream, updatedAt]);
+    const failing = pageQuery.isError;
+    useEffect(() => {onStatus({freshness: {kind: "stream", mode: stream, pollSeconds: ATTEMPTS_POLL_SECONDS, failing}, updatedAt});}, [onStatus, stream, failing, updatedAt]);
     // A stale cursor is rejected by the server: go back to the first page.
     if (pageQuery.error instanceof AttemptsCursorError && pages.cursor !== null) pages.reset();
     const items = pageQuery.data?.Items ?? [];

@@ -3,6 +3,7 @@
 import {useEffect, useRef, useState} from "react";
 import {apiOrigin} from "@/utils/origins";
 import {jitter} from "@/utils/jitter";
+import {heartbeatEvent, staleStreamMs} from "./streamTiming";
 
 // SSE with a snapshot fallback: the stream only tells the page to reload.
 // "live" — the stream is open; "fallback" — it failed repeatedly, poll instead.
@@ -13,8 +14,7 @@ export const streamFailureLimit = 3;
 // A stream that fell back to polling keeps trying to reconnect this often.
 export const fallbackRetryMs = 30_000;
 
-// The named event every live stream sends while idle (sse.Heartbeat).
-export const heartbeatEvent = "heartbeat";
+export {heartbeatEvent, heartbeatMs, staleStreamMs} from "./streamTiming";
 
 // 1 s, 2 s, 4 s … capped at 30 s between reconnects after errors.
 export function reconnectDelay(failures: number): number {
@@ -73,6 +73,7 @@ export function useEventStream({url, events, resetEvents = [], onChange, onAlive
         let failures = 0;
         let stopped = false;
         let paused = false;
+        let lastAlive = 0;
         const reload = debounce(() => latest.current.onChange(), debounceMs);
         const close = () => { source?.close(); source = null; };
         const schedule = (delay: number) => { if (!stopped) timer = setTimeout(connect, delay); };
@@ -81,23 +82,32 @@ export function useEventStream({url, events, resetEvents = [], onChange, onAlive
             const target = latest.current.url();
             if (!target || stopped || paused) return;
             source = new EventSource(target, {withCredentials: true});
-            source.onopen = () => { failures = 0; setState({failures: 0, open: true}); latest.current.onAlive?.(); };
-            for (const name of eventsKey.split(",").filter(Boolean)) source.addEventListener(name, () => { reload.call(); latest.current.onAlive?.(); });
-            source.addEventListener(heartbeatEvent, () => latest.current.onAlive?.());
+            lastAlive = Date.now(); // a new connection gets a full staleStreamMs to speak
+            const alive = () => { lastAlive = Date.now(); latest.current.onAlive?.(); };
+            source.onopen = () => { failures = 0; setState({failures: 0, open: true}); alive(); };
+            for (const name of eventsKey.split(",").filter(Boolean)) source.addEventListener(name, () => { reload.call(); alive(); });
+            source.addEventListener(heartbeatEvent, alive);
             for (const name of resetKey.split(",").filter(Boolean)) source.addEventListener(name, () => {
                 close();
                 setState(current => ({...current, open: false}));
                 latest.current.onChange();
                 schedule(jitter(1000));
             });
-            source.onerror = () => {
-                close();
-                failures += 1;
-                setState({failures, open: false});
-                latest.current.onChange();
-                schedule(jitter(failures < streamFailureLimit ? reconnectDelay(failures) : fallbackRetryMs));
-            };
+            source.onerror = () => fail();
         }
+        // A broken connection: count a failure, reload and retry later.
+        function fail() {
+            close();
+            failures += 1;
+            setState({failures, open: false});
+            latest.current.onChange();
+            schedule(jitter(failures < streamFailureLimit ? reconnectDelay(failures) : fallbackRetryMs));
+        }
+        // Watchdog: an open stream with no event or heartbeat for
+        // staleStreamMs is dead even if the browser has not noticed.
+        const watchdog = setInterval(() => {
+            if (source && lastAlive > 0 && Date.now() - lastAlive > staleStreamMs) fail();
+        }, 5000);
         const onVisibility = () => {
             if (document.hidden) {
                 paused = true;
@@ -124,6 +134,7 @@ export function useEventStream({url, events, resetEvents = [], onChange, onAlive
         connect();
         return () => {
             stopped = true;
+            clearInterval(watchdog);
             if (pauseWhenHidden) document.removeEventListener("visibilitychange", onVisibility);
             reload.cancel(); if (timer) clearTimeout(timer); close(); setState({failures: 0, open: false});
         };

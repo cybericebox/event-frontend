@@ -129,7 +129,7 @@ export default function ManageResultsPage() {
         <header className="event-manage-heading">
             <div><h1>{t("manage.results.title")}</h1><p>{teamMode ? t("manage.results.subtitleTeams") : t("manage.results.subtitle")}</p></div>
             <div className="event-manage-heading__actions">
-                <LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: RESULTS_POLL_SECONDS}} updatedAt={Math.max(query.dataUpdatedAt, aliveAt)} />
+                <LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: RESULTS_POLL_SECONDS, failing: query.isError}} updatedAt={Math.max(query.dataUpdatedAt, aliveAt)} />
                 <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> {t("manage.results.openLive")}</a>
             </div>
         </header>

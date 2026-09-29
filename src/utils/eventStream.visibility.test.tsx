@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
-import {cleanup, renderHook} from "@testing-library/react";
+import {act, cleanup, renderHook} from "@testing-library/react";
 import {useEventStream} from "./eventStream";
 
 class FakeEventSource {
@@ -91,4 +91,21 @@ it("keeps retrying after falling back to polling", () => {
     const opened = FakeEventSource.open.length;
     vi.advanceTimersByTime(40_000);
     expect(FakeEventSource.open.length).toBe(opened + 1);
+});
+
+it("reopens a stream that stays silent past 2× the heartbeat", () => {
+    vi.stubGlobal("EventSource", ListeningEventSource);
+    const onChange = vi.fn();
+    const {result} = renderHook(() => useEventStream({url: () => "https://api.example.org/live", events: [], onChange, enabled: true}));
+    const first = ListeningEventSource.last!;
+    act(() => {first.onopen?.();});
+    expect(result.current).toBe("live");
+    act(() => {vi.advanceTimersByTime(20_000); first.emit("heartbeat");});
+    act(() => {vi.advanceTimersByTime(25_000);});
+    expect(result.current).toBe("live");
+    act(() => {vi.advanceTimersByTime(10_000);});
+    expect(result.current).toBe("connecting");
+    expect(onChange).toHaveBeenCalled();
+    act(() => {vi.advanceTimersByTime(3000);});
+    expect(ListeningEventSource.last).not.toBe(first);
 });
