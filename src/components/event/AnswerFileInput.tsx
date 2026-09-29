@@ -4,7 +4,7 @@ import {useState} from "react";
 import {AnswerFileError, type AnswerFile} from "@/api/answerFiles";
 import type {FileKind, FormField} from "@/api/manageParticipantForm";
 import {apiErrorMessage} from "@/api/apiErrors";
-import {FilePicker} from "@/components/event/manage/invites/FilePicker";
+import {EventFilePicker} from "@/components/ui/EventFilePicker";
 import {defaultFileMB, maxFileMB} from "@/components/event/manage/participantFormEditor";
 import {BusyMark} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
@@ -53,7 +53,7 @@ export function AnswerFileInput({id, field, value, onChange, upload, disabled = 
 
     return <div className="event-answer-file">
         <div className="event-answer-file__row">
-            <FilePicker id={id} fileName={value?.name ?? null} accept={(field.fileTypes ?? []).map(kind => accepted[kind]).join(",")} disabled={disabled || busy} describedBy={hintID} onFile={file => void choose(file)} />
+            <EventFilePicker id={id} fileName={value?.name ?? null} accept={(field.fileTypes ?? []).map(kind => accepted[kind]).join(",")} disabled={disabled || busy} describedBy={hintID} onFile={file => void choose(file)} />
             {busy && <span className="event-answer-file__busy" role="status" aria-label={t("forms.file.uploading")}><BusyMark /></span>}
         </div>
         <small id={hintID}>{fileRulesText(field)}</small>

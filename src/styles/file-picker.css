@@ -1,0 +1,6 @@
+/* DS file picker: a button, the chosen file name and a clear action instead of
+   the browser's native control (EventFilePicker). */
+.event-file-picker{display:flex;align-items:center;gap:var(--ib-2);min-width:0}
+.event-file-picker__name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-13);color:var(--ib-ink)}
+.event-file-picker__name.is-empty{color:var(--ib-dim)}
+.event-file-picker__input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}

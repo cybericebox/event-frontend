@@ -33,7 +33,7 @@ const inputOptions: {value: FormField["input"]; label: string}[] = [
 ];
 
 function AnswerFilePreview({field}: {field: FormField}) {
-    return <div className="event-file-picker"><button className="ib-btn ib-btn--sm" type="button" disabled>{t("manage.invites.file.choose")}</button><span className="event-file-picker__name is-empty">{fileRulesText(field)}</span></div>;
+    return <div className="event-file-picker"><button className="ib-btn ib-btn--sm" type="button" disabled>{t("ui.filePicker.choose")}</button><span className="event-file-picker__name is-empty">{fileRulesText(field)}</span></div>;
 }
 
 function FormPreview({blocks, selectedID, scope}: {blocks: FormBlock[]; selectedID: string | null; scope: "participant" | "team"}) {
