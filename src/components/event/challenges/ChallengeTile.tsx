@@ -1,6 +1,8 @@
 import {Lock} from "lucide-react";
 import type {OwnChallenge} from "@/api/participantChallenges";
+import {t} from "@/i18n/t";
 import {formatClock, lockedLabel} from "./challengeBoardModel";
+import {pointsLabel} from "./hintModel";
 
 const CHECK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
 
@@ -16,7 +18,7 @@ export function ChallengeTile({challenge, lg = false, accepted = false, onOpen}:
     const size = lg ? " ib-tile--lg" : "";
     if (challenge.Locked) {
         const label = lockedLabel(challenge);
-        return <button type="button" className={`ib-tile is-locked${size}`} aria-disabled="true" data-challenge-id={challenge.EventChallengeID} aria-label={`${name}, ${challenge.Points} балів, ${label}`} title={label}>
+        return <button type="button" className={`ib-tile is-locked${size}`} aria-disabled="true" data-challenge-id={challenge.EventChallengeID} aria-label={[name, pointsLabel(challenge.Points), label].join(", ")} title={label}>
             <span className="ib-tile__name">{name}</span>
             <span className="ib-tile__foot"><span className="ib-tile__lock"><Lock aria-hidden="true" />{label}</span></span>
         </button>;
@@ -25,13 +27,13 @@ export function ChallengeTile({challenge, lg = false, accepted = false, onOpen}:
     const updated = challenge.ContentUpdatedAt ? formatClock(challenge.ContentUpdatedAt) : "";
     const classes = ["ib-tile", size.trim(), solved && "is-solved", updated && "is-updated", accepted && "is-accepted"].filter(Boolean).join(" ");
     return <button type="button" className={classes} data-challenge-id={challenge.EventChallengeID}
-        aria-label={`${name}, ${challenge.Points} балів${solved ? ", розвʼязано" : ""}${updated ? ", оновлено" : ""}`}
+        aria-label={[name, pointsLabel(challenge.Points), solved && t("challenges.tile.state.solved"), updated && t("challenges.tile.state.updated")].filter(Boolean).join(", ")}
         onClick={event => onOpen(challenge, event.currentTarget)}>
         <span className="ib-tile__name">{name}</span>
         <span className="ib-tile__foot">
             <span className="ib-tile__pts">{challenge.Points}</span>
-            {updated && <span className="ib-tile__upd">Оновлено</span>}
-            <span className="ib-tile__solved">{CHECK}<span className="ib-tile__solved-t">Розвʼязано</span></span>
+            {updated && <span className="ib-tile__upd">{t("challenges.tile.updated")}</span>}
+            <span className="ib-tile__solved">{CHECK}<span className="ib-tile__solved-t">{t("challenges.tile.solved")}</span></span>
         </span>
     </button>;
 }

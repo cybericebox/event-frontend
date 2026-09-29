@@ -1,6 +1,7 @@
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswer, ParticipantAnswers} from "@/api/participantForm";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {t} from "@/i18n/t";
 
 export function formFields(form: ParticipantForm | null | undefined): FormField[] {
     return form?.Enabled ? form.Document.blocks.filter(isFormField) : [];
@@ -9,7 +10,7 @@ export function formFields(form: ParticipantForm | null | undefined): FormField[
 export function formatAnswer(value: ParticipantAnswer | unknown): string {
     if (value === undefined || value === null || value === "") return "—";
     if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
-    if (typeof value === "boolean") return value ? "Так" : "Ні";
+    if (typeof value === "boolean") return value ? t("participation.answer.yes") : t("participation.answer.no");
     return String(value);
 }
 
@@ -29,7 +30,7 @@ export function changedEditableAnswers(form: ParticipantForm, before: Participan
 }
 
 export function rosterLine(memberCount: number, max: number | null | undefined, min: number | null | undefined): string {
-    const parts = [max ? `${memberCount} з ${max}` : String(memberCount)];
-    if (min && min > 1) parts.push(`мінімум ${min}`);
+    const parts = [max ? t("participation.roster.ofMax", {count: memberCount, max}) : String(memberCount)];
+    if (min && min > 1) parts.push(t("participation.roster.min", {min}));
     return parts.join(" · ");
 }

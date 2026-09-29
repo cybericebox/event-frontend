@@ -15,6 +15,8 @@ import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
 import {DialogModal} from "@/components/event/DialogModal";
 import {difficultyLabel, formatClock, formatFileSize, solvesLabel} from "./challengeBoardModel";
+import {t} from "@/i18n/t";
+import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
 
 export type BoardMode = "participant" | "moderators";
@@ -32,26 +34,26 @@ const ICON = {
 // Participant errors on submit; the rate limit carries its own countdown.
 function submitMessage(error: unknown): Message {
     if (error instanceof ParticipantChallengeError) {
-        if (error.code === ApiErrorCode.TeamNotAdmitted) return {text: "Команду ще не допущено до завдань", tone: "warn"};
-        if (error.status === 409 || error.status === 403) return {text: "Відповіді зараз не приймаються", tone: "warn"};
+        if (error.code === ApiErrorCode.TeamNotAdmitted) return {text: t("challenges.hint.error.notAdmitted"), tone: "warn"};
+        if (error.status === 409 || error.status === 403) return {text: t("challenges.submit.notAccepting"), tone: "warn"};
     }
-    return {text: "Не вдалося надіслати. Спробуйте ще раз", tone: "warn"};
+    return {text: t("challenges.submit.failed"), tone: "warn"};
 }
 
 function CopyField({value, url}: {value: string; url?: string}) {
     const [copied, setCopied] = useState(false);
     return <div className="ib-copy">
         <span className="ib-copy__value" title={value}>{value}</span>
-        <button type="button" className={`ib-btn ib-btn--sm ib-copy__btn${copied ? " is-copied" : ""}`} aria-label="Копіювати адресу" onClick={() => {
+        <button type="button" className={`ib-btn ib-btn--sm ib-copy__btn${copied ? " is-copied" : ""}`} aria-label={t("challenges.copy.aria")} onClick={() => {
             void navigator.clipboard?.writeText(value).then(() => {
                 setCopied(true);
                 window.setTimeout(() => setCopied(false), 1600);
             }).catch(() => {});
         }}>
-            <span className="ib-copy__idle">{ICON.copy}Копіювати</span>
-            <span className="ib-copy__done">{ICON.check}Скопійовано</span>
+            <span className="ib-copy__idle">{ICON.copy}{t("challenges.copy.idle")}</span>
+            <span className="ib-copy__done">{ICON.check}{t("challenges.copy.done")}</span>
         </button>
-        {url && <a className="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" href={url} target="_blank" rel="noopener noreferrer" aria-label="Відкрити сервіс">{ICON.ext}</a>}
+        {url && <a className="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" href={url} target="_blank" rel="noopener noreferrer" aria-label={t("challenges.host.open")}>{ICON.ext}</a>}
     </div>;
 }
 
@@ -59,14 +61,14 @@ function HostBlock({lab, pending}: {lab: LabRuntime | undefined; pending: boolea
     const access = lab?.Access ?? [];
     const web = access.some(item => /^https?$/i.test(item.Protocol) || !!item.URL);
     return <section className="ib-cmodal__blk">
-        <h3>{web ? "Сервіс" : "Підключення"}</h3>
+        <h3>{web ? t("challenges.host.service") : t("challenges.host.connection")}</h3>
         {access.length
             ? <div className="event-cmodal__hosts">{access.map(item => {
                 const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
                 return <CopyField key={`${item.Device}-${item.Port}`} value={value} url={item.URL || undefined} />;
             })}</div>
-            : <p className="ib-cmodal__hint">{pending ? "Перевіряємо адресу сервісу…" : "Сервіс ще готується. Адреса з’явиться, щойно стенд буде готовий."}</p>}
-        <p className="ib-cmodal__hint">Доступно через VPN команди.</p>
+            : <p className="ib-cmodal__hint">{pending ? t("challenges.host.checking") : t("challenges.host.preparing")}</p>}
+        <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>
     </section>;
 }
 
@@ -97,25 +99,25 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
     }
 
     return <section className="ib-cmodal__blk">
-        <h3>Підказки</h3>
+        <h3>{t("challenges.hints.title")}</h3>
         {!moderators && (paid || challenge.HintCostTotal > 0) && <p className="ib-cmodal__hint event-cmodal__hint-mode">
-            {hintModeNote(chargeMode)}{challenge.HintCostTotal > 0 && <> Витрачено: <span className="ib-num">{pointsLabel(challenge.HintCostTotal)}</span>.</>}
+            {hintModeNote(chargeMode)}{challenge.HintCostTotal > 0 && <> {richMessage(t("challenges.hints.spent"), {points: <span className="ib-num">{pointsLabel(challenge.HintCostTotal)}</span>})}</>}
         </p>}
         <ul className="event-cmodal__hints">{challenge.Hints.map((hint, index) => <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
-                <span className="event-cmodal__hint-title">Підказка {index + 1}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
+                <span className="event-cmodal__hint-title">{t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
                 {!moderators && !hint.Unlocked && <button type="button" className={`ib-btn ib-btn--sm${busyID === hint.ID ? " is-loading" : ""}`} disabled={!!busyID} aria-busy={busyID === hint.ID || undefined}
-                    onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>Відкрити підказку</button>}
+                    onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>{t("challenges.hints.unlock")}</button>}
             </div>
             {hint.Content && <p>{hint.Content}</p>}
-            {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">Відкрито: {hint.UnlockedByName}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
+            {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">{t("challenges.hints.unlockedBy", {name: hint.UnlockedByName})}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
         </li>)}</ul>
         {error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
-        <DialogModal open={!!confirm} onClose={() => { if (!busyID) setConfirm(null); }} title={confirm ? `Відкрити підказку ${confirm.index + 1}?` : ""}
+        <DialogModal open={!!confirm} onClose={() => { if (!busyID) setConfirm(null); }} title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
             description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
-            footer={<><button className="ib-btn" type="button" disabled={!!busyID} onClick={() => setConfirm(null)}>Скасувати</button>
-                <button className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} onClick={() => confirm && void unlock(confirm.hint)}>{busyID ? "Відкриваємо…" : "Відкрити"}</button></>}>
-            <p className="ib-cmodal__hint">Підказку побачить уся команда.</p>
+            footer={<><button className="ib-btn" type="button" disabled={!!busyID} onClick={() => setConfirm(null)}>{t("common.cancel")}</button>
+                <button className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} onClick={() => confirm && void unlock(confirm.hint)}>{busyID ? t("challenges.hints.unlocking") : t("challenges.hints.confirm")}</button></>}>
+            <p className="ib-cmodal__hint">{t("challenges.hints.teamSees")}</p>
         </DialogModal>
     </section>;
 }
@@ -199,7 +201,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         if (!challenge || busy || waiting) return;
         const value = answer.trim();
         if (!value) {
-            setMessage({text: "Введіть прапор", tone: "error"});
+            setMessage({text: t("challenges.modal.flagEmpty"), tone: "error"});
             flagRef.current?.focus();
             return;
         }
@@ -217,7 +219,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                     titleRef.current?.focus();
                 }
             } else {
-                setMessage({text: "Прапор не прийнято", tone: "error"});
+                setMessage({text: t("challenges.modal.flagRejected"), tone: "error"});
                 flagRef.current?.focus();
             }
         } catch (error) {
@@ -255,56 +257,56 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         {challenge && <>
             <header className="ib-cmodal__head">
                 <p className="ib-cmodal__meta">
-                    <span>{challenge.GroupName || "Інші завдання"}</span><span aria-hidden="true">·</span>
-                    <span className="ib-num">{challenge.Points} балів</span>
-                    {showDifficulty && <span className="ib-tag">{difficultyLabel[challenge.Snapshot.difficulty]}</span>}
-                    {solved && <span className="ib-tag ib-tag--ok">{ICON.check}Розвʼязано</span>}
-                    {challenge.ContentUpdatedAt && <span className="ib-tag">Оновлено {formatClock(challenge.ContentUpdatedAt)}</span>}
-                    {moderators && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">Не опубліковано</span>}
-                    {challenge.Infrastructure && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />Потрібен VPN</button>}
+                    <span>{challenge.GroupName || t("challenges.otherCategory")}</span><span aria-hidden="true">·</span>
+                    <span className="ib-num">{pointsLabel(challenge.Points)}</span>
+                    {showDifficulty && <span className="ib-tag">{difficultyLabel(challenge.Snapshot.difficulty)}</span>}
+                    {solved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.modal.solved")}</span>}
+                    {challenge.ContentUpdatedAt && <span className="ib-tag">{t("challenges.modal.updatedAt", {time: formatClock(challenge.ContentUpdatedAt)})}</span>}
+                    {moderators && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">{t("challenges.modal.unpublished")}</span>}
+                    {challenge.Infrastructure && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />{t("challenges.modal.vpnRequired")}</button>}
                 </p>
                 <h2 className="ib-cmodal__title" id={`${id}-t`} tabIndex={-1} ref={titleRef}>{challenge.Snapshot.name}</h2>
-                <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label="Закрити" onClick={() => ref.current?.close()}>{ICON.x}</button>
+                <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label={t("common.close")} onClick={() => ref.current?.close()}>{ICON.x}</button>
             </header>
-            <div className="ib-tabs ib-cmodal__tabs" role="tablist" aria-label="Розділи завдання">
+            <div className="ib-tabs ib-cmodal__tabs" role="tablist" aria-label={t("challenges.modal.sections")}>
                 <button type="button" role="tab" id={`${id}-tab1`} aria-controls={`${id}-p1`} aria-selected={tab === "task"} tabIndex={tab === "task" ? 0 : -1} onClick={() => setTab("task")}
-                    onKeyDown={event => { if (solvesVisible && ["ArrowRight", "ArrowLeft", "End"].includes(event.key)) { event.preventDefault(); setTab("solves"); } }}>Завдання</button>
+                    onKeyDown={event => { if (solvesVisible && ["ArrowRight", "ArrowLeft", "End"].includes(event.key)) { event.preventDefault(); setTab("solves"); } }}>{t("challenges.modal.taskTab")}</button>
                 {solvesVisible && <button type="button" role="tab" id={`${id}-tab2`} aria-controls={`${id}-p2`} aria-selected={tab === "solves"} tabIndex={tab === "solves" ? 0 : -1} onClick={() => setTab("solves")}
                     onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{solvesLabel(count)}</button>}
             </div>
             <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
-                <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} /> : <p>Опис завдання відсутній.</p>}</div>
+                <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
                 {files.length > 0 && <section className="ib-cmodal__blk">
-                    <h3>Файли</h3>
+                    <h3>{t("challenges.modal.files")}</h3>
                     <ul className="ib-cmodal__files">{files.map(file => <li key={file.FileID}>
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
                 {challenge.Infrastructure && <HostBlock lab={lab.data} pending={lab.isPending} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={challenge} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} onUnlocked={() => onHintUnlocked?.()} />}
-                {moderators && <p className="ib-cmodal__hint event-cmodal__note">Перевірка від імені команди модераторів не впливає на результати.</p>}
-                {accepted && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? "Прапор правильний" : "Прапор прийнято"}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}
-                {!accepted && solved && !moderators && <div className="ib-cmodal__ok" role="status">{ICON.check}{teamMode ? "Розвʼязано вашою командою" : "Розвʼязано"}<span className="ib-num">{formatClock(challenge.SolvedAt!, true)}</span></div>}
-                {!solved && finished && !moderators && <p className="event-cmodal__closed" role="status"><b>Подію завершено.</b> Відповіді більше не приймаються.</p>}
+                {moderators && <p className="ib-cmodal__hint event-cmodal__note">{t("challenges.modal.moderatorsNote")}</p>}
+                {accepted && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? t("challenges.modal.flagCorrect") : t("challenges.modal.flagAccepted")}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}
+                {!accepted && solved && !moderators && <div className="ib-cmodal__ok" role="status">{ICON.check}{teamMode ? t("challenges.modal.solvedByTeam") : t("challenges.modal.solved")}<span className="ib-num">{formatClock(challenge.SolvedAt!, true)}</span></div>}
+                {!solved && finished && !moderators && <p className="event-cmodal__closed" role="status">{richMessage(t("challenges.modal.finished"), {strong: <b>{t("challenges.modal.finishedStrong")}</b>})}</p>}
                 {(moderators || (!solved && !finished && !accepted)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
-                    <label htmlFor={`${id}-flag`}>Прапор</label>
+                    <label htmlFor={`${id}-flag`}>{t("challenges.modal.flag")}</label>
                     <div className="ib-cmodal__row">
                         <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
                             aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer}
                             onChange={event => { setAnswer(event.target.value); if (message?.tone === "error") setMessage(null); if (moderators) setAccepted(false); }} />
-                        <button className={`ib-btn ib-btn--primary${busy ? " is-loading" : ""}`} type="submit" disabled={busy || waiting} aria-busy={busy || undefined}>{busy ? "Перевіряємо…" : "Надіслати"}</button>
+                        <button className={`ib-btn ib-btn--primary${busy ? " is-loading" : ""}`} type="submit" disabled={busy || waiting} aria-busy={busy || undefined}>{busy ? t("challenges.modal.checking") : t("challenges.modal.submit")}</button>
                     </div>
                     <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role="alert">
-                        {waiting ? `Забагато спроб · через ${waitSeconds} с` : message?.text}
+                        {waiting ? t("challenges.modal.rateLimited", {seconds: waitSeconds}) : message?.text}
                     </p>
                 </form>}
             </div>
             {solvesVisible && <div className="ib-cmodal__body" id={`${id}-p2`} role="tabpanel" aria-labelledby={`${id}-tab2`} hidden={tab !== "solves"}>
-                {solves.isPending ? <p className="ib-cmodal__empty">Завантажуємо рішення…</p>
-                    : solves.isError ? <div className="ib-cmodal__empty"><b>Список рішень недоступний</b>Результати зараз приховано.</div>
-                    : !solves.data.length ? <div className="ib-cmodal__empty"><b>Ще ніхто не розвʼязав</b>Станьте першими.</div>
+                {solves.isPending ? <p className="ib-cmodal__empty">{t("challenges.solves.loading")}</p>
+                    : solves.isError ? <div className="ib-cmodal__empty"><b>{t("challenges.solves.unavailableTitle")}</b>{t("challenges.solves.unavailableBody")}</div>
+                    : !solves.data.length ? <div className="ib-cmodal__empty"><b>{t("challenges.solves.emptyTitle")}</b>{t("challenges.solves.emptyBody")}</div>
                     : <table className="ib-cmodal__solves">
-                        <thead><tr><th className="is-n">#</th><th>{teamMode ? "Команда" : "Учасник"}</th><th className="is-t">Час</th></tr></thead>
+                        <thead><tr><th className="is-n">#</th><th>{teamMode ? t("scoreboard.col.team") : t("scoreboard.col.participant")}</th><th className="is-t">{t("challenges.solves.time")}</th></tr></thead>
                         <tbody>{solves.data.map((row, index) => <tr key={`${row.TeamName}-${row.SolvedAt}`} className={row.Own ? "is-own" : undefined}>
                             <td className="is-n">{index + 1}</td><td>{row.TeamName}</td><td className="is-t">{formatClock(row.SolvedAt, true)}</td>
                         </tr>)}</tbody>

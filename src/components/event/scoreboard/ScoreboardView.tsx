@@ -11,6 +11,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventBanner} from "@/components/event/EventBanner";
 import {useEventStream} from "@/utils/eventStream";
 import {frozenBannerTitle, frozenSinceLabel, nextFreezeBoundary} from "@/utils/resultsFreeze";
+import {t} from "@/i18n/t";
 import {chartTeamIDs, unitCount} from "./scoreboardModel";
 import {ScoreChart} from "./ScoreChart";
 import {ScoreTable} from "./ScoreTable";
@@ -61,13 +62,13 @@ export function ScoreboardView() {
         return () => clearTimeout(id);
     }, [freeze, refetch]);
 
-    if (!event) return <EventLoading label="Завантажуємо рейтинг…" />;
+    if (!event) return <EventLoading label={t("scoreboard.loadingRanking")} />;
     const denied: ResultsAvailability | null = !readable ? availability : results.error instanceof ResultsUnavailableError ? results.error.reason : null;
-    if (denied === "hidden") return <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">Рейтинг приховано організатором</p></Centered>;
-    if (denied === "participants_only") return <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">Рейтинг доступний лише учасникам</p></Centered>;
-    if (denied === "not_started") return <Centered>{started ? <p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">Рейтинг з&apos;явиться після старту</p> : <CountdownTimer text="Рейтинг з'явиться після старту" until={new Date(event.StartTime)} />}</Centered>;
-    if (results.isPending) return <EventLoading label="Завантажуємо результати…" />;
-    if (results.isError) return <Centered><p className="text-sm text-destructive">Не вдалося завантажити рейтинг.</p></Centered>;
+    if (denied === "hidden") return <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">{t("scoreboard.hidden")}</p></Centered>;
+    if (denied === "participants_only") return <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">{t("scoreboard.participantsOnly")}</p></Centered>;
+    if (denied === "not_started") return <Centered>{started ? <p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">{t("scoreboard.afterStart")}</p> : <CountdownTimer text={t("scoreboard.afterStart")} until={new Date(event.StartTime)} />}</Centered>;
+    if (results.isPending) return <EventLoading label={t("scoreboard.loadingResults")} />;
+    if (results.isError) return <Centered><p className="text-sm text-destructive">{t("scoreboard.loadFailed")}</p></Centered>;
 
     const data = results.data;
     const teamMode = event.Participation === 1;
@@ -75,24 +76,24 @@ export function ScoreboardView() {
     const ownRow = !!ownTeamID && data.Scoreboard.some(entry => entry.TeamID === ownTeamID);
     const frozen = data.Freeze.Applied;
     const chartEnd = Math.max(Date.parse(event.StartTime) + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now));
-    const sub = `${unitCount(data.TotalTeams, teamMode)} · ${frozen ? "рейтинг заморожено" : stream === "fallback" ? "оновлюється кожні 30 с" : "оновлюється наживо"}`;
+    const sub = t("scoreboard.sub", {units: unitCount(data.TotalTeams, teamMode), status: t(frozen ? "scoreboard.status.frozen" : stream === "fallback" ? "scoreboard.status.polling" : "scoreboard.status.live")});
     const trimmed = data.Display.RowsLimit !== null && data.TotalTeams > data.Display.RowsLimit;
 
     return <div className="event-results">
-        {frozen && <div className="ib-banner-stack event-results__banners"><EventBanner tone="warning" title={frozenBannerTitle(data.Freeze)} meta={frozenSinceLabel(data.Freeze)} message="Таблиця показує стан на момент заморожування. Підсумки — після фіналу." /></div>}
+        {frozen && <div className="ib-banner-stack event-results__banners"><EventBanner tone="warning" title={frozenBannerTitle(data.Freeze)} meta={frozenSinceLabel(data.Freeze)} message={t("scoreboard.frozenMessage")} /></div>}
         <header className="ib-page-header">
-            <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">Результати</h1><p className="ib-page-header__sub">{sub}</p></div></div>
+            <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("scoreboard.title")}</h1><p className="ib-page-header__sub">{sub}</p></div></div>
         </header>
-        {data.Scoreboard.length === 0 ? <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">Ще немає результатів</p></Centered> : <>
+        {data.Scoreboard.length === 0 ? <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">{t("scoreboard.empty")}</p></Centered> : <>
             {data.Display.ChartEnabled && <div className="event-results__chart rounded-lg border border-border bg-card p-4">
-                <p className="mb-2 text-sm font-semibold text-foreground">Бали за часом · топ-{Math.min(data.Display.ChartTeams, data.Scoreboard.length)}{ownRow ? (teamMode ? " і ваша команда" : " і ви") : ""}</p>
+                <p className="mb-2 text-sm font-semibold text-foreground">{t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
                 <ScoreChart snapshot={data} teamIDs={chartTeamIDs(data, ownTeamID)} ownTeamID={ownTeamID} startTime={new Date(event.StartTime)} finishTime={new Date(chartEnd)} />
             </div>}
             <ScoreTable snapshot={data} ownTeamID={ownTeamID} teamMode={teamMode} />
             {(frozen && ownRow || trimmed) && <p className="ib-ranking-note">
-                {frozen && ownRow && (teamMode ? "Бали вашої команди оновлюються, місце — на момент заморожування." : "Ваші бали оновлюються, місце — на момент заморожування.")}
+                {frozen && ownRow && t(teamMode ? "scoreboard.frozenOwnTeam" : "scoreboard.frozenOwn")}
                 {frozen && ownRow && trimmed && " "}
-                {trimmed && `Показано перші ${data.Display.RowsLimit} з ${data.TotalTeams}.`}
+                {trimmed && t("scoreboard.trimmed", {shown: data.Display.RowsLimit ?? 0, total: data.TotalTeams})}
             </p>}
         </>}
     </div>;

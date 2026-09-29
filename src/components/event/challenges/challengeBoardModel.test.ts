@@ -2,7 +2,7 @@ import {describe, expect, it} from "vitest";
 import {challengeSchema, type OwnChallenge} from "@/api/participantChallenges";
 import {
     boardViewKey, buildCategories, formatFileSize, formatPoints, lockedLabel, matchesBoard, missingMembers,
-    pluralUk, readBoardView, restPoints, solvedCount, solvesLabel, writeBoardView,
+    readBoardView, restPoints, solvedCount, solvesLabel, writeBoardView,
 } from "./challengeBoardModel";
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -16,8 +16,9 @@ function challenge(n: number, group: number, extra: Partial<OwnChallenge> = {}):
 
 describe("challenge board model", () => {
     it("pluralizes Ukrainian counts", () => {
-        expect([1, 2, 5, 11, 12, 21, 22, 25].map(n => pluralUk(n, "a", "b", "c")).join("")).toBe("abccca" + "bc");
         expect(solvesLabel(1)).toBe("1 рішення");
+        expect(solvesLabel(22)).toBe("22 рішення");
+        expect(solvesLabel(11)).toBe("11 рішень");
         expect(solvesLabel(7)).toBe("7 рішень");
     });
 

@@ -1,15 +1,9 @@
 import type {OwnChallenge} from "@/api/participantChallenges";
+import {t, tPlural} from "@/i18n/t";
 
 export type BoardView = "tiles" | "rail";
 export type BoardFilter = "all" | "open";
 export type BoardCategory = {key: string; name: string; order: number; challenges: OwnChallenge[]};
-
-export function pluralUk(n: number, one: string, few: string, many: string): string {
-    const mod10 = n % 10, mod100 = n % 100;
-    if (mod10 === 1 && mod100 !== 11) return one;
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-    return many;
-}
 
 // «1 250» — a narrow no-break space groups thousands like the DS boards.
 export function formatPoints(value: number): string {
@@ -18,8 +12,8 @@ export function formatPoints(value: number): string {
 
 export function formatFileSize(bytes: number): string {
     if (!bytes || bytes < 0) return "";
-    if (bytes < 1024) return `${bytes} Б`;
-    const units = ["КБ", "МБ", "ГБ"];
+    if (bytes < 1024) return t("challenges.size.bytes", {value: bytes});
+    const units = ["challenges.size.kb", "challenges.size.mb", "challenges.size.gb"];
     let value = bytes / 1024;
     let unit = 0;
     while (value >= 1024 && unit < units.length - 1) {
@@ -27,7 +21,7 @@ export function formatFileSize(bytes: number): string {
         unit++;
     }
     const rounded = value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
-    return `${String(rounded).replace(".", ",")} ${units[unit]}`;
+    return t(units[unit], {value: String(rounded).replace(".", ",")});
 }
 
 export function formatClock(iso: string, seconds = false): string {
@@ -36,16 +30,12 @@ export function formatClock(iso: string, seconds = false): string {
     return date.toLocaleTimeString("uk-UA", {hour: "2-digit", minute: "2-digit", ...(seconds ? {second: "2-digit"} : {}), hour12: false});
 }
 
-export const difficultyLabel: Record<OwnChallenge["Snapshot"]["difficulty"], string> = {
-    trivial: "Розминка",
-    easy: "Легке",
-    medium: "Середнє",
-    hard: "Складне",
-    insane: "Дуже складне",
-};
+export function difficultyLabel(difficulty: OwnChallenge["Snapshot"]["difficulty"]): string {
+    return t(`challenges.difficulty.${difficulty}`);
+}
 
 export function solvesLabel(n: number): string {
-    return `${n} ${pluralUk(n, "рішення", "рішення", "рішень")}`;
+    return tPlural("challenges.solves", n);
 }
 
 // Categories keep the organizer's group order; tasks keep the organizer's order.
@@ -53,7 +43,7 @@ export function buildCategories(challenges: OwnChallenge[]): BoardCategory[] {
     const groups = new Map<string, BoardCategory>();
     for (const challenge of challenges) {
         const key = challenge.GroupID ?? "ungrouped";
-        if (!groups.has(key)) groups.set(key, {key, name: challenge.GroupName || "Інші завдання", order: challenge.GroupOrder, challenges: []});
+        if (!groups.has(key)) groups.set(key, {key, name: challenge.GroupName || t("challenges.otherCategory"), order: challenge.GroupOrder, challenges: []});
         groups.get(key)!.challenges.push(challenge);
     }
     return Array.from(groups.values())
@@ -77,7 +67,7 @@ export function restPoints(challenges: OwnChallenge[]): number {
 
 export function lockedLabel(challenge: OwnChallenge): string {
     const names = challenge.Prerequisites.filter(item => !item.Solved).map(item => item.Name);
-    return names.length ? `Відкриється після: ${names.join(", ")}` : "Відкриється пізніше";
+    return names.length ? t("challenges.locked.after", {names: names.join(", ")}) : t("challenges.locked.later");
 }
 
 export function boardViewKey(userID: string | undefined): string {
