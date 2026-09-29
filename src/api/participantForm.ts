@@ -1,6 +1,6 @@
 import {z} from "zod";
 import type {AnswerFile} from "@/api/answerFiles";
-import {participantFormSchema, type ParticipantForm} from "@/api/manageParticipantForm";
+import {participantFormSchema} from "@/api/manageParticipantForm";
 import {readApiErrorCode} from "@/api/apiErrors";
 import {joinInfoSchema, type JoinInfo} from "@/api/clientAuth";
 import {requireApiOrigin} from "@/utils/origins";
@@ -22,10 +22,17 @@ async function data<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
-export async function getSelfParticipantForm(): Promise<ParticipantForm | null> {
+// The form with the caller's stored answers: organizers may have prefilled
+// some (CSV import), and a non-editable field with a value is locked.
+const selfParticipantFormSchema = participantFormSchema.extend({
+    Answers: z.record(z.string(), z.unknown()).nullish().transform(value => (value ?? {}) as ParticipantAnswers),
+});
+export type SelfParticipantForm = z.infer<typeof selfParticipantFormSchema>;
+
+export async function getSelfParticipantForm(): Promise<SelfParticipantForm | null> {
     const response = await fetch(url("participant-form"), {credentials: "include", cache: "no-store"});
     if (response.status === 404) return null;
-    return data(response, participantFormSchema);
+    return data(response, selfParticipantFormSchema);
 }
 
 export async function submitSelfParticipantForm(eventID: string, answers: ParticipantAnswers): Promise<void> {

@@ -11,6 +11,7 @@
 .event-modal__summary{font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .event-modal__issues{display:flex;flex-direction:column;gap:var(--ib-1);margin:0;padding:0;list-style:none;
   font-size:var(--ib-fs-13);color:var(--ib-danger);max-height:180px;overflow:auto}
+.event-modal__issues--soft{color:var(--ib-dim)}
 .event-modal__modes{align-self:flex-start}
 
 .event-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:var(--ib-control-h-lg);height:auto;

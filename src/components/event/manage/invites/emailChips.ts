@@ -1,6 +1,8 @@
+import type {ParticipantAnswers} from "@/api/participantForm";
 import {isValidEmail, normalizeEmail, type InviteEntry} from "./inviteCsv";
 
-export type EmailChip = {email: string; firstName: string; lastName: string; valid: boolean};
+// fields and missing come from a CSV with form-field columns (see InviteEntry).
+export type EmailChip = {email: string; firstName: string; lastName: string; valid: boolean; fields?: ParticipantAnswers; missing?: string[]};
 
 // Typing or pasting splits addresses on comma, semicolon, spaces and newlines.
 export const addressSeparator = /[\s,;]+/;
@@ -25,7 +27,7 @@ export function addChips(chips: EmailChip[], entries: Array<Pick<InviteEntry, "e
             continue;
         }
         index.set(email, next.length);
-        next.push({email, firstName: entry.firstName?.trim() ?? "", lastName: entry.lastName?.trim() ?? "", valid: isValidEmail(email)});
+        next.push({email, firstName: entry.firstName?.trim() ?? "", lastName: entry.lastName?.trim() ?? "", valid: isValidEmail(email), ...(entry.fields ? {fields: entry.fields, missing: entry.missing ?? []} : {})});
     }
     return next;
 }

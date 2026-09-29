@@ -1,8 +1,10 @@
 "use client";
 
-import {useCallback, useId, useRef, useState, type FormEvent} from "react";
+import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {sendInvitations, type InvitationResult} from "@/api/manageInvites";
+import {getManageParticipantForm} from "@/api/manageParticipantForm";
 import {EventButton} from "@/components/ui/EventButton";
 import {t, tPlural} from "@/i18n/t";
 import {CsvField} from "./invites/CsvField";
@@ -10,6 +12,8 @@ import type {FilePickerHandle} from "@/components/ui/EventFilePicker";
 import {EmailChipsInput} from "./invites/EmailChipsInput";
 import {ManageDialog} from "./invites/ManageDialog";
 import {addChips, validChips, type EmailChip} from "./invites/emailChips";
+import {MissingFieldsSummary} from "./invites/MissingFieldsSummary";
+import {buildSchema, exampleRow, fieldHelp, templateHeader} from "./invites/csvFields";
 import {inviteColumns, parseInviteCsv, type CsvIssue} from "./invites/inviteCsv";
 
 export const invitationLimit = 200;
@@ -34,6 +38,11 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     const [mode, setMode] = useState<"manual" | "csv">("manual");
     const [chips, setChips] = useState<EmailChip[]>(() => addChips([], initialEmails.map(email => ({email}))));
     const [csvChips, setCsvChips] = useState<EmailChip[]>([]);
+    // The CSV carries the participant form's fields, so the template follows the form as it is now.
+    const queryClient = useQueryClient();
+    const formKey = ["event-management-participant-form", eventID];
+    const formQuery = useQuery({queryKey: formKey, queryFn: () => getManageParticipantForm(eventID), enabled: open && mode === "csv", refetchOnWindowFocus: false});
+    const schema = useMemo(() => buildSchema(formQuery.data, null, inviteColumns), [formQuery.data]);
     const [fileName, setFileName] = useState<string | null>(null);
     const [csvIssues, setCsvIssues] = useState<CsvIssue[]>([]);
     const [failures, setFailures] = useState<InvitationResult[]>([]);
@@ -70,7 +79,9 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
         if (!file) {setFileName(null); setCsvIssues([]); setCsvChips([]); return;}
         setFileName(file.name);
         try {
-            const {entries, issues} = parseInviteCsv(await file.text());
+            // A file dropped before the form arrived waits for it.
+            const form = await queryClient.ensureQueryData({queryKey: formKey, queryFn: () => getManageParticipantForm(eventID)});
+            const {entries, issues} = parseInviteCsv(await file.text(), buildSchema(form, null, inviteColumns));
             setCsvIssues(issues);
             setCsvChips(addChips([], entries));
         } catch {
@@ -85,7 +96,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
         if (!canSend) return;
         setBusy(true);
         try {
-            const results = await sendInvitations(eventID, valid.map(chip => ({Email: chip.email, FirstName: chip.firstName, LastName: chip.lastName})), team?.ID);
+            const results = await sendInvitations(eventID, valid.map(chip => ({Email: chip.email, FirstName: chip.firstName, LastName: chip.lastName, ...(chip.fields && Object.keys(chip.fields).length ? {Fields: chip.fields} : {})})), team?.ID);
             const failed = results.filter(result => result.Code);
             const failedEmails = new Set(failed.map(result => result.Email.toLowerCase()));
             const sent = results.length - failed.length;
@@ -117,9 +128,12 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.chips.hint")} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>
             <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
         </div> : <>
-            <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName")]]}
-                templateName={t("manage.invites.template.inviteFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
+            <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} header={templateHeader(schema, "invite")} fieldLines={fieldHelp(schema)}
+                examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), ...exampleRow(schema.participant, true)]]}
+                templateName={t("manage.invites.template.inviteFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy || formQuery.isError} templateDisabled={formQuery.isPending} />
+            {formQuery.isError && <p className="ib-field__error" role="alert">{t("manage.invites.csv.formsFailed")}</p>}
             {fileName && csvChips.length > 0 && <p className="event-modal__summary" role="status">{tPlural("manage.invites.csv.summary", valid.length, {named})} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>}
+            {fileName && csvIssues.length === 0 && <MissingFieldsSummary rows={valid.map(chip => ({name: chip.email, missing: chip.missing ?? []}))} />}
             {valid.length > invitationLimit && <p className="ib-field__error" role="alert">{t("manage.participants.invite.limit")}</p>}
         </>}
         {failures.length > 0 && <ul className="event-modal__issues" role="status">{failures.map(result => <li key={result.Email}>{invitationFailureText(result)}</li>)}</ul>}

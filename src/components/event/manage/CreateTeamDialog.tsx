@@ -1,12 +1,13 @@
 "use client";
 
-import {useCallback, useId, useRef, useState, type FormEvent} from "react";
-import {useQuery} from "@tanstack/react-query";
+import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {createManageTeams, type BatchTeam, type BatchTeamIssue, type BatchTeamsResult} from "@/api/manageInvites";
 import {getManageParticipants} from "@/api/manageParticipants";
+import {getManageParticipantForm} from "@/api/manageParticipantForm";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
@@ -18,6 +19,8 @@ import type {FilePickerHandle} from "@/components/ui/EventFilePicker";
 import {EmailChipsInput} from "./invites/EmailChipsInput";
 import {ManageDialog} from "./invites/ManageDialog";
 import {addChips, chipName, validChips, type EmailChip} from "./invites/emailChips";
+import {MissingFieldsSummary} from "./invites/MissingFieldsSummary";
+import {buildSchema, exampleRow, fieldHelp, templateHeader} from "./invites/csvFields";
 import {parseTeamCsv, teamColumns, type CsvIssue, type TeamDraft} from "./invites/inviteCsv";
 import {invitationLimit} from "./InviteParticipantsDialog";
 
@@ -82,6 +85,12 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     const [serverIssues, setServerIssues] = useState<string[]>([]);
     const [busy, setBusy] = useState(false);
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: open, refetchOnWindowFocus: false});
+    // The CSV carries the team and participant form fields: the template follows the forms as they are now.
+    const queryClient = useQueryClient();
+    const participantFormKey = ["event-management-participant-form", eventID];
+    const teamFieldsKey = ["event-management-team-fields", eventID];
+    const participantFormQuery = useQuery({queryKey: participantFormKey, queryFn: () => getManageParticipantForm(eventID), enabled: open && mode === "csv", refetchOnWindowFocus: false});
+    const schema = useMemo(() => buildSchema(participantFormQuery.data, fieldsQuery.data, teamColumns), [participantFormQuery.data, fieldsQuery.data]);
     const participantsQuery = useQuery({
         queryKey: ["event-management-team-dialog-participants", eventID],
         queryFn: () => getManageParticipants(eventID, {kind: "participants"}, null, 100),
@@ -118,14 +127,21 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
         if (!file) {setFileName(null); setCsvIssues([]); setCsvTeams([]); return;}
         setFileName(file.name);
         let parsed: ReturnType<typeof parseTeamCsv>;
-        try {parsed = parseTeamCsv(await file.text());}
+        try {
+            // A file dropped before the forms arrived waits for them.
+            const [participantForm, teamForm] = await Promise.all([
+                queryClient.ensureQueryData({queryKey: participantFormKey, queryFn: () => getManageParticipantForm(eventID)}),
+                queryClient.ensureQueryData({queryKey: teamFieldsKey, queryFn: () => getManageTeamFields(eventID)}),
+            ]);
+            parsed = parseTeamCsv(await file.text(), buildSchema(participantForm, teamForm, teamColumns));
+        }
         catch {toast.error(t("manage.participants.invite.csvFailed")); return;}
         setCsvIssues(parsed.issues);
         setCsvTeams(parsed.teams);
         if (parsed.issues.length || parsed.teams.length === 0) return;
         setBusy(true);
         try {
-            const result = await createManageTeams(eventID, toBatch(parsed.teams), true);
+            const result = await createManageTeams(eventID, toBatch(parsed.teams), true, true);
             setPreview(result);
             setServerIssues(result.Issues.map(issue => csvIssueText(issue, parsed.teams)));
         } catch (error) {toast.error(failure(error, t("manage.teams.batch.previewFailed")));}
@@ -133,7 +149,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     }
 
     function toBatch(teams: TeamDraft[]): BatchTeam[] {
-        return teams.map(team => ({Name: team.name, CaptainEmail: team.captainEmail, Members: team.members.map(member => ({Email: member.email, FirstName: member.firstName, LastName: member.lastName}))}));
+        return teams.map(team => ({Name: team.name, CaptainEmail: team.captainEmail, Members: team.members.map(member => ({Email: member.email, FirstName: member.firstName, LastName: member.lastName, ...(member.fields && Object.keys(member.fields).length ? {Fields: member.fields} : {})})), ...(Object.keys(team.fields).length ? {Fields: team.fields} : {})}));
     }
 
     async function submit(event: FormEvent<HTMLFormElement>) {
@@ -144,7 +160,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             : toBatch(csvTeams);
         setBusy(true);
         try {
-            const result = await createManageTeams(eventID, teams);
+            const result = await createManageTeams(eventID, teams, false, mode === "csv");
             if (result.Issues.length) {
                 setPreview(mode === "csv" ? result : null);
                 setServerIssues(result.Issues.map(issue => mode === "csv" ? csvIssueText(issue, csvTeams) : issueMessage(issue, name.trim())));
@@ -186,11 +202,16 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             </div>
             {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}
         </> : <>
-            <CsvField label={t("manage.teams.batch.csv")} columns={teamColumns} required={["team", "email", "captain"]}
-                examples={[[t("manage.invites.template.team"), t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), t("manage.invites.template.captain")], [t("manage.invites.template.team"), t("manage.invites.template.email2"), t("manage.invites.template.firstName2"), t("manage.invites.template.lastName2"), ""]]}
-                templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
+            <CsvField label={t("manage.teams.batch.csv")} columns={teamColumns} required={["team", "email", "captain"]} header={templateHeader(schema, "team")} fieldLines={fieldHelp(schema)}
+                examples={[
+                    [t("manage.invites.template.team"), ...exampleRow(schema.team, true), t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), t("manage.invites.template.captain"), ...exampleRow(schema.participant, true)],
+                    [t("manage.invites.template.team"), ...exampleRow(schema.team, false), t("manage.invites.template.email2"), t("manage.invites.template.firstName2"), t("manage.invites.template.lastName2"), "", ...exampleRow(schema.participant, true)],
+                ]}
+                templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy || participantFormQuery.isError || fieldsQuery.isError} templateDisabled={participantFormQuery.isPending || fieldsQuery.isPending} />
+            {(participantFormQuery.isError || fieldsQuery.isError) && <p className="ib-field__error" role="alert">{t("manage.invites.csv.formsFailed")}</p>}
             <p className="ib-field__hint">{t("manage.teams.batch.captainMarks")}</p>
             {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}
+            {preview && preview.Issues.length === 0 && <MissingFieldsSummary rows={[...csvTeams.map(team => ({name: team.name, missing: team.missing})), ...csvTeams.flatMap(team => team.members.map(member => ({name: member.email, missing: member.missing ?? []})))]} />}
         </>}
         {serverIssues.length > 0 && <ul className="event-modal__issues" role="alert">{serverIssues.map((text, index) => <li key={index}>{text}</li>)}</ul>}
     </ManageDialog>;

@@ -1,12 +1,19 @@
 // CSV import for invitations and team rosters. Columns are matched by their
 // English header name (any case, any order); unknown columns are ignored.
 // Every issue carries the 1-based file row, so the dialog can say where to fix.
+// Form-field columns (csvFields.ts) ride along: their values are checked by
+// field type and returned as answers, required ones left blank are listed.
 
-export type CsvIssueCode = "empty" | "missingColumn" | "exampleRow" | "missingEmail" | "invalidEmail" | "duplicateEmail" | "missingTeam" | "captainMark" | "noCaptain" | "manyCaptains";
+import type {ParticipantAnswers} from "@/api/participantForm";
+import {emptySchema, missingRequired, parseFieldCells, type CsvSchema, type FieldIssue} from "./csvFields";
+
+export type CsvIssueCode = "empty" | "missingColumn" | "exampleRow" | "missingEmail" | "invalidEmail" | "duplicateEmail" | "missingTeam" | "captainMark" | "noCaptain" | "manyCaptains" | "teamFieldConflict" | FieldIssue["code"];
 export type CsvIssue = {row: number; code: CsvIssueCode; column?: string; value?: string};
 
-export type InviteEntry = {email: string; firstName: string; lastName: string; row?: number};
-export type TeamDraft = {name: string; row: number; captainEmail: string; members: InviteEntry[]};
+// fields are the person's prefilled answers; missing the labels of required
+// questions still blank (the person fills them in on first login).
+export type InviteEntry = {email: string; firstName: string; lastName: string; row?: number; fields?: ParticipantAnswers; missing?: string[]};
+export type TeamDraft = {name: string; row: number; captainEmail: string; members: InviteEntry[]; fields: ParticipantAnswers; missing: string[]};
 
 export const inviteColumns = ["email", "first_name", "last_name"] as const;
 export const teamColumns = ["team", "email", "first_name", "last_name", "captain"] as const;
@@ -76,7 +83,7 @@ function readTable(source: string, required: readonly string[]): Table {
     const [header, ...data] = lines;
     const index = new Map<string, number>();
     header.cells.forEach((name, position) => {
-        const key = name.trim().toLowerCase();
+        const key = name.trim().replace(/\*+$/, "").trim().toLowerCase();
         if (key && !index.has(key)) index.set(key, position);
     });
     const issues: CsvIssue[] = required.filter(column => !index.has(column)).map(column => ({row: header.row, code: "missingColumn", column}));
@@ -91,8 +98,13 @@ function readTable(source: string, required: readonly string[]): Table {
     };
 }
 
-// Invitation list: email (required), first_name, last_name.
-export function parseInviteCsv(source: string): {entries: InviteEntry[]; issues: CsvIssue[]} {
+function fieldIssues(row: number, issues: FieldIssue[]): CsvIssue[] {
+    return issues.map(issue => ({row, ...issue}));
+}
+
+// Invitation list: email (required), first_name, last_name, then the
+// participant form fields.
+export function parseInviteCsv(source: string, schema: CsvSchema = emptySchema): {entries: InviteEntry[]; issues: CsvIssue[]} {
     const table = readTable(source, ["email"]);
     const issues = [...table.issues];
     const entries: InviteEntry[] = [];
@@ -104,15 +116,19 @@ export function parseInviteCsv(source: string): {entries: InviteEntry[]; issues:
         if (isExampleAddress(email)) {issues.push({row: line.row, code: "exampleRow"}); continue;}
         if (seen.has(email)) continue;
         seen.add(email);
-        entries.push({email, firstName: line.get("first_name"), lastName: line.get("last_name"), row: line.row});
+        const {values, issues: cellIssues} = parseFieldCells(schema.participant, line.get);
+        issues.push(...fieldIssues(line.row, cellIssues));
+        entries.push({email, firstName: line.get("first_name"), lastName: line.get("last_name"), row: line.row, ...(schema.participantForm ? {fields: values, missing: missingRequired(schema.participantForm, values)} : {})});
     }
     return {entries, issues};
 }
 
-// Team roster: team, email (required), first_name, last_name, captain. Rows of
-// one team (name compared case-insensitively) form it; exactly one row per
-// team carries the captain mark.
-export function parseTeamCsv(source: string): {teams: TeamDraft[]; issues: CsvIssue[]} {
+// Team roster: team, team fields, email (required), first_name, last_name,
+// captain, participant fields. Rows of one team (name compared
+// case-insensitively) form it; exactly one row per team carries the captain
+// mark. A team's fields are filled once: rows of the team merge, a blank cell
+// takes the value of another row and two different values are an issue.
+export function parseTeamCsv(source: string, schema: CsvSchema = emptySchema): {teams: TeamDraft[]; issues: CsvIssue[]} {
     const table = readTable(source, ["team", "email", "captain"]);
     const issues = [...table.issues];
     const teams = new Map<string, TeamDraft & {captainRows: number[]}>();
@@ -130,17 +146,27 @@ export function parseTeamCsv(source: string): {teams: TeamDraft[]; issues: CsvIs
         const captain = captainMarks.has(mark);
         if (!captain && !notCaptainMarks.has(mark)) {issues.push({row: line.row, code: "captainMark", value: line.get("captain")}); continue;}
         const key = name.toLowerCase();
-        const team = teams.get(key) ?? {name, row: line.row, captainEmail: "", members: [], captainRows: []};
-        team.members.push({email, firstName: line.get("first_name"), lastName: line.get("last_name"), row: line.row});
+        const team = teams.get(key) ?? {name, row: line.row, captainEmail: "", members: [], captainRows: [], fields: {}, missing: []};
+        const teamCells = parseFieldCells(schema.team, line.get);
+        issues.push(...fieldIssues(line.row, teamCells.issues));
+        for (const [field, value] of Object.entries(teamCells.values)) {
+            const column = schema.team.find(item => item.field.key === field);
+            if (field in team.fields && JSON.stringify(team.fields[field]) !== JSON.stringify(value)) issues.push({row: line.row, code: "teamFieldConflict", column: column?.code ?? field, value: line.get(column?.code ?? field)});
+            else team.fields[field] = value;
+        }
+        const memberCells = parseFieldCells(schema.participant, line.get);
+        issues.push(...fieldIssues(line.row, memberCells.issues));
+        team.members.push({email, firstName: line.get("first_name"), lastName: line.get("last_name"), row: line.row, ...(schema.participantForm ? {fields: memberCells.values, missing: missingRequired(schema.participantForm, memberCells.values)} : {})});
         if (captain) {team.captainRows.push(line.row); team.captainEmail ||= email;}
         teams.set(key, team);
     }
     for (const team of teams.values()) {
+        team.missing = missingRequired(schema.teamForm, team.fields);
         if (team.captainRows.length === 0) issues.push({row: team.row, code: "noCaptain", value: team.name});
         else if (team.captainRows.length > 1) issues.push({row: team.captainRows[1], code: "manyCaptains", value: team.name});
     }
     issues.sort((a, b) => a.row - b.row);
-    return {teams: [...teams.values()].map(team => ({name: team.name, row: team.row, captainEmail: team.captainEmail, members: team.members})), issues};
+    return {teams: [...teams.values()].map(team => ({name: team.name, row: team.row, captainEmail: team.captainEmail, members: team.members, fields: team.fields, missing: team.missing})), issues};
 }
 
 // The template is UTF-8 with a BOM (Excel then opens Cyrillic correctly):

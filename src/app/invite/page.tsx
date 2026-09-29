@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
@@ -8,7 +8,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {getCurrentUser, getInvitationInfo} from "@/api/clientAuth";
 import {acceptSelfInvitation, declineSelfInvitation, getSelfParticipantForm, ParticipantJoinError, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
-import {collectFormAnswers, ParticipantFormFields} from "@/components/event/ParticipantFormFields";
+import {collectFormAnswers, lockedFieldKeys, ParticipantFormFields} from "@/components/event/ParticipantFormFields";
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
@@ -34,7 +34,11 @@ export default function InvitePage() {
     const invitation = info.data;
     const actionable = !!invitation && invitation.Invited && invitation.Status === ParticipationStatusEnum.PendingParticipationStatus && !invitation.InvitationExpired && !invitation.TeamUnavailable;
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!event && actionable, retry: false});
-    const [answers, setAnswers] = useState<ParticipantAnswers>({});
+    // Answers an organizer prefilled (CSV import) show up first; the person's own edits win, except locked ones.
+    const [edits, setAnswers] = useState<ParticipantAnswers>({});
+    const stored = form.data?.Answers;
+    const locked = useMemo(() => lockedFieldKeys(form.data, stored), [form.data, stored]);
+    const answers = useMemo(() => ({...stored, ...edits}), [stored, edits]);
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
     const [expired, setExpired] = useState(false);
@@ -100,7 +104,7 @@ export default function InvitePage() {
             : <>
                 <h1>{title}</h1>
                 <p>{invitation.InvitedTeamName ? t("invite.acceptHintTeam") : t("invite.acceptHint")}</p>
-                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" />}
+                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" locked={locked} />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
                 <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()} busy={working}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => {setDeclineError(""); setDeclining(true);}}>{t("invite.decline")}</button></div>
                 <ConfirmDialog open={declining} onCancel={() => setDeclining(false)} tone="danger" busy={working} error={declineError}

@@ -31,11 +31,22 @@ export function collectFormAnswers(form: ParticipantForm | null | undefined, ans
     return {send, answers: sent};
 }
 
-export function ParticipantFormFields({form, answers, onChange, idPrefix = "join"}: {
+// Questions the participant cannot change: not editable and already answered
+// (an organizer's CSV import prefilled them).
+export function lockedFieldKeys(form: ParticipantForm | null | undefined, stored: ParticipantAnswers | undefined): Set<string> {
+    const locked = new Set<string>();
+    for (const block of form?.Document.blocks ?? []) {
+        if (isFormField(block) && !block.editable && present(stored?.[block.key])) locked.add(block.key);
+    }
+    return locked;
+}
+
+export function ParticipantFormFields({form, answers, onChange, idPrefix = "join", locked}: {
     form: ParticipantForm;
     answers: ParticipantAnswers;
     onChange: (answers: ParticipantAnswers) => void;
     idPrefix?: string;
+    locked?: ReadonlySet<string>;
 }) {
     const shown = visibleFieldKeys(form.Document.blocks, answers);
     return <div className="event-join-form"><h2>{t("forms.field.title")}</h2><p>{form.Required ? t("forms.field.requiredHint") : t("forms.field.optionalHint")}</p>
@@ -45,7 +56,8 @@ export function ParticipantFormFields({form, answers, onChange, idPrefix = "join
                 const key = block.key;
                 const id = `${idPrefix}-${block.id}`;
                 const update = (value: ParticipantAnswers[string]) => onChange({...answers, [key]: value});
-                return <div className="event-join-question" key={block.id}><label htmlFor={id}><strong>{block.label}</strong>{block.required && <span className="event-field-required" aria-label={t("forms.field.required")}>*</span>}</label>{block.help && <p>{block.help}</p>}
+                const Question = locked?.has(key) ? "fieldset" : "div";
+                return <Question className="event-join-question" key={block.id} disabled={locked?.has(key) || undefined}><label htmlFor={id}><strong>{block.label}</strong>{block.required && <span className="event-field-required" aria-label={t("forms.field.required")}>*</span>}</label>{block.help && <p>{block.help}</p>}
                     {block.input === "file" ? <AnswerFileInput id={id} field={block} value={isFileAnswer(answers[key]) ? answers[key] : undefined} upload={file => uploadSelfAnswerFile("participant", key, file)} onChange={value => {const next = {...answers}; if (value) next[key] = value; else delete next[key]; onChange(next);}} />
                         : block.input === "date" ? <DateAnswerInput id={id} mode={dateModeOf(block)} value={typeof answers[key] === "string" ? answers[key] : ""} onChange={value => update(value)} ariaLabel={block.label} />
                         : block.input === "long_text" ? <textarea id={id} className="event-join-input" rows={4} value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />
@@ -54,7 +66,8 @@ export function ParticipantFormFields({form, answers, onChange, idPrefix = "join
                         : block.input === "select" ? <select id={id} className="event-join-input" value={String(answers[key] ?? "")} onChange={e => update(e.target.value)}><option value="">{t("common.chooseOption")}</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
                         : block.input === "multi_select" ? <div className="event-join-options" id={id}>{(block.options ?? []).map(option => <EventCheckbox className="event-join-choice" key={option} checked={Array.isArray(answers[key]) && (answers[key] as string[]).includes(option)} onCheckedChange={checked => {const previous = Array.isArray(answers[key]) ? answers[key] as string[] : []; update(checked ? [...previous, option] : previous.filter(item => item !== option));}} label={option} />)}</div>
                         : <input id={id} className="event-join-input" type="text" value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />}
-                </div>;
+                    {locked?.has(key) && <small>{t("forms.field.lockedByOrganizer")}</small>}
+                </Question>;
             }
             if (block.type === "section") return <h3 key={block.id}>{block.label}</h3>;
             if (block.type === "text") return <div className="event-join-markdown" key={block.id}><EventRichTextView value={block.richText} /></div>;

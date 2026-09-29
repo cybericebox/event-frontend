@@ -9,6 +9,7 @@ import {InviteParticipantsDialog} from "../InviteParticipantsDialog";
 
 vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => null}));
 vi.mock("@/api/manageTeamFields", () => ({getManageTeamFields: async () => null}));
+vi.mock("@/api/manageParticipantForm", () => ({getManageParticipantForm: async () => null}));
 vi.mock("@/api/manageParticipants", () => ({getManageParticipants: async () => ({Items: [], NextCursor: null})}));
 vi.mock("@/api/manageInvites", () => ({sendInvitations: vi.fn(async () => []), createManageTeams: vi.fn(async () => ({Teams: [], Issues: [], Assigned: 0, Invited: 2}))}));
 
@@ -79,7 +80,7 @@ describe("create-team dialog", () => {
 });
 
 describe("invite dialog", () => {
-    const renderInvite = () => render(<InviteParticipantsDialog eventID="e1" open onOpenChange={vi.fn()} onSent={vi.fn(async () => undefined)} />);
+    const renderInvite = () => render(<QueryClientProvider client={new QueryClient()}><InviteParticipantsDialog eventID="e1" open onOpenChange={vi.fn()} onSent={vi.fn(async () => undefined)} /></QueryClientProvider>);
     const send = () => screen.getByRole("button", {name: "Надіслати запрошення"}) as HTMLButtonElement;
     const people = new File(["email,first_name\na@x.test,Ann\nb@x.test,\n"], "people.csv", {type: "text/csv"});
 
