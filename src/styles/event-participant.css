@@ -6,6 +6,11 @@
 .event-challenges,.event-participation{display:flex;flex-direction:column;min-width:0}
 .event-challenges__banners,.event-participation__banners{gap:var(--ib-2);margin-bottom:var(--ib-5)}
 .event-challenges__banners .ib-banner,.event-participation__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
+.event-results{display:flex;flex-direction:column;gap:var(--ib-4);min-width:0}
+.event-results__banners{gap:var(--ib-2)}
+.event-results__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
+/* ds-v2 ranking-table: the frozen board note under the table */
+.ib-ranking-note{margin:calc(var(--ib-2) - var(--ib-4)) 0 0;font-size:var(--ib-fs-12);color:var(--ib-faint)}
 .event-challenges__countdown{display:flex;min-height:40vh;align-items:center;justify-content:center}
 
 /* The page scrolls, not the board: category headers stick under the 60px navbar. */
