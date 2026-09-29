@@ -2,30 +2,29 @@
 
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {visibleFieldKeys} from "@/components/event/formVisibility";
 import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers, ParticipantAnswer} from "@/api/participantForm";
 import {t} from "@/i18n/t";
 
-function visible(condition: {fieldKey: string; operator: string; value: string | number | boolean} | undefined, answers: ParticipantAnswers) {
-    if (!condition) return true;
-    const value = answers[condition.fieldKey];
-    if (value === undefined) return false;
-    return condition.operator === "equals" ? String(value) === String(condition.value) : String(value) !== String(condition.value);
-}
-
-export function TeamFieldsInputs({form, answers, onChange, disabled}: {
+// editableOnly renders just the questions that may change later; visibility is
+// still worked out on the whole form, so a condition on a locked question holds.
+export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnly = false}: {
     form: ParticipantForm;
     answers: ParticipantAnswers;
     onChange: (key: string, value: ParticipantAnswer) => void;
     disabled?: boolean;
+    editableOnly?: boolean;
 }) {
     if (!form.Enabled) return null;
+    const shown = visibleFieldKeys(form.Document.blocks, answers);
     return <div className="grid gap-4">
         {form.Document.blocks.map(block => {
+            if (editableOnly && (!isFormField(block) || !block.editable)) return null;
             if (block.type === "section") return <h3 key={block.id}>{block.label}</h3>;
             if (block.type === "divider") return <hr key={block.id} />;
             if (block.type === "text") return <EventRichTextView key={block.id} value={block.richText} />;
-            if (!isFormField(block) || !visible(block.condition, answers)) return null;
+            if (!isFormField(block) || !shown.has(block.key)) return null;
             const value = answers[block.key];
             const required = form.Required && !!block.required;
             return <label className="event-manage-field" key={block.id}><span>{block.label}{block.required && <span className="event-field-required"> *</span>}</span>{block.help && <small>{block.help}</small>}

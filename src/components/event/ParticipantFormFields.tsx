@@ -4,15 +4,8 @@ import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {visibleFieldKeys} from "@/components/event/formVisibility";
 import {t} from "@/i18n/t";
-
-function visible(condition: {fieldKey: string; operator: string; value: string | number | boolean} | undefined, answers: ParticipantAnswers): boolean {
-    if (!condition) return true;
-    const answer = answers[condition.fieldKey];
-    if (answer === undefined) return false;
-    const equals = String(answer) === String(condition.value);
-    return condition.operator === "equals" ? equals : !equals;
-}
 
 function present(value: ParticipantAnswers[string] | undefined): boolean {
     return value !== undefined && value !== "" && (!Array.isArray(value) || value.length > 0);
@@ -24,8 +17,9 @@ export function collectFormAnswers(form: ParticipantForm | null | undefined, ans
     const send = !!form?.Enabled && (form.Required || Object.values(answers).some(present));
     const sent: ParticipantAnswers = {};
     if (!send || !form) return {send: false, answers: sent};
+    const shown = visibleFieldKeys(form.Document.blocks, answers);
     for (const block of form.Document.blocks) {
-        if (!isFormField(block) || !visible(block.condition, sent)) continue;
+        if (!isFormField(block) || !shown.has(block.key)) continue;
         const answer = answers[block.key];
         if (block.required && !present(answer)) return {send, answers: sent, error: t("forms.field.requiredMissing", {label: block.label})};
         if (present(answer)) sent[block.key] = answer!;
@@ -39,10 +33,11 @@ export function ParticipantFormFields({form, answers, onChange, idPrefix = "join
     onChange: (answers: ParticipantAnswers) => void;
     idPrefix?: string;
 }) {
+    const shown = visibleFieldKeys(form.Document.blocks, answers);
     return <div className="event-join-form"><h2>{t("forms.field.title")}</h2><p>{form.Required ? t("forms.field.requiredHint") : t("forms.field.optionalHint")}</p>
         {form.Document.blocks.map(block => {
             if (isFormField(block)) {
-                if (!visible(block.condition, answers)) return null;
+                if (!shown.has(block.key)) return null;
                 const key = block.key;
                 const id = `${idPrefix}-${block.id}`;
                 const update = (value: ParticipantAnswers[string]) => onChange({...answers, [key]: value});

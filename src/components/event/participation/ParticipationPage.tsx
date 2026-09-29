@@ -23,7 +23,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {StandStatusIcon, standStatusText, useEventVpn} from "@/components/event/vpn/EventVpn";
 import {missingMembers} from "@/components/event/challenges/challengeBoardModel";
 import {t, tPlural} from "@/i18n/t";
-import {changedEditableAnswers, editableForm, formatAnswer, formFields, rosterLine} from "./participationModel";
+import {changedEditableAnswers, formatAnswer, formFields, rosterLine} from "./participationModel";
 import {EventButton} from "@/components/ui/EventButton";
 
 function errorText(error: unknown, fallback: string): string {
@@ -61,7 +61,7 @@ function FieldsEditor({form, answers, onCancel, onSave}: {form: ParticipantForm;
         setBusy(true);
         try { await onSave(draft); } finally { setBusy(false); }
     }}>
-        <TeamFieldsInputs form={editableForm(form)} answers={draft} onChange={(key, value) => setDraft(current => ({...current, [key]: value}))} disabled={busy} />
+        <TeamFieldsInputs form={{...form, Required: false}} editableOnly answers={draft} onChange={(key, value) => setDraft(current => ({...current, [key]: value}))} disabled={busy} />
         <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy} busy={busy}>{t("common.save")}</EventButton><button type="button" className="ib-btn" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button></div>
     </form>;
 }
