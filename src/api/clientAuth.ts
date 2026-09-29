@@ -102,24 +102,6 @@ export async function getInvitationInfo(): Promise<JoinInfo> {
     return readData(response, joinSchema);
 }
 
-// Superseded by getParticipation (server-computed); kept until the team tab stops using it.
-// rosterOpen: teams may still change (locked-at-start events freeze at the start, rolling ones stay open until they finish).
-export type RegistrationWindow = {registrationOpen: boolean; joinPolicy: string; startAt: string; finishAt: string; rosterOpen: boolean};
-
-// The same public content values the join CTA reads, so /join agrees with it.
-export async function getRegistrationWindow(eventID: string): Promise<RegistrationWindow> {
-    const response = await fetch(`/api/content/values?${new URLSearchParams({eventId: eventID})}`, {cache: "no-store"});
-    if (!response.ok) throw new ClientAuthError(response.status);
-    const variables = z.object({Variables: z.record(z.string(), z.unknown())}).parse(await response.json()).Variables;
-    return {
-        registrationOpen: variables["event.registrationOpen"] === true,
-        joinPolicy: String(variables["event.joinPolicy"] ?? ""),
-        startAt: String(variables["event.startAt"] ?? ""),
-        finishAt: String(variables["event.effectiveFinishAt"] ?? ""),
-        rosterOpen: variables["event.rosterOpen"] === true,
-    };
-}
-
 // The caller's participation block (null when the server did not send one).
 export async function getParticipation(): Promise<Participation | null> {
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});

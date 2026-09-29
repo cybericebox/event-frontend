@@ -7,6 +7,7 @@ import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers, ParticipantAnswer} from "@/api/participantForm";
 import {t} from "@/i18n/t";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
+import {EventSelect} from "@/components/ui/EventSelect";
 import {AnswerFileInput} from "@/components/event/AnswerFileInput";
 import {DateAnswerInput} from "@/components/event/DateAnswerInput";
 import {isFileAnswer, uploadSelfAnswerFile, type AnswerFile} from "@/api/answerFiles";
@@ -48,7 +49,7 @@ export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnl
                     : block.input === "long_text" ? <textarea className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} rows={3} />
                     : block.input === "checkbox" ? <EventCheckbox checked={value === true} onCheckedChange={checked => onChange(block.key, checked)} disabled={disabled} label={t("common.yes")} />
                     : block.input === "number" ? <input className="event-manage-input" type="number" value={value === undefined ? "" : String(value)} onChange={e => onChange(block.key, e.target.value === "" ? "" : Number(e.target.value))} required={required} disabled={disabled} />
-                    : block.input === "select" ? <select className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled}><option value="">{t("common.chooseOption")}</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
+                    : block.input === "select" ? <EventSelect value={String(value ?? "")} ariaLabel={block.label} disabled={disabled} onValueChange={next => onChange(block.key, next)} options={[{value: "", label: t("common.chooseOption")}, ...(block.options ?? []).map(option => ({value: option, label: option}))]} />
                     : block.input === "multi_select" ? <span className="grid gap-2">{(block.options ?? []).map(option => <EventCheckbox key={option} checked={Array.isArray(value) && value.includes(option)} onCheckedChange={checked => onChange(block.key, checked ? [...(Array.isArray(value) ? value : []), option] : (Array.isArray(value) ? value : []).filter(item => item !== option))} disabled={disabled} label={option} />)}</span>
                     : <input className="event-manage-input" type="text" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} />}
             </Field>;

@@ -41,6 +41,7 @@ import "@/styles/challenge-board.css";
 import "@/styles/category-rail.css";
 import "@/styles/challenge-modal.css";
 import "@/styles/event-participant.css";
+import "@/styles/event-participation.css";
 import "@/styles/event-manage.css";
 import "@/styles/event-inbox.css";
 import "@/styles/event-navbar-account.css";

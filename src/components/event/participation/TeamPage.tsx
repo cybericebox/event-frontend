@@ -3,154 +3,99 @@
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import {Copy} from "lucide-react";
-import {EventLoadError} from "@/components/event/EventLoadError";
-import {getRegistrationWindow, type OwnTeam} from "@/api/clientAuth";
+import type {OwnTeam, Participation} from "@/api/clientAuth";
 import {
-    createEventTeam, disbandEventTeam, getOwnTeamMembers, getSelfTeamFields, joinEventTeam, joinLinkExpiries, kickEventTeamMember, leaveEventTeam,
-    regenerateEventTeamCode, renameEventTeam, TeamRole, transferEventTeamCaptain, updateOwnTeamFields, type JoinLinkExpiry, type TeamMember,
+    disbandEventTeam, getOwnTeamMembers, getSelfTeamFields, kickEventTeamMember, leaveEventTeam, regenerateEventTeamCode, renameEventTeam,
+    TeamRole, transferEventTeamCaptain, updateOwnTeamFields, type JoinLinkExpiry, type TeamMember,
 } from "@/api/eventTeams";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import type {ParticipantEventInfo} from "@/types/participantEventInfo";
+import {EventLoadError} from "@/components/event/EventLoadError";
+import {EventLoading} from "@/components/event/EventLoading";
+import {reasonText, useParticipation} from "./participationRules";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
-import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
-import {DialogModal} from "@/components/event/DialogModal";
 import {EventBanner} from "@/components/event/EventBanner";
-import {EventLoading} from "@/components/event/EventLoading";
 import {missingMembers} from "@/components/event/challenges/challengeBoardModel";
-import {t, tPlural} from "@/i18n/t";
-import {EventButton} from "@/components/ui/EventButton";
-import {EventSelect} from "@/components/ui/EventSelect";
-import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
-import {changedEditableAnswers, forgetJoinCode, formFields, joinLink, joinLinkValidity, parseJoinCode, rosterLine} from "./participationModel";
 import {getModeratorsTeam} from "@/api/moderatorsBoard";
 import {eventRoleLabel} from "@/utils/roles";
+import {EventButton} from "@/components/ui/EventButton";
+import {t, tPlural} from "@/i18n/t";
+import {AnswersCard} from "./AnswersCard";
+import {NoTeam} from "./NoTeam";
+import {InviteCard} from "./TeamInvite";
+import {MembersCard} from "./TeamMembers";
+import {Card, CategoryChartCard, PointsChartCard, RatioBar, SolvesTable, StatTiles, statTiles, formatNumber, type BlockState} from "./participationBlocks";
+import {changedEditableAnswers, rosterLine} from "./participationModel";
+import {errorText, TeamConfirm, useLinkCode, type Confirm} from "./participationParts";
 import {previewMembers, previewOwnTeam} from "./participationPreview";
-import {errorText, FieldRow, FieldRows, FieldsEditor, Section, TeamConfirm, useLinkCode, type Confirm} from "./participationParts";
+import {chartWindow, cumulativePoints, ownSolves, placeText, solveEntries, timelineEntries} from "./participationStatsModel";
+import {useEventAccent} from "./useEventAccent";
+import {useParticipationStats} from "./useParticipationStats";
 
-function NoTeam({event, rosterOpen, linkCode, preview}: {event: PublicEventInfo; rosterOpen: boolean; linkCode: string; preview: boolean}) {
-    const queryClient = useQueryClient();
-    const [code, setCode] = useState(linkCode);
-    const [name, setName] = useState("");
-    const [fields, setFields] = useState<ParticipantAnswers>({});
-    const [createOpen, setCreateOpen] = useState(false);
+function TeamHeader({info, team, rosterOpen, captain, captainName, stats, onRename}: {
+    info: ParticipantEventInfo; team: OwnTeam; rosterOpen: boolean; captain: boolean; captainName: string;
+    stats: {rank: number; points: number} | null; onRename: (name: string) => Promise<void>;
+}) {
+    const [renaming, setRenaming] = useState(false);
+    const [name, setName] = useState(team.Name);
     const [busy, setBusy] = useState(false);
-    const [error, setError] = useState("");
-    const fieldsQuery = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(), enabled: createOpen && !preview, refetchOnWindowFocus: false});
-    const refresh = () => Promise.all([
-        queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]}),
-        queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]}),
-    ]);
-    if (!rosterOpen) return <p className="event-part__note">{t("participation.noTeam.frozen")}</p>;
-    const join = async (submit: FormEvent) => {
+    const min = team.MinTeamSize ?? info.MinTeamSize;
+    const max = team.MaxTeamSize ?? info.MaxTeamSize;
+    const missing = missingMembers(team.MemberCount, min);
+    const admitted = team.Admitted !== false;
+    const rename = async (submit: FormEvent) => {
         submit.preventDefault();
-        if (preview) { toast(t("participation.preview.noChanges")); return; }
         setBusy(true);
-        setError("");
-        try {
-            await joinEventTeam(event.EventID, parseJoinCode(code));
-            forgetJoinCode();
-            await refresh();
-        } catch (failure) {
-            // JoinTeam: 404 = unknown link; 409 = full team, expired link or closed roster.
-            setError(errorText(failure, t("participation.noTeam.joinFailed")));
-        } finally { setBusy(false); }
-    };
-    const create = async (submit: FormEvent) => {
-        submit.preventDefault();
-        if (preview) { toast(t("participation.preview.noChanges")); return; }
-        setBusy(true);
-        setError("");
-        try {
-            await createEventTeam(event.EventID, name.trim(), fields);
-            setCreateOpen(false);
-            await refresh();
-        } catch (failure) {
-            setError(errorText(failure, t("participation.noTeam.createFailed")));
-        } finally { setBusy(false); }
+        try { await onRename(name.trim()); setRenaming(false); } catch { /* toast shown */ } finally { setBusy(false); }
     };
     return <>
-        {linkCode && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.noTeam.linkTitle")} message={t("participation.noTeam.linkMessage")} /></div>}
-        <div className="event-part__choice">
-            <section><h3>{t("participation.noTeam.create")}</h3><p>{t("participation.noTeam.createNote")}</p><button type="button" className="ib-btn ib-btn--primary" onClick={() => { setError(""); setCreateOpen(true); }}>{t("participation.noTeam.create")}</button></section>
-            <section><h3>{t("participation.noTeam.joinTitle")}</h3><p>{t("participation.noTeam.joinNote")}</p>
-                <form className="event-part__inline" onSubmit={event => void join(event)}>
-                    <input className="ib-input ib-input--mono" value={code} onChange={event => setCode(event.target.value)} aria-label={t("participation.noTeam.code")} placeholder={t("participation.noTeam.code")} required autoComplete="off" disabled={busy} />
-                    <button type="submit" className="ib-btn" disabled={busy || !parseJoinCode(code)}>{t("participation.noTeam.join")}</button>
-                </form>
-            </section>
-        </div>
-        {error && !createOpen && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
-        <DialogModal open={createOpen} onClose={() => { if (!busy) setCreateOpen(false); }} title={t("participation.noTeam.create")} description={t("participation.noTeam.createDescription")}>
-            <form className="event-part__form" onSubmit={event => void create(event)}>
-                <label className="ib-field"><span className="ib-field__label">{t("participation.team.name")}</span><input className="ib-input" value={name} onChange={event => setName(event.target.value)} required minLength={3} maxLength={64} disabled={busy} autoFocus /></label>
-                {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fields} onChange={(key, value) => setFields(current => ({...current, [key]: value}))} disabled={busy} />}
-                {fieldsQuery.isError && <EventLoadError compact message={t("participation.noTeam.fieldsFailed")} error={fieldsQuery.error} onRetry={() => void fieldsQuery.refetch()} />}
-                {error && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
-                <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy || (fieldsQuery.isPending && !preview)} busy={busy}>{t("participation.noTeam.createAction")}</EventButton></div>
-            </form>
-        </DialogModal>
+        {!admitted && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="warning" title={missing ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title")} message={t("participation.team.notAdmittedMessage")} /></div>}
+        <section className="event-pp-card event-pp-hero" aria-label={t("participation.team.title")}>
+            <div className="event-pp-hero__who">
+                {renaming
+                    ? <form className="event-pp-rename" onSubmit={submit => void rename(submit)}>
+                        <input className="ib-input" value={name} onChange={submit => setName(submit.target.value)} minLength={3} maxLength={64} required aria-label={t("participation.team.name")} autoFocus disabled={busy} />
+                        <EventButton type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
+                        <button type="button" className="ib-btn" disabled={busy} onClick={() => setRenaming(false)}>{t("common.cancel")}</button>
+                    </form>
+                    : <div className="event-pp-rename"><h2 className="event-pp-hero__name">{team.Name}</h2>
+                        {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm" onClick={() => { setName(team.Name); setRenaming(true); }}>{t("participation.team.rename")}</button>}</div>}
+                <div className="event-pp-hero__tags">
+                    {admitted ? <span className="ib-tag ib-tag--ok">{t("participation.team.admitted")}</span> : <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>}
+                    <span className="event-pp-hero__sub">{t("participation.team.roster")}: {rosterLine(team.MemberCount, max, min)}</span>
+                </div>
+                {captainName && <span className="event-pp-hero__sub">{t("participation.team.captainLine", {name: captainName})}</span>}
+            </div>
+            <dl className="event-pp-hero__score">
+                <div><dt>{t("participation.stats.teamPlace")}</dt><dd>{stats ? placeText(stats.rank) : "—"}</dd></div>
+                <div><dt>{t("participation.stats.teamPoints")}</dt><dd>{stats ? formatNumber(stats.points) : "—"}</dd></div>
+            </dl>
+        </section>
     </>;
 }
 
-// «Перевипустити»: the old link stops working; the captain picks how long the new one lives.
-function RegenerateLinkDialog({open, onClose, onRegenerate}: {open: boolean; onClose: () => void; onRegenerate: (expiry: JoinLinkExpiry) => Promise<void>}) {
-    const [expiry, setExpiry] = useState<JoinLinkExpiry>("none");
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState("");
-    return <ConfirmDialog open={open} onCancel={() => { if (!busy) { setError(""); onClose(); } }} busy={busy} error={error}
-        title={t("participation.team.link.regenerateTitle")} description={t("participation.team.link.regenerateText")} confirmLabel={t("participation.team.link.regenerate")}
-        onConfirm={async () => {
-            setBusy(true);
-            setError("");
-            try { await onRegenerate(expiry); onClose(); } catch (failure) { setError(failure instanceof Error ? failure.message : ""); } finally { setBusy(false); }
-        }}>
-        <div className="ib-field"><span className="ib-field__label">{t("participation.team.link.expiry")}</span>
-            <EventSelect ariaLabel={t("participation.team.link.expiry")} value={expiry} onValueChange={value => setExpiry(value as JoinLinkExpiry)} disabled={busy}
-                options={joinLinkExpiries.map(value => ({value, label: t(`participation.team.link.expiry.${value}`)}))} />
-        </div>
-    </ConfirmDialog>;
-}
-
-// Only the captain sees the link and shares it.
-function JoinLinkRow({team, canRegenerate, onRegenerate, preview}: {team: OwnTeam; canRegenerate: boolean; onRegenerate: (expiry: JoinLinkExpiry) => Promise<void>; preview: boolean}) {
-    const [regenerating, setRegenerating] = useState(false);
-    const [now] = useState(() => Date.now());
-    const link = joinLink(window.location.origin, team.JoinCode);
-    const validity = joinLinkValidity(team.JoinCodeExpiresAt, now);
-    const copy = async () => {
-        try {
-            await navigator.clipboard.writeText(link);
-            toast.success(t("participation.team.link.copied"));
-        } catch { toast.error(t("participation.team.link.copyFailed")); }
-    };
-    return <FieldRow label={t("participation.team.link.label")}>
-        <span className="event-part__link"><input className="ib-input ib-input--mono" readOnly value={link} aria-label={t("participation.team.link.label")} onFocus={event => event.currentTarget.select()} />
-            <small className={validity.expired ? "event-part__warn" : "event-part__muted"}>{validity.text}</small></span>
-        <span className="event-part__end"><button type="button" className="ib-btn ib-btn--sm" onClick={() => void copy()}><Copy aria-hidden="true" />{t("participation.team.link.copy")}</button>
-            {canRegenerate && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setRegenerating(true)}>{t("participation.team.link.regenerate")}</button>}</span>
-        <RegenerateLinkDialog open={regenerating} onClose={() => setRegenerating(false)} onRegenerate={async expiry => {
-            if (preview) { toast(t("participation.preview.noChanges")); return; }
-            await onRegenerate(expiry);
-        }} />
-    </FieldRow>;
-}
-
-function TeamSection({event, info, team, rosterOpen, finished, preview}: {event: PublicEventInfo; info: ParticipantEventInfo; team: OwnTeam; rosterOpen: boolean; finished: boolean; preview: boolean}) {
+function TeamSection({event, info, team, participation, rosterOpen, finished, preview, now}: {
+    event: PublicEventInfo; info: ParticipantEventInfo; team: OwnTeam; participation: Participation | null; rosterOpen: boolean; finished: boolean; preview: boolean; now: number;
+}) {
     const queryClient = useQueryClient();
+    const accent = useEventAccent();
     const members = useQuery({queryKey: ["event-team-members", event.EventID, team.ID], queryFn: () => getOwnTeamMembers(event.EventID), enabled: !preview, retry: false, refetchOnWindowFocus: false});
     const fieldsForm = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(), enabled: !preview, refetchOnWindowFocus: false});
+    const stats = useParticipationStats(event.EventID, {preview, enabled: true});
     const [confirm, setConfirm] = useState<Confirm>(null);
-    const [renaming, setRenaming] = useState(false);
-    const [name, setName] = useState(team.Name);
-    const [editingFields, setEditingFields] = useState(false);
     const captain = team.Role === TeamRole.Captain;
-    const memberList: TeamMember[] | undefined = preview ? previewMembers() : members.data;
+    // Every action follows its own server rule; a closed one says why.
+    const manage = participation?.ManageTeam?.Allowed ?? rosterOpen;
+    const leave = participation?.LeaveTeam?.Allowed ?? rosterOpen;
+    const manageReason = reasonText(participation?.ManageTeam?.Reason ?? "");
+    const leaveReason = reasonText(participation?.LeaveTeam?.Reason ?? "");
+    const roster: TeamMember[] | undefined = preview ? previewMembers() : members.data;
     const teamFieldForm = preview ? undefined : fieldsForm.data;
-    const own = memberList?.find(member => member.Own);
+    const own = roster?.find(member => member.Own);
+    const captainName = roster?.find(member => member.Role === TeamRole.Captain)?.DisplayName ?? "";
     const refresh = () => Promise.all([
         queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]}),
         queryClient.invalidateQueries({queryKey: ["event-team-members", event.EventID]}),
@@ -169,88 +114,82 @@ function TeamSection({event, info, team, rosterOpen, finished, preview}: {event:
             throw error;
         }
     };
-    const rename = async (submit: FormEvent) => {
-        submit.preventDefault();
-        try {
-            await run(() => renameEventTeam(event.EventID, team.ID, name.trim()), t("participation.team.renamed"), t("participation.team.renameFailed"))();
-            setRenaming(false);
-        } catch { /* toast shown */ }
-    };
-    const memberActions = (member: TeamMember) => captain && rosterOpen && !member.Own && !member.Pending && <>
+    const memberActions = (member: TeamMember) => captain && manage && !member.Own && !member.Pending && <>
         <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
         <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>
     </>;
     const min = team.MinTeamSize ?? info.MinTeamSize;
-    const missing = missingMembers(team.MemberCount, min);
-    return <Section title={t("participation.team.title")} note={captain ? (rosterOpen ? t("participation.team.captainRosterOpen") : t("participation.team.rosterFrozen")) : (rosterOpen ? t("participation.team.memberRosterOpen") : t("participation.team.rosterFrozen"))}>
-        {team.Admitted === false && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="warning" title={missing ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title")} message={t("participation.team.notAdmittedMessage")} /></div>}
-        <dl className="event-part__rows">
-            <FieldRow label={t("participation.team.nameLabel")}>{renaming
-                ? <form className="event-part__inline" onSubmit={event => void rename(event)}><input className="ib-input" value={name} onChange={event => setName(event.target.value)} minLength={3} maxLength={64} required aria-label={t("participation.team.name")} autoFocus /><button type="submit" className="ib-btn ib-btn--primary">{t("common.save")}</button><button type="button" className="ib-btn" onClick={() => setRenaming(false)}>{t("common.cancel")}</button></form>
-                : <><span>{team.Name}</span>{captain && rosterOpen && <span className="event-part__end"><button type="button" className="ib-btn ib-btn--sm" onClick={() => { setName(team.Name); setRenaming(true); }}>{t("participation.team.rename")}</button></span>}</>}</FieldRow>
-            <FieldRow label={t("participation.team.roster")}><span>{rosterLine(team.MemberCount, team.MaxTeamSize ?? info.MaxTeamSize, min)}</span>{team.Admitted !== false && <span className="ib-tag ib-tag--ok">{t("participation.team.admitted")}</span>}</FieldRow>
-            {captain && team.JoinCode && <JoinLinkRow team={team} canRegenerate={rosterOpen} preview={preview}
-                onRegenerate={async expiry => { await run(() => regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />}
-        </dl>
-        <h3 className="event-part__subhead">{t("participation.team.members")}</h3>
-        {!memberList ? (members.isError ? <EventLoadError compact message={t("participation.team.membersFailed")} error={members.error} onRetry={() => void members.refetch()} /> : <EventLoading compact label={t("participation.team.membersLoading")} />) :
-            <table className="event-members"><thead><tr><th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th><th><span className="ib-sr">{t("participation.team.actions")}</span></th></tr></thead>
-                <tbody>{memberList.map(member => <tr key={member.UserID} className={member.Own ? "is-own" : undefined}>
-                    <td>{member.DisplayName}{member.Own && <span className="event-part__muted"> · {t("participation.team.you")}</span>}</td>
-                    <td>{member.Pending ? <span className="ib-tag ib-tag--warn">{t("participation.team.pending")}</span>
-                        : member.Role === TeamRole.Captain ? <span className="ib-tag ib-tag--role">{t("participation.team.captain")}</span> : <span className="event-part__muted">{t("participation.team.member")}</span>}</td>
-                    <td className="is-actions">{memberActions(member)}</td>
-                </tr>)}</tbody></table>}
-        {teamFieldForm && formFields(teamFieldForm).length > 0 && <>
-            <h3 className="event-part__subhead">{t("participation.team.fieldsTitle")}</h3>
-            {editingFields
-                ? <FieldsEditor form={teamFieldForm} answers={team.ExtraFields as ParticipantAnswers} fillable={team.MissingFields ?? []} onCancel={() => setEditingFields(false)} onSave={async draft => {
-                    try {
-                        await run(() => updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft, team.MissingFields ?? [])).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"))();
-                        setEditingFields(false);
-                    } catch { /* toast shown */ }
-                }} />
-                : <FieldRows form={teamFieldForm} answers={team.ExtraFields} canEdit={captain && !finished} missing={team.MissingFields ?? []} onEdit={() => setEditingFields(true)} />}
-        </>}
-        {rosterOpen && own && <div className="event-part__actions">
-            {captain
-                ? <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"), true)})}>{t("participation.team.disband")}</button>
-                : <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.leaveTitle"), text: t("participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"), true)})}>{t("participation.team.leave")}</button>}
-        </div>}
+    const max = team.MaxTeamSize ?? info.MaxTeamSize;
+    const data = stats.stats;
+    const solves = data?.Team.Solves ?? [];
+    const teamState: BlockState = !data ? (stats.state as BlockState) : solves.length === 0 ? "empty" : "ready";
+    const teamSeries = data ? cumulativePoints(timelineEntries(data.Timeline)) : [];
+    const mineSeries = data ? cumulativePoints(solveEntries(ownSolves(solves, data.Me.UserID))) : [];
+    const lastAt = teamSeries.length ? teamSeries[teamSeries.length - 1][0] : null;
+    const window = chartWindow(event.StartTime, event.FinishTime, now, lastAt);
+    const tiles = statTiles({
+        solves: data?.Solved ?? 0, points: data?.Points ?? 0, firstBloods: data?.Team.FirstBloods ?? 0, hints: data?.Team.Hints ?? 0,
+        attempts: data?.Team.Attempts ?? 0, correct: data?.Team.CorrectAttempts ?? 0, scope: "team",
+    }).map(tile => data ? tile : {...tile, value: "—", note: undefined});
+    return <div className="event-pp">
+        <TeamHeader info={info} team={team} rosterOpen={manage} captain={captain} captainName={captainName} stats={data ? {rank: data.Rank, points: data.Points} : null}
+            onRename={name => run(() => renameEventTeam(event.EventID, team.ID, name), t("participation.team.renamed"), t("participation.team.renameFailed"))()} />
+        <StatTiles label={t("participation.stats.teamTitle")} tiles={tiles} />
+        <MembersCard event={event} roster={roster} error={members.error} onRetry={() => void members.refetch()} stats={data?.Team.Members ?? []} actions={memberActions} rosterLine={rosterLine(team.MemberCount, max, min)} />
+        <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage} preview={preview} now={now}
+            onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />
+        <div className="event-pp-charts">
+            <PointsChartCard event={event} title={t("participation.chart.points.teamTitle")} state={teamState} error={stats.error} onRetry={stats.retry} window={window}
+                series={[{name: t("participation.chart.points.team"), points: teamSeries, color: accent}, ...(mineSeries.length ? [{name: t("participation.chart.points.mine"), points: mineSeries, color: "#94a3b8", dashed: true}] : [])]} />
+            <CategoryChartCard event={event} state={teamState} solves={solves} color={accent} error={stats.error} onRetry={stats.retry} />
+        </div>
+        <Card title={t("participation.ratio.title")} note={t("participation.ratio.note")}>
+            {data ? <RatioBar correct={data.Team.CorrectAttempts} attempts={data.Team.Attempts} /> : <RatioBar correct={0} attempts={0} />}
+        </Card>
+        <SolvesTable event={event} state={teamState} solves={solves} now={now} showSolver error={stats.error} onRetry={stats.retry} title={t("participation.solves.teamTitle")} />
+        {teamFieldForm?.Enabled && <AnswersCard scope="team" title={t("participation.team.fieldsTitle")} note={t("participation.team.fieldsNote")} form={teamFieldForm} answers={team.ExtraFields as ParticipantAnswers}
+            missing={team.MissingFields ?? []} canEdit={captain && !finished} whyReadOnly={finished ? t("participation.form.finished") : t("participation.team.fieldsCaptainOnly")}
+            onSave={async draft => {
+                await run(() => updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft, team.MissingFields ?? [])).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"), true)();
+            }} />}
+        {own && <section className="event-pp-card event-pp-danger" aria-label={captain ? t("participation.team.disband") : t("participation.team.leave")}>
+            <p>{captain ? (manage ? t("participation.team.disbandNote") : manageReason || t("participation.team.disbandNote")) : (leave ? t("participation.team.leaveNote") : leaveReason || t("participation.team.leaveNote"))}</p>
+            {captain && manage && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"), true)})}>{t("participation.team.disband")}</button>}
+            {!captain && leave && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.leaveTitle"), text: t("participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"), true)})}>{t("participation.team.leave")}</button>}
+        </section>}
         <TeamConfirm confirm={confirm} onClose={() => setConfirm(null)} />
-    </Section>;
+    </div>;
 }
 
 // Organizers see the real hidden moderators team, read-only: no link, no roster actions, no results.
 function ModeratorsTeamSection({members}: {members: {UserID: string; Name: string; Role: number}[]}) {
-    return <Section title={t("participation.team.title")} note={t("participation.team.moderatorsNote")}>
-        <dl className="event-part__rows">
-            <FieldRow label={t("participation.team.nameLabel")}><span>{t("participation.team.moderatorsName")}</span></FieldRow>
-            <FieldRow label={t("participation.team.roster")}><span>{members.length}</span></FieldRow>
-        </dl>
-        <h3 className="event-part__subhead">{t("participation.team.members")}</h3>
-        <table className="event-members"><thead><tr><th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th></tr></thead>
-            <tbody>{members.map(member => <tr key={member.UserID}><td>{member.Name}</td><td><span className="ib-tag ib-tag--role">{eventRoleLabel(member.Role)}</span></td></tr>)}</tbody></table>
-    </Section>;
+    return <div className="event-pp">
+        <Card title={t("participation.team.moderatorsName")} note={t("participation.team.moderatorsNote")} flush>
+            <div className="event-pp-table__scroll"><table className="event-pp-table"><thead><tr><th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th></tr></thead>
+                <tbody>{members.map(member => <tr key={member.UserID}><td>{member.Name}</td><td><span className="ib-tag ib-tag--role">{eventRoleLabel(member.Role)}</span></td></tr>)}</tbody></table></div>
+        </Card>
+    </div>;
 }
 
-// The «Команда» tab of «Моя участь»: the roster and, for the captain, the join link and the roster management.
+// The «Команда» tab of «Моя участь»: the roster, the team's results and, for the captain, the join link and the roster management.
 export function TeamTab() {
     const access = useParticipantContext();
     const guest = useGuestEvent();
     const staff = useStaffAccess(guest?.EventID);
     const linkCode = useLinkCode();
     const event = access?.event ?? guest;
-    const registration = useQuery({queryKey: ["event-registration-window", event?.EventID], queryFn: () => getRegistrationWindow(event!.EventID), enabled: !!event, retry: false, refetchOnWindowFocus: false});
+    const registration = useParticipation(event?.EventID, !!event);
     const [now] = useState(() => Date.now());
     const moderators = useQuery({queryKey: ["event-moderators-team", event?.EventID], queryFn: () => getModeratorsTeam(event!.EventID), enabled: !!event && !access && staff.staff, retry: false, refetchOnWindowFocus: false});
     if (!event) return <EventLoading label={t("participation.loading")} />;
     const previewing = !access && staff.staff;
-    if (registration.isPending) return <EventLoading label={t("participation.loading")} />;
+    if (registration.isPending) return <EventLoading event={event} label={t("participation.loading")} />;
     if (registration.isError) return <EventLoadError message={t("participation.team.loadFailed")} error={registration.error} onRetry={() => void registration.refetch()} />;
-    const rosterOpen = registration.data.rosterOpen;
+    const participation = registration.data ?? null;
+    const rosterOpen = participation?.RosterOpen ?? false;
+    const closedReason = reasonText(participation?.RosterReason ?? "");
     const finished = !!event.FinishTime && Date.parse(event.FinishTime) <= now;
-    if (previewing && moderators.isPending) return <EventLoading label={t("participation.loading")} />;
+    if (previewing && moderators.isPending) return <EventLoading event={event} label={t("participation.loading")} />;
     const realModerators = previewing && moderators.data ? moderators.data : null;
     const info = access?.participantInfo;
     const team = previewing ? previewOwnTeam() : access?.ownTeam ?? null;
@@ -258,7 +197,7 @@ export function TeamTab() {
         {realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} /></div>}
         {previewing && !realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
         {realModerators ? <ModeratorsTeamSection members={realModerators.Members} /> : team
-            ? <TeamSection event={event} info={info ?? ({MinTeamSize: 2, MaxTeamSize: 4} as ParticipantEventInfo)} team={team} rosterOpen={rosterOpen} finished={finished} preview={previewing} />
-            : <Section title={t("participation.team.title")} note={t("participation.noTeam.sectionNote")}><NoTeam event={event} rosterOpen={rosterOpen} linkCode={linkCode} preview={previewing} /></Section>}
+            ? <TeamSection event={event} info={info ?? ({MinTeamSize: 2, MaxTeamSize: 4} as ParticipantEventInfo)} team={team} participation={participation} rosterOpen={rosterOpen} finished={finished} preview={previewing} now={now} />
+            : <div className="event-pp"><p className="event-part__note">{t("participation.noTeam.sectionNote")}</p><NoTeam event={event} rosterOpen={rosterOpen} closedReason={closedReason} linkCode={linkCode} preview={previewing} /></div>}
     </>;
 }

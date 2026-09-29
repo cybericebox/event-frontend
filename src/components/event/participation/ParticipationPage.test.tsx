@@ -22,7 +22,7 @@ vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: ()
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.guest}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
-vi.mock("@/api/clientAuth", () => ({getRegistrationWindow: async () => ({registrationOpen: true, joinPolicy: "rolling", startAt: "", finishAt: "", rosterOpen: state.rosterOpen})}));
+vi.mock("@/api/clientAuth", () => ({getParticipation: async () => ({Phase: "started", Staff: state.staff, RosterOpen: state.rosterOpen, RosterReason: state.rosterOpen ? "" : "roster_frozen_at_start"})}));
 vi.mock("@/api/participantForm", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/participantForm")>()),
     getOwnParticipantAnswers: async () => ({Form: {Fields: []}, Answers: {}, Editable: true, Missing: state.missing, Blocking: false}),
@@ -85,6 +85,18 @@ it("hides the roster management once the roster is closed", async () => {
     expect(screen.queryByRole("button", {name: "Перевипустити"})).toBeNull();
     expect(screen.queryByRole("button", {name: "Виключити"})).toBeNull();
     expect(screen.queryByRole("button", {name: "Розпустити команду"})).toBeNull();
+    // The server's reason is what the section says, not a generic «closed».
+    expect(screen.getByText(/Склад команд заморожено зі стартом заходу/)).toBeTruthy();
+});
+
+it("tells a participant without a team why the roster is closed instead of offering to create or join", async () => {
+    state.rosterOpen = false;
+    state.participant = {event, participantInfo: info, ownTeam: null};
+    window.history.replaceState(null, "", "/participation?tab=team");
+    view();
+    expect(await screen.findByText(/пізній вхід вимкнено/)).toBeTruthy();
+    expect(screen.queryByRole("button", {name: "Створити команду"})).toBeNull();
+    expect(screen.queryByPlaceholderText("Посилання або код команди")).toBeNull();
 });
 
 it("shows organizers the real moderators team, read-only", async () => {

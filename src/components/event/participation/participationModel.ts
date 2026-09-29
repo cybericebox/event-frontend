@@ -3,6 +3,8 @@ import type {ParticipantAnswer, ParticipantAnswers} from "@/api/participantForm"
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {t} from "@/i18n/t";
 import {isFileAnswer} from "@/api/answerFiles";
+import type {Participation} from "@/api/clientAuth";
+import {reasonText} from "./participationRules";
 
 export function formFields(form: ParticipantForm | null | undefined): FormField[] {
     return form?.Enabled ? form.Document.blocks.filter(isFormField) : [];
@@ -110,4 +112,15 @@ export function teamRedirectHref(search: string): string {
     const params = new URLSearchParams(search);
     params.set("tab", "team");
     return `/participation?${params.toString()}`;
+}
+
+// The roster line of the invite block: the roster closes with the registration, so both lines carry that one moment.
+export function rosterStatusLine(participation: Participation | null, rosterOpen: boolean): string {
+    const closesAt = participation?.RegistrationClosesAt ?? null;
+    const date = closesAt && Number.isFinite(Date.parse(closesAt)) ? expiresFormat.format(Date.parse(closesAt)) : "";
+    if (!rosterOpen) {
+        if (date) return t("participation.roster.lockedFrom", {date});
+        return reasonText(participation?.RosterReason ?? "") || t("participation.roster.locked");
+    }
+    return date ? t("participation.roster.openUntil", {date}) : t("participation.roster.open");
 }
