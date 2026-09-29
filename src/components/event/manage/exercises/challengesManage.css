@@ -81,3 +81,9 @@ button.event-sortable__main{cursor:pointer}
   .event-task__panel{padding:var(--ib-4)}
   .event-task__kind,.event-task__number{width:100%}
 }
+
+/* Action menus («⋯»): as wide as their labels (not the icon trigger), DS
+   listbox look (1px border, no shadow), icon + label items. */
+.event-action-menu{z-index:80;width:max-content;min-width:220px;max-width:calc(100vw - 24px);outline:0}
+.event-action-menu__item{height:auto;min-height:var(--ib-control-h);white-space:nowrap}
+.event-action-menu__item>svg{visibility:visible;margin-left:0;color:var(--ib-dim)}

@@ -2691,5 +2691,6 @@
   "manage.challenges.set.update": "Оновити до нової версії",
   "manage.challenges.set.infraMissingBefore": "Увімкніть інфраструктуру для заходу або приберіть набір: попросіть адміністратора платформи увімкнути інфраструктуру до публікації.",
   "manage.challenges.set.infraMissingAfter": "Приберіть набір із заходу — інфраструктуру після публікації увімкнути не можна.",
-  "manage.exercises.attachDialog.needsInfrastructureAfter": "Потрібна інфраструктура — після публікації її не увімкнути"
+  "manage.exercises.attachDialog.needsInfrastructureAfter": "Потрібна інфраструктура — після публікації її не увімкнути",
+  "manage.challenges.set.forkBroken": "Копія не допоможе: набору потрібна інфраструктура, якої в заходу немає."
 }
