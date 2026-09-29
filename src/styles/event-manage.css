@@ -793,3 +793,4 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 @media(max-width:760px){.event-stands__times{grid-template-columns:minmax(0,1fr)}.event-stands__summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .event-stands__table>.event-challenge-manager__empty{padding:var(--ib-6)}
 .event-manage-readonly-note{margin:0;color:var(--ib-body);font-size:var(--ib-fs-14)}
+.event-results-settings__number{max-width:160px}
