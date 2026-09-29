@@ -8,6 +8,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
 
 const scoringModes = [
     {value: "0", label: "Фіксовані бали"},
@@ -32,7 +33,7 @@ export default function ScoringPage() {
     const modeProblem = value?.Mode === 1 || value?.Mode === 2
         ? lifecycle?.JoinPolicy !== 0 ? "Цей режим потребує завершення приєднання до початку події." : ""
         : value?.Mode === 3 && !lifecycle?.FinishAt ? "Для цього режиму спершу заплануйте завершення події." : "";
-    const valid = !!value && (!dynamic || (Number.isInteger(value.MinPoints) && value.MinPoints > 0 && Number.isInteger(value.MaxPoints) && value.MaxPoints > value.MinPoints && Number.isInteger(value.FloorAtPercent) && value.FloorAtPercent >= 1 && value.FloorAtPercent <= 100)) && !modeProblem;
+    const valid = !!value && (!dynamic || (Number.isInteger(value.MinPoints) && value.MinPoints > 0 && Number.isInteger(value.MaxPoints) && value.MaxPoints > value.MinPoints && (value.Mode === 3 || (Number.isInteger(value.FloorAtPercent) && value.FloorAtPercent >= 1 && value.FloorAtPercent <= 100)))) && !modeProblem;
 
     function update(patch: Partial<ManageScoringInput>) {
         if (value) setEdit({eventID, value: {...value, ...patch}});
@@ -43,7 +44,7 @@ export default function ScoringPage() {
         if (!value || !valid || !dirty || !canManage || saving) return;
         setSaving(true);
         try {
-            const updated = await putManageScoring(eventID, value);
+            const updated = await putManageScoring(eventID, withTimeDecayFloor(value));
             queryClient.setQueryData(["event-management-scoring", eventID], updated);
             setEdit(null);
             toast.success("Профіль балів збережено");
@@ -64,7 +65,7 @@ export default function ScoringPage() {
                 <div className="event-manage-field"><ManageFieldLabel htmlFor="score-max" title="Максимум балів" help="Скільки балів завдання дає спочатку. Має бути більше мінімуму." required /><input id="score-max" className="event-manage-input" type="number" min={value.MinPoints + 1} step={1} value={value.MaxPoints} onChange={event => update({MaxPoints: Number(event.target.value)})} disabled={!canManage || saving} /></div>
                 {value.Mode !== 3 && <div className="event-manage-field"><ManageFieldLabel htmlFor="score-floor" title="Поріг, %" help="Частка учасників або команд, після якої бали досягають мінімуму." required /><input id="score-floor" className="event-manage-input" type="number" min={1} max={100} step={1} value={value.FloorAtPercent} onChange={event => update({FloorAtPercent: Number(event.target.value)})} disabled={!canManage || saving} /></div>}
             </div>}
-            {dynamic && !valid && !modeProblem && <p className="event-manage-validation" role="alert">Укажіть цілі значення: мінімум понад нуль, максимум більший за мінімум, поріг від 1 до 100%.</p>}
+            {dynamic && !valid && !modeProblem && <p className="event-manage-validation" role="alert">{value.Mode === 3 ? "Укажіть цілі значення: мінімум понад нуль, максимум більший за мінімум." : "Укажіть цілі значення: мінімум понад нуль, максимум більший за мінімум, поріг від 1 до 100%."}</p>}
         </section>
         <section className="event-manage-section"><ManageFieldLabel title="Пріоритет профілю події" help="Локальні налаштування балів завдань зберігаються. Коли цей перемикач увімкнено, замість них для всіх завдань використовується профіль події." /><label className="event-exercise-editor__check"><input type="checkbox" checked={value.ForceEventScoring} onChange={event => update({ForceEventScoring: event.target.checked})} disabled={!canManage || saving} /> Застосовувати до всіх завдань</label></section>
         {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
