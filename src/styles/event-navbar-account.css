@@ -23,7 +23,6 @@
   .event-account__theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
   .event-account__theme .event-theme-toggle{flex:none}
   .event-account__theme .event-theme-toggle button{width:32px;height:32px;min-height:0;padding:0;justify-content:center}
-  .event-navbar__mobile-theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding-top:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}
 }
 @media(max-width:760px){.event-header-divider{display:none}}
 /* Pinned right items (VPN, team, profile): icon + short label, like CTFd. */
