@@ -1,12 +1,14 @@
 "use client";
 
 import {useState} from "react";
+import {Info} from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {
     emptyMailJournalFilters, getEventMailJournal, journalTarget, mailDispatchStatuses, mailResultLabels, mailTransportLabel,
-    mailTransportLabels, type MailJournalFilters, type MailResult, type MailTransport,
+    mailTransportLabels, type MailJournalFilters, type MailJournalItem, type MailResult, type MailTransport,
 } from "@/api/manageMail";
 import {signalLabel, signalLabels} from "@/api/manageNotifications";
+import {DialogModal} from "@/components/event/DialogModal";
 import {t} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {useManager} from "./ManagerShell";
@@ -25,6 +27,7 @@ export function MailJournal() {
     const eventID = event.EventID;
     const [filters, setFilters] = useState<MailJournalFilters>(emptyMailJournalFilters);
     const pages = useCursorPages();
+    const [detail, setDetail] = useState<MailJournalItem | null>(null);
     const query = useQuery({
         queryKey: ["event-manage-mail-journal", eventID, filters, pages.cursor, pages.pageSize],
         queryFn: () => getEventMailJournal(eventID, filters, pages.cursor, pages.pageSize),
@@ -67,6 +70,7 @@ export function MailJournal() {
                 <th scope="col">{t("manage.mail.journal.col.status")}</th>
                 {email && <th scope="col">{t("manage.mail.journal.col.transport")}</th>}
                 <th scope="col" className="ib-num">{t("manage.mail.journal.col.attempts")}</th>
+                <th scope="col"><span className="ib-sr">{t("manage.mail.journal.col.details")}</span></th>
             </tr>}
             footer={<ManageTablePagination event={event} page={pages.page} pageSize={pages.pageSize} total={query.data?.Total ?? 0} hasNext={!!query.data?.NextCursor} busy={busy}
                 onPrevious={pages.previous} onNext={() => pages.next(query.data?.NextCursor ?? undefined)} onPageSize={pages.setPageSize} />}>
@@ -84,8 +88,34 @@ export function MailJournal() {
                     </div></td>
                     {email && <td className="event-manage-table__nowrap">{target?.Transport ? mailTransportLabel(target.Transport) : <span className="event-manage-table__dim">—</span>}</td>}
                     <td className="ib-num">{target ? target.Attempts : <span className="event-manage-table__dim">—</span>}</td>
+                    <td><button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.mail.journal.detail.open", {type: signalLabel(item.NotificationType).title})} onClick={() => setDetail(item)}><Info size={16} aria-hidden="true" /></button></td>
                 </tr>;
             })}</tbody>
         </ManageTable>
+        <DialogModal open={detail !== null} onClose={() => setDetail(null)} size="md" title={t("manage.mail.journal.detail.title")}
+            footer={<button className="ib-btn" type="button" onClick={() => setDetail(null)}>{t("manage.mail.journal.detail.close")}</button>}>
+            {detail && <div className="event-mail-detail">
+                <dl className="event-mail-detail__facts">
+                    <div><dt>{t("manage.mail.journal.col.type")}</dt><dd>{signalLabel(detail.NotificationType).title}</dd></div>
+                    <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd>{detail.RecipientEmail || "—"}</dd></div>
+                    <div><dt>{t("manage.mail.journal.detail.created")}</dt><dd><time dateTime={detail.CreatedAt}>{timestamp(detail.CreatedAt)}</time></dd></div>
+                    <div><dt>{t("manage.mail.journal.col.status")}</dt><dd>{t(`manage.mail.journal.status.${detail.Status}`)}</dd></div>
+                </dl>
+                <h3>{t("manage.mail.journal.detail.targets")}</h3>
+                {detail.Targets.length === 0 ? <p className="event-manage-table__dim">{t("manage.mail.journal.detail.noTargets")}</p>
+                    : <ul>{detail.Targets.map(target => <li key={target.Channel}>
+                        <div className="event-mail-detail__head"><strong>{t(target.Channel === "email" ? "manage.mail.channel.email" : "manage.mail.channel.inApp")}</strong>
+                            <span className={`event-manage-participants__status ${target.Status === "done" ? "is-2" : target.Status === "error" ? "is-3" : "is-1"}`}>{target.Status === "done" || target.Status === "error" ? mailResultLabels[target.Status] : t("manage.mail.journal.pending")}</span></div>
+                        <dl className="event-mail-detail__facts">
+                            <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd>{target.Recipient || "—"}</dd></div>
+                            <div><dt>{t("manage.mail.journal.col.attempts")}</dt><dd>{target.Attempts}</dd></div>
+                            {target.Transport && <div><dt>{t("manage.mail.journal.col.transport")}</dt><dd>{mailTransportLabel(target.Transport)}</dd></div>}
+                            <div><dt>{t("manage.mail.journal.detail.updated")}</dt><dd><time dateTime={target.UpdatedAt}>{timestamp(target.UpdatedAt)}</time></dd></div>
+                        </dl>
+                        {target.Error && <p className="event-manage-mail__error">{t("manage.mail.journal.detail.error", {error: target.Error})}</p>}
+                        {target.FallbackError && <p>{t("manage.mail.journal.fallbackError", {error: target.FallbackError})}</p>}
+                    </li>)}</ul>}
+            </div>}
+        </DialogModal>
     </div>;
 }

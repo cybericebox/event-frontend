@@ -25,7 +25,7 @@ describe("Сторінка сповіщення на сайті", () => {
         const {container} = renderPage();
         await screen.findByText("Спливаюче повідомлення");
         expect(container.querySelector(".event-notification-popin strong")?.textContent).toBe("CTF 2027");
-        expect((screen.getByRole("textbox", {name: /Заголовок/}) as HTMLInputElement).disabled).toBe(true);
+        expect(screen.getByRole("textbox", {name: "Заголовок", hidden: true}).closest("[inert]")).not.toBeNull();
         expect(screen.getByRole("button", {name: "Налаштувати для заходу"})).toBeTruthy();
     });
 
@@ -40,10 +40,11 @@ describe("Сторінка сповіщення на сайті", () => {
     it("edits the draft with every field labelled and validates the title", async () => {
         fakeServer("in_app", subs, [inAppTemplate(1), inAppTemplate(2, {Source: "event", Status: "draft"})]);
         renderPage();
-        const title = await screen.findByRole("textbox", {name: /Заголовок/}) as HTMLInputElement;
-        for (const name of ["Про поле «Заголовок»", "Про поле «Текст»", "Про поле «Посилання»", "Про поле «Вигляд»", "Про поле «Час показу спливаючого повідомлення, секунди»", "Про поле «Кнопка»"]) expect(screen.getByRole("button", {name})).toBeTruthy();
+        const title = await screen.findByRole("textbox", {name: "Заголовок"});
+        for (const name of ["Про поле «Заголовок»", "Про поле «Текст»", "Про поле «Посилання»", /^Про поле «.*вигляд/i, "Про поле «Час показу спливаючого повідомлення, секунди»", "Про поле «Кнопка»"]) expect(screen.getByRole("button", {name})).toBeTruthy();
         expect(screen.getByRole("button", {name: "Повернути стандартний"})).toBeTruthy();
-        fireEvent.change(title, {target: {value: ""}});
+        title.textContent = "";
+        fireEvent.input(title);
         expect(screen.getByRole("alert").textContent).toBe("Заповніть заголовок.");
         expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(true);
     });

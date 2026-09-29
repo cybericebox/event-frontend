@@ -11,3 +11,11 @@ describe("email preview document", () => {
         expect(html).toContain("html,body{margin:0;padding:0}");
     });
 });
+
+describe("email preview footer", () => {
+    it("keeps the platform footer the server appended, after the message", () => {
+        const html = emailPreviewDocument('<p>Текст</p><div style="font-size:12px">Footer: support, privacy</div>');
+        expect(html.indexOf("Текст")).toBeLessThan(html.indexOf("Footer: support, privacy"));
+        expect(html).toContain('</div></div></body>');
+    });
+});

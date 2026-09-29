@@ -57,8 +57,8 @@ describe("event SMTP form", () => {
 describe("mail journal", () => {
     it("maps filters to query parameters", () => {
         expect(mailJournalQueryParams(emptyMailJournalFilters).toString()).toBe("limit=25&channel=email");
-        expect(mailJournalQueryParams({type: "participant.event.finished", result: "error", transport: "event", channel: "email"}, "c1", 10).toString())
-            .toBe("limit=10&channel=email&type=participant.event.finished&result=error&transport=event&cursor=c1");
+        expect(mailJournalQueryParams({type: "participant.event.finished", status: "pending", result: "error", transport: "event", channel: "email"}, "c1", 10).toString())
+            .toBe("limit=10&channel=email&type=participant.event.finished&status=pending&result=error&transport=event&cursor=c1");
     });
 
     it("picks the target of the shown channel", () => {

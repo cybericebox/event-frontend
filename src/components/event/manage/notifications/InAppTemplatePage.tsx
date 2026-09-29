@@ -19,7 +19,7 @@ import {useManager} from "../ManagerShell";
 import {InAppEditor} from "./InAppEditor";
 import {InAppPreview} from "./InAppPreview";
 import {inAppValidation} from "./inAppValidation";
-import {orderedVersions, sampleValues, templateMode} from "./notificationModel";
+import {orderedVersions, sameValue, sampleValues, templateMode, toVariableDefs} from "./notificationModel";
 import {TemplateActions} from "./TemplateActions";
 import {TemplateHeader} from "./TemplateHeader";
 import {TemplateStatusTag} from "./TemplateStatusTag";
@@ -59,7 +59,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     const type = types.data?.find(item => item.Type === signal);
     const saved = template ? inputOf(template) : null;
     const draft = template ? drafts[template.ID] ?? saved : null;
-    const dirty = !!(saved && draft && JSON.stringify(saved) !== JSON.stringify(draft));
+    const dirty = !!(saved && draft && !sameValue(saved, draft));
     const validation = draft ? inAppValidation(draft) : "";
     const editable = !!(canManage && mode === "edit" && !busy);
     const ownVersions = versions.filter(item => item.Source === "event");
@@ -117,7 +117,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
         {template && draft ? <div className="event-template-grid">
             <div className="event-template-grid__fields">
                 {readOnlyHint && <p className="event-template-page__hint">{readOnlyHint}</p>}
-                <InAppEditor draft={draft} disabled={!editable} variables={type?.Variables ?? []} onChange={next => setDrafts(current => ({...current, [template.ID]: next}))} />
+                <InAppEditor draft={draft} disabled={!editable} variables={toVariableDefs(type?.Variables ?? [])} onChange={next => setDrafts(current => ({...current, [template.ID]: next}))} />
                 {editable && validation && <p className="event-manage-validation" role="alert">{validation}</p>}
             </div>
             <div className="event-template-grid__preview">

@@ -6,7 +6,9 @@ export const REMINDER = "participant.event.start_reminder";
 export const EVENT_ID = "01a0d498-32b3-7a38-8355-30cc209f56ab";
 export const uuid = (n: number) => `0190c6a4-0000-7000-8000-${String(n).padStart(12, "0")}`;
 export type Call = {method: string; path: string; body: Record<string, unknown>};
-const body = [{type: "rich_text", content: {root: {type: "root", children: [{type: "paragraph", children: [{type: "text", text: "Привіт"}]}]}}}];
+const text = {detail: 0, format: 0, mode: "normal", style: "", text: "Привіт", type: "text", version: 1};
+const paragraph = {children: [text], direction: "ltr", format: "", indent: 0, type: "paragraph", version: 1, textFormat: 0, textStyle: ""};
+const body = [{type: "rich_text", content: {root: {children: [paragraph], direction: "ltr", format: "", indent: 0, type: "root", version: 1}}}];
 
 export function emailTemplate(n: number, type: string, patch: Record<string, unknown> = {}) {
     return {ID: uuid(n), ScopeEventID: null, NotificationType: type, Status: "published", Subject: "Тема листа", Preheader: "", Body: body, Styling: {}, PublishedAt: "2026-09-01T00:00:00Z", UpdatedByUserID: null, CreatedAt: "2026-09-01T00:00:00Z", UpdatedAt: "2026-09-01T00:00:00Z", Source: "platform", ...patch};

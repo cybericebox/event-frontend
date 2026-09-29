@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {afterEach, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
@@ -7,6 +7,11 @@ vi.mock("./ManagerShell", () => ({useManager: () => ({event: {EventID: "01a0d498
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 
 import {MailJournal} from "./MailJournal";
+
+beforeAll(() => {
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
+    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute("open"); };
+});
 
 function item(n: number, patch: Record<string, unknown> = {}) {
     return {
@@ -39,10 +44,22 @@ describe("Журнал надсилання", () => {
         renderJournal();
         expect(screen.getByRole("heading", {name: "Журнал надсилання"})).toBeTruthy();
         const table = screen.getByRole("table");
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (UTC)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (UTC)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби", "Деталі"]);
         await waitFor(() => expect(within(table).getByText("user1@example.com")).toBeTruthy());
         expect(within(table).getByText("550 rejected")).toBeTruthy();
         expect(within(table).getByText("SMTP заходу")).toBeTruthy();
+    });
+
+    it("opens the details of a row: recipient, attempts, transport and errors", async () => {
+        mockApi([{Items: [item(2, {Targets: [{Channel: "email", Status: "error", Error: "550 rejected", Attempts: 3, Transport: "event", Recipient: "user2@example.com", FallbackError: "timeout", UpdatedAt: "2026-09-29T07:31:00Z"}]})], Total: 1}]);
+        renderJournal();
+        fireEvent.click(await screen.findByRole("button", {name: "Деталі надсилання: Захід завершено"}));
+        const dialog = screen.getByText("Деталі надсилання", {selector: "h2"}).closest("dialog")!;
+        expect(within(dialog).getByText("Помилка: 550 rejected")).toBeTruthy();
+        expect(within(dialog).getByText("SMTP заходу")).toBeTruthy();
+        expect(within(dialog).getByText("3")).toBeTruthy();
+        expect(within(dialog).getAllByText("user2@example.com").length).toBeGreaterThan(0);
+        expect(within(dialog).getByText(/timeout/)).toBeTruthy();
     });
 
     it("shows the empty state inside the table body", async () => {

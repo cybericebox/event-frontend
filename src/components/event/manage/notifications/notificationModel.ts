@@ -1,4 +1,4 @@
-import type {ManageNotificationType} from "@/api/manageNotifications";
+import type {ManageNotificationType, ManageNotificationVariable} from "@/api/manageNotifications";
 
 type Versioned = {NotificationType: string; Status: "draft" | "published" | "unpublished"; UpdatedAt: string};
 type Owned = {Source: "platform" | "event"; Status: Versioned["Status"]};
@@ -55,6 +55,15 @@ export function variableToken(name: string): string {
     return `{{.${name}}}`;
 }
 
+// Compare editor JSON without treating a different object-key order as an edit.
+export function sameValue(left: unknown, right: unknown): boolean {
+    const canonical = (value: unknown) => JSON.stringify(value, (_key, item) => {
+        if (item && typeof item === "object" && !Array.isArray(item)) return Object.fromEntries(Object.entries(item as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)));
+        return item;
+    });
+    return canonical(left) === canonical(right);
+}
+
 export type ListStatus = "published" | "draft" | "unpublished" | "platform";
 
 // What the list shows for a signal: the event's own effective version
@@ -64,4 +73,9 @@ export function listStatus(versions: Array<Owned>): {status: ListStatus; draftPe
     const has = (status: Versioned["Status"]) => own.some(item => item.Status === status);
     const status: ListStatus = has("published") ? "published" : has("draft") ? "draft" : has("unpublished") ? "unpublished" : "platform";
     return {status, draftPending: has("published") && has("draft")};
+}
+
+// The variables of a signal as the editors take them.
+export function toVariableDefs(variables: ManageNotificationVariable[]): Array<{name: string; description: string; example: string}> {
+    return variables.map(variable => ({name: variable.Name, description: variable.Description, example: variable.Default}));
 }

@@ -32,7 +32,8 @@ describe("Сторінка листа", () => {
         const frame = await screen.findByTitle("Попередній вигляд електронного листа");
         expect(frame.getAttribute("srcdoc")).toContain("Привіт, учаснику");
         expect(screen.getByRole("heading", {level: 1, name: "Захід завершено"})).toBeTruthy();
-        expect((screen.getByRole("textbox", {name: /Тема листа/}) as HTMLInputElement).disabled).toBe(true);
+        expect(screen.getByRole("textbox", {name: "Тема листа", hidden: true}).closest("[inert]")).not.toBeNull();
+        expect(screen.getByTestId("body-readonly")).toBeTruthy();
         expect(screen.getByText(/стандартний шаблон платформи/)).toBeTruthy();
         expect(screen.getByRole("button", {name: "Налаштувати для заходу"})).toBeTruthy();
         expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
@@ -50,11 +51,12 @@ describe("Сторінка листа", () => {
     it("edits a draft with save and publish, and offers the standard template", async () => {
         const calls = fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "draft"})]);
         renderPage();
-        const subject = await screen.findByRole("textbox", {name: /Тема листа/}) as HTMLInputElement;
-        expect(subject.disabled).toBe(false);
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        expect(subject.closest("[inert]")).toBeNull();
         expect(screen.getByRole("button", {name: "Опублікувати"})).toBeTruthy();
         expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(true);
-        fireEvent.change(subject, {target: {value: "Нова тема"}});
+        subject.textContent = "Нова тема";
+        fireEvent.input(subject);
         expect(screen.queryByRole("button", {name: "Опублікувати"})).toBeNull();
         fireEvent.click(screen.getByRole("button", {name: "Зберегти чернетку"}));
         await waitFor(() => expect(calls.some(call => call.method === "PUT" && call.path.endsWith(uuid(2)))).toBe(true));
@@ -64,7 +66,9 @@ describe("Сторінка листа", () => {
     it("does not save an empty subject", async () => {
         fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "draft"})]);
         renderPage();
-        fireEvent.change(await screen.findByRole("textbox", {name: /Тема листа/}), {target: {value: ""}});
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        subject.textContent = "";
+        fireEvent.input(subject);
         expect(screen.getByRole("alert").textContent).toContain("тему листа");
         expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(true);
     });

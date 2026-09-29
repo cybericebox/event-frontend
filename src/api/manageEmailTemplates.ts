@@ -12,11 +12,13 @@ const templateSchema = z.object({
     PublishedAt: z.string().nullable(), UpdatedByUserID: id.nullable(),
     CreatedAt: z.string(), UpdatedAt: z.string(), Source: z.enum(["platform", "event"]),
 });
+const presetSchema = z.object({ID: id, Name: z.string(), Description: z.string().nullish().transform(value => value ?? ""), Blocks: z.array(blockSchema)});
 const previewSchema = z.object({Subject: z.string(), Preheader: z.string(), HTML: z.string()});
 export type ManageEmailTemplate = z.infer<typeof templateSchema>;
 export type ManageEmailBlock = ManageEmailTemplate["Body"][number];
 export type ManageEmailTemplateInput = Pick<ManageEmailTemplate, "NotificationType" | "Subject" | "Preheader" | "Body" | "Styling">;
 export type ManageEmailPreview = z.infer<typeof previewSchema>;
+export type ManageEmailPreset = z.infer<typeof presetSchema>;
 const imageUploadSchema = z.object({FileID: id, Url: z.string()});
 
 export function getManageEmailImageURL(eventID: string, fileID: string): string {
@@ -81,4 +83,9 @@ export async function sendManageEmailTemplateTest(eventID: string, templateID: s
 
 export async function previewManageEmailTemplate(eventID: string, input: ManageEmailTemplateInput): Promise<ManageEmailPreview> {
     return request(eventID, "/preview", previewSchema, "POST", input);
+}
+
+// The shared block presets (managed by the platform, read-only here).
+export async function getManageEmailPresets(eventID: string): Promise<ManageEmailPreset[]> {
+    return request(eventID, "/presets", z.array(presetSchema));
 }

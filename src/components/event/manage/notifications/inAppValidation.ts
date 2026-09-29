@@ -1,6 +1,6 @@
 import type {ManageInAppTemplateInput} from "@/api/manageNotifications";
 import {t} from "@/i18n/t";
-import {POP_IN_MAX_SECONDS, POP_IN_MIN_SECONDS} from "./inAppOptions";
+import {POP_IN_MAX_SECONDS, POP_IN_MIN_SECONDS} from "./editor/inAppOptions";
 
 // Only these addresses may open from a button; a variable in it is not allowed.
 export function validActionHref(href: string): boolean {

@@ -1,13 +1,13 @@
 "use client";
 
-import {useRef, useState} from "react";
+import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Send} from "lucide-react";
 import Link from "next/link";
 import {toast} from "react-hot-toast";
 import {
-    customizeManageEmailTemplate, getManageEmailImageURL, getManageEmailTemplates, publishManageEmailTemplate,
+    customizeManageEmailTemplate, getManageEmailImageURL, getManageEmailPresets, getManageEmailTemplates, publishManageEmailTemplate,
     resetManageEmailTemplate, rollbackManageEmailTemplate, sendManageEmailTemplateTest, updateManageEmailTemplate,
     uploadManageEmailImage, type ManageEmailTemplate, type ManageEmailTemplateInput,
 } from "@/api/manageEmailTemplates";
@@ -21,20 +21,23 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {t} from "@/i18n/t";
-import {EmailBlocksEditor} from "../EmailBlocksEditor";
 import {EmailStylingEditor} from "../EmailStylingEditor";
 import {ManageFieldLabel} from "../ManageFieldLabel";
+import {BlockEditor} from "./editor/BlockEditor";
+import {EmailFooterEditor} from "./editor/EmailFooterEditor";
+import {VariableRichText} from "./editor/VariableRichText";
+import {eventBrandColors} from "./editor/brandColors";
+import type {BlockPreset, EmailBodyBlock, PresetBlock} from "./editor/emailBlocks";
 import {useManager} from "../ManagerShell";
 import {emailRichText} from "../emailBlocks";
 import {EmailPreview} from "./EmailPreview";
-import {insertAtCaret, orderedVersions, templateMode, variableToken} from "./notificationModel";
+import {orderedVersions, sameValue, templateMode, toVariableDefs} from "./notificationModel";
 import {ReminderDaysField} from "./ReminderDaysField";
 import {TemplateActions} from "./TemplateActions";
 import {TemplateHeader} from "./TemplateHeader";
 import {TemplateStatusTag} from "./TemplateStatusTag";
 import {TemplateVersions} from "./TemplateVersions";
 import {useDebounced} from "./useDebounced";
-import {VariableInsert} from "./VariableInsert";
 
 const BASE = "/manage/email";
 
@@ -53,12 +56,11 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const queryClient = useQueryClient();
     const subscriptions = useQuery({queryKey: ["event-manage-notification-subscriptions", eventID], queryFn: () => getManageNotificationSubscriptions(eventID), refetchOnWindowFocus: false});
     const templates = useQuery({queryKey: ["event-manage-email-templates", eventID], queryFn: () => getManageEmailTemplates(eventID), refetchOnWindowFocus: false});
+    const presets = useQuery({queryKey: ["event-manage-email-presets", eventID], queryFn: () => getManageEmailPresets(eventID), refetchOnWindowFocus: false});
     const types = useQuery({queryKey: ["event-manage-notification-types", eventID], queryFn: () => getManageNotificationTypes(eventID), refetchOnWindowFocus: false});
     const [drafts, setDrafts] = useState<Record<string, ManageEmailTemplateInput>>({});
     const [busy, setBusy] = useState(false);
     const [testing, setTesting] = useState(false);
-    const subjectRef = useRef<HTMLInputElement>(null);
-    const preheaderRef = useRef<HTMLInputElement>(null);
     const href = (id?: string) => `${BASE}/${encodeURIComponent(signal)}${id ? `?id=${id}` : ""}`;
 
     const rows = (subscriptions.data ?? []).filter(row => row.Channel === "email");
@@ -66,10 +68,14 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const versions = orderedVersions(templates.data ?? [], signal);
     const template = versions.find(item => item.ID === versionID) ?? versions[0];
     const mode = templateMode(template);
-    const variables = types.data?.find(item => item.Type === signal)?.Variables ?? [];
+    const variables = toVariableDefs(types.data?.find(item => item.Type === signal)?.Variables ?? []);
+    const brand = eventBrandColors(event);
     const saved = template ? inputOf(template) : null;
     const draft = template ? drafts[template.ID] ?? saved : null;
-    const dirty = !!(saved && draft && JSON.stringify(saved) !== JSON.stringify(draft));
+    const dirty = !!(saved && draft && !sameValue(saved, draft));
+    const body = (draft?.Body ?? []) as EmailBodyBlock[];
+    const footer = body.find((block): block is PresetBlock => block.type === "preset" && block.placement === "footer");
+    const bodyContent = body.filter(block => !(block.type === "preset" && block.placement === "footer"));
     const validation = !draft?.Subject.trim() ? t("manage.email.validation.subject")
         : !draft.Body.length || !draft.Body.some(block => block.type === "rich_text" && emailRichText(block).trim() || block.type === "button" || block.type === "image" || block.type === "preset") ? t("manage.email.validation.body")
         : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.email.validation.buttons")
@@ -107,26 +113,9 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
         if (template) setDrafts(current => ({...current, [template.ID]: input}));
     }
 
-    function insertInto(field: "Subject" | "Preheader", input: HTMLInputElement | null, name: string) {
-        if (!draft) return;
-        const result = insertAtCaret(draft[field], variableToken(name), input?.selectionStart ?? null, input?.selectionEnd ?? null);
-        change({...draft, [field]: result.value});
-        requestAnimationFrame(() => {input?.focus(); input?.setSelectionRange(result.caret, result.caret);});
-    }
-
-    async function addImage(file: File) {
-        if (!template || !editable) return;
-        const target = template;
-        setBusy(true);
-        try {
-            const uploaded = await uploadManageEmailImage(eventID, target.ID, file);
-            setDrafts(current => {
-                const input = current[target.ID] ?? inputOf(target);
-                return {...current, [target.ID]: {...input, Body: [...input.Body, {type: "image", file_id: uploaded.FileID, alt: file.name.replace(/\.[^.]+$/, ""), width_pct: 100}]}};
-            });
-            toast.success(t("manage.email.imageAdded"));
-        } catch {toast.error(t("manage.email.imageError"));}
-        finally {setBusy(false);}
+    async function uploadImage(file: File): Promise<string> {
+        if (!template || !editable) throw new Error("not editable");
+        return (await uploadManageEmailImage(eventID, template.ID, file)).FileID;
     }
 
     async function sendTest() {
@@ -170,11 +159,24 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
         {template && draft ? <div className="event-template-grid">
             <div className="event-template-grid__fields">
                 {readOnlyHint && <p className="event-template-page__hint">{readOnlyHint}</p>}
-                <div className="event-manage-field"><div className="event-manage-notifications__field-head"><ManageFieldLabel title={t("manage.email.subject")} help={t("manage.email.subjectHelp")} htmlFor="event-email-subject" required /><VariableInsert variables={variables} disabled={!editable} onInsert={name => insertInto("Subject", subjectRef.current, name)} /></div><input ref={subjectRef} className="event-manage-input" id="event-email-subject" value={draft.Subject} disabled={!editable} onChange={e => change({...draft, Subject: e.target.value})} /></div>
-                <div className="event-manage-field"><div className="event-manage-notifications__field-head"><ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} htmlFor="event-email-preheader" /><VariableInsert variables={variables} disabled={!editable} onInsert={name => insertInto("Preheader", preheaderRef.current, name)} /></div><input ref={preheaderRef} className="event-manage-input" id="event-email-preheader" value={draft.Preheader} disabled={!editable} onChange={e => change({...draft, Preheader: e.target.value})} placeholder={t("manage.email.optional")} /></div>
-                <EmailBlocksEditor blocks={draft.Body} disabled={!editable} variables={variables} onChange={blocks => change({...draft, Body: blocks})} onUploadImage={addImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />
+                <div className={`event-manage-field${editable ? "" : " opacity-60"}`} {...(editable ? {} : {inert: true})}>
+                    <ManageFieldLabel title={t("manage.email.subject")} help={t("manage.email.subjectHelp")} required />
+                    <VariableRichText key={`subject-${template.ID}`} value={draft.Subject} onChange={Subject => change({...draft, Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted />
+                </div>
+                <div className={`event-manage-field${editable ? "" : " opacity-60"}`} {...(editable ? {} : {inert: true})}>
+                    <ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} />
+                    <VariableRichText key={`preheader-${template.ID}`} value={draft.Preheader} onChange={Preheader => change({...draft, Preheader})} variables={variables} placeholder={t("manage.email.optional")} dotted />
+                </div>
+                <div className="event-manage-field">
+                    <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} />
+                    {editable ? <BlockEditor key={`body-${template.ID}`} value={bodyContent} onChange={blocks => change({...draft, Body: footer ? [...blocks, footer] : blocks})} variables={variables}
+                        presets={(presets.data ?? []) as BlockPreset[]} onUploadImage={uploadImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />
+                        : <div data-testid="body-readonly" className="rounded-lg border border-dashed border-(--ib-line) bg-(--ib-soft) p-4 text-sm text-(--ib-dim)">{t("manage.tpl.tpl.readonlyHint")}</div>}
+                </div>
+                <EmailFooterEditor presetId={footer?.preset_id ?? ""} presets={(presets.data ?? []) as BlockPreset[]} readOnly={!editable}
+                    onSelect={id => { const selected = presets.data?.find(preset => preset.ID === id); change({...draft, Body: selected ? [...bodyContent, {type: "preset", preset_id: selected.ID, name: selected.Name, placement: "footer"}] : bodyContent}); }} />
                 {editable && validation && <p className="event-manage-validation" role="alert">{validation}</p>}
-                <EmailStylingEditor styling={draft.Styling} disabled={!editable} onChange={styling => change({...draft, Styling: styling})} />
+                <EmailStylingEditor styling={draft.Styling} disabled={!editable} brand={brand} onChange={styling => change({...draft, Styling: styling})} />
             </div>
             <div className="event-template-grid__preview">
                 <h2>{t("manage.email.previewTitle")}</h2>
