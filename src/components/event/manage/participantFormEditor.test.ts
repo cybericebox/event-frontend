@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {addOption, changeInput, conditionSources, createFormField, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
+import {addOption, changeInput, conditionSources, createFormField, duplicateBlock, participantFormProblem, reorderBlocks, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
 import {emptyRichText} from "../content/richTextState";
 
 describe("formatted text in forms and surveys", () => {
@@ -89,5 +89,30 @@ describe("file questions", () => {
         expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: []})]})).toBe("Питання 1: оберіть хоча б один формат файлу.");
         expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf"], maxSizeMB: 26})]})).toBe("Питання 1: розмір файлу має бути від 1 до 25 МБ.");
         expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf"]}), field("b", "text", {condition: {fieldKey: "a", operator: "equals", value: "x"}})]})).toBe("Питання 2: для умови оберіть питання з однією відповіддю.");
+    });
+});
+
+describe("card operations", () => {
+    const blocks: FormBlock[] = [field("a", "text"), field("b", "select", {options: ["x"]}), field("c", "text", {condition: {fieldKey: "b", operator: "equals", value: "x"}})];
+
+    it("reorder a card onto another card's place", () => {
+        expect(reorderBlocks(blocks, "c", "a").map(block => block.id)).toEqual(["c", "a", "b"]);
+        expect(reorderBlocks(blocks, "a", "b").map(block => block.id)).toEqual(["b", "a", "c"]);
+        expect(reorderBlocks(blocks, "a", "missing")).toBe(blocks);
+    });
+
+    it("duplicate a question with its own id and key right below it", () => {
+        const result = duplicateBlock(blocks, 1)!;
+        const copy = result.copy as FormField;
+        expect(result.blocks.map(block => block.id)).toEqual(["a", "b", copy.id, "c"]);
+        expect(copy.id).not.toBe("b");
+        expect(copy.key).not.toBe("b");
+        expect(copy.options).toEqual(["x"]);
+        expect((result.blocks[3] as FormField).condition?.fieldKey).toBe("b");
+    });
+
+    it("report the block a problem is about", () => {
+        expect(participantFormProblem({blocks: [field("a", "text"), field("b", "text", {label: " "})]})).toEqual({index: 1, message: "Питання 2: додайте текст питання."});
+        expect(participantFormProblem({blocks})).toBeNull();
     });
 });

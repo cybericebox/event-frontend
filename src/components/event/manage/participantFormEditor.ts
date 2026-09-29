@@ -121,44 +121,71 @@ export function invalidOptions(options: string[]): Set<number> {
     return invalid;
 }
 
-export function validateParticipantForm(document: FormDocument): string | null {
+// Moves a block to where another block is (drag and drop).
+export function reorderBlocks(blocks: FormBlock[], sourceID: string, targetID: string): FormBlock[] {
+    const from = blocks.findIndex(block => block.id === sourceID);
+    const to = blocks.findIndex(block => block.id === targetID);
+    if (from < 0 || to < 0 || from === to) return blocks;
+    const next = [...blocks];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    return next;
+}
+
+// A copy right below the block. A question gets its own key, so answers and
+// conditions of the original stay with the original.
+export function duplicateBlock(blocks: FormBlock[], index: number): {blocks: FormBlock[]; copy: FormBlock} | null {
+    const block = blocks[index];
+    if (!block) return null;
+    const copy: FormBlock = isFormField(block)
+        ? {...structuredClone(block), id: `field-${crypto.randomUUID()}`, key: `field_${crypto.randomUUID().replaceAll("-", "")}`}
+        : {...structuredClone(block), id: `${block.type}-${crypto.randomUUID()}`};
+    return {blocks: [...blocks.slice(0, index + 1), copy, ...blocks.slice(index + 1)], copy};
+}
+
+// The first problem of the form and the position of the block it is about.
+export function participantFormProblem(document: FormDocument): {message: string; index: number} | null {
     const ids = new Set<string>();
     const keys = new Set<string>();
     const previous = new Map<string, FormField>();
     for (const [index, block] of document.blocks.entries()) {
-        if (!block.id || ids.has(block.id)) return t("manage.fields.validation.duplicateBlockID", {n: index + 1});
+        if (!block.id || ids.has(block.id)) return {index, message: t("manage.fields.validation.duplicateBlockID", {n: index + 1})};
         ids.add(block.id);
         if (!isFormField(block)) {
-            if (block.type === "section" && !block.label?.trim()) return t("manage.fields.validation.sectionTitle", {n: index + 1});
-            if (block.type === "text" && !richTextHasContent(block.richText)) return t("manage.fields.validation.textContent", {n: index + 1});
+            if (block.type === "section" && !block.label?.trim()) return {index, message: t("manage.fields.validation.sectionTitle", {n: index + 1})};
+            if (block.type === "text" && !richTextHasContent(block.richText)) return {index, message: t("manage.fields.validation.textContent", {n: index + 1})};
             continue;
         }
-        if (!block.key.trim() || keys.has(block.key)) return t("manage.fields.validation.key", {n: index + 1});
-        if (!block.label.trim()) return t("manage.fields.validation.label", {n: index + 1});
+        if (!block.key.trim() || keys.has(block.key)) return {index, message: t("manage.fields.validation.key", {n: index + 1})};
+        if (!block.label.trim()) return {index, message: t("manage.fields.validation.label", {n: index + 1})};
         if (isChoiceInput(block.input)) {
             const options = block.options ?? [];
-            if (!options.length) return t("manage.fields.validation.optionsMissing", {n: index + 1});
+            if (!options.length) return {index, message: t("manage.fields.validation.optionsMissing", {n: index + 1})};
             const emptyAt = options.findIndex(option => !option.trim());
-            if (emptyAt >= 0) return t("manage.fields.validation.optionEmpty", {n: index + 1, option: emptyAt + 1});
-            if (invalidOptions(options).size) return t("manage.fields.validation.optionDuplicate", {n: index + 1});
+            if (emptyAt >= 0) return {index, message: t("manage.fields.validation.optionEmpty", {n: index + 1, option: emptyAt + 1})};
+            if (invalidOptions(options).size) return {index, message: t("manage.fields.validation.optionDuplicate", {n: index + 1})};
         }
         if (block.input === "file") {
-            if (!block.fileTypes?.length) return t("manage.fields.validation.fileTypes", {n: index + 1});
+            if (!block.fileTypes?.length) return {index, message: t("manage.fields.validation.fileTypes", {n: index + 1})};
             const size = block.maxSizeMB ?? defaultFileMB;
-            if (!Number.isInteger(size) || size < 1 || size > maxFileMB) return t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB});
+            if (!Number.isInteger(size) || size < 1 || size > maxFileMB) return {index, message: t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB})};
         }
         if (block.condition) {
             const source = previous.get(block.condition.fieldKey);
-            if (!source) return t("manage.fields.validation.conditionSource", {n: index + 1});
-            if (!comparableInput(source.input)) return t("manage.fields.validation.conditionSingle", {n: index + 1});
+            if (!source) return {index, message: t("manage.fields.validation.conditionSource", {n: index + 1})};
+            if (!comparableInput(source.input)) return {index, message: t("manage.fields.validation.conditionSingle", {n: index + 1})};
             const value = block.condition.value;
-            if (source.input === "number" && (typeof value !== "number" || !Number.isFinite(value))) return t("manage.fields.validation.conditionNumber", {n: index + 1});
-            if (source.input === "checkbox" && typeof value !== "boolean") return t("manage.fields.validation.conditionValue", {n: index + 1});
-            if (source.input === "select" && !source.options?.includes(String(value))) return t("manage.fields.validation.conditionOption", {n: index + 1});
-            if ((source.input === "text" || source.input === "long_text") && (typeof value !== "string" || !value.trim())) return t("manage.fields.validation.conditionValue", {n: index + 1});
+            if (source.input === "number" && (typeof value !== "number" || !Number.isFinite(value))) return {index, message: t("manage.fields.validation.conditionNumber", {n: index + 1})};
+            if (source.input === "checkbox" && typeof value !== "boolean") return {index, message: t("manage.fields.validation.conditionValue", {n: index + 1})};
+            if (source.input === "select" && !source.options?.includes(String(value))) return {index, message: t("manage.fields.validation.conditionOption", {n: index + 1})};
+            if ((source.input === "text" || source.input === "long_text") && (typeof value !== "string" || !value.trim())) return {index, message: t("manage.fields.validation.conditionValue", {n: index + 1})};
         }
         keys.add(block.key);
         previous.set(block.key, block);
     }
     return null;
+}
+
+export function validateParticipantForm(document: FormDocument): string | null {
+    return participantFormProblem(document)?.message ?? null;
 }
