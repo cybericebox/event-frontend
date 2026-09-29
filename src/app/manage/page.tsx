@@ -3,9 +3,11 @@
 import {useState, type FormEvent} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ArrowUpRight, CalendarDays, Check, FileText, UsersRound} from "lucide-react";
+import {ArrowUpRight} from "lucide-react";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, putManageLifecycle, type ManageConfigInput} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {AnalyticsOverview} from "@/components/event/manage/analytics/AnalyticsOverview";
+import {ReadinessSteps} from "@/components/event/manage/ReadinessSteps";
 import {ChallengeBlockers} from "@/components/event/manage/exercises/ChallengeBlockers";
 import {ManageDateField} from "@/components/event/manage/ManageDateField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
@@ -43,6 +45,8 @@ export default function ManageIndex() {
     const startAt = startAtDraft ?? localDateTime(lifecycle.data.StartAt);
     const joinPolicy = lifecycle.data.JoinPolicy;
     const configured = config.data.Participation !== null && lifecycle.data.Configured;
+    // Once the event is set up, «Огляд» is the analytics dashboard (§6.1); it keeps the checklist until the start.
+    if (configured) return <AnalyticsOverview />;
     const completedSteps = Number(config.data.Participation !== null) + Number(lifecycle.data.Configured);
     const publishTime = Date.parse(publishAt);
     const startTime = Date.parse(startAt);
@@ -79,18 +83,14 @@ export default function ManageIndex() {
     }
 
     return <div className="event-manage-setup">
-        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">{t("manage.overview.eyebrow")}</p><h1>{t("manage.overview.title")}</h1><p>{t(configured ? "manage.overview.introReady" : "manage.overview.introSetup")}</p></div><Link className="ib-btn" href="/">{t("manage.overview.viewSite")} <ArrowUpRight size={16} /></Link></header>
+        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">{t("manage.overview.eyebrow")}</p><h1>{t("manage.overview.title")}</h1><p>{t("manage.overview.introSetup")}</p></div><Link className="ib-btn" href="/">{t("manage.overview.viewSite")} <ArrowUpRight size={16} /></Link></header>
         <ChallengeBlockers eventID={eventID} />
         <div className="event-manage-setup__summary" role="status">
-            <div><span className="event-manage-setup__summary-label">{t("manage.overview.firstRun")}</span><strong>{t(configured ? "manage.overview.summaryReady" : "manage.overview.summarySetup")}</strong><p>{t(configured ? "manage.overview.summaryReadyText" : "manage.overview.summarySetupText")}</p></div>
+            <div><span className="event-manage-setup__summary-label">{t("manage.overview.firstRun")}</span><strong>{t("manage.overview.summarySetup")}</strong><p>{t("manage.overview.summarySetupText")}</p></div>
             <div className="event-manage-setup__summary-progress"><b>{completedSteps}<span>/2</span></b><span>{t("manage.overview.requiredSteps")}</span><div className="event-manage-setup__progress-track"><span style={{width: `${completedSteps * 50}%`}} /></div></div>
         </div>
-        <div className="event-manage-setup__steps" aria-label={t("manage.overview.steps")}>
-            <div className={`event-manage-setup__step${config.data.Participation === null ? " is-current" : " is-complete"}`}><span className="event-manage-setup__step-number">01</span><UsersRound size={20} /><div><strong>{t("manage.overview.participation")}</strong><span>{config.data.Participation === null ? t("manage.overview.participationPending") : config.data.Participation === 1 ? t("manage.overview.participationTeams", {size: config.data.MaxTeamSize}) : t("manage.overview.individual")}</span></div>{config.data.Participation !== null && <Check size={18} />}</div>
-            <div className={`event-manage-setup__step${lifecycle.data.Configured ? " is-complete" : config.data.Participation !== null ? " is-current" : ""}`}><span className="event-manage-setup__step-number">02</span><CalendarDays size={20} /><div><strong>{t("manage.overview.schedule")}</strong><span>{t(lifecycle.data.Configured ? "manage.overview.scheduleSaved" : "manage.overview.schedulePending")}</span></div>{lifecycle.data.Configured && <Check size={18} />}</div>
-            <Link className="event-manage-setup__step" href="/manage/content/landing"><span className="event-manage-setup__step-number">→</span><FileText size={20} /><div><strong>{t("manage.overview.landing")}</strong><span>{t("manage.overview.landingNext")}</span></div><ArrowUpRight size={18} /></Link>
-        </div>
-        {!configured && <form className="event-manage-section event-manage-setup__form" onSubmit={save}>
+        <ReadinessSteps config={config.data} lifecycle={lifecycle.data} />
+        <form className="event-manage-section event-manage-setup__form" onSubmit={save}>
             <div className="event-manage-section__head"><h2>{t("manage.overview.requiredTitle")}</h2><p>{t("manage.overview.requiredIntro")}</p></div>
             <dl className="event-manage-setup__facts">
                 <div><dt>{t("manage.overview.participation")}</dt><dd>{participation === null ? t("manage.overview.participationPending") : participation === 1 ? t("manage.overview.participationTeams", {size: config.data.MaxTeamSize}) : t("manage.overview.individual")}</dd><Link href="/manage/participation-settings">{t(participation === null ? "manage.overview.choose" : "manage.overview.change")}</Link></div>
@@ -104,7 +104,6 @@ export default function ManageIndex() {
             {error && <p className="event-manage-validation" role="alert">{error}</p>}
             {publishAt && startAt && startTime < publishTime && <p className="event-manage-validation" role="alert">{t("manage.overview.startBeforePublish")}</p>}
             <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !valid || saving} busy={saving}>{t("manage.overview.saveAndSchedule")}</EventButton></div>
-        </form>}
-        {configured && <div className="event-manage-setup__links"><Link className="ib-btn" href="/manage/settings">{t("manage.overview.linkSettings")}</Link><Link className="ib-btn" href="/manage/schedule">{t("manage.overview.linkSchedule")}</Link><Link className="ib-btn ib-btn--primary" href="/manage/content/landing">{t("manage.overview.linkLanding")}</Link></div>}
+        </form>
     </div>;
 }
