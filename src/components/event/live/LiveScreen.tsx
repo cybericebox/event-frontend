@@ -11,6 +11,7 @@ import {useLiveResults} from "./useLiveResults";
 import {useFullscreen, useIdle, useWakeLock, useWindowSize, type WakeLockState} from "./liveScreenHooks";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const wakeLabel = (state: WakeLockState) => t(`live.wake.${state}`);
 
@@ -84,8 +85,8 @@ export function LiveScreen({event}: {event: PublicEventInfo}) {
         </div>
         {results.isError && <div className="live-fullscreen__notice" role="alert">{t("live.resultsUnavailable")}</div>}
         <div className="live-controls" aria-label={t("live.controls")}>
-            {fullscreen.supported && <button type="button" onClick={fullscreen.toggle} title={t("live.keyF")}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}
-            <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} title={t("live.keyT")}><MonitorCheck size={16} />{t("live.test.title")}</button>
+            {fullscreen.supported && <EventTooltip content={t("live.keyF")}>{id => <button type="button" onClick={fullscreen.toggle} aria-keyshortcuts="F" aria-describedby={id}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}</EventTooltip>}
+            <EventTooltip content={t("live.keyT")}>{id => <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} aria-keyshortcuts="T" aria-describedby={id}><MonitorCheck size={16} />{t("live.test.title")}</button>}</EventTooltip>
             <span>{wakeLabel(wake)}</span>
         </div>
     </main>;

@@ -18,7 +18,7 @@ export function EventSelect({value, options, onValueChange, disabled = false, ar
         <DropdownMenu.Portal><DropdownMenu.Content className={`ib-listbox event-select__menu${options.some(option => option.disabledReason) ? " event-select__menu--reasons" : ""}`} sideOffset={4} align="start" collisionPadding={8}>
             <DropdownMenu.RadioGroup value={value} onValueChange={onValueChange}>
                 {options.map(option => option.disabled && option.disabledReason
-                    ? <div className="event-select__unavailable" key={option.value} title={option.disabledReason} aria-label={`${option.label}. ${option.disabledReason}`}>
+                    ? <div className="event-select__unavailable" key={option.value} aria-label={`${option.label}. ${option.disabledReason}`}>
                         <DropdownMenu.RadioItem className="ib-listbox__opt event-select__option" value={option.value} disabled><DropdownMenu.ItemIndicator className="event-select__indicator"><Circle size={8} fill="currentColor" aria-hidden="true" /></DropdownMenu.ItemIndicator><span>{option.label}</span></DropdownMenu.RadioItem>
                         <small>{option.disabledReason}</small>
                     </div>

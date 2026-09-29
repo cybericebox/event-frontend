@@ -23,3 +23,7 @@
 /* invite code: shows the whole value, no truncation */
 .ib-copy--code{display:inline-flex;border:0;background:none;padding:0;gap:var(--ib-3)}
 .ib-copy--code .ib-copy__value{flex:none;font-size:var(--ib-fs-16);letter-spacing:.04em;padding:6px 10px;border:1px dashed var(--ib-control);border-radius:var(--ib-r)}
+
+/* Local: the tooltip wrapper takes the value's place in the row. */
+.ib-copy__tip{flex:1;min-width:0}
+.ib-copy--code .ib-copy__tip{flex:none}

@@ -47,3 +47,5 @@
 .event-help-tip__copy{display:flex;flex-direction:column;gap:2px}
 .event-help-tip__point{padding-left:var(--ib-3);position:relative}
 .event-help-tip__point::before{content:"–";position:absolute;left:0;color:var(--ib-dim)}
+.event-chip__tip{min-width:0}
+.event-chip{overflow:visible}

@@ -14,3 +14,7 @@
 a.ib-block-partners__logo:hover{border-color:var(--ib-control)}
 a.ib-block-partners__logo:hover .ib-block-partners__image{opacity:1}
 @media (prefers-reduced-motion:no-preference){.ib-block-partners__image{transition:opacity .15s ease}}
+
+/* Local: an image logo inside its tooltip wrapper still fills the grid cell. */
+.ib-block-partners__tip{display:flex}
+.ib-block-partners__tip>.ib-block-partners__logo{flex:1;min-width:0}

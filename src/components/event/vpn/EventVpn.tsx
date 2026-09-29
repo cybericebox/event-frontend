@@ -9,6 +9,7 @@ import {DialogModal} from "@/components/event/DialogModal";
 import {richMessage} from "@/components/event/challenges/richMessage";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type VpnContextValue = {available: boolean; status: StandStatus | null; openVpn: () => void};
 const VpnContext = createContext<VpnContextValue>({available: false, status: null, openVpn: () => {}});
@@ -91,7 +92,7 @@ export function VpnHeaderButton() {
     const {available, status, openVpn} = useEventVpn();
     if (!available) return null;
     const label = t("vpn.header.label", {status: status ? standStatusText(status).title.toLocaleLowerCase() : t("vpn.header.checking")});
-    return <button type="button" className={`ib-icon-btn event-vpn-button is-${status ?? "unknown"}`} aria-label={label} title={label} onClick={openVpn}>
+    return <EventTooltip content={label} placement="bottom" silent>{() => <button type="button" className={`ib-icon-btn event-vpn-button is-${status ?? "unknown"}`} aria-label={label} onClick={openVpn}>
         <StandStatusIcon status={status} />
-    </button>;
+    </button>}</EventTooltip>;
 }

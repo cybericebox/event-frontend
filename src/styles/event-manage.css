@@ -303,6 +303,7 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-exercise-hints__name{white-space:nowrap;font-weight:var(--ib-w-medium)}
 .event-exercise-hints__level{white-space:nowrap;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-exercise-hints__text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim)}
+.event-exercise-hints__tip{min-width:0}
 .event-exercise-hints__cost{display:flex;align-items:center;gap:var(--ib-2)}
 .event-exercise-hints__cost .event-manage-input{width:96px}
 .event-exercise-hints__unit{min-width:72px;color:var(--ib-dim);font-size:var(--ib-fs-12)}

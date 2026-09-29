@@ -18,6 +18,7 @@ import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const aspects = {"16:9": 16 / 9, "16:10": 16 / 10, "4:3": 4 / 3, "5:3": 5 / 3};
 const dragMime = "application/x-live-widget";
@@ -70,7 +71,7 @@ function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos
         <span className="event-live-editor__label">{t("manage.live.logos.title")}</span>
         {logos.length ? <ul>{logos.map((logo, index) => <li key={`${logo}-${index}`}>
             {liveLogoURL(logo) ? <img src={liveLogoURL(logo)!} alt="" /> : <span className="event-live-editor__logo-broken">?</span>}
-            <span title={logo}>{logo.includes("/content-images/") ? t("manage.live.logos.file", {number: index + 1}) : logo}</span>
+            <EventTooltip content={logo} className="event-live-editor__logo-tip">{id => <span className="event-live-editor__logo-name" tabIndex={0} aria-describedby={id}>{logo.includes("/content-images/") ? t("manage.live.logos.file", {number: index + 1}) : logo}</span>}</EventTooltip>
             <button type="button" aria-label={t("manage.live.logos.up")} disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>
             <button type="button" aria-label={t("manage.live.logos.down")} disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>
             <button type="button" aria-label={t("manage.live.logos.remove")} disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>
@@ -281,7 +282,7 @@ export default function ManageLivePage() {
         </div>}
         <div className="event-live-editor__grid-options">
             <button className="ib-btn" type="button" disabled={locked} onClick={() => {setGridCols(layout.grid.cols); setGridRows(layout.grid.rows); setCustomGrid(value => !value);}}>{t(customGrid ? "manage.live.gridHide" : "manage.live.gridCustom")}</button>
-            <button className="ib-btn" type="button" disabled={locked || !liveGridValid(finer.cols, finer.rows)} title={t("manage.live.gridFinerTitle")} onClick={() => changeGrid(finer.cols, finer.rows)}><Grid3x3 size={16} /> {t("manage.live.gridFiner")}</button>
+            <EventTooltip content={t("manage.live.gridFinerTitle")}>{id => <button className="ib-btn" type="button" disabled={locked || !liveGridValid(finer.cols, finer.rows)} aria-describedby={id} onClick={() => changeGrid(finer.cols, finer.rows)}><Grid3x3 size={16} /> {t("manage.live.gridFiner")}</button>}</EventTooltip>
             {customGrid && <div className="event-live-editor__custom-grid">
                 <label>{t("manage.live.cols")}<input type="number" min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={gridCols} disabled={locked} onChange={changeEvent => setGridCols(Number(changeEvent.target.value))} /></label>
                 <label>{t("manage.live.rows")}<input type="number" min={liveGridLimits.minRows} max={liveGridLimits.maxRows} value={gridRows} disabled={locked} onChange={changeEvent => setGridRows(Number(changeEvent.target.value))} /></label>
@@ -296,10 +297,10 @@ export default function ManageLivePage() {
         <div className={`event-live-editor__workspace${preview ? " is-preview" : ""}`}>
             <aside className="event-live-editor__palette">
                 <h2>{t("manage.live.widgets")}</h2>
-                {livePaletteTypes.map(type => <button key={type} type="button" draggable={!locked} disabled={locked} title={t("manage.live.paletteHint")}
+                {livePaletteTypes.map(type => <EventTooltip key={type} content={t("manage.live.paletteHint")}>{id => <button type="button" draggable={!locked} disabled={locked} aria-describedby={id}
                     onDragStart={dragEvent => {dragEvent.dataTransfer.setData(dragMime, type); dragEvent.dataTransfer.effectAllowed = "copy"; setDragType(type);}}
                     onDragEnd={() => {setDragType(null); setGhost(null);}}
-                    onClick={() => addWidget(type)}>{t("manage.live.paletteAdd", {name: liveWidgetLabels[type]})}</button>)}
+                    onClick={() => addWidget(type)}>{t("manage.live.paletteAdd", {name: liveWidgetLabels[type]})}</button>}</EventTooltip>)}
             </aside>
             <div className="event-live-editor__stage">
                 <div className="event-live-editor__screen" style={screenStyle} ref={setScreen}>
@@ -316,8 +317,8 @@ export default function ManageLivePage() {
                     <p>{liveWidgetLabels[selected.type]}</p>
                     <div className="event-live-editor__grid-fields">{(["x", "y", "w", "h"] as const).map(key => <label key={key}>{t(`manage.live.pos.${key}`)}<input type="number" min="1" value={selected[key]} disabled={locked} onChange={changeEvent => updateWidget({...selected, [key]: Number(changeEvent.target.value)})} /></label>)}</div>
                     <div className="event-live-editor__distribute">
-                        <button className="ib-btn" type="button" disabled={locked} title={t("manage.live.distributeRowTitle")} onClick={() => distribute("row")}><Columns3 size={16} /> {t("manage.live.distributeRow")}</button>
-                        <button className="ib-btn" type="button" disabled={locked} title={t("manage.live.distributeColumnTitle")} onClick={() => distribute("column")}><Rows3 size={16} /> {t("manage.live.distributeColumn")}</button>
+                        <EventTooltip content={t("manage.live.distributeRowTitle")}>{id => <button className="ib-btn" type="button" disabled={locked} aria-describedby={id} onClick={() => distribute("row")}><Columns3 size={16} /> {t("manage.live.distributeRow")}</button>}</EventTooltip>
+                        <EventTooltip content={t("manage.live.distributeColumnTitle")}>{id => <button className="ib-btn" type="button" disabled={locked} aria-describedby={id} onClick={() => distribute("column")}><Rows3 size={16} /> {t("manage.live.distributeColumn")}</button>}</EventTooltip>
                     </div>
                     {selected.type === "title" && <label>{t("manage.live.prop.subtitle")}<input value={String(selected.props.subtitle ?? "")} disabled={locked} onChange={changeEvent => updateProp("subtitle", changeEvent.target.value)} /></label>}
                     {selected.type === "announcement" && <label>{t("manage.live.prop.announcement")}<textarea value={String(selected.props.text ?? "")} disabled={locked} onChange={changeEvent => updateProp("text", changeEvent.target.value)} /></label>}

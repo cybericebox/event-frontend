@@ -34,6 +34,7 @@ import {EventBrandLogo} from "../EventBrandLogo";
 import {comparePageOrder} from "../content/pageNavigationOrder";
 import "./managerSidebar.css";
 import {t} from "@/i18n/t";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean};
 type Group = {id: string; label: string; items: Item[]};
@@ -73,6 +74,11 @@ const groups: Group[] = [
     ]},
 ];
 
+// A cut-off label shows its full text (and page state) in our tooltip on hover.
+function SideLabel({text, hint = text}: {text: string; hint?: string}) {
+    return <EventTooltip content={hint} className="event-manage-sidebar__tip" truncated>{() => <span className="ib-admin-side__label">{text}</span>}</EventTooltip>;
+}
+
 export function ManagerSidebar({event, pathname, pages, pagesError, canManage, infrastructureAllowed, onRetryPages, onNavigate}: {
     event: PublicEventInfo;
     pathname: string;
@@ -103,13 +109,13 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
                         <span>{group.label}</span><ChevronDown size={15} aria-hidden="true" />
                     </button>
                     <div id={`event-manage-group-${group.id}`} className="event-manage-sidebar__items" hidden={!isOpen}>
-                        {items.map(item => <Link className="ib-admin-side__item" href={item.href} key={item.href} aria-current={pathname === item.href ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}} title={item.label}><item.icon size={16} aria-hidden="true" /><span className="ib-admin-side__label">{item.label}</span></Link>)}
+                        {items.map(item => <Link className="ib-admin-side__item" href={item.href} key={item.href} aria-current={pathname === item.href ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}}><item.icon size={16} aria-hidden="true" /><SideLabel text={item.label} /></Link>)}
                         {group.id === "pages" && <>
                             {[...(pages ?? [])].sort(comparePageOrder).map(page => {
                                 const editorSlug = page.Draft?.Slug ?? page.Slug;
                                 const title = page.Draft?.Title ?? page.Title;
                                 const state = !page.PublishedAt ? t("manage.nav.page.unpublished") : page.Draft ? t("manage.nav.page.unpublishedChanges") : "";
-                                return <Link className="ib-admin-side__item event-manage-sidebar__page" key={page.ID} href={`/manage/content/pages/${editorSlug}`} aria-current={pathname === `/manage/content/pages/${editorSlug}` ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}} title={state ? t("manage.nav.page.titleWithState", {title, state}) : title}><FileText size={16} aria-hidden="true" /><span className="ib-admin-side__label">{title}</span>{state && <span className="event-manage-sidebar__draft">{page.PublishedAt ? t("manage.nav.page.draftBadge") : t("manage.nav.page.unpublishedBadge")}</span>}</Link>;
+                                return <Link className="ib-admin-side__item event-manage-sidebar__page" key={page.ID} href={`/manage/content/pages/${editorSlug}`} aria-current={pathname === `/manage/content/pages/${editorSlug}` ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}}><FileText size={16} aria-hidden="true" /><SideLabel text={title} hint={state ? t("manage.nav.page.titleWithState", {title, state}) : title} />{state && <span className="event-manage-sidebar__draft">{page.PublishedAt ? t("manage.nav.page.draftBadge") : t("manage.nav.page.unpublishedBadge")}</span>}</Link>;
                             })}
                             {pagesError && <div className="event-manage-sidebar__error" role="alert">{t("manage.nav.pagesUnavailable")} <button type="button" onClick={onRetryPages}>{t("common.retry")}</button></div>}
                             {canManage && <Link className="ib-admin-side__item event-manage-sidebar__add" href="/manage/content/pages/new" aria-current={pathname === "/manage/content/pages/new" ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}}><Plus size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.addPage")}</span></Link>}

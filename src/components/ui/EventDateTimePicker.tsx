@@ -7,6 +7,7 @@ import {calendarDays, datePart, formatLocal, monthStart, moveDay, parseLocal, pa
 import {t} from "@/i18n/t";
 import {EventTimePicker} from "./EventTimePicker";
 import "./eventDateTimePicker.css";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const weekdays = () => t("ui.datePicker.weekdays").split(",");
 const pad = (value: number) => String(value).padStart(2, "0");
@@ -136,7 +137,7 @@ function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allow
     return <Popover.Root open={open} onOpenChange={openChange}>
         <Popover.Trigger ref={triggerRef} id={id} type="button" className="event-manage-input event-date-picker__trigger" aria-label={ariaLabel} aria-haspopup="dialog" disabled={disabled}>
             <span className={chosen ? "event-date-picker__value" : "event-date-picker__placeholder"}>{chosen ? dateOnly ? dateLabel(chosen) : t("ui.datePicker.value", {date: dateLabel(chosen), time: `${pad(time.hour)}:${pad(time.minute)}${showSeconds ? `:${pad(time.second)}` : ""}`}) : placeholder ?? t("ui.datePicker.placeholder")}</span>
-            {chosen && !dateOnly && <span className="event-date-picker__zone" title={zone}>{offset}</span>}
+            {chosen && !dateOnly && <EventTooltip content={zone} silent>{() => <span className="event-date-picker__zone">{offset}</span>}</EventTooltip>}
             <CalendarDays size={17} aria-hidden="true" />
         </Popover.Trigger>
         <Popover.Portal container={container ?? undefined}>
@@ -167,7 +168,7 @@ function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allow
                                 onFocus={event => event.currentTarget.select()} onChange={event => typePart(part, event.target.value)}
                                 onBlur={event => commitPart(part, event.currentTarget.value)} onKeyDown={event => partKey(event, part)} />
                         </span>)}
-                        <span className="event-date-picker__zone" title={zone}>{t("ui.datePicker.zone", {zone, offset})}</span>
+                        <span className="event-date-picker__zone">{t("ui.datePicker.zone", {zone, offset})}</span>
                     </div>}
                     <div className="event-date-picker__actions">
                         {allowClear && chosen && <button className="ib-btn" type="button" onClick={() => { onChange(""); setOpen(false); }}>{t("ui.datePicker.noDate")}</button>}

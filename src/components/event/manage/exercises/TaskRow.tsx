@@ -156,7 +156,7 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
                 return <li className="event-exercise-hints__item" key={hint.ID}>
                     <span className="event-exercise-hints__name">{t("manage.exercises.unlocks.hintNumber", {number: index + 1})}</span>
                     <span className="event-exercise-hints__level">{hintLevelLabel(hint.Level)}</span>
-                    <span className="event-exercise-hints__text" title={text || undefined}>{text || t("manage.exercises.hints.noText")}</span>
+                    {text ? <EventTooltip content={text} className="event-exercise-hints__tip" truncated>{() => <span className="event-exercise-hints__text">{text}</span>}</EventTooltip> : <span className="event-exercise-hints__text">{t("manage.exercises.hints.noText")}</span>}
                     <label className="event-exercise-hints__cost">
                         <span className="event-manage-visually-hidden">{t("manage.exercises.hints.costLabel", {number: index + 1})}</span>
                         <input className="event-manage-input" type="number" inputMode="numeric" min={0} max={10000} step={1} value={value} placeholder="0"
@@ -228,7 +228,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
             {canManage && <div className="event-task__actions">
                 {editURL
                     ? <a className="ib-btn ib-btn--sm" href={editURL}><Pencil aria-hidden="true" />{t("common.edit")}</a>
-                    : <button className="ib-btn ib-btn--sm" type="button" disabled title={t("manage.challenges.task.editNeedsFork")}><Pencil aria-hidden="true" />{t("common.edit")}</button>}
+                    : <EventTooltip content={t("manage.challenges.task.editNeedsFork")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled aria-describedby={id}><Pencil aria-hidden="true" />{t("common.edit")}</button>}</EventTooltip>}
                 <button className="ib-btn ib-btn--sm ib-btn--danger" type="button" onClick={onRemove}>{t("manage.challenges.task.remove")}</button>
             </div>}
         </div>}

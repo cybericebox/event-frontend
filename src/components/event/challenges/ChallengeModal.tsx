@@ -22,6 +22,7 @@ import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
 import {BusyMark, EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 export type BoardMode = "participant" | "moderators";
 type Message = {text: string; tone: "error" | "warn"} | null;
@@ -47,7 +48,7 @@ function submitMessage(error: unknown): Message {
 function CopyField({value, url}: {value: string; url?: string}) {
     const [copied, setCopied] = useState(false);
     return <div className="ib-copy">
-        <span className="ib-copy__value" title={value}>{value}</span>
+        <EventTooltip content={value} className="ib-copy__tip" truncated>{() => <span className="ib-copy__value">{value}</span>}</EventTooltip>
         <button type="button" className={`ib-btn ib-btn--sm ib-copy__btn${copied ? " is-copied" : ""}`} aria-label={t("challenges.copy.aria")} onClick={() => {
             void navigator.clipboard?.writeText(value).then(() => {
                 setCopied(true);

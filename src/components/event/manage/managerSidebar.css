@@ -13,3 +13,4 @@
 .event-manage-sidebar__error{padding:var(--ib-2) var(--ib-3);color:var(--ib-on-brand-3);font-size:var(--ib-fs-12);line-height:var(--ib-lh-body)}
 .event-manage-sidebar__error button{padding:0;border:0;background:none;color:var(--ib-on-brand);font:inherit;text-decoration:underline;cursor:pointer}
 @media(prefers-reduced-motion:reduce){.event-manage-sidebar__heading svg{transition:none}}
+.event-manage-sidebar__tip{flex:1;min-width:0}

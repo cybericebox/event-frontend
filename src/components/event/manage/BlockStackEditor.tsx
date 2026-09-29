@@ -13,6 +13,7 @@ import {EditedDocumentContext} from "./useEventLinkOptions";
 import {t, tPlural} from "@/i18n/t";
 import {currentPreviewPhase, defaultPreviewRegistration, previewPageAccess, previewPhases, previewRegistrations, previewValues, previewViewers, type PreviewPhase, type PreviewRegistration, type PreviewViewer} from "./previewScenario";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const undoMilliseconds = 6000;
 
@@ -140,6 +141,9 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
         }}>{t("common.restore")}</button></span>, {id: `undo-${block.id}`, duration: undoMilliseconds});
     }
 
+    // After registration closes the switch is disabled; the group carries the reason (a disabled button cannot take focus).
+    const registrationSwitch = (hintID?: string) => <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.registration")} aria-describedby={hintID}>{previewRegistrations.map(item => <button key={item.value} type="button" aria-pressed={activeRegistration === item.value} disabled={activePhase === "after"} onClick={() => setRegistration(item.value)}>{item.label}</button>)}</div>;
+
     return <EditedDocumentContext.Provider value={edited}><div className="event-manage-content__layout">
         <div className="event-content-editor">
             {before}
@@ -156,7 +160,7 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
             <div className="event-preview-switches">
                 <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.viewer")}>{previewViewers.map(item => <button key={item.value} type="button" aria-pressed={viewer === item.value} onClick={() => setViewer(item.value)}>{item.label}</button>)}</div>
                 <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.phase")}>{previewPhases.map(item => <button key={item.value} type="button" aria-pressed={activePhase === item.value} onClick={() => {setPhase(item.value); setRegistration(null);}}>{item.label}</button>)}</div>
-                <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.registration")}>{previewRegistrations.map(item => <button key={item.value} type="button" aria-pressed={activeRegistration === item.value} disabled={activePhase === "after"} title={activePhase === "after" ? t("manage.blocks.preview.registrationAfter") : undefined} onClick={() => setRegistration(item.value)}>{item.label}</button>)}</div>
+                {activePhase === "after" ? <EventTooltip content={t("manage.blocks.preview.registrationAfter")}>{id => registrationSwitch(id)}</EventTooltip> : registrationSwitch()}
             </div>
             <div className="event-manage-content__preview-window" ref={previewRef}>
                 {accessNotice ? <EmptyState message={t("manage.blocks.preview.accessNotice", {notice: accessNotice})} />

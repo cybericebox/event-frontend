@@ -5,6 +5,7 @@ import {useLexicalNodeSelection} from "@lexical/react/useLexicalNodeSelection";
 import {DecoratorNode, $getSelection, $isRangeSelection, type DOMConversionMap, type DOMConversionOutput, type DOMExportOutput, type NodeKey, type SerializedLexicalNode, type Spread, type TextFormatType} from "lexical";
 import {formatDateTime} from "../content/dateDisplay";
 import {t} from "@/i18n/t";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type Display = {format: "date-time" | "date" | "time" | "short" | "custom"; pattern?: string};
 type SerializedEventVariableNode = Spread<{varName: string; formats?: TextFormatType[]}, SerializedLexicalNode>;
@@ -24,11 +25,11 @@ function EventVariablePreview({name, formats, nodeKey}: {name: string; formats: 
     const rendered = typeof value === "string" && display && !Number.isNaN(Date.parse(value))
         ? formatDateTime(value, display.format, display.pattern)
         : typeof value === "boolean" ? value ? t("common.yes") : t("common.no") : value == null ? labels[name] ?? name : String(value);
-    return <span className={`event-lexical__variable${isSelected ? " is-selected" : ""}`} data-event-variable={name} contentEditable={false} title={labels[name] ?? name}
+    return <EventTooltip content={labels[name] ?? name} className="event-lexical__variable-tip" silent>{() => <span className={`event-lexical__variable${isSelected ? " is-selected" : ""}`} data-event-variable={name} contentEditable={false}
         onMouseDown={event => { event.preventDefault(); clearSelection(); setSelected(true); }}
         style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,
             textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined,
-            fontFamily: formats.includes("code") ? "monospace" : undefined}}>{rendered}</span>;
+            fontFamily: formats.includes("code") ? "monospace" : undefined}}>{rendered}</span>}</EventTooltip>;
 }
 
 export class EventVariableNode extends DecoratorNode<JSX.Element> {

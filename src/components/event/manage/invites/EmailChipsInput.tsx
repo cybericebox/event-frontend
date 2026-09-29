@@ -5,6 +5,7 @@ import {X} from "lucide-react";
 import {t} from "@/i18n/t";
 import {addChips, addressSeparator, chipName, splitAddresses, type EmailChip} from "./emailChips";
 import "./invites.css";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 // Gmail-style address input: typing a separator or pasting turns addresses
 // into chips; repeats are skipped; invalid ones stay as red chips; Backspace
@@ -62,8 +63,11 @@ export function EmailChipsInput({id, chips, onChange, disabled = false, placehol
     return <div className="ib-input event-chips" aria-invalid={invalid || undefined} aria-disabled={disabled || undefined} onClick={() => input.current?.focus()}>
         {chips.map(chip => {
             const name = chipName(chip);
-            return <span key={chip.email} className={`ib-tag event-chip${chip.valid ? "" : " is-invalid"}`} title={chip.valid ? name || undefined : t("manage.invites.chips.invalidAddress", {email: chip.email})}>
-                <span className="event-chip__text">{chip.email}</span>
+            const hint = chip.valid ? name : t("manage.invites.chips.invalidAddress", {email: chip.email});
+            const text = <span className="event-chip__text">{chip.email}</span>;
+            // The hint covers only the address, so the remove button keeps its own focus and name.
+            return <span key={chip.email} className={`ib-tag event-chip${chip.valid ? "" : " is-invalid"}`}>
+                {hint ? <EventTooltip content={hint} className="event-chip__tip">{() => text}</EventTooltip> : text}
                 <button className="event-chip__remove" type="button" disabled={disabled} aria-label={t("manage.invites.chips.remove", {email: chip.email})} onClick={event => {event.stopPropagation(); remove(chip.email);}}><X aria-hidden="true" /></button>
             </span>;
         })}

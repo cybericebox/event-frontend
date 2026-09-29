@@ -1,5 +1,6 @@
 import type {ReactNode} from "react";
 import Image from "next/image";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type Logo = {name: string; imageURL: string; href?: string};
 
@@ -29,9 +30,11 @@ export function PartnersBlock({id, selected, heading, text, groups}: {
                     const image = logo.imageURL
                         ? <Image className="ib-block-partners__image" src={logo.imageURL} alt={logo.name} width={160} height={40} unoptimized />
                         : <span className="ib-block-partners__name">{logo.name}</span>;
-                    return <li key={logoIndex}>{href
-                        ? <a className="ib-block-partners__logo" href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noopener noreferrer" : undefined} title={logo.name}>{image}</a>
-                        : <span className="ib-block-partners__logo" title={logo.name}>{image}</span>}</li>;
+                    const tile = href
+                        ? <a className="ib-block-partners__logo" href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noopener noreferrer" : undefined}>{image}</a>
+                        : <span className="ib-block-partners__logo">{image}</span>;
+                    // An image logo names the partner only through alt text, so the hint shows the name.
+                    return <li key={logoIndex}>{logo.imageURL ? <EventTooltip content={logo.name} className="ib-block-partners__tip" silent>{() => tile}</EventTooltip> : tile}</li>;
                 })}</ul>
             </div>)}
         </div>

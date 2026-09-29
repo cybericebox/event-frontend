@@ -21,6 +21,7 @@ import {journalTime, PeriodFilters, useJournalOptions} from "./journalShared";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 import "./journal.css";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const all = "all";
 
@@ -182,7 +183,7 @@ function AttemptsLog() {
                 <td>{attempt.ChallengeName || t("manage.attempts.challenge")}</td>
                 <td><ResultTag attempt={attempt} /></td>
                 <td className="ib-num">{attempt.Points === null ? <span className="event-manage-table__dim">{t("manage.attempts.noPoints")}</span> : points.format(attempt.Points)}</td>
-                {canManage && <td><code className="event-manage-table__answer event-journal__answer" title={attempt.Answer ?? undefined}>{attempt.Answer}</code></td>}
+                {canManage && <td><EventTooltip content={attempt.Answer} className="event-manage-table__answer-tip" truncated>{() => <code className="event-manage-table__answer event-journal__answer">{attempt.Answer}</code>}</EventTooltip></td>}
             </tr>)}</tbody>
         </ManageTable>
         <DialogModal open={!!selected} onClose={close} size="md" title={selected ? selected.ChallengeName || t("manage.attempts.challenge") : t("manage.attempts.detail")}

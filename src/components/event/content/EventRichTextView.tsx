@@ -51,7 +51,7 @@ export function EventRichTextView({value, variables = {}, dateDisplays, emptyFal
                 const text = typeof raw === "string" && display && !Number.isNaN(Date.parse(raw)) ? formatDateTime(raw, display.format, display.pattern)
                     : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? name : String(raw);
                 const formats = Array.isArray(node.formats) ? node.formats : [];
-                return <span key={key} className="event-lexical__variable" data-event-variable={name} title={name}
+                return <span key={key} className="event-lexical__variable" data-event-variable={name}
                     style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,
                         textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined,
                         fontFamily: formats.includes("code") ? "monospace" : undefined}}>{text}</span>;

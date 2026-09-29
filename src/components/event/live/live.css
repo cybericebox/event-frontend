@@ -76,7 +76,7 @@
 .live-fullscreen.is-idle .live-controls{opacity:0;pointer-events:none}
 .live-controls button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.24);border-radius:6px;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .live-controls button:hover,.live-controls button[aria-pressed="true"]{background:rgba(255,255,255,.12)}
-.live-controls span{padding:0 6px;color:rgba(255,255,255,.7)}
+.live-controls>span:not(.ib-tip){padding:0 6px;color:rgba(255,255,255,.7)}
 /* Screen test: a frame on the area edges shows what the processor crops. */
 .live-test{position:absolute;inset:0;z-index:4;display:grid;place-items:center;border:4px solid #fd929d;background:repeating-linear-gradient(45deg,transparent 0 22px,rgba(253,146,157,.08) 22px 24px);color:#fff;pointer-events:none}
 .live-test__corner{position:absolute;padding:4px 8px;background:#fd929d;color:#16152B;font:600 14px/1.2 var(--font-geist-mono,ui-monospace,monospace)}
@@ -142,13 +142,16 @@
 .event-live-editor__warnings button:hover{text-decoration:underline}
 .event-live-editor__distribute{display:grid;gap:var(--ib-2)}
 .event-live-editor__distribute .ib-btn{justify-self:stretch}
+.event-live-editor__logo-tip{min-width:0}
+.event-live-editor__palette>.ib-tip,.event-live-editor__distribute>.ib-tip{display:flex;min-width:0}
+.event-live-editor__palette>.ib-tip>button,.event-live-editor__distribute>.ib-tip>.ib-btn{flex:1;min-width:0}
 .event-live-editor__label{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-live-editor__logos{display:grid;gap:var(--ib-2)}
 .event-live-editor__logos ul{display:grid;gap:4px;margin:0;padding:0;list-style:none}
 .event-live-editor__logos li{display:grid;grid-template-columns:48px minmax(0,1fr) repeat(3,28px);align-items:center;gap:4px;padding:4px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper)}
 .event-live-editor__logos li img,.event-live-editor__logo-broken{width:48px;height:28px;object-fit:contain;border-radius:3px;background:var(--ev-brand,#211a52)}
 .event-live-editor__logo-broken{display:grid;place-items:center;color:#fff}
-.event-live-editor__logos li span{overflow:hidden;color:var(--ib-ink);font-size:var(--ib-fs-12);text-overflow:ellipsis;white-space:nowrap}
+.event-live-editor__logos li>span:not(.ib-tip),.event-live-editor__logo-name{overflow:hidden;color:var(--ib-ink);font-size:var(--ib-fs-12);text-overflow:ellipsis;white-space:nowrap}
 .event-live-editor__logos li button{display:grid;place-items:center;width:28px;height:28px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
 .event-live-editor__logos li button:hover:not(:disabled){background:var(--ib-soft);color:var(--ib-ink)}
 .event-live-editor__logos li button:disabled{opacity:.35;cursor:default}

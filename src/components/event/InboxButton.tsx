@@ -16,6 +16,7 @@ import {t} from "@/i18n/t";
 import {EventLoading} from "./EventLoading";
 import {NotificationMessageCard} from "./NotificationMessageCard";
 import {NotificationPopIn, popInDuration} from "./NotificationPopIn";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 import {
     INBOX_TABS, canResolve, countsAfterRead, countsAfterReadAll, countsAfterResolve, formatInboxTime, inTab, inboxQuery, isUnread, orderForTab,
     bellCount, parseCounts, parseOtherEvents, resolutionKey, resolveDefaultTab, resolverName,
@@ -376,7 +377,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                                 unread={unreadItem} compact
                                 timestamp={<span className="event-notifications__meta">
                                     {resolved
-                                        ? <span title={formatInboxTime(item.CreatedAt)}>{resolvedLine(item)}</span>
+                                        ? <EventTooltip content={formatInboxTime(item.CreatedAt)}>{id => <span tabIndex={0} aria-describedby={id}>{resolvedLine(item)}</span>}</EventTooltip>
                                         : <time dateTime={item.CreatedAt}>{formatInboxTime(item.CreatedAt)}</time>}
                                     {!event && <EventLabel name={item.EventName} />}
                                 </span>}
