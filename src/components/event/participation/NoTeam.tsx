@@ -17,7 +17,7 @@ import {forgetJoinCode, parseJoinCode} from "./participationModel";
 import {errorText} from "./participationParts";
 
 // No team yet: create one or join with a link or a code.
-export function NoTeam({event, rosterOpen, closedReason, linkCode, preview}: {event: PublicEventInfo; rosterOpen: boolean; closedReason: string; linkCode: string; preview: boolean}) {
+export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, createReason = "", joinReason = ""}: {event: PublicEventInfo; rosterOpen: boolean; closedReason: string; linkCode: string; preview: boolean; createReason?: string; joinReason?: string}) {
     const queryClient = useQueryClient();
     const [code, setCode] = useState(linkCode);
     const [name, setName] = useState("");
@@ -61,12 +61,13 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview}: {ev
     return <>
         {linkCode && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.noTeam.linkTitle")} message={t("participation.noTeam.linkMessage")} /></div>}
         <div className="event-pp-choice">
-            <Card title={t("participation.noTeam.create")}><p className="event-pp-invite__note">{t("participation.noTeam.createNote")}</p><div className="event-part__actions"><button type="button" className="ib-btn ib-btn--primary" onClick={() => { setError(""); setCreateOpen(true); }}>{t("participation.noTeam.create")}</button></div></Card>
+            <Card title={t("participation.noTeam.create")}><p className="event-pp-invite__note">{t("participation.noTeam.createNote")}</p><div className="event-part__actions"><button type="button" className="ib-btn ib-btn--primary" disabled={!!createReason} onClick={() => { setError(""); setCreateOpen(true); }}>{t("participation.noTeam.create")}</button></div>{createReason && <p className="event-part__note">{createReason}</p>}</Card>
             <Card title={t("participation.noTeam.joinTitle")}><p className="event-pp-invite__note">{t("participation.noTeam.joinNote")}</p>
                 <form className="event-part__inline" onSubmit={event => void join(event)}>
                     <input className="ib-input ib-input--mono" value={code} onChange={event => setCode(event.target.value)} aria-label={t("participation.noTeam.code")} placeholder={t("participation.noTeam.code")} required autoComplete="off" disabled={busy} />
-                    <button type="submit" className="ib-btn" disabled={busy || !parseJoinCode(code)}>{t("participation.noTeam.join")}</button>
+                    <button type="submit" className="ib-btn" disabled={busy || !!joinReason || !parseJoinCode(code)}>{t("participation.noTeam.join")}</button>
                 </form>
+                {joinReason && <p className="event-part__note">{joinReason}</p>}
             </Card>
         </div>
         {error && !createOpen && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}

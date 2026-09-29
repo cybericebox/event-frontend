@@ -148,7 +148,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         </Card>
         <SolvesTable event={event} state={teamState} solves={solves} now={now} showSolver error={stats.error} onRetry={stats.retry} title={t("participation.solves.teamTitle")} />
         {teamFieldForm?.Enabled && <AnswersCard scope="team" title={t("participation.team.fieldsTitle")} note={t("participation.team.fieldsNote")} form={teamFieldForm} answers={team.ExtraFields as ParticipantAnswers}
-            missing={team.MissingFields ?? []} canEdit={captain && !finished} whyReadOnly={finished ? t("participation.form.finished") : t("participation.team.fieldsCaptainOnly")}
+            missing={team.MissingFields ?? []} canEdit={captain && (participation?.EditAnswers?.Allowed ?? !finished)} whyReadOnly={finished ? t("participation.form.finished") : t("participation.team.fieldsCaptainOnly")}
             onSave={async draft => {
                 await run(() => updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft, team.MissingFields ?? [])).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"), true)();
             }} />}
@@ -198,6 +198,6 @@ export function TeamTab() {
         {previewing && !realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
         {realModerators ? <ModeratorsTeamSection members={realModerators.Members} /> : team
             ? <TeamSection event={event} info={info ?? ({MinTeamSize: 2, MaxTeamSize: 4} as ParticipantEventInfo)} team={team} participation={participation} rosterOpen={rosterOpen} finished={finished} preview={previewing} now={now} />
-            : <div className="event-pp"><p className="event-part__note">{t("participation.noTeam.sectionNote")}</p><NoTeam event={event} rosterOpen={rosterOpen} closedReason={closedReason} linkCode={linkCode} preview={previewing} /></div>}
+            : <div className="event-pp"><p className="event-part__note">{t("participation.noTeam.sectionNote")}</p><NoTeam event={event} rosterOpen={rosterOpen} closedReason={closedReason} createReason={participation && participation.CreateTeam && !participation.CreateTeam.Allowed ? reasonText(participation.CreateTeam.Reason) : ""} joinReason={participation && participation.JoinTeam && !participation.JoinTeam.Allowed ? reasonText(participation.JoinTeam.Reason) : ""} linkCode={linkCode} preview={previewing} /></div>}
     </>;
 }
