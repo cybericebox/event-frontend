@@ -3,6 +3,15 @@
    Mirrors src/styles/event.css; versioned because the development edge caches Next's CSS chunk. */
 .event-page-content{width:100%;max-width:1280px;margin:0 auto;padding:var(--ib-8) var(--ib-6) var(--ib-12)}
 .event-page-content:has(.ib-blocks){padding:0}
+/* The frame fills the height between the navbar and the footer, and so does the page in it:
+   empty, loading and error states centre in that whole area, not at its top. */
+.event-guest-main{display:flex;flex-direction:column}
+.event-page-content{display:flex;flex:1 0 auto;flex-direction:column}
+.event-page-content>:last-child{flex:1 0 auto}
+.event-page-content>.event-private-preview-banner:last-child{flex:none}
+.event-page-content .ib-board__empty,.event-challenges__countdown{display:flex;flex:1 0 auto;flex-direction:column;align-items:center;justify-content:center}
+/* The event footer is the platform credit alone. */
+.ib-footer--event .ib-footer__org>span:first-child{margin:0}
 .event-page-content>.event-shell-state{min-height:max(60dvh,240px);padding-inline:0;background:none}
 /* Constructor blocks keep their backgrounds to the 1280px frame, and their text on the navbar gutter. */
 .event-page-content .ib-blocks>.ib-block{--ib-block-px:var(--ib-6);--ib-block-max:none}

@@ -86,6 +86,15 @@ body.event-root main{overflow-x:visible}
 /* Constructor blocks keep their backgrounds to the 1280px frame, and their text on the navbar gutter. */
 .event-page-content .ib-blocks>.ib-block{--ib-block-px:var(--ib-6);--ib-block-max:none}
 @media(max-width:760px){.event-page-content .ib-blocks>.ib-block{--ib-block-px:var(--ib-4)}}
+/* The frame fills the height between the navbar and the footer, and so does the page in it:
+   empty, loading and error states centre in that whole area, not at its top. */
+.event-guest-main{display:flex;flex-direction:column}
+.event-page-content{display:flex;flex:1 0 auto;flex-direction:column}
+.event-page-content>:last-child{flex:1 0 auto}
+.event-page-content>.event-private-preview-banner:last-child{flex:none}
+.event-page-content .ib-board__empty,.event-challenges__countdown{display:flex;flex:1 0 auto;flex-direction:column;align-items:center;justify-content:center}
+/* The event footer is the platform credit alone. */
+.ib-footer--event .ib-footer__org>span:first-child{margin:0}
 /* Route loading, content errors: centred in the content frame, not the viewport. */
 .event-page-content>.event-shell-state{min-height:max(60dvh,240px);padding-inline:0;background:none}
 .event-join-banner{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);margin:0 0 var(--ib-5);padding:var(--ib-4) var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);font-size:var(--ib-fs-14)}

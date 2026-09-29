@@ -1,7 +1,6 @@
 "use client";
 
 import {createContext, useContext, type ReactNode} from "react";
-import Link from "next/link";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import type {OwnTeam} from "@/api/clientAuth";
 import type {ParticipantEventInfo} from "@/types/participantEventInfo";
@@ -27,6 +26,6 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
     return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><EventVpnProvider eventID={event.EventID} enabled={vpn}><div className="event-guest-shell">
         <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <main className="event-guest-main"><div className="event-page-content">{children}</div></main>
-        <footer className="ib-footer ib-footer--event"><div className="ib-footer__inner"><div className="ib-footer__row"><span className="ib-footer__org"><b>{event.Name}</b><PlatformCredit /></span><nav className="ib-footer__links" aria-label={t("shell.footerLinks")}><Link href="/challenges">{t("nav.challenges")}</Link><CookieSettingsLink /></nav></div></div></footer>
+        <footer className="ib-footer ib-footer--event"><div className="ib-footer__inner"><div className="ib-footer__row"><span className="ib-footer__org"><PlatformCredit /></span><nav className="ib-footer__links" aria-label={t("shell.footerLinks")}><CookieSettingsLink /></nav></div></div></footer>
     </div></EventVpnProvider></ParticipantContext.Provider>;
 }

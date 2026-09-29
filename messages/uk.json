@@ -126,7 +126,7 @@
   "challenges.difficulty.insane": "Дуже складне",
   "challenges.difficulty.medium": "Середнє",
   "challenges.difficulty.trivial": "Розминка",
-  "challenges.emptyMessage": "Завдань поки немає. Вони зʼявляться тут, щойно організатори їх опублікують.",
+  "challenges.emptyMessage": "Завдань поки немає. Вони скоро зʼявляться.",
   "challenges.finished.message": "Відповіді більше не приймаються. Завдання лишаються для перегляду.",
   "challenges.finished.title": "Захід завершено",
   "challenges.hint.confirmBalance": "Відкриття одразу спише {points} з рахунку команди.",

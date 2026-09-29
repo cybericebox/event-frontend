@@ -126,7 +126,7 @@
   "challenges.difficulty.insane": "Insane",
   "challenges.difficulty.medium": "Medium",
   "challenges.difficulty.trivial": "Warm-up",
-  "challenges.emptyMessage": "No challenges yet. They will appear here once the organizers publish them.",
+  "challenges.emptyMessage": "No challenges yet. They'll appear soon.",
   "challenges.finished.message": "Answers are no longer accepted. Challenges remain available to view.",
   "challenges.finished.title": "The event has finished",
   "challenges.hint.confirmBalance": "Unlocking will immediately deduct {points} from the team's score.",
