@@ -4,7 +4,7 @@ import {addChips, splitAddresses} from "./emailChips";
 
 describe("invitation CSV", () => {
     it("matches columns by English header in any case and order, ignoring unknown ones", () => {
-        const csv = '﻿Last_Name,Phone,EMAIL,first_name\r\n"Коваль, Олена",1,Olena@Example.test,Олена\r\nМельник,2,ivan@example.test,Іван\r\n';
+        const csv = '\uFEFFLast_Name,Phone,EMAIL,first_name\r\n"Коваль, Олена",1,Olena@Example.test,Олена\r\nМельник,2,ivan@example.test,Іван\r\n';
         expect(parseInviteCsv(csv)).toEqual({issues: [], entries: [
             {email: "olena@example.test", firstName: "Олена", lastName: "Коваль, Олена", row: 2},
             {email: "ivan@example.test", firstName: "Іван", lastName: "Мельник", row: 3},
@@ -55,7 +55,7 @@ describe("team CSV", () => {
     });
 
     it("builds a template with a BOM and quoted example cells", () => {
-        expect(csvTemplate(["team", "email"], ["Blue, Red", "a@example.test"])).toBe('﻿team,email\r\n"Blue, Red",a@example.test\r\n');
+        expect(csvTemplate(["team", "email"], ["Blue, Red", "a@example.test"])).toBe('\uFEFFteam,email\r\n"Blue, Red",a@example.test\r\n');
     });
 });
 

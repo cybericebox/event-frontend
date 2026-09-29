@@ -33,7 +33,7 @@ type Line = {row: number; cells: string[]};
 // inside quotes). The delimiter is a comma, or a semicolon when the header
 // uses semicolons (the Excel export of the uk locale).
 export function readCsvLines(source: string): Line[] {
-    const text = source.replace(/^﻿/, "");
+    const text = source.replace(/^\uFEFF/, "");
     const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
     const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
     const lines: Line[] = [];
@@ -143,5 +143,5 @@ export function parseTeamCsv(source: string): {teams: TeamDraft[]; issues: CsvIs
 
 export function csvTemplate(columns: readonly string[], example: readonly string[]): string {
     const quote = (value: string) => /[",;\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
-    return `﻿${columns.join(",")}\r\n${example.map(quote).join(",")}\r\n`;
+    return `\uFEFF${columns.join(",")}\r\n${example.map(quote).join(",")}\r\n`;
 }
