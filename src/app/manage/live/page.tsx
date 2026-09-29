@@ -18,7 +18,7 @@ export default function ManageLivePage() {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const editor = useQuery({queryKey: ["event-live-editor", eventID], queryFn: () => getManageLive(eventID), refetchOnWindowFocus: false});
-    const results = useQuery({queryKey: ["event-live-results", eventID], queryFn: () => getManageResults(eventID), retry: false, refetchInterval: 15000});
+    const results = useQuery({queryKey: ["event-live-results", eventID], queryFn: () => getManageResults(eventID, "live"), retry: false, refetchInterval: 15000});
     const [override, setOverride] = useState<LiveLayout | null>(null);
     const [selectedID, setSelectedID] = useState<string | null>(null);
     const [preview, setPreview] = useState(false);

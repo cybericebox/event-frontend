@@ -8,7 +8,7 @@ import {LiveCanvas} from "./LiveCanvas";
 import type {CSSProperties} from "react";
 
 export function LiveScreen({event, layout}: {event: PublicEventInfo; layout: LiveLayout}) {
-    const results = useQuery({queryKey: ["event-live-screen-results", event.EventID], queryFn: () => getManageResults(event.EventID), retry: false, refetchInterval: 10000});
+    const results = useQuery({queryKey: ["event-live-screen-results", event.EventID], queryFn: () => getManageResults(event.EventID, "live"), retry: false, refetchInterval: 10000});
     const published = useQuery({queryKey: ["event-live-screen-layout", event.EventID], queryFn: () => getPublishedLiveLayout(event.EventID), retry: false, refetchInterval: 15000, initialData: layout});
     const active = published.data ?? layout;
     const style = {"--live-screen-width": `${active.screen.width}px`, "--live-screen-height": `${active.screen.height}px`} as CSSProperties;
