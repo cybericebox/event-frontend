@@ -53,6 +53,8 @@
 .event-live-editor__stage{display:grid;gap:var(--ib-2);min-width:0;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-soft)}
 .event-live-editor__stage-head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);flex-wrap:wrap}
 .event-live-editor__formats{display:flex;align-items:center;gap:var(--ib-2);flex-wrap:wrap}
+/* Shape tabs use the segmented look; the selected tab is raised like a pressed button. */
+.event-live-editor__formats .ib-seg>button[aria-selected="true"]{background:var(--ib-raised);border-color:var(--ib-line);color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
 .event-live-editor__format-mode{display:flex;align-items:center;gap:4px}
 .event-live-editor__format-note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-live-editor__stage-note{color:var(--ib-dim);font-size:var(--ib-fs-12)}

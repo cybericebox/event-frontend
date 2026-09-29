@@ -396,7 +396,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 <div className="event-live-editor__stage-head">
                     <div className="event-live-editor__formats">
                         <div className="ib-seg ib-seg--sm" role="tablist" aria-label={t("manage.live.format.tabs")}>
-                            {liveFormatTabs(layout).map(key => <button key={key} type="button" role="tab" aria-selected={shape === key} aria-pressed={shape === key} onClick={() => {setFormat(key); setCustomGrid(null);}}>{tabLabel(key)}</button>)}
+                            {liveFormatTabs(layout).map(key => <button key={key} type="button" role="tab" aria-selected={shape === key} onClick={() => {setFormat(key); setCustomGrid(null);}}>{tabLabel(key)}</button>)}
                         </div>
                         {mode !== "base" && <div className="event-live-editor__format-mode">
                             <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.live.format.mode")}>
