@@ -11,11 +11,27 @@ const meSchema = z.object({
     Role: z.string().default("user"),
 });
 export type CurrentUser = z.infer<typeof meSchema>;
+// One participation action: allowed, or the reason code the server gives (see participationRules).
+const capabilitySchema = z.object({Allowed: z.boolean().default(false), Reason: z.string().default("")}).default({Allowed: false, Reason: ""});
+// What the caller can do right now, computed by the server from the event's
+// schedule, its settings and the caller's own state. The site renders it and
+// never derives these rules from dates.
+export const participationSchema = z.object({
+    Phase: z.enum(["not_published", "published", "started", "finished", "withdrawn"]).default("not_published"),
+    RegistrationClosesAt: z.string().nullish().transform(value => value ?? null),
+    Staff: z.boolean().default(false),
+    RegistrationWindowOpen: z.boolean().default(false), RosterOpen: z.boolean().default(false),
+    RegistrationReason: z.string().default(""), RosterReason: z.string().default(""),
+    Register: capabilitySchema, CreateTeam: capabilitySchema, JoinTeam: capabilitySchema, LeaveTeam: capabilitySchema, ManageTeam: capabilitySchema,
+    EditAnswers: capabilitySchema, SeeTasks: capabilitySchema, Submit: capabilitySchema,
+});
+export type Participation = z.infer<typeof participationSchema>;
 export const joinInfoSchema = z.object({
     Status: z.number().int(), Invited: z.boolean().default(false),
     InvitedTeamName: z.string().nullish().transform(value => value ?? ""),
     InvitedTeamID: z.string().uuid().nullish().transform(value => value ?? null),
     TeamUnavailable: z.boolean().default(false), InvitationExpired: z.boolean().default(false),
+    Participation: participationSchema.nullish().transform(value => value ?? null),
 });
 const joinSchema = joinInfoSchema;
 export type JoinInfo = z.infer<typeof joinInfoSchema>;
@@ -86,6 +102,7 @@ export async function getInvitationInfo(): Promise<JoinInfo> {
     return readData(response, joinSchema);
 }
 
+// Superseded by getParticipation (server-computed); kept until the team tab stops using it.
 // rosterOpen: teams may still change (locked-at-start events freeze at the start, rolling ones stay open until they finish).
 export type RegistrationWindow = {registrationOpen: boolean; joinPolicy: string; startAt: string; finishAt: string; rosterOpen: boolean};
 
@@ -101,6 +118,12 @@ export async function getRegistrationWindow(eventID: string): Promise<Registrati
         finishAt: String(variables["event.effectiveFinishAt"] ?? ""),
         rosterOpen: variables["event.rosterOpen"] === true,
     };
+}
+
+// The caller's participation block (null when the server did not send one).
+export async function getParticipation(): Promise<Participation | null> {
+    const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
+    return (await readData(response, joinSchema)).Participation;
 }
 
 export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {

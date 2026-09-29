@@ -3,6 +3,7 @@
 import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
+import {useParticipation} from "@/components/event/participation/participationRules";
 import {eventOrigin, idOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
@@ -36,10 +37,12 @@ export type JoinState =
     | {kind: "approved"}
     | {kind: "rejected"};
 
-export function joinState({preview, windowOpen, timeWindowOpen, identity, status, invitation, signInHref}: {
+export function joinState({preview, windowOpen, timeWindowOpen, registerAllowed, identity, status, invitation, signInHref}: {
     preview?: PreviewViewer;
     windowOpen: boolean;
     timeWindowOpen: boolean;
+    // The server's verdict for a signed-in visitor without an application (staff, registration mode, schedule); it overrides windowOpen.
+    registerAllowed?: boolean | "loading";
     identity: "loading" | "guest" | "user";
     status?: number | "loading" | "error";
     invitation?: {Invited?: boolean; InvitationExpired?: boolean} | "loading";
@@ -52,7 +55,9 @@ export function joinState({preview, windowOpen, timeWindowOpen, identity, status
     if (status === "loading" || status === undefined) return {kind: "loading"};
     if (status === "error") return {kind: "hidden"};
     switch (status) {
-        case 0: return windowOpen ? {kind: "join", href: "/join"} : {kind: "hidden"};
+        case 0:
+            if (registerAllowed === "loading") return {kind: "loading"};
+            return (registerAllowed ?? windowOpen) ? {kind: "join", href: "/join"} : {kind: "hidden"};
         case 1:
             if (invitation === "loading" || invitation === undefined) return {kind: "loading"};
             // Invitations ignore the registration type but not the registration window.
@@ -99,12 +104,14 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !viewer, retry: false, refetchInterval: false});
     const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !!eventID && !!identity.data, retry: false, refetchInterval: false});
     const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !viewer && join.data === 1, retry: false, refetchInterval: false});
+    const participation = useParticipation(eventID, hasJoin && !viewer && join.data === 0);
     const eventSite = eventTag ? eventOrigin(eventTag) : "";
     const signInHref = idOrigin && eventSite
         ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${eventSite}/join`)}`
         : "/join";
     const state = hasJoin ? joinState({
         preview: viewer, windowOpen, timeWindowOpen, signInHref,
+        registerAllowed: participation.isPending ? "loading" : participation.data ? participation.data.Register.Allowed : undefined,
         identity: identity.isPending ? "loading" : identity.data ? "user" : "guest",
         status: join.isPending ? "loading" : join.isError ? "error" : join.data,
         invitation: invitation.isPending ? "loading" : invitation.data,

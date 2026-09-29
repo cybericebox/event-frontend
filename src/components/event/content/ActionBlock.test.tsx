@@ -13,6 +13,7 @@ vi.mock("@/api/clientAuth", () => ({
     getCurrentUser: vi.fn(async () => null),
     getJoinStatus: vi.fn(async () => 0),
     getInvitationInfo: vi.fn(async () => ({Status: 0, Invited: false})),
+    getParticipation: vi.fn(async () => null),
 }));
 
 afterEach(cleanup);
@@ -56,6 +57,25 @@ describe("join action states", () => {
         expect(joinState({...base, windowOpen: false, identity: "user", status: 2})).toEqual({kind: "approved"});
         expect(joinState({...base, identity: "loading"})).toEqual({kind: "loading"});
         expect(joinState({...base, identity: "user", status: "loading"})).toEqual({kind: "loading"});
+    });
+
+    it("follows the server's verdict for a signed-in visitor: staff never see the join button, whatever the window says", () => {
+        expect(joinState({...base, identity: "user", status: 0, registerAllowed: false})).toEqual({kind: "hidden"});
+        expect(joinState({...base, windowOpen: false, identity: "user", status: 0, registerAllowed: true})).toEqual({kind: "join", href: "/join"});
+        expect(joinState({...base, identity: "user", status: 0, registerAllowed: "loading"})).toEqual({kind: "loading"});
+        // Someone who already applied keeps their status even when registration is no longer allowed.
+        expect(joinState({...base, identity: "user", status: 2, registerAllowed: false})).toEqual({kind: "approved"});
+    });
+
+    it("hides the join button from event staff", async () => {
+        const {getJoinStatus, getCurrentUser, getParticipation} = await import("@/api/clientAuth");
+        vi.mocked(getCurrentUser).mockResolvedValueOnce({ID: "u", FirstName: "", LastName: "", Email: ""} as never);
+        vi.mocked(getJoinStatus).mockResolvedValueOnce(0);
+        vi.mocked(getParticipation).mockResolvedValueOnce({Staff: true, Register: {Allowed: false, Reason: "staff_cannot_participate"}} as never);
+        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        render(<QueryClientProvider client={client}><ActionBlock id="cta" title="" text="" registrationOpen joinPolicy="rolling" startAt="" finishAt="" eventID="event-3" eventTag="games" actions={[{label: "Зареєструватися", kind: "join_event"}, {label: "Правила", href: "/rules"}]} /></QueryClientProvider>);
+        await waitFor(() => expect(screen.queryByText("Зареєструватися")).toBeNull());
+        expect(screen.getByRole("link", {name: "Правила"})).toBeTruthy();
     });
 
     it("previews the button for each viewer without requests", () => {

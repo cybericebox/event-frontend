@@ -22,6 +22,8 @@
   "1320": "This field cannot be changed after registration.",
   "1321": "Fields cannot be changed after the event ends.",
   "1322": "Check the fields you filled in.",
+  "1325": "Event owners and moderators cannot register as participants.",
+  "1326": "Registration is not open right now: the event is not published yet or has finished.",
   "1702": "The team name is invalid.",
   "1706": "The team is already full.",
   "1707": "Team not found.",
@@ -34,6 +36,7 @@
   "1716": "The invitation link has expired. Ask the captain for a new one.",
   "1717": "The link expiry is invalid.",
   "1803": "This set has already been added to the event.",
+  "1808": "The set needs infrastructure, but the event has it disabled.",
   "1809": "The new version removes a challenge that teams have already solved. The update is not possible.",
   "1811": "This set is not available for the event.",
   "1812": "This action is not available for this set.",
@@ -42,6 +45,5 @@
   "2101": "Check the host, port and TLS mode.",
   "2102": "The SMTP password cannot be saved: no encryption key is configured on the platform.",
   "2103": "This notification is mandatory and cannot be disabled.",
-  "2104": "Check the contact email and reminder hours.",
-  "1808": "The set needs infrastructure, but the event has it disabled."
+  "2104": "Check the contact email and reminder hours."
 }

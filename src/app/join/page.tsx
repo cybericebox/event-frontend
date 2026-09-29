@@ -6,9 +6,9 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {apiErrorMessage} from "@/api/apiErrors";
-import {getCurrentUser, getInvitationInfo, getJoinStatus, getRegistrationWindow} from "@/api/clientAuth";
+import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
 import {getSelfParticipantForm, joinSelfEvent, ParticipantJoinError, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
-import {registrationWindowOpen} from "@/components/event/content/ActionBlock";
+import {reasonText, useParticipation} from "@/components/event/participation/participationRules";
 import {collectFormAnswers, ParticipantFormFields} from "@/components/event/ParticipantFormFields";
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
@@ -28,10 +28,11 @@ export default function JoinPage() {
     const invitation = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event && join.data === 1, retry: false});
     // Invitations are accepted on /invite; this page only handles own applications.
     const invited = invitation.data?.Invited === true && invitation.data.Status === ParticipationStatusEnum.PendingParticipationStatus;
-    const registration = useQuery({queryKey: ["event-registration-window", event?.EventID], queryFn: () => getRegistrationWindow(event!.EventID), enabled: !!identity.data && !!event, retry: false});
-    const windowOpen = (now: number) => !!registration.data && registrationWindowOpen(registration.data.registrationOpen, registration.data.joinPolicy, registration.data.startAt, registration.data.finishAt, now);
-    const [openedAt] = useState(() => Date.now());
-    const canJoin = join.data === 0 && windowOpen(openedAt);
+    // What the caller may do is decided by the server (schedule, registration
+    // mode, staff role); the page only shows it and the reason when it is closed.
+    const registration = useParticipation(event?.EventID, !!identity.data && !!event);
+    const register = registration.data?.Register;
+    const canJoin = join.data === 0 && !!register?.Allowed;
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!identity.data && !!event && canJoin, retry: false});
     const [answers, setAnswers] = useState<ParticipantAnswers>({});
     const [working, setWorking] = useState(false);
@@ -42,10 +43,6 @@ export default function JoinPage() {
     async function submit() {
         if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;
         setError("");
-        if (!windowOpen(Date.now())) {
-            setError(t("join.closed"));
-            return;
-        }
         const collected = collectFormAnswers(form.data, answers);
         if (collected.error) {
             setError(collected.error);
@@ -76,7 +73,7 @@ export default function JoinPage() {
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>{t("invite.already")}</p>
             : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>{t("join.pending")}</p>
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>{t("shell.join.rejected")}</p>
-            : !windowOpen(openedAt) ? <p>{t("join.closed")}</p>
+            : !register?.Allowed ? <p>{reasonText(register?.Reason ?? "") || t("join.closed")}</p>
             : <>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}

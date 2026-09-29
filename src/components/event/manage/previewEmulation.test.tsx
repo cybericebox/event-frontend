@@ -11,6 +11,7 @@ vi.mock("@/api/clientAuth", () => ({
     getCurrentUser: vi.fn(async () => null),
     getJoinStatus: vi.fn(async () => 0),
     getInvitationInfo: vi.fn(async () => ({Status: 0, Invited: false})),
+    getParticipation: vi.fn(async () => null),
 }));
 vi.mock("@/api/manage", () => ({
     getManagePages: vi.fn(async () => []),
