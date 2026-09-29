@@ -29,7 +29,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const dragMime = "application/x-live-widget";
-const paletteBox = {width: 196, height: 64};
+const paletteBox = {width: 180, height: 59};
 const historyLimit = 50;
 // Edits closer than this (typing, a slider drag) undo as one step.
 const historyMergeMs = 700;
