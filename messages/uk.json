@@ -1480,7 +1480,7 @@
   "manage.live.logos.up": "Вище",
   "manage.live.logos.upload": "Завантажити логотипи",
   "manage.live.logos.uploadError": "Не вдалося завантажити логотип. Підійде PNG, JPEG, WebP або GIF до 5 МБ.",
-  "manage.live.note": "Перетягніть віджет, щоб перемістити. Тягніть правий нижній кут, щоб змінити розмір.",
+  "manage.live.note": "Перетягніть віджет, щоб перемістити; правий нижній кут змінює розмір. Виділений віджет: стрілки — на клітинку, Shift+стрілки — розмір, Delete — прибрати, Esc — зняти виділення.",
   "manage.live.open": "Відкрити екран",
   "manage.live.paletteAdd": "Додати віджет «{name}»",
   "manage.live.paletteHint": "Натисніть, щоб додати, або перетягніть на сітку",
@@ -2799,5 +2799,7 @@
   "manage.live.audience.capParticipants": "Результати бачать лише учасники.",
   "manage.live.audience.saved": "Доступ до Live змінено",
   "manage.live.access.error": "Не вдалося змінити доступ до Live.",
-  "live.unavailable.closed": "Організатори не відкрили Live-екран для вас. Якщо ви учасник, увійдіть під своїм обліковим записом."
+  "live.unavailable.closed": "Організатори не відкрили Live-екран для вас. Якщо ви учасник, увійдіть під своїм обліковим записом.",
+  "manage.live.undo": "Скасувати зміну (⌘Z / Ctrl+Z)",
+  "manage.live.redo": "Повторити зміну (⇧⌘Z / Ctrl+Y)"
 }

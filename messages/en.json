@@ -1480,7 +1480,7 @@
   "manage.live.logos.up": "Up",
   "manage.live.logos.upload": "Upload logos",
   "manage.live.logos.uploadError": "Could not upload the logo. Use PNG, JPEG, WebP or GIF up to 5 MB.",
-  "manage.live.note": "Drag a widget to move it. Drag its bottom-right corner to resize it.",
+  "manage.live.note": "Drag a widget to move it; its bottom-right corner resizes it. Selected widget: arrows move it by a cell, Shift+arrows resize, Delete removes, Esc clears the selection.",
   "manage.live.open": "Open screen",
   "manage.live.paletteAdd": "Add the “{name}” widget",
   "manage.live.paletteHint": "Click to add, or drag onto the grid",
@@ -2799,5 +2799,7 @@
   "manage.live.audience.capParticipants": "Only participants see the results.",
   "manage.live.audience.saved": "Live access changed",
   "manage.live.access.error": "Could not change Live access.",
-  "live.unavailable.closed": "The organizers have not opened the live screen to you. If you are a participant, sign in with your account."
+  "live.unavailable.closed": "The organizers have not opened the live screen to you. If you are a participant, sign in with your account.",
+  "manage.live.undo": "Undo (⌘Z / Ctrl+Z)",
+  "manage.live.redo": "Redo (⇧⌘Z / Ctrl+Y)"
 }
