@@ -16,6 +16,7 @@ import {AnalyticsExportButton} from "./AnalyticsExportButton";
 import {AnalyticsPage} from "./AnalyticsPage";
 import {AnalyticsPeriodFilter} from "./AnalyticsPeriodFilter";
 import {AnalyticsStat, AnalyticsStatGrid} from "./AnalyticsStat";
+import {RegistrationsCard, ScoresCard} from "./OverviewCharts";
 import {CommsCard, EngagementCard, LeadersCard, sectionHref, StandsCard, StatusStrip, TasksCard} from "./OverviewCards";
 import {useAnalyticsPeriod} from "./useAnalyticsPeriod";
 
@@ -144,6 +145,7 @@ export function AnalyticsOverview() {
     if (!started) return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.descriptionBefore")} actions={actions}>
         <StatusStrip overview={data} />
         <RegistrationStats overview={data} teamMode={teamMode} />
+        <div className="event-analytics-charts event-analytics-charts--single"><RegistrationsCard /></div>
         {(hasStands || hasComms) && <div className="event-analytics-cards">
             {hasStands && <StandsCard {...cards} />}
             {hasComms && <CommsCard {...cards} />}
@@ -153,17 +155,18 @@ export function AnalyticsOverview() {
     return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.description")} actions={actions} filter={<AnalyticsPeriodFilter period={filter} />}>
         <StatusStrip overview={data} />
         <LiveStats overview={data} teamMode={teamMode} />
-        <div className="event-analytics__columns">
+        <div className="event-analytics-charts">
             <section className="event-analytics__block" aria-label={t("manage.analytics.chart.title")}>
                 <div className="event-analytics__block-head"><h2>{t("manage.analytics.chart.title")}</h2><p>{t("manage.analytics.chart.subtitle", {minutes: activityBucketMinutes(data)})}</p></div>
                 <AnalyticsChart event={event} state={chartState} option={chartOption}
                     ariaLabel={t("manage.analytics.chart.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage={t("manage.analytics.chart.loadFailed")}
                     emptyMessage={t("manage.analytics.chart.empty")} onRetry={retry} error={overview.error} />
             </section>
-            <Feed overview={data} state={blockState} onRetry={retry} error={overview.error} />
+            <ScoresCard period={filter.period} final={data.Final} />
         </div>
         <div className="event-analytics-cards">
             <LeadersCard {...cards} />
+            <Feed overview={data} state={blockState} onRetry={retry} error={overview.error} />
             <TasksCard {...cards} />
             <EngagementCard {...cards} />
             {hasStands && <StandsCard {...cards} />}
