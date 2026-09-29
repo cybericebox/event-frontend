@@ -62,7 +62,7 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
     const entries = accountMenu("event", {
         adminTier, catalog: adminTier || catalog.data === true,
         returnTo: typeof window !== "undefined" ? window.location.href : `${eventOrigin(event.Tag)}/`,
-    }, {id: idOrigin, admin: adminOrigin, exercises: exercisesOrigin, main: mainOrigin});
+    }, {id: idOrigin, admin: adminOrigin, exercises: exercisesOrigin});
     const contextAt = entries.findIndex(entry => entry.kind === "divider");
     const picture = profilePictureUrl(profile.data?.Picture ?? "");
     const avatarInitials = initials(profile.data?.FirstName, profile.data?.LastName, profile.data?.Email);
