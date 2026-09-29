@@ -68,6 +68,8 @@ export function resultsLiveURL(eventID: string, revision: number, view: ResultsV
 const moderatorTeamSchema = z.object({
     Rank: z.number().int().nullable(), TeamID: id, Name: z.string(), RealName: z.string(), Pseudonym: z.string().nullable(),
     Individual: z.boolean(), Hidden: z.boolean(), Admitted: z.boolean(), Points: z.number().int(), Solved: z.number().int(), LastSolveAt: z.string().nullable(),
+    Hints: z.number().int().default(0), HintPoints: z.number().int().default(0),
+    Solves: z.array(z.object({ChallengeID: id, ChallengeName: z.string(), Points: z.number().int(), SolvedAt: z.string(), FirstBlood: z.boolean()})).default([]),
 });
 const moderatorResultsSchema = z.object({
     Revision: z.number().int(), GeneratedAt: z.string(), Freeze: freezeSchema,
@@ -76,6 +78,7 @@ const moderatorResultsSchema = z.object({
 });
 export type ModeratorResults = z.infer<typeof moderatorResultsSchema>;
 export type ModeratorResultsTeam = z.infer<typeof moderatorTeamSchema>;
+export type ModeratorResultsSolve = ModeratorResultsTeam["Solves"][number];
 
 const settingsSchema = z.object({
     ScoreboardVisibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),

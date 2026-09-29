@@ -1,0 +1,22 @@
+/* «Таблиця результатів» and «Налаштування результатів». */
+.event-results-freeze{flex-wrap:wrap;margin-bottom:0}
+.event-results-freeze>svg{flex:none;color:var(--ib-ok)}
+.event-results-freeze.is-frozen>svg{color:var(--ib-action)}
+.event-results-freeze__text{flex:1 1 280px;min-width:0}
+.event-results-freeze__text strong{font-weight:var(--ib-w-semibold)}
+.event-results-table__tools{display:flex;margin-left:auto;gap:var(--ib-2)}
+.event-results-table__title{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
+.event-results-table__rank{color:var(--ib-dim);font-family:var(--ib-mono);font-variant-numeric:tabular-nums}
+.event-results-table__points{font-weight:var(--ib-w-semibold)}
+.event-results-table__toggle svg{transition:transform var(--ib-dur-fast) var(--ib-ease)}
+.event-results-table__toggle[aria-expanded="true"] svg{transform:rotate(90deg)}
+.event-manage-table tr.is-open td{background:var(--ib-soft)}
+.event-manage-table tr.event-results-table__detail td{padding:0 var(--ib-4) var(--ib-4) calc(var(--ib-4) + 40px);background:var(--ib-soft)}
+.event-manage-table tr.event-results-table__detail:hover td{background:var(--ib-soft)}
+.event-results-table__solves{width:100%;border-collapse:collapse;font-size:var(--ib-fs-13)}
+.event-results-table__solves th{padding:var(--ib-2) var(--ib-3);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);text-align:left}
+.event-results-table__solves td{padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);background:transparent}
+.event-manage-table .event-results-table__solves tbody tr:hover td{background:transparent}
+.event-results-table__solves .ib-num{text-align:right}
+.event-results-settings__select{max-width:160px}
+.event-results-settings__hint{color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-regular,400)}

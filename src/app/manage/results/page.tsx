@@ -1,25 +1,33 @@
 "use client";
 
-import {useState} from "react";
+import {Fragment, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {Download, RefreshCw} from "lucide-react";
-import {downloadResultsCSV, getModeratorResults, resultsLiveURL, setResultsOpened, type ModeratorResults} from "@/api/manageResults";
-import {EventLoading} from "@/components/event/EventLoading";
-import {EventLoadError} from "@/components/event/EventLoadError";
+import {ChevronRight, Download, ExternalLink, Radio, Snowflake} from "lucide-react";
+import {downloadResultsCSV, getModeratorResults, resultsLiveURL, setResultsOpened, type ModeratorResults, type ModeratorResultsTeam} from "@/api/manageResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {ManageTable, ManageTablePagination, ManageTableSearch} from "@/components/event/manage/ManageTable";
+import {LiveStatus} from "@/components/event/manage/LiveStatus";
+import {SortHeader, TableFilterChips, TableFiltersButton} from "@/components/event/manage/TableFilters";
+import type {FilterSpec} from "@/components/event/manage/tableFilterModel";
+import {useTableState} from "@/components/event/manage/useTableState";
+import {journalTime} from "@/components/event/manage/journalShared";
+import {pageOf, selectResults} from "@/components/event/manage/resultsTable";
+import {zoneLabel} from "@/components/ui/dateTimePicker";
+import {EmptyState} from "@/components/ui/EmptyState";
+import {EventButton} from "@/components/ui/EventButton";
 import {useEventStream} from "@/utils/eventStream";
 import {clockLabel, freezeLeadMinutes} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
-import {EmptyState} from "@/components/ui/EmptyState";
-import {EventButton} from "@/components/ui/EventButton";
+import "@/components/event/manage/results.css";
 
+const RESULTS_POLL_SECONDS = 30;
 const number = new Intl.NumberFormat("uk-UA");
-const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
 
 // `now` is the snapshot time, so the text follows the data, not the render.
 function freezeStatus(freeze: ModeratorResults["Freeze"], now: number): string {
     const lead = freezeLeadMinutes(freeze);
+    if (!freeze.Enabled) return t("manage.results.freeze.disabled");
     if (freeze.OpenedAt) return t("manage.results.freeze.opened", {time: clockLabel(freeze.OpenedAt)});
     if (freeze.Active && freeze.FrozenAt) return t("manage.results.freeze.active", {time: clockLabel(freeze.FrozenAt)});
     if (freeze.FrozenAt && freeze.FinishAt && Date.parse(freeze.FinishAt) <= now) return t("manage.results.freeze.finished");
@@ -27,16 +35,73 @@ function freezeStatus(freeze: ModeratorResults["Freeze"], now: number): string {
     return t("manage.results.freeze.noFinish");
 }
 
+function TeamName({team}: {team: ModeratorResultsTeam}) {
+    return <span className="event-manage-table__person">
+        <span className="event-results-table__title"><strong>{team.Name}</strong>{team.Hidden && <span className="ib-tag ib-tag--sm">{t("manage.results.hidden")}</span>}{!team.Admitted && <span className="ib-tag ib-tag--sm ib-tag--warn">{t("manage.results.notAdmitted")}</span>}</span>
+        {team.Individual && (team.RealName !== team.Name || team.Pseudonym) && <small>{team.RealName}{team.Pseudonym ? ` · ${t("manage.results.pseudonym", {pseudonym: team.Pseudonym})}` : ""}</small>}
+    </span>;
+}
+
+function SolveDetails({team}: {team: ModeratorResultsTeam}) {
+    if (team.Solves.length === 0) return <EmptyState compact message={t("manage.results.detail.empty")} />;
+    return <table className="event-results-table__solves">
+        <thead><tr>
+            <th scope="col">{t("manage.results.detail.challenge")}</th>
+            <th scope="col">{t("manage.results.detail.time")}</th>
+            <th scope="col" className="ib-num">{t("manage.results.column.points")}</th>
+            <th scope="col"><span className="sr-only">{t("manage.results.detail.firstBlood")}</span></th>
+        </tr></thead>
+        <tbody>{team.Solves.map(solve => <tr key={solve.ChallengeID}>
+            <td>{solve.ChallengeName || t("manage.attempts.challenge")}</td>
+            <td className="event-manage-table__nowrap"><time dateTime={solve.SolvedAt}>{journalTime.format(new Date(solve.SolvedAt))}</time></td>
+            <td className="ib-num">{number.format(solve.Points)}</td>
+            <td>{solve.FirstBlood && <span className="ib-tag ib-tag--sm ib-tag--danger">{t("manage.results.detail.firstBlood")}</span>}</td>
+        </tr>)}</tbody>
+    </table>;
+}
+
 export default function ManageResultsPage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
+    const teamMode = event.Participation === 1;
     const queryClient = useQueryClient();
     const [busy, setBusy] = useState<"open" | "export" | null>(null);
+    const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
     const queryKey = ["event-management-moderator-results", eventID];
     const revision = queryClient.getQueryData<ModeratorResults>(queryKey)?.Revision;
     // Moderators are never frozen: the public stream only signals changes.
     const stream = useEventStream({url: () => revision === undefined ? null : resultsLiveURL(eventID, revision), events: ["result-change"], resetEvents: ["snapshot-required"], onChange: () => void queryClient.invalidateQueries({queryKey}), enabled: revision !== undefined});
-    const query = useQuery({queryKey, queryFn: () => getModeratorResults(eventID), refetchInterval: stream === "fallback" ? 30_000 : false, refetchOnWindowFocus: false});
+    const query = useQuery({queryKey, queryFn: () => getModeratorResults(eventID), refetchInterval: stream === "fallback" ? RESULTS_POLL_SECONDS * 1000 : false, refetchOnWindowFocus: false});
+    const teams = query.data?.Teams ?? [];
+    const withHints = teams.some(team => team.Hints > 0);
+    const who = teamMode ? t("manage.attempts.team") : t("manage.attempts.participant");
+    const {offset} = zoneLabel();
+    const specs: FilterSpec[] = [
+        {key: "@name", label: who, kind: "contains"},
+        {key: "@status", label: t("manage.results.column.status"), kind: "any", options: [
+            {value: "ranked", label: t("manage.results.status.ranked")},
+            {value: "hidden", label: t("manage.results.hidden")},
+            {value: "notAdmitted", label: t("manage.results.notAdmitted")},
+        ]},
+        {key: "@points", label: t("manage.results.column.points"), kind: "number"},
+        {key: "@solved", label: t("manage.results.column.solved"), kind: "number"},
+        {key: "@last", label: t("manage.results.column.lastSolve"), kind: "date"},
+        ...(withHints ? [{key: "@hints", label: t("manage.results.column.hints"), kind: "number" as const}] : []),
+        {key: "@firstBlood", label: t("manage.results.detail.firstBlood"), kind: "bool"},
+    ];
+    const table = useTableState(specs, {key: "@rank", desc: false});
+    const rows = selectResults(teams, table.debounced, table.appliedFilters, table.sort);
+    const visible = pageOf(rows, table.page, table.pageSize);
+    const columns = withHints ? 7 : 6;
+    const state = query.isPending ? "loading" : query.isError && !query.data ? "error" : rows.length === 0 ? "empty" : "ready";
+
+    function toggle(teamID: string) {
+        setExpanded(current => {
+            const next = new Set(current);
+            if (!next.delete(teamID)) next.add(teamID);
+            return next;
+        });
+    }
 
     async function toggleOpened(opened: boolean) {
         setBusy("open");
@@ -55,38 +120,66 @@ export default function ManageResultsPage() {
         finally {setBusy(null);}
     }
 
-    if (query.isPending) return <EventLoading event={event} label={t("manage.results.loading")} />;
-    if (query.isError) return <EventLoadError message={t("manage.results.loadFailed")} onRetry={() => void query.refetch()} />;
-
-    const results = query.data;
-    const teamMode = event.Participation === 1;
-    const maxPoints = Math.max(1, ...results.Teams.map(entry => entry.Points));
-    const freeze = results.Freeze;
-    const generatedAt = Date.parse(results.GeneratedAt);
-    const finished = !!freeze.FinishAt && Date.parse(freeze.FinishAt) <= generatedAt;
+    const freeze = query.data?.Freeze;
+    const generatedAt = query.data ? Date.parse(query.data.GeneratedAt) : 0;
+    const finished = !!freeze?.FinishAt && Date.parse(freeze.FinishAt) <= generatedAt;
+    const frozenForParticipants = !!freeze && freeze.Active && !freeze.OpenedAt;
     return <div className="event-manage-settings event-manage-results">
-        <header className="event-manage-heading"><div><h1>{t("manage.results.title")}</h1><p>{teamMode ? t("manage.results.subtitleTeams") : t("manage.results.subtitle")} {stream === "live" ? t("manage.results.stream.live") : stream === "fallback" ? t("manage.results.stream.fallback") : ""}</p></div>
-            <div className="event-manage-results__actions"><EventButton className="ib-btn" type="button" disabled={busy === "export"} onClick={() => void exportCSV()} busy={busy === "export"}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton><EventButton className="ib-btn" type="button" disabled={query.isFetching} onClick={() => void query.refetch()} busy={query.isFetching}><RefreshCw size={16} aria-hidden="true" /> {t("manage.results.refresh")}</EventButton></div>
+        <header className="event-manage-heading">
+            <div><h1>{t("manage.results.title")}</h1><p>{teamMode ? t("manage.results.subtitleTeams") : t("manage.results.subtitle")}</p></div>
+            <div className="event-manage-heading__actions">
+                <LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: RESULTS_POLL_SECONDS}} updatedAt={query.dataUpdatedAt} />
+                <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> {t("manage.results.openLive")}</a>
+            </div>
         </header>
-        <div className="event-manage-results__summary"><div><span>{t("manage.results.ranked")}</span><strong>{number.format(results.Counts.Ranked)}</strong></div><div><span>{t("manage.results.hiddenNotAdmitted")}</span><strong>{number.format(results.Counts.Hidden)} · {number.format(results.Counts.NotAdmitted)}</strong></div><div><span>{t("manage.results.updated")}</span><strong>{t("manage.attempts.timeUtc", {time: date.format(new Date(results.GeneratedAt))})}</strong></div></div>
-        {freeze.Enabled && <section className="event-manage-section event-manage-results__freeze" aria-label={t("manage.results.freeze.label")}><p>{freezeStatus(freeze, generatedAt)}</p>{canManage && !finished && (freeze.OpenedAt
-            ? <button className="ib-btn" type="button" disabled={busy === "open"} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</button>
-            : <button className="ib-btn ib-btn--primary" type="button" disabled={busy === "open"} onClick={() => void toggleOpened(true)}>{t("manage.results.freeze.open")}</button>)}</section>}
-        <section className="event-manage-section"><div className="event-manage-section__head"><h2>{t("manage.results.ranking")}</h2><p>{teamMode ? t("manage.results.unrankedTeams") : t("manage.results.unrankedParticipants")}</p></div>
-            {results.Teams.length === 0 ? <EmptyState message={t("manage.results.empty")} /> : <div className="event-manage-results__table" role="table" aria-label={t("manage.results.tableLabel")}>
-                <div className="event-manage-results__table-head" role="row"><span role="columnheader">{t("manage.results.column.rank")}</span><span role="columnheader">{teamMode ? t("manage.attempts.team") : t("manage.attempts.participant")}</span><span role="columnheader">{t("manage.results.column.points")}</span><span role="columnheader">{t("manage.results.column.solved")}</span><span role="columnheader">{t("manage.results.column.lastSolve")}</span></div>
-                {results.Teams.map(entry => <div className="event-manage-results__row" role="row" key={entry.TeamID}>
-                    <span role="cell" className="event-manage-results__rank">{entry.Rank ?? "—"}</span>
-                    <span role="cell" className="event-manage-results__name">
-                        <span className="event-manage-results__title"><strong>{entry.Name}</strong>{entry.Hidden && <span className="ib-tag ib-tag--sm">{t("manage.results.hidden")}</span>}{!entry.Admitted && <span className="ib-tag ib-tag--sm ib-tag--warn">{t("manage.results.notAdmitted")}</span>}</span>
-                        {entry.Individual && (entry.RealName !== entry.Name || entry.Pseudonym) && <small>{entry.RealName}{entry.Pseudonym ? ` · ${t("manage.results.pseudonym", {pseudonym: entry.Pseudonym})}` : ""}</small>}
-                        <span className="event-manage-results__bar" aria-hidden="true"><i style={{width: `${Math.max(0, Math.min(100, entry.Points / maxPoints * 100))}%`}} /></span>
-                    </span>
-                    <span role="cell" className="event-manage-results__points">{number.format(entry.Points)}</span>
-                    <span role="cell" className="event-manage-results__points">{number.format(entry.Solved)}</span>
-                    <span role="cell" className="event-manage-results__time">{entry.LastSolveAt ? t("manage.attempts.timeUtc", {time: date.format(new Date(entry.LastSolveAt))}) : "—"}</span>
-                </div>)}
-            </div>}
-        </section>
+        {freeze && <div className={`event-manage-notice event-results-freeze${frozenForParticipants ? " is-frozen" : ""}`} role="status" aria-label={t("manage.results.freeze.label")}>
+            {frozenForParticipants ? <Snowflake size={18} aria-hidden="true" /> : <Radio size={18} aria-hidden="true" />}
+            <span className="event-results-freeze__text"><strong>{frozenForParticipants ? t("manage.results.view.frozen") : t("manage.results.view.live")}</strong> {freezeStatus(freeze, generatedAt)}</span>
+            {canManage && freeze.Enabled && !finished && freeze.FrozenAt && (freeze.OpenedAt
+                ? <EventButton className="ib-btn ib-btn--sm" type="button" disabled={busy === "open"} busy={busy === "open"} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</EventButton>
+                : <EventButton className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy === "open"} busy={busy === "open"} onClick={() => void toggleOpened(true)}>{t("manage.results.freeze.open")}</EventButton>)}
+        </div>}
+        <ManageTable event={event} state={state} loadingLabel={t("manage.results.loading")} errorMessage={t("manage.results.loadFailed")} onRetry={() => void query.refetch()}
+            emptyMessage={table.filtered ? t("manage.results.emptyFiltered") : t("manage.results.empty")}
+            toolbar={<>
+                <ManageTableSearch value={table.search} onChange={table.setSearch} label={teamMode ? t("manage.results.searchTeams") : t("manage.results.searchParticipants")} />
+                <TableFiltersButton specs={specs} drafts={table.drafts} onChange={table.setDrafts} active={table.active} />
+                <div className="event-results-table__tools">
+                    <EventButton className="ib-btn" type="button" disabled={busy === "export"} busy={busy === "export"} onClick={() => void exportCSV()}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>
+                </div>
+                <TableFilterChips specs={specs} drafts={table.drafts} onChange={table.setDrafts} onReset={table.reset}
+                    extra={table.search.trim() ? [{key: "@search", text: t("manage.table.filters.searchChip", {text: table.search.trim()}), onRemove: () => table.setSearch("")}] : []} />
+            </>}
+            footer={<ManageTablePagination event={event} page={table.page} pageSize={table.pageSize} total={rows.length} hasNext={table.page * table.pageSize < rows.length}
+                onPrevious={() => table.setPage(table.page - 1)} onNext={() => table.setPage(table.page + 1)} onPageSize={table.setPageSize} />}
+            head={<tr>
+                <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.results.detail.toggleColumn")}</span></th>
+                <SortHeader columnKey="@rank" label={t("manage.results.column.rank")} sort={table.sort} onSort={table.setSort} />
+                <SortHeader columnKey="@name" label={who} sort={table.sort} onSort={table.setSort} />
+                <SortHeader columnKey="@points" label={t("manage.results.column.points")} sort={table.sort} onSort={table.setSort} />
+                <SortHeader columnKey="@solved" label={t("manage.results.column.solved")} sort={table.sort} onSort={table.setSort} />
+                <SortHeader columnKey="@last" label={t("manage.results.column.lastSolveAt", {offset})} sort={table.sort} onSort={table.setSort} />
+                {withHints && <SortHeader columnKey="@hints" label={t("manage.results.column.hints")} sort={table.sort} onSort={table.setSort} />}
+            </tr>}>
+            <tbody>{visible.map(team => {
+                const open = expanded.has(team.TeamID);
+                const detailID = `results-detail-${team.TeamID}`;
+                return <Fragment key={team.TeamID}>
+                    <tr className={`is-clickable${open ? " is-open" : ""}`} onClick={() => toggle(team.TeamID)}>
+                        <td><button className="ib-icon-btn ib-icon-btn--sm event-results-table__toggle" type="button" aria-expanded={open} aria-controls={detailID}
+                            aria-label={t(open ? "manage.results.detail.hide" : "manage.results.detail.show", {name: team.Name})} onClick={clickEvent => {clickEvent.stopPropagation(); toggle(team.TeamID);}}>
+                            <ChevronRight size={16} aria-hidden="true" />
+                        </button></td>
+                        <td className="event-results-table__rank">{team.Rank ?? "—"}</td>
+                        <td><TeamName team={team} /></td>
+                        <td className="ib-num event-results-table__points">{number.format(team.Points)}</td>
+                        <td className="ib-num">{number.format(team.Solved)}</td>
+                        <td className="event-manage-table__nowrap event-manage-table__dim">{team.LastSolveAt ? <time dateTime={team.LastSolveAt}>{journalTime.format(new Date(team.LastSolveAt))}</time> : "—"}</td>
+                        {withHints && <td className="ib-num">{team.Hints > 0 ? t("manage.results.hintsValue", {count: team.Hints, points: number.format(team.HintPoints)}) : "—"}</td>}
+                    </tr>
+                    {open && <tr id={detailID} className="event-results-table__detail"><td colSpan={columns}><SolveDetails team={team} /></td></tr>}
+                </Fragment>;
+            })}</tbody>
+        </ManageTable>
     </div>;
 }
