@@ -100,9 +100,9 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
             {draft.kind === "dynamic" && <>
                 <div className="event-manage-field event-task__kind">{t("manage.challenges.scoring.decay")}
                     <EventSelect ariaLabel={t("manage.challenges.scoring.decay")} value={String(draft.profile.Mode)} options={decayOptions()} onValueChange={mode => updateProfile({Mode: Number(mode) as ScoringMode})} disabled={locked} /></div>
-                <RequiredNumber id={`${fieldID}-max`} title={t("manage.challenges.task.from")} help={t("manage.scoring.maxHelp")} value={String(draft.profile.MaxPoints)} min={2}
+                <RequiredNumber id={`${fieldID}-max`} title={t("manage.challenges.task.from")} help={t("manage.scoring.maxHelp")} value={String(draft.profile.MaxPoints)} min={1}
                     error={errors.max} disabled={locked} onChange={value => updateProfile({MaxPoints: numberOf(value)})} />
-                <RequiredNumber id={`${fieldID}-min`} title={t("manage.challenges.task.to")} help={t("manage.scoring.minHelp")} value={String(draft.profile.MinPoints)} min={1}
+                <RequiredNumber id={`${fieldID}-min`} title={t("manage.challenges.task.to")} help={t("manage.scoring.minHelp")} value={String(draft.profile.MinPoints)} min={0}
                     error={errors.min} disabled={locked} onChange={value => updateProfile({MinPoints: numberOf(value)})} />
                 {draft.profile.Mode !== 3 && <RequiredNumber id={`${fieldID}-floor`} title={t("manage.scoring.floor")} help={t("manage.scoring.floorHelp")} value={String(draft.profile.FloorAtPercent)} min={1} max={100}
                     error={errors.floor} disabled={locked} onChange={value => updateProfile({FloorAtPercent: numberOf(value)})} />}

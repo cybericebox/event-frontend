@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {getManageConfig} from "@/api/manage";
+import {getManageConfig, getManageLifecycle} from "@/api/manage";
 import {Plus} from "lucide-react";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {AttachExerciseDialog} from "./AttachExerciseDialog";
@@ -18,6 +18,7 @@ export function ExercisesSection() {
     const returnURL = useReturnURL();
     const [attachOpen, setAttachOpen] = useState(false);
     const config = useQuery({queryKey: ["event-management-config", event.EventID], queryFn: () => getManageConfig(event.EventID), refetchOnWindowFocus: false});
+    const lifecycle = useQuery({queryKey: ["event-management-lifecycle", event.EventID], queryFn: () => getManageLifecycle(event.EventID), refetchOnWindowFocus: false});
 
     return <div className="event-manage-settings event-challenge-manager">
         <header className="event-manage-heading">
@@ -28,7 +29,7 @@ export function ExercisesSection() {
             </div>}
         </header>
         <ExerciseAttachments />
-        {canManage && config.data && <AttachExerciseDialog eventID={event.EventID} infrastructureAllowed={config.data.InfrastructureAllowed} open={attachOpen} onClose={() => setAttachOpen(false)}
+        {canManage && config.data && <AttachExerciseDialog eventID={event.EventID} infrastructureAllowed={config.data.InfrastructureAllowed} published={!!lifecycle.data && lifecycle.data.Status !== "not_published"} open={attachOpen} onClose={() => setAttachOpen(false)}
             onAttached={() => Promise.all([
                 queryClient.invalidateQueries({queryKey: ["event-exercise-attachments", event.EventID]}),
                 queryClient.invalidateQueries({queryKey: ["event-exercise-boards", event.EventID]}),

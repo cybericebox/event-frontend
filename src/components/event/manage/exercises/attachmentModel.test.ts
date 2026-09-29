@@ -13,7 +13,7 @@ describe("attachment labels", () => {
     it("names the scope: catalog, the event's copy, or the event's own exercise", () => {
         const fork = {SourceExerciseID: "s"} as never;
         expect(attachmentScopeLabel(attachmentKind({Scope: "catalog", Fork: null}))).toBe("Каталог");
-        expect(attachmentScopeLabel(attachmentKind({Scope: "event", Fork: fork}))).toBe("Копія для заходу");
+        expect(attachmentScopeLabel(attachmentKind({Scope: "event", Fork: fork}))).toBe("Копія заходу");
         expect(attachmentScopeLabel(attachmentKind({Scope: "event", Fork: null}))).toBe("Завдання заходу");
     });
 });

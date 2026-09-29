@@ -37,6 +37,7 @@ button.event-sortable__main{cursor:pointer}
 .event-exercise-set__warning .ib-btn{flex:none}
 .event-exercise-picker__reason{grid-column:1/-1;color:var(--ib-danger);font-size:var(--ib-fs-12)}
 .event-manage-blockers{display:grid;gap:var(--ib-2);margin-bottom:var(--ib-5);padding:var(--ib-3) var(--ib-4);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger)}
+.event-manage-blockers p{margin:0;font-size:var(--ib-fs-13)}
 .event-manage-blockers h2{margin:0;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
 .event-manage-blockers ul{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none;font-size:var(--ib-fs-13)}
 .event-manage-blockers a{color:inherit;font-weight:var(--ib-w-semibold)}

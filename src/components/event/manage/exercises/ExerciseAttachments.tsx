@@ -2,7 +2,7 @@
 
 import {useState, useSyncExternalStore} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {ChevronRight, Pencil} from "lucide-react";
+import {ChevronRight} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
     detachEventExercise, forkEventExercise, removeEventChallenge, revertEventExercise, updateEventExercise,
@@ -19,6 +19,7 @@ import {
     infrastructureMismatch, isDetached,
 } from "./attachmentModel";
 import {InfrastructureIcon, TipTag} from "./InfrastructureIcon";
+import {SetActions} from "./SetActions";
 import {HintMark, TaskRow} from "./TaskRow";
 import {setOpenByDefault, setSummary, standReadiness} from "./taskRowModel";
 import {useSetOpenState} from "./useSetOpenState";
@@ -94,6 +95,8 @@ export function ExerciseAttachments() {
     if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.exercises.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}}>{t("common.retry")}</button></div>;
 
     const copy = action && actionCopy(action);
+    // Infrastructure can be enabled only before publication.
+    const published = lifecycleQuery.data.Status !== "not_published";
     return <>
         {scoringQuery.data.ForceEventScoring && <p className="event-manage-notice">{t("manage.challenges.task.scoringForcedNotice")}</p>}
         <section className="event-manage-section event-sets" aria-label={t("manage.exercises.sets")}>
@@ -124,12 +127,8 @@ export function ExerciseAttachments() {
                                 {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
                                 {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
                             </span>
-                            {canManage && <div className="event-exercise-set__actions">
-                                {kind === "catalog" && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "fork", attachment})}>{t("manage.exercises.fork")}</button>}
-                                {editURL && <a className="ib-btn ib-btn--sm" href={editURL}><Pencil aria-hidden="true" />{t("common.edit")}</a>}
-                                {kind === "fork" && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "revert", attachment})}>{t("manage.exercises.revert")}</button>}
-                                <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "detach", attachment, attempts: attachment.HasAttempts})}>{t("manage.exercises.action.detach.confirm")}</button>
-                            </div>}
+                            {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy}
+                                onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}
                             <button type="button" className="ib-icon-btn ib-icon-btn--sm event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`}
                                 aria-label={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} onClick={toggle}>
                                 <ChevronRight className="event-exercise-set__chevron" size={18} aria-hidden="true" />
@@ -145,7 +144,7 @@ export function ExerciseAttachments() {
                             ].filter(Boolean).join(" · ")}
                         </p>
                         {mismatch && <div className="event-exercise-set__warning" role="alert">
-                            <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t("manage.challenges.set.infraMissingHow")}</span>
+                            <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t(published ? "manage.challenges.set.infraMissingAfter" : "manage.challenges.set.infraMissingBefore")}</span>
                             {canManage && <button className="ib-btn ib-btn--sm ib-btn--danger" type="button" disabled={busy} onClick={() => setAction({kind: "detach", attachment, attempts: attachment.HasAttempts})}>{t("manage.challenges.task.remove")}</button>}
                         </div>}
                     </header>

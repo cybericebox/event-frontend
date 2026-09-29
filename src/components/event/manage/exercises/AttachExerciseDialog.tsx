@@ -29,8 +29,8 @@ function difficultyLabel(value: string): string {
 // Catalog picker: own event exercises first, preview per variant, variant mode.
 // Without event infrastructure, sets that need it are listed but disabled
 // (the filter starts at «Немає»).
-export function AttachExerciseDialog({eventID, infrastructureAllowed, open, onClose, onAttached}: {
-    eventID: string; infrastructureAllowed: boolean; open: boolean; onClose: () => void; onAttached: () => Promise<unknown>;
+export function AttachExerciseDialog({eventID, infrastructureAllowed, published = false, open, onClose, onAttached}: {
+    eventID: string; infrastructureAllowed: boolean; published?: boolean; open: boolean; onClose: () => void; onAttached: () => Promise<unknown>;
 }) {
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
@@ -102,7 +102,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, open, onCl
                             <span className="ib-tag ib-tag--sm">{t(choice.Scope === "event" ? "manage.exercises.scope.own" : "manage.exercises.scope.catalog")}</span>
                             {choice.Attached && <span className="ib-tag ib-tag--sm ib-tag--ok">{t("manage.exercises.attachDialog.attached")}</span>}
                         </span>
-                        {unavailable(choice) && !choice.Attached && <span className="event-exercise-picker__reason">{t("manage.exercises.attachDialog.needsInfrastructure")}</span>}
+                        {unavailable(choice) && !choice.Attached && <span className="event-exercise-picker__reason">{t(published ? "manage.exercises.attachDialog.needsInfrastructureAfter" : "manage.exercises.attachDialog.needsInfrastructure")}</span>}
                     </button>
                 </li>)}</ul>}
             {attachError && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{attachError}</p>}
