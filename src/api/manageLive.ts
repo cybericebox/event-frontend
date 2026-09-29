@@ -36,7 +36,18 @@ export class LiveDraftInvalidError extends ManageApiError {
     }
 }
 
-let mockEditor: LiveEditor = {Published: defaultLiveLayout, Draft: null};
+// Mock screens: ?mockTheme=light and ?mockScreen=1040x624 (fixed top-left area).
+function mockPublished(): LiveLayout {
+    if (typeof window === "undefined") return defaultLiveLayout;
+    const params = new URLSearchParams(window.location.search);
+    const [width, height] = (params.get("mockScreen") ?? "").split("x").map(Number);
+    const theme = params.get("mockTheme") === "light" ? "light" : "dark";
+    return width > 0 && height > 0
+        ? {...defaultLiveLayout, theme, aspect: "custom", screen: {width, height, anchor: "top-left", textScale: 1}}
+        : {...defaultLiveLayout, theme};
+}
+
+let mockEditor: LiveEditor = {Published: mockPublished(), Draft: null};
 
 async function liveRequest<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
@@ -68,13 +79,12 @@ export const getManageLive = (eventID: string) => liveRequest(eventID, "", edito
 export const saveManageLiveDraft = (eventID: string, layout: LiveLayout) => liveRequest(eventID, "", z.undefined(), "PUT", {Layout: layout});
 export const publishManageLive = (eventID: string) => liveRequest(eventID, "/publish", liveLayoutSchema, "POST");
 
-export async function getPublishedLiveLayout(eventID: string): Promise<LiveLayout> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockEditor.Published;
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/content`, {
-        credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
-    });
-    if (!response.ok) throw new ManageApiError(response.status);
-    return liveLayoutSchema.parse(z.object({Data: z.object({Live: z.unknown()})}).parse(await response.json()).Data.Live);
+// The live screen is a manager view (L1): it reads the published layout
+// through the management API, so unpublished events work too.
+export const getPublishedLiveLayout = async (eventID: string) => (await getManageLive(eventID)).Published;
+
+// Open live screens poll this light version and reload the layout on a change.
+export async function getLiveLayoutVersion(eventID: string): Promise<number> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockEditor.Published.version;
+    return liveRequest(eventID, "/version", z.object({Version: z.number().int()})).then(value => value.Version);
 }

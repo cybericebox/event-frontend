@@ -56,6 +56,7 @@ export function AppShell({children, event, unavailable}: {
     }
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
+        if (isLive) return children;
         if (isContentPage) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
         return <div className="event-shell-state"><h1>Подію не знайдено</h1></div>;
     }

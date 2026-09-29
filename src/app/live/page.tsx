@@ -1,12 +1,6 @@
-import {notFound} from "next/navigation";
-import {getPublicEventInfo} from "@/api/publicEventInfo";
-import {getLiveContent} from "@/api/eventContent";
-import {LiveScreen} from "@/components/event/live/LiveScreen";
+import {LiveBootstrap} from "@/components/event/live/LiveBootstrap";
 
-export default async function LivePage() {
-    const event = await getPublicEventInfo();
-    if (!event) notFound();
-    const layout = await getLiveContent();
-    if (!layout) notFound();
-    return <LiveScreen event={event} layout={layout} />;
+// Managers only (L1): the browser checks access with its own session.
+export default function LivePage() {
+    return <LiveBootstrap />;
 }
