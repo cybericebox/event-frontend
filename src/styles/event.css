@@ -69,10 +69,8 @@ body.event-root main{overflow-x:visible}
 .event-team-form label{display:grid;gap:var(--ib-2);color:var(--ib-ink);font-weight:var(--ib-w-medium)}
 .event-team-form .ib-btn{justify-self:start}
 @media(max-width:640px){.event-team-page{padding:var(--ib-6) var(--ib-4)}}
-.event-guest-main>.event-landing{max-width:1280px;margin-inline:auto}
-.event-guest-main>.ib-blocks{max-width:1280px;margin-inline:auto}
 .event-page-content:has(.ib-blocks){padding:0}
-.event-landing,.event-guest-main>.ib-blocks,.event-page-content>.ib-blocks{gap:0;padding:0 0 var(--ib-12)}
+.event-landing,.event-page-content>.ib-blocks{gap:0;padding:0 0 var(--ib-12)}
 .event-landing>.ib-blocks{gap:0;padding:0}
 .event-guest-main .ib-blocks>.ib-block,.event-landing>.ib-block{border:0;border-radius:0;overflow:hidden}
 .event-guest-main .ib-blocks>.ib-block:not(.ib-mass){background:var(--ib-paper)}
@@ -82,10 +80,17 @@ body.event-root main{overflow-x:visible}
 .event-landing .ib-block-hero__title{max-width:14ch}
 .event-landing .ib-block-hero__facts{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:520px){.event-landing .ib-block-hero__facts{grid-template-columns:minmax(0,1fr)}}
-.event-page-content{max-width:1280px;margin:0 auto;padding:var(--ib-8)}
-.event-join-banner{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);max-width:1200px;margin:var(--ib-5) auto 0;padding:var(--ib-4) var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);font-size:var(--ib-fs-14)}
-.event-join-page{max-width:880px;margin:0 auto;padding:var(--ib-8) var(--ib-5)}
-.event-join-card{display:grid;gap:var(--ib-5);padding:var(--ib-7);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
+/* One content frame for every page of both shells: the navbar bar and the footer row
+   use the same 1280px width and 24px gutter (16px on phones). */
+.event-page-content{width:100%;max-width:1280px;margin:0 auto;padding:var(--ib-8) var(--ib-6) var(--ib-12)}
+/* Constructor blocks keep their backgrounds to the 1280px frame, and their text on the navbar gutter. */
+.event-page-content .ib-blocks>.ib-block{--ib-block-px:var(--ib-6);--ib-block-max:none}
+@media(max-width:760px){.event-page-content .ib-blocks>.ib-block{--ib-block-px:var(--ib-4)}}
+/* Route loading, content errors: centred in the content frame, not the viewport. */
+.event-page-content>.event-shell-state{min-height:max(60dvh,240px);padding-inline:0;background:none}
+.event-join-banner{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);margin:0 0 var(--ib-5);padding:var(--ib-4) var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);font-size:var(--ib-fs-14)}
+.event-join-page{max-width:880px;margin:0 auto}
+.event-join-card{display:grid;gap:var(--ib-5);padding:var(--ib-6);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
 .event-join-card h1,.event-join-card h2,.event-join-card h3,.event-join-card p{margin:0}
 .event-join-card h1{font-size:var(--ib-fs-24)}
 .event-join-card h2{font-size:var(--ib-fs-18)}
@@ -109,7 +114,7 @@ body.event-root main{overflow-x:visible}
 .event-forms-notice>div{flex:1;min-width:0}
 .event-forms-notice strong{color:var(--ib-ink)}
 .event-forms-notice p{margin:var(--ib-1) 0 0;color:var(--ib-dim)}
-.event-forms-page{display:grid;gap:var(--ib-5);max-width:1050px;margin:0 auto}
+.event-forms-page{display:grid;gap:var(--ib-5)}
 .event-forms-page header{display:grid;gap:var(--ib-2)}
 .event-forms-page h1,.event-forms-page h2,.event-forms-page p{margin:0}
 .event-forms-page h1{font-size:var(--ib-fs-24)}
@@ -138,7 +143,7 @@ body.event-root main{overflow-x:visible}
 .event-loading-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 @keyframes event-loading-pulse{50%{opacity:.45;transform:scale(.94)}}
 @media(prefers-reduced-motion:reduce){.event-loading-logo{animation:none}}
-.event-private-preview-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem max(1.5rem,calc((100vw - 72rem)/2));background:var(--ib-paper);border-bottom:1px solid var(--ib-line);font-size:.875rem}
+.event-private-preview-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem max(var(--ib-6),calc((100% - 1280px) / 2 + var(--ib-6)));background:var(--ib-paper);border-bottom:1px solid var(--ib-line);font-size:.875rem}
 .event-private-preview-banner a{color:var(--ib-ink);font-weight:650;text-decoration:underline;text-underline-offset:3px}
 .event-theme-toggle{display:inline-flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--ib-line);border-radius:6px}
 .event-theme-toggle button{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--ib-dim);cursor:pointer}
@@ -146,8 +151,9 @@ body.event-root main{overflow-x:visible}
 .event-theme-toggle button[aria-checked="true"]{background:var(--ib-hero);color:var(--ib-ink)}
 .event-theme-toggle button:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
 .ib-event-shell__backdrop{border:0;padding:0;cursor:pointer}
-@media(max-width:767px){.event-page-content{padding:var(--ib-4)}}
-@media(max-width:600px){.event-join-banner{align-items:flex-start;flex-direction:column;margin:var(--ib-4);padding:var(--ib-4)}.event-join-page{padding:var(--ib-4)}.event-join-card{padding:var(--ib-5)}}
-@media(max-width:767px){.event-landing,.event-guest-main>.ib-blocks,.event-page-content>.ib-blocks{padding:var(--ib-4) var(--ib-4) var(--ib-8);gap:0}.event-landing>.ib-blocks{padding:0}}
+@media(max-width:760px){.event-page-content{padding:var(--ib-6) var(--ib-4) var(--ib-10)}.event-private-preview-banner{padding-inline:var(--ib-4)}}
+@media(max-width:600px){.event-join-banner{align-items:flex-start;flex-direction:column;padding:var(--ib-4)}.event-join-card{padding:var(--ib-5)}}
+@media(max-width:760px){.event-landing,.event-page-content>.ib-blocks{padding:var(--ib-4) 0 var(--ib-8);gap:0}.event-landing>.ib-blocks{padding:0}}
 .ib-footer--event .ib-footer__inner{max-width:1280px;padding-inline:var(--ib-6)}
+@media(max-width:760px){.ib-footer--event .ib-footer__inner{padding-inline:var(--ib-4)}}
 .event-notification-card__source{display:inline-flex;align-items:center;margin-left:var(--ib-2);padding:0 6px;border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-dim);font-size:11px;font-weight:var(--ib-w-medium);line-height:18px;vertical-align:1px}

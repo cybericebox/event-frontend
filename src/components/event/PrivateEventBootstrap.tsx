@@ -61,11 +61,10 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
     }
     const event = identity.data!;
     return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>
-        <GuestShell event={event} authenticated>
-            <div className="event-private-preview-banner" role="status">
-                <span>{t("shell.preview.banner")}</span>
-                <Link href={pathname === "/" ? "/manage/content/landing" : "/manage"}>{pathname === "/" ? t("shell.preview.editLanding") : t("shell.preview.manage")}</Link>
-            </div>
+        <GuestShell event={event} authenticated notice={<div className="event-private-preview-banner" role="status">
+            <span>{t("shell.preview.banner")}</span>
+            <Link href={pathname === "/" ? "/manage/content/landing" : "/manage"}>{pathname === "/" ? t("shell.preview.editLanding") : t("shell.preview.manage")}</Link>
+        </div>}>
             {children}
         </GuestShell>
     </PrivateEventContext.Provider></EventBrandProvider>;

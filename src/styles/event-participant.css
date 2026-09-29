@@ -6,8 +6,7 @@
 .event-challenges,.event-participation{display:flex;flex-direction:column;min-width:0}
 .event-challenges__banners,.event-participation__banners{gap:var(--ib-2);margin-bottom:var(--ib-5)}
 .event-challenges__banners .ib-banner,.event-participation__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
-.event-results{display:flex;flex-direction:column;gap:var(--ib-4);min-width:0;width:100%;max-width:1280px;margin:0 auto;padding:var(--ib-8) var(--ib-6) var(--ib-12)}
-@media (max-width:640px){.event-results{padding:var(--ib-5) var(--ib-4) var(--ib-10)}}
+.event-results{display:flex;flex-direction:column;gap:var(--ib-4);min-width:0;width:100%}
 .event-results__banners{gap:var(--ib-2)}
 .event-results__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
 /* ds-v2 ranking-table: the frozen board note under the table */
@@ -77,7 +76,7 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-inline-icon{display:inline-block;width:14px;height:14px;vertical-align:-2px}
 
 /* ── «Моя участь» ────────────────────────────────────────────────────────── */
-.event-participation{max-width:880px;margin:0 auto;width:100%}
+.event-participation{width:100%}
 .event-part{padding:var(--ib-6) 0;border-top:1px solid var(--ib-line)}
 .event-part:first-of-type{border-top:0;padding-top:var(--ib-2)}
 .event-part__head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-4);margin-bottom:var(--ib-4)}

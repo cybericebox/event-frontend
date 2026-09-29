@@ -128,6 +128,8 @@ export default async function RootLayout({
             <link rel="stylesheet" href="/event-page-builder-v50.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS keeps the manage page frame current behind the development edge cache. */}
             <link rel="stylesheet" href="/event-manage-layout-v5.css" />
+            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS keeps the participant page frame current behind the development edge cache. */}
+            <link rel="stylesheet" href="/event-page-frame-v4.css" />
         </head>
         <body className="event-root">
         <Providers>
