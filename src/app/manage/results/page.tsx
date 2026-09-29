@@ -13,11 +13,12 @@ import {clockLabel, freezeLeadMinutes} from "@/utils/resultsFreeze";
 const number = new Intl.NumberFormat("uk-UA");
 const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
 
-function freezeStatus(freeze: ModeratorResults["Freeze"]): string {
+// `now` is the snapshot time, so the text follows the data, not the render.
+function freezeStatus(freeze: ModeratorResults["Freeze"], now: number): string {
     const lead = freezeLeadMinutes(freeze);
     if (freeze.OpenedAt) return `Підсумки відкрито о ${clockLabel(freeze.OpenedAt)} — учасники бачать актуальний рейтинг.`;
     if (freeze.Active && freeze.FrozenAt) return `Рейтинг заморожено з ${clockLabel(freeze.FrozenAt)} для учасників і гостей. Ви бачите актуальні дані.`;
-    if (freeze.FrozenAt && freeze.FinishAt && Date.parse(freeze.FinishAt) <= Date.now()) return "Подію завершено — заморожування знято.";
+    if (freeze.FrozenAt && freeze.FinishAt && Date.parse(freeze.FinishAt) <= now) return "Подію завершено — заморожування знято.";
     if (freeze.FrozenAt) return `Заморожування почнеться о ${clockLabel(freeze.FrozenAt)}${lead === null ? "" : `, за ${lead} хв до фіналу`}.`;
     return "Заморожування ввімкнено, але в події немає часу фінішу.";
 }
@@ -57,13 +58,14 @@ export default function ManageResultsPage() {
     const teamMode = event.Participation === 1;
     const maxPoints = Math.max(1, ...results.Teams.map(entry => entry.Points));
     const freeze = results.Freeze;
-    const finished = !!freeze.FinishAt && Date.parse(freeze.FinishAt) <= Date.now();
+    const generatedAt = Date.parse(results.GeneratedAt);
+    const finished = !!freeze.FinishAt && Date.parse(freeze.FinishAt) <= generatedAt;
     return <div className="event-manage-settings event-manage-results">
         <header className="event-manage-heading"><div><h1>Таблиця результатів</h1><p>Актуальний рейтинг з усіма {teamMode ? "командами" : "учасниками"}, зокрема прихованими й недопущеними. {stream === "live" ? "Оновлюється наживо." : stream === "fallback" ? "Оновлюється кожні 30 с." : ""}</p></div>
             <div className="event-manage-results__actions"><button className="ib-btn" type="button" disabled={busy === "export"} onClick={() => void exportCSV()}><Download size={16} aria-hidden="true" /> {busy === "export" ? "Експортуємо…" : "Експорт CSV"}</button><button className="ib-btn" type="button" disabled={query.isFetching} onClick={() => void query.refetch()}><RefreshCw size={16} aria-hidden="true" /> {query.isFetching ? "Оновлюємо…" : "Оновити"}</button></div>
         </header>
         <div className="event-manage-results__summary"><div><span>У рейтингу</span><strong>{number.format(results.Counts.Ranked)}</strong></div><div><span>Приховані · недопущені</span><strong>{number.format(results.Counts.Hidden)} · {number.format(results.Counts.NotAdmitted)}</strong></div><div><span>Оновлено</span><strong>{date.format(new Date(results.GeneratedAt))} UTC</strong></div></div>
-        {freeze.Enabled && <section className="event-manage-section event-manage-results__freeze" aria-label="Заморожування рейтингу"><p>{freezeStatus(freeze)}</p>{canManage && !finished && (freeze.OpenedAt
+        {freeze.Enabled && <section className="event-manage-section event-manage-results__freeze" aria-label="Заморожування рейтингу"><p>{freezeStatus(freeze, generatedAt)}</p>{canManage && !finished && (freeze.OpenedAt
             ? <button className="ib-btn" type="button" disabled={busy === "open"} onClick={() => void toggleOpened(false)}>Повернути заморожування</button>
             : <button className="ib-btn ib-btn--primary" type="button" disabled={busy === "open"} onClick={() => void toggleOpened(true)}>Відкрити підсумки</button>)}</section>}
         <section className="event-manage-section"><div className="event-manage-section__head"><h2>Рейтинг</h2><p>{teamMode ? "Приховані й недопущені команди не мають місця." : "Приховані й недопущені учасники не мають місця."}</p></div>
