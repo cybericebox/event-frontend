@@ -2664,5 +2664,18 @@
   "manage.challenges.scoring.maxInvalid": "A whole number from 2.",
   "manage.challenges.scoring.maxAboveMin": "Must be above the lower bound.",
   "manage.challenges.scoring.floorInvalid": "A whole number from 1 to 100.",
-  "manage.challenges.task.staticPointsHelp": "Points this task gives. A whole number above zero."
+  "manage.challenges.task.staticPointsHelp": "Points this task gives. A whole number above zero.",
+  "manage.challenges.set.infrastructureTip": "Needs infrastructure (stands): teams get labs.",
+  "manage.challenges.set.versionTip": "Version {number} of the set, pinned to the event. Newer versions appear as «Update».",
+  "manage.challenges.set.scopeTip.catalog": "A catalog set. To change its tasks, first «Customize for the event».",
+  "manage.challenges.set.scopeTip.fork": "The event's copy of the set: editable, the catalog stays as is.",
+  "manage.challenges.set.scopeTip.own": "A set created in this event.",
+  "manage.challenges.set.infraMissingBadge": "Will not work",
+  "manage.challenges.set.infraMissing": "The set needs infrastructure, but the event has it disabled — its tasks will not work.",
+  "manage.challenges.set.infraMissingHow": "Remove the set from the event or ask the platform administrator to enable infrastructure.",
+  "manage.challenges.task.infraMissing": "No infrastructure",
+  "manage.exercises.attachDialog.needsInfrastructure": "Needs infrastructure — the event has it disabled",
+  "manage.challenges.blockers.title": "Blocks the event",
+  "manage.challenges.blockers.infraMissing": "The set «{name}» needs infrastructure, but the event has it disabled.",
+  "manage.challenges.blockers.open": "Open tasks"
 }

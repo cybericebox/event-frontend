@@ -15,6 +15,15 @@ export function attachmentScopeLabel(kind: AttachmentKind): string {
     return t(`manage.exercises.scope.${kind}`);
 }
 
+export function attachmentScopeTip(kind: AttachmentKind): string {
+    return t(`manage.challenges.set.scopeTip.${kind}`);
+}
+
+// A set that needs labs on an event without infrastructure: its tasks cannot work.
+export function infrastructureMismatch(attachment: Pick<EventExerciseAttachment, "Infrastructure">, infrastructureAllowed: boolean): boolean {
+    return attachment.Infrastructure && !infrastructureAllowed;
+}
+
 // «версія N» is the catalog version ordinal, never the event's Revision counter.
 export function attachmentVersionLabel(attachment: Pick<EventExerciseAttachment, "VersionNumber">): string {
     return t("manage.exercises.version", {number: attachment.VersionNumber});

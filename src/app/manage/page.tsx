@@ -6,6 +6,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, CalendarDays, Check, FileText, UsersRound} from "lucide-react";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, putManageLifecycle, type ManageConfigInput} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {ChallengeBlockers} from "@/components/event/manage/exercises/ChallengeBlockers";
 import {ManageDateField} from "@/components/event/manage/ManageDateField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -90,6 +91,7 @@ export default function ManageIndex() {
 
     return <div className="event-manage-setup">
         <header className="event-manage-heading"><div><p className="event-manage-eyebrow">{t("manage.overview.eyebrow")}</p><h1>{t(configured ? "manage.overview.titleReady" : "manage.overview.titleSetup")}</h1><p>{t(configured ? "manage.overview.introReady" : "manage.overview.introSetup")}</p></div><Link className="ib-btn" href="/">{t("manage.overview.viewSite")} <ArrowUpRight size={16} /></Link></header>
+        <ChallengeBlockers eventID={eventID} />
         <div className="event-manage-setup__summary" role="status">
             <div><span className="event-manage-setup__summary-label">{t("manage.overview.firstRun")}</span><strong>{t(configured ? "manage.overview.summaryReady" : "manage.overview.summarySetup")}</strong><p>{t(configured ? "manage.overview.summaryReadyText" : "manage.overview.summarySetupText")}</p></div>
             <div className="event-manage-setup__summary-progress"><b>{completedSteps}<span>/2</span></b><span>{t("manage.overview.requiredSteps")}</span><div className="event-manage-setup__progress-track"><span style={{width: `${completedSteps * 50}%`}} /></div></div>

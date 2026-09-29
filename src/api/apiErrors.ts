@@ -28,6 +28,7 @@ export const ApiErrorCode = {
     TeamFieldNotEditable: 1714,
     TeamFieldsLocked: 1715,
     ExerciseAlreadyAttached: 1803,
+    ExerciseInfrastructureNotAllowed: 1808,
     ExerciseTaskHasAttempts: 1809,
     ExerciseDetachNeedsConfirm: 1810,
     ExerciseNotAvailable: 1811,

@@ -203,9 +203,9 @@ export function HintMark({hints}: {hints: HintIndicator}) {
 
 // One task of a set: a thin row (name, first description line, badges) that
 // expands into «Оцінювання», «Підказки» and «Показ».
-export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, editURL, onSaved, onRemove}: {
+export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, infrastructureMissing = false, stand, canManage, editURL, onSaved, onRemove}: {
     eventID: string; attachment: EventExerciseAttachment; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;
-    hintsDisabled: boolean; stand: StandReadiness | null; canManage: boolean; editURL: string | null; onSaved: () => Promise<unknown>; onRemove: () => void;
+    hintsDisabled: boolean; infrastructureMissing?: boolean; stand: StandReadiness | null; canManage: boolean; editURL: string | null; onSaved: () => Promise<unknown>; onRemove: () => void;
 }) {
     const [open, setOpen] = useState(false);
     const hints = hintIndicator(challenge, hintsDisabled);
@@ -216,6 +216,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
             <ChevronRight className="event-task__chevron" size={16} aria-hidden="true" />
             <span className="event-task__text"><strong>{challenge.Snapshot.name}</strong>{line && <span>{line}</span>}</span>
             <span className="event-task__badges">
+                {infrastructureMissing && <span className="ib-tag ib-tag--sm ib-tag--danger">{t("manage.challenges.task.infraMissing")}</span>}
                 {hints && <HintMark hints={hints} />}
                 {taskBadges(challenge, stand).map(badge => <span key={badge.key} className={`ib-tag ib-tag--sm${badge.tone ? ` ib-tag--${badge.tone}` : ""}`}>{badge.label}</span>)}
             </span>

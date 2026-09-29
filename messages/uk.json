@@ -2664,5 +2664,18 @@
   "manage.challenges.scoring.maxInvalid": "Ціле число від 2.",
   "manage.challenges.scoring.maxAboveMin": "Має бути більше за нижню межу.",
   "manage.challenges.scoring.floorInvalid": "Ціле число від 1 до 100.",
-  "manage.challenges.task.staticPointsHelp": "Скільки балів дає це завдання. Ціле число більше за нуль."
+  "manage.challenges.task.staticPointsHelp": "Скільки балів дає це завдання. Ціле число більше за нуль.",
+  "manage.challenges.set.infrastructureTip": "Потребує інфраструктури (стенди): командам розгортаються лаби.",
+  "manage.challenges.set.versionTip": "Версія {number} набору, закріплена за заходом. Нові версії з’являються як «Оновити».",
+  "manage.challenges.set.scopeTip.catalog": "Набір із каталогу. Щоб змінити завдання, спершу «Налаштувати під захід».",
+  "manage.challenges.set.scopeTip.fork": "Копія набору для цього заходу: її можна редагувати, каталог не зміниться.",
+  "manage.challenges.set.scopeTip.own": "Набір, створений у цьому заході.",
+  "manage.challenges.set.infraMissingBadge": "Не працюватиме",
+  "manage.challenges.set.infraMissing": "Набір потребує інфраструктури, але в заходу її вимкнено — завдання не працюватимуть.",
+  "manage.challenges.set.infraMissingHow": "Приберіть набір із заходу або попросіть адміністратора платформи увімкнути інфраструктуру.",
+  "manage.challenges.task.infraMissing": "Без інфраструктури",
+  "manage.exercises.attachDialog.needsInfrastructure": "Потрібна інфраструктура — у заходу її вимкнено",
+  "manage.challenges.blockers.title": "Блокує проведення",
+  "manage.challenges.blockers.infraMissing": "Набір «{name}» потребує інфраструктури, але в заходу її вимкнено.",
+  "manage.challenges.blockers.open": "До завдань"
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import {useState} from "react";
-import {useQueryClient} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {getManageConfig} from "@/api/manage";
 import {Plus} from "lucide-react";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {AttachExerciseDialog} from "./AttachExerciseDialog";
@@ -16,6 +17,7 @@ export function ExercisesSection() {
     const queryClient = useQueryClient();
     const returnURL = useReturnURL();
     const [attachOpen, setAttachOpen] = useState(false);
+    const config = useQuery({queryKey: ["event-management-config", event.EventID], queryFn: () => getManageConfig(event.EventID), refetchOnWindowFocus: false});
 
     return <div className="event-manage-settings event-challenge-manager">
         <header className="event-manage-heading">
@@ -26,7 +28,7 @@ export function ExercisesSection() {
             </div>}
         </header>
         <ExerciseAttachments />
-        {canManage && <AttachExerciseDialog eventID={event.EventID} open={attachOpen} onClose={() => setAttachOpen(false)}
+        {canManage && config.data && <AttachExerciseDialog eventID={event.EventID} infrastructureAllowed={config.data.InfrastructureAllowed} open={attachOpen} onClose={() => setAttachOpen(false)}
             onAttached={() => Promise.all([
                 queryClient.invalidateQueries({queryKey: ["event-exercise-attachments", event.EventID]}),
                 queryClient.invalidateQueries({queryKey: ["event-exercise-boards", event.EventID]}),

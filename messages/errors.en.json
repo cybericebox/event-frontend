@@ -41,5 +41,6 @@
   "2101": "Check the host, port and TLS mode.",
   "2102": "The SMTP password cannot be saved: no encryption key is configured on the platform.",
   "2103": "This notification is mandatory and cannot be disabled.",
-  "2104": "Check the contact email and reminder hours."
+  "2104": "Check the contact email and reminder hours.",
+  "1808": "The set needs infrastructure, but the event has it disabled."
 }

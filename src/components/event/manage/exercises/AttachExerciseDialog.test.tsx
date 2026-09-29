@@ -1,0 +1,47 @@
+// @vitest-environment jsdom
+import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
+import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import type {PublishedExerciseChoice} from "@/api/manageChallenges";
+import {ManageApiError} from "@/api/manage";
+import {AttachExerciseDialog} from "./AttachExerciseDialog";
+
+const api = vi.hoisted(() => ({choices: vi.fn(), preview: vi.fn(), attach: vi.fn()}));
+vi.mock("@/api/manageChallenges", () => ({
+    getPublishedExerciseChoices: api.choices, getPublishedExercisePreview: api.preview, attachEventExercise: api.attach,
+}));
+
+beforeAll(() => {
+    HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) { this.setAttribute("open", ""); };
+    HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) { this.removeAttribute("open"); this.dispatchEvent(new Event("close")); };
+});
+afterEach(() => { cleanup(); vi.resetAllMocks(); });
+
+const choice = (id: string, name: string, infrastructure: boolean) => ({ID: id, Name: name, Description: "", PublishedVersionID: id, Tags: [], Scope: "catalog", Infrastructure: infrastructure, Attached: false}) as PublishedExerciseChoice;
+
+function renderDialog(infrastructureAllowed: boolean) {
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    render(<QueryClientProvider client={client}><AttachExerciseDialog eventID="e" infrastructureAllowed={infrastructureAllowed} open onClose={vi.fn()} onAttached={vi.fn(async () => undefined)} /></QueryClientProvider>);
+}
+
+describe("AttachExerciseDialog", () => {
+    it("starts at «Немає» and disables sets that need infrastructure when the event has none", async () => {
+        api.choices.mockResolvedValue([choice("11111111-1111-4111-8111-111111111111", "Test", true)]);
+        renderDialog(false);
+        expect(api.choices).toHaveBeenCalledWith("e", "", "no");
+        const item = await screen.findByRole("button", {name: /Test/});
+        expect((item as HTMLButtonElement).disabled).toBe(true);
+        expect(item.textContent).toContain("Потрібна інфраструктура — у заходу її вимкнено");
+    });
+
+    it("shows a failed attach inside the dialog", async () => {
+        api.choices.mockResolvedValue([choice("22222222-2222-4222-8222-222222222222", "Web", false)]);
+        api.preview.mockResolvedValue({ID: "22222222-2222-4222-8222-222222222222", Name: "Web", Description: "", VersionID: "v", VariantCount: 1, Variant: 0, Tasks: []});
+        api.attach.mockRejectedValue(new ManageApiError(409, 1808));
+        renderDialog(true);
+        expect(api.choices).toHaveBeenCalledWith("e", "", "all");
+        fireEvent.click(await screen.findByRole("button", {name: /Web/}));
+        fireEvent.click(await screen.findByRole("button", {name: "Додати"}));
+        await waitFor(() => expect(screen.getByText("Набір потребує інфраструктури, а в заходу її вимкнено.")).toBeTruthy());
+    });
+});

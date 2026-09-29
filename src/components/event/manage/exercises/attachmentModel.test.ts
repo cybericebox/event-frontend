@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from "vitest";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
-import {attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentVersionLabel, detachWithConfirm, exercisesAppURL, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
+import {attachmentActionError, infrastructureMismatch, attachmentKind, attachmentScopeLabel, attachmentVersionLabel, detachWithConfirm, exercisesAppURL, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
 
 const hint = (patch: Partial<{ID: string; Cost: number; Overridden: boolean}>) => ({ID: "h", Text: "", Level: "nudge" as const, Cost: 10, Overridden: false, ...patch});
 
@@ -55,5 +55,11 @@ describe("detach flow", () => {
     it("explains a refused update", () => {
         expect(attachmentActionError(new ManageApiError(409, ApiErrorCode.ExerciseTaskHasAttempts), "x")).toContain("вже розвʼязували");
         expect(attachmentActionError(new Error("boom"), "fallback")).toBe("fallback");
+    });
+
+    it("flags a set that needs infrastructure on an event without it", () => {
+        expect(infrastructureMismatch({Infrastructure: true}, false)).toBe(true);
+        expect(infrastructureMismatch({Infrastructure: true}, true)).toBe(false);
+        expect(infrastructureMismatch({Infrastructure: false}, false)).toBe(false);
     });
 });

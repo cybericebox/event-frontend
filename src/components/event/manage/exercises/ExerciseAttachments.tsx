@@ -15,9 +15,10 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {DialogModal} from "@/components/event/DialogModal";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {
-    attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentVersionLabel, detachWithConfirm, exercisesAppURL, isDetached,
+    attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentScopeTip, attachmentVersionLabel, detachWithConfirm, exercisesAppURL,
+    infrastructureMismatch, isDetached,
 } from "./attachmentModel";
-import {InfrastructureIcon} from "./InfrastructureIcon";
+import {InfrastructureIcon, TipTag} from "./InfrastructureIcon";
 import {HintMark, TaskRow} from "./TaskRow";
 import {setOpenByDefault, setSummary, standReadiness} from "./taskRowModel";
 import {useSetOpenState} from "./useSetOpenState";
@@ -106,17 +107,19 @@ export function ExerciseAttachments() {
                 const name = attachment.ExerciseName || t("manage.exercises.set");
                 const stands = challenges.map(challenge => attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null);
                 const summary = setSummary(challenges, configQuery.data.HintsDisabled, stands);
+                const mismatch = infrastructureMismatch(attachment, configQuery.data.InfrastructureAllowed);
                 return <article className={`event-exercise-set${open ? " is-open" : ""}`} key={attachment.ID} aria-labelledby={`set-${attachment.ID}`}>
                     {/* The header row toggles the set; its buttons and links keep their own action. */}
-                    <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a")) toggle(); }}>
+                    <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a, [role=alert]")) toggle(); }}>
                         <div className="event-exercise-set__title">
                             <h3 id={`set-${attachment.ID}`}>{name}</h3>
-                            <span className="ib-tag ib-tag--sm">{attachmentVersionLabel(attachment)}</span>
-                            <span className="ib-tag ib-tag--sm">{attachmentScopeLabel(kind)}</span>
-                            {attachment.Infrastructure && <InfrastructureIcon interactive={false} />}
+                            <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
+                            <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
+                            {attachment.Infrastructure && <InfrastructureIcon />}
                         </div>
                         <div className="event-exercise-set__side">
                             <span className="event-task__badges">
+                                {mismatch && <span className="ib-tag ib-tag--sm ib-tag--danger">{t("manage.challenges.set.infraMissingBadge")}</span>}
                                 {summary.hints && <HintMark hints={summary.hints} />}
                                 {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
                                 {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
@@ -141,6 +144,10 @@ export function ExerciseAttachments() {
                                 attachment.Fork ? t("manage.exercises.meta.forkOf", {number: attachment.Fork.SourceVersionNumber}) : "",
                             ].filter(Boolean).join(" · ")}
                         </p>
+                        {mismatch && <div className="event-exercise-set__warning" role="alert">
+                            <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t("manage.challenges.set.infraMissingHow")}</span>
+                            {canManage && <button className="ib-btn ib-btn--sm ib-btn--danger" type="button" disabled={busy} onClick={() => setAction({kind: "detach", attachment, attempts: attachment.HasAttempts})}>{t("manage.challenges.task.remove")}</button>}
+                        </div>}
                     </header>
                     {open && <div className="event-exercise-set__body" id={`set-tasks-${attachment.ID}`}>
                         {attachment.UpdateAvailable && <div className="event-exercise-set__notice">
@@ -152,7 +159,7 @@ export function ExerciseAttachments() {
                         </div>}
                         {challenges.length === 0 ? <EmptyState compact message={t("manage.exercises.setEmpty")} /> : <ul className="event-task-list">
                             {challenges.map(challenge => <TaskRow key={challenge.ID} eventID={eventID} attachment={attachment} challenge={challenge}
-                                scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} hintsDisabled={configQuery.data.HintsDisabled} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
+                                scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} hintsDisabled={configQuery.data.HintsDisabled} infrastructureMissing={mismatch} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
                                 canManage={canManage} editURL={editURL} onSaved={board.refreshSets} onRemove={() => setAction({kind: "remove", attachment, challenge})} />)}
                         </ul>}
                     </div>}

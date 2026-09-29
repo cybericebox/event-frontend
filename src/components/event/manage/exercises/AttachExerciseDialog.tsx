@@ -27,12 +27,15 @@ function difficultyLabel(value: string): string {
 }
 
 // Catalog picker: own event exercises first, preview per variant, variant mode.
-export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
-    eventID: string; open: boolean; onClose: () => void; onAttached: () => Promise<unknown>;
+// Without event infrastructure, sets that need it are listed but disabled
+// (the filter starts at «Немає»).
+export function AttachExerciseDialog({eventID, infrastructureAllowed, open, onClose, onAttached}: {
+    eventID: string; infrastructureAllowed: boolean; open: boolean; onClose: () => void; onAttached: () => Promise<unknown>;
 }) {
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
-    const [infrastructure, setInfrastructure] = useState<InfrastructureFilter>("all");
+    const [infrastructure, setInfrastructure] = useState<InfrastructureFilter>(infrastructureAllowed ? "all" : "no");
+    const [attachError, setAttachError] = useState("");
     const [selected, setSelected] = useState<PublishedExerciseChoice | null>(null);
     const [variant, setVariant] = useState(0);
     const [variantMode, setVariantMode] = useState<0 | 1>(0);
@@ -45,7 +48,10 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
     });
     const variantCount = preview.data?.ID === selected?.ID ? preview.data?.VariantCount ?? 1 : 1;
 
+    const unavailable = (choice: PublishedExerciseChoice) => choice.Infrastructure && !infrastructureAllowed;
+
     function select(choice: PublishedExerciseChoice) {
+        setAttachError("");
         setSelected(current => current?.ID === choice.ID ? null : choice);
         setVariant(0);
         setVariantMode(0);
@@ -54,11 +60,12 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
     function close() {
         if (busy) return;
         setSelected(null);
+        setAttachError("");
         onClose();
     }
 
     async function attach() {
-        if (!selected || selected.Attached || busy) return;
+        if (!selected || selected.Attached || unavailable(selected) || busy) return;
         setBusy(true);
         try {
             await attachEventExercise(eventID, selected.PublishedVersionID, variantMode, variantMode === 1 ? variant : null);
@@ -67,13 +74,14 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
             setSelected(null);
             onClose();
         } catch (error) {
-            toast.error(attachmentActionError(error, t("manage.exercises.attachDialog.failed")));
+            // Shown in the dialog: the organizer picks another set.
+            setAttachError(attachmentActionError(error, t("manage.exercises.attachDialog.failed")));
         } finally {setBusy(false);}
     }
 
     return <DialogModal open={open} onClose={close} size="md" title={t("manage.exercises.attach")} description={t("manage.exercises.attachDialog.description")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
-            <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached} onClick={() => void attach()} busy={busy}>{t("common.add")}</EventButton></>}>
+            <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached || unavailable(selected)} onClick={() => void attach()} busy={busy}>{t("common.add")}</EventButton></>}>
         <div className="event-exercise-picker">
             <form className="event-exercise-editor__search" onSubmit={(submitEvent: FormEvent<HTMLFormElement>) => {submitEvent.preventDefault(); setSearch(searchInput.trim());}}>
                 <label className="event-manage-field" htmlFor="exercise-search">{t("manage.exercises.attachDialog.search")}<input id="exercise-search" className="event-manage-input" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder={t("manage.exercises.attachDialog.searchPlaceholder")} maxLength={100} /></label>
@@ -87,15 +95,17 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
                 : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} onRetry={() => void catalog.refetch()} />
                 : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
                 : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}>
-                    <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached} onClick={() => select(choice)}>
+                    <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached || unavailable(choice)} onClick={() => select(choice)}>
                         <span className="event-exercise-picker__name"><strong>{choice.Name}</strong>{choice.Infrastructure && <InfrastructureIcon interactive={false} />}</span>
                         {choice.Description && <span className="event-exercise-picker__desc">{choice.Description}</span>}
                         <span className="event-exercise-picker__tags">
                             <span className="ib-tag ib-tag--sm">{t(choice.Scope === "event" ? "manage.exercises.scope.own" : "manage.exercises.scope.catalog")}</span>
                             {choice.Attached && <span className="ib-tag ib-tag--sm ib-tag--ok">{t("manage.exercises.attachDialog.attached")}</span>}
                         </span>
+                        {unavailable(choice) && !choice.Attached && <span className="event-exercise-picker__reason">{t("manage.exercises.attachDialog.needsInfrastructure")}</span>}
                     </button>
                 </li>)}</ul>}
+            {attachError && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{attachError}</p>}
             {selected && <div className="event-exercise-editor__preview" aria-live="polite">
                 {preview.isPending ? <EventLoading compact /> : preview.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.previewFailed")} onRetry={() => void preview.refetch()} /> : <>
                     <div className="event-exercise-editor__preview-head"><h3>{preview.data.Name}</h3>
