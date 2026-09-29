@@ -10,15 +10,17 @@ import {
 } from "@/api/manageChallenges";
 import {DialogModal} from "@/components/event/DialogModal";
 import {EventSelect} from "@/components/ui/EventSelect";
-import {pluralUk} from "@/components/event/challenges/challengeBoardModel";
+import {t, tPlural} from "@/i18n/t";
 import {attachmentActionError} from "./attachmentModel";
 import {InfrastructureIcon} from "./InfrastructureIcon";
 
-const infrastructureFilters: {value: InfrastructureFilter; label: string}[] = [
-    {value: "all", label: "Усі"}, {value: "yes", label: "Є"}, {value: "no", label: "Немає"},
-];
+const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
-const difficulty: Record<string, string> = {trivial: "дуже легке", easy: "легке", medium: "середнє", hard: "складне", insane: "дуже складне"};
+const difficulties = new Set(["trivial", "easy", "medium", "hard", "insane"]);
+
+function difficultyLabel(value: string): string {
+    return difficulties.has(value) ? t(`manage.exercises.difficulty.${value}`) : value;
+}
 
 // Catalog picker: own event exercises first, preview per variant, variant mode.
 export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
@@ -57,50 +59,50 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
         try {
             await attachEventExercise(eventID, selected.PublishedVersionID, variantMode, variantMode === 1 ? variant : null);
             await onAttached();
-            toast.success("Набір додано");
+            toast.success(t("manage.exercises.attachDialog.done"));
             setSelected(null);
             onClose();
         } catch (error) {
-            toast.error(attachmentActionError(error, "Не вдалося додати набір."));
+            toast.error(attachmentActionError(error, t("manage.exercises.attachDialog.failed")));
         } finally {setBusy(false);}
     }
 
-    return <DialogModal open={open} onClose={close} size="md" title="Додати набір" description="Опубліковані набори каталогу й завдання, створені в цій події."
-        footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>Скасувати</button>
-            <button className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached} onClick={() => void attach()}>{busy ? "Додаємо…" : "Додати"}</button></>}>
+    return <DialogModal open={open} onClose={close} size="md" title={t("manage.exercises.attach")} description={t("manage.exercises.attachDialog.description")}
+        footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
+            <button className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached} onClick={() => void attach()}>{busy ? t("manage.exercises.attachDialog.adding") : t("common.add")}</button></>}>
         <div className="event-exercise-picker">
             <form className="event-exercise-editor__search" onSubmit={(submitEvent: FormEvent<HTMLFormElement>) => {submitEvent.preventDefault(); setSearch(searchInput.trim());}}>
-                <label className="event-manage-field" htmlFor="exercise-search">Пошук<input id="exercise-search" className="event-manage-input" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder="Назва або опис" maxLength={100} /></label>
-                <button className="ib-btn" type="submit"><Search aria-hidden="true" />Знайти</button>
+                <label className="event-manage-field" htmlFor="exercise-search">{t("manage.exercises.attachDialog.search")}<input id="exercise-search" className="event-manage-input" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder={t("manage.exercises.attachDialog.searchPlaceholder")} maxLength={100} /></label>
+                <button className="ib-btn" type="submit"><Search aria-hidden="true" />{t("manage.exercises.attachDialog.find")}</button>
             </form>
-            <div className="event-exercise-picker__filter" role="group" aria-label="Інфраструктура">
-                <span>Інфраструктура</span>
-                <div className="event-manage-participants__filters">{infrastructureFilters.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" aria-pressed={infrastructure === option.value} onClick={() => setInfrastructure(option.value)}>{option.label}</button>)}</div>
+            <div className="event-exercise-picker__filter" role="group" aria-label={t("manage.exercises.attachDialog.infrastructure")}>
+                <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
+                <div className="event-manage-participants__filters">{infrastructureFilters.map(option => <button key={option} className="event-manage-participants__filter" type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
             </div>
-            {catalog.isPending ? <p className="event-challenge-manager__empty">Завантажуємо каталог…</p>
-                : catalog.isError ? <div className="event-manage-feedback event-manage-feedback--error" role="alert">Не вдалося завантажити каталог. <button className="ib-btn ib-btn--sm" type="button" onClick={() => void catalog.refetch()}>Повторити</button></div>
-                : catalog.data.length === 0 ? <p className="event-challenge-manager__empty">За цим запитом наборів немає.</p>
+            {catalog.isPending ? <p className="event-challenge-manager__empty">{t("manage.exercises.attachDialog.catalogLoading")}</p>
+                : catalog.isError ? <div className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.exercises.attachDialog.catalogFailed")} <button className="ib-btn ib-btn--sm" type="button" onClick={() => void catalog.refetch()}>{t("common.retry")}</button></div>
+                : catalog.data.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.exercises.attachDialog.noResults")}</p>
                 : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}>
                     <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached} onClick={() => select(choice)}>
                         <span className="event-exercise-picker__name"><strong>{choice.Name}</strong>{choice.Infrastructure && <InfrastructureIcon interactive={false} />}</span>
                         {choice.Description && <span className="event-exercise-picker__desc">{choice.Description}</span>}
                         <span className="event-exercise-picker__tags">
-                            <span className="ib-tag ib-tag--sm">{choice.Scope === "event" ? "Завдання події" : "Каталог"}</span>
-                            {choice.Attached && <span className="ib-tag ib-tag--sm ib-tag--ok">Уже додано</span>}
+                            <span className="ib-tag ib-tag--sm">{t(choice.Scope === "event" ? "manage.exercises.scope.own" : "manage.exercises.scope.catalog")}</span>
+                            {choice.Attached && <span className="ib-tag ib-tag--sm ib-tag--ok">{t("manage.exercises.attachDialog.attached")}</span>}
                         </span>
                     </button>
                 </li>)}</ul>}
             {selected && <div className="event-exercise-editor__preview" aria-live="polite">
-                {preview.isPending ? <p>Завантажуємо…</p> : preview.isError ? <p role="alert">Не вдалося завантажити попередній перегляд.</p> : <>
+                {preview.isPending ? <p>{t("manage.exercises.attachDialog.previewLoading")}</p> : preview.isError ? <p role="alert">{t("manage.exercises.attachDialog.previewFailed")}</p> : <>
                     <div className="event-exercise-editor__preview-head"><h3>{preview.data.Name}</h3>
-                        {variantCount > 1 && <EventSelect ariaLabel="Варіант для перегляду" value={String(variant)} options={Array.from({length: variantCount}, (_, index) => ({value: String(index), label: `Варіант ${index + 1}`}))} onValueChange={value => setVariant(Number(value))} />}
+                        {variantCount > 1 && <EventSelect ariaLabel={t("manage.exercises.attachDialog.previewVariant")} value={String(variant)} options={Array.from({length: variantCount}, (_, index) => ({value: String(index), label: t("manage.exercises.attachDialog.variant", {number: index + 1})}))} onValueChange={value => setVariant(Number(value))} />}
                     </div>
-                    <p>{preview.data.Tasks.length} {pluralUk(preview.data.Tasks.length, "завдання", "завдання", "завдань")}{variantCount > 1 ? ` · ${variantCount} ${pluralUk(variantCount, "варіант", "варіанти", "варіантів")}` : ""}</p>
-                    <ol>{preview.data.Tasks.map((task, index) => <li key={`${index}-${task.Name}`}><strong>{task.Name}</strong><span>{difficulty[task.Difficulty] ?? task.Difficulty}</span>{task.HintCount > 0 && <span>{task.HintCount} {pluralUk(task.HintCount, "підказка", "підказки", "підказок")}</span>}</li>)}</ol>
+                    <p>{tPlural("manage.exercises.meta.challenges", preview.data.Tasks.length)}{variantCount > 1 ? ` · ${tPlural("manage.exercises.meta.variants", variantCount)}` : ""}</p>
+                    <ol>{preview.data.Tasks.map((task, index) => <li key={`${index}-${task.Name}`}><strong>{task.Name}</strong><span>{difficultyLabel(task.Difficulty)}</span>{task.HintCount > 0 && <span>{tPlural("manage.exercises.attachDialog.hints", task.HintCount)}</span>}</li>)}</ol>
                     {variantCount > 1 && <fieldset className="event-exercise-picker__variants">
-                        <legend>Варіанти</legend>
-                        <label className="event-exercise-editor__check"><input type="radio" name="variant-mode" checked={variantMode === 0} onChange={() => setVariantMode(0)} />Свій варіант для кожної команди</label>
-                        <label className="event-exercise-editor__check"><input type="radio" name="variant-mode" checked={variantMode === 1} onChange={() => setVariantMode(1)} />Для всіх — варіант {variant + 1}</label>
+                        <legend>{t("manage.exercises.attachDialog.variants")}</legend>
+                        <label className="event-exercise-editor__check"><input type="radio" name="variant-mode" checked={variantMode === 0} onChange={() => setVariantMode(0)} />{t("manage.exercises.attachDialog.variantPerTeam")}</label>
+                        <label className="event-exercise-editor__check"><input type="radio" name="variant-mode" checked={variantMode === 1} onChange={() => setVariantMode(1)} />{t("manage.exercises.attachDialog.variantForAll", {number: variant + 1})}</label>
                     </fieldset>}
                 </>}
             </div>}

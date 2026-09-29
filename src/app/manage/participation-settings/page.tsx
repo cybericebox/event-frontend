@@ -8,6 +8,7 @@ import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, ma
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
+import {t} from "@/i18n/t";
 
 
 export default function ParticipationSettingsPage() {
@@ -34,32 +35,32 @@ export default function ParticipationSettingsPage() {
             queryClient.setQueryData(["event-management-config", eventID], updated);
             queryClient.setQueryData<typeof event>(["event-manager-public-info"], current => current ? {...current, Participation: updated.Participation} : current);
             setEdit(null);
-            toast.success("Формат участі збережено");
-        } catch (failure) {toast.error(failure instanceof ManageApiError && failure.status === 409 ? "Формат участі вже зафіксовано після публікації." : "Не вдалося зберегти формат участі.");}
+            toast.success(t("manage.participation.saved"));
+        } catch (failure) {toast.error(failure instanceof ManageApiError && failure.status === 409 ? t("manage.participation.locked") : t("manage.participation.saveFailed"));}
         finally {setSaving(false);}
     }
 
     if (configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || lifecycleQuery.isError || !config) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити формат участі</h1><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>Повторити</button></div>;
+    if (configQuery.isError || lifecycleQuery.isError || !config) return <div className="event-manage-error" role="alert"><h1>{t("manage.participation.loadFailed")}</h1><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>{t("common.retry")}</button></div>;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
-        <header className="event-manage-heading"><div><h1>Формат участі</h1><p>Визначте, хто змагається: окремі учасники чи команди.</p></div></header>
+        <header className="event-manage-heading"><div><h1>{t("manage.participation.title")}</h1><p>{t("manage.participation.subtitle")}</p></div></header>
         <section className="event-manage-section">
-            <ManageFieldLabel title="Формат участі" help={"Оберіть, хто проходить завдання та отримує бали: окремий учасник або команда.\n\nФормат можна змінити лише до публікації."} required />
-            <div className="event-manage-choice-group" role="radiogroup" aria-label="Тип участі">
-                <label><input type="radio" name="participation" checked={config.Participation === 0} onChange={() => update({Participation: 0})} disabled={disabled || locked} /><div className="event-manage-choice-content"><strong>Особиста участь</strong><ul className="event-manage-choice-points"><li>Кожен учасник змагається самостійно.</li><li>Розв’язання, бали й місце — особисті.</li><li>У рейтингу показується ім’я або псевдонім учасника.</li></ul></div></label>
-                <label><input type="radio" name="participation" checked={config.Participation === 1} onChange={() => update({Participation: 1})} disabled={disabled || locked} /><div className="event-manage-choice-content"><strong>Командна участь</strong><ul className="event-manage-choice-points"><li>Учасники об’єднуються в команди.</li><li>Розв’язання учасника зараховується команді.</li><li>Бали та місце визначаються для команди.</li></ul></div></label>
+            <ManageFieldLabel title={t("manage.participation.title")} help={t("manage.participation.help")} required />
+            <div className="event-manage-choice-group" role="radiogroup" aria-label={t("manage.participation.type")}>
+                <label><input type="radio" name="participation" checked={config.Participation === 0} onChange={() => update({Participation: 0})} disabled={disabled || locked} /><div className="event-manage-choice-content"><strong>{t("manage.participation.individual.title")}</strong><ul className="event-manage-choice-points"><li>{t("manage.participation.individual.point1")}</li><li>{t("manage.participation.individual.point2")}</li><li>{t("manage.participation.individual.point3")}</li></ul></div></label>
+                <label><input type="radio" name="participation" checked={config.Participation === 1} onChange={() => update({Participation: 1})} disabled={disabled || locked} /><div className="event-manage-choice-content"><strong>{t("manage.participation.team.title")}</strong><ul className="event-manage-choice-points"><li>{t("manage.participation.team.point1")}</li><li>{t("manage.participation.team.point2")}</li><li>{t("manage.participation.team.point3")}</li></ul></div></label>
             </div>
             {config.Participation === 1 && <div className="event-manage-fields-two">
-                <div className="event-manage-field"><ManageFieldLabel htmlFor="max-team-size" title="Максимум у команді" help={"Найбільша кількість учасників в одній команді.\n\nПісля публікації змінити не можна."} required /><input id="max-team-size" className="event-manage-input" type="number" min={1} value={config.MaxTeamSize} onChange={change => update({MaxTeamSize: Number(change.target.value)})} disabled={disabled || locked} /></div>
-                <div className="event-manage-field"><ManageFieldLabel htmlFor="min-team-size" title="Мінімум у команді" help={"Команда з меншою кількістю учасників не допускається до завдань, доки її не допустить модератор.\n\nЯкщо поле порожнє, мінімум — 2 учасники (або максимум, якщо він менший)."} /><input id="min-team-size" className="event-manage-input" type="number" min={1} max={config.MaxTeamSize} placeholder={String(Math.min(2, config.MaxTeamSize || 2))} value={config.MinTeamSize ?? ""} onChange={change => update({MinTeamSize: change.target.value ? Number(change.target.value) : null})} disabled={disabled || locked} /></div>
+                <div className="event-manage-field"><ManageFieldLabel htmlFor="max-team-size" title={t("manage.participation.maxTeamSize")} help={t("manage.participation.maxTeamSizeHelp")} required /><input id="max-team-size" className="event-manage-input" type="number" min={1} value={config.MaxTeamSize} onChange={change => update({MaxTeamSize: Number(change.target.value)})} disabled={disabled || locked} /></div>
+                <div className="event-manage-field"><ManageFieldLabel htmlFor="min-team-size" title={t("manage.participation.minTeamSize")} help={t("manage.participation.minTeamSizeHelp")} /><input id="min-team-size" className="event-manage-input" type="number" min={1} max={config.MaxTeamSize} placeholder={String(Math.min(2, config.MaxTeamSize || 2))} value={config.MinTeamSize ?? ""} onChange={change => update({MinTeamSize: change.target.value ? Number(change.target.value) : null})} disabled={disabled || locked} /></div>
             </div>}
-            <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>Після публікації змінити формат участі неможливо.</span></div>
+            <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>{t("manage.participation.lockWarning")}</span></div>
         </section>
         <section className="event-manage-section">
-            <ManageFieldLabel title="Завдання з інфраструктурою" help={"Дозвіл на завдання з окремою лабораторією для команди задає адміністратор під час створення події.\n\nЗмінити його після створення не можна."} />
-            <p className="event-manage-readonly-note">Завдання з інфраструктурою: {configQuery.data?.InfrastructureAllowed ? "дозволено" : "не дозволено"} адміністратором під час створення події.</p>
+            <ManageFieldLabel title={t("manage.participation.infrastructure")} help={t("manage.participation.infrastructureHelp")} />
+            <p className="event-manage-readonly-note">{configQuery.data?.InfrastructureAllowed ? t("manage.participation.infrastructureAllowed") : t("manage.participation.infrastructureDenied")}</p>
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid}>{saving ? t("common.saving") : t("common.save")}</button></div>}
     </form>;
 }

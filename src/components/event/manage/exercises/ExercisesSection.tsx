@@ -10,6 +10,7 @@ import {exercisesAppURL} from "./attachmentModel";
 import {exercisesTabFromParam, exercisesTabHref, exercisesTabs, type ExercisesTab} from "./exercisesTabs";
 import {HintUnlocksList} from "./HintUnlocksList";
 import {exercisesOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 export function ExercisesSection({initialTab}: {initialTab: string | undefined}) {
     const {event, canManage} = useManager();
@@ -25,13 +26,13 @@ export function ExercisesSection({initialTab}: {initialTab: string | undefined})
 
     return <div className="event-manage-settings event-challenge-manager">
         <header className="event-manage-heading">
-            <div><h1>Завдання</h1><p>Набори з каталогу й власні завдання події.</p></div>
+            <div><h1>{t("manage.exercises.title")}</h1><p>{t("manage.exercises.subtitle")}</p></div>
             {canManage && <div className="event-exercise-set__actions">
-                <a className="ib-btn" href={exercisesAppURL(exercisesOrigin, "new", {eventID: event.EventID, returnURL})}>Створити завдання</a>
-                <button className="ib-btn ib-btn--primary" type="button" onClick={() => setAttachOpen(true)}><Plus aria-hidden="true" />Додати набір</button>
+                <a className="ib-btn" href={exercisesAppURL(exercisesOrigin, "new", {eventID: event.EventID, returnURL})}>{t("manage.exercises.create")}</a>
+                <button className="ib-btn ib-btn--primary" type="button" onClick={() => setAttachOpen(true)}><Plus aria-hidden="true" />{t("manage.exercises.attach")}</button>
             </div>}
         </header>
-        <div className="event-manage-participants__filters" role="tablist" aria-label="Розділи завдань">{exercisesTabs.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => change(option.value)}>{option.label}</button>)}</div>
+        <div className="event-manage-participants__filters" role="tablist" aria-label={t("manage.exercises.tabs.label")}>{exercisesTabs.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => change(option.value)}>{t(option.labelKey)}</button>)}</div>
         <div role="tabpanel" className="event-challenge-manager__panel">{tab === "sets" ? <ExerciseAttachments /> : <HintUnlocksList />}</div>
         {canManage && <AttachExerciseDialog eventID={event.EventID} open={attachOpen} onClose={() => setAttachOpen(false)}
             onAttached={() => Promise.all([

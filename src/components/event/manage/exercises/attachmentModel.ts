@@ -1,5 +1,6 @@
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
+import {t} from "@/i18n/t";
 import type {EventChallengeHint, EventExerciseAttachment, HintCostInput} from "@/api/manageChallenges";
 
 export type AttachmentKind = "catalog" | "fork" | "own";
@@ -10,11 +11,13 @@ export function attachmentKind(attachment: Pick<EventExerciseAttachment, "Scope"
     return attachment.Fork ? "fork" : "own";
 }
 
-export const attachmentScopeLabel: Record<AttachmentKind, string> = {catalog: "Каталог", fork: "Копія для події", own: "Завдання події"};
+export function attachmentScopeLabel(kind: AttachmentKind): string {
+    return t(`manage.exercises.scope.${kind}`);
+}
 
 // «версія N» is the catalog version ordinal, never the event's Revision counter.
 export function attachmentVersionLabel(attachment: Pick<EventExerciseAttachment, "VersionNumber">): string {
-    return `версія ${attachment.VersionNumber}`;
+    return t("manage.exercises.version", {number: attachment.VersionNumber});
 }
 
 export function isDetached(attachment: Pick<EventExerciseAttachment, "Status">): boolean {

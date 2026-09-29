@@ -1,8 +1,8 @@
 export type ExercisesTab = "sets" | "unlocks";
 
-export const exercisesTabs: {value: ExercisesTab; label: string}[] = [
-    {value: "sets", label: "Набори"},
-    {value: "unlocks", label: "Відкриті підказки"},
+export const exercisesTabs: {value: ExercisesTab; labelKey: string}[] = [
+    {value: "sets", labelKey: "manage.exercises.tabs.sets"},
+    {value: "unlocks", labelKey: "manage.exercises.tabs.unlocks"},
 ];
 
 // `?tab=unlocks` opens the hint unlocks journal; anything else opens the sets.

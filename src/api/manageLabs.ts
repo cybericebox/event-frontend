@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {manageApiError, ManageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 const id = z.string().uuid();
 const optionalText = z.string().nullish().transform(value => value ?? "");
@@ -62,20 +63,17 @@ export const StandErrorCode = {
     InfrastructureUnavailable: 1401,
 } as const;
 
-const standMessages: Partial<Record<number, string>> = {
-    [StandErrorCode.InfrastructureNotAllowed]: "Для цієї події завдання з інфраструктурою не дозволені.",
-    [StandErrorCode.SettingsInvalid]: "Перевірте час розгортання та видалення.",
-    [StandErrorCode.TeamNotFound]: "Команду не знайдено.",
-    [StandErrorCode.NotDeployed]: "Стенд ще не розгорнуто або вже видалено.",
-    [StandErrorCode.EventFinished]: "Подія завершилася — стенд не можна перестворити.",
-    [StandErrorCode.ModeratorsTeamUnavailable]: "Команда модераторів ще не створена.",
-    [StandErrorCode.InfrastructureUnavailable]: "Інфраструктура зараз недоступна. Спробуйте пізніше.",
-};
+// Stand codes have their own messages: manage.labs.error.<code>.
+const standErrorCodes = new Set<number>(Object.values(StandErrorCode));
+
+function standMessage(code: number): string {
+    return t(`manage.labs.error.${code}`);
+}
 
 export function standErrorMessage(error: unknown, fallback: string): string {
     if (!(error instanceof ManageApiError)) return fallback;
-    if (error.code !== undefined && standMessages[error.code]) return standMessages[error.code]!;
-    if (error.status === 503) return standMessages[StandErrorCode.InfrastructureUnavailable]!;
+    if (error.code !== undefined && standErrorCodes.has(error.code)) return standMessage(error.code);
+    if (error.status === 503) return standMessage(StandErrorCode.InfrastructureUnavailable);
     return fallback;
 }
 

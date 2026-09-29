@@ -9,6 +9,7 @@ import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {clockLabel, freezeStartAt} from "@/utils/resultsFreeze";
+import {t} from "@/i18n/t";
 
 function inRange(value: number, min: number, max: number) {
     return Number.isInteger(value) && value >= min && value <= max;
@@ -41,38 +42,38 @@ export default function ResultsSettingsPage() {
             queryClient.setQueryData(["event-management-results-settings", eventID], updated);
             void queryClient.invalidateQueries({queryKey: ["event-management-config", eventID]});
             setEdit(null);
-            toast.success("Налаштування результатів збережено");
-        } catch {toast.error("Не вдалося зберегти налаштування результатів.");}
+            toast.success(t("manage.results.settings.saved"));
+        } catch {toast.error(t("manage.results.settings.saveFailed"));}
         finally {setSaving(false);}
     }
 
     if (settingsQuery.isPending) return <EventLoading event={event} />;
-    if (settingsQuery.isError || !value) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити налаштування результатів</h1><button className="ib-btn" onClick={() => {void settingsQuery.refetch();}}>Повторити</button></div>;
+    if (settingsQuery.isError || !value) return <div className="event-manage-error" role="alert"><h1>{t("manage.results.settings.loadFailed")}</h1><button className="ib-btn" onClick={() => {void settingsQuery.refetch();}}>{t("common.retry")}</button></div>;
 
     const freezeAt = freezeStartAt(event.FinishTime, value.FreezeMinutes);
-    const teamWord = event.Participation === 1 ? "команд" : "учасників";
+    const teamMode = event.Participation === 1;
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
-        <header className="event-manage-heading"><div><h1>Налаштування результатів</h1><p>Хто бачить рейтинг і як виглядає сторінка результатів.</p></div></header>
-        <section className="event-manage-section"><div className="event-manage-field"><ManageFieldLabel title="Перегляд результатів" help={"Визначає, хто може переглядати бали та місця.\n\n• Приховано — ніхто з відвідувачів.\n• Учасникам — лише авторизовані учасники.\n• Усім — усі відвідувачі сайту."} required /><EventSelect ariaLabel="Перегляд результатів" value={String(value.ScoreboardVisibility)} options={[{value: "0", label: "Приховано"}, {value: "1", label: "Учасникам"}, {value: "2", label: "Усім"}]} onValueChange={next => change({ScoreboardVisibility: Number(next) as 0 | 1 | 2})} disabled={disabled} /></div></section>
+        <header className="event-manage-heading"><div><h1>{t("manage.results.settings.title")}</h1><p>{t("manage.results.settings.subtitle")}</p></div></header>
+        <section className="event-manage-section"><div className="event-manage-field"><ManageFieldLabel title={t("manage.results.settings.visibility")} help={t("manage.results.settings.visibilityHelp")} required /><EventSelect ariaLabel={t("manage.results.settings.visibility")} value={String(value.ScoreboardVisibility)} options={["0", "1", "2"].map(option => ({value: option, label: t(`manage.results.settings.visibility.${option}`)}))} onValueChange={next => change({ScoreboardVisibility: Number(next) as 0 | 1 | 2})} disabled={disabled} /></div></section>
         <section className="event-manage-section" aria-labelledby="results-freeze-title">
-            <div className="event-manage-section__head"><h2 id="results-freeze-title">Заморожування</h2><p>Учасники й гості бачать таблицю на момент заморожування, своя команда — свої бали. Модератори завжди бачать актуальні дані. Знімається після фінішу або кнопкою «Відкрити підсумки».</p></div>
-            <label className="event-manage-form__switch"><input type="checkbox" checked={value.FreezeEnabled} disabled={disabled} onChange={event => change({FreezeEnabled: event.target.checked})} />Заморожувати рейтинг перед фіналом</label>
-            {value.FreezeEnabled && <label className="event-manage-field">За скільки хвилин до фіналу<input className="event-manage-input event-results-settings__number" type="number" min={1} max={1440} value={value.FreezeMinutes} disabled={disabled} onChange={event => change({FreezeMinutes: Number(event.target.value)})} />
-                <small>{!inRange(value.FreezeMinutes, 1, 1440) ? "Від 1 до 1440 хвилин." : freezeAt && event.FinishTime ? `Рейтинг заморозиться о ${clockLabel(freezeAt)}, фініш о ${clockLabel(event.FinishTime)}.` : "Час заморожування залежить від фінішу події."}</small></label>}
+            <div className="event-manage-section__head"><h2 id="results-freeze-title">{t("manage.results.settings.freeze")}</h2><p>{t("manage.results.settings.freezeHelp")}</p></div>
+            <label className="event-manage-form__switch"><input type="checkbox" checked={value.FreezeEnabled} disabled={disabled} onChange={event => change({FreezeEnabled: event.target.checked})} />{t("manage.results.settings.freezeEnabled")}</label>
+            {value.FreezeEnabled && <label className="event-manage-field">{t("manage.results.settings.freezeMinutes")}<input className="event-manage-input event-results-settings__number" type="number" min={1} max={1440} value={value.FreezeMinutes} disabled={disabled} onChange={event => change({FreezeMinutes: Number(event.target.value)})} />
+                <small>{!inRange(value.FreezeMinutes, 1, 1440) ? t("manage.results.settings.freezeMinutesRange") : freezeAt && event.FinishTime ? t("manage.results.settings.freezeAt", {freeze: clockLabel(freezeAt), finish: clockLabel(event.FinishTime)}) : t("manage.results.settings.freezeDependsOnFinish")}</small></label>}
         </section>
         <section className="event-manage-section" aria-labelledby="results-chart-title">
-            <div className="event-manage-section__head"><h2 id="results-chart-title">Графік</h2><p>Динаміка балів лідерів над таблицею. Своя команда учасника завжди на графіку.</p></div>
-            <label className="event-manage-form__switch"><input type="checkbox" checked={value.ChartEnabled} disabled={disabled} onChange={event => change({ChartEnabled: event.target.checked})} />Показувати графік</label>
-            {value.ChartEnabled && <label className="event-manage-field">Скільки {teamWord} на графіку<input className="event-manage-input event-results-settings__number" type="number" min={1} max={10} value={value.ChartTeams} disabled={disabled} onChange={event => change({ChartTeams: Number(event.target.value)})} /><small>{inRange(value.ChartTeams, 1, 10) ? "Перші за місцем." : "Від 1 до 10."}</small></label>}
+            <div className="event-manage-section__head"><h2 id="results-chart-title">{t("manage.results.settings.chart")}</h2><p>{t("manage.results.settings.chartHelp")}</p></div>
+            <label className="event-manage-form__switch"><input type="checkbox" checked={value.ChartEnabled} disabled={disabled} onChange={event => change({ChartEnabled: event.target.checked})} />{t("manage.results.settings.chartEnabled")}</label>
+            {value.ChartEnabled && <label className="event-manage-field">{teamMode ? t("manage.results.settings.chartTeams") : t("manage.results.settings.chartParticipants")}<input className="event-manage-input event-results-settings__number" type="number" min={1} max={10} value={value.ChartTeams} disabled={disabled} onChange={event => change({ChartTeams: Number(event.target.value)})} /><small>{inRange(value.ChartTeams, 1, 10) ? t("manage.results.settings.chartTop") : t("manage.results.settings.chartRange")}</small></label>}
         </section>
         <section className="event-manage-section" aria-labelledby="results-rows-title">
-            <div className="event-manage-section__head"><h2 id="results-rows-title">Рядки таблиці</h2><p>Своя команда учасника показується, навіть якщо вона нижче.</p></div>
-            <div className="event-manage-choice-group" role="radiogroup" aria-label="Рядки таблиці">
-                <label><input type="radio" name="rows" checked={value.RowsLimit === null} disabled={disabled} onChange={() => change({RowsLimit: null})} /><span><strong>Усі</strong><small>Повний рейтинг.</small></span></label>
-                <label><input type="radio" name="rows" checked={value.RowsLimit !== null} disabled={disabled} onChange={() => change({RowsLimit: 10})} /><span><strong>Лише перші</strong><small>Топ-N місць.</small></span></label>
+            <div className="event-manage-section__head"><h2 id="results-rows-title">{t("manage.results.settings.rows")}</h2><p>{t("manage.results.settings.rowsHelp")}</p></div>
+            <div className="event-manage-choice-group" role="radiogroup" aria-label={t("manage.results.settings.rows")}>
+                <label><input type="radio" name="rows" checked={value.RowsLimit === null} disabled={disabled} onChange={() => change({RowsLimit: null})} /><span><strong>{t("manage.results.settings.rowsAll")}</strong><small>{t("manage.results.settings.rowsAllHelp")}</small></span></label>
+                <label><input type="radio" name="rows" checked={value.RowsLimit !== null} disabled={disabled} onChange={() => change({RowsLimit: 10})} /><span><strong>{t("manage.results.settings.rowsTop")}</strong><small>{t("manage.results.settings.rowsTopHelp")}</small></span></label>
             </div>
-            {value.RowsLimit !== null && <label className="event-manage-field">Скільки рядків<input className="event-manage-input event-results-settings__number" type="number" min={1} max={1000} value={value.RowsLimit} disabled={disabled} onChange={event => change({RowsLimit: Number(event.target.value)})} />{!inRange(value.RowsLimit, 1, 1000) && <small>Від 1 до 1000.</small>}</label>}
+            {value.RowsLimit !== null && <label className="event-manage-field">{t("manage.results.settings.rowsLimit")}<input className="event-manage-input event-results-settings__number" type="number" min={1} max={1000} value={value.RowsLimit} disabled={disabled} onChange={event => change({RowsLimit: Number(event.target.value)})} />{!inRange(value.RowsLimit, 1, 1000) && <small>{t("manage.results.settings.rowsRange")}</small>}</label>}
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid}>{saving ? t("common.saving") : t("common.save")}</button></div>}
     </form>;
 }
