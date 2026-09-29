@@ -2428,6 +2428,8 @@
   "participation.team.makeCaptain": "Make captain",
   "participation.team.member": "Member",
   "participation.team.memberRosterOpen": "The captain manages the roster.",
+  "participation.team.moderatorsName": "Moderators team",
+  "participation.team.moderatorsNote": "View only: the moderators team is made of the event managers.",
   "participation.team.members": "Members",
   "participation.team.membersFailed": "Could not load the team roster.",
   "participation.team.membersLoading": "Loading the roster…",

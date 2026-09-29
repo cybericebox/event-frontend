@@ -2428,6 +2428,8 @@
   "participation.team.makeCaptain": "Зробити капітаном",
   "participation.team.member": "Учасник",
   "participation.team.memberRosterOpen": "Складом керує капітан.",
+  "participation.team.moderatorsName": "Команда модераторів",
+  "participation.team.moderatorsNote": "Лише перегляд: склад команди модераторів — це керівники заходу.",
   "participation.team.members": "Учасники",
   "participation.team.membersFailed": "Не вдалося завантажити склад команди.",
   "participation.team.membersLoading": "Завантажуємо склад…",

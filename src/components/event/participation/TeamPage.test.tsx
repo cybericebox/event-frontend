@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
     staff: false,
     rosterOpen: true,
     members: [] as unknown[],
+    moderators: null as unknown,
 }));
 
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
@@ -21,6 +22,7 @@ vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.gues
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
 vi.mock("@/api/clientAuth", () => ({getRegistrationWindow: async () => ({registrationOpen: true, joinPolicy: "rolling", startAt: "", finishAt: "", rosterOpen: state.rosterOpen})}));
+vi.mock("@/api/moderatorsBoard", () => ({getModeratorsTeam: async () => { if (!state.moderators) throw new Error("unavailable"); return state.moderators; }}));
 vi.mock("@/api/eventTeams", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/eventTeams")>()),
     getOwnTeamMembers: async () => state.members,
@@ -40,7 +42,7 @@ function view() {
 }
 
 beforeEach(() => {
-    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = [];
+    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = []; state.moderators = null;
     window.history.replaceState(null, "", "/team");
     sessionStorage.clear();
 });
@@ -80,7 +82,19 @@ it("hides the roster management once the roster is closed", async () => {
     expect(screen.queryByRole("button", {name: "Розпустити команду"})).toBeNull();
 });
 
-it("lets organizers open the page as a captain with sample data", async () => {
+it("shows organizers the real moderators team, read-only", async () => {
+    state.guest = event;
+    state.staff = true;
+    state.moderators = {TeamID: "00000000-0000-4000-8000-0000000000bb", Members: [{UserID: "00000000-0000-4000-8000-0000000000c1", Name: "Олена Коваль", Role: 1}]};
+    view();
+    expect(await screen.findByText("Перевірка завдань від імені команди модераторів")).toBeTruthy();
+    expect(screen.getByText("Олена Коваль")).toBeTruthy();
+    expect(screen.getByText("Команда модераторів")).toBeTruthy();
+    expect(screen.queryByLabelText("Посилання для запрошення")).toBeNull();
+    expect(screen.queryByRole("button", {name: "Розпустити команду"})).toBeNull();
+});
+
+it("lets organizers open the page as a captain with sample data when there is no moderators team", async () => {
     state.guest = event;
     state.staff = true;
     view();

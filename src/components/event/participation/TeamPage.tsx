@@ -28,6 +28,8 @@ import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {changedEditableAnswers, forgetJoinCode, formFields, joinCodeFromSearch, joinLink, joinLinkValidity, parseJoinCode, recalledJoinCode, rememberJoinCode, rosterLine} from "./participationModel";
+import {getModeratorsTeam} from "@/api/moderatorsBoard";
+import {eventRoleLabel} from "@/utils/roles";
 import {previewMembers, previewOwnTeam} from "./participationPreview";
 import {errorText, FieldRow, FieldRows, FieldsEditor, Section, TeamConfirm, type Confirm} from "./participationParts";
 
@@ -238,6 +240,19 @@ function TeamSection({event, info, team, rosterOpen, finished, preview}: {event:
     </Section>;
 }
 
+// Organizers see the real hidden moderators team, read-only: no link, no roster actions, no results.
+function ModeratorsTeamSection({members}: {members: {UserID: string; Name: string; Role: number}[]}) {
+    return <Section title={t("participation.team.title")} note={t("participation.team.moderatorsNote")}>
+        <dl className="event-part__rows">
+            <FieldRow label={t("participation.team.nameLabel")}><span>{t("participation.team.moderatorsName")}</span></FieldRow>
+            <FieldRow label={t("participation.team.roster")}><span>{members.length}</span></FieldRow>
+        </dl>
+        <h3 className="event-part__subhead">{t("participation.team.members")}</h3>
+        <table className="event-members"><thead><tr><th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th></tr></thead>
+            <tbody>{members.map(member => <tr key={member.UserID}><td>{member.Name}</td><td><span className="ib-tag ib-tag--role">{eventRoleLabel(member.Role)}</span></td></tr>)}</tbody></table>
+    </Section>;
+}
+
 // «Моя команда»: the roster and, for the captain, the join link and the roster management.
 export function TeamPage() {
     const access = useParticipantContext();
@@ -247,6 +262,7 @@ export function TeamPage() {
     const event = access?.event ?? guest;
     const registration = useQuery({queryKey: ["event-registration-window", event?.EventID], queryFn: () => getRegistrationWindow(event!.EventID), enabled: !!event, retry: false, refetchOnWindowFocus: false});
     const [now] = useState(() => Date.now());
+    const moderators = useQuery({queryKey: ["event-moderators-team", event?.EventID], queryFn: () => getModeratorsTeam(event!.EventID), enabled: !!event && !access && staff.staff, retry: false, refetchOnWindowFocus: false});
     if (!event) return <EventLoading label={t("participation.loading")} />;
     const participant = !!access;
     const previewing = !participant && staff.staff;
@@ -263,12 +279,15 @@ export function TeamPage() {
     if (registration.isError) return <EventLoadError message={t("participation.team.loadFailed")} error={registration.error} onRetry={() => void registration.refetch()} />;
     const rosterOpen = registration.data.rosterOpen;
     const finished = !!event.FinishTime && Date.parse(event.FinishTime) <= now;
+    if (previewing && moderators.isPending) return <EventLoading label={t("participation.loading")} />;
+    const realModerators = previewing && moderators.data ? moderators.data : null;
     const info = access?.participantInfo;
     const team = previewing ? previewOwnTeam() : access?.ownTeam ?? null;
     return <div className="event-participation">
         <PageHeading sub={finished ? t("participation.sub.finished", {name: event.Name}) : event.Name} />
-        {previewing && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
-        {team
+        {realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} /></div>}
+        {previewing && !realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
+        {realModerators ? <ModeratorsTeamSection members={realModerators.Members} /> : team
             ? <TeamSection event={event} info={info ?? ({MinTeamSize: 2, MaxTeamSize: 4} as ParticipantEventInfo)} team={team} rosterOpen={rosterOpen} finished={finished} preview={previewing} />
             : <Section title={t("participation.team.title")} note={t("participation.noTeam.sectionNote")}><NoTeam event={event} rosterOpen={rosterOpen} linkCode={linkCode} preview={previewing} /></Section>}
     </div>;
