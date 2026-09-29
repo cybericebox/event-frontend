@@ -1,5 +1,6 @@
 "use client";
 
+import {useRef, useState} from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {ChevronDown, Circle} from "lucide-react";
 import {t} from "@/i18n/t";
@@ -11,11 +12,14 @@ export function EventSelect({value, options, onValueChange, disabled = false, ar
     disabled?: boolean; ariaLabel: string; placeholder?: string; className?: string;
 }) {
     const selected = options.find(option => option.value === value);
-    return <DropdownMenu.Root>
-        <DropdownMenu.Trigger className={`event-select ib-select__trigger event-manage-input ${className}`} type="button" disabled={disabled} aria-label={ariaLabel}>
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    // Inside a native <dialog> (top layer) the menu must render in it, or it opens behind the dialog.
+    const [container, setContainer] = useState<HTMLElement | null>(null);
+    return <DropdownMenu.Root onOpenChange={open => {if (open) setContainer(triggerRef.current?.closest("dialog") ?? null);}}>
+        <DropdownMenu.Trigger ref={triggerRef} className={`event-select ib-select__trigger event-manage-input ${className}`} type="button" disabled={disabled} aria-label={ariaLabel}>
             <span className={selected ? "" : "ib-select__ph"}>{selected?.label ?? placeholder}</span><ChevronDown size={16} aria-hidden="true" />
         </DropdownMenu.Trigger>
-        <DropdownMenu.Portal><DropdownMenu.Content className={`ib-listbox event-select__menu${options.some(option => option.disabledReason) ? " event-select__menu--reasons" : ""}`} sideOffset={4} align="start" collisionPadding={8}>
+        <DropdownMenu.Portal container={container ?? undefined}><DropdownMenu.Content className={`ib-listbox event-select__menu${options.some(option => option.disabledReason) ? " event-select__menu--reasons" : ""}`} sideOffset={4} align="start" collisionPadding={8}>
             <DropdownMenu.RadioGroup value={value} onValueChange={onValueChange}>
                 {options.map(option => option.disabled && option.disabledReason
                     ? <div className="event-select__unavailable" key={option.value} aria-label={`${option.label}. ${option.disabledReason}`}>
