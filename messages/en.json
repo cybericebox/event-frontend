@@ -1692,6 +1692,8 @@
   "manage.notifications.signal.participant.approval_registration.submitted.title": "Application submitted",
   "manage.notifications.signal.participant.event.finished.description": "Participants learn that the event has ended.",
   "manage.notifications.signal.participant.event.finished.title": "Event finished",
+  "manage.notifications.signal.participant.event.results_published.description": "Participants are notified when the organizers open the event results.",
+  "manage.notifications.signal.participant.event.results_published.title": "Event results published",
   "manage.notifications.signal.participant.event.start_reminder.description": "Participants get a reminder before the event starts.",
   "manage.notifications.signal.participant.event.start_reminder.title": "Start reminder",
   "manage.notifications.signal.participant.invitation.accepted.description": "A participant accepted the invitation.",

@@ -21,6 +21,7 @@ export const signalLabels: Record<string, {title: string; description: string; g
     "participant.team_invitation.sent": signal("participant.team_invitation.sent", "invitations"),
     "participant.event.start_reminder": signal("participant.event.start_reminder", "event"),
     "participant.event.finished": signal("participant.event.finished", "event"),
+    "participant.event.results_published": signal("participant.event.results_published", "event"),
 };
 
 const otherGroup = t("manage.notifications.group.other");

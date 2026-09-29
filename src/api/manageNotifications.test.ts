@@ -1,4 +1,6 @@
 import {describe, expect, it} from "vitest";
+import en from "../../messages/en.json";
+import uk from "../../messages/uk.json";
 import {channelSignals, reminderDays, signalGroups, signalLabel, signalLabels, validReminderDays} from "./manageNotifications";
 
 describe("notification signal labels", () => {
@@ -25,6 +27,34 @@ describe("notification signal labels", () => {
     it("groups signals keeping their order", () => {
         expect(signalGroups(["participant.invitation.sent", "participant.event.finished", "custom.type"]))
             .toEqual([{group: "Запрошення", signals: ["participant.invitation.sent"]}, {group: "Захід", signals: ["participant.event.finished"]}, {group: "Інше", signals: ["custom.type"]}]);
+    });
+});
+
+// Mirrors AP Backend notificationTypes.EventScopedTypes(): the signals an Event can list.
+const eventScopedSignals = [
+    "participant.approval_registration.submitted", "participant.approval_registration.approved", "participant.approval_registration.rejected",
+    "participant.open_registration.completed", "participant.invitation.sent", "participant.team_invitation.sent",
+    "participant.invitation.accepted", "participant.invitation.revoked", "participant.invitation.expired",
+    "participant.event.start_reminder", "participant.event.finished", "participant.event.results_published",
+];
+
+describe("every event-scoped signal is translated", () => {
+    it.each([["uk", uk], ["en", en]] as const)("has %s title, description and a known group", (_lang, messages) => {
+        const catalog = messages as Record<string, string>;
+        for (const type of eventScopedSignals) {
+            expect(signalLabels, type).toHaveProperty(type);
+            expect(catalog[`manage.notifications.signal.${type}.title`]?.trim(), type).toBeTruthy();
+            expect(catalog[`manage.notifications.signal.${type}.description`]?.trim(), type).toBeTruthy();
+        }
+    });
+
+    it("never falls back to the raw type name for a known signal", () => {
+        for (const type of eventScopedSignals) {
+            const label = signalLabel(type);
+            expect(label.title).not.toBe(type);
+            expect(label.title).not.toContain(".");
+            expect(label.group).not.toBe("Інше");
+        }
     });
 });
 

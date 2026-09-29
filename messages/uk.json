@@ -1692,6 +1692,8 @@
   "manage.notifications.signal.participant.approval_registration.submitted.title": "Заявку подано",
   "manage.notifications.signal.participant.event.finished.description": "Учасники дізнаються, що захід завершився.",
   "manage.notifications.signal.participant.event.finished.title": "Захід завершено",
+  "manage.notifications.signal.participant.event.results_published.description": "Учасники отримують лист, коли організатори відкривають результати заходу.",
+  "manage.notifications.signal.participant.event.results_published.title": "Результати заходу опубліковано",
   "manage.notifications.signal.participant.event.start_reminder.description": "Учасники отримують нагадування перед початком заходу.",
   "manage.notifications.signal.participant.event.start_reminder.title": "Нагадування про старт",
   "manage.notifications.signal.participant.invitation.accepted.description": "Учасник прийняв запрошення.",
