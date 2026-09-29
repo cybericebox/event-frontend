@@ -17,6 +17,7 @@ import {EventBanner} from "@/components/event/EventBanner";
 import {EventVpnProvider} from "@/components/event/vpn/EventVpn";
 import {RailBoard, TilesBoard} from "./ChallengeBoards";
 import {ChallengeModal, type BoardMode} from "./ChallengeModal";
+import type {HintChargeMode} from "./hintModel";
 import {
     boardViewKey, buildCategories, formatPoints, missingMembers, pluralUk, readBoardView, writeBoardView, type BoardView,
 } from "./challengeBoardModel";
@@ -54,9 +55,9 @@ function Empty({title, children}: {title: string; children?: ReactNode}) {
     return <div className="ib-board__empty"><b>{title}</b>{children}</div>;
 }
 
-function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, showHints, userID, onRefresh, banners}: {
+function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, banners}: {
     eventID: string; mode: BoardMode; challenges: OwnChallenge[]; teamMode: boolean; finished: boolean;
-    showDifficulty: boolean; showHints: boolean; userID?: string; onRefresh: () => void; banners?: ReactNode;
+    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; banners?: ReactNode;
 }) {
     const key = boardViewKey(userID);
     // The board renders only after client-side queries, so reading storage here never races hydration.
@@ -86,9 +87,10 @@ function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, s
             : view === "rail" ? <RailBoard categories={categories} acceptedID={acceptedID} onOpen={open} />
             : <TilesBoard categories={categories} acceptedID={acceptedID} onOpen={open} />}
         <ChallengeModal challenge={selected} eventID={eventID} mode={mode} teamMode={teamMode} finished={finished}
-            showDifficulty={showDifficulty} showHints={showHints}
+            showDifficulty={showDifficulty} showHints={showHints} hintChargeMode={hintChargeMode}
             onClose={() => setSelectedID(null)}
-            onAccepted={challengeID => { setAcceptedID(challengeID); onRefresh(); }} />
+            onAccepted={challengeID => { setAcceptedID(challengeID); onRefresh(); }}
+            onHintUnlocked={onRefresh} />
     </Page>;
 }
 
@@ -144,6 +146,6 @@ export function ChallengesBoard() {
     if (challenges.isError) return <Page banners={finishedBanner || undefined}><Empty title="Не вдалося завантажити завдання">Перевірте з’єднання. <button type="button" className="ib-btn ib-btn--sm" onClick={() => void challenges.refetch()}>Повторити</button></Empty></Page>;
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data} teamMode={teamMode} finished={finished}
-        showDifficulty={info?.ShowDifficulty ?? true} showHints={info?.ShowHints ?? true} userID={user.data?.ID}
+        showDifficulty={info?.ShowDifficulty ?? true} showHints={info?.ShowHints ?? true} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}
         onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} />;
 }

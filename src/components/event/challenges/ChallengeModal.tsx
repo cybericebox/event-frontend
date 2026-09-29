@@ -5,15 +5,17 @@ import {useQuery} from "@tanstack/react-query";
 import {Network} from "lucide-react";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {
-    challengeAttachmentUrl, challengeFiles, getChallengeSolves, getOwnChallengeLab, ParticipantChallengeError, submitChallenge,
-    type OwnChallenge,
+    challengeAttachmentUrl, challengeFiles, getChallengeSolves, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
+    type ChallengeHint, type OwnChallenge,
 } from "@/api/participantChallenges";
 import {checkModeratorFlag, moderatorFileUrl} from "@/api/moderatorsBoard";
 import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
+import {DialogModal} from "@/components/event/DialogModal";
 import {difficultyLabel, formatClock, formatFileSize, solvesLabel} from "./challengeBoardModel";
+import {hintConfirmText, hintCostLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
 
 export type BoardMode = "participant" | "moderators";
 type Message = {text: string; tone: "error" | "warn"} | null;
@@ -68,8 +70,58 @@ function HostBlock({lab, pending}: {lab: LabRuntime | undefined; pending: boolea
     </section>;
 }
 
+// Hints: participants unlock one by one (paid ones after a confirm); the
+// moderators board shows every text and never unlocks.
+export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlocked}: {
+    challenge: OwnChallenge; eventID: string; moderators: boolean; chargeMode: HintChargeMode; onUnlocked: () => void;
+}) {
+    const [confirm, setConfirm] = useState<{hint: ChallengeHint; index: number} | null>(null);
+    const [busyID, setBusyID] = useState<string | null>(null);
+    const [error, setError] = useState("");
+    const paid = challenge.Hints.some(hint => hint.Cost > 0);
+
+    async function unlock(hint: ChallengeHint) {
+        if (busyID) return;
+        setBusyID(hint.ID);
+        setError("");
+        try {
+            await unlockChallengeHint(eventID, challenge.EventChallengeID, hint.ID);
+            setConfirm(null);
+            onUnlocked();
+        } catch (failure) {
+            setConfirm(null);
+            setError(hintUnlockError(failure));
+        } finally {
+            setBusyID(null);
+        }
+    }
+
+    return <section className="ib-cmodal__blk">
+        <h3>Підказки</h3>
+        {!moderators && (paid || challenge.HintCostTotal > 0) && <p className="ib-cmodal__hint event-cmodal__hint-mode">
+            {hintModeNote(chargeMode)}{challenge.HintCostTotal > 0 && <> Витрачено: <span className="ib-num">{pointsLabel(challenge.HintCostTotal)}</span>.</>}
+        </p>}
+        <ul className="event-cmodal__hints">{challenge.Hints.map((hint, index) => <li key={hint.ID}>
+            <div className="event-cmodal__hint-head">
+                <span className="event-cmodal__hint-title">Підказка {index + 1}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
+                {!moderators && !hint.Unlocked && <button type="button" className={`ib-btn ib-btn--sm${busyID === hint.ID ? " is-loading" : ""}`} disabled={!!busyID} aria-busy={busyID === hint.ID || undefined}
+                    onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>Відкрити підказку</button>}
+            </div>
+            {hint.Content && <p>{hint.Content}</p>}
+            {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">Відкрито: {hint.UnlockedByName}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
+        </li>)}</ul>
+        {error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
+        <DialogModal open={!!confirm} onClose={() => { if (!busyID) setConfirm(null); }} title={confirm ? `Відкрити підказку ${confirm.index + 1}?` : ""}
+            description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
+            footer={<><button className="ib-btn" type="button" disabled={!!busyID} onClick={() => setConfirm(null)}>Скасувати</button>
+                <button className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} onClick={() => confirm && void unlock(confirm.hint)}>{busyID ? "Відкриваємо…" : "Відкрити"}</button></>}>
+            <p className="ib-cmodal__hint">Підказку побачить уся команда.</p>
+        </DialogModal>
+    </section>;
+}
+
 // React port of ds-v2 IB.ChallengeModal on a native <dialog>.
-export function ChallengeModal({challenge, eventID, mode, teamMode, finished, showDifficulty, showHints, onClose, onAccepted}: {
+export function ChallengeModal({challenge, eventID, mode, teamMode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onHintUnlocked}: {
     challenge: OwnChallenge | null;
     eventID: string;
     mode: BoardMode;
@@ -77,8 +129,10 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     finished: boolean;
     showDifficulty: boolean;
     showHints: boolean;
+    hintChargeMode?: HintChargeMode;
     onClose: () => void;
     onAccepted: (challengeID: string) => void;
+    onHintUnlocked?: () => void;
 }) {
     const ref = useRef<HTMLDialogElement>(null);
     const opener = useRef<Element | null>(null);
@@ -187,7 +241,12 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     const fileUrl = (fileID: string) => moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
 
     return <dialog ref={ref} className="ib-cmodal" aria-labelledby={`${id}-t`}
-        onClose={() => { onClose(); if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus(); }}
+        onClose={event => {
+            // React re-dispatches a nested dialog's close (the hint confirm) here; only our own counts.
+            if (event.target !== ref.current) return;
+            onClose();
+            if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus();
+        }}
         onClick={event => {
             if (event.target !== ref.current) return;
             const box = ref.current.getBoundingClientRect();
@@ -222,13 +281,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                     </li>)}</ul>
                 </section>}
                 {challenge.Infrastructure && <HostBlock lab={lab.data} pending={lab.isPending} />}
-                {hints.length > 0 && <section className="ib-cmodal__blk">
-                    <h3>Підказки</h3>
-                    <ul className="event-cmodal__hints">{hints.map((hint, index) => <li key={hint.ID}>
-                        <span className="event-cmodal__hint-title">Підказка {index + 1}{hint.Cost > 0 && <span className="ib-num"> · −{hint.Cost} балів</span>}</span>
-                        {hint.Content ? <p>{hint.Content}</p> : <p className="ib-cmodal__hint">Вміст підказки відкриває організатор.</p>}
-                    </li>)}</ul>
-                </section>}
+                {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={challenge} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} onUnlocked={() => onHintUnlocked?.()} />}
                 {moderators && <p className="ib-cmodal__hint event-cmodal__note">Перевірка від імені команди модераторів не впливає на результати.</p>}
                 {accepted && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? "Прапор правильний" : "Прапор прийнято"}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}
                 {!accepted && solved && !moderators && <div className="ib-cmodal__ok" role="status">{ICON.check}{teamMode ? "Розвʼязано вашою командою" : "Розвʼязано"}<span className="ib-num">{formatClock(challenge.SolvedAt!, true)}</span></div>}
