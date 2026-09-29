@@ -39,7 +39,7 @@ dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal__file[role="button"]{cursor:pointer}
 .ib-cmodal__file svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .ib-cmodal__size{margin-left:auto;font:var(--ib-fs-12) var(--ib-mono);color:var(--ib-dim);font-weight:var(--ib-w-regular)}
-.ib-cmodal__hint{margin-top:6px;font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-cmodal__hint{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:var(--ib-fs-12);color:var(--ib-dim)}
 
 /* flag */
 .ib-cmodal__flag{margin-top:18px;padding-top:18px;border-top:1px solid var(--ib-line)}

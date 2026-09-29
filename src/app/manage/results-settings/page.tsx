@@ -10,6 +10,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {clockLabel, freezeStartAt} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 function inRange(value: number, min: number, max: number) {
     return Number.isInteger(value) && value >= min && value <= max;
@@ -74,6 +75,6 @@ export default function ResultsSettingsPage() {
             </div>
             {value.RowsLimit !== null && <label className="event-manage-field">{t("manage.results.settings.rowsLimit")}<input className="event-manage-input event-results-settings__number" type="number" min={1} max={1000} value={value.RowsLimit} disabled={disabled} onChange={event => change({RowsLimit: Number(event.target.value)})} />{!inRange(value.RowsLimit, 1, 1000) && <small>{t("manage.results.settings.rowsRange")}</small>}</label>}
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid}>{saving ? t("common.saving") : t("common.save")}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }

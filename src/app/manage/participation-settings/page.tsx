@@ -9,6 +9,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 
 export default function ParticipationSettingsPage() {
@@ -61,6 +62,6 @@ export default function ParticipationSettingsPage() {
             <ManageFieldLabel title={t("manage.participation.infrastructure")} help={t("manage.participation.infrastructureHelp")} />
             <p className="event-manage-readonly-note">{configQuery.data?.InfrastructureAllowed ? t("manage.participation.infrastructureAllowed") : t("manage.participation.infrastructureDenied")}</p>
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid}>{saving ? t("common.saving") : t("common.save")}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }

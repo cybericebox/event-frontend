@@ -14,6 +14,7 @@ import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventButton} from "@/components/ui/EventButton";
 
 export default function JoinPage() {
     const router = useRouter();
@@ -78,7 +79,7 @@ export default function JoinPage() {
             : <>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
-                <button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? t("common.sending") : t("shell.join.action")}</button>
+                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()} busy={working}>{t("shell.join.action")}</EventButton>
             </>}
     </div></div>;
 }

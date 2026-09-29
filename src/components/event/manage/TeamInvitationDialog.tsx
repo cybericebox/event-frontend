@@ -6,6 +6,7 @@ import {inviteManageParticipants, type ParticipantInvitationResult} from "@/api/
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {invitationEmails, parseInvitationCsv} from "./participantInvitations";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 export function TeamInvitationDialog({eventID, team, onClose, onSent}: {
     eventID: string;
@@ -43,7 +44,7 @@ export function TeamInvitationDialog({eventID, team, onClose, onSent}: {
             <p>{t("manage.participants.invite.count", {count: emails.length})}</p>
             {emails.length > 200 && <p className="event-manage-validation" role="alert">{t("manage.participants.invite.limit")}</p>}
             {results.length > 0 && <div role="status" className="grid gap-1">{results.map(result => <p key={result.Email}>{result.Email}: {result.Error || t("manage.participants.invite.resultSent")}</p>)}</div>}
-            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={onClose}>{t("common.close")}</button><button className="ib-btn ib-btn--primary" type="button" disabled={busy || emails.length === 0 || emails.length > 200} onClick={() => void send()}>{busy ? t("manage.participants.invite.sending") : t("manage.participants.invite.send")}</button></div>
+            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={onClose}>{t("common.close")}</button><EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || emails.length === 0 || emails.length > 200} onClick={() => void send()} busy={busy}>{t("manage.participants.invite.send")}</EventButton></div>
         </div>
     </DialogContent></Dialog>;
 }

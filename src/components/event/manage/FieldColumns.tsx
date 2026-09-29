@@ -10,6 +10,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {formatAnswer, moveColumn, resolveColumns, toSavedColumns, type FieldColumn} from "./listColumns";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventButton} from "@/components/ui/EventButton";
 
 export function useFieldColumns(eventID: string, list: ManagedList, fields: FormField[], enabled = true) {
     const query = useQuery({queryKey: ["event-management-list-columns", eventID, list], queryFn: () => getManageListColumns(eventID, list), enabled, refetchOnWindowFocus: false});
@@ -43,7 +44,7 @@ export function FieldColumnsButton({eventID, list, columns, canManage}: {eventID
                 <label className="event-manage-form__switch"><input type="checkbox" checked={column.visible} disabled={!canManage || saving} onChange={event => setDraft(current => current && current.map(item => item.key === column.key ? {...item, visible: event.target.checked} : item))} />{column.label}</label>
                 {canManage && <span className="event-content-editor__block-actions"><button type="button" aria-label={t("manage.fields.columns.moveUp", {label: column.label})} disabled={index === 0 || saving} onClick={() => setDraft(current => current && moveColumn(current, index, -1))}><ArrowUp size={16} /></button><button type="button" aria-label={t("manage.fields.columns.moveDown", {label: column.label})} disabled={index === (draft?.length ?? 0) - 1 || saving} onClick={() => setDraft(current => current && moveColumn(current, index, 1))}><ArrowDown size={16} /></button></span>}
             </li>)}</ol>
-            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={saving} onClick={() => setDraft(null)}>{t("common.cancel")}</button>{canManage && <button className="ib-btn ib-btn--primary" type="button" disabled={saving} onClick={() => void save()}>{saving ? t("common.saving") : t("common.save")}</button>}</div>
+            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={saving} onClick={() => setDraft(null)}>{t("common.cancel")}</button>{canManage && <EventButton className="ib-btn ib-btn--primary" type="button" disabled={saving} onClick={() => void save()} busy={saving}>{t("common.save")}</EventButton>}</div>
         </DialogContent></Dialog>
     </>;
 }

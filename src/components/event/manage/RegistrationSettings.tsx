@@ -10,6 +10,7 @@ import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 
 export function RegistrationSettings() {
@@ -77,6 +78,6 @@ export function RegistrationSettings() {
             {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title={t("manage.registration.maxTeams")} help={t("manage.registration.maxTeamsHelp")} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage || saving} placeholder={t("manage.registration.noLimit")} /></div>}
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.pseudonyms")} help={t("manage.registration.pseudonymsHelp")} /><label className="event-manage-form__switch"><input type="checkbox" checked={!!allowPseudonyms} onChange={change => update({allowPseudonyms: change.target.checked})} disabled={!canManage || saving} />{t("manage.registration.allowPseudonyms")}</label></div>
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))}>{saving ? t("common.saving") : t("common.save")}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }

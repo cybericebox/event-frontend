@@ -20,6 +20,7 @@ import {difficultyLabel, formatClock, formatFileSize, solvesLabel} from "./chall
 import {t} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
+import {BusyMark, EventButton} from "@/components/ui/EventButton";
 
 export type BoardMode = "participant" | "moderators";
 type Message = {text: string; tone: "error" | "warn"} | null;
@@ -69,7 +70,7 @@ function HostBlock({lab, pending}: {lab: LabRuntime | undefined; pending: boolea
                 const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
                 return <CopyField key={`${item.Device}-${item.Port}`} value={value} url={item.URL || undefined} />;
             })}</div>
-            : <p className="ib-cmodal__hint">{pending ? t("challenges.host.checking") : t("challenges.host.preparing")}</p>}
+            : <p className="ib-cmodal__hint">{pending && <BusyMark />}{pending ? t("challenges.host.checking") : t("challenges.host.preparing")}</p>}
         <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>
     </section>;
 }
@@ -108,8 +109,8 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         <ul className="event-cmodal__hints">{challenge.Hints.map((hint, index) => <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
                 <span className="event-cmodal__hint-title">{t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
-                {!moderators && !hint.Unlocked && <button type="button" className={`ib-btn ib-btn--sm${busyID === hint.ID ? " is-loading" : ""}`} disabled={!!busyID} aria-busy={busyID === hint.ID || undefined}
-                    onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>{t("challenges.hints.unlock")}</button>}
+                {!moderators && !hint.Unlocked && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
+                    onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>{t("challenges.hints.unlock")}</EventButton>}
             </div>
             {hint.Content && <p>{hint.Content}</p>}
             {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">{t("challenges.hints.unlockedBy", {name: hint.UnlockedByName})}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
@@ -118,7 +119,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         <DialogModal open={!!confirm} onClose={() => { if (!busyID) setConfirm(null); }} title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
             description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
             footer={<><button className="ib-btn" type="button" disabled={!!busyID} onClick={() => setConfirm(null)}>{t("common.cancel")}</button>
-                <button className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} onClick={() => confirm && void unlock(confirm.hint)}>{busyID ? t("challenges.hints.unlocking") : t("challenges.hints.confirm")}</button></>}>
+                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} onClick={() => confirm && void unlock(confirm.hint)} busy={!!busyID}>{t("challenges.hints.confirm")}</EventButton></>}>
             <p className="ib-cmodal__hint">{t("challenges.hints.teamSees")}</p>
         </DialogModal>
     </section>;
@@ -296,7 +297,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                         <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
                             aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer}
                             onChange={event => { setAnswer(event.target.value); if (message?.tone === "error") setMessage(null); if (moderators) setAccepted(false); }} />
-                        <button className={`ib-btn ib-btn--primary${busy ? " is-loading" : ""}`} type="submit" disabled={busy || waiting} aria-busy={busy || undefined}>{busy ? t("challenges.modal.checking") : t("challenges.modal.submit")}</button>
+                        <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting} busy={busy}>{t("challenges.modal.submit")}</EventButton>
                     </div>
                     <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role="alert">
                         {waiting ? t("challenges.modal.rateLimited", {seconds: waitSeconds}) : message?.text}

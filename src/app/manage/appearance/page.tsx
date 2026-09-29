@@ -16,6 +16,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 const defaultBrand = "#211A52";
 const colorPattern = /^#[0-9a-fA-F]{6}$/;
@@ -104,7 +105,7 @@ export default function ManageAppearancePage() {
                 <div className="event-manage-preview__sample" style={previewStyle} data-theme="dark"><div className="event-manage-preview__body"><strong>{t("manage.appearance.darkTheme")}</strong><span className="event-manage-preview__accent">{t("manage.appearance.accentElement")}</span></div></div>
             </aside>
         </div>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !theme || logo.uploading || favicon.uploading}>{saving ? t("manage.editor.draft.saving") : t("common.save")}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !theme || logo.uploading || favicon.uploading} busy={saving}>{t("common.save")}</EventButton></div>}
         <Dialog open={suggestion !== null} onOpenChange={open => {if (!open) setSuggestion(null);}}><DialogContent className="event-brand-palette-dialog"><DialogHeader><DialogTitle>{t("manage.appearance.paletteTitle")}</DialogTitle><DialogDescription>{t("manage.appearance.paletteBody")}</DialogDescription></DialogHeader>{suggestion && <div className="event-brand-palette-dialog__colors"><div><span>{t("manage.appearance.brand")}</span><strong><i style={{backgroundColor: suggestion.brand}} />{suggestion.brand}</strong></div><div><span>{t("manage.appearance.accent")}</span><strong><i style={{backgroundColor: suggestion.accent || "#FFFFFF"}} />{suggestion.accent || t("manage.appearance.undefined")}</strong></div></div>}<div className="event-brand-palette-dialog__actions"><button className="ib-btn" type="button" onClick={() => setSuggestion(null)}>{t("manage.appearance.keepCurrent")}</button><button className="ib-btn ib-btn--primary" type="button" disabled={disabled} onClick={() => {if (suggestion && (whiteTextContrast(suggestion.brand) ?? 0) >= 4.5) setEdit({eventID, brand: suggestion.brand, accent: suggestion.accent}); setSuggestion(null);}}>{t("manage.appearance.applyColors")}</button></div></DialogContent></Dialog>
     </form>;
 }

@@ -16,6 +16,7 @@ import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel,
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventButton} from "@/components/ui/EventButton";
 
 const timeFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 const formatTime = (value: string | null) => value ? timeFormat.format(new Date(value)) : null;
@@ -69,7 +70,7 @@ function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: Man
             <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-delay" title={t("manage.labs.schedule.delay")} help={t("manage.labs.schedule.delayHelp", TEARDOWN_DELAY_RANGE)} /><input id="stand-delay" className="event-manage-input" type="number" min={TEARDOWN_DELAY_RANGE.min} max={TEARDOWN_DELAY_RANGE.max} value={Number.isNaN(delay) ? "" : delay} onChange={change => setEdit({lead, delay: change.target.valueAsNumber})} disabled={!canManage || saving} /></div>
         </div>
         {dirty && !valid && <p className="event-manage-validation" role="alert">{t("manage.labs.schedule.invalid", {leadMin: DEPLOY_LEAD_RANGE.min, leadMax: DEPLOY_LEAD_RANGE.max, delayMin: TEARDOWN_DELAY_RANGE.min, delayMax: TEARDOWN_DELAY_RANGE.max})}</p>}
-        {canManage && dirty && <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={saving} onClick={() => setEdit(null)}>{t("common.cancel")}</button><button className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid}>{saving ? t("common.saving") : t("common.save")}</button></div>}
+        {canManage && dirty && <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={saving} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }
 
@@ -175,7 +176,7 @@ export default function ManageLabsPage() {
         </section>
         <Dialog open={confirm !== null} onOpenChange={next => {if (!next && !busy) setConfirm(null);}}><DialogContent className="max-w-[min(480px,calc(100vw-24px))]">
             <DialogHeader><DialogTitle>{t("manage.labs.recreate.title")}</DialogTitle><DialogDescription>{t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}</DialogDescription></DialogHeader>
-            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setConfirm(null)}>{t("common.cancel")}</button><button className="ib-btn ib-btn--danger" type="button" disabled={busy} onClick={() => void recreate()}>{busy ? t("manage.labs.recreate.running") : t("manage.labs.recreate.confirm")}</button></div>
+            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setConfirm(null)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--danger" type="button" disabled={busy} onClick={() => void recreate()} busy={busy}>{t("manage.labs.recreate.confirm")}</EventButton></div>
         </DialogContent></Dialog>
         <ModeratorChallengesDialog eventID={eventID} open={challengesOpen} onClose={() => setChallengesOpen(false)} />
     </div>;

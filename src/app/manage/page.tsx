@@ -11,6 +11,7 @@ import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 function localDateTime(iso: string | null): string {
     if (!iso) return "";
@@ -121,7 +122,7 @@ export default function ManageIndex() {
             {error && <p className="event-manage-validation" role="alert">{error}</p>}
             {publishAt && startAt && startTime < publishTime && <p className="event-manage-validation" role="alert">{t("manage.overview.startBeforePublish")}</p>}
             {participation === 1 && minSize !== null && minSize > maxSize && <p className="event-manage-validation" role="alert">{t("manage.overview.minAboveMax")}</p>}
-            <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !valid || saving}>{t(saving ? "common.saving" : "manage.overview.saveAndSchedule")}</button></div>
+            <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || !valid || saving} busy={saving}>{t("manage.overview.saveAndSchedule")}</EventButton></div>
         </form>}
         {configured && <div className="event-manage-setup__links"><Link className="ib-btn" href="/manage/settings">{t("manage.overview.linkSettings")}</Link><Link className="ib-btn" href="/manage/schedule">{t("manage.overview.linkSchedule")}</Link><Link className="ib-btn ib-btn--primary" href="/manage/content/landing">{t("manage.overview.linkLanding")}</Link></div>}
     </div>;

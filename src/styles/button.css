@@ -2,7 +2,7 @@
    Variants: --primary (action) · default = secondary (outline, control border) · --ghost · --danger (outline)
              --danger-solid (confirm destructive) · --mass (on brand mass: --ib-mass-btn fill, brand text)
    Sizes: default 40 (--ib-control-h-lg) · --sm 32 (--ib-control-h)
-   Modifiers: --block (full width) · .is-loading (+ aria-busy) · [disabled] / [aria-disabled=true]
+   Modifiers: --block (full width) · .is-busy (EventButton busy) · [disabled] / [aria-disabled=true]
    Hover look can be forced in previews with .is-hover. */
 
 :root,[data-theme="light"]{
@@ -50,12 +50,13 @@
 .ib-btn--mass-outline{--_fg:var(--ib-on-brand);--_bd:var(--ib-on-brand-3);--_hover:var(--ib-brand-hover)}
 .ib-mass .ib-btn:focus-visible,.ib-mass .ib-btn.is-focus{outline-color:var(--ib-on-brand)}
 
-/* loading: keeps width, hides label visually, shows ring */
-.ib-btn.is-loading{cursor:progress;pointer-events:none;color:transparent}
-.ib-btn__spin{display:none;position:absolute;inset:0;margin:auto;width:16px;height:16px;border-radius:50%;border:2px solid var(--_fg);border-right-color:transparent;animation:ib-btn-spin .7s linear infinite}
-.ib-btn.is-loading .ib-btn__spin{display:block}
-@keyframes ib-btn-spin{to{transform:rotate(1turn)}}
 
 /* disabled */
 .ib-btn:disabled,.ib-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;background:var(--_bg)}
 .ib-btn--primary:disabled,.ib-btn--primary[aria-disabled="true"]{border-color:var(--ib-action)}
+
+/* Busy state: the event logo replaces the icon, the label stays. */
+.ib-busy-mark{width:16px;height:16px;flex:none;object-fit:contain;animation:event-loading-pulse 1.8s ease-in-out infinite}
+.ib-btn.is-busy>svg,.event-brand-drop.is-busy>svg{display:none}
+.ib-btn.is-busy{cursor:progress}
+@media(prefers-reduced-motion:reduce){.ib-busy-mark{animation:none}}

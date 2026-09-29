@@ -11,6 +11,7 @@ import {useEventStream} from "@/utils/eventStream";
 import {clockLabel, freezeLeadMinutes} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventButton} from "@/components/ui/EventButton";
 
 const number = new Intl.NumberFormat("uk-UA");
 const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
@@ -64,7 +65,7 @@ export default function ManageResultsPage() {
     const finished = !!freeze.FinishAt && Date.parse(freeze.FinishAt) <= generatedAt;
     return <div className="event-manage-settings event-manage-results">
         <header className="event-manage-heading"><div><h1>{t("manage.results.title")}</h1><p>{teamMode ? t("manage.results.subtitleTeams") : t("manage.results.subtitle")} {stream === "live" ? t("manage.results.stream.live") : stream === "fallback" ? t("manage.results.stream.fallback") : ""}</p></div>
-            <div className="event-manage-results__actions"><button className="ib-btn" type="button" disabled={busy === "export"} onClick={() => void exportCSV()}><Download size={16} aria-hidden="true" /> {busy === "export" ? t("manage.attempts.exporting") : t("manage.attempts.export")}</button><button className="ib-btn" type="button" disabled={query.isFetching} onClick={() => void query.refetch()}><RefreshCw size={16} aria-hidden="true" /> {query.isFetching ? t("manage.results.refreshing") : t("manage.results.refresh")}</button></div>
+            <div className="event-manage-results__actions"><EventButton className="ib-btn" type="button" disabled={busy === "export"} onClick={() => void exportCSV()} busy={busy === "export"}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton><EventButton className="ib-btn" type="button" disabled={query.isFetching} onClick={() => void query.refetch()} busy={query.isFetching}><RefreshCw size={16} aria-hidden="true" /> {t("manage.results.refresh")}</EventButton></div>
         </header>
         <div className="event-manage-results__summary"><div><span>{t("manage.results.ranked")}</span><strong>{number.format(results.Counts.Ranked)}</strong></div><div><span>{t("manage.results.hiddenNotAdmitted")}</span><strong>{number.format(results.Counts.Hidden)} · {number.format(results.Counts.NotAdmitted)}</strong></div><div><span>{t("manage.results.updated")}</span><strong>{t("manage.attempts.timeUtc", {time: date.format(new Date(results.GeneratedAt))})}</strong></div></div>
         {freeze.Enabled && <section className="event-manage-section event-manage-results__freeze" aria-label={t("manage.results.freeze.label")}><p>{freezeStatus(freeze, generatedAt)}</p>{canManage && !finished && (freeze.OpenedAt

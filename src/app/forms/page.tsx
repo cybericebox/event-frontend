@@ -13,6 +13,7 @@ import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventButton} from "@/components/ui/EventButton";
 
 function visible(condition: {fieldKey: string; operator: string; value: string | number | boolean} | undefined, answers: EventFormAnswers): boolean {
     if (!condition) return true;
@@ -79,7 +80,7 @@ function FormsPage() {
                 if (block.type === "text") return <div className="event-join-markdown" key={block.id}><EventRichTextView value={block.richText} /></div>;
                 if (block.type === "divider") return <hr key={block.id} />;
                 return null;
-            })}</div>{error && <p className="event-join-error" role="alert">{error}</p>}<button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? t("common.sending") : t("forms.send")}</button></>}</section></div>}
+            })}</div>{error && <p className="event-join-error" role="alert">{error}</p>}<EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()} busy={working}>{t("forms.send")}</EventButton></>}</section></div>}
     </div>;
 }
 

@@ -17,6 +17,7 @@ import {useEventStream} from "@/utils/eventStream";
 import {useManager} from "./ManagerShell";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventButton} from "@/components/ui/EventButton";
 
 const all = "all";
 
@@ -149,7 +150,7 @@ export function AttemptsManager() {
 
     return <div className="event-manage-settings event-attempts-manager">
         <header className="event-manage-heading"><div><h1>{t("manage.attempts.title")}</h1><p>{teamMode ? t("manage.attempts.subtitleTeams") : t("manage.attempts.subtitle")}</p></div>
-            <div className="event-attempts-manager__head-actions"><span className="event-attempts-manager__total">{tPlural("manage.attempts.records", pageQuery.data?.Total ?? 0)} · {stream === "fallback" ? t("manage.attempts.stream.fallback") : stream === "live" ? t("manage.attempts.stream.live") : t("manage.attempts.stream.connecting")}</span><button className="ib-btn" type="button" disabled={exporting} onClick={() => void exportCSV()}><Download size={16} aria-hidden="true" /> {exporting ? t("manage.attempts.exporting") : t("manage.attempts.export")}</button></div>
+            <div className="event-attempts-manager__head-actions"><span className="event-attempts-manager__total">{tPlural("manage.attempts.records", pageQuery.data?.Total ?? 0)} · {stream === "fallback" ? t("manage.attempts.stream.fallback") : stream === "live" ? t("manage.attempts.stream.live") : t("manage.attempts.stream.connecting")}</span><EventButton className="ib-btn" type="button" disabled={exporting} onClick={() => void exportCSV()} busy={exporting}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton></div>
         </header>
         <section className="event-manage-section event-attempts-manager__filters" aria-label={t("manage.attempts.filter.label")}>
             <label className="event-manage-field">{teamMode ? t("manage.attempts.team") : t("manage.attempts.participant")}<EventSelect ariaLabel={teamMode ? t("manage.attempts.team") : t("manage.attempts.participant")} value={filters.teamID ?? all} options={teamOptions} onValueChange={value => changeFilters({teamID: value === all ? null : value})} /></label>
@@ -182,14 +183,14 @@ export function AttemptsManager() {
                     <form className="event-attempts-manager__review" onSubmit={save}>
                         <label className="event-manage-field">{t("manage.attempts.decision")}<EventSelect ariaLabel={t("manage.attempts.decisionLabel")} value={decision} options={[{value: "automatic", label: t("manage.attempts.automaticCheck")}, {value: "accepted", label: t("manage.attempts.accept")}, {value: "rejected", label: t("manage.attempts.reject")}]} onValueChange={value => setDraft({id: selected.ID, decision: value as AttemptDecision, reason: value === selected.Decision ? selected.DecisionReason ?? "" : ""})} disabled={saving} /></label>
                         <label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={reason} onChange={event => setDraft({id: selected.ID, decision, reason: event.target.value})} placeholder={t("manage.attempts.reasonPlaceholder")} maxLength={1000} disabled={saving} /></label>
-                        {changed && <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={saving || !reason.trim()}>{saving ? t("common.saving") : t("manage.attempts.saveDecision")}</button></div>}
+                        {changed && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || !reason.trim()} busy={saving}>{t("manage.attempts.saveDecision")}</EventButton></div>}
                     </form>
                     {selected.Correct && <div className="event-attempts-manager__annul"><div><strong>{t("manage.attempts.annul.title")}</strong><p>{teamMode ? t("manage.attempts.annul.hintTeam") : t("manage.attempts.annul.hintParticipant")}</p></div><button className="ib-btn ib-btn--danger" type="button" onClick={() => setAnnul({attempt: selected, reason: ""})}>{t("manage.attempts.annul.confirm")}</button></div>}
                 </>}
             </section>
         </div>}
         <DialogModal open={!!annul} onClose={() => { if (!annulling) setAnnul(null); }} title={t("manage.attempts.annul.dialogTitle")} description={annul ? t("manage.attempts.annul.description", {challenge: annul.attempt.ChallengeName || t("manage.attempts.challenge"), name: teamMode ? annul.attempt.TeamName : annul.attempt.ParticipantName}) : undefined}
-            footer={<><button className="ib-btn" type="button" disabled={annulling} onClick={() => setAnnul(null)}>{t("common.cancel")}</button><button className="ib-btn ib-btn--danger" type="submit" form="annul-solve-form" disabled={annulling || !annul?.reason.trim()}>{annulling ? t("manage.attempts.annul.running") : t("manage.attempts.annul.confirm")}</button></>}>
+            footer={<><button className="ib-btn" type="button" disabled={annulling} onClick={() => setAnnul(null)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--danger" type="submit" form="annul-solve-form" disabled={annulling || !annul?.reason.trim()} busy={annulling}>{t("manage.attempts.annul.confirm")}</EventButton></>}>
             <form id="annul-solve-form" onSubmit={confirmAnnul}><label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={annul?.reason ?? ""} onChange={event => setAnnul(current => current && {...current, reason: event.target.value})} placeholder={t("manage.attempts.annul.reasonPlaceholder")} maxLength={1000} disabled={annulling} required /></label></form>
         </DialogModal>
     </div>;

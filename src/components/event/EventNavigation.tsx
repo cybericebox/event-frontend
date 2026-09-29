@@ -21,6 +21,7 @@ import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailabili
 import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
 import {accountLinks, type AccountLinkKey} from "@/utils/accountMenu";
 import {t} from "@/i18n/t";
+import {initials} from "@/utils/initials";
 
 type Props = {
     event: PublicEventInfo;
@@ -66,8 +67,7 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
         returnTo: typeof window !== "undefined" ? window.location.href : `${eventOrigin(event.Tag)}/`,
     }, {id: idOrigin, admin: adminOrigin, exercises: exercisesOrigin, main: mainOrigin});
     const picture = profilePictureUrl(profile.data?.Picture ?? "");
-    const initials = `${profile.data?.FirstName?.trim()?.[0] ?? ""}${profile.data?.LastName?.trim()?.[0] ?? ""}`.toLocaleUpperCase("uk-UA")
-        || profile.data?.Email?.trim()?.[0]?.toLocaleUpperCase("uk-UA") || "?";
+    const avatarInitials = initials(profile.data?.FirstName, profile.data?.LastName, profile.data?.Email);
     const leave = async () => {
         try {
             setSignOutError(false);
@@ -84,7 +84,7 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
             // The API returns an origin-specific media URL; this app is statically exported.
             // eslint-disable-next-line @next/next/no-img-element
             <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
-        ) : initials}</span></button></PopoverTrigger>
+        ) : avatarInitials}</span></button></PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="event-account__menu">
             {links.map(({key, href}) => {
                 const {label, icon: Icon} = ACCOUNT_ITEMS[key];

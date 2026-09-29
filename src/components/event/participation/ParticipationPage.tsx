@@ -24,6 +24,7 @@ import {StandStatusIcon, standStatusText, useEventVpn} from "@/components/event/
 import {missingMembers} from "@/components/event/challenges/challengeBoardModel";
 import {t, tPlural} from "@/i18n/t";
 import {changedEditableAnswers, editableForm, formatAnswer, formFields, rosterLine} from "./participationModel";
+import {EventButton} from "@/components/ui/EventButton";
 
 function errorText(error: unknown, fallback: string): string {
     if (error instanceof EventTeamError || error instanceof ParticipantJoinError) return apiErrorMessage(error.code, fallback);
@@ -43,11 +44,11 @@ function ConfirmDialog({confirm, onClose}: {confirm: Confirm; onClose: () => voi
     const [busy, setBusy] = useState(false);
     return <DialogModal open={!!confirm} onClose={() => { if (!busy) onClose(); }} title={confirm?.title ?? ""}
         footer={<><button type="button" className="ib-btn" disabled={busy} onClick={onClose}>{t("common.cancel")}</button>
-            <button type="button" className={`ib-btn ${confirm?.danger ? "ib-btn--danger-solid" : "ib-btn--primary"}`} disabled={busy} onClick={async () => {
+            <EventButton type="button" className={`ib-btn ${confirm?.danger ? "ib-btn--danger-solid" : "ib-btn--primary"}`} disabled={busy} onClick={async () => {
                 if (!confirm) return;
                 setBusy(true);
                 try { await confirm.run(); onClose(); } finally { setBusy(false); }
-            }}>{busy ? t("common.wait") : confirm?.action}</button></>}>
+            }} busy={busy}>{confirm?.action}</EventButton></>}>
         <p>{confirm?.text}</p>
     </DialogModal>;
 }
@@ -61,7 +62,7 @@ function FieldsEditor({form, answers, onCancel, onSave}: {form: ParticipantForm;
         try { await onSave(draft); } finally { setBusy(false); }
     }}>
         <TeamFieldsInputs form={editableForm(form)} answers={draft} onChange={(key, value) => setDraft(current => ({...current, [key]: value}))} disabled={busy} />
-        <div className="event-part__actions"><button type="submit" className="ib-btn ib-btn--primary" disabled={busy}>{busy ? t("common.saving") : t("common.save")}</button><button type="button" className="ib-btn" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button></div>
+        <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy} busy={busy}>{t("common.save")}</EventButton><button type="button" className="ib-btn" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button></div>
     </form>;
 }
 
@@ -197,7 +198,7 @@ function NoTeam({event, started}: {event: PublicEventInfo; started: boolean}) {
                 {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fields} onChange={(key, value) => setFields(current => ({...current, [key]: value}))} disabled={busy} />}
                 {fieldsQuery.isError && <p className="ib-cmodal__msg is-error">{t("participation.noTeam.fieldsFailed")}</p>}
                 {error && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
-                <div className="event-part__actions"><button type="submit" className="ib-btn ib-btn--primary" disabled={busy || fieldsQuery.isPending}>{busy ? t("participation.noTeam.creating") : t("participation.noTeam.createAction")}</button></div>
+                <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy || fieldsQuery.isPending} busy={busy}>{t("participation.noTeam.createAction")}</EventButton></div>
             </form>
         </DialogModal>
     </>;

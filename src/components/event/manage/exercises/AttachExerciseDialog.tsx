@@ -15,6 +15,7 @@ import {attachmentActionError} from "./attachmentModel";
 import {InfrastructureIcon} from "./InfrastructureIcon";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventButton} from "@/components/ui/EventButton";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
@@ -71,7 +72,7 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
 
     return <DialogModal open={open} onClose={close} size="md" title={t("manage.exercises.attach")} description={t("manage.exercises.attachDialog.description")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
-            <button className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached} onClick={() => void attach()}>{busy ? t("manage.exercises.attachDialog.adding") : t("common.add")}</button></>}>
+            <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached} onClick={() => void attach()} busy={busy}>{t("common.add")}</EventButton></>}>
         <div className="event-exercise-picker">
             <form className="event-exercise-editor__search" onSubmit={(submitEvent: FormEvent<HTMLFormElement>) => {submitEvent.preventDefault(); setSearch(searchInput.trim());}}>
                 <label className="event-manage-field" htmlFor="exercise-search">{t("manage.exercises.attachDialog.search")}<input id="exercise-search" className="event-manage-input" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder={t("manage.exercises.attachDialog.searchPlaceholder")} maxLength={100} /></label>

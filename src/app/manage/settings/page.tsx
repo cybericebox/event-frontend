@@ -12,6 +12,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 function FieldLabel({htmlFor, title, help, required = false}: {htmlFor: string; title: string; help: string; required?: boolean}) {
     return <div className="event-brand-field__head"><label htmlFor={htmlFor}>{title}{required && <span className="event-field-required" aria-label={t("manage.fields.requiredField")}>*</span>}</label><EventTooltip content={<span className="event-brand-tooltip-copy">{help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip></div>;
@@ -62,6 +63,6 @@ export default function ManageGeneralPage() {
             <div className="event-manage-field"><FieldLabel htmlFor="event-description" title={t("manage.settings.description")} help={t("manage.settings.descriptionHelp")} /><textarea id="event-description" className="event-manage-input" value={description} onChange={change => setDescriptionEdit({eventID, value: change.target.value})} maxLength={1000} rows={3} disabled={disabled} /></div>
             <BrandDraftField id="event-preview-picture" title={t("manage.settings.preview")} help={t("manage.settings.previewHelp")} hint={t("manage.settings.previewHint")} kind="preview" draft={preview} disabled={disabled} />
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !name.trim() || preview.uploading}>{t(saving ? "common.saving" : "common.save")}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !name.trim() || preview.uploading} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }

@@ -8,6 +8,7 @@ import {getManageLabs, getModeratorVPNConfig, getOwnStandStatus, type StandStatu
 import {DialogModal} from "@/components/event/DialogModal";
 import {richMessage} from "@/components/event/challenges/richMessage";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 type VpnContextValue = {available: boolean; status: StandStatus | null; openVpn: () => void};
 const VpnContext = createContext<VpnContextValue>({available: false, status: null, openVpn: () => {}});
@@ -53,7 +54,7 @@ function VpnModal({eventID, moderators, status, open, onClose}: {eventID: string
         }
     };
     return <DialogModal open={open} onClose={onClose} title={t("vpn.modal.title")} description={moderators ? t("vpn.modal.descriptionModerators") : t("vpn.modal.description")}
-        footer={<><button type="button" className="ib-btn" onClick={onClose}>{t("common.close")}</button><button type="button" className="ib-btn ib-btn--primary" disabled={issuing} onClick={() => void download()}><Download aria-hidden="true" />{issuing ? t("vpn.modal.preparingFile") : t("vpn.modal.download")}</button></>}>
+        footer={<><button type="button" className="ib-btn" onClick={onClose}>{t("common.close")}</button><EventButton type="button" className="ib-btn ib-btn--primary" disabled={issuing} onClick={() => void download()} busy={issuing}><Download aria-hidden="true" />{t("vpn.modal.download")}</EventButton></>}>
         <div className={`event-vpn-stand is-${status ?? "unknown"}`} role="status">
             <StandStatusIcon status={status} />
             <div><b>{text?.title ?? t("vpn.modal.checkingStand")}</b>{text && <span>{text.note}</span>}</div>

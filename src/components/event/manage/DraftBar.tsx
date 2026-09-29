@@ -4,6 +4,7 @@ import {useState} from "react";
 import {RotateCcw, Send} from "lucide-react";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 export type DraftState = {
     // Local edits not yet saved as a draft.
@@ -44,9 +45,9 @@ export function DraftBar({state, busy, canManage, invalid, onSave, onPublish, on
         {canManage && <div className="event-draft-bar__actions">
             {state.dirty && <button className="ib-btn" type="button" disabled={!!busy} onClick={onRevertLocal}><RotateCcw size={16} /> {t("common.cancel")}</button>}
             {!state.dirty && state.hasDraft && state.published && onDiscardDraft && <button className="ib-btn" type="button" disabled={!!busy} onClick={() => setConfirmDiscard(true)}><RotateCcw size={16} /> {t("manage.editor.draft.discard")}</button>}
-            <button className="ib-btn" type="button" disabled={!state.dirty || invalid || !!busy} onClick={onSave}>{busy === "save" ? t("manage.editor.draft.saving") : t("common.save")}</button>
-            <button className="ib-btn ib-btn--primary" type="button" disabled={!canPublish || invalid || !!busy} onClick={onPublish}><Send size={16} /> {busy === "publish" ? t("manage.editor.draft.publishing") : t("manage.editor.draft.publish")}</button>
+            <EventButton className="ib-btn" type="button" disabled={!state.dirty || invalid || !!busy} onClick={onSave} busy={busy === "save"}>{t("common.save")}</EventButton>
+            <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canPublish || invalid || !!busy} onClick={onPublish} busy={busy === "publish"}><Send size={16} /> {t("manage.editor.draft.publish")}</EventButton>
         </div>}
-        <Dialog open={confirmDiscard} onOpenChange={open => {if (!busy) setConfirmDiscard(open);}}><DialogContent className="event-page-delete-dialog"><DialogHeader><DialogTitle>{t("manage.editor.draft.discardTitle")}</DialogTitle><DialogDescription>{t("manage.editor.draft.discardBody")}</DialogDescription></DialogHeader><div className="event-page-delete-dialog__actions"><button className="ib-btn" type="button" disabled={!!busy} onClick={() => setConfirmDiscard(false)}>{t("manage.editor.draft.keep")}</button><button className="ib-btn ib-btn--danger-solid" type="button" disabled={!!busy} onClick={() => {onDiscardDraft?.(); setConfirmDiscard(false);}}>{busy === "discard" ? t("manage.editor.draft.discarding") : t("manage.editor.draft.discard")}</button></div></DialogContent></Dialog>
+        <Dialog open={confirmDiscard} onOpenChange={open => {if (!busy) setConfirmDiscard(open);}}><DialogContent className="event-page-delete-dialog"><DialogHeader><DialogTitle>{t("manage.editor.draft.discardTitle")}</DialogTitle><DialogDescription>{t("manage.editor.draft.discardBody")}</DialogDescription></DialogHeader><div className="event-page-delete-dialog__actions"><button className="ib-btn" type="button" disabled={!!busy} onClick={() => setConfirmDiscard(false)}>{t("manage.editor.draft.keep")}</button><EventButton className="ib-btn ib-btn--danger-solid" type="button" disabled={!!busy} onClick={() => {onDiscardDraft?.(); setConfirmDiscard(false);}} busy={busy === "discard"}>{t("manage.editor.draft.discard")}</EventButton></div></DialogContent></Dialog>
     </div>;
 }

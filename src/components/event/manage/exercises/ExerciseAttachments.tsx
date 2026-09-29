@@ -25,6 +25,7 @@ import {InfrastructureIcon} from "./InfrastructureIcon";
 import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventButton} from "@/components/ui/EventButton";
 
 type ChallengeDraft = Pick<EventBoardChallenge, "Points" | "HintsEnabled" | "Published">;
 type Board = {attachment: EventExerciseAttachment; challenges: EventBoardChallenge[]};
@@ -274,7 +275,7 @@ export function ExerciseAttachments() {
         <DialogModal open={!!action} onClose={() => { if (!busy) setAction(null); }} title={copy?.title ?? ""} description={copy?.description}
             footer={action?.error ? <button className="ib-btn" type="button" onClick={() => setAction(null)}>{t("common.close")}</button> : <>
                 <button className="ib-btn" type="button" disabled={busy} onClick={() => setAction(null)}>{t("common.cancel")}</button>
-                <button className={`ib-btn ${copy?.danger ? "ib-btn--danger" : "ib-btn--primary"}`} type="button" disabled={busy} onClick={() => void runAction()}>{busy ? t("common.wait") : copy?.confirm}</button>
+                <EventButton className={`ib-btn ${copy?.danger ? "ib-btn--danger" : "ib-btn--primary"}`} type="button" disabled={busy} onClick={() => void runAction()} busy={busy}>{copy?.confirm}</EventButton>
             </>}>
             {action?.error ? <p className="event-manage-feedback event-manage-feedback--error" role="alert">{action.error}</p> : <p className="event-exercise-set__dialog-name">{action?.attachment.ExerciseName}</p>}
         </DialogModal>

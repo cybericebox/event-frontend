@@ -6,6 +6,7 @@ import {toast} from "react-hot-toast";
 import {uploadManageBrandDraft, type BrandAssetChange} from "@/api/manage";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 type Kind = "preview" | "logo" | "favicon";
 type Draft = {action: "keep" | "remove" | "replace"; fileID?: string; previewURL?: string};
@@ -70,10 +71,10 @@ export function BrandDraftField({id, title, help, hint, kind, draft, disabled, o
                 <EventTooltip content={t("manage.appearance.brand.change", {title: title.toLowerCase()})}>{tooltipID => <button className="ib-btn event-brand-change" type="button" aria-label={t("manage.appearance.brand.change", {title: title.toLowerCase()})} aria-describedby={tooltipID} disabled={draft.uploading} onClick={() => inputRef.current?.click()}><Pencil size={16} /></button>}</EventTooltip>
                 <EventTooltip content={t("manage.appearance.brand.removeTip")}>{tooltipID => <button className="ib-btn event-brand-remove" type="button" aria-label={t("manage.appearance.brand.remove", {title: title.toLowerCase()})} aria-describedby={tooltipID} disabled={draft.uploading} onClick={draft.reset}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
-        </div> : <button className={`event-brand-drop event-brand-drop--${kind}`} type="button" onClick={() => inputRef.current?.click()} onDragOver={event => event.preventDefault()} onDrop={handleDrop} disabled={disabled || draft.uploading}>
+        </div> : <EventButton className={`event-brand-drop event-brand-drop--${kind}`} type="button" onClick={() => inputRef.current?.click()} onDragOver={event => event.preventDefault()} onDrop={handleDrop} disabled={disabled || draft.uploading} busy={draft.uploading}>
             <ImagePlus size={22} aria-hidden="true" />
-            <span className="event-brand-drop__action"><strong>{draft.uploading ? t("manage.appearance.brand.uploading") : t("manage.appearance.brand.attach")}</strong><small>{t("manage.appearance.brand.drop")}</small></span>
-        </button>}
+            <span className="event-brand-drop__action"><strong>{t("manage.appearance.brand.attach")}</strong><small>{t("manage.appearance.brand.drop")}</small></span>
+        </EventButton>}
         {draft.error && <small className="event-brand-field__error" role="alert">{draft.error}</small>}
     </div>;
 }

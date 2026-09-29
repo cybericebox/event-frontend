@@ -20,6 +20,7 @@ import {beforeChallenges, comparePageOrder} from "../content/pageNavigationOrder
 import {BlockStackEditor} from "./BlockStackEditor";
 import {DraftBar} from "./DraftBar";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 
 const emptyPage: ManagePageInput = {
     Slug: "", Title: "", Document: {blocks: []}, Visibility: 0, Navigation: 1, NavigationAfter: "",
@@ -186,6 +187,6 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={() => void discardDraft()} />
         <BlockStackEditor editorKey={`${eventID}:${key}`} eventID={eventID} coverImage={event.PreviewPicture ?? ""} document={draft.Document} catalog={catalog} values={values} validation={documentError}
             canEdit={canManage && !busy} pageVisibility={draft.Visibility} previewTitle={draft.Title || t("manage.content.page.new")} before={settings} onChange={changeDocument} />
-        <Dialog open={deleteOpen} onOpenChange={open => {if (!busy) setDeleteOpen(open);}}><DialogContent className="event-page-delete-dialog"><DialogHeader><DialogTitle>{t("manage.content.page.deleteTitle", {title: page.data?.Title ?? ""})}</DialogTitle><DialogDescription>{t("manage.content.page.deleteBody")}</DialogDescription></DialogHeader><div className="event-page-delete-dialog__actions"><button className="ib-btn" type="button" disabled={!!busy} onClick={() => setDeleteOpen(false)}>{t("manage.content.page.keep")}</button><button className="ib-btn ib-btn--danger-solid" type="button" disabled={!!busy} onClick={() => void remove()}>{busy ? t("manage.content.page.deleting") : t("manage.content.page.delete")}</button></div></DialogContent></Dialog>
+        <Dialog open={deleteOpen} onOpenChange={open => {if (!busy) setDeleteOpen(open);}}><DialogContent className="event-page-delete-dialog"><DialogHeader><DialogTitle>{t("manage.content.page.deleteTitle", {title: page.data?.Title ?? ""})}</DialogTitle><DialogDescription>{t("manage.content.page.deleteBody")}</DialogDescription></DialogHeader><div className="event-page-delete-dialog__actions"><button className="ib-btn" type="button" disabled={!!busy} onClick={() => setDeleteOpen(false)}>{t("manage.content.page.keep")}</button><EventButton className="ib-btn ib-btn--danger-solid" type="button" disabled={!!busy} onClick={() => void remove()} busy={!!busy}>{t("manage.content.page.delete")}</EventButton></div></DialogContent></Dialog>
     </div>;
 }

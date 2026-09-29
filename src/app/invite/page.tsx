@@ -14,6 +14,7 @@ import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {eventOrigin, idOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventButton} from "@/components/ui/EventButton";
 
 function signInHref(eventTag: string | undefined): string | null {
     const back = eventTag ? eventOrigin(eventTag) : "";
@@ -97,7 +98,7 @@ export default function InvitePage() {
                 <p>{invitation.InvitedTeamName ? t("invite.acceptHintTeam") : t("invite.acceptHint")}</p>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
-                <div className="event-join-actions"><button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()}>{working ? t("common.wait") : t("invite.accept")}</button><button className="ib-btn" type="button" disabled={working} onClick={() => void decline()}>{t("invite.decline")}</button></div>
+                <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()} busy={working}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => void decline()}>{t("invite.decline")}</button></div>
             </>}
     </div></div>;
 }
