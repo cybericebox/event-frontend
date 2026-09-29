@@ -89,8 +89,11 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
             </form>
             <div className="event-exercise-picker__filter" role="group" aria-label={t("manage.exercises.attachDialog.infrastructure")}>
                 <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
-                <div className="event-manage-participants__filters">{infrastructureFilters.map(option => <button key={option} className="event-manage-participants__filter" type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
+                <div className="ib-seg ib-seg--sm">{infrastructureFilters.map(option => <button key={option} type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
             </div>
+            {!infrastructureAllowed && infrastructure !== "no" && <p className="event-exercise-picker__notice" role="status">
+                {t("manage.exercises.attachDialog.noInfrastructure")}{!published && <> {t("manage.exercises.attachDialog.noInfrastructureBefore")}</>}
+            </p>}
             {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />
                 : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} onRetry={() => void catalog.refetch()} />
                 : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />

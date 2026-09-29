@@ -2692,5 +2692,7 @@
   "manage.challenges.set.infraMissingBefore": "Enable infrastructure for the event or remove the set: ask the platform administrator to enable infrastructure before publication.",
   "manage.challenges.set.infraMissingAfter": "Remove the set from the event — infrastructure cannot be enabled after publication.",
   "manage.exercises.attachDialog.needsInfrastructureAfter": "Needs infrastructure — it cannot be enabled after publication",
-  "manage.challenges.set.forkBroken": "A copy will not help: the set needs infrastructure the event does not have."
+  "manage.challenges.set.forkBroken": "A copy will not help: the set needs infrastructure the event does not have.",
+  "manage.exercises.attachDialog.noInfrastructure": "The event has no infrastructure — sets with stands cannot be added.",
+  "manage.exercises.attachDialog.noInfrastructureBefore": "The platform administrator can enable it before publication."
 }
