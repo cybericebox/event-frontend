@@ -15,7 +15,7 @@ import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
 import {VpnHeaderButton} from "./vpn/EventVpn";
 import {ManagerEntry} from "./manage/ManagerEntry";
-import {NotificationsPopover} from "./NotificationsPopover";
+import {InboxButton} from "./InboxButton";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
@@ -115,12 +115,14 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
 }
 
 export function EventHeaderActions({event, authenticated, approved = false}: Pick<Props, "event" | "authenticated" | "approved">) {
+    // Managers land on «Запити» in /manage; participants see «Усі».
+    const manage = /^\/manage(\/|$)/.test(usePathname() ?? "");
     return <>
         <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div>
         {authenticated && <>
             <span className="event-header-divider" aria-hidden="true" />
             {approved && <VpnHeaderButton />}
-            <NotificationsPopover eventID={event.EventID} />
+            <InboxButton defaultTab={manage ? "requests" : "all"} event={{id: event.EventID, otherEventsHref: `${mainOrigin}/?inbox`}} />
             <AccountMenu event={event} approved={approved} />
         </>}
         {!authenticated && <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>{t("account.signIn")}</a>}

@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState} from "react";
 import DOMPurify from "isomorphic-dompurify";
 import {X} from "lucide-react";
-import type {InboxItem} from "@/api/inbox";
+import type {InboxMessage} from "./inboxModel";
 import {NotificationMessageCard} from "./NotificationMessageCard";
 import {notificationAccent} from "./NotificationIcon";
 import {t} from "@/i18n/t";
@@ -18,7 +18,7 @@ function safeHref(value: string): boolean {
 }
 
 export function NotificationPopIn({message, onClose, onAction}: {
-    message: InboxItem; onClose: () => void; onAction: (href: string) => void;
+    message: InboxMessage; onClose: () => void; onAction: (href: string) => void;
 }) {
     const duration = popInDuration(message.AutoDismissMs);
     const [paused, setPaused] = useState(false);

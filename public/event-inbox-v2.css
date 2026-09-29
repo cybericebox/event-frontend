@@ -1,8 +1,10 @@
 /* Event inbox uses the same notification layout as the platform administration UI. */
 .event-notifications__trigger{position:relative;flex:none}
 .event-notifications__count{position:absolute;top:-3px;right:-5px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 3px;border-radius:var(--ib-r-pill);background:var(--ib-action);color:var(--ib-on-action);font-size:10px;font-weight:var(--ib-w-semibold);line-height:1}
-.event-notifications__panel{z-index:80;display:flex;flex-direction:column;width:min(32rem,calc(100vw - 24px));max-height:min(38rem,calc(100dvh - 5rem));overflow:hidden;padding:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink)}
+.event-notifications__panel{z-index:80;display:flex;flex-direction:column;width:min(32rem,calc(100vw - 24px));max-height:min(28rem,calc(100dvh - 6rem));overflow:hidden;padding:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink)}
 .event-notifications__head{display:flex;flex:none;align-items:center;justify-content:space-between;gap:var(--ib-2);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
+/* With tabs the head and the tab row share one border (the row draws it). */
+.event-notifications__head:has(+.event-notifications__tabs-wrap){padding-bottom:var(--ib-2);border-bottom:0}
 .event-notifications__head h2{margin:0;color:var(--ib-dim);line-height:1}
 .event-notifications__sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 .event-notifications__head>div{display:flex;align-items:center;gap:var(--ib-2);flex:none}
@@ -43,3 +45,26 @@
 .event-notification-popin__track span{display:block;width:100%;height:100%;transform-origin:left;animation:event-notification-countdown linear forwards}
 @keyframes event-notification-countdown{to{transform:scaleX(0)}}
 @media(prefers-reduced-motion:reduce){.event-notification-popin__track span{animation:none}}
+/* Category tabs: the segmented control of the catalog's «Область» switch (exercises-frontend). */
+.event-notifications__tabs-wrap{flex:none;padding:0 var(--ib-3) var(--ib-3);border-bottom:1px solid var(--ib-line)}
+.event-notifications__tabs{display:flex;align-items:center;width:100%;height:40px;padding:4px;border-radius:var(--ib-r);background:var(--ib-hero)}
+.event-notifications__tabs button{display:inline-flex;flex:1 1 auto;min-width:0;align-items:center;justify-content:center;gap:4px;height:32px;padding:0 var(--ib-2);border:0;border-radius:calc(var(--ib-r) - 2px);background:transparent;color:var(--ib-dim);font:var(--ib-w-regular) var(--ib-fs-14)/1 var(--ib-font);cursor:pointer}
+.event-notifications__tabs button:hover{color:var(--ib-ink)}
+.event-notifications__tabs button[aria-selected="true"]{background:var(--ib-surface);color:var(--ib-ink);font-weight:var(--ib-w-medium)}
+.event-notifications__tabs button:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
+.event-notifications__tab-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-notifications__tab-count{color:var(--ib-dim);font-size:var(--ib-fs-12);font-variant-numeric:tabular-nums}
+/* Row meta: time (or who resolved it) on the left, the event label on the right. */
+.event-notifications__meta{display:flex;min-width:0;align-items:center;justify-content:space-between;gap:var(--ib-2)}
+.event-notifications__meta>:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-notifications__event{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 6px;border-radius:4px;background:var(--ib-soft);color:var(--ib-dim);font-size:11px;font-weight:var(--ib-w-medium)}
+/* Resolved requests stay in the list, greyed. */
+.event-notifications__list li.is-resolved{opacity:.6}
+.event-notification-card__actions .event-notifications__resolve{display:inline-flex;align-items:center;gap:4px;font-size:var(--ib-fs-12)}
+.event-notification-card__actions .event-notifications__resolve:disabled{opacity:.6;cursor:not-allowed;text-decoration:none}
+.event-notifications__resolve .event-block-state{--event-block-state-h:0;flex:none;padding:0}
+.event-notifications__resolve .event-loading-logo{width:14px;height:14px}
+/* Event-site footer: «Ще N в інших заходах →» to the landing inbox. */
+.event-notifications__other{display:flex;flex:none;align-items:center;justify-content:center;gap:4px;padding:10px var(--ib-4);border-top:1px solid var(--ib-line);color:var(--ib-action);font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium);text-decoration:none}
+.event-notifications__other:hover{background:var(--ib-soft)}
+.event-notifications__other:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
