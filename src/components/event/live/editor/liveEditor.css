@@ -124,3 +124,19 @@
   .event-live-editor__stage{padding:6px}
   .event-live-editor__actions{margin-left:0}
 }
+
+/* «Посилання для екрана» dialog. */
+.event-dialog:has(.event-live-links){--ib-modal-w:640px}
+.event-live-links{display:grid;gap:var(--ib-4)}
+.event-live-links__create{display:flex;align-items:flex-end;gap:var(--ib-2);flex-wrap:wrap}
+.event-live-links__create .event-live-field{flex:1 1 200px}
+.event-live-links__fresh{display:grid;gap:6px;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-soft)}
+.event-live-links__fresh small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-live-links__url{display:flex;gap:var(--ib-2)}
+.event-live-links__url input{flex:1;min-width:0;font-family:var(--font-geist-mono,ui-monospace,monospace);font-size:var(--ib-fs-12)}
+.event-live-links__list{display:grid;gap:var(--ib-2)}
+.event-live-links__list h3{margin:0;color:var(--ib-ink);font-size:var(--ib-fs-14,14px)}
+.event-live-links__list .event-block-state{--event-block-state-h:120px}
+.event-live-links__list ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.event-live-links__list li{display:flex;align-items:center;gap:var(--ib-2);padding:8px 10px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-ink);font-size:var(--ib-fs-13)}
+.event-live-links__list li>span:first-child{flex:1;min-width:0}

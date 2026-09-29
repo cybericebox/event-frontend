@@ -3,7 +3,7 @@
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {ExternalLink, LayoutTemplate, Redo2, Send, Undo2} from "lucide-react";
+import {ExternalLink, LayoutTemplate, MonitorUp, Redo2, Send, Undo2} from "lucide-react";
 import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
@@ -13,6 +13,7 @@ import {liveTextWarnings} from "@/components/event/live/liveText";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {LiveMiniature, usePaletteLayouts} from "./LiveMiniature";
 import {LiveTemplateDialog} from "./LiveTemplateDialog";
+import {LiveScreenLinksDialog} from "./LiveScreenLinksDialog";
 import {LiveScreenSettings} from "./LiveScreenSettings";
 import {LiveWidgetSettings} from "./LiveWidgetSettings";
 import {useLiveAutosave, type LiveSaveState} from "./useLiveAutosave";
@@ -71,6 +72,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const [scale, setScale] = useState(0);
     const [customGrid, setCustomGrid] = useState<{cols: number; rows: number} | null>(null);
     const [templatesOpen, setTemplatesOpen] = useState(false);
+    const [linksOpen, setLinksOpen] = useState(false);
     // The last applied template and the layout it produced: the quiet
     // «Шаблон: …» line says «змінено» once the layout moves away from it.
     const [applied, setApplied] = useState<{key: LivePresetKey; layout: string} | null>(null);
@@ -301,6 +303,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                     {saveLabel(status, unpublished, published.version)}
                     {status === "error" && <button type="button" onClick={autosave.retry}>{t("manage.live.status.retry")}</button>}
                 </span>}
+                {canManage && <EventTooltip content={t("manage.live.links.hint")}>{id => <button className="ib-btn" type="button" aria-describedby={id} onClick={() => setLinksOpen(true)}><MonitorUp size={16} /> {t("manage.live.links.open")}</button>}</EventTooltip>}
                 <EventTooltip content={t("manage.live.openHint")}>{id => <a className="ib-btn" href="/live" target="_blank" rel="noreferrer" aria-describedby={id}><ExternalLink size={16} /> {t("manage.live.open")}</a>}</EventTooltip>
                 {canManage && <EventTooltip content={t("manage.live.publishHint")}>{id => <EventButton className="ib-btn ib-btn--primary" type="button" aria-describedby={id} busy={publishing}
                     disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}><Send size={16} /> {t("manage.live.publish")}</EventButton>}</EventTooltip>}
@@ -386,6 +389,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 </> : <LiveScreenSettings eventID={eventID} event={event} layout={layout} results={shownResults} sample={sample} canManage={canManage} disabled={locked} onChange={mutate} />}
             </aside>
         </div>
+        {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
         <LiveTemplateDialog open={templatesOpen} layout={layout} event={event} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
         <ConfirmDialog open={confirmRemove && !!selected} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
             description={t("manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
