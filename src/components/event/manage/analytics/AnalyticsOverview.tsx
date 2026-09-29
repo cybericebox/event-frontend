@@ -114,18 +114,25 @@ export function AnalyticsOverview() {
     const hasStands = !!data && data.Stands.Creating + data.Stands.Ready + data.Stands.Failed > 0;
     const hasComms = !!data?.Comms;
 
-    // Nothing to lean on: the same layout, every block in its own loading or error state.
+    // The overview is one request: when it fails there is one error, centred in a block
+    // as tall as the page content, not one per card.
+    if (!data && !overview.isPending) return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.description")} actions={actions}>
+        <div className="event-analytics__block event-analytics__block--page">
+            <EventLoadError message={t("manage.analytics.overview.loadFailed")} error={overview.error} onRetry={retry} />
+        </div>
+    </AnalyticsPage>;
+
+    // Nothing to show yet: the same layout, every block in its own loading state.
     if (!data) return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.description")} actions={actions}>
         <section className="event-analytics__block event-analytics-status" aria-label={t("manage.analytics.status.label")}>
-            {overview.isPending ? <EventLoading event={event} label={t("manage.analytics.overview.loading")} compact /> : <EventLoadError message={t("manage.analytics.overview.loadFailed")} error={overview.error} onRetry={retry} compact />}
+            <EventLoading event={event} label={t("manage.analytics.overview.loading")} compact />
         </section>
         <div className="event-analytics__columns">
             <section className="event-analytics__block" aria-label={t("manage.analytics.chart.title")}>
                 <div className="event-analytics__block-head"><h2>{t("manage.analytics.chart.title")}</h2></div>
-                <AnalyticsChart event={event} state={chartState} ariaLabel={t("manage.analytics.chart.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage={t("manage.analytics.chart.loadFailed")}
-                    emptyMessage={t("manage.analytics.chart.empty")} onRetry={retry} error={overview.error} />
+                <AnalyticsChart event={event} state="loading" ariaLabel={t("manage.analytics.chart.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage="" emptyMessage="" />
             </section>
-            <Feed state={blockState} onRetry={retry} error={overview.error} />
+            <Feed state="loading" onRetry={retry} />
         </div>
         <div className="event-analytics-cards">
             <LeadersCard {...cards} />

@@ -105,7 +105,7 @@ describe("Огляд", () => {
         mockApi(null, 500);
         renderOverview();
         expect(await screen.findByText("Не вдалося завантажити огляд")).toBeTruthy();
-        expect(screen.getAllByRole("button", {name: "Спробувати ще раз"}).length).toBeGreaterThan(0);
+        expect(screen.getAllByRole("button", {name: "Спробувати ще раз"})).toHaveLength(1);
     });
 });
 
@@ -223,11 +223,12 @@ describe("Огляд: cards", () => {
         expect(within(screen.getByRole("region", {name: "Лідери"})).getByRole("status", {name: "Завантажуємо лідерів"})).toBeTruthy();
     });
 
-    it("shows a load error inside each card", async () => {
+    it("shows one load error for the whole page when the overview fails", async () => {
         mockApi(null, 500);
         renderOverview();
-        const tasks = await screen.findByRole("region", {name: "Завдання"});
-        expect(await within(tasks).findByText("Не вдалося завантажити завдання")).toBeTruthy();
+        expect(await screen.findByText("Не вдалося завантажити огляд")).toBeTruthy();
+        expect(screen.getAllByRole("button", {name: "Спробувати ще раз"})).toHaveLength(1);
+        expect(screen.queryByRole("region", {name: "Завдання"})).toBeNull();
     });
 });
 

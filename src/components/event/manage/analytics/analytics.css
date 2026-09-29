@@ -65,3 +65,5 @@
 .event-analytics-triple strong{font-size:var(--ib-fs-24);font-weight:var(--ib-w-semibold);font-variant-numeric:tabular-nums}
 .event-analytics-triple span{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-analytics-triple__bad strong{color:var(--ib-danger)}
+
+.event-analytics__block--page{min-height:640px}
