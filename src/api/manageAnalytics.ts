@@ -31,6 +31,16 @@ export type AnalyticsFeedItem = z.infer<typeof feedItemSchema>;
 const seriesPointSchema = z.object({At: z.string(), Attempts: count, Correct: count, Solves: count, Opens: count});
 export type AnalyticsSeriesPoint = z.infer<typeof seriesPointSchema>;
 
+const leaderSchema = z.object({TeamID: z.string(), Name: z.string(), Rank: count, Points: count, Solved: count, Gap: count});
+export type AnalyticsLeader = z.infer<typeof leaderSchema>;
+
+const taskSolvesSchema = z.object({ChallengeID: z.string(), Name: z.string(), Solves: count}).nullish().transform(value => value ?? null);
+
+const tasksSnapshotSchema = z.object({Total: count, Unsolved: count, FirstBloods: count, MostSolved: taskSolvesSchema, LeastSolved: taskSolvesSchema});
+const engagementSchema = z.object({Teams: count, TeamsSolving: count, AvgSolves: z.number()});
+// Mail of the last 24 hours; null unless the viewer has the sensitive access.
+const commsSnapshotSchema = z.object({EmailSent: count, EmailFailed: count, Since: z.string()}).nullish().transform(value => value ?? null);
+
 export const AnalyticsOverviewSchema = z.object({
     Participants: z.object({Registered: count, Approved: count, Pending: count, Invited: count, Active: count}),
     Teams: z.object({Total: count, Admitted: count, Incomplete: count}),
@@ -46,6 +56,11 @@ export const AnalyticsOverviewSchema = z.object({
     Period: z.object({From: z.string(), To: z.string()}),
     RefreshedAt: optionalTime,
     Final: z.boolean().default(false),
+    Leaders: z.array(leaderSchema).nullish().transform(value => value ?? []),
+    RankedTeams: count.default(0),
+    Tasks: tasksSnapshotSchema.default({Total: 0, Unsolved: 0, FirstBloods: 0, MostSolved: null, LeastSolved: null}),
+    Engagement: engagementSchema.default({Teams: 0, TeamsSolving: 0, AvgSolves: 0}),
+    Comms: commsSnapshotSchema,
 });
 export type AnalyticsOverview = z.infer<typeof AnalyticsOverviewSchema>;
 

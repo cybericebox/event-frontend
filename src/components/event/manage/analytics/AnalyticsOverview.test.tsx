@@ -28,6 +28,14 @@ function overview(extra: Record<string, unknown> = {}) {
         ],
         Markers: {StartAt: past, FreezeAt: null, FinishAt: future},
         Period: {From: past, To: future},
+        Leaders: [
+            {TeamID: "0190c6a4-0000-7000-8000-000000000001", Name: "Blue", Rank: 1, Points: 300, Solved: 3, Gap: 0},
+            {TeamID: "0190c6a4-0000-7000-8000-000000000003", Name: "Red", Rank: 2, Points: 250, Solved: 2, Gap: 50},
+        ],
+        RankedTeams: 2,
+        Tasks: {Total: 8, Unsolved: 3, FirstBloods: 5, MostSolved: {ChallengeID: "0190c6a4-0000-7000-8000-000000000011", Name: "Web 1", Solves: 4}, LeastSolved: {ChallengeID: "0190c6a4-0000-7000-8000-000000000012", Name: "Pwn 2", Solves: 1}},
+        Engagement: {Teams: 4, TeamsSolving: 3, AvgSolves: 1.5},
+        Comms: {EmailSent: 18, EmailFailed: 2, Since: past},
         RefreshedAt: null, Final: false, ...extra,
     };
 }
@@ -55,7 +63,7 @@ describe("Огляд", () => {
         expect(within(stats).getByText("Допущені команди")).toBeTruthy();
         expect(within(stats).getByText("Правильних: 10 (25%)")).toBeTruthy();
         expect(within(stats).getByText("Стенди готові")).toBeTruthy();
-        expect(screen.getByTestId("chart").getAttribute("data-series")).toBe("4");
+        expect(screen.getByTestId("chart").getAttribute("data-series")).toBe("5");
         const feed = screen.getByRole("region", {name: "Стрічка подій"});
         expect(within(feed).getByText("«Blue» — перша кров у «Web 1»")).toBeTruthy();
         expect(within(feed).getByText("Стенд команди «Red» не запустився")).toBeTruthy();
@@ -97,7 +105,129 @@ describe("Огляд", () => {
         mockApi(null, 500);
         renderOverview();
         expect(await screen.findByText("Не вдалося завантажити огляд")).toBeTruthy();
-        expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+        expect(screen.getAllByRole("button", {name: "Спробувати ще раз"}).length).toBeGreaterThan(0);
+    });
+});
+
+// The strip is there while loading too; wait for its text, then take it.
+async function strip(text: string) {
+    await screen.findByText(text);
+    return screen.getByRole("region", {name: "Стан заходу"});
+}
+
+describe("Огляд: status strip", () => {
+    it("counts down to the start and shows the registration progress", async () => {
+        mockApi(overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: [], Feed: []}));
+        renderOverview();
+        const bar = await strip("До старту");
+        expect(within(bar).getByText("До старту")).toBeTruthy();
+        expect(within(bar).getByText("До початку")).toBeTruthy();
+        expect(within(bar).getByText("Затверджено 10 із 12")).toBeTruthy();
+        expect(within(bar).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("83");
+    });
+
+    it("shows the elapsed and remaining time with a progress bar while running", async () => {
+        mockApi(overview());
+        renderOverview();
+        const bar = await strip("Захід триває");
+        expect(within(bar).getByText("Захід триває")).toBeTruthy();
+        expect(within(bar).getByText("1 год")).toBeTruthy();
+        expect(within(bar).getByText("Залишилось")).toBeTruthy();
+        expect(within(bar).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+    });
+
+    it("says «Завершено» with the duration after the finish, and keeps the manual refresh", async () => {
+        const start = new Date(Date.now() - 5 * 3_600_000).toISOString();
+        const finish = new Date(Date.now() - 3_600_000).toISOString();
+        mockApi(overview({Final: true, Markers: {StartAt: start, FreezeAt: null, FinishAt: finish}}));
+        renderOverview();
+        const bar = await strip("Завершено");
+        expect(within(bar).getByText("Завершено")).toBeTruthy();
+        expect(within(bar).getByText("Тривалість")).toBeTruthy();
+        expect(within(bar).getByText("4 год")).toBeTruthy();
+        expect(within(bar).queryByRole("progressbar")).toBeNull();
+        expect(screen.getByRole("button", {name: /Оновити/})).toBeTruthy();
+    });
+});
+
+describe("Огляд: cards", () => {
+    it("shows the leaders with the gap, the task snapshot and the engagement, each linking to its section", async () => {
+        mockApi(overview());
+        renderOverview();
+        await screen.findByText("Blue");
+        const leaders = screen.getByRole("region", {name: "Лідери"});
+        expect(within(leaders).getByText("Blue")).toBeTruthy();
+        expect(within(leaders).getByText("Лідер")).toBeTruthy();
+        expect(within(leaders).getByText("−50 б. до першого")).toBeTruthy();
+        expect(within(leaders).getByRole("link", {name: /Результати/}).getAttribute("href")).toBe("/scoreboard");
+
+        const tasks = screen.getByRole("region", {name: "Завдання"});
+        expect(within(tasks).getByText("3 із 8")).toBeTruthy();
+        expect(within(tasks).getByText("Web 1 (4)")).toBeTruthy();
+        expect(within(tasks).getByText("Pwn 2 (1)")).toBeTruthy();
+        expect(within(tasks).getByText("5 із 8")).toBeTruthy();
+        expect(within(tasks).getAllByRole("link").every(link => link.getAttribute("href") === "/manage/analytics/tasks")).toBe(true);
+
+        const engagement = screen.getByRole("region", {name: "Залученість"});
+        expect(within(engagement).getByText("4 із 10")).toBeTruthy();
+        expect(within(engagement).getByText("3 із 4 (75%)")).toBeTruthy();
+        expect(within(engagement).getByText("1,5")).toBeTruthy();
+    });
+
+    it("links the stat tiles to their sections", async () => {
+        mockApi(overview());
+        renderOverview();
+        const stats = await screen.findByRole("region", {name: "Ключові числа"});
+        expect(within(stats).getByRole("link", {name: "40"}).getAttribute("href")).toBe("/manage/analytics/tasks");
+        expect(within(stats).getByRole("link", {name: "12"}).getAttribute("href")).toBe("/manage/analytics/participants");
+    });
+
+    it("shows the stands card only for an event with stands", async () => {
+        mockApi(overview());
+        renderOverview();
+        const stands = await screen.findByRole("region", {name: "Стенди"});
+        expect(within(stands).getByRole("link", {name: /Стенди/}).getAttribute("href")).toBe("/manage/analytics/stands");
+        cleanup();
+        mockApi(overview({Stands: {Creating: 0, Ready: 0, Failed: 0}}));
+        renderOverview();
+        await screen.findByRole("region", {name: "Ключові числа"});
+        expect(screen.queryByRole("region", {name: "Стенди"})).toBeNull();
+    });
+
+    it("shows the mail card only when the server sent it (the sensitive access)", async () => {
+        mockApi(overview());
+        renderOverview();
+        const comms = await screen.findByRole("region", {name: "Комунікації"});
+        expect(within(comms).getByText("18")).toBeTruthy();
+        expect(within(comms).getByRole("link", {name: /Комунікації/}).getAttribute("href")).toBe("/manage/analytics/communications");
+        cleanup();
+        mockApi(overview({Comms: null}));
+        renderOverview();
+        await screen.findByRole("region", {name: "Ключові числа"});
+        expect(screen.queryByRole("region", {name: "Комунікації"})).toBeNull();
+    });
+
+    it("says so, inside the card, when there is nothing to list", async () => {
+        mockApi(overview({Leaders: [], RankedTeams: 0, Tasks: {Total: 0, Unsolved: 0, FirstBloods: 0, MostSolved: null, LeastSolved: null}, Engagement: {Teams: 0, TeamsSolving: 0, AvgSolves: 0}, Comms: {EmailSent: 0, EmailFailed: 0, Since: past}}));
+        renderOverview();
+        expect(await screen.findByText("Поки що немає команд у рейтингу")).toBeTruthy();
+        expect(within(screen.getByRole("region", {name: "Завдання"})).getByText("У заході ще немає завдань")).toBeTruthy();
+        expect(within(screen.getByRole("region", {name: "Залученість"})).getByText("Ще немає допущених команд")).toBeTruthy();
+        expect(within(screen.getByRole("region", {name: "Комунікації"})).getByText("За останню добу листів не надсилали")).toBeTruthy();
+    });
+
+    it("shows the leaders and the engagement in the loading state, inside their own cards", () => {
+        globalThis.fetch = vi.fn(() => new Promise<Response>(() => {})) as typeof fetch;
+        renderOverview();
+        expect(within(screen.getByRole("region", {name: "Завдання"})).getByRole("status", {name: "Завантажуємо завдання"})).toBeTruthy();
+        expect(within(screen.getByRole("region", {name: "Лідери"})).getByRole("status", {name: "Завантажуємо лідерів"})).toBeTruthy();
+    });
+
+    it("shows a load error inside each card", async () => {
+        mockApi(null, 500);
+        renderOverview();
+        const tasks = await screen.findByRole("region", {name: "Завдання"});
+        expect(await within(tasks).findByText("Не вдалося завантажити завдання")).toBeTruthy();
     });
 });
 
