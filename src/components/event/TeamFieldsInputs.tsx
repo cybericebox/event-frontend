@@ -6,6 +6,7 @@ import {visibleFieldKeys} from "@/components/event/formVisibility";
 import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers, ParticipantAnswer} from "@/api/participantForm";
 import {t} from "@/i18n/t";
+import {EventCheckbox} from "@/components/ui/EventCheckbox";
 
 // editableOnly renders just the questions that may change later; visibility is
 // still worked out on the whole form, so a condition on a locked question holds.
@@ -27,14 +28,16 @@ export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnl
             if (!isFormField(block) || !shown.has(block.key)) return null;
             const value = answers[block.key];
             const required = form.Required && !!block.required;
-            return <label className="event-manage-field" key={block.id}><span>{block.label}{block.required && <span className="event-field-required"> *</span>}</span>{block.help && <small>{block.help}</small>}
+            // choices carry their own <label>, so their field is a group, not a label
+            const Field = block.input === "checkbox" || block.input === "multi_select" ? "div" : "label";
+            return <Field className="event-manage-field" key={block.id} role={Field === "div" ? "group" : undefined} aria-label={Field === "div" ? block.label : undefined}><span>{block.label}{block.required && <span className="event-field-required"> *</span>}</span>{block.help && <small>{block.help}</small>}
                 {block.input === "long_text" ? <textarea className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} rows={3} />
-                    : block.input === "checkbox" ? <input type="checkbox" checked={value === true} onChange={e => onChange(block.key, e.target.checked)} disabled={disabled} />
+                    : block.input === "checkbox" ? <EventCheckbox checked={value === true} onCheckedChange={checked => onChange(block.key, checked)} disabled={disabled} label={t("common.yes")} />
                     : block.input === "number" ? <input className="event-manage-input" type="number" value={value === undefined ? "" : String(value)} onChange={e => onChange(block.key, e.target.value === "" ? "" : Number(e.target.value))} required={required} disabled={disabled} />
                     : block.input === "select" ? <select className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled}><option value="">{t("common.chooseOption")}</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
-                    : block.input === "multi_select" ? <span className="grid gap-2">{(block.options ?? []).map(option => <span key={option}><input type="checkbox" checked={Array.isArray(value) && value.includes(option)} onChange={e => onChange(block.key, e.target.checked ? [...(Array.isArray(value) ? value : []), option] : (Array.isArray(value) ? value : []).filter(item => item !== option))} disabled={disabled} /> {option}</span>)}</span>
+                    : block.input === "multi_select" ? <span className="grid gap-2">{(block.options ?? []).map(option => <EventCheckbox key={option} checked={Array.isArray(value) && value.includes(option)} onCheckedChange={checked => onChange(block.key, checked ? [...(Array.isArray(value) ? value : []), option] : (Array.isArray(value) ? value : []).filter(item => item !== option))} disabled={disabled} label={option} />)}</span>
                     : <input className="event-manage-input" type="text" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} />}
-            </label>;
+            </Field>;
         })}
     </div>;
 }
