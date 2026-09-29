@@ -7,6 +7,7 @@ import {getEventBoardChallenges, getEventExerciseAttachments} from "@/api/manage
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {useManager} from "./ManagerShell";
 import {t} from "@/i18n/t";
+import "./journal.css";
 
 // Shared by the «Журнал спроб» views (attempts and hints).
 

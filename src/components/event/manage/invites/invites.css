@@ -1,13 +1,8 @@
 /* Invitation dialogs: DS modal on the raised fill (no tinted background), no
    divider above the actions; email chips input; DS file picker. */
-.event-modal-backdrop{overflow:auto}
-.event-modal{max-height:calc(100dvh - 2 * var(--ib-4))}
-.event-modal{position:relative}
 .event-modal__drop{position:absolute;inset:var(--ib-3);z-index:5;display:grid;place-content:center;justify-items:center;gap:var(--ib-2);padding:var(--ib-5);border:1px dashed var(--ib-action);border-radius:var(--ib-r-lg);background:color-mix(in srgb,var(--ib-action) 8%,var(--ib-raised,var(--ib-surface)));color:var(--ib-ink);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);text-align:center;pointer-events:none}
 .event-modal__drop svg{color:var(--ib-action)}
-.event-modal:focus{outline:none}
 .event-modal__form{display:flex;flex-direction:column;min-height:0}
-.event-modal .ib-modal__foot{border-top:0;padding-top:0}
 .event-modal__summary{font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .event-modal__issues{display:flex;flex-direction:column;gap:var(--ib-1);margin:0;padding:0;list-style:none;
   font-size:var(--ib-fs-13);color:var(--ib-danger);max-height:180px;overflow:auto}
@@ -32,9 +27,7 @@
 
 .event-field-help{display:inline-flex;align-items:center;gap:var(--ib-1)}
 
-/* Dialog content never overflows sideways: flexible children may shrink. */
-.event-modal .ib-modal__body{min-width:0}
-.event-modal .ib-modal__body>*{min-width:0;max-width:100%}
+/* Email chips. */
 .event-chip{max-width:100%}
 .event-chip__text{min-width:0}
 

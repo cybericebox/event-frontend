@@ -16,6 +16,7 @@ import {AnalyticsStat, AnalyticsStatGrid} from "../AnalyticsStat";
 import {useAnalyticsAccess} from "../useAnalyticsAccess";
 import {HelpButton} from "./SectionBlock";
 import {detailHasActivity, difficultyLabel, formatDuration, formatPercent, groupName, solvesChartOption, verdictLabel, verdictTone} from "./tasksModel";
+import "../../eventModal.css";
 import "./tasks.css";
 
 const number = new Intl.NumberFormat("uk-UA");

@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {Upload, X} from "lucide-react";
 import {useFileDragOverlay} from "./useFileDragOverlay";
 import {t} from "@/i18n/t";
+import "../eventModal.css";
 import "./invites.css";
 
 // The DS modal (.ib-modal) on Radix: raised fill, hairline, header with the
