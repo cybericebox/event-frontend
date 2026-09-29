@@ -4,6 +4,8 @@ import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-libr
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const manager = vi.hoisted(() => ({canManage: true}));
+const router = vi.hoisted(() => ({replace: vi.fn()}));
+vi.mock("next/navigation", () => ({useRouter: () => router}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null}, canManage: manager.canManage})}));
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 
@@ -22,39 +24,41 @@ function attempt(n: number, extra: Record<string, unknown> = {}) {
     };
 }
 
-function mockApi(page: unknown) {
+function mockApi(page: unknown, hints: unknown[] = []) {
     const calls: string[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         calls.push(url);
-        const data = url.includes("/solution-attempts") ? page : url.includes("/manage/results") ? {Teams: []} : url.includes("/participants") ? {Items: [], Total: 0} : [];
+        const data = url.includes("/solution-attempts") ? page : url.includes("/hint-unlocks") ? hints : url.includes("/manage/results") ? {Teams: []} : url.includes("/participants") ? {Items: [], Total: 0} : [];
         return new Response(JSON.stringify({Status: {Code: 0}, Data: data}), {status: 200});
     }) as typeof fetch;
     return calls;
 }
 
-function renderManager() {
-    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AttemptsManager /></QueryClientProvider>);
+function renderManager(view: "attempts" | "hints" = "attempts") {
+    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AttemptsManager initialView={view} /></QueryClientProvider>);
 }
 
-describe("AttemptsManager", () => {
-    afterEach(() => { cleanup(); manager.canManage = true; });
+describe("Журнал спроб", () => {
+    afterEach(() => { cleanup(); manager.canManage = true; router.replace.mockClear(); });
 
-    it("shows the empty state centered in the table block", async () => {
+    it("keeps the table headers and footer with the empty state inside the body", async () => {
         mockApi({Items: [], Total: 0});
         renderManager();
-        const block = screen.getByRole("region", {name: "Спроби розв’язання"});
-        await waitFor(() => expect(within(block).getByText("Спроб поки немає.")).toBeTruthy());
-        expect(block.querySelector(".event-data-table__scroll [data-empty-state]")).not.toBeNull();
-        expect(within(block).getByText("Сторінка 1 з 1")).toBeTruthy();
+        const table = screen.getByRole("table");
+        expect(within(table).getByRole("columnheader", {name: "Бали"})).toBeTruthy();
+        await waitFor(() => expect(within(table).getByText("Спроб поки немає.")).toBeTruthy());
+        expect(within(table).getByText("Спроб поки немає.").closest("tbody")).toBeTruthy();
+        expect(screen.getByText("Сторінка 1 з 1")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Зараховані"}).closest(".ib-seg")).toBeTruthy();
     });
 
     it("lists attempts with result, points and answers for managers", async () => {
         const calls = mockApi({Items: [attempt(1, {Correct: true, AutomaticCorrect: true, Points: 250}), attempt(2)], Total: 2});
         renderManager();
-        const table = await screen.findByRole("table", {name: "Спроби розв’язання"});
+        const table = screen.getByRole("table");
+        await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(3));
         const rows = within(table).getAllByRole("row");
-        expect(rows).toHaveLength(3);
         expect(within(rows[0]).getByText("Відповідь")).toBeTruthy();
         expect(within(rows[1]).getByText("Зараховано")).toBeTruthy();
         expect(within(rows[1]).getByText("250")).toBeTruthy();
@@ -62,16 +66,29 @@ describe("AttemptsManager", () => {
         expect(within(rows[2]).getByText("Не зараховано")).toBeTruthy();
         expect(within(rows[2]).getByText("—")).toBeTruthy();
         expect(calls.find(url => url.includes("/solution-attempts?"))).toContain("pageSize=25");
+        fireEvent.click(screen.getByRole("button", {name: "Не зараховані"}));
+        await waitFor(() => expect(calls.some(url => url.includes("correct=false"))).toBe(true));
         fireEvent.keyDown(rows[1], {key: "Enter"});
         expect(await screen.findByRole("button", {name: "Показати еталон"})).toBeTruthy();
     });
 
-    it("hides the submitted value from viewers", async () => {
+    it("hides the submitted value and export from viewers", async () => {
         manager.canManage = false;
         mockApi({Items: [attempt(1, {Answer: null, ExpectedFlag: null})], Total: 1});
         renderManager();
-        const table = await screen.findByRole("table", {name: "Спроби розв’язання"});
+        const table = screen.getByRole("table");
+        await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(2));
         expect(within(table).queryByText("Відповідь")).toBeNull();
         expect(screen.queryByRole("button", {name: /Експорт CSV/})).toBeNull();
+    });
+
+    it("switches to the hints log and keeps its address", async () => {
+        mockApi({Items: [], Total: 0}, [{TeamID: ids.team, TeamName: "Blue", EventChallengeID: ids.challenge, ChallengeName: "Warmup", HintID: ids.user, HintIndex: 0, UnlockedBy: ids.user, UnlockedByName: "Olena", UnlockedAt: "2026-09-29T07:30:00Z", Cost: 10}]);
+        renderManager();
+        fireEvent.click(screen.getByRole("button", {name: "Підказки"}));
+        expect(router.replace).toHaveBeenCalledWith("/manage/submissions?tab=hints", {scroll: false});
+        const table = screen.getByRole("table");
+        expect(within(table).getByRole("columnheader", {name: "Вартість"})).toBeTruthy();
+        expect(await within(table).findByText("Підказка 1")).toBeTruthy();
     });
 });
