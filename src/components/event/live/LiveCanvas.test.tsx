@@ -50,6 +50,6 @@ describe("live canvas widgets", () => {
 
     it("shows the centered empty state without results", async () => {
         const {container} = await mount(only({type: "table", w: 4, h: 4}));
-        expect(container.querySelector(".live-table .ib-empty")).not.toBeNull();
+        expect(container.querySelector(".live-list .ib-empty")).not.toBeNull();
     });
 });

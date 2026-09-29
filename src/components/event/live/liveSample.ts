@@ -4,7 +4,9 @@ import {t} from "@/i18n/t";
 // Sample results for the live editor: the palette previews and the canvas
 // show widgets filled with plausible data until the event has real results.
 export const liveSampleSpan = 3 * 60 * 60 * 1000;
-const teamCount = 10;
+// Enough teams and solves to fill any row count the editor offers.
+const teamCount = 40;
+const namedTeams = 10;
 const challengeCount = 6;
 
 // A fixed pseudo-random sequence, so the sample looks the same on every render.
@@ -27,7 +29,7 @@ export function liveSampleResults(now: number): ManageResultsSnapshot {
     const totals = Array.from({length: teamCount}, () => 0);
     const last = Array.from({length: teamCount}, () => start);
     for (let team = 0; team < teamCount; team++) {
-        const solves = 9 - Math.floor(team * 0.7);
+        const solves = Math.max(1, 9 - Math.floor(team * 0.2));
         for (let solve = 0; solve < solves; solve++) {
             const challenge = (team + solve) % challengeCount;
             const points = 100 + Math.round(random() * 4) * 50;
@@ -39,7 +41,7 @@ export function liveSampleResults(now: number): ManageResultsSnapshot {
     }
     const scoreboard = totals.map((points, team) => ({team, points}))
         .sort((a, b) => b.points - a.points || a.team - b.team)
-        .map((item, index) => ({Rank: index + 1, TeamID: teamID(item.team), TeamName: t(`live.sample.team.${item.team + 1}`), Points: item.points, Solved: timeline.filter(solve => solve.EventTeamID === teamID(item.team)).length, LastSolveAt: new Date(last[item.team]).toISOString()}));
+        .map((item, index) => ({Rank: index + 1, TeamID: teamID(item.team), TeamName: item.team < namedTeams ? t(`live.sample.team.${item.team + 1}`) : t("live.sample.teamNumbered", {number: item.team + 1}), Points: item.points, Solved: timeline.filter(solve => solve.EventTeamID === teamID(item.team)).length, LastSolveAt: new Date(last[item.team]).toISOString()}));
     return {
         Revision: 0, GeneratedAt: new Date(now).toISOString(), Scoreboard: scoreboard, Timeline: timeline, TotalTeams: teamCount,
         Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},

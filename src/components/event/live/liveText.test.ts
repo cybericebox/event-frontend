@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, type LiveLayout} from "@/api/manageLive";
-import {liveTextSize, liveTextVars, liveTextWarnings} from "./liveText";
+import {liveListFit, liveTextSize, liveTextVars, liveTextWarnings} from "./liveText";
 
 const led: LiveLayout = {...defaultLiveLayout, aspect: "custom", screen: {width: 1040, height: 624, anchor: "top-left", textScale: 1}};
 
@@ -31,7 +31,17 @@ describe("liveTextWarnings", () => {
 
     it("names rows that no longer fit", () => {
         const crowded: LiveLayout = {...led, widgets: led.widgets.map(item => item.id === "table" ? {...item, props: {rowsPerPage: 20}} : item)};
-        expect(liveTextWarnings(crowded).some(item => item.id === "table" && /вміщується \d+ з 20 рядків/.test(item.text))).toBe(true);
+        expect(liveTextWarnings(crowded).some(item => item.id === "table" && /20 рядків будуть задрібні .* не більше \d+/.test(item.text))).toBe(true);
+    });
+
+    it("warns exactly when the rendered rows would drop below the readable height", () => {
+        const table = led.widgets.find(item => item.id === "table")!;
+        const fit = liveListFit(led, {...table, props: {rowsPerPage: 1}});
+        const at = (rows: number) => liveListFit(led, {...table, props: {rowsPerPage: rows}});
+        expect(at(fit.maxRows).readable).toBe(true);
+        expect(at(fit.maxRows + 1).readable).toBe(false);
+        // The rows split the height exactly.
+        expect(at(8).rowHeight * 8).toBeCloseTo(fit.rowsHeight);
     });
 
     it("ignores legacy A/D tables", () => {

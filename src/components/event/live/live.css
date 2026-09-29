@@ -8,18 +8,41 @@
 .live-widget--masked{background:var(--live-bg)}
 .live-canvas--grid{background-image:linear-gradient(to right,var(--live-line) 1px,transparent 1px),linear-gradient(to bottom,var(--live-line) 1px,transparent 1px);background-size:calc(100% / var(--live-cols)) calc(100% / var(--live-rows))}
 .live-widget{position:relative;display:block;min-width:0;min-height:0;overflow:hidden;padding:var(--live-pad);border:0;border-radius:0;background:transparent;color:var(--live-ink);text-align:left;font:inherit;cursor:default}
-.live-widget h2{margin:0 0 .5em;overflow:hidden;color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-.live-widget p{margin:0;color:var(--live-faint);font-size:var(--live-fs-caption)}
-.live-title{display:flex;align-items:center;gap:calc(var(--live-u) * .6);height:100%}
-.live-title__logo{display:grid;place-items:center;flex:none;height:min(100%,calc(var(--live-u) * 1.9));aspect-ratio:1;border-radius:calc(var(--live-u) * .25);background:var(--live-tile)}
+.live-widget h2{flex:none;height:calc(var(--live-fs-caption) * 1.8);margin:0;overflow:hidden;color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+/* Title, timer: sizes come from liveFit (the largest that fits the widget). */
+.live-title{display:flex;align-items:center;gap:calc(var(--live-u) * .6);height:100%;min-width:0}
+.live-title__logo{display:grid;place-items:center;flex:none;aspect-ratio:1;border-radius:calc(var(--live-u) * .25);background:var(--live-tile)}
 .live-title__logo img{width:78%;height:78%;object-fit:contain}
 .live-title>div{display:grid;gap:.1em;min-width:0}
-.live-title strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--live-fs-display);font-weight:600;line-height:1.1}
-.live-title span{overflow:hidden;color:var(--live-faint);font-size:var(--live-fs-caption);text-overflow:ellipsis;white-space:nowrap}
-.live-timer{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;height:100%;text-align:right}
-.live-timer small{color:var(--live-faint);font-size:var(--live-fs-caption)}
-.live-timer strong{color:var(--live-accent);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-size:var(--live-fs-timer);font-weight:600;line-height:1.05;white-space:nowrap}
-.live-chart,.live-table,.live-solves,.live-logos{display:flex;flex-direction:column;height:100%;min-height:0}
+.live-title strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.1}
+.live-title span{overflow:hidden;color:var(--live-faint);line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.live-timer{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;height:100%;min-width:0;text-align:right}
+.live-timer small{max-width:100%;overflow:hidden;color:var(--live-faint);line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
+.live-timer strong{color:var(--live-accent);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.08;white-space:nowrap}
+.live-chart,.live-list,.live-logos{display:flex;flex-direction:column;height:100%;min-height:0}
+/* Table and recent solves: the caption, then N rows that split the rest
+   exactly (liveListGeometry). Row heights and text are set inline. */
+.live-table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
+.live-table th,.live-table td{height:auto;padding:0 .45em;border-bottom:1px solid var(--live-line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.live-table th{color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;text-align:left}
+.live-table td{font-weight:500;line-height:1.2}
+/* Rank and points columns follow the row text (--live-row-font). */
+.live-table th:first-child,.live-table td:first-child{width:calc(var(--live-row-font,var(--live-fs-body)) * 2.8);color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace)}
+.live-table th:last-child,.live-table td:last-child{width:calc(var(--live-row-font,var(--live-fs-body)) * 5.2);text-align:right}
+.live-table td:last-child{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
+.live-table tr.is-lead{background:var(--live-lead)}
+.live-table tr.is-lead td:nth-child(2),.live-table tr.is-lead td:last-child{color:var(--live-accent)}
+.live-solves{margin:0;padding:0;list-style:none}
+.live-solves li{display:flex;gap:.6em;align-items:center;border-bottom:1px solid var(--live-line);line-height:1.2}
+.live-solves li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-solves li b{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
+.live-solves li time{color:var(--live-faint);font-size:.75em;font-family:var(--font-geist-mono,ui-monospace,monospace)}
+/* Empty widget: the shared EmptyState fills the tile under its caption, centered. */
+.live-chart .event-block-state,.live-list .event-block-state{--event-block-state-h:0px;flex:1;min-height:0;padding:var(--ib-4)}
+.live-chart__plot>.event-block-state{position:absolute;inset:0}
+.live-chart .ib-empty__text,.live-list .ib-empty__text{max-width:28ch;font-size:var(--live-fs-body)}
+.live-chart .ib-empty svg,.live-list .ib-empty svg{width:1.6em;height:1.6em;font-size:var(--live-fs-body)}
+.live-widget p{margin:0;color:var(--live-faint);font-size:var(--live-fs-caption)}
 .live-chart__plot{position:relative;flex:1;min-height:0;font-size:var(--live-fs-caption)}
 .live-chart__plot>svg{position:absolute;inset:0;overflow:visible}
 .live-chart__probe{position:absolute;visibility:hidden;line-height:1.2}
@@ -27,27 +50,6 @@
 .live-chart__axis,.live-chart__time{position:absolute;color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap}
 .live-chart__axis{left:0;text-align:right}
 .live-chart__label{position:absolute;overflow:hidden;font-weight:600;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-.live-table table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums;font-size:var(--live-fs-body)}
-.live-table th,.live-table td{padding:.34em .45em;border-bottom:1px solid var(--live-line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.live-table th{color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;text-align:left}
-.live-table td{font-weight:500}
-/* Column widths follow the body size: the fixed layout takes them from the
-   smaller header cells otherwise. */
-.live-table th:first-child,.live-table td:first-child{width:calc(var(--live-fs-body) * 2.4);color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace)}
-.live-table th:last-child,.live-table td:last-child{width:calc(var(--live-fs-body) * 5.2);text-align:right}
-.live-table td:last-child{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
-.live-table tr.is-lead{background:var(--live-lead)}
-.live-table tr.is-lead td:nth-child(2),.live-table tr.is-lead td:last-child{color:var(--live-accent)}
-.live-solves ol{margin:0;padding:0;list-style:none}
-.live-solves li{display:flex;gap:.6em;align-items:baseline;padding:.42em 0;border-bottom:1px solid var(--live-line);font-size:var(--live-fs-body)}
-.live-solves li span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.live-solves li b{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
-/* Empty widget: the shared EmptyState fills the tile under its title, centered. */
-.live-chart .event-block-state,.live-table .event-block-state,.live-solves .event-block-state{--event-block-state-h:0px;padding:var(--ib-4)}
-.live-chart__plot>.event-block-state{position:absolute;inset:0}
-.live-chart .ib-empty__text,.live-table .ib-empty__text,.live-solves .ib-empty__text{max-width:28ch;font-size:var(--live-fs-body)}
-.live-chart .ib-empty svg,.live-table .ib-empty svg,.live-solves .ib-empty svg{width:1.6em;height:1.6em;font-size:var(--live-fs-body)}
-.live-solves li time{color:var(--live-faint);font-size:var(--live-fs-caption);font-family:var(--font-geist-mono,ui-monospace,monospace)}
 .live-announcement{display:grid;place-items:center;height:100%;font-size:var(--live-fs-display);font-weight:600;line-height:1.2;text-align:center}
 /* Logos: monochrome, quieter than the numbers (§3). */
 .live-logos small{display:block;margin-bottom:.4em;color:var(--live-faint);font-size:var(--live-fs-caption)}
@@ -112,7 +114,7 @@
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--chart{height:280px}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--table,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--ad_table,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--solves{min-height:180px}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--logos{min-height:110px}
-  .live-fullscreen:not(.live-fullscreen--anchor) .live-table table{font-size:16px;table-layout:fixed}
+  .live-fullscreen:not(.live-fullscreen--anchor) .live-table{font-size:16px;table-layout:fixed}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-table th,.live-fullscreen:not(.live-fullscreen--anchor) .live-table td{padding:.45em .3em}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-title strong{white-space:normal;font-size:22px}
 }

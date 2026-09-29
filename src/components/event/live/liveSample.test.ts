@@ -5,9 +5,10 @@ describe("live sample results", () => {
     const now = Date.UTC(2026, 8, 29, 12);
     const sample = liveSampleResults(now);
 
-    it("ranks ten teams by points, highest first", () => {
-        expect(sample.Scoreboard).toHaveLength(10);
-        expect(sample.Scoreboard.map(team => team.Rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    it("ranks forty teams by points, highest first, with at least 30 solves", () => {
+        expect(sample.Scoreboard).toHaveLength(40);
+        expect(sample.Scoreboard.map(team => team.Rank)).toEqual(Array.from({length: 40}, (_, index) => index + 1));
+        expect(sample.Timeline.length).toBeGreaterThanOrEqual(30);
         const points = sample.Scoreboard.map(team => team.Points);
         expect([...points].sort((a, b) => b - a)).toEqual(points);
     });
