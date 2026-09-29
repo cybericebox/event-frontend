@@ -2,6 +2,7 @@ import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswer, ParticipantAnswers} from "@/api/participantForm";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {t} from "@/i18n/t";
+import {isFileAnswer} from "@/api/answerFiles";
 
 export function formFields(form: ParticipantForm | null | undefined): FormField[] {
     return form?.Enabled ? form.Document.blocks.filter(isFormField) : [];
@@ -11,6 +12,8 @@ export function formatAnswer(value: ParticipantAnswer | unknown): string {
     if (value === undefined || value === null || value === "") return "—";
     if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
     if (typeof value === "boolean") return value ? t("participation.answer.yes") : t("participation.answer.no");
+    if (isFileAnswer(value)) return value.name;
+    if (typeof value === "object") return "—";
     return String(value);
 }
 

@@ -1,4 +1,4 @@
-import type {FormBlock, FormDocument, FormField} from "@/api/manageParticipantForm";
+import type {FileKind, FormBlock, FormDocument, FormField} from "@/api/manageParticipantForm";
 import {richTextHasContent} from "../content/richTextState";
 import {t} from "@/i18n/t";
 
@@ -6,13 +6,29 @@ export function isFormField(block: FormBlock): block is FormField { return block
 
 export function isChoiceInput(input: FormField["input"]): boolean { return input === "select" || input === "multi_select"; }
 
-export function createFormField(input: FormField["input"] = "text"): FormField {
-    return {id: `field-${crypto.randomUUID()}`, type: "field", key: `field_${crypto.randomUUID().replaceAll("-", "")}`, input, label: "", required: false, options: isChoiceInput(input) ? [""] : undefined};
+// «Файл» questions: the formats an organizer may allow and the size limits,
+// the same as the backend (eventFormModel.MaxAnswerFileMB).
+export const fileKinds: FileKind[] = ["pdf", "image", "doc", "zip"];
+export const defaultFileMB = 10;
+export const maxFileMB = 25;
+
+// Fields a question of this answer type carries besides the common ones.
+function inputSettings(input: FormField["input"], field?: FormField): Pick<FormField, "options" | "fileTypes" | "maxSizeMB"> {
+    if (isChoiceInput(input)) return {options: field?.options?.length ? field.options : [""], fileTypes: undefined, maxSizeMB: undefined};
+    if (input === "file") return {options: undefined, fileTypes: field?.fileTypes?.length ? field.fileTypes : ["pdf"], maxSizeMB: field?.maxSizeMB ?? defaultFileMB};
+    return {options: undefined, fileTypes: undefined, maxSizeMB: undefined};
 }
 
-// A condition may depend only on an earlier single-answer question.
+export function createFormField(input: FormField["input"] = "text"): FormField {
+    return {id: `field-${crypto.randomUUID()}`, type: "field", key: `field_${crypto.randomUUID().replaceAll("-", "")}`, input, label: "", required: false, ...inputSettings(input)};
+}
+
+// A condition may depend only on an earlier question with one comparable
+// answer: not a multi-select and not a file.
+function comparableInput(input: FormField["input"]): boolean { return input !== "multi_select" && input !== "file"; }
+
 export function conditionSources(blocks: FormBlock[], index: number): FormField[] {
-    return blocks.slice(0, index).filter(isFormField).filter(field => field.input !== "multi_select");
+    return blocks.slice(0, index).filter(isFormField).filter(field => comparableInput(field.input));
 }
 
 export function initialConditionValue(source: FormField): string | number | boolean {
@@ -49,8 +65,8 @@ export function removeBlock(blocks: FormBlock[], index: number): FormBlock[] {
 export function changeInput(blocks: FormBlock[], index: number, input: FormField["input"]): FormBlock[] {
     const field = blocks[index];
     if (!field || !isFormField(field) || field.input === input) return blocks;
-    const next: FormField = {...field, input, options: isChoiceInput(input) ? field.options?.length ? field.options : [""] : undefined};
-    return mapDependents(replaceField(blocks, index, next), field.key, condition => input === "multi_select" ? undefined : {...condition, value: initialConditionValue(next)});
+    const next: FormField = {...field, input, ...inputSettings(input, field)};
+    return mapDependents(replaceField(blocks, index, next), field.key, condition => comparableInput(input) ? {...condition, value: initialConditionValue(next)} : undefined);
 }
 
 function setOptions(blocks: FormBlock[], index: number, options: string[], renamed?: {from: string; to: string}): FormBlock[] {
@@ -126,10 +142,15 @@ export function validateParticipantForm(document: FormDocument): string | null {
             if (emptyAt >= 0) return t("manage.fields.validation.optionEmpty", {n: index + 1, option: emptyAt + 1});
             if (invalidOptions(options).size) return t("manage.fields.validation.optionDuplicate", {n: index + 1});
         }
+        if (block.input === "file") {
+            if (!block.fileTypes?.length) return t("manage.fields.validation.fileTypes", {n: index + 1});
+            const size = block.maxSizeMB ?? defaultFileMB;
+            if (!Number.isInteger(size) || size < 1 || size > maxFileMB) return t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB});
+        }
         if (block.condition) {
             const source = previous.get(block.condition.fieldKey);
             if (!source) return t("manage.fields.validation.conditionSource", {n: index + 1});
-            if (source.input === "multi_select") return t("manage.fields.validation.conditionSingle", {n: index + 1});
+            if (!comparableInput(source.input)) return t("manage.fields.validation.conditionSingle", {n: index + 1});
             const value = block.condition.value;
             if (source.input === "number" && (typeof value !== "number" || !Number.isFinite(value))) return t("manage.fields.validation.conditionNumber", {n: index + 1});
             if (source.input === "checkbox" && typeof value !== "boolean") return t("manage.fields.validation.conditionValue", {n: index + 1});

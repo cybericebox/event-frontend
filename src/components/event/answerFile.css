@@ -1,0 +1,7 @@
+/* «Файл» answer: the DS file picker, the question's rules and upload errors. */
+.event-answer-file{display:grid;gap:var(--ib-1);min-width:0}
+.event-answer-file__row{display:flex;align-items:center;gap:var(--ib-2);min-width:0}
+.event-answer-file__row>.event-file-picker{flex:1}
+.event-answer-file__busy{display:inline-flex;flex:none}
+.event-answer-file>small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-answer-file__error{margin:0;color:var(--ib-danger);font-size:var(--ib-fs-12)}

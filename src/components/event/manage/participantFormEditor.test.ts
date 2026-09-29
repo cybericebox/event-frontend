@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {addOption, changeInput, conditionSources, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
+import {addOption, changeInput, conditionSources, createFormField, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
 import {emptyRichText} from "../content/richTextState";
 
 describe("formatted text in forms and surveys", () => {
@@ -66,5 +66,28 @@ describe("answer options", () => {
         expect(validateParticipantForm({blocks: [field("a", "select", {options: ["А", ""]})]})).toBe("Питання 1: заповніть варіант 2.");
         expect(validateParticipantForm({blocks: [field("a", "multi_select", {options: ["А", "А"]})]})).toBe("Питання 1: варіанти відповіді повторюються.");
         expect(validateParticipantForm({blocks: [field("a", "multi_select", {options: ["А", "Б"]})]})).toBeNull();
+    });
+});
+
+describe("file questions", () => {
+    it("start with PDF up to 10 MB and never drive a condition", () => {
+        const file = createFormField("file");
+        expect([file.fileTypes, file.maxSizeMB, file.options]).toEqual([["pdf"], 10, undefined]);
+        expect(conditionSources([file, field("b", "text")], 1)).toEqual([]);
+    });
+
+    it("switching to a file question drops conditions on it and keeps only its settings", () => {
+        const blocks: FormBlock[] = [field("a", "select", {options: ["x"]}), field("b", "text", {condition: {fieldKey: "a", operator: "equals", value: "x"}})];
+        const next = changeInput(blocks, 0, "file");
+        expect(next[0]).toMatchObject({input: "file", fileTypes: ["pdf"], maxSizeMB: 10, options: undefined});
+        expect((next[1] as FormField).condition).toBeUndefined();
+        expect(changeInput(next, 0, "text")[0]).toMatchObject({fileTypes: undefined, maxSizeMB: undefined});
+    });
+
+    it("need a format and a size within the platform limit", () => {
+        expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf", "zip"], maxSizeMB: 25})]})).toBeNull();
+        expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: []})]})).toBe("Питання 1: оберіть хоча б один формат файлу.");
+        expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf"], maxSizeMB: 26})]})).toBe("Питання 1: розмір файлу має бути від 1 до 25 МБ.");
+        expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf"]}), field("b", "text", {condition: {fieldKey: "a", operator: "equals", value: "x"}})]})).toBe("Питання 2: для умови оберіть питання з однією відповіддю.");
     });
 });

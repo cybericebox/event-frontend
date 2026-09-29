@@ -13,9 +13,10 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {changeInput, createFormField, isChoiceInput, isFormField, removeBlock, validateParticipantForm} from "@/components/event/manage/participantFormEditor";
-import {FormConditionEditor, FormOptionsEditor} from "@/components/event/manage/FormFieldControls";
+import {FormConditionEditor, FormFileSettings, FormOptionsEditor} from "@/components/event/manage/FormFieldControls";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {fileRulesText} from "@/components/event/AnswerFileInput";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
@@ -28,7 +29,12 @@ const inputOptions: {value: FormField["input"]; label: string}[] = [
     {value: "select", label: t("manage.fields.input.select")},
     {value: "multi_select", label: t("manage.fields.input.multiSelect")},
     {value: "checkbox", label: t("manage.fields.input.checkbox")},
+    {value: "file", label: t("manage.fields.input.file")},
 ];
+
+function AnswerFilePreview({field}: {field: FormField}) {
+    return <div className="event-file-picker"><button className="ib-btn ib-btn--sm" type="button" disabled>{t("manage.invites.file.choose")}</button><span className="event-file-picker__name is-empty">{fileRulesText(field)}</span></div>;
+}
 
 function FormPreview({blocks, selectedID, scope}: {blocks: FormBlock[]; selectedID: string | null; scope: "participant" | "team"}) {
     return <div className="event-form-preview">{blocks.map(block => <div className={`event-form-preview__block${block.id === selectedID ? " is-selected" : ""}`} key={block.id}>
@@ -38,6 +44,7 @@ function FormPreview({blocks, selectedID, scope}: {blocks: FormBlock[]; selected
         {isFormField(block) && <div className="event-manage-field"><strong>{block.label || t("manage.fields.preview.newQuestion")}{block.required && <span className="event-field-required">*</span>}</strong>{block.condition && <small className="event-form-preview__condition">{t("manage.fields.preview.conditional", {question: blocks.find(item => isFormField(item) && item.key === block.condition?.fieldKey)?.label || t("manage.fields.preview.previousQuestion")})}</small>}{block.help && <small>{block.help}</small>}
             {block.input === "long_text" ? <textarea className="event-manage-input" rows={3} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} /> :
                 block.input === "checkbox" ? <label className="event-form-preview__choice"><input type="checkbox" disabled /> {t("common.yes")}</label> :
+                block.input === "file" ? <AnswerFilePreview field={block} /> :
                 block.input === "select" || block.input === "multi_select" ? <div className="event-form-preview__choices">{(block.options ?? []).map((option, index) => <label className="event-form-preview__choice" key={index}><input type={block.input === "select" ? "radio" : "checkbox"} disabled />{option || t("manage.fields.preview.option", {n: index + 1})}</label>)}</div> :
                 <input className="event-manage-input" type={block.input === "number" ? "number" : "text"} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} />}
         </div>}
@@ -102,6 +109,7 @@ export function ExtraFieldsEditor({scope}: {scope: "participant" | "team"}) {
                         <label className="event-manage-field"><span>{t("manage.fields.block.question")}<span className="event-field-required">*</span></span><input className="event-manage-input" value={block.label} onChange={e => updateBlock(index, {...block, label: e.target.value})} disabled={!canManage || saving} placeholder={t("manage.fields.editor.questionPlaceholder")} /></label>
                         <div className="event-manage-fields-two"><div className="event-manage-field"><span>{t("manage.fields.editor.answerType")}</span><EventSelect ariaLabel={t("manage.fields.editor.answerTypeFor", {n: index + 1})} value={block.input} options={inputOptions} disabled={!canManage || saving} onValueChange={value => setBlocks(changeInput(blocks, index, value as FormField["input"]))} /></div><label className="event-manage-field"><span>{scope === "team" ? t("manage.fields.editor.helpTeam") : t("manage.fields.editor.helpParticipant")}</span><input className="event-manage-input" value={block.help ?? ""} onChange={e => updateBlock(index, {...block, help: e.target.value})} disabled={!canManage || saving} placeholder={t("manage.fields.editor.optional")} /></label></div>
                         {isChoiceInput(block.input) && <FormOptionsEditor blocks={blocks} index={index} disabled={!canManage || saving} onChange={setBlocks} />}
+                        {block.input === "file" && <FormFileSettings blocks={blocks} index={index} disabled={!canManage || saving} onChange={setBlocks} />}
                         <div className="event-manage-form__switches"><EventSwitch className="event-manage-form__switch" checked={!!block.required} onCheckedChange={checked => updateBlock(index, {...block, required: checked})} disabled={!canManage || saving} label={t("manage.fields.editor.answerRequired")} />
                         <EventSwitch className="event-manage-form__switch" checked={!!block.editable} onCheckedChange={checked => updateBlock(index, {...block, editable: checked || undefined})} disabled={!canManage || saving} label={scope === "team" ? t("manage.fields.editor.editableTeam") : t("manage.fields.editor.editableParticipant")} /></div>
                         <FormConditionEditor blocks={blocks} index={index} disabled={!canManage || saving} onChange={setBlocks} />

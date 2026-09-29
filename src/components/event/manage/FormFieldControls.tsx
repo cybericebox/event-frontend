@@ -3,8 +3,9 @@
 import {useState} from "react";
 import {ArrowDown, ArrowUp, Plus, Trash2, X} from "lucide-react";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {addOption, conditionSources, defaultCondition, initialConditionValue, invalidOptions, isFormField, moveOption, removeOption, renameOption} from "@/components/event/manage/participantFormEditor";
+import {addOption, conditionSources, defaultFileMB, fileKinds, maxFileMB, defaultCondition, initialConditionValue, invalidOptions, isFormField, moveOption, removeOption, renameOption} from "@/components/event/manage/participantFormEditor";
 import {FieldLabel} from "@/components/event/manage/FieldLabel";
+import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 
@@ -37,6 +38,29 @@ export function FormOptionsEditor({blocks, index, disabled, onChange}: Props) {
             </div>;
         })}</div>
         {!disabled && <button className="ib-btn ib-btn--sm event-form-options__add" type="button" onClick={() => onChange(addOption(blocks, index))}><Plus size={15} /> {t("manage.fields.editor.addOption")}</button>}
+    </div>;
+}
+
+// A «Файл» question: allowed formats (several may be ticked) and the size
+// limit. One file per answer.
+export function FormFileSettings({blocks, index, disabled, onChange}: Props) {
+    const field = fieldAt(blocks, index);
+    if (!field) return null;
+    const types = field.fileTypes ?? [];
+    const update = (patch: Partial<FormField>) => onChange(blocks.map((block, position) => position === index ? {...field, ...patch} : block));
+    const size = field.maxSizeMB ?? defaultFileMB;
+    const sizeInvalid = !Number.isInteger(size) || size < 1 || size > maxFileMB;
+    const sizeID = `${field.id}-file-size`;
+    return <div className="event-form-file-settings">
+        <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.fileTypesFor", {n: index + 1})}>
+            <span>{t("manage.fields.editor.fileTypes")}<span className="event-field-required">*</span></span>
+            <div className="event-form-file-settings__types">{fileKinds.map(kind => <EventCheckbox key={kind} checked={types.includes(kind)} disabled={disabled} label={t(`manage.fields.fileKind.${kind}`)} onCheckedChange={checked => update({fileTypes: checked ? fileKinds.filter(item => item === kind || types.includes(item)) : types.filter(item => item !== kind)})} />)}</div>
+            {!types.length && <p className="event-content-editor__field-error">{t("manage.fields.editor.fileTypesEmpty")}</p>}
+        </div>
+        <div className="event-manage-field"><label htmlFor={sizeID}>{t("manage.fields.editor.fileSize")}</label>
+            <input id={sizeID} className="event-manage-input event-form-file-settings__size" type="number" min={1} max={maxFileMB} step={1} value={Number.isNaN(size) ? "" : size} aria-invalid={sizeInvalid} disabled={disabled} onChange={e => update({maxSizeMB: e.target.value === "" ? Number.NaN : Number(e.target.value)})} />
+            <small>{t("manage.fields.editor.fileSizeHint", {max: maxFileMB})}</small>
+        </div>
     </div>;
 }
 

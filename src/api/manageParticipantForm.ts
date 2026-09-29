@@ -3,11 +3,15 @@ import {ManageApiError} from "@/api/manage";
 import {ContentBlockSchema} from "@/types/eventContent";
 import {requireApiOrigin} from "@/utils/origins";
 
-export const formInputSchema = z.enum(["text", "long_text", "number", "select", "multi_select", "checkbox"]);
+export const formInputSchema = z.enum(["text", "long_text", "number", "select", "multi_select", "checkbox", "file"]);
+export const fileKindSchema = z.enum(["pdf", "image", "doc", "zip"]);
 export const formFieldSchema = z.object({
     id: z.string(), type: z.literal("field"), key: z.string(), input: formInputSchema,
     label: z.string(), help: z.string().optional(), required: z.boolean().optional(),
     options: z.array(z.string()).optional(),
+    // A «Файл» question: allowed formats and the size limit in MB.
+    fileTypes: z.array(fileKindSchema).optional(),
+    maxSizeMB: z.number().int().optional(),
     // The captain (team fields) or the participant (own fields) may change this answer later.
     editable: z.boolean().optional(),
     condition: z.object({fieldKey: z.string(), operator: z.enum(["equals", "not_equals"]), value: z.union([z.string(), z.number(), z.boolean()])}).optional(),
@@ -16,6 +20,7 @@ export const formBlockSchema = z.union([formFieldSchema, ContentBlockSchema]);
 export const formDocumentSchema = z.object({blocks: z.array(formBlockSchema).nullable().transform(blocks => blocks ?? [])});
 export const participantFormSchema = z.object({Version: z.number().int(), Enabled: z.boolean(), Required: z.boolean(), Document: formDocumentSchema});
 export type FormField = z.infer<typeof formFieldSchema>;
+export type FileKind = z.infer<typeof fileKindSchema>;
 export type FormBlock = z.infer<typeof formBlockSchema>;
 export type FormDocument = z.infer<typeof formDocumentSchema>;
 export type ParticipantForm = z.infer<typeof participantFormSchema>;

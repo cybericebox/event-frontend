@@ -1,6 +1,5 @@
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-
-type Answer = string | number | boolean | string[];
+import type {ParticipantAnswer as Answer} from "@/api/participantForm";
 
 function isField(block: FormBlock): block is FormField { return block.type === "field"; }
 
@@ -8,7 +7,7 @@ function isField(block: FormBlock): block is FormField { return block.type === "
 // every other unanswered question has no value and never satisfies a condition.
 function comparable(source: FormField, answer: Answer | undefined): string | undefined {
     if (source.input === "checkbox") return String(answer === true);
-    if (answer === undefined || answer === "" || Array.isArray(answer)) return undefined;
+    if (answer === undefined || answer === "" || typeof answer === "object") return undefined;
     return String(answer);
 }
 

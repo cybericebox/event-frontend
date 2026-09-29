@@ -28,3 +28,13 @@ describe("conditional questions", () => {
         expect(visibleFieldKeys(blocks, {team: true, size: ""}).has("big")).toBe(false);
     });
 });
+
+describe("file answers in conditions", () => {
+    it("never satisfy a condition", () => {
+        const withFile: FormBlock[] = [
+            {id: "1", type: "field", key: "cv", input: "file", label: "CV", fileTypes: ["pdf"]},
+            {id: "2", type: "field", key: "why", input: "text", label: "Чому?", condition: {fieldKey: "cv", operator: "not_equals", value: "x"}},
+        ];
+        expect([...visibleFieldKeys(withFile, {cv: {id: "1", name: "cv.pdf", size: 1, contentType: "application/pdf"}})]).toEqual(["cv"]);
+    });
+});

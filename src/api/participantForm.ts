@@ -1,10 +1,11 @@
 import {z} from "zod";
+import type {AnswerFile} from "@/api/answerFiles";
 import {participantFormSchema, type ParticipantForm} from "@/api/manageParticipantForm";
 import {readApiErrorCode} from "@/api/apiErrors";
 import {joinInfoSchema, type JoinInfo} from "@/api/clientAuth";
 import {requireApiOrigin} from "@/utils/origins";
 
-export type ParticipantAnswer = string | number | boolean | string[];
+export type ParticipantAnswer = string | number | boolean | string[] | AnswerFile;
 export type ParticipantAnswers = Record<string, ParticipantAnswer>;
 
 export class ParticipantJoinError extends Error {
