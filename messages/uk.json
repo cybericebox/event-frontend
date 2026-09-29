@@ -3208,6 +3208,8 @@
   "manage.analytics.chart.loading": "Завантажуємо графік",
   "manage.analytics.chart.loadFailed": "Не вдалося завантажити графік",
   "manage.analytics.chart.empty": "У цей період ще не було активності",
+  "manage.analytics.overview.notStarted": "Захід ще не почався",
+  "manage.analytics.tasksCard.total": "Завдань у заході",
   "manage.analytics.overviewCharts.scores.title": "Динаміка балів",
   "manage.analytics.overviewCharts.scores.subtitle": "Перші {count} у рейтингу",
   "manage.analytics.overviewCharts.scores.hint": "Як зростали бали найкращих у таблиці результатів. Приховані та недопущені не показуємо.",

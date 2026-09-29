@@ -1,7 +1,7 @@
 "use client";
 
 import {useMemo} from "react";
-import {keepPreviousData, useQuery} from "@tanstack/react-query";
+import {keepPreviousData, useQuery, type UseQueryResult} from "@tanstack/react-query";
 import type {AnalyticsPeriod} from "@/api/manageAnalytics";
 import {getAnalyticsParticipants, type AnalyticsParticipants} from "@/api/manageAnalyticsPeople";
 import {getAnalyticsScores, type AnalyticsScores} from "@/api/manageAnalyticsTasks";
@@ -57,16 +57,36 @@ export function registrationsOverviewOption(registrations: AnalyticsParticipants
 
 const stateOf = (pending: boolean, data: unknown, hasData: boolean): ChartState => pending ? "loading" : !data ? "error" : hasData ? "ready" : "empty";
 
-// «Динаміка балів»: the top teams' running score. Its own query, its own states.
-export function ScoresCard({period, final}: {period: AnalyticsPeriod; final: boolean}) {
+type ScoresQuery = UseQueryResult<AnalyticsScores>;
+type RegistrationsQuery = UseQueryResult<AnalyticsParticipants>;
+
+// The queries live in the page, so its one first-load loader waits for them.
+export function useOverviewScores(period: AnalyticsPeriod, final: boolean): ScoresQuery {
     const {event} = useManager();
-    const query = useQuery({
+    return useQuery({
         queryKey: ["event-analytics-overview-scores", event.EventID, period.from, period.to, LEADER_LINES],
         queryFn: () => getAnalyticsScores(event.EventID, period, LEADER_LINES, []),
         refetchInterval: final ? false : POLL_SECONDS * 1000,
         refetchOnWindowFocus: false,
         placeholderData: keepPreviousData,
     });
+}
+
+export function useOverviewRegistrations(enabled: boolean): RegistrationsQuery {
+    const {event} = useManager();
+    return useQuery({
+        queryKey: ["event-analytics-overview-registrations", event.EventID],
+        queryFn: () => getAnalyticsParticipants(event.EventID),
+        enabled,
+        refetchInterval: POLL_SECONDS * 1000,
+        refetchOnWindowFocus: false,
+    });
+}
+
+// «Динаміка балів»: the top teams' running score. It exists in every phase;
+// before the start it says so (empty).
+export function ScoresCard({query, final}: {query: ScoresQuery; final: boolean}) {
+    const {event} = useManager();
     const {data, dataUpdatedAt} = query;
     const ready = !!data && scoresHaveData(data);
     const option = useMemo(() => data && scoresHaveData(data) ? scoresOverviewOption(data, final ? undefined : dataUpdatedAt) : undefined, [data, final, dataUpdatedAt]);
@@ -78,14 +98,8 @@ export function ScoresCard({period, final}: {period: AnalyticsPeriod; final: boo
 }
 
 // «Реєстрації»: before the start, instead of the (empty) activity chart.
-export function RegistrationsCard() {
+export function RegistrationsCard({query}: {query: RegistrationsQuery}) {
     const {event} = useManager();
-    const query = useQuery({
-        queryKey: ["event-analytics-overview-registrations", event.EventID],
-        queryFn: () => getAnalyticsParticipants(event.EventID),
-        refetchInterval: POLL_SECONDS * 1000,
-        refetchOnWindowFocus: false,
-    });
     const data = query.data;
     const ready = !!data && registrationsHaveData(data.Registrations);
     return <AnalyticsBlock title={t("manage.analytics.overviewCharts.registrations.title")} subtitle={t("manage.analytics.overviewCharts.registrations.subtitle")} hint={t("manage.analytics.overviewCharts.registrations.hint")}>

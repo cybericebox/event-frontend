@@ -3,7 +3,7 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, render, screen, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
-const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null}));
+const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null, StartTime: ""}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event, canManage: true})}));
 vi.mock("echarts-for-react", () => ({default: ({option}: {option: {series: unknown[]}}) => <div data-testid="chart" data-series={option.series.length} />}));
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
@@ -35,6 +35,7 @@ const overview = (extra: Record<string, unknown> = {}) => ({
 
 function mockApi(routes: {overview: unknown; scores?: unknown; participants?: unknown}) {
     const calls: string[] = [];
+    event.StartTime = (routes.overview as {Markers: {StartAt: string}}).Markers.StartAt;
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         calls.push(url);
@@ -88,16 +89,16 @@ describe("Огляд: score and registration charts", () => {
         expect(screen.getByRole("region", {name: "Ключові числа"})).toBeTruthy();
     });
 
-    it("hides the score card and shows the registrations before the start", async () => {
+    it("keeps the score card (empty) and swaps the activity chart for the registrations before the start", async () => {
         const participants = {
             TeamMode: true, Funnel: [], Registrations: {Total: 3, Days: [{Day: "2026-09-01", Open: 2, Approval: 1, Invitation: 0}]},
             Teams: {Histogram: [], Incomplete: []}, Answers: {Respondents: 0, Questions: []}, DropOff: {Total: 0, Rows: []}, Period: {From: null, To: null},
         };
-        mockApi({overview: overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: []}), participants});
+        mockApi({overview: overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: []}), participants, scores: {...scores, Series: []}});
         renderOverview();
         const card = await screen.findByRole("region", {name: "Реєстрації"});
         expect((await within(card).findByTestId("chart")).getAttribute("data-series")).toBe("4");
-        expect(screen.queryByRole("region", {name: "Динаміка балів"})).toBeNull();
+        expect(within(screen.getByRole("region", {name: "Динаміка балів"})).getByText("Балів ще ніхто не здобув")).toBeTruthy();
         expect(screen.queryByRole("region", {name: "Активність"})).toBeNull();
     });
 });

@@ -131,16 +131,19 @@ export function StatusStrip({overview}: {overview: Overview}) {
     </section>;
 }
 
-type CardProps = {event: PublicEventInfo; overview?: Overview; state: "loading" | "error" | "ready"; onRetry: () => void; error?: unknown; teamMode: boolean};
+type CardProps = {event: PublicEventInfo; overview?: Overview; state: "loading" | "error" | "ready"; onRetry: () => void; error?: unknown; teamMode: boolean; notStarted?: boolean};
 
 const cardStates = (props: CardProps, empty: boolean): CardState => props.state === "ready" ? (empty ? "empty" : "ready") : props.state;
+
+// Before the start there is nothing to rank or measure: the card says so.
+const notStartedMessage = () => t("manage.analytics.overview.notStarted");
 
 export function LeadersCard(props: CardProps) {
     const {event, overview, teamMode} = props;
     const leaders = overview?.Leaders ?? [];
     return <OverviewCard event={event} title={t(teamMode ? "manage.analytics.leaders.title" : "manage.analytics.leaders.titleSolo")} subtitle={t("manage.analytics.leaders.subtitle")} hint={t("manage.analytics.leaders.hint")}
-        link={{href: sectionHref.results, label: t("manage.analytics.leaders.link")}} state={cardStates(props, leaders.length === 0)}
-        loadingLabel={t("manage.analytics.leaders.loading")} errorMessage={t("manage.analytics.leaders.loadFailed")} emptyMessage={t(teamMode ? "manage.analytics.leaders.empty" : "manage.analytics.leaders.emptySolo")}
+        link={{href: sectionHref.results, label: t("manage.analytics.leaders.link")}} state={cardStates(props, !!props.notStarted || leaders.length === 0)}
+        loadingLabel={t("manage.analytics.leaders.loading")} errorMessage={t("manage.analytics.leaders.loadFailed")} emptyMessage={props.notStarted ? notStartedMessage() : t(teamMode ? "manage.analytics.leaders.empty" : "manage.analytics.leaders.emptySolo")}
         onRetry={props.onRetry} error={props.error}>
         <ol className="event-analytics-leaders">{leaders.map(leader => <li key={leader.TeamID}>
             <span className="event-analytics-leaders__rank">{leader.Rank}</span>
@@ -159,7 +162,8 @@ export function TasksCard(props: CardProps) {
     return <OverviewCard event={event} title={t("manage.analytics.tasksCard.title")} subtitle={t("manage.analytics.tasksCard.subtitle")} hint={t("manage.analytics.tasksCard.hint")} link={link} state={cardStates(props, tasks?.Total === 0)}
         loadingLabel={t("manage.analytics.tasksCard.loading")} errorMessage={t("manage.analytics.tasksCard.loadFailed")} emptyMessage={t("manage.analytics.tasksCard.empty")}
         onRetry={props.onRetry} error={props.error}>
-        {tasks && <FactRows rows={[
+        {tasks && props.notStarted && <FactRows rows={[{key: "total", label: t("manage.analytics.tasksCard.total"), value: tasks.Total, href: link.href}]} />}
+        {tasks && !props.notStarted && <FactRows rows={[
             {key: "unsolved", label: t("manage.analytics.tasksCard.unsolved"), value: t("manage.analytics.tasksCard.unsolvedValue", {count: tasks.Unsolved, total: tasks.Total}), href: link.href},
             {key: "most", label: t("manage.analytics.tasksCard.most"), value: solved(tasks.MostSolved), href: link.href},
             {key: "least", label: t("manage.analytics.tasksCard.least"), value: solved(tasks.LeastSolved), href: link.href},
@@ -173,8 +177,8 @@ export function EngagementCard(props: CardProps) {
     const engagement = overview?.Engagement;
     const link = {href: sectionHref.participants, label: t("manage.analytics.engagement.link")};
     const average = new Intl.NumberFormat("uk-UA", {maximumFractionDigits: 1});
-    return <OverviewCard event={event} title={t("manage.analytics.engagement.title")} subtitle={t("manage.analytics.engagement.subtitle")} hint={t("manage.analytics.engagement.hint")} link={link} state={cardStates(props, engagement?.Teams === 0)}
-        loadingLabel={t("manage.analytics.engagement.loading")} errorMessage={t("manage.analytics.engagement.loadFailed")} emptyMessage={t(teamMode ? "manage.analytics.engagement.empty" : "manage.analytics.engagement.emptySolo")}
+    return <OverviewCard event={event} title={t("manage.analytics.engagement.title")} subtitle={t("manage.analytics.engagement.subtitle")} hint={t("manage.analytics.engagement.hint")} link={link} state={cardStates(props, !!props.notStarted || engagement?.Teams === 0)}
+        loadingLabel={t("manage.analytics.engagement.loading")} errorMessage={t("manage.analytics.engagement.loadFailed")} emptyMessage={props.notStarted ? notStartedMessage() : t(teamMode ? "manage.analytics.engagement.empty" : "manage.analytics.engagement.emptySolo")}
         onRetry={props.onRetry} error={props.error}>
         {overview && engagement && <FactRows rows={[
             {key: "active", label: t("manage.analytics.engagement.active"), value: t("manage.analytics.engagement.activeValue", {active: overview.Participants.Active, approved: overview.Participants.Approved}), href: link.href},

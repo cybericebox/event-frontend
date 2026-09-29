@@ -3208,6 +3208,8 @@
   "manage.analytics.chart.loading": "Loading the chart",
   "manage.analytics.chart.loadFailed": "The chart could not be loaded",
   "manage.analytics.chart.empty": "No activity in this period yet",
+  "manage.analytics.overview.notStarted": "The event has not started yet",
+  "manage.analytics.tasksCard.total": "Tasks in the event",
   "manage.analytics.overviewCharts.scores.title": "Score dynamics",
   "manage.analytics.overviewCharts.scores.subtitle": "Top {count} of the ranking",
   "manage.analytics.overviewCharts.scores.hint": "How the score of the best on the scoreboard grew. Hidden and not admitted ones are not shown.",

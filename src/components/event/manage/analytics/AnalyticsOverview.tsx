@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo} from "react";
+import {useMemo, useState} from "react";
 import {keepPreviousData, useQuery} from "@tanstack/react-query";
 import {getAnalyticsOverview, type AnalyticsFeedItem, type AnalyticsOverview as Overview} from "@/api/manageAnalytics";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -16,7 +16,7 @@ import {AnalyticsExportButton} from "./AnalyticsExportButton";
 import {AnalyticsPage} from "./AnalyticsPage";
 import {AnalyticsPeriodFilter} from "./AnalyticsPeriodFilter";
 import {AnalyticsStat, AnalyticsStatGrid} from "./AnalyticsStat";
-import {RegistrationsCard, ScoresCard} from "./OverviewCharts";
+import {RegistrationsCard, ScoresCard, useOverviewRegistrations, useOverviewScores} from "./OverviewCharts";
 import {CommsCard, EngagementCard, LeadersCard, sectionHref, StandsCard, StatusStrip, TasksCard} from "./OverviewCards";
 import {useAnalyticsPeriod} from "./useAnalyticsPeriod";
 
@@ -102,71 +102,51 @@ export function AnalyticsOverview() {
     const data = overview.data;
     const updatedAt = overview.dataUpdatedAt;
     // "Now" is the moment of the last answer; the poll moves it every few seconds.
-    const started = !data || Date.parse(data.Markers.StartAt) <= updatedAt;
+    // The phase comes from the event itself, so the layout is the same before and after the data.
+    const [mountedAt] = useState(() => Date.now());
+    const started = Date.parse(event.StartTime) <= (updatedAt || mountedAt);
+    const scores = useOverviewScores(filter.period, !!data?.Final);
+    const registrations = useOverviewRegistrations(!started);
     const chartState: ChartState = overview.isPending ? "loading" : !data ? "error" : seriesHasActivity(data.Series) ? "ready" : "empty";
-    const blockState = overview.isPending ? "loading" : !data ? "error" : "ready";
     const chartOption = useMemo(() => data && seriesHasActivity(data.Series) ? activityChartOption(data, data.Final ? undefined : updatedAt) : undefined, [data, updatedAt]);
     const retry = () => void overview.refetch();
 
     const status = <LiveStatus freshness={data?.Final ? {kind: "manual", onRefresh: () => void overview.refetch(), refreshing: overview.isFetching} : {kind: "polling", seconds: OVERVIEW_POLL_SECONDS, failing: overview.isError}} updatedAt={updatedAt} />;
     const actions = <>{status}<AnalyticsExportButton eventID={eventID} section="overview" period={filter.period} disabled={!data} /></>;
-    const cards = {event, overview: data, state: blockState, onRetry: retry, error: overview.error, teamMode} as const;
+    const cards = {event, overview: data, state: "ready", onRetry: retry, error: overview.error, teamMode, notStarted: !started} as const;
     // Stands appear only for an event that has them, mail only for the sensitive access.
     const hasStands = !!data && data.Stands.Creating + data.Stands.Ready + data.Stands.Failed > 0;
     const hasComms = !!data?.Comms;
+    const title = t("manage.analytics.overview.title");
+    const description = t(started ? "manage.analytics.overview.description" : "manage.analytics.overview.descriptionBefore");
 
-    // The overview is one request: when it fails there is one error, centred in a block
-    // as tall as the page content, not one per card.
-    if (!data && !overview.isPending) return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.description")} actions={actions}>
+    // The overview is one request: its first load is one loader and its failure one error,
+    // both centred in a block as tall as the page content. Polling keeps the data on screen.
+    if (!data) return <AnalyticsPage title={title} description={description} actions={actions}>
         <div className="event-analytics__block event-analytics__block--page">
-            <EventLoadError message={t("manage.analytics.overview.loadFailed")} error={overview.error} onRetry={retry} />
+            {overview.isPending ? <EventLoading event={event} label={t("manage.analytics.overview.loading")} /> : <EventLoadError message={t("manage.analytics.overview.loadFailed")} error={overview.error} onRetry={retry} />}
         </div>
     </AnalyticsPage>;
-
-    // Nothing to show yet: the same layout, every block in its own loading state.
-    if (!data) return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.description")} actions={actions}>
-        <section className="event-analytics__block event-analytics-status" aria-label={t("manage.analytics.status.label")}>
-            <EventLoading event={event} label={t("manage.analytics.overview.loading")} compact />
-        </section>
-        <div className="event-analytics__columns">
-            <section className="event-analytics__block" aria-label={t("manage.analytics.chart.title")}>
-                <div className="event-analytics__block-head"><h2>{t("manage.analytics.chart.title")}</h2></div>
-                <AnalyticsChart event={event} state="loading" ariaLabel={t("manage.analytics.chart.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage="" emptyMessage="" />
-            </section>
-            <Feed state="loading" onRetry={retry} />
-        </div>
-        <div className="event-analytics-cards">
-            <LeadersCard {...cards} />
-            <TasksCard {...cards} />
-            <EngagementCard {...cards} />
-        </div>
+    // The charts' own requests run beside it; the page shows once they have answered too.
+    if (scores.isPending || (!started && registrations.isPending)) return <AnalyticsPage title={title} description={description} actions={actions}>
+        <div className="event-analytics__block event-analytics__block--page"><EventLoading event={event} label={t("manage.analytics.overview.loading")} /></div>
     </AnalyticsPage>;
 
-    if (!started) return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.descriptionBefore")} actions={actions}>
+    return <AnalyticsPage title={title} description={description} actions={actions} filter={started ? <AnalyticsPeriodFilter period={filter} /> : undefined}>
         <StatusStrip overview={data} />
-        <RegistrationStats overview={data} teamMode={teamMode} />
-        <div className="event-analytics-charts event-analytics-charts--single"><RegistrationsCard /></div>
-        {(hasStands || hasComms) && <div className="event-analytics-cards">
-            {hasStands && <StandsCard {...cards} />}
-            {hasComms && <CommsCard {...cards} />}
-        </div>}
-    </AnalyticsPage>;
-
-    return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.description")} actions={actions} filter={<AnalyticsPeriodFilter period={filter} />}>
-        <StatusStrip overview={data} />
-        <LiveStats overview={data} teamMode={teamMode} />
+        {started ? <LiveStats overview={data} teamMode={teamMode} /> : <RegistrationStats overview={data} teamMode={teamMode} />}
         <div className="event-analytics-charts">
-            <section className="event-analytics__block" aria-label={t("manage.analytics.chart.title")}>
+            {started ? <section className="event-analytics__block" aria-label={t("manage.analytics.chart.title")}>
                 <div className="event-analytics__block-head"><h2>{t("manage.analytics.chart.title")}</h2><p>{t("manage.analytics.chart.subtitle", {minutes: activityBucketMinutes(data)})}</p></div>
                 <AnalyticsChart event={event} state={chartState} option={chartOption}
                     ariaLabel={t("manage.analytics.chart.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage={t("manage.analytics.chart.loadFailed")}
                     emptyMessage={t("manage.analytics.chart.empty")} onRetry={retry} error={overview.error} />
-            </section>
-            <ScoresCard period={filter.period} final={data.Final} />
+            </section> : <RegistrationsCard query={registrations} />}
+            <ScoresCard query={scores} final={data.Final} />
         </div>
         <div className="event-analytics-cards">
             <LeadersCard {...cards} />
-            <Feed overview={data} state={blockState} onRetry={retry} error={overview.error} />
+            <Feed overview={data} state="ready" onRetry={retry} error={overview.error} />
             <TasksCard {...cards} />
             <EngagementCard {...cards} />
             {hasStands && <StandsCard {...cards} />}

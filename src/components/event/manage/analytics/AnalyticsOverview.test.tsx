@@ -3,7 +3,7 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, render, screen, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
-const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null}));
+const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null, StartTime: ""}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event, canManage: true})}));
 vi.mock("echarts-for-react", () => ({default: ({option}: {option: {series: unknown[]}}) => <div data-testid="chart" data-series={option.series.length} />}));
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
@@ -42,6 +42,8 @@ function overview(extra: Record<string, unknown> = {}) {
 
 function mockApi(body: unknown, status = 200) {
     const calls: string[] = [];
+    // The page decides its phase from the event itself.
+    event.StartTime = (body as {Markers?: {StartAt: string}} | null)?.Markers?.StartAt ?? past;
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         calls.push(url);
@@ -216,11 +218,39 @@ describe("Огляд: cards", () => {
         expect(within(screen.getByRole("region", {name: "Комунікації"})).getByText("За останню добу листів не надсилали")).toBeTruthy();
     });
 
-    it("shows the leaders and the engagement in the loading state, inside their own cards", () => {
+    it("shows one loader for the first load and no cards yet", () => {
         globalThis.fetch = vi.fn(() => new Promise<Response>(() => {})) as typeof fetch;
         renderOverview();
-        expect(within(screen.getByRole("region", {name: "Завдання"})).getByRole("status", {name: "Завантажуємо завдання"})).toBeTruthy();
-        expect(within(screen.getByRole("region", {name: "Лідери"})).getByRole("status", {name: "Завантажуємо лідерів"})).toBeTruthy();
+        expect(screen.getAllByRole("status")).toHaveLength(1);
+        expect(screen.queryByRole("region", {name: "Завдання"})).toBeNull();
+        expect(screen.queryByRole("region", {name: "Лідери"})).toBeNull();
+    });
+
+    it("keeps the same cards before the start, with «Захід ще не почався» in leaders and engagement", async () => {
+        mockApi(overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: [], Feed: [], Leaders: [], RankedTeams: 0}));
+        renderOverview();
+        const leaders = await screen.findByRole("region", {name: "Лідери"});
+        expect(within(leaders).getByText("Захід ще не почався")).toBeTruthy();
+        expect(within(screen.getByRole("region", {name: "Залученість"})).getByText("Захід ще не почався")).toBeTruthy();
+        const tasks = screen.getByRole("region", {name: "Завдання"});
+        expect(within(tasks).getByText("Завдань у заході")).toBeTruthy();
+        expect(within(tasks).getByText("8")).toBeTruthy();
+        expect(screen.getByRole("region", {name: "Динаміка балів"})).toBeTruthy();
+        expect(screen.getByRole("region", {name: "Стенди"})).toBeTruthy();
+        expect(screen.getByRole("region", {name: "Комунікації"})).toBeTruthy();
+    });
+
+    it("has the same set of blocks in every phase apart from the activity / registrations swap", async () => {
+        const names = () => screen.getAllByRole("region").map(region => region.getAttribute("aria-label")).filter(name => name !== "Активність" && name !== "Реєстрації" && name !== "Ключові числа" && name !== "Реєстрація");
+        mockApi(overview());
+        renderOverview();
+        await screen.findByRole("region", {name: "Динаміка балів"});
+        const running = names();
+        cleanup();
+        mockApi(overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: []}));
+        renderOverview();
+        await screen.findByRole("region", {name: "Динаміка балів"});
+        expect(names()).toEqual(running);
     });
 
     it("shows one load error for the whole page when the overview fails", async () => {
