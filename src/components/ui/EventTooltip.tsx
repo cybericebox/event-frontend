@@ -16,7 +16,11 @@ export function EventTooltip({content, children, placement = "top", className, t
         if (!node) return;
         const trigger = node.previousElementSibling;
         if (truncated && trigger) setCut(trigger.scrollWidth > trigger.clientWidth);
-        const rect = node.getBoundingClientRect();
+        // The closed bubble is scaled to its centre, so its box is rebuilt from the centre and the unscaled size.
+        const box = node.getBoundingClientRect();
+        const centerX = box.left + box.width / 2;
+        const centerY = box.top + box.height / 2;
+        const rect = {left: centerX - node.offsetWidth / 2, right: centerX + node.offsetWidth / 2, top: centerY - node.offsetHeight / 2};
         const scrollBounds = node.closest(".ib-admin-shell__scroll")?.getBoundingClientRect();
         const left = Math.max(12, (scrollBounds?.left ?? 0) + 12);
         const right = Math.min(window.innerWidth - 12, (scrollBounds?.right ?? window.innerWidth) - 12);

@@ -11,16 +11,17 @@
   display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:240px;padding:5px 8px;
   background:var(--ib-raised);color:var(--ib-ink);border:1px solid var(--ib-line);border-radius:var(--ib-r);
   font:var(--ib-w-medium) var(--ib-fs-12)/var(--ib-lh-ui) var(--ib-font);white-space:normal;text-align:left;pointer-events:none;
-  opacity:0;visibility:hidden;transition:opacity var(--ib-dur-fast) var(--ib-ease),visibility 0s linear var(--ib-dur-fast)}
+  opacity:0;visibility:hidden;scale:0;transition:opacity var(--ib-dur-fast) var(--ib-ease),visibility 0s linear var(--ib-dur-fast),scale 0s linear var(--ib-dur-fast)}
+/* Local: a closed bubble is scaled to a point so it never widens the page (horizontal scroll on phones). */
 .ib-tip__bubble .ib-kbd{height:16px;min-width:16px;font-size:10px}
 .ib-tip__bubble small{display:block;color:var(--ib-dim);font-weight:var(--ib-w-regular)}
 .ib-tip__bubble:has(.ib-tip__copy){max-width:min(320px,calc(100vw - 24px));padding:10px 12px;line-height:1.45}
 .ib-tip__copy{display:grid;gap:6px;min-width:0;white-space:normal}
 .ib-tip__point{position:relative;padding-left:12px;font-weight:var(--ib-w-regular)}
 .ib-tip__point::before{content:"•";position:absolute;left:0}
-.ib-tip:hover>.ib-tip__bubble{opacity:1;visibility:visible;transition-delay:300ms,300ms}
-.ib-tip:has(:focus-visible)>.ib-tip__bubble,.ib-tip.is-open>.ib-tip__bubble{opacity:1;visibility:visible;transition-delay:0s,0s}
+.ib-tip:hover>.ib-tip__bubble{opacity:1;visibility:visible;scale:1;transition-delay:300ms,300ms,300ms}
+.ib-tip:has(:focus-visible)>.ib-tip__bubble,.ib-tip.is-open>.ib-tip__bubble{opacity:1;visibility:visible;scale:1;transition-delay:0s,0s,0s}
 .ib-tip--bottom>.ib-tip__bubble{bottom:auto;top:calc(100% + 6px)}
 .ib-tip--end>.ib-tip__bubble{left:auto;right:0;transform:none}
 .ib-tip--start>.ib-tip__bubble{left:0;transform:none}
-.ib-tip.is-dismissed>.ib-tip__bubble{opacity:0;visibility:hidden;transition:none}
+.ib-tip.is-dismissed>.ib-tip__bubble{opacity:0;visibility:hidden;scale:0;transition:none}
