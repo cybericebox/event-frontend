@@ -1,5 +1,5 @@
 /* Cookie consent: fixed to the bottom, non-blocking, hairline border instead of a shadow.
-   Banner = one line + two buttons; panel = categories with switches + three actions.
+   Banner = one line + two buttons; panel = categories with switches + two buttons.
    Stacks under 640 px. Tokens only. */
 .cb-consent{position:fixed;z-index:60;left:var(--ib-4);right:var(--ib-4);bottom:var(--ib-4);margin:0 auto;max-width:880px;display:flex;align-items:center;gap:var(--ib-6);padding:var(--ib-4) var(--ib-5);background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-body);font-size:var(--ib-fs-14);line-height:var(--ib-lh-body)}
 .cb-consent:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
@@ -17,7 +17,6 @@
 .cb-consent__desc{display:block;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .cb-consent__policy{padding-top:var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .cb-consent__actions--panel{margin-top:var(--ib-4);justify-content:flex-end}
-.cb-consent__actions--panel .cb-consent-link{margin-right:auto}
 
 /* switch: a native checkbox (role=switch), 36×20 track with a sliding knob */
 .cb-switch{appearance:none;flex:none;position:relative;width:36px;height:20px;margin:0;border:1px solid var(--ib-control);border-radius:999px;background:var(--ib-surface);cursor:pointer;transition:background-color var(--ib-dur-fast),border-color var(--ib-dur-fast)}
@@ -30,11 +29,9 @@
 @media (max-width:640px){
   .cb-consent{flex-direction:column;align-items:stretch;gap:var(--ib-3);left:var(--ib-2);right:var(--ib-2);bottom:var(--ib-2)}
   .cb-consent__actions>.ib-btn{flex:1}
-  .cb-consent__actions--panel{flex-wrap:wrap}
-  .cb-consent__actions--panel .cb-consent-link{flex-basis:100%;order:1;margin:var(--ib-1) 0 0;text-align:center}
 }
 
-/* «Налаштування cookie» (event footer, 13 px) / «Відхилити всі»: a button that reads as a link */
+/* «Налаштування файлів cookie» (event footer, 13 px): reads as a footer link */
 .cb-consent-link{padding:0;border:0;background:none;color:var(--ib-dim);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}
 .cb-consent-link:hover{color:var(--ib-ink)}
 .cb-consent-link:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}

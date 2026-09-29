@@ -20,7 +20,7 @@ describe("ConsentBanner", () => {
         expect(document.cookie).toContain("cib_consent=analytics:granted");
     });
 
-    it("customize → accept selected with analytics off (the default)", () => {
+    it("customize → save choice with analytics off (the default)", () => {
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         click("Налаштувати");
         const dialog = screen.getByRole("dialog");
@@ -28,25 +28,29 @@ describe("ConsentBanner", () => {
         const [necessary, analytics] = screen.getAllByRole("switch") as HTMLInputElement[];
         expect(necessary.checked && necessary.disabled).toBe(true);
         expect(analytics.checked).toBe(false);
-        click("Прийняти вибрані");
+        click("Зберегти вибір");
         expect(screen.queryByRole("dialog")).toBeNull();
         expect(document.cookie).toContain("cib_consent=analytics:denied");
     });
 
-    it("customize → accept selected with analytics on", () => {
+    it("customize → save choice with analytics on", () => {
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         click("Налаштувати");
         fireEvent.click(screen.getAllByRole("switch")[1]);
-        click("Прийняти вибрані");
+        click("Зберегти вибір");
         expect(document.cookie).toContain("cib_consent=analytics:granted");
     });
 
-    it("customize → reject all", () => {
+    it("the panel has only «Зберегти вибір» and «Прийняти всі»; saving with analytics off drops _ga", () => {
+        document.cookie = "_ga=GA1.1.1; path=/";
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         click("Налаштувати");
-        click("Відхилити всі");
+        expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Зберегти вибір", "Прийняти всі"]);
+        expect(screen.queryByRole("button", {name: "Відхилити всі"})).toBeNull();
+        click("Зберегти вибір");
         expect(screen.queryByRole("dialog")).toBeNull();
         expect(document.cookie).toContain("cib_consent=analytics:denied");
+        expect(document.cookie).not.toMatch(/(^|; )_ga=/);
     });
 
     it("Esc never consents: on the panel it steps back to the banner", () => {

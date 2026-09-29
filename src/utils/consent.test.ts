@@ -1,5 +1,5 @@
-// Cookie consent (Google Consent Mode v2): denied by default; accept all / accept selected /
-// reject all map to analytics_storage only; the choice is one cookie on the parent domain.
+// Cookie consent (Google Consent Mode v2): denied by default; accept all / save choice
+// map to analytics_storage only; the choice is one cookie on the parent domain.
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
 import * as consent from "./consent";
@@ -50,14 +50,14 @@ describe("consent", () => {
         expect(consent.readConsent()).toEqual({analytics: true});
     });
 
-    it("accept selected with analytics on grants it", () => {
+    it("save choice with analytics on grants it", () => {
         const gtag = spyGtag();
         consent.saveConsent({analytics: true});
         expect(gtag.mock.calls).toEqual([["consent", "update", {analytics_storage: "granted"}]]);
         expect(consent.readConsent()).toEqual({analytics: true});
     });
 
-    it("accept selected with analytics off keeps everything denied", () => {
+    it("save choice with analytics off keeps everything denied", () => {
         const gtag = spyGtag();
         document.cookie = "_ga=GA1.1.1; path=/";
         consent.saveConsent({analytics: false});
@@ -66,11 +66,11 @@ describe("consent", () => {
         expect(document.cookie).not.toMatch(/_ga/);
     });
 
-    it("reject all keeps everything denied and drops GA cookies", () => {
+    it("save choice with analytics off after accepting drops GA cookies", () => {
         const gtag = spyGtag();
         document.cookie = "_ga=GA1.1.1; path=/";
         document.cookie = "_ga_TEST=GS1.1; path=/";
-        consent.saveConsent(consent.REJECT_ALL);
+        consent.saveConsent({ analytics: false });
         expect(gtag.mock.calls).toEqual([["consent", "update", {analytics_storage: "denied"}]]);
         expect(consent.readConsent()).toEqual({analytics: false});
         expect(document.cookie).not.toMatch(/_ga/);
