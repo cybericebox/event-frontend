@@ -83,7 +83,7 @@ export function resultsLiveURL(eventID: string, revision: number, view: ResultsV
     return `${apiOrigin}/api/events/${encodeURIComponent(eventID)}/results/live?${params}`;
 }
 
-const moderatorTeamSchema = z.object({
+export const moderatorTeamSchema = z.object({
     Rank: z.number().int().nullable(), TeamID: id, Name: z.string(), RealName: z.string(), Pseudonym: z.string().nullable(),
     Individual: z.boolean(), Hidden: z.boolean(), Admitted: z.boolean(), Points: z.number().int(), Solved: z.number().int(), LastSolveAt: z.string().nullable(),
     Hints: z.number().int().default(0), HintPoints: z.number().int().default(0),

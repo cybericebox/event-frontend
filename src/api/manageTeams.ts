@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
+import {moderatorTeamSchema} from "@/api/manageResults";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import type {TableFilter, TableSort} from "@/components/event/manage/tableFilterModel";
 import {requireApiOrigin} from "@/utils/origins";
@@ -79,4 +80,13 @@ export async function getManageTeamsTable(eventID: string, query: TeamsTableQuer
     if (query.filters?.length) params.set("filters", JSON.stringify(query.filters));
     if (query.sort) {params.set("sortBy", query.sort.key); params.set("sortDir", query.sort.desc ? "desc" : "asc");}
     return request(eventID, `teams?${params}`, tablePageSchema);
+}
+
+// Read-only team profile for organizers: the team as in the list plus its results
+// (null when the scoreboard does not list the team).
+const teamProfileSchema = z.object({Team: teamSchema, Results: moderatorTeamSchema.nullish().transform(value => value ?? null)});
+export type ManageTeamProfile = z.infer<typeof teamProfileSchema>;
+
+export async function getManageTeamProfile(eventID: string, teamID: string): Promise<ManageTeamProfile> {
+    return request(eventID, `teams/${encodeURIComponent(teamID)}`, teamProfileSchema);
 }

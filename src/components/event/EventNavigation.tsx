@@ -4,7 +4,7 @@ import {Fragment, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, Menu, Users, X} from "lucide-react";
+import {ChevronDown, Menu, User, Users, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
@@ -15,6 +15,7 @@ import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
 import {VpnHeaderButton} from "./vpn/EventVpn";
 import {ManagerEntry} from "./manage/ManagerEntry";
+import {useStaffAccess} from "./useStaffAccess";
 import {InboxButton} from "./InboxButton";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
@@ -54,6 +55,8 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
         retry: false, refetchOnWindowFocus: false,
     });
     const adminTier = !!profile.data && profile.data.Role !== "user";
+    // Organizers open the participant pages too, to try them out.
+    const {staff} = useStaffAccess(event.EventID);
     const catalog = useQuery({
         queryKey: ["event-catalog-access"], queryFn: getCatalogAccess,
         enabled: !!profile.data && !adminTier,
@@ -92,7 +95,8 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
                 if (entry.kind === "divider") return <Fragment key={i}>
                     {/* The event context sits right after the platform links. */}
                     {i === contextAt && <>
-                        {approved && <Link href="/participation" onClick={() => setOpen(false)}><Users {...ACCOUNT_MENU_ICON_PROPS} />{t("account.participation")}</Link>}
+                        {(approved || staff) && <Link href="/participation" onClick={() => setOpen(false)}><User {...ACCOUNT_MENU_ICON_PROPS} />{t("account.participation")}</Link>}
+                        {(approved || staff) && event.Participation === 1 && <Link href="/team" onClick={() => setOpen(false)}><Users {...ACCOUNT_MENU_ICON_PROPS} />{t("account.team")}</Link>}
                         <div className="event-account__theme"><span>{t("theme.label")}</span><ThemeToggle /></div>
                     </>}
                     <hr className="event-account__sep" />
@@ -168,6 +172,11 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
         ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         // Staff read the results in every phase; the public info is the guest view.
         ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) || !!managementAccess.data ? [{href: "/scoreboard", label: t("nav.results")}] : []),
+        // The participant's own pages; organizers see them to try them out.
+        ...(approved || !!managementAccess.data ? [
+            {href: "/participation", label: t("nav.participation")},
+            ...(event.Participation === 1 ? [{href: "/team", label: t("nav.team")}] : []),
+        ] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
     ], [pending, approved, canViewResults, event, navigationPages, managementAccess.data]);
 

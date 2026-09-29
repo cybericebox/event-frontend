@@ -25,7 +25,8 @@ async function send(eventID: string, path: string, body: Record<string, unknown>
 
 // Role follows the backend TeamRole: 0 = captain, 1 = member.
 export const TeamRole = {Captain: 0, Member: 1} as const;
-const memberSchema = z.object({UserID: z.string().uuid(), DisplayName: z.string(), Role: z.number().int(), Own: z.boolean()});
+// Pending marks an invitee who has not accepted the team invitation yet.
+const memberSchema = z.object({UserID: z.string().uuid(), DisplayName: z.string(), Role: z.number().int(), Own: z.boolean(), Pending: z.boolean().default(false)});
 export type TeamMember = z.infer<typeof memberSchema>;
 
 export async function getOwnTeamMembers(eventID: string): Promise<TeamMember[]> {
@@ -35,15 +36,20 @@ export async function getOwnTeamMembers(eventID: string): Promise<TeamMember[]> 
     return z.object({Data: memberSchema.array().nullish().transform(value => value ?? [])}).parse(await response.json()).Data;
 }
 
-// Roster actions are open to participants only before the start (RosterLocked after).
+// Roster actions follow the join period: an event that closes joining at the start freezes the roster
+// there (RosterLocked after), a rolling event keeps it open until it finishes.
 export async function leaveEventTeam(eventID: string): Promise<void> {
     await send(eventID, "/mine/leave", {});
 }
 export async function renameEventTeam(eventID: string, teamID: string, name: string): Promise<void> {
     await send(eventID, `/${encodeURIComponent(teamID)}`, {Name: name}, "PUT");
 }
-export async function regenerateEventTeamCode(eventID: string, teamID: string): Promise<void> {
-    await send(eventID, `/${encodeURIComponent(teamID)}/join-code`, {});
+// How long a freshly issued join link stays valid (backend JoinCodeExpiry).
+export type JoinLinkExpiry = "none" | "day" | "week" | "start";
+export const joinLinkExpiries: JoinLinkExpiry[] = ["none", "day", "week", "start"];
+
+export async function regenerateEventTeamCode(eventID: string, teamID: string, expiry: JoinLinkExpiry): Promise<void> {
+    await send(eventID, `/${encodeURIComponent(teamID)}/join-code`, {Expiry: expiry});
 }
 export async function transferEventTeamCaptain(eventID: string, teamID: string, userID: string): Promise<void> {
     await send(eventID, `/${encodeURIComponent(teamID)}/captain`, {UserID: userID});

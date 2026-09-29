@@ -20,7 +20,12 @@ export const joinInfoSchema = z.object({
 const joinSchema = joinInfoSchema;
 export type JoinInfo = z.infer<typeof joinInfoSchema>;
 const ownTeamSchema = z.object({
-    ID: z.string().uuid(), Name: z.string(), JoinCode: z.string(), MemberCount: z.number().int(),
+    ID: z.string().uuid(), Name: z.string(), MemberCount: z.number().int(),
+    // The join code and its expiry are sent to the captain only.
+    JoinCode: z.string().nullish().transform(value => value ?? ""), JoinCodeExpiresAt: z.string().nullish().transform(value => value ?? null),
+    CaptainID: z.string().uuid().optional(),
+    // TeamRole: 0 = captain, 1 = member.
+    Role: z.number().int().default(1),
     ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {}),
     Admitted: z.boolean().optional(), MinTeamSize: z.number().int().nullish(), MaxTeamSize: z.number().int().nullish(),
 });
@@ -79,7 +84,8 @@ export async function getInvitationInfo(): Promise<JoinInfo> {
     return readData(response, joinSchema);
 }
 
-export type RegistrationWindow = {registrationOpen: boolean; joinPolicy: string; startAt: string; finishAt: string};
+// rosterOpen: teams may still change (locked-at-start events freeze at the start, rolling ones stay open until they finish).
+export type RegistrationWindow = {registrationOpen: boolean; joinPolicy: string; startAt: string; finishAt: string; rosterOpen: boolean};
 
 // The same public content values the join CTA reads, so /join agrees with it.
 export async function getRegistrationWindow(eventID: string): Promise<RegistrationWindow> {
@@ -91,6 +97,7 @@ export async function getRegistrationWindow(eventID: string): Promise<Registrati
         joinPolicy: String(variables["event.joinPolicy"] ?? ""),
         startAt: String(variables["event.startAt"] ?? ""),
         finishAt: String(variables["event.effectiveFinishAt"] ?? ""),
+        rosterOpen: variables["event.rosterOpen"] === true,
     };
 }
 

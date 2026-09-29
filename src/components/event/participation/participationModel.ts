@@ -37,3 +37,51 @@ export function rosterLine(memberCount: number, max: number | null | undefined, 
     if (min && min > 1) parts.push(t("participation.roster.min", {min}));
     return parts.join(" · ");
 }
+
+const JOIN_PARAM = "join";
+const JOIN_CODE_KEY = "event-team-join-code";
+
+// The invitation is a link to the event's team page with the code in the query.
+export function joinLink(origin: string, code: string): string {
+    return `${origin}/team?${JOIN_PARAM}=${encodeURIComponent(code)}`;
+}
+
+// The code from a pasted join link or a bare code; empty when there is none.
+export function parseJoinCode(input: string): string {
+    const text = input.trim();
+    if (!text) return "";
+    try {
+        const code = new URL(text).searchParams.get(JOIN_PARAM);
+        if (code !== null) return code.trim();
+    } catch { /* not a URL: a bare code */ }
+    const match = new RegExp(`[?&]${JOIN_PARAM}=([^&#\\s]+)`).exec(text);
+    return match ? decodeURIComponent(match[1]).trim() : text;
+}
+
+export function joinCodeFromSearch(search: string): string {
+    return new URLSearchParams(search).get(JOIN_PARAM)?.trim() ?? "";
+}
+
+// A visitor who has to register first keeps the code for the rest of the session.
+export function rememberJoinCode(code: string): void {
+    try { if (code) sessionStorage.setItem(JOIN_CODE_KEY, code); } catch { /* storage may be blocked */ }
+}
+
+export function recalledJoinCode(): string {
+    try { return sessionStorage.getItem(JOIN_CODE_KEY) ?? ""; } catch { return ""; }
+}
+
+export function forgetJoinCode(): void {
+    try { sessionStorage.removeItem(JOIN_CODE_KEY); } catch { /* storage may be blocked */ }
+}
+
+const expiresFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
+
+// «діє до …» for a link with an expiry, the no-limit line otherwise; an expired link says so.
+export function joinLinkValidity(expiresAt: string | null, now: number): {text: string; expired: boolean} {
+    if (!expiresAt) return {text: t("participation.team.link.noExpiry"), expired: false};
+    const at = Date.parse(expiresAt);
+    if (!Number.isFinite(at)) return {text: t("participation.team.link.noExpiry"), expired: false};
+    if (at <= now) return {text: t("participation.team.link.expired", {date: expiresFormat.format(at)}), expired: true};
+    return {text: t("participation.team.link.validUntil", {date: expiresFormat.format(at)}), expired: false};
+}

@@ -9,7 +9,7 @@ import {ManageApiError} from "@/api/manage";
 import {getManageParticipants} from "@/api/manageParticipants";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import {changeManageTeamMember, deleteManageTeam, getManageTeamsTable, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
+import {changeManageTeamMember, deleteManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {CreateTeamDialog} from "@/components/event/manage/CreateTeamDialog";
@@ -29,6 +29,8 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 
 const sentAt = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
 const MEMBER_TAGS = 3;
@@ -115,10 +117,13 @@ export default function ManageTeamsPage() {
     ], canManage);
     const fieldColumns = tableColumns.visible.filter(column => !column.key.startsWith("@"));
     const managed = teams.find(team => team.ID === managedID) ?? null;
+    // The profile adds the team's results (places, points, solves) to the row the table already has.
+    const profile = useQuery({queryKey: ["event-management-team-profile", eventID, managedID], queryFn: () => getManageTeamProfile(eventID, managedID!), enabled: managedID !== null, refetchOnWindowFocus: false});
 
     async function refresh() {
         await Promise.all([
             queryClient.invalidateQueries({queryKey: ["event-management-teams", eventID]}),
+            queryClient.invalidateQueries({queryKey: ["event-management-team-profile", eventID]}),
             queryClient.invalidateQueries({queryKey: ["event-management-team-participants", eventID]}),
             queryClient.invalidateQueries({queryKey: ["event-management-participants", eventID]}),
         ]);
@@ -250,7 +255,7 @@ export default function ManageTeamsPage() {
                 <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.teams.col.actions")}</span></th>
             </tr>}>
             <tbody>{teams.map(team => {
-                return <tr key={team.ID}>
+                return <tr key={team.ID} className="is-clickable" onClick={event => {if (!(event.target as HTMLElement).closest("button, a, input, label")) {setEditing(null); setManagedID(team.ID);}}}>
                     {tableColumns.visible.map(column => <Fragment key={column.key}>{teamCell(column, team)}</Fragment>)}
                     <td><div className="event-manage-table__actions">
                         {canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button>}
@@ -266,9 +271,19 @@ export default function ManageTeamsPage() {
                 const team = managed;
                 const choice = memberChoices[team.ID] ?? "";
                 return <div className="event-manage-team-details">
-                    <div className="event-manage-teams__head"><div><p>{t("manage.teams.summary", {count: team.MemberCount, captain: captainName(team)})}{team.Hidden ? t("manage.teams.hiddenSuffix") : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? t("common.cancel") : t("manage.teams.edit")}</button></div>}</div>
+                    <div className="event-manage-teams__head"><div><p>{t("manage.teams.summary", {count: team.MemberCount, captain: captainName(team)})}{team.Hidden ? t("manage.teams.hiddenSuffix") : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? t("common.cancel") : t("manage.teams.edit")}</button></div>}</div>
                     {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={busy} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
                     {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={busy} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={busy} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={busy || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={fieldsQuery.data} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={busy} /></div>}</div>}
+                    <div className="event-manage-teams__members"><h3>{t("manage.teams.results")}</h3>
+                        {profile.isPending ? <EventLoading compact label={t("manage.teams.resultsLoading")} /> : profile.isError ? <EventLoadError compact message={t("manage.teams.resultsFailed")} error={profile.error} onRetry={() => void profile.refetch()} />
+                            : !profile.data.Results ? <EmptyState compact message={t("manage.teams.resultsNone")} />
+                                : <><dl className="event-manage-teams__fields">
+                                    <div><dt>{t("manage.teams.place")}</dt><dd>{profile.data.Results.Rank ?? "—"}</dd></div>
+                                    <div><dt>{t("manage.teams.points")}</dt><dd>{profile.data.Results.Points}</dd></div>
+                                    <div><dt>{t("manage.teams.solved")}</dt><dd>{profile.data.Results.Solved}</dd></div>
+                                    <div><dt>{t("manage.teams.hints")}</dt><dd>{t("manage.teams.hintsValue", {count: profile.data.Results.Hints, points: profile.data.Results.HintPoints})}</dd></div>
+                                </dl>{profile.data.Results.Solves.length === 0 ? <EmptyState compact message={t("manage.teams.noSolves")} /> : profile.data.Results.Solves.map(solve => <div className="event-manage-teams__member" key={solve.ChallengeID}><span><strong>{solve.ChallengeName}</strong>{solve.FirstBlood && <small>{t("manage.teams.firstBlood")}</small>}<small>{t("manage.participants.dateUtc", {date: sentAt.format(new Date(solve.SolvedAt))})}</small></span><span className="ib-tag ib-tag--sm">{t("manage.teams.solvePoints", {points: solve.Points})}</span></div>)}</>}
+                    </div>
                     {fields.length > 0 && <div className="event-manage-teams__members"><div className="event-manage-teams__members-head"><h3>{t("manage.fields.title")}</h3><button className="ib-btn ib-btn--sm" type="button" onClick={() => setAnswersTeam(team)}>{t("manage.teams.allAnswers")}</button></div>{fieldColumns.length > 0 && <dl className="event-manage-teams__fields">{fieldColumns.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{formatAnswer(team.ExtraFields[column.key])}</dd></div>)}</dl>}</div>}
                     <div className="event-manage-teams__members"><h3>{t("manage.teams.roster")}</h3>{team.Members.length === 0 ? <EmptyState compact message={t("manage.teams.noMembers")} /> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: person.Pseudonym})}</small>}{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "captain", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.makeCaptain")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "remove", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.removeMember")}</button></div>}</div>)}</div>
                     {team.PendingInvitations.length > 0 && <div className="event-manage-teams__members"><h3>{t("manage.teams.invited")}</h3>{team.PendingInvitations.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{person.Email || person.Name || person.UserID.slice(0, 8)}</strong>{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}<small>{t("manage.teams.pendingConfirmation")}</small><small>{person.InvitationSentAt ? t("manage.participants.sentAt", {date: sentAt.format(new Date(person.InvitationSentAt))}) : t("manage.participants.notSent")}</small></span></div>)}</div>}

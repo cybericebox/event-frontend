@@ -97,6 +97,10 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-part__choice h3{font-size:var(--ib-fs-16);color:var(--ib-ink);margin-bottom:var(--ib-1)}
 .event-part__choice p{font-size:var(--ib-fs-13);color:var(--ib-dim);margin-bottom:var(--ib-4)}
 .event-part__code{font:var(--ib-fs-14) var(--ib-mono);letter-spacing:.2em;color:var(--ib-ink)}
+.event-part__link{display:grid;flex:1 1 320px;gap:var(--ib-1);min-width:0}
+.event-part__link .ib-input{width:100%}
+.event-part__link small{font-size:var(--ib-fs-12)}
+.event-part__warn{color:var(--ib-danger)}
 .event-members{width:100%;border-collapse:collapse;font-size:var(--ib-fs-14)}
 .event-members th{padding:0 var(--ib-2) var(--ib-2) 0;border-bottom:1px solid var(--ib-line);text-align:left;font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-dim)}
 .event-members td{height:44px;padding:0 var(--ib-2) 0 0;border-bottom:1px solid var(--ib-line);color:var(--ib-ink)}

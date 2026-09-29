@@ -31,6 +31,8 @@
   "1713": "The team has not been admitted to challenges yet.",
   "1714": "This team field cannot be changed after creation.",
   "1715": "Team fields cannot be changed after the event ends.",
+  "1716": "The invitation link has expired. Ask the captain for a new one.",
+  "1717": "The link expiry is invalid.",
   "1803": "This set has already been added to the event.",
   "1809": "The new version removes a challenge that teams have already solved. The update is not possible.",
   "1811": "This set is not available for the event.",
