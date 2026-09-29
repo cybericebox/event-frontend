@@ -14,6 +14,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {AnswersList, AnswerValue} from "./FieldColumns";
 import {fieldColumnDefinitions, formFields, type TableColumn} from "./listColumns";
+import {hasStaffFields, StaffFieldsPanel} from "./StaffFieldsPanel";
 import {TableColumnsPopover, useTableColumns} from "./TableControls";
 import {SortHeader, TableFilterChips, TableFiltersButton} from "./TableFilters";
 import {fieldFilterSpecs, type FilterSpec} from "./tableFilterModel";
@@ -23,7 +24,7 @@ import {LiveStatus} from "./LiveStatus";
 import {ManageTable, ManageTablePagination, ManageTableSearch} from "./ManageTable";
 import {participantTabHref, participantTabs, type ParticipantTab} from "./participantTabs";
 import {useManager} from "./ManagerShell";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
@@ -56,6 +57,8 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const teamsQuery = useQuery({queryKey: ["event-management-teams", eventID, "options"], queryFn: () => getManageTeams(eventID, null, {}, 200), enabled: teamMode, refetchOnWindowFocus: false});
     const fields = formFields(formQuery.data?.Document.blocks);
     const pseudonyms = !!configQuery.data?.AllowPseudonyms;
+    // «Не заповнено» exists once the organizer asked everyone for the new required fields.
+    const askedEveryone = !!formQuery.data?.RequireExisting;
     const specs: FilterSpec[] = [
         {key: "@name", label: tab === "invitations" ? t("manage.participants.col.address") : t("manage.participants.col.name"), kind: "contains"},
         ...(tab !== "invitations" ? [{key: "@email", label: t("manage.participants.col.emailAddress"), kind: "contains" as const}] : []),
@@ -64,6 +67,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         ...(tab === "invitations" ? [{key: "@invitation", label: t("manage.participants.col.status"), kind: "any" as const, options: [{value: "sent", label: t("manage.participants.invitationSent")}, {value: "notSent", label: t("manage.participants.notSent")}]}] : []),
         ...(teamMode && tab !== "applications" ? [{key: "@team", label: t("manage.participants.col.team"), kind: "any" as const, options: [{value: "none", label: t("manage.participants.noTeam")}, ...(teamsQuery.data?.Items ?? []).map(team => ({value: team.ID, label: team.Name}))]}] : []),
         {key: "@date", label: tab === "invitations" ? t("manage.participants.col.invited") : t("manage.participants.col.registered"), kind: "date"},
+        ...(askedEveryone && tab === "participants" ? [{key: "@missing", label: t("manage.fields.missing.filter"), kind: "bool" as const, yes: t("manage.fields.missing.yes"), no: t("manage.fields.missing.no")}] : []),
         ...(showAnswers ? fieldFilterSpecs(fields) : []),
     ];
     const table = useTableState(specs, {key: "@date", desc: true});
@@ -79,11 +83,12 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         {key: "@status", label: t("manage.participants.col.status")},
         ...(teamMode ? [{key: "@team", label: t("manage.participants.col.team")}] : []),
         {key: "@date", label: t("manage.participants.col.registered")},
+        ...(askedEveryone ? [{key: "@missing", label: t("manage.fields.missing.column")}] : []),
         ...fieldColumnDefinitions(fields),
     ], canManage);
     // The invitations tab has no answers, no email and no pseudonym column
     // (the address is the first column); applications have no team yet.
-    const shown = tableColumns.visible.filter(column => tab === "invitations" ? column.key.startsWith("@") && column.key !== "@email" && column.key !== "@pseudonym" : tab === "applications" ? column.key !== "@team" : true);
+    const shown = tableColumns.visible.filter(column => tab === "invitations" ? column.key.startsWith("@") && column.key !== "@email" && column.key !== "@pseudonym" && column.key !== "@missing" : tab === "applications" ? column.key !== "@team" && column.key !== "@missing" : true);
     const counts = query.data?.Counts;
 
     function changeTab(value: ParticipantTab) {
@@ -176,6 +181,9 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             ? participant.InvitedToTeam ? participant.InvitedTeamName || t("manage.participants.col.team") : <span className="event-manage-table__dim">—</span>
             : participant.TeamID ? <Link href="/manage/teams" onClick={stop}>{participant.TeamName || t("manage.participants.inTeam")}</Link> : <span className="event-manage-table__dim">{t("manage.participants.noTeam")}</span>}</td>;
         case "@date": return <td className="event-manage-table__nowrap event-manage-table__dim">{t("manage.participants.dateUtc", {date: date.format(new Date(participant.CreatedAt))})}</td>;
+        case "@missing": return <td>{participant.FieldsMissing > 0
+            ? <EventTooltip content={tPlural("manage.fields.missing.tooltip", participant.FieldsMissing)}>{id => <span className="ib-tag ib-tag--warn" aria-describedby={id}>{participant.FieldsMissing}</span>}</EventTooltip>
+            : <span className="event-manage-table__dim">—</span>}</td>;
         default: return <td className="event-manage-table__answer"><AnswerValue eventID={eventID} value={participant.Answers[column.key]} /></td>;
         }
     }
@@ -214,6 +222,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         <Dialog open={opened !== null} onOpenChange={value => {if (!value) setOpened(null);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto">
             <DialogHeader><DialogTitle>{opened ? personName(opened) : ""}</DialogTitle><DialogDescription>{[opened?.Pseudonym && t("manage.participants.pseudonym", {pseudonym: opened.Pseudonym}), opened?.Email, opened && !opened.Invited && t("manage.participants.submittedAt", {date: date.format(new Date(opened.CreatedAt))})].filter(Boolean).join(" · ")}</DialogDescription></DialogHeader>
             {opened && <AnswersList fields={fields} answers={opened.Answers} />}
+            {opened && formQuery.data && hasStaffFields(formQuery.data) && <StaffFieldsPanel key={opened.UserID} eventID={eventID} scope="participant" subjectID={opened.UserID} form={formQuery.data} answers={opened.Answers} canManage={canManage} onSaved={refresh} />}
         </DialogContent></Dialog>
         <ConfirmDialog open={confirm !== null} onCancel={() => setConfirm(null)} tone="danger" busy={!!busyID} error={confirmError}
             title={t(confirm?.kind === "revoke" ? "manage.participants.revokeTitle" : "manage.participants.rejectTitle")}

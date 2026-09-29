@@ -12,6 +12,8 @@ const pendingInvitationSchema = z.object({UserID: id, Email: optionalText, Name:
 const teamSchema = z.object({
     ID: id, Name: z.string(), CaptainID: id, Hidden: z.boolean(), MemberCount: z.number().int(),
     ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {}), CreatedAt: z.string(),
+    // How many required team fields are unfilled (0 = complete or not asked).
+    FieldsMissing: z.number().int().default(0),
     Members: z.array(memberSchema).nullish().transform(value => value ?? []),
     PendingInvitations: z.array(pendingInvitationSchema).nullish().transform(value => value ?? []),
     Admitted: z.boolean().default(true), AdmittedManually: z.boolean().default(false),

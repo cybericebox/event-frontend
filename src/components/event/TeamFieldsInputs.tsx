@@ -11,23 +11,29 @@ import {AnswerFileInput} from "@/components/event/AnswerFileInput";
 import {DateAnswerInput} from "@/components/event/DateAnswerInput";
 import {isFileAnswer, uploadSelfAnswerFile, type AnswerFile} from "@/api/answerFiles";
 
-// editableOnly renders just the questions that may change later; visibility is
-// still worked out on the whole form, so a condition on a locked question holds.
+// editableOnly renders just the questions that may change later (plus the
+// fillable ones: required fields the person still owes, fillable once even
+// when not editable); visibility is still worked out on the whole form, so a
+// condition on a locked question holds.
 // upload stores a «Файл» answer; by default the participant or captain uploads
 // on the event site, staff pass the /manage upload. A cleared file is "".
-export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnly = false, upload = (key, file) => uploadSelfAnswerFile("team", key, file)}: {
+export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnly = false, staffOnly = false, fillable = [], upload = (key, file) => uploadSelfAnswerFile("team", key, file)}: {
     form: ParticipantForm;
     answers: ParticipantAnswers;
     onChange: (key: string, value: ParticipantAnswer) => void;
     disabled?: boolean;
     editableOnly?: boolean;
+    // Organizer view: only the staff-only questions (conditions still see every answer).
+    staffOnly?: boolean;
+    fillable?: readonly string[];
     upload?: (key: string, file: File) => Promise<AnswerFile>;
 }) {
     if (!form.Enabled) return null;
     const shown = visibleFieldKeys(form.Document.blocks, answers);
     return <div className="grid gap-4">
         {form.Document.blocks.map(block => {
-            if (editableOnly && (!isFormField(block) || !block.editable)) return null;
+            if (editableOnly && (!isFormField(block) || !(block.editable || fillable.includes(block.key)))) return null;
+            if (staffOnly && (!isFormField(block) || !block.staffOnly)) return null;
             if (block.type === "section") return <h3 key={block.id}>{block.label}</h3>;
             if (block.type === "divider") return <hr key={block.id} />;
             if (block.type === "text") return <EventRichTextView key={block.id} value={block.richText} />;

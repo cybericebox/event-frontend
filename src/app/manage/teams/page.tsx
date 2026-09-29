@@ -11,6 +11,7 @@ import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {changeManageTeamMember, deleteManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
+import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {CreateTeamDialog} from "@/components/event/manage/CreateTeamDialog";
 import {TeamInvitationDialog} from "@/components/event/manage/TeamInvitationDialog";
@@ -22,9 +23,10 @@ import {fieldFilterSpecs, type FilterSpec} from "@/components/event/manage/table
 import {useTableState} from "@/components/event/manage/useTableState";
 import {LiveStatus} from "@/components/event/manage/LiveStatus";
 import {fieldColumnDefinitions, formFields, formatAnswer, type TableColumn} from "@/components/event/manage/listColumns";
+import {hasStaffFields, StaffFieldsPanel} from "@/components/event/manage/StaffFieldsPanel";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
@@ -55,6 +57,11 @@ function admissionText(team: ManageTeam): string {
     return t("manage.teams.admission.notAdmitted", {min: team.MinTeamSize ?? 2});
 }
 
+// Staff-only answers are saved through their own panel, never with the team form.
+function withoutKeys(answers: ParticipantAnswers, keys: ReadonlySet<string>): ParticipantAnswers {
+    return Object.fromEntries(Object.entries(answers).filter(([key]) => !keys.has(key)));
+}
+
 function failure(error: unknown, fallback: string): string {
     return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback);
 }
@@ -75,6 +82,8 @@ export default function ManageTeamsPage() {
     const [confirmError, setConfirmError] = useState("");
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
     const fields = formFields(fieldsQuery.data?.Document.blocks);
+    // «Не заповнено» exists once the organizer asked every team for the new required fields.
+    const askedEveryone = !!fieldsQuery.data?.RequireExisting;
     const specs: FilterSpec[] = [
         {key: "@name", label: t("manage.teams.col.name"), kind: "contains"},
         {key: "@captain", label: t("manage.teams.col.captain"), kind: "contains"},
@@ -87,6 +96,7 @@ export default function ManageTeamsPage() {
         ]},
         {key: "@pending", label: t("manage.teams.filter.pendingInvitees"), kind: "bool"},
         {key: "@created", label: t("manage.teams.col.created"), kind: "date"},
+        ...(askedEveryone ? [{key: "@missing", label: t("manage.fields.missing.filter"), kind: "bool" as const, yes: t("manage.fields.missing.yes"), no: t("manage.fields.missing.no")}] : []),
         ...fieldFilterSpecs(fields),
     ];
     const table = useTableState(specs, {key: "@created", desc: true});
@@ -113,9 +123,11 @@ export default function ManageTeamsPage() {
         {key: "@members", label: t("manage.teams.col.members")},
         {key: "@status", label: t("manage.teams.col.status")},
         {key: "@created", label: t("manage.teams.col.created")},
+        ...(askedEveryone ? [{key: "@missing", label: t("manage.fields.missing.column")}] : []),
         ...fieldColumnDefinitions(fields),
     ], canManage);
-    const fieldColumns = tableColumns.visible.filter(column => !column.key.startsWith("@"));
+    const staffKeys = new Set(fields.filter(field => field.staffOnly).map(field => field.key));
+    const fieldColumns = tableColumns.visible.filter(column => !column.key.startsWith("@") && !staffKeys.has(column.key));
     const managed = teams.find(team => team.ID === managedID) ?? null;
     // The profile adds the team's results (places, points, solves) to the row the table already has.
     const profile = useQuery({queryKey: ["event-management-team-profile", eventID, managedID], queryFn: () => getManageTeamProfile(eventID, managedID!), enabled: managedID !== null, refetchOnWindowFocus: false});
@@ -133,7 +145,7 @@ export default function ManageTeamsPage() {
         if (!canManage || busy || editing?.id !== team.ID || !editing.name.trim()) return;
         setBusy(true);
         try {
-            await updateManageTeam(eventID, team.ID, {Name: editing.name.trim(), Hidden: editing.hidden, ...(fields.length > 0 ? {Fields: editing.fields} : {})});
+            await updateManageTeam(eventID, team.ID, {Name: editing.name.trim(), Hidden: editing.hidden, ...(fields.length > 0 ? {Fields: withoutKeys(editing.fields, staffKeys)} : {})});
             setEditing(null);
             await refresh();
             toast.success(t("manage.teams.updated"));
@@ -226,6 +238,9 @@ export default function ManageTeamsPage() {
             : <span className="ib-tag ib-tag--sm" key={tag.id}>{tag.name}</span>)}{tags.length > MEMBER_TAGS && <span className="ib-tag ib-tag--sm">{t("manage.teams.moreMembers", {count: tags.length - MEMBER_TAGS})}</span>}</div>{team.PendingInvitations.length > 0 && <small>{t("manage.teams.pendingCount", {count: team.PendingInvitations.length})}</small>}</div></td>;
         case "@status": return <td><span className={`ib-tag ${admissionTag(team)}`}>{admissionText(team)}</span></td>;
         case "@created": return <td className="event-manage-table__nowrap event-manage-table__dim">{t("manage.participants.dateUtc", {date: sentAt.format(new Date(team.CreatedAt))})}</td>;
+        case "@missing": return <td>{team.FieldsMissing > 0
+            ? <EventTooltip content={tPlural("manage.fields.missing.tooltip", team.FieldsMissing)}>{id => <span className="ib-tag ib-tag--warn" aria-describedby={id}>{team.FieldsMissing}</span>}</EventTooltip>
+            : <span className="event-manage-table__dim">—</span>}</td>;
         default: return <td className="event-manage-table__answer"><AnswerValue eventID={eventID} value={team.ExtraFields[column.key]} /></td>;
         }
     }
@@ -273,7 +288,7 @@ export default function ManageTeamsPage() {
                 return <div className="event-manage-team-details">
                     <div className="event-manage-teams__head"><div><p>{t("manage.teams.summary", {count: team.MemberCount, captain: captainName(team)})}{team.Hidden ? t("manage.teams.hiddenSuffix") : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? t("common.cancel") : t("manage.teams.edit")}</button></div>}</div>
                     {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={busy} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
-                    {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={busy} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={busy} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={busy || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={fieldsQuery.data} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={busy} /></div>}</div>}
+                    {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={busy} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={busy} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={busy || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={{...fieldsQuery.data, Document: {blocks: fieldsQuery.data.Document.blocks.filter(block => !(isFormField(block) && block.staffOnly))}}} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={busy} /></div>}</div>}
                     <div className="event-manage-teams__members"><h3>{t("manage.teams.results")}</h3>
                         {profile.isPending ? <EventLoading compact label={t("manage.teams.resultsLoading")} /> : profile.isError ? <EventLoadError compact message={t("manage.teams.resultsFailed")} error={profile.error} onRetry={() => void profile.refetch()} />
                             : !profile.data.Results ? <EmptyState compact message={t("manage.teams.resultsNone")} />
@@ -285,6 +300,7 @@ export default function ManageTeamsPage() {
                                 </dl>{profile.data.Results.Solves.length === 0 ? <EmptyState compact message={t("manage.teams.noSolves")} /> : profile.data.Results.Solves.map(solve => <div className="event-manage-teams__member" key={solve.ChallengeID}><span><strong>{solve.ChallengeName}</strong>{solve.FirstBlood && <small>{t("manage.teams.firstBlood")}</small>}<small>{t("manage.participants.dateUtc", {date: sentAt.format(new Date(solve.SolvedAt))})}</small></span><span className="ib-tag ib-tag--sm">{t("manage.teams.solvePoints", {points: solve.Points})}</span></div>)}</>}
                     </div>
                     {fields.length > 0 && <div className="event-manage-teams__members"><div className="event-manage-teams__members-head"><h3>{t("manage.fields.title")}</h3><button className="ib-btn ib-btn--sm" type="button" onClick={() => setAnswersTeam(team)}>{t("manage.teams.allAnswers")}</button></div>{fieldColumns.length > 0 && <dl className="event-manage-teams__fields">{fieldColumns.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{formatAnswer(team.ExtraFields[column.key])}</dd></div>)}</dl>}</div>}
+                    {fieldsQuery.data && hasStaffFields(fieldsQuery.data) && <StaffFieldsPanel key={team.ID} eventID={eventID} scope="team" subjectID={team.ID} form={fieldsQuery.data} answers={team.ExtraFields} canManage={canManage} onSaved={refresh} />}
                     <div className="event-manage-teams__members"><h3>{t("manage.teams.roster")}</h3>{team.Members.length === 0 ? <EmptyState compact message={t("manage.teams.noMembers")} /> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: person.Pseudonym})}</small>}{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "captain", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.makeCaptain")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "remove", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.removeMember")}</button></div>}</div>)}</div>
                     {team.PendingInvitations.length > 0 && <div className="event-manage-teams__members"><h3>{t("manage.teams.invited")}</h3>{team.PendingInvitations.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{person.Email || person.Name || person.UserID.slice(0, 8)}</strong>{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}<small>{t("manage.teams.pendingConfirmation")}</small><small>{person.InvitationSentAt ? t("manage.participants.sentAt", {date: sentAt.format(new Date(person.InvitationSentAt))}) : t("manage.participants.notSent")}</small></span></div>)}</div>}
                     {canManage && <div className="event-manage-teams__assign"><div className="event-manage-field"><span>{t("manage.teams.addMember")}</span><EventSelect ariaLabel={t("manage.teams.addMemberTo", {name: team.Name})} value={choice} placeholder={t("manage.teams.chooseParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={value => setMemberChoices(current => ({...current, [team.ID]: value}))} disabled={busy || available.length === 0} /></div><button className="ib-btn" type="button" disabled={busy || !choice} onClick={() => void changeMember(team, choice, "add")}>{t("common.add")}</button></div>}
