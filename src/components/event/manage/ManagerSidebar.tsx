@@ -38,7 +38,7 @@ import {t} from "@/i18n/t";
 type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean};
 type Group = {id: string; label: string; items: Item[]};
 
-// Пауза: повернути до навігації, коли з'явиться механізм призупинення події.
+// Пауза: повернути до навігації, коли з'явиться механізм призупинення заходу.
 const groups: Group[] = [
     {id: "event", label: t("manage.nav.group.event"), items: [
         {href: "/manage/settings", label: t("manage.nav.settings"), icon: Settings2},

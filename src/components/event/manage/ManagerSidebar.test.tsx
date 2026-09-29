@@ -22,8 +22,8 @@ function renderSidebar(participation: 0 | 1, infrastructure = false) {
 describe("participation navigation", () => {
     it("places participation and challenges immediately after event settings", () => {
         renderSidebar(0);
-        const headings = screen.getAllByRole("button", {name: /^(Подія|Участь|Завдання|Сторінки)$/});
-        expect(headings.map(heading => heading.textContent?.trim())).toEqual(["Подія", "Участь", "Завдання", "Сторінки"]);
+        const headings = screen.getAllByRole("button", {name: /^(Захід|Участь|Завдання|Сторінки)$/});
+        expect(headings.map(heading => heading.textContent?.trim())).toEqual(["Захід", "Участь", "Завдання", "Сторінки"]);
     });
 
     it("keeps requests inside participants and hides teams for an individual event", () => {

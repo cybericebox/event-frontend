@@ -102,7 +102,7 @@ export const getPublishedExercisePreview = (eventID: string, versionID: string, 
 export const attachEventExercise = (eventID: string, versionID: string, variantMode: 0 | 1, fixedVariantIndex: number | null) => request(eventID, "exercises", attachmentSchema, "POST", {ExerciseVersionID: versionID, VariantMode: variantMode, FixedVariantIndex: fixedVariantIndex});
 // «Оновити»: the latest published version; event settings carry over (409 1809 when a removed task has attempts).
 export const updateEventExercise = (eventID: string, attachmentID: string, versionID?: string) => request(eventID, `exercises/${attachmentID}/update`, attachmentSchema, "POST", versionID ? {ExerciseVersionID: versionID} : {});
-// «Налаштувати під подію»: the attachment switches to the event's own copy.
+// «Налаштувати під захід»: the attachment switches to the event's own copy.
 export const forkEventExercise = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/fork`, attachmentSchema, "POST");
 // «Повернути оригінал»: back to the catalog version the copy was made from.
 export const revertEventExercise = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/revert`, attachmentSchema, "POST");

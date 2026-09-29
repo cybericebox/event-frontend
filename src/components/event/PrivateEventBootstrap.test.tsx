@@ -19,6 +19,6 @@ describe("PrivateEventBootstrap", () => {
         client.setQueryData(["event-management-access", "event-1"], {CanManage: true});
         render(<QueryClientProvider client={client}><PrivateEventBootstrap><p>Готова сторінка</p></PrivateEventBootstrap></QueryClientProvider>);
         expect(screen.getByText("Готова сторінка")).toBeTruthy();
-        expect(screen.queryByRole("status", {name: "Завантажуємо попередній перегляд події…"})).toBeNull();
+        expect(screen.queryByRole("status", {name: "Завантажуємо попередній перегляд заходу…"})).toBeNull();
     });
 });

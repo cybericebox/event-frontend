@@ -24,6 +24,6 @@ describe("notification signal labels", () => {
 
     it("groups signals keeping their order", () => {
         expect(signalGroups(["participant.invitation.sent", "participant.event.finished", "custom.type"]))
-            .toEqual([{group: "Запрошення", signals: ["participant.invitation.sent"]}, {group: "Подія", signals: ["participant.event.finished"]}, {group: "Інше", signals: ["custom.type"]}]);
+            .toEqual([{group: "Запрошення", signals: ["participant.invitation.sent"]}, {group: "Захід", signals: ["participant.event.finished"]}, {group: "Інше", signals: ["custom.type"]}]);
     });
 });
