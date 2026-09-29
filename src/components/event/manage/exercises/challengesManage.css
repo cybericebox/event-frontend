@@ -96,9 +96,12 @@ button.event-sortable__main{cursor:pointer}
 .event-set-status{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border-radius:var(--ib-r-sm);color:var(--ib-dim)}
 .event-set-status.is-broken,.event-set-status.is-broken svg{color:var(--ib-danger)}
 
-/* Row actions show on hover or keyboard focus (always on touch); they keep
-   their space, so nothing jumps. */
+/* Row actions show on hover or keyboard focus (always on touch, and on an
+   expanded set); they keep their space, so nothing jumps. The status icon
+   and the chevron always show. */
 .event-sortable__actions,.event-exercise-set__head .event-row-actions{opacity:0;transition:opacity .12s ease}
 .event-sortable__row:hover .event-sortable__actions,.event-sortable__row:focus-within .event-sortable__actions,
-.event-exercise-set__head:hover .event-row-actions,.event-exercise-set__head:focus-within .event-row-actions{opacity:1}
+.event-exercise-set__head:hover .event-row-actions,.event-exercise-set__head:focus-within .event-row-actions,
+.event-exercise-set.is-open>.event-exercise-set__head .event-row-actions{opacity:1}
 @media (hover:none),(pointer:coarse){.event-sortable__actions,.event-exercise-set__head .event-row-actions{opacity:1}}
+@media (prefers-reduced-motion:reduce){.event-sortable__actions,.event-exercise-set__head .event-row-actions{transition:none}}
