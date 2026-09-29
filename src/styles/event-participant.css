@@ -1,6 +1,6 @@
 /* Participant pages (W3): local glue around the copied ds-v2 components
    (challenge-board, challenge-tile, category-rail, challenge-modal, banner, modal).
-   Only tokens; no shadows except overlays, no left-border accents, no dots. */
+   Only tokens; no shadows, no left-border accents, no dots. */
 
 /* ── page frame ───────────────────────────────────────────────────────────── */
 .event-challenges,.event-participation{display:flex;flex-direction:column;min-width:0}

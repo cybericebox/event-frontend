@@ -1,7 +1,7 @@
 /* Event inbox uses the same notification layout as the platform administration UI. */
 .event-notifications__trigger{position:relative;flex:none}
 .event-notifications__count{position:absolute;top:-3px;right:-5px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 3px;border-radius:var(--ib-r-pill);background:var(--ib-action);color:var(--ib-on-action);font-size:10px;font-weight:var(--ib-w-semibold);line-height:1}
-.event-notifications__panel{z-index:80;display:flex;flex-direction:column;width:min(32rem,calc(100vw - 24px));max-height:min(38rem,calc(100dvh - 5rem));overflow:hidden;padding:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink);box-shadow:var(--ib-shadow-overlay)}
+.event-notifications__panel{z-index:80;display:flex;flex-direction:column;width:min(32rem,calc(100vw - 24px));max-height:min(38rem,calc(100dvh - 5rem));overflow:hidden;padding:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink)}
 .event-notifications__head{display:flex;flex:none;align-items:center;justify-content:space-between;gap:var(--ib-2);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
 .event-notifications__head h2{margin:0;color:var(--ib-dim);line-height:1}
 .event-notifications__sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
@@ -35,7 +35,7 @@
 .event-notification-card__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);margin-top:var(--ib-3)}
 .event-notification-card__actions a,.event-notification-card__actions button{padding:0;font-size:var(--ib-fs-14);text-decoration:none}
 .event-notifications__popins{position:fixed;top:64px;right:16px;z-index:90;display:grid;gap:var(--ib-3);max-height:calc(100dvh - 80px);overflow-y:auto}
-.event-notification-popin{position:relative;width:min(360px,calc(100vw - 32px));padding:var(--ib-4) var(--ib-4) var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink);box-shadow:var(--ib-shadow-overlay)}
+.event-notification-popin{position:relative;width:min(360px,calc(100vw - 32px));padding:var(--ib-4) var(--ib-4) var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink)}
 .event-notification-popin__content{padding-right:var(--ib-5)}
 .event-notification-popin__close{position:absolute;top:var(--ib-2);right:var(--ib-2);display:grid;place-items:center;width:25px;height:25px;padding:0;border:0;border-radius:var(--ib-r);background:transparent;color:var(--ib-dim);cursor:pointer}
 .event-notification-popin__close:hover{background:var(--ib-soft);color:var(--ib-ink)}

@@ -120,7 +120,7 @@ export default async function RootLayout({
             {/* eslint-disable-next-line @next/next/no-css-tags -- The development edge caches stable Next CSS chunk URLs. */}
             <link rel="stylesheet" href="/event-manage-access-v5.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-action-toast-v1.css" />
+            <link rel="stylesheet" href="/event-action-toast-v2.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS avoids stale constructor styles behind the development edge. */}
             <link rel="stylesheet" href="/event-page-builder-v50.css" />
         </head>

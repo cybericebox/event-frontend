@@ -3,13 +3,13 @@
    <span class="ib-tip"><button class="ib-icon-btn" aria-label="Повноекранний режим" aria-describedby="tp1">…</button>
      <span class="ib-tip__bubble" role="tooltip" id="tp1">На весь екран <kbd class="ib-kbd">F</kbd></span></span>
    Shows on :hover and :focus-visible within, after 300 ms (hover). Placement: default top, --bottom, --end (right-aligned).
-   Overlay: raised fill, hairline, radius 6, --ib-shadow-overlay (allowed for overlays). .is-open forces it visible (previews).
+   Overlay: raised fill, hairline, radius 6, no shadow. .is-open forces it visible (previews).
    Esc dismisses (WCAG 1.4.13) via tooltip.js → .is-dismissed until pointer leaves / focus moves. */
 
 .ib-tip{position:relative;display:inline-flex}
 .ib-tip__bubble{position:absolute;z-index:70;left:50%;bottom:calc(100% + 6px);transform:translateX(calc(-50% + var(--ib-tip-shift,0px)));
   display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:240px;padding:5px 8px;
-  background:var(--ib-raised);color:var(--ib-ink);border:1px solid var(--ib-line);border-radius:var(--ib-r);box-shadow:var(--ib-shadow-overlay);
+  background:var(--ib-raised);color:var(--ib-ink);border:1px solid var(--ib-line);border-radius:var(--ib-r);
   font:var(--ib-w-medium) var(--ib-fs-12)/var(--ib-lh-ui) var(--ib-font);white-space:normal;text-align:left;pointer-events:none;
   opacity:0;visibility:hidden;transition:opacity var(--ib-dur-fast) var(--ib-ease),visibility 0s linear var(--ib-dur-fast)}
 .ib-tip__bubble .ib-kbd{height:16px;min-width:16px;font-size:10px}

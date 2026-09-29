@@ -1,5 +1,5 @@
 /* Modal — generic dialog: header (title + one line + close), body (any form), footer (actions right).
-   Overlay → the one allowed shadow. Sizes: --sm 480px (short forms: «Запросити користувачів»), default 640px (--ib-modal-w).
+   Overlay: raised fill + hairline, no shadow. Sizes: --sm 480px (short forms: «Запросити користувачів»), default 640px (--ib-modal-w).
    Behaviour (modal.js, IB.Modal): open(el) / close(el); focus goes to [data-ib-modal-focus] or the first field,
    Tab is trapped, Esc and a click on the backdrop close, focus returns to the opener. [data-ib-modal-close] closes.
    IB.ConfirmDialog is built on the same base (IB.Modal.trap).
@@ -22,7 +22,7 @@
 
 .ib-modal{width:var(--ib-modal-w);max-width:100%;max-height:100%;display:flex;flex-direction:column;
   background:var(--ib-raised);color:var(--ib-body);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);
-  box-shadow:var(--ib-shadow-overlay);animation:ib-modal-in var(--ib-dur-move) var(--ib-ease)}
+  animation:ib-modal-in var(--ib-dur-move) var(--ib-ease)}
 .ib-modal--sm{width:480px}
 .ib-modal-backdrop--static .ib-modal{animation:none}
 @keyframes ib-modal-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}

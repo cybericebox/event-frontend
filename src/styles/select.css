@@ -1,7 +1,7 @@
 /* Select
    1) Native: <span class="ib-select"><select class="ib-input">…</select><svg chevron/></span>  (--sm for 32)
    2) Custom listbox look: button.ib-select__trigger[aria-haspopup=listbox] + ul.ib-listbox[role=listbox] > li.ib-listbox__opt[role=option]
-      Selected option: [aria-selected=true] (check icon), keyboard-highlighted: .is-active. Overlay shadow allowed. */
+      Selected option: [aria-selected=true] (check icon), keyboard-highlighted: .is-active. Overlay: hairline, no shadow. */
 
 .ib-select{position:relative;display:inline-flex;width:100%}
 .ib-select>select.ib-input{appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer}
@@ -20,7 +20,7 @@
 .ib-select__trigger[aria-expanded="true"]{outline:2px solid var(--ib-action);outline-offset:-1px;border-color:var(--ib-action)}
 
 .ib-listbox{list-style:none;margin:var(--ib-1) 0 0;padding:var(--ib-1);min-width:200px;max-height:264px;overflow:auto;
-  background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);box-shadow:var(--ib-shadow-overlay)}
+  background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
 .ib-listbox__opt{display:flex;align-items:center;gap:var(--ib-2);height:var(--ib-control-h);padding:0 var(--ib-2) 0 10px;border-radius:var(--ib-r-sm);
   color:var(--ib-ink);font-size:var(--ib-fs-14);cursor:pointer}
 .ib-listbox__opt>svg{width:16px;height:16px;margin-left:auto;flex:none;visibility:hidden;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

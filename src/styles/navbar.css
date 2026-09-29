@@ -44,13 +44,12 @@
 .ib-navbar__more-btn .ib-icon{width:14px;height:14px;transition:transform var(--ib-dur) var(--ib-ease)}
 .ib-navbar__more-btn[aria-expanded="true"] .ib-icon{transform:rotate(180deg)}
 
-/* «Ще ▾» dropdown (overlay → shadow allowed) */
+/* «Ще ▾» dropdown (overlay: raised fill + hairline, no shadow) */
 .ib-navbar__more{position:relative;display:flex;flex:none}
 .ib-navbar__menu{
   position:absolute;top:calc(100% + var(--ib-1));left:0;z-index:60;
   min-width:200px;margin:0;padding:var(--ib-1);list-style:none;
   background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);
-  box-shadow:var(--ib-shadow-overlay);
 }
 .ib-navbar__menu a{
   display:flex;align-items:center;min-height:var(--ib-control-h);padding:0 var(--ib-3);

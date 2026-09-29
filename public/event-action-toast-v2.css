@@ -1,4 +1,4 @@
-.event-action-toast{display:flex;align-items:flex-start;gap:12px;width:min(384px,calc(100vw - 32px));padding:12px 16px;border:1px solid;border-radius:8px;box-shadow:0 10px 15px -3px rgb(0 0 0 / .1),0 4px 6px -4px rgb(0 0 0 / .1);background:var(--ib-surface);color:var(--ib-body);font:400 14px/20px var(--ib-font);pointer-events:auto;transition:opacity 150ms ease}
+.event-action-toast{display:flex;align-items:flex-start;gap:12px;width:min(384px,calc(100vw - 32px));padding:12px 16px;border:1px solid;border-radius:8px;background:var(--ib-surface);color:var(--ib-body);font:400 14px/20px var(--ib-font);pointer-events:auto;transition:opacity 150ms ease}
 .event-action-toast[data-visible="false"]{opacity:0}
 .event-action-toast[data-tone="success"]{border-color:var(--ib-ok);background:var(--ib-ok-bg)}
 .event-action-toast[data-tone="warning"]{border-color:var(--ib-warn);background:var(--ib-warn-bg)}
