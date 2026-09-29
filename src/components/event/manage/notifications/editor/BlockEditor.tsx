@@ -180,6 +180,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
             {block.type === "rich_text" && (
               <RichTextEditor
                 showVariableNames
+                className="[&_[data-notif-variable]]:border-amber-300 [&_[data-notif-variable]]:bg-amber-100 [&_[data-notif-variable]]:text-amber-950 dark:[&_[data-notif-variable]]:border-amber-700 dark:[&_[data-notif-variable]]:bg-amber-900/40 dark:[&_[data-notif-variable]]:text-amber-200"
                 disabled={disabled}
                 value={block.content}
                 onChange={(state) => updateBlock(i, { ...block, content: state as typeof block.content })}

@@ -211,8 +211,8 @@ export function VariableRichText({
         data-placeholder={placeholder}
         className={cn(
           "variable-richtext min-h-[2rem] px-3 py-1.5 text-sm rounded-md border border-(--ib-control) bg-(--ib-surface) text-(--ib-ink)",
-          "outline-none focus-visible:ring-2 focus-visible:ring-(--ib-action) focus-visible:",
-          "[&_.var-pill]:mx-0.5 [&_.var-pill]:rounded [&_.var-pill]:border [&_.var-pill]:border-(--ib-line) [&_.var-pill]:bg-(--ib-soft) [&_.var-pill]:px-1 [&_.var-pill]:text-(--ib-action) dark:[&_.var-pill]:border-(--ib-line) dark:[&_.var-pill]:bg-amber-900/40 dark:[&_.var-pill]:text-(--ib-action)",
+          "outline-none focus-visible:ring-2 focus-visible:ring-(--ib-action)",
+          "[&_.var-pill]:mx-0.5 [&_.var-pill]:rounded [&_.var-pill]:border [&_.var-pill]:border-amber-300 [&_.var-pill]:bg-amber-100 [&_.var-pill]:px-1 [&_.var-pill]:text-amber-950 dark:[&_.var-pill]:border-amber-700 dark:[&_.var-pill]:bg-amber-900/40 dark:[&_.var-pill]:text-amber-200",
           "[&_.var-pill-invalid]:border-(--ib-danger) [&_.var-pill-invalid]:bg-(--ib-danger-bg) [&_.var-pill-invalid]:text-(--ib-danger) [&_.var-pill-invalid]:underline [&_.var-pill-invalid]:decoration-wavy",
           "[&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-(--ib-dim) [&:empty]:before:pointer-events-none",
           variables.length > 0 && "pr-11",
