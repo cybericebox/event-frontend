@@ -40,24 +40,29 @@ describe("answer options editor", () => {
 });
 
 describe("display condition editor", () => {
-    it("allows «За умовою» only when an earlier single-answer question exists", () => {
+    it("explains why a condition is unavailable without an earlier single-answer question", () => {
         render(<Harness initial={[field("a", "text"), field("b", "text")]} index={0} editor="condition" />);
-        expect((screen.getByRole("button", {name: "За умовою"}) as HTMLButtonElement).disabled).toBe(true);
-        expect(screen.getByText("Умова можлива, коли вище є питання з однією відповіддю.")).toBeTruthy();
-    });
-
-    it("switches between «Завжди» and «За умовою»", () => {
-        render(<Harness initial={[field("a", "checkbox"), field("b", "text")]} index={1} editor="condition" />);
-        expect(screen.getByRole("button", {name: "Завжди"}).getAttribute("aria-pressed")).toBe("true");
-        fireEvent.click(screen.getByRole("button", {name: "За умовою"}));
-        expect((latest[1] as FormField).condition).toEqual({fieldKey: "a", operator: "equals", value: true});
-        expect(screen.getByRole("button", {name: "Попереднє питання для умови 2"})).toBeTruthy();
         fireEvent.click(screen.getByRole("button", {name: "Завжди"}));
-        expect((latest[1] as FormField).condition).toBeUndefined();
+        expect((screen.getByRole("button", {name: "Додати умову"}) as HTMLButtonElement).disabled).toBe(true);
+        expect(screen.getByText("Умову можна додати, коли вище є питання з однією відповіддю.")).toBeTruthy();
     });
 
-    it("stores a typed number value for a number source", () => {
-        render(<Harness initial={[field("a", "number"), field("b", "text", {condition: {fieldKey: "a", operator: "equals", value: 0}})]} index={1} editor="condition" />);
+    it("collapses to a one-line summary and expands to edit the rule", () => {
+        render(<Harness initial={[field("a", "checkbox", {label: "Студент"}), field("b", "text")]} index={1} editor="condition" />);
+        const toggle = screen.getByRole("button", {name: "Завжди"});
+        expect(toggle.getAttribute("aria-expanded")).toBe("false");
+        fireEvent.click(toggle);
+        fireEvent.click(screen.getByRole("button", {name: "Додати умову"}));
+        expect((latest[1] as FormField).condition).toEqual({fieldKey: "a", operator: "equals", value: true});
+        expect(screen.getByRole("button", {name: "Якщо «Студент» = «Так»"}).getAttribute("aria-expanded")).toBe("true");
+        fireEvent.click(screen.getByRole("button", {name: "Видалити умову питання 2"}));
+        expect((latest[1] as FormField).condition).toBeUndefined();
+        expect(screen.getByRole("button", {name: "Завжди"})).toBeTruthy();
+    });
+
+    it("starts open with a summary for an existing rule and stores typed numbers", () => {
+        render(<Harness initial={[field("a", "number", {label: "Курс"}), field("b", "text", {condition: {fieldKey: "a", operator: "not_equals", value: 3}})]} index={1} editor="condition" />);
+        expect(screen.getByRole("button", {name: "Якщо «Курс» ≠ «3»"}).getAttribute("aria-expanded")).toBe("true");
         fireEvent.change(screen.getByRole("spinbutton", {name: "Значення умови 2"}), {target: {value: "5"}});
         expect((latest[1] as FormField).condition?.value).toBe(5);
     });

@@ -674,9 +674,6 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-manage-form__switch input{accent-color:var(--ib-action)}
 .event-manage-form__condition{display:grid;gap:var(--ib-2);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
 .event-manage-form__condition-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ib-2)}
-.event-manage-form__condition>.ib-seg{justify-self:start}
-.event-manage-form__condition>small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
-.event-manage-form__condition-label{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
 .event-manage-form__switches{display:flex;flex-wrap:wrap;column-gap:var(--ib-5)}
 .event-form-options{display:grid;gap:var(--ib-2)}
 .event-form-options__row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--ib-2)}
