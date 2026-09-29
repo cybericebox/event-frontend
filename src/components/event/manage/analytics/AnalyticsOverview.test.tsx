@@ -1,17 +1,11 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {cleanup, render, screen, waitFor, within} from "@testing-library/react";
+import {cleanup, render, screen, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event, canManage: true})}));
-vi.mock("@/components/event/manage/exercises/ChallengeBlockers", () => ({ChallengeBlockers: () => <div data-testid="blockers" />}));
 vi.mock("echarts-for-react", () => ({default: ({option}: {option: {series: unknown[]}}) => <div data-testid="chart" data-series={option.series.length} />}));
-vi.mock("@/api/manage", async original => ({
-    ...(await original() as object),
-    getManageConfig: async () => ({Participation: 1, MaxTeamSize: 4}),
-    getManageLifecycle: async () => ({Configured: true, JoinPolicy: 0}),
-}));
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 
 import {AnalyticsOverview, feedText} from "./AnalyticsOverview";
@@ -68,7 +62,6 @@ describe("Огляд", () => {
         expect(within(feed).getByText("no capacity")).toBeTruthy();
         expect(screen.getByText("Автооновлення")).toBeTruthy();
         expect(calls.some(url => url.endsWith("/manage/analytics/overview"))).toBe(true);
-        expect(screen.queryByTestId("blockers")).toBeNull();
     });
 
     it("leaves out team counters for an individual event and stands without any", async () => {
@@ -90,14 +83,13 @@ describe("Огляд", () => {
         expect(within(screen.getByRole("region", {name: "Стрічка подій"})).getByText("Поки що нічого не сталося")).toBeTruthy();
     });
 
-    it("shows the readiness checklist and the registration counters before the start", async () => {
+    it("shows only the registration counters before the start, no setup checklist", async () => {
         mockApi(overview({Markers: {StartAt: future, FreezeAt: null, FinishAt: null}, Series: [], Feed: []}));
         renderOverview();
         const registration = await screen.findByRole("region", {name: "Реєстрація"});
         expect(within(registration).getByText("Очікують рішення")).toBeTruthy();
         expect(within(registration).getByText("Запрошені")).toBeTruthy();
-        expect(screen.getByTestId("blockers")).toBeTruthy();
-        await waitFor(() => expect(screen.getByLabelText("Етапи підготовки")).toBeTruthy());
+        expect(screen.queryByLabelText("Етапи підготовки")).toBeNull();
         expect(screen.queryByTestId("chart")).toBeNull();
     });
 

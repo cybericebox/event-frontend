@@ -11,6 +11,7 @@ import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavigation";
 import {OutageShell} from "../OutageShell";
 import {useAnalyticsAccess} from "./analytics/useAnalyticsAccess";
+import {SetupChip} from "./setup/SetupChip";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {managerLocationTitle} from "./managerNavigation";
 import Link from "next/link";
@@ -73,7 +74,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
                 <header className="ib-topbar">
                     <EventTooltip content={t("manage.shell.openMenu")} silent>{() => <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>}</EventTooltip>
                     <ol className="ib-topbar__crumbs"><li aria-current="page">{managerLocationTitle(pathname, pages.data ?? [])}</li></ol>
-                    <div className="ib-topbar__actions">{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
+                    <div className="ib-topbar__actions"><SetupChip eventID={event.EventID} />{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
                 <main className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
             </div>

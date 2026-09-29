@@ -1,15 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import {keepPreviousData, useQuery} from "@tanstack/react-query";
-import {getManageConfig, getManageLifecycle} from "@/api/manage";
 import {getAnalyticsOverview, type AnalyticsFeedItem, type AnalyticsOverview as Overview} from "@/api/manageAnalytics";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
-import {ChallengeBlockers} from "@/components/event/manage/exercises/ChallengeBlockers";
 import {LiveStatus} from "@/components/event/manage/LiveStatus";
 import {useManager} from "@/components/event/manage/ManagerShell";
-import {ReadinessSteps} from "@/components/event/manage/ReadinessSteps";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {t} from "@/i18n/t";
 import {activityChartOption} from "./activityChart";
@@ -82,7 +78,7 @@ function Feed({overview, state, onRetry}: {overview?: Overview; state: "loading"
 
 // «Огляд» (§6.1): counters, the 5-minute activity chart with the start / freeze /
 // finish markers, and the feed of notable moments. Before the start it shows
-// the readiness checklist and the registration counters instead.
+// the registration counters instead. Setup lives in the «Підготовка заходу» wizard.
 export function AnalyticsOverview() {
     const {event} = useManager();
     const eventID = event.EventID;
@@ -97,14 +93,11 @@ export function AnalyticsOverview() {
         // Changing the period keeps the page, and its filter, in place.
         placeholderData: keepPreviousData,
     });
-    const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchInterval: false, refetchOnWindowFocus: false});
-    const lifecycle = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchInterval: false, refetchOnWindowFocus: false});
     const data = overview.data;
     // "Now" is the moment of the last answer; the poll moves it every few seconds.
     const started = !!data && Date.parse(data.Markers.StartAt) <= overview.dataUpdatedAt;
     const chartState: ChartState = overview.isPending ? "loading" : !data ? "error" : seriesHasActivity(data.Series) ? "ready" : "empty";
     const blockState = overview.isPending ? "loading" : !data ? "error" : "ready";
-    const settled = config.data && lifecycle.data;
 
     const status = <LiveStatus freshness={data?.Final ? {kind: "manual", onRefresh: () => void overview.refetch(), refreshing: overview.isFetching} : {kind: "polling", seconds: OVERVIEW_POLL_SECONDS, failing: overview.isError}} updatedAt={overview.dataUpdatedAt} />;
     const actions = <>{status}<AnalyticsExportButton eventID={eventID} section="overview" period={filter.period} disabled={!data} /></>;
@@ -118,10 +111,7 @@ export function AnalyticsOverview() {
     </AnalyticsPage>;
 
     if (!started) return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.descriptionBefore")} actions={actions}>
-        <ChallengeBlockers eventID={eventID} />
-        {settled && <ReadinessSteps config={config.data} lifecycle={lifecycle.data} />}
         <RegistrationStats overview={data} teamMode={teamMode} />
-        <div className="event-manage-setup__links"><Link className="ib-btn" href="/manage/settings">{t("manage.overview.linkSettings")}</Link><Link className="ib-btn" href="/manage/schedule">{t("manage.overview.linkSchedule")}</Link><Link className="ib-btn ib-btn--primary" href="/manage/content/landing">{t("manage.overview.linkLanding")}</Link></div>
     </AnalyticsPage>;
 
     return <AnalyticsPage title={t("manage.analytics.overview.title")} description={t("manage.analytics.overview.description")} actions={actions} filter={<AnalyticsPeriodFilter period={filter} />}>
