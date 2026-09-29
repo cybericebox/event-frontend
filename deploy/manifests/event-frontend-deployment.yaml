@@ -31,6 +31,26 @@ spec:
                 configMapKeyRef:
                   name: config
                   key: DOMAIN
+            - name: NEXT_PUBLIC_API_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: API_DOMAIN
+            - name: NEXT_PUBLIC_ID_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: ID_DOMAIN
+            - name: NEXT_PUBLIC_EXERCISES_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: EXERCISES_DOMAIN
+            - name: NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: GOOGLE_ANALYTICS_ID
           ports:
             - containerPort: 3000
               protocol:  TCP
