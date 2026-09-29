@@ -1,11 +1,17 @@
 import {z} from "zod";
-import {readApiErrorCode} from "@/api/apiErrors";
+import {ApiErrorCode, readApiErrorCode} from "@/api/apiErrors";
 import {LabRuntimeSchema, type LabRuntime} from "@/api/manageLabs";
 
 const id = z.string().uuid();
 const attachmentSchema = z.object({file_id: id, name: z.string()});
-// Hints arrive with W4; the board renders them only when the API sends them.
-const hintSchema = z.object({ID: z.string(), Cost: z.number().int().default(0), Content: z.string().nullish()});
+// Content arrives only once the team unlocked the hint (moderators see every text).
+// Cost is what the team pays now, or what it paid.
+export const hintSchema = z.object({
+    ID: z.string(), Cost: z.number().int().default(0), Unlocked: z.boolean().default(false),
+    Content: z.string().nullish().transform(value => value ?? null),
+    UnlockedAt: z.string().nullish().transform(value => value ?? null),
+    UnlockedByName: z.string().nullish().transform(value => value ?? ""),
+});
 const snapshotSchema = z.object({
     name: z.string(),
     description: z.unknown().optional(),
@@ -33,6 +39,7 @@ export const challengeSchema = z.object({
     Files: z.array(fileSchema).nullish().transform(value => value ?? null),
     SolveCount: z.number().int().nullish().transform(value => value ?? null),
     Hints: z.array(hintSchema).nullish().transform(value => value ?? []),
+    HintCostTotal: z.number().int().default(0),
     // Moderators board only: the challenge is (not yet) on the participants' board.
     BoardPublished: z.boolean().optional(),
 });
@@ -42,6 +49,7 @@ export type OwnChallenge = z.infer<typeof challengeSchema>;
 export type ChallengeSubmission = z.infer<typeof submissionSchema>;
 export type ChallengeSolve = z.infer<typeof solveSchema>;
 export type ChallengeFile = {FileID: string; Name: string; Size: number};
+export type ChallengeHint = z.infer<typeof hintSchema>;
 
 export class ParticipantChallengeError extends Error {
     constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number) {
@@ -70,13 +78,19 @@ const text = (value: string) => ({root: {type: "root", children: [{type: "paragr
 type MockSeed = [string, string, string, number, OwnChallenge["Snapshot"]["difficulty"], Partial<OwnChallenge>?];
 const mockGroups: Array<[string, string, MockSeed[]]> = [
     ["1", "Web", [
-        ["101", "IceWall", "Знайдіть прапор у панелі керування крижаної фортеці.", 100, "easy", {Infrastructure: true, Files: [{FileID: mockID("1011"), Name: "icewall-src.zip", Size: 1_468_006}]}],
+        ["101", "IceWall", "Знайдіть прапор у панелі керування крижаної фортеці.", 100, "easy", {Infrastructure: true, Files: [{FileID: mockID("1011"), Name: "icewall-src.zip", Size: 1_468_006}], HintsEnabled: true, Hints: [
+            {ID: mockID("1101"), Cost: 0, Unlocked: true, Content: "Панель керування слухає не тільки на порту 80.", UnlockedAt: "2026-09-29T09:12:00Z", UnlockedByName: "Андрій Мельник"},
+            {ID: mockID("1102"), Cost: 50, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""},
+            {ID: mockID("1103"), Cost: 0, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""},
+        ]}],
         ["102", "SQL Frostbite", "Дістаньте облікові дані адміністратора.", 250, "medium", {SolvedAt: "2026-09-26T09:14:02Z", SolveCount: 7}],
         ["103", "SSTI у звіті", "Генератор звітів підставляє назву компанії в шаблон.", 300, "medium", {Infrastructure: true, ContentUpdatedAt: new Date(Date.now() - 40 * 60_000).toISOString()}],
         ["104", "Сесія без підпису", "Підробіть сесію адміністратора.", 400, "hard", {Locked: true, Prerequisites: [{EventChallengeID: mockID("102"), Name: "SQL Frostbite", Solved: true}, {EventChallengeID: mockID("103"), Name: "SSTI у звіті", Solved: false}]}],
     ]],
     ["2", "Crypto", [
-        ["201", "Glacier Cipher", "Розшифруйте повідомлення, вкарбоване у лід.", 200, "easy", {Files: [{FileID: mockID("2011"), Name: "cipher.txt", Size: 2048}]}],
+        ["201", "Glacier Cipher", "Розшифруйте повідомлення, вкарбоване у лід.", 200, "easy", {Files: [{FileID: mockID("2011"), Name: "cipher.txt", Size: 2048}], HintsEnabled: true, HintCostTotal: 40, Hints: [
+            {ID: mockID("2101"), Cost: 40, Unlocked: true, Content: "Ключ — назва станції, записана задом наперед.", UnlockedAt: "2026-09-29T10:02:00Z", UnlockedByName: "Олена Коваль"},
+        ]}],
         ["202", "RSA на морозі", "Малий показник, великий модуль.", 350, "hard", {SolvedAt: "2026-09-26T10:02:40Z", SolveCount: 3}],
     ]],
     ["3", "Pwn", [
@@ -96,6 +110,17 @@ let mockChallenges: OwnChallenge[] = mockGroups.flatMap(([group, groupName, item
 })));
 const mockFlags: Record<string, string> = {[mockID("101")]: "ICE{ice_wall_breached}", [mockID("201")]: "ICE{glacier_cipher_cracked}", [mockID("103")]: "ICE{demo}"};
 let mockAttempts = 0;
+const mockHintTexts: Record<string, string> = {
+    [mockID("1101")]: "Панель керування слухає не тільки на порту 80.",
+    [mockID("1102")]: "Заголовок X-Forwarded-For довіряють без перевірки.",
+    [mockID("1103")]: "Подивіться на robots.txt.",
+    [mockID("2101")]: "Ключ — назва станції, записана задом наперед.",
+};
+
+// Moderators see every hint text; the mock reveals them from here.
+export function mockHintText(hintID: string): string {
+    return mockHintTexts[hintID] ?? "Текст підказки";
+}
 
 export async function getOwnChallenges(eventID: string): Promise<OwnChallenge[]> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockChallenges.map(item => ({...item}));
@@ -142,6 +167,26 @@ export async function getOwnChallengeLab(eventID: string, challengeID: string): 
     const response = await fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/lab`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
     if (!response.ok) throw await failure(response);
     return z.object({Data: LabRuntimeSchema}).parse(await response.json()).Data;
+}
+
+// Idempotent per team: a repeat returns the first unlock. Cost is 0 once solved or finished.
+export async function unlockChallengeHint(eventID: string, challengeID: string, hintID: string): Promise<ChallengeHint> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
+        const challenge = mockChallenges.find(item => item.EventChallengeID === challengeID);
+        const hint = challenge?.Hints.find(item => item.ID === hintID);
+        if (!challenge) throw new ParticipantChallengeError(404, ApiErrorCode.ChallengeNotFound);
+        if (!hint) throw new ParticipantChallengeError(404, ApiErrorCode.HintNotFound);
+        if (hint.Unlocked) return hint;
+        const cost = challenge.SolvedAt ? 0 : hint.Cost;
+        const unlocked: ChallengeHint = {...hint, Cost: cost, Unlocked: true, Content: mockHintText(hintID), UnlockedAt: new Date().toISOString(), UnlockedByName: "Олена Коваль"};
+        mockChallenges = mockChallenges.map(item => item !== challenge ? item : {...item, HintCostTotal: item.HintCostTotal + cost, Hints: item.Hints.map(value => value.ID === hintID ? unlocked : value)});
+        return unlocked;
+    }
+    const response = await fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/hints/${encodeURIComponent(hintID)}/unlock`, {
+        method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
+    });
+    if (!response.ok) throw await failure(response);
+    return z.object({Data: hintSchema}).parse(await response.json()).Data;
 }
 
 export function challengeAttachmentUrl(eventID: string, challengeID: string, fileID: string): string {

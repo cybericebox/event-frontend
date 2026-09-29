@@ -71,7 +71,7 @@ export default function ManageIndex() {
                     MinTeamSize: participation === 1 ? minSize : current.MinTeamSize,
                     MaxTeams: current.MaxTeams,
                     AllowPseudonyms: current.AllowPseudonyms,
-                    ShowDifficulty: current.ShowDifficulty, ShowHints: current.ShowHints,
+                    ShowDifficulty: current.ShowDifficulty, ShowHints: current.ShowHints, HintChargeMode: current.HintChargeMode,
                 };
                 client.setQueryData(["event-management-config", eventID], await putManageConfig(eventID, input));
             }

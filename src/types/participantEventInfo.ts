@@ -22,6 +22,8 @@ export const ParticipantEventInfoSchema = z.object({
     ShowDifficulty: z.boolean().default(true),
     ShowHints: z.boolean().default(true),
     HasInfrastructureChallenges: z.boolean().default(false),
+    // How paid hints are charged: reduce the challenge reward, or the balance at unlock.
+    HintChargeMode: z.enum(["reward", "balance"]).catch("reward"),
 });
 
 export type ParticipantEventInfo = z.infer<typeof ParticipantEventInfoSchema>;

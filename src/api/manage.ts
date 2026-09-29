@@ -26,6 +26,8 @@ export const ManageConfigSchema = z.object({
     AllowPseudonyms: z.boolean().default(false),
     ShowDifficulty: z.boolean().default(true),
     ShowHints: z.boolean().default(true),
+    // reward (default): unlocked hints reduce the solve's reward; balance: charged at unlock.
+    HintChargeMode: z.enum(["reward", "balance"]).catch("reward"),
     Theme: themeSchema,
     UpdatedAt: z.string(),
 });
@@ -41,7 +43,7 @@ export function manageConfigInput(config: ManageConfig): ManageConfigInput {
         PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture,
         MaxTeamSize: config.MaxTeamSize, MinTeamSize: config.MinTeamSize, MaxTeams: config.MaxTeams,
         AllowPseudonyms: config.AllowPseudonyms,
-        ShowDifficulty: config.ShowDifficulty, ShowHints: config.ShowHints,
+        ShowDifficulty: config.ShowDifficulty, ShowHints: config.ShowHints, HintChargeMode: config.HintChargeMode,
     };
 }
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;
@@ -134,6 +136,7 @@ let mockConfig: ManageConfig = {
     AllowPseudonyms: false,
     ShowDifficulty: true,
     ShowHints: true,
+    HintChargeMode: "reward",
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
     UpdatedAt: "2026-09-26T00:00:00Z",
 };

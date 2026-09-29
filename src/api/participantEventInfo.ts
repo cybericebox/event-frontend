@@ -16,7 +16,7 @@ export async function getParticipantEventInfo(): Promise<ParticipantEventInfo> {
             CanViewParticipants: false,
             Participation: 1, RealName: "Олена Коваль", Pseudonym: null, DisplayName: "Олена Коваль",
             AllowPseudonyms: true, PseudonymEditable: false, TeamAdmitted: true, MinTeamSize: 2, MaxTeamSize: 5,
-            ShowDifficulty: true, ShowHints: true, HasInfrastructureChallenges: true,
+            ShowDifficulty: true, ShowHints: true, HasInfrastructureChallenges: true, HintChargeMode: "reward",
         });
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
