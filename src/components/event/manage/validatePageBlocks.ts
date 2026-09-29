@@ -2,6 +2,7 @@ import type {ContentBlock, ContentDocument} from "../../../types/eventContent";
 import {visibilityOperators, type ContentVariableDefinition} from "../content/variableCatalog";
 import {validDatePattern} from "../content/dateDisplay";
 import {richTextHasContent, richTextVariableNames} from "../content/richTextState";
+import {anchorError} from "./blockAnchor";
 
 const tokenPattern = /\{\{([a-z][a-zA-Z0-9.]*)\}\}/g;
 
@@ -16,6 +17,8 @@ export function blockValidationField(error: string | undefined, block: ContentBl
         const field = Object.entries(block.dateDisplays ?? {}).find(([, formats]) => Object.values(formats).some(display => display.format === "custom" && !validDatePattern(display.pattern ?? "")))?.[0];
         return field ? `dateDisplays:${field}` : null;
     }
+    if (message.startsWith("якір:")) return "anchor";
+    if (message.startsWith("партнери:")) return "groups";
     if (message === "заповніть назву.") return "label";
     if (message === "заповніть текст.") return "richText";
     if (message === "вкажіть назву героя.") return "title";
@@ -70,12 +73,28 @@ export function validateLanding(document: ContentDocument, catalog: ContentVaria
     for (const [index, block] of document.blocks.entries()) {
         if (!block.id.trim() || ids.has(block.id)) return `Блок ${index + 1}: некоректний або повторний ідентифікатор.`;
         ids.add(block.id);
+        // A repeated anchor is reported at its later block.
+        const anchorProblem = anchorError(block.anchor ?? "", [...document.blocks.filter(other => other.id !== block.id).map(other => other.id), ...document.blocks.slice(0, index).map(other => other.anchor ?? "")]);
+        if (anchorProblem) return `Блок ${index + 1}: якір: ${anchorProblem.replace(/^./, first => first.toLocaleLowerCase("uk"))}`;
+        if (block.type === "partners") {
+            const groups = block.groups ?? [];
+            if (!groups.length || groups.length > 10) return `Блок ${index + 1}: партнери: додайте від однієї до десяти груп.`;
+            for (const group of groups) {
+                if (!group.items.length || group.items.length > 24) return `Блок ${index + 1}: партнери: додайте логотип у кожну групу (до 24) або видаліть порожню.`;
+                if ([group.title ?? "", ...group.items.flatMap(logo => [logo.name, logo.href ?? ""])].some(text => /\{\{/.test(text))) return `Блок ${index + 1}: партнери: змінні в назвах і посиланнях не підтримуються.`;
+                for (const logo of group.items) {
+                    if (!logo.name.trim()) return `Блок ${index + 1}: партнери: вкажіть назву кожного партнера.`;
+                    if (!logo.imageURL.trim()) return `Блок ${index + 1}: партнери: прикріпіть файл логотипа.`;
+                    if (logo.href && !validHref(logo.href)) return `Блок ${index + 1}: партнери: посилання має бути внутрішнім або HTTPS.`;
+                }
+            }
+        }
         const text = block.type === "section" ? block.label ?? "" : "";
         if (block.type === "section" && !text.trim()) return `Блок ${index + 1}: заповніть назву.`;
         if (block.type === "text" && !richTextHasContent(block.richText)) return `Блок ${index + 1}: заповніть текст.`;
         if (block.type === "section" && block.variant && !["left", "center", "right", "justify"].includes(block.variant)) return `Блок ${index + 1}: невідоме вирівнювання заголовка.`;
         if (block.type === "text" && block.variant && !["narrow", "wide"].includes(block.variant)) return `Блок ${index + 1}: невідома ширина тексту.`;
-        if (block.type === "text" && block.layout && !["left", "center", "right", "justify"].includes(block.layout)) return `Блок ${index + 1}: невідоме вирівнювання тексту.`;
+        if (block.type === "text" && block.layout) return `Блок ${index + 1}: вирівнювання задається в самому тексті.`;
         if (block.type === "timeline" && block.variant && !["grid", "list"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка розкладу.`;
         if (block.type === "banner" && block.variant && !["edge", "frame"].includes(block.variant)) return `Блок ${index + 1}: невідома розкладка банера.`;
         if (block.type === "banner" && block.layout && !["left", "center", "right"].includes(block.layout)) return `Блок ${index + 1}: невідоме розташування підпису банера.`;

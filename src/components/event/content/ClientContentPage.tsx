@@ -29,11 +29,13 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
         queryFn: async () => {
             const visible = await getVisiblePage(eventID!, slug);
             if (visible) return visible;
-            // An unpublished page has no public response. Manager access is
-            // checked again by the API before its document can be returned.
+            // A manager-only page has no public response. Manager access is
+            // checked again by the API; the site shows only the published
+            // version at its published address, never a draft.
             const [managed, content] = await Promise.all([
                 getManagePage(eventID!, slug), getManageContent(eventID!),
             ]);
+            if (!managed.PublishedAt || managed.Slug !== slug) throw new ManageApiError(404);
             return {Page: managed, Variables: content.Variables};
         },
         enabled: !!eventID,

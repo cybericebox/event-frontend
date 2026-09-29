@@ -2,7 +2,8 @@
 
 import {useEffect, useId, useRef, useState, type ChangeEvent} from "react";
 import * as Popover from "@radix-ui/react-popover";
-import {ArrowDown, ArrowUp, Braces, GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react";
+import Image from "next/image";
+import {ArrowDown, ArrowUp, Braces, Copy, GripVertical, ImagePlus, Plus, Trash2, Wand2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
 import {emptyRichText, richTextPlainText, type ContentRichText} from "@/components/event/content/richTextState";
 import {initialVisibilityValue, insertableContentVariable, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
@@ -14,7 +15,8 @@ import {uploadManageBannerImage} from "@/api/manage";
 import {FieldLabel} from "./FieldLabel";
 import {EventRichTextField} from "./EventRichTextField";
 import {blockValidationField} from "./validatePageBlocks";
-import {replaceVariables} from "@/components/event/content/ContentBlocks";
+import {contentImageURL, replaceVariables} from "@/components/event/content/ContentBlocks";
+import {anchorError, anchorFromText, maxAnchorLength} from "./blockAnchor";
 import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {useEventLinkOptions} from "./useEventLinkOptions";
 import {DateVariableFormatControls} from "./DateVariableFormatControls";
@@ -206,12 +208,14 @@ function EditorLinkField({eventID, label, value, placeholder, required, help, er
     </div>;
 }
 
-export function PageBlockEditor({eventID, coverImage, block, index, count, values, catalog, canEdit, selected = false, error, onSelect, onUpdate, onMove, onReorder, onDelete}: {
+export function PageBlockEditor({eventID, coverImage, block, index, count, anchorsInUse = [], values, catalog, canEdit, selected = false, error, onSelect, onUpdate, onMove, onReorder, onDuplicate, onDelete}: {
     eventID: string;
     coverImage: string;
     block: ContentBlock;
     index: number;
     count: number;
+    // Other blocks' ids and anchors: an anchor must differ from all of them.
+    anchorsInUse?: string[];
     values: Record<string, ContentValue>;
     catalog: ContentVariableDefinition[];
     canEdit: boolean;
@@ -221,6 +225,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
     onUpdate: (value: ContentBlock | ((current: ContentBlock) => ContentBlock)) => void;
     onMove: (direction: -1 | 1) => void;
     onReorder: (sourceID: string, targetID: string) => void;
+    onDuplicate?: () => void;
     onDelete: () => void;
 }) {
     const pointerID = useRef<number | null>(null);
@@ -232,6 +237,8 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
     const [uploadingImage, setUploadingImage] = useState(false);
     const [imageError, setImageError] = useState("");
     const [imageDragOver, setImageDragOver] = useState(false);
+    const [logoUpload, setLogoUpload] = useState<{group: number; error: string; busy: boolean} | null>(null);
+    const anchorProblem = anchorError(block.anchor ?? "", anchorsInUse);
     const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const errorField = error ? blockValidationField(error, block) : null;
     const errorMessage = error?.replace(/^Блок \d+: /, "").replace(/^./, first => first.toLocaleUpperCase("uk"));
@@ -476,7 +483,8 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
                 <EventTooltip content="Перетягніть блок: у списку одразу звільниться нове місце. Для клавіатури скористайтеся стрілками.">{id => <button type="button" className="event-content-editor__drag" aria-label={`Перетягнути блок ${index + 1}`} aria-describedby={id} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={clearDropTarget} onPointerCancel={clearDropTarget}><GripVertical size={16} /></button>}</EventTooltip>
                 <EventTooltip content="Перемістити вище">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} вище`} aria-describedby={id} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
                 <EventTooltip content="Перемістити нижче">{id => <button type="button" aria-label={`Перемістити блок ${index + 1} нижче`} aria-describedby={id} disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown size={16} /></button>}</EventTooltip>
-                <EventTooltip content="Видалити блок">{id => <button type="button" className="event-content-editor__danger" aria-label={`Видалити блок ${index + 1}`} aria-describedby={id} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
+                {onDuplicate && <EventTooltip content="Дублювати блок">{id => <button type="button" aria-label={`Дублювати блок ${index + 1}`} aria-describedby={id} onClick={onDuplicate}><Copy size={16} /></button>}</EventTooltip>}
+                <EventTooltip content="Видалити блок. Його можна відновити кілька секунд.">{id => <button type="button" className="event-content-editor__danger" aria-label={`Видалити блок ${index + 1}`} aria-describedby={id} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
         </div>
         {error && selected && !errorField && <p className="event-content-editor__block-error" id={`block-error-${block.id}`} role="alert">{errorMessage}</p>}
@@ -485,7 +493,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
             {block.type === "section" && <div className="event-manage-field"><FieldLabel label="Вирівнювання заголовка" required help="Вирівнює текст заголовка в межах секції: ліворуч, по центру, праворуч або по ширині." /><EventSelect ariaLabel="Вирівнювання заголовка" value={block.variant ?? "left"} options={[{value: "left", label: "Ліворуч"}, {value: "center", label: "По центру"}, {value: "right", label: "Праворуч"}, {value: "justify", label: "По ширині"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {block.type === "text" && richField("richText", "Вміст")}
             {block.type === "text" && <div className="event-manage-field"><FieldLabel label="Ширина тексту" required help="Визначає максимальну ширину вмісту.\n• Для читання — коротші рядки, зручні для довгого тексту.\n• На всю ширину — для таблиць і широкого вмісту." /><EventSelect ariaLabel="Ширина тексту" value={block.variant ?? "narrow"} options={[{value: "narrow", label: "Для читання"}, {value: "wide", label: "На всю ширину"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
-            {["hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : block.type === "banner" ? "Підпис поверх фото" : "Заголовок", block.type === "banner" || block.type === "cta" ? "Необов’язково" : "Назва блока", false, block.type === "hero", block.type === "faq" ? "Назва переліку питань.\nПоказується над поясненням і відповідями.\nПоле можна залишити порожнім." : block.type === "cta" ? "Необов’язковий заголовок над кнопками.\nМожна залишити лише кнопку реєстрації." : block.type === "countdown" ? "Заголовок поруч із відліком або над ним у центральній розкладці.\nПоле можна залишити порожнім." : undefined)}
+            {["hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "partners"].includes(block.type) && inputField("title", block.type === "hero" ? "Назва" : block.type === "banner" ? "Підпис поверх фото" : "Заголовок", block.type === "banner" || block.type === "cta" ? "Необов’язково" : "Назва блока", false, block.type === "hero", block.type === "faq" ? "Назва переліку питань.\nПоказується над поясненням і відповідями.\nПоле можна залишити порожнім." : block.type === "cta" ? "Необов’язковий заголовок над кнопками.\nМожна залишити лише кнопку реєстрації." : block.type === "countdown" ? "Заголовок поруч із відліком або над ним у центральній розкладці.\nПоле можна залишити порожнім." : undefined)}
             {block.type === "banner" && <>
                 <div className={`event-manage-field${errorField === "imageSource" ? " is-invalid" : ""}`}><FieldLabel label="Зображення банера" required help="Джерело зображення для цього блока.\n• Обкладинка події — повторно використовує файл із розділу «Загальне».\n• Окреме зображення — власний файл лише для цього банера.\nЗміна банера не змінює обкладинку події." /><EventSelect ariaLabel="Джерело зображення банера" value={block.imageSource ?? "preview"} options={[{value: "preview", label: coverImage ? "Обкладинка події" : "Обкладинка події (не завантажена)", disabled: !coverImage}, {value: "custom", label: "Окреме зображення"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, imageSource: value})} />{errorField === "imageSource" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>
                 {block.imageSource === "custom" && <div className={`event-manage-field${errorField === "imageURL" ? " is-invalid" : ""}`}><FieldLabel label="Окреме зображення" required help="PNG, JPEG, WebP або GIF до 5 МБ. Перетягніть файл у поле або виберіть з пристрою. Зображення показується лише в цьому банері." /><label className={`event-brand-drop event-content-editor__upload${imageDragOver ? " is-over" : ""}`} onDragOver={event => {event.preventDefault(); setImageDragOver(true);}} onDragLeave={() => setImageDragOver(false)} onDrop={event => {event.preventDefault(); setImageDragOver(false); if (canEdit && !uploadingImage) void uploadBanner(event.dataTransfer.files[0]);}}><ImagePlus size={22} /><span className="event-brand-drop__action"><strong>{uploadingImage ? "Завантажуємо…" : block.imageURL ? "Замінити зображення" : "Прикріпити зображення"}</strong><small>або перетягніть сюди</small></span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={!canEdit || uploadingImage} onChange={event => void uploadBanner(event.target.files?.[0])} /></label>{block.imageURL && <p className="event-content-editor__hint">Окреме зображення прикріплено.</p>}{errorField === "imageURL" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}{imageError && <p className="event-manage-validation" role="alert">{imageError}</p>}</div>}
@@ -544,10 +552,55 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, value
                 <div className="event-manage-field"><FieldLabel label="Оформлення" required help="Без рамки — секція йде безперервно зі сторінкою. У рамці — відлік виділений усередині секції, як у попередньому вигляді головної сторінки." /><EventSelect ariaLabel="Оформлення окремого відліку" value={block.surface ?? "plain"} options={[{value: "plain", label: "Без рамки"}, {value: "frame", label: "У рамці"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, surface: value})} /></div>
                 {showFromControls()}
             </>}
+            {block.type === "partners" && <>
+                {inputField("sub", "Пояснення", "Необов’язково")}
+                {inputField("text", "Текст про організатора", "Необов’язково", true, false, "Абзац над логотипами.\nНаприклад, хто проводить подію і хто допомагає.")}
+                {(block.groups ?? []).map((group, groupIndex) => {
+                    const updateGroup = (update: (current: typeof group) => typeof group) => onUpdate(current => ({...current, groups: (current.groups ?? []).map((entry, position) => position === groupIndex ? update(entry) : entry)}));
+                    return <div className="event-content-editor__item event-content-editor__item--faq" key={groupIndex}>
+                        <div className="event-content-editor__item-head"><strong>Група {groupIndex + 1}</strong>{canEdit && <button className="event-content-editor__item-delete" type="button" aria-label={`Видалити групу ${groupIndex + 1}`} onClick={() => onUpdate(current => ({...current, groups: (current.groups ?? []).filter((_, position) => position !== groupIndex)}))}><Trash2 size={15} /></button>}</div>
+                        <div className="event-manage-field"><FieldLabel label="Назва групи" help={"Підпис над логотипами групи.\nНаприклад, «Організатори» або «Партнери».\nМожна залишити порожнім."} /><input className="event-manage-input" aria-label={`Назва групи ${groupIndex + 1}`} value={group.title ?? ""} placeholder="Партнери" maxLength={120} disabled={!canEdit} onChange={event => updateGroup(current => ({...current, title: event.target.value}))} /></div>
+                        {group.items.length > 0 && <ul className="event-partner-logos">{group.items.map((logo, logoIndex) => {
+                            const updateLogo = (update: Partial<typeof logo>) => updateGroup(current => ({...current, items: current.items.map((entry, position) => position === logoIndex ? {...entry, ...update} : entry)}));
+                            const preview = contentImageURL(logo.imageURL);
+                            return <li className="event-partner-logo" key={logoIndex}>
+                                <span className="event-partner-logo__preview">{preview ? <Image src={preview} alt="" width={96} height={32} unoptimized /> : <ImagePlus size={18} aria-hidden="true" />}</span>
+                                <input className="event-manage-input" aria-label={`Назва партнера ${logoIndex + 1} у групі ${groupIndex + 1}`} value={logo.name} placeholder="Назва партнера" maxLength={120} disabled={!canEdit} onChange={event => updateLogo({name: event.target.value})} />
+                                <input className="event-manage-input" aria-label={`Посилання партнера ${logoIndex + 1} у групі ${groupIndex + 1}`} value={logo.href ?? ""} placeholder="https://… (необов’язково)" disabled={!canEdit} onChange={event => updateLogo({href: event.target.value || undefined})} />
+                                {canEdit && <button className="event-content-editor__rule-remove" type="button" aria-label={`Видалити логотип ${logoIndex + 1} у групі ${groupIndex + 1}`} onClick={() => updateGroup(current => ({...current, items: current.items.filter((_, position) => position !== logoIndex)}))}><X size={16} /></button>}
+                            </li>;
+                        })}</ul>}
+                        {canEdit && group.items.length < 24 && <label className="event-brand-drop event-content-editor__upload"><ImagePlus size={20} /><span className="event-brand-drop__action"><strong>{logoUpload?.group === groupIndex && logoUpload.busy ? "Завантажуємо…" : "Додати логотип"}</strong><small>PNG або WebP з прозорим фоном, до 5 МБ</small></span><input type="file" accept="image/png,image/webp,image/jpeg,image/gif" disabled={logoUpload?.busy} onChange={event => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (!file) return;
+                            if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 5 * 1024 * 1024) {
+                                setLogoUpload({group: groupIndex, error: "Оберіть PNG, WebP, JPEG або GIF до 5 МБ.", busy: false});
+                                return;
+                            }
+                            setLogoUpload({group: groupIndex, error: "", busy: true});
+                            void uploadManageBannerImage(eventID, file).then(imageURL => {
+                                const name = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 120);
+                                updateGroup(current => ({...current, items: [...current.items, {name, imageURL}]}));
+                                setLogoUpload(null);
+                            }, () => setLogoUpload({group: groupIndex, error: "Не вдалося завантажити логотип. Спробуйте ще раз.", busy: false}));
+                        }} /></label>}
+                        {logoUpload?.group === groupIndex && logoUpload.error && <p className="event-manage-validation" role="alert">{logoUpload.error}</p>}
+                    </div>;
+                })}
+                {errorField === "groups" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}
+                {canEdit && (block.groups?.length ?? 0) < 10 && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate(current => ({...current, groups: [...(current.groups ?? []), {title: "", items: []}]}))}><Plus size={15} /> Додати групу</button>}
+            </>}
             {block.type === "divider" && <div className="event-content-editor__item">
                 <div className="event-manage-field"><FieldLabel label="Відступ" required help="За замовчуванням блоки йдуть без проміжків. Додайте роздільник між ними, щоб задати малий, середній або великий відступ." /><EventSelect value={block.size ?? "md"} ariaLabel="Відступ роздільника" options={[{value: "sm", label: "Малий"}, {value: "md", label: "Середній"}, {value: "lg", label: "Великий"}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, size: value})} /></div>
                 <label className="event-manage-field"><FieldLabel label="Лінія" help="Показати тонкий роздільник посередині відступу." /><input type="checkbox" checked={!!block.line} disabled={!canEdit} onChange={event => onUpdate({...block, line: event.target.checked})} /></label>
             </div>}
+            <div className={`event-manage-field${anchorProblem || errorField === "anchor" ? " is-invalid" : ""}`}>
+                <FieldLabel label="Якір" help={"Адреса блока для посилань.\n• На цій сторінці — #якір.\n• З інших сторінок — /адреса-сторінки#якір.\nЛатинські малі літери, цифри й дефіси. Має бути унікальним на сторінці."} />
+                <div className="event-anchor-field"><span aria-hidden="true">#</span><input className="event-manage-input" aria-label="Якір блока" aria-invalid={!!anchorProblem} value={block.anchor ?? ""} placeholder="наприклад, rules" maxLength={maxAnchorLength} disabled={!canEdit} onChange={event => onUpdate({...block, anchor: event.target.value.toLowerCase() || undefined})} />
+                    {canEdit && <EventTooltip content="Створити якір із заголовка блока">{id => <button className="ib-btn ib-btn--sm" type="button" aria-describedby={id} disabled={!anchorFromText(block.type === "section" ? block.label ?? "" : block.title ?? "")} onClick={() => onUpdate({...block, anchor: anchorFromText(block.type === "section" ? block.label ?? "" : block.title ?? "")})}><Wand2 size={15} /> З заголовка</button>}</EventTooltip>}</div>
+                {(anchorProblem || errorField === "anchor") && <p className="event-content-editor__field-error" role="alert">{anchorProblem ?? errorMessage}</p>}
+            </div>
             <div className="event-content-editor__tools"><FieldLabel label="Показ блока" help="Коли блок видно на сторінці.\n• Завжди — без додаткових умов.\n• За умовами — показується лише за вибраних значень події.\nЯкщо умов кілька, виконатися мають усі." /><button className="event-content-editor__rules-toggle" type="button" aria-expanded={rulesOpen} onClick={() => setRulesOpen(!rulesOpen)}>{block.visibility?.length ? `За умовами: ${block.visibility.length}` : "Завжди"}</button></div>
             {rulesOpen && <div className="event-content-editor__rules">
                 <p>Блок з’явиться, лише коли виконуються всі умови.</p>

@@ -114,7 +114,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
         retry: false, refetchOnWindowFocus: false,
     });
     const navigationPages = useMemo(() => managedPages.data
-        ? [...managedPages.data].filter(page => page.Navigation !== 0).sort(comparePageOrder)
+        ? [...managedPages.data].filter(page => page.PublishedAt && page.Navigation !== 0).sort(comparePageOrder)
         : pages.data ?? [], [managedPages.data, pages.data]);
     const links = useMemo(() => pending ? [] : [
         ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),

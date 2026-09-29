@@ -43,3 +43,24 @@ describe("registration actions and countdown windows", () => {
         expect(validateLanding({blocks: [{...block, showFromDate: "2026-09-30T12:00:00Z"}]}, [])).toBeNull();
     });
 });
+
+describe("anchors and partners", () => {
+    const section = (id: string, anchor?: string): ContentBlock => ({id, type: "section", label: "Правила", anchor});
+    it("points anchor problems at the anchor field", () => {
+        const second = section("b", "rules");
+        const error = validateLanding({blocks: [section("a", "rules"), second]}, []);
+        expect(error).toContain("Блок 2: якір:");
+        expect(blockValidationField(error ?? undefined, second)).toBe("anchor");
+        expect(validateLanding({blocks: [section("a", "rules"), section("b", "faq")]}, [])).toBeNull();
+    });
+
+    it("requires named logos with images in every partner group", () => {
+        const partners = (groups: ContentBlock["groups"]): ContentBlock => ({id: "p", type: "partners", title: "Партнери", groups});
+        expect(validateLanding({blocks: [partners([{title: "", items: [{name: "ХНУРЕ", imageURL: "/api/events/e/content-images/f", href: "https://nure.ua"}]}])]}, [])).toBeNull();
+        const empty = partners([{title: "Партнери", items: []}]);
+        expect(blockValidationField(validateLanding({blocks: [empty]}, []) ?? undefined, empty)).toBe("groups");
+        expect(validateLanding({blocks: [partners([{items: [{name: "", imageURL: "x"}]}])]}, [])).toContain("назву");
+        expect(validateLanding({blocks: [partners([{items: [{name: "A", imageURL: ""}]}])]}, [])).toContain("файл");
+        expect(validateLanding({blocks: [partners([{items: [{name: "A", imageURL: "x", href: "javascript:alert(1)"}]}])]}, [])).toContain("HTTPS");
+    });
+});

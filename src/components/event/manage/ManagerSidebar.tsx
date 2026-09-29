@@ -85,7 +85,12 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
                     <div id={`event-manage-group-${group.id}`} className="event-manage-sidebar__items" hidden={!isOpen}>
                         {items.map(item => <Link className="ib-admin-side__item" href={item.href} key={item.href} aria-current={pathname === item.href ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}} title={item.label}><item.icon size={16} aria-hidden="true" /><span className="ib-admin-side__label">{item.label}</span></Link>)}
                         {group.id === "pages" && <>
-                            {[...(pages ?? [])].sort(comparePageOrder).map(page => <Link className="ib-admin-side__item event-manage-sidebar__page" key={page.ID} href={`/manage/content/pages/${page.Slug}`} aria-current={pathname === `/manage/content/pages/${page.Slug}` ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}} title={page.Title}><FileText size={16} aria-hidden="true" /><span className="ib-admin-side__label">{page.Title}</span></Link>)}
+                            {[...(pages ?? [])].sort(comparePageOrder).map(page => {
+                                const editorSlug = page.Draft?.Slug ?? page.Slug;
+                                const title = page.Draft?.Title ?? page.Title;
+                                const state = !page.PublishedAt ? "не опубліковано" : page.Draft ? "є неопубліковані зміни" : "";
+                                return <Link className="ib-admin-side__item event-manage-sidebar__page" key={page.ID} href={`/manage/content/pages/${editorSlug}`} aria-current={pathname === `/manage/content/pages/${editorSlug}` ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}} title={state ? `${title} · ${state}` : title}><FileText size={16} aria-hidden="true" /><span className="ib-admin-side__label">{title}</span>{state && <span className="event-manage-sidebar__draft">{page.PublishedAt ? "чернетка" : "не опубл."}</span>}</Link>;
+                            })}
                             {pagesError && <div className="event-manage-sidebar__error" role="alert">Сторінки недоступні. <button type="button" onClick={onRetryPages}>Повторити</button></div>}
                             {canManage && <Link className="ib-admin-side__item event-manage-sidebar__add" href="/manage/content/pages/new" aria-current={pathname === "/manage/content/pages/new" ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}}><Plus size={16} aria-hidden="true" /><span className="ib-admin-side__label">Додати сторінку</span></Link>}
                         </>}

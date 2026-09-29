@@ -23,7 +23,8 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/email") return "Електронні листи";
     if (pathname === "/manage/mail") return "Пошта";
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
-    const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
-    if (page) return page.Title;
+    // The editor address follows the draft slug while a draft exists.
+    const page = pages.find(item => pathname === `/manage/content/pages/${item.Draft?.Slug ?? item.Slug}` || pathname === `/manage/content/pages/${item.Slug}`);
+    if (page) return page.Draft?.Title ?? page.Title;
     return "Сторінки";
 }

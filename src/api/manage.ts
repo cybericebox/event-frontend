@@ -4,7 +4,7 @@ import {readApiErrorCode} from "@/api/apiErrors";
 import {deriveTheme} from "@/components/event/manage/deriveTheme";
 import {EventThemeSchema} from "@/types/eventTheme";
 import {ContentDocumentSchema, ContentValueSchema, type ContentDocument} from "@/types/eventContent";
-import {defaultMockLanding, readMockLanding, writeMockLanding} from "@/api/mockLanding";
+import {defaultMockLanding, readMockLanding, readMockLandingDraft, writeMockLanding, writeMockLandingDraft} from "@/api/mockLanding";
 import {ContentVariableCatalogSchema} from "@/components/event/content/variableCatalog";
 
 const themeSchema = EventThemeSchema;
@@ -73,18 +73,37 @@ export type ManageScoringInput = Omit<ManageScoring, "UpdatedAt">;
 
 export const ManageContentSchema = z.object({
     Landing: ContentDocumentSchema,
+    // Saved but unpublished landing; the site keeps showing Landing.
+    LandingDraft: ContentDocumentSchema.nullable().default(null),
     Live: z.unknown(),
     Variables: z.record(z.string(), ContentValueSchema),
 });
 export type ManageContent = z.infer<typeof ManageContentSchema>;
+const PageVisibilitySchema = z.union([z.literal(0), z.literal(1), z.literal(2)]);
+// The event site has one menu: a page is in the navbar (1) or nowhere (0).
+const PageNavigationSchema = z.union([z.literal(0), z.literal(1)]);
+// "first" | "challenges" | "results" | page ID | "" (keep the current place).
+export const ManagePageDraftSchema = z.object({
+    Slug: z.string(), Title: z.string(), Document: ContentDocumentSchema,
+    Visibility: PageVisibilitySchema, Navigation: PageNavigationSchema, NavigationAfter: z.string().default(""),
+});
+// Top-level fields are the published version (a never-published page shows its
+// current content and PublishedAt null); Draft holds unpublished changes.
 export const ManagePageSchema = z.object({
     ID: z.string().uuid(), Slug: z.string(), Title: z.string(), Document: ContentDocumentSchema,
-    Visibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),
-    Navigation: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+    Visibility: PageVisibilitySchema,
+    Navigation: PageNavigationSchema,
     NavigationOrder: z.number().int(),
+    Draft: ManagePageDraftSchema.nullable().default(null),
+    PublishedAt: z.string().nullable().default(null),
 });
 export type ManagePage = z.infer<typeof ManagePageSchema>;
-export type ManagePageInput = Pick<ManagePage, "Slug" | "Title" | "Document" | "Visibility" | "Navigation" | "NavigationOrder">;
+export type ManagePageInput = z.infer<typeof ManagePageDraftSchema>;
+
+// The editor works on the draft when there is one, otherwise on the published page.
+export function editablePage(page: ManagePage): ManagePageInput {
+    return page.Draft ?? {Slug: page.Slug, Title: page.Title, Document: page.Document, Visibility: page.Visibility, Navigation: page.Navigation, NavigationAfter: ""};
+}
 
 export class ManageApiError extends Error {
     constructor(readonly status: number, readonly code?: number) {
@@ -130,14 +149,39 @@ let mockLifecycle: ManageLifecycle = {
 let mockScoring: ManageScoring = {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, ForceEventScoring: false, UpdatedAt: "2026-09-26T00:00:00Z"};
 let mockContent: ManageContent = {
     Landing: defaultMockLanding,
+    LandingDraft: null,
     Live: {Profile: "scoreboard", Slots: {}},
     Variables: {"event.name": "Winter Arena CTF", "event.tag": "winter-arena-2026", "event.finishAt": new Date(Date.now() + 18 * 3_600_000).toISOString(), "event.approvedTeamCount": 0, "event.approvedParticipantCount": 0, "event.isPublished": false},
 };
 let mockPages: ManagePage[] = [{
     ID: "01900000-0000-7000-8000-000000000002", Slug: "faq", Title: "Питання та відповіді",
     Document: {blocks: [{id: "sample", type: "text", richText: plainTextRichText("Вміст цієї сторінки налаштовується організаторами події.")}]},
-    Visibility: 0, Navigation: 1, NavigationOrder: 1,
+    Visibility: 0, Navigation: 1, NavigationOrder: 1, Draft: null, PublishedAt: "2026-09-26T00:00:00Z",
 }];
+
+// Mirrors eventContentModel.PlaceInNavigation for mock mode.
+function mockPublishPage(page: ManagePage): ManagePage {
+    const draft = page.Draft ?? editablePage(page);
+    const group = (order: number) => order < -500_000_000 ? 0 : order < 0 ? 1 : 2;
+    const current = mockPages.filter(item => item.PublishedAt && item.Navigation === 1).sort((a, b) => a.NavigationOrder - b.NavigationOrder || a.Slug.localeCompare(b.Slug));
+    const oldIndex = current.findIndex(item => item.ID === page.ID);
+    const entries = current.filter(item => item.ID !== page.ID).map(item => ({id: item.ID, group: group(item.NavigationOrder)}));
+    if (draft.Navigation === 1) {
+        const after = (limit: number) => entries.filter(item => item.group <= limit).length;
+        const target = entries.findIndex(item => item.id === draft.NavigationAfter);
+        const [index, placed] = draft.NavigationAfter === "first" ? [0, 0] : draft.NavigationAfter === "challenges" ? [after(0), 1] : draft.NavigationAfter === "results" ? [after(1), 2]
+            : target >= 0 ? [target + 1, entries[target].group] : oldIndex >= 0 ? [oldIndex, group(page.NavigationOrder)] : [entries.length, 2];
+        entries.splice(index, 0, {id: page.ID, group: placed});
+    }
+    const challenges = entries.filter(item => item.group === 0).length;
+    const results = entries.filter(item => item.group < 2).length;
+    const orders = new Map(entries.map((item, position) => [item.id, position < challenges ? position - 1_000_000_000 : position - results]));
+    mockPages = mockPages.map(item => orders.has(item.ID) && item.ID !== page.ID ? {...item, NavigationOrder: orders.get(item.ID)!} : item);
+    const published: ManagePage = {...page, Slug: draft.Slug, Title: draft.Title, Document: draft.Document, Visibility: draft.Visibility, Navigation: draft.Navigation,
+        NavigationOrder: orders.get(page.ID) ?? page.NavigationOrder, Draft: null, PublishedAt: new Date().toISOString()};
+    mockPages = mockPages.map(item => item.ID === page.ID ? published : item);
+    return published;
+}
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
@@ -190,7 +234,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
             if (method === "PUT") mockScoring = {...(payload as ManageScoringInput), UpdatedAt: new Date().toISOString()};
             return schema.parse(mockScoring);
         }
-        if (path === "content") return schema.parse({...mockContent, Landing: readMockLanding(mockContent.Landing)});
+        if (path === "content") return schema.parse({...mockContent, Landing: readMockLanding(mockContent.Landing), LandingDraft: readMockLandingDraft()});
         if (path === "content/variables") return schema.parse([
             {name: "event.name", label: "Назва події", format: "text", audience: 0},
             {name: "event.startAt", label: "Початок", format: "date-time", audience: 0},
@@ -201,34 +245,52 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         ]);
         if (path === "pages") {
             if (method === "POST") {
-                const page = {ID: crypto.randomUUID(), ...(payload as ManagePageInput)};
-                mockPages = [...mockPages, ManagePageSchema.parse(page)];
+                const draft = ManagePageDraftSchema.parse(payload);
+                const page = ManagePageSchema.parse({ID: crypto.randomUUID(), ...draft, NavigationOrder: 0, Draft: draft, PublishedAt: null});
+                mockPages = [...mockPages, page];
                 return schema.parse(page);
             }
             return schema.parse(mockPages);
         }
-        if (path === "pages/order" && method === "PUT") {
-            const {PageIDs: pageIDs, ChallengesPosition: challengesPosition, ResultsPosition: resultsPosition} = payload as {PageIDs: string[]; ChallengesPosition: number; ResultsPosition: number};
-            mockPages = mockPages.map(page => {
-                const order = pageIDs.indexOf(page.ID);
-                return order < 0 ? page : {...page, NavigationOrder: order < challengesPosition ? order - 1_000_000_000 : order - resultsPosition};
-            });
-            return schema.parse(undefined);
-        }
         if (path.startsWith("pages/")) {
-            const key = decodeURIComponent(path.slice(6));
-            const page = mockPages.find(item => item.ID === key || item.Slug === key);
+            const [rawKey, action] = path.slice(6).split("/");
+            const key = decodeURIComponent(rawKey);
+            const page = mockPages.find(item => item.ID === key) ?? mockPages.find(item => item.Slug === key) ?? mockPages.find(item => item.Draft?.Slug === key);
             if (!page) throw new ManageApiError(404);
+            if (action === "publish" && method === "POST") {
+                if (!page.Draft) throw new ManageApiError(404);
+                return schema.parse(mockPublishPage(page));
+            }
+            if (action === "draft" && method === "DELETE") {
+                if (!page.Draft || !page.PublishedAt) throw new ManageApiError(404);
+                mockPages = mockPages.map(item => item.ID === page.ID ? {...item, Draft: null} : item);
+                return schema.parse(undefined);
+            }
             if (method === "DELETE") {
                 mockPages = mockPages.filter(item => item.ID !== page.ID);
                 return schema.parse(undefined);
             }
             if (method === "PUT") {
-                const updated = ManagePageSchema.parse({...page, ...(payload as ManagePageInput)});
+                const draft = ManagePageDraftSchema.parse(payload);
+                if (mockPages.some(item => item.ID !== page.ID && (item.Slug === draft.Slug || item.Draft?.Slug === draft.Slug))) throw new ManageApiError(409);
+                const updated = ManagePageSchema.parse(page.PublishedAt ? {...page, Draft: draft} : {...page, ...draft, Draft: draft});
                 mockPages = mockPages.map(item => item.ID === page.ID ? updated : item);
                 return schema.parse(updated);
             }
             return schema.parse(page);
+        }
+        if (path === "content/landing/publish" && method === "POST") {
+            const draft = readMockLandingDraft();
+            if (!draft) throw new ManageApiError(404);
+            mockContent = {...mockContent, Landing: draft};
+            writeMockLanding(draft);
+            writeMockLandingDraft(null);
+            return schema.parse(undefined);
+        }
+        if (path === "content/landing/draft" && method === "DELETE") {
+            if (!readMockLandingDraft()) throw new ManageApiError(404);
+            writeMockLandingDraft(null);
+            return schema.parse(undefined);
         }
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
@@ -351,15 +413,20 @@ export const getManageContent = (eventID: string) => request(eventID, "content",
 export const getManageContentVariables = (eventID: string) => request(eventID, "content/variables", ContentVariableCatalogSchema);
 export const getManagePage = (eventID: string, slug: string) => request(eventID, `pages/${encodeURIComponent(slug)}`, ManagePageSchema);
 export const getManagePages = (eventID: string) => request(eventID, "pages", z.array(ManagePageSchema));
+// Create and save store a draft; only publish makes the page (with its settings
+// and navbar place) public.
 export const createManagePage = (eventID: string, page: ManagePageInput) => request(eventID, "pages", ManagePageSchema, "POST", page);
-export const updateManagePage = (eventID: string, pageID: string, page: ManagePageInput) => request(eventID, `pages/${encodeURIComponent(pageID)}`, ManagePageSchema, "PUT", page);
-export const putManagePageOrder = (eventID: string, pageIDs: string[], challengesPosition: number, resultsPosition: number) => request(eventID, "pages/order", z.undefined(), "PUT", {PageIDs: pageIDs, ChallengesPosition: challengesPosition, ResultsPosition: resultsPosition});
+export const saveManagePageDraft = (eventID: string, pageID: string, page: ManagePageInput) => request(eventID, `pages/${encodeURIComponent(pageID)}`, ManagePageSchema, "PUT", page);
+export const publishManagePage = (eventID: string, pageID: string) => request(eventID, `pages/${encodeURIComponent(pageID)}/publish`, ManagePageSchema, "POST");
+export const discardManagePageDraft = (eventID: string, pageID: string) => request(eventID, `pages/${encodeURIComponent(pageID)}/draft`, z.undefined(), "DELETE");
 export const deleteManagePage = (eventID: string, pageID: string) => request(eventID, `pages/${encodeURIComponent(pageID)}`, z.undefined(), "DELETE");
+export const publishManageLanding = (eventID: string) => request(eventID, "content/landing/publish", z.undefined(), "POST");
+export const discardManageLandingDraft = (eventID: string) => request(eventID, "content/landing/draft", z.undefined(), "DELETE");
 
+// Saves the landing draft; the site keeps the published landing until publish.
 export async function putManageLanding(eventID: string, document: ContentDocument): Promise<void> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        mockContent = {...mockContent, Landing: ContentDocumentSchema.parse(document)};
-        writeMockLanding(document);
+        writeMockLandingDraft(ContentDocumentSchema.parse(document));
         return;
     }
     const domain = process.env.NEXT_PUBLIC_DOMAIN;

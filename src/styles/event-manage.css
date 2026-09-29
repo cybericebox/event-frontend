@@ -825,3 +825,20 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-email-test .event-email-test__result{color:var(--ib-ok)}
 .event-email-test button{flex:none}
 @media(max-width:760px){.event-manage-mail__smtp{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.event-manage-mail__host{grid-column:1/-1}.event-manage-mail__facts>div{grid-template-columns:minmax(0,1fr);gap:var(--ib-1)}.event-email-test{flex-direction:column;align-items:stretch}}
+
+/* W6 page constructor: draft state bar, preview switches, anchors, partner logos, undo toast. */
+.event-draft-bar{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-4);flex-wrap:wrap;margin-bottom:var(--ib-5);padding:var(--ib-3) var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
+.event-draft-bar__state{display:flex;flex-direction:column;gap:2px;min-width:0}
+.event-draft-bar__state strong{font-size:var(--ib-fs-14);color:var(--ib-ink)}
+.event-draft-bar__state small{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.event-draft-bar__actions{display:flex;gap:var(--ib-2);flex-wrap:wrap}
+.event-preview-switches{display:flex;gap:var(--ib-2);flex-wrap:wrap;margin-bottom:var(--ib-3)}
+.event-anchor-field{display:flex;align-items:center;gap:var(--ib-2)}
+.event-anchor-field>span{color:var(--ib-dim);font:var(--ib-fs-13) var(--ib-mono)}
+.event-anchor-field>.event-manage-input{flex:1;min-width:0}
+.event-partner-logos{display:grid;gap:var(--ib-2);margin:var(--ib-3) 0;padding:0;list-style:none}
+.event-partner-logo{display:grid;grid-template-columns:104px minmax(0,1fr) minmax(0,1fr) 30px;align-items:center;gap:var(--ib-2)}
+.event-partner-logo__preview{display:grid;place-items:center;height:40px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-dim)}
+.event-partner-logo__preview img{width:auto;max-width:96px;height:32px;object-fit:contain;filter:grayscale(1)}
+.event-undo-toast{display:flex;align-items:center;gap:var(--ib-3)}
+@media(max-width:640px){.event-partner-logo{grid-template-columns:72px minmax(0,1fr) 30px}.event-partner-logo>.event-manage-input:nth-of-type(2){grid-column:2}.event-partner-logo__preview{grid-row:1/3}.event-partner-logo>.event-content-editor__rule-remove{grid-column:3;grid-row:1}}

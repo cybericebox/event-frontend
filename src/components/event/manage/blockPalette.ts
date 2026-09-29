@@ -12,6 +12,7 @@ export const blockPalette: {type: PageBlockType; label: string}[] = [
     {type: "faq", label: "Питання й відповіді"},
     {type: "cta", label: "Дія"},
     {type: "countdown", label: "Зворотний відлік"},
+    {type: "partners", label: "Партнери"},
     {type: "divider", label: "Роздільник"},
 ];
 
@@ -29,5 +30,12 @@ export function createPageBlock(type: PageBlockType, landing = false): ContentBl
         case "cta": return {id, type, title: "", text: "", action: {label: "", kind: "link", href: ""}, variant: "plain"};
         case "countdown": return {id, type, title: "", text: "", dateSource: "event", targetVariable: "", showFromSource: "none", hideAfterFinish: false, variant: "split", timerSize: "large", timerDisplay: "segments", surface: "plain"};
         case "divider": return {id, type, size: "md", line: false};
+        case "partners": return {id, type, title: "Партнери", groups: [{title: "", items: []}]};
     }
+}
+
+// A copy placed after the original: a new id, no anchor (anchors are unique).
+export function duplicatePageBlock(block: ContentBlock): ContentBlock {
+    const copy = structuredClone(block);
+    return {...copy, id: `block-${crypto.randomUUID()}`, anchor: undefined};
 }

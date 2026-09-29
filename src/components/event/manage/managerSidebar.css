@@ -8,6 +8,7 @@
 .event-manage-sidebar__items{display:grid;gap:2px}
 .event-manage-sidebar__items[hidden]{display:none}
 .event-manage-sidebar__page{padding-left:var(--ib-5)}
+.event-manage-sidebar__draft{margin-left:auto;flex:none;padding:0 var(--ib-2);border:1px solid var(--ib-brand-line);border-radius:var(--ib-r-sm);color:var(--ib-on-brand-3);font-size:var(--ib-fs-11);line-height:18px}
 .event-manage-sidebar__add{color:var(--ib-on-brand-3)}
 .event-manage-sidebar__error{padding:var(--ib-2) var(--ib-3);color:var(--ib-on-brand-3);font-size:var(--ib-fs-12);line-height:var(--ib-lh-body)}
 .event-manage-sidebar__error button{padding:0;border:0;background:none;color:var(--ib-on-brand);font:inherit;text-decoration:underline;cursor:pointer}
