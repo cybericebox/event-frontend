@@ -173,7 +173,7 @@ describe("Звіт по заході", () => {
         const ranking = screen.getByRole("region", {name: "Підсумковий рейтинг"});
         expect(within(ranking).getByText("Blue")).toBeTruthy();
         expect(within(ranking).getByText("Учасників: 3")).toBeTruthy();
-        const tasks = screen.getByRole("region", {name: "Завдання", exact: false});
+        const tasks = screen.getByRole("region", {name: /Завдання/});
         expect(within(tasks).getAllByText("75%").length).toBeGreaterThan(0);
     });
 
