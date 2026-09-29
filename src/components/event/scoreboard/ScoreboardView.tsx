@@ -12,6 +12,7 @@ import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventBanner} from "@/components/event/EventBanner";
 import {useEventStream} from "@/utils/eventStream";
+import {jitter} from "@/utils/jitter";
 import {frozenBannerTitle, frozenSinceLabel, nextFreezeBoundary} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
 import {LiveStatus} from "@/components/event/manage/LiveStatus";
@@ -24,6 +25,9 @@ import "./scoreboard.css";
 
 const deniedMessages = {hidden: "scoreboard.hidden", participants_only: "scoreboard.participantsOnly", not_started: "scoreboard.afterStart"} as const;
 const POLL_SECONDS = 30;
+// The stream's server check period for this page (the staff live screen sets
+// its own). 10 s ±20 %, drawn once per page, so viewers do not tick in step.
+const STREAM_SECONDS = 10;
 
 // The participant and guest «Результати»: a chart of the leaders (plus the
 // viewer's own team) above a searchable ranking. The page exists in every
@@ -49,20 +53,26 @@ export function ScoreboardView() {
     const queryClient = useQueryClient();
     const queryKey = ["event-public-results", event?.EventID];
     const revision = queryClient.getQueryData<ManageResultsSnapshot>(queryKey)?.Revision;
+    const [pacing] = useState(() => ({streamSeconds: Math.round(jitter(STREAM_SECONDS * 1000) / 1000), reloadMs: jitter(2000)}));
     // Realtime: every change reloads the snapshot (the server applies the
-    // freeze); 30 s polling only when the stream keeps failing.
+    // freeze), spread over the viewers; 30 s ±20 % polling only when the
+    // stream keeps failing. A hidden tab neither streams nor polls.
     const stream = useEventStream({
-        url: () => event && revision !== undefined ? resultsLiveURL(event.EventID, revision) : null,
+        url: () => {
+            const url = event && revision !== undefined ? resultsLiveURL(event.EventID, revision) : null;
+            return url && `${url}&pollInterval=${pacing.streamSeconds}`;
+        },
         events: ["result-change"], resetEvents: ["snapshot-required"],
         onChange: () => void queryClient.invalidateQueries({queryKey}),
         enabled: !!event && readable && revision !== undefined,
+        debounceMs: pacing.reloadMs, pauseWhenHidden: true,
     });
     const results = useQuery({
         queryKey,
         queryFn: () => getManageResults(event!.EventID),
         enabled: !!event && readable && !access.pending,
         retry: false,
-        refetchInterval: stream === "fallback" ? POLL_SECONDS * 1000 : false,
+        refetchInterval: stream === "fallback" ? () => jitter(POLL_SECONDS * 1000) : false,
     });
     // The freeze starts and ends by the clock: reload right after each boundary.
     const freeze = results.data?.Freeze;
