@@ -6,9 +6,9 @@ import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {
-    defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, mailSettingsError, mailSettingsForm,
-    mailSettingsInput, mailTransportLabel, putEventMailSettings, putEventMailSMTP, smtpError, smtpForm, smtpInput,
-    testEventMailSMTP, tlsModeOptions, type EventMailSettings, type MailSettingsForm, type MailTestResult,
+    defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityForm, identityInput,
+    mailTransportLabel, maxMailNameLength, putEventMailIdentity, putEventMailSMTP, smtpError, smtpForm, smtpInput,
+    testEventMailSMTP, tlsModeOptions, type EventMailSettings, type IdentityForm, type MailTestResult,
     type MailTLSMode, type SMTPForm,
 } from "@/api/manageMail";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -31,9 +31,9 @@ export function MailSettingsPanel() {
     const queryClient = useQueryClient();
     const queryKey = ["event-manage-mail", eventID];
     const query = useQuery({queryKey, queryFn: () => getEventMailSettings(eventID), refetchOnWindowFocus: false});
-    const [settingsDraft, setSettingsDraft] = useState<MailSettingsForm | null>(null);
+    const [identityDraft, setIdentityDraft] = useState<IdentityForm | null>(null);
     const [smtpDraft, setSMTPDraft] = useState<SMTPForm | null>(null);
-    const [busy, setBusy] = useState<"settings" | "smtp" | "test" | "reset" | null>(null);
+    const [busy, setBusy] = useState<"identity" | "smtp" | "test" | "reset" | null>(null);
     const [test, setTest] = useState<MailTestResult | null>(null);
     const [confirmReset, setConfirmReset] = useState(false);
     const [resetError, setResetError] = useState("");
@@ -42,16 +42,16 @@ export function MailSettingsPanel() {
     if (query.isError) return <EventLoadError message={t("manage.mail.settings.loadError")} onRetry={() => void query.refetch()} />;
 
     const settings = query.data;
-    const savedSettings = mailSettingsForm(settings);
-    const settingsForm = settingsDraft ?? savedSettings;
-    const settingsDirty = JSON.stringify(settingsForm) !== JSON.stringify(savedSettings);
-    const settingsValidation = mailSettingsError(settingsForm);
+    const savedIdentity = identityForm(settings.Identity);
+    const idForm = identityDraft ?? savedIdentity;
+    const identityDirty = JSON.stringify(idForm) !== JSON.stringify(savedIdentity);
+    const identityInvalid = identityError(idForm);
+    const inherited = settings.Inherited;
     const savedSMTP = smtpForm(settings.SMTP);
     const form = smtpDraft ?? savedSMTP;
     const smtpDirty = JSON.stringify(form) !== JSON.stringify(savedSMTP);
     const smtpValidation = smtpError(form);
     const disabled = !canManage || busy !== null;
-    const hours = Number(settingsForm.startReminderHours);
     const canTest = canManage && ((!smtpDirty && !!settings.SMTP) || !smtpValidation);
 
     function applied(next: EventMailSettings) {
@@ -71,13 +71,13 @@ export function MailSettingsPanel() {
         changeSMTP({tlsMode, port});
     }
 
-    async function saveSettings(submit: FormEvent<HTMLFormElement>) {
+    async function saveIdentity(submit: FormEvent<HTMLFormElement>) {
         submit.preventDefault();
-        if (disabled || !settingsDirty || settingsValidation) return;
-        setBusy("settings");
+        if (disabled || !identityDirty || identityInvalid) return;
+        setBusy("identity");
         try {
-            applied(await putEventMailSettings(eventID, mailSettingsInput(settingsForm)));
-            setSettingsDraft(null);
+            applied(await putEventMailIdentity(eventID, identityInput(idForm)));
+            setIdentityDraft(null);
             toast.success(t("manage.mail.settings.saved"));
         } catch (error) {toast.error(errorText(error, t("manage.mail.settings.saveError")));}
         finally {setBusy(null);}
@@ -123,45 +123,50 @@ export function MailSettingsPanel() {
 
     return <div className="event-manage-mail__panel">
         {!canManage && <p className="event-manage-notice">{t("common.viewOnly")}</p>}
-        <section className="event-manage-section" aria-labelledby="mail-sender-title">
+        <form className="event-manage-section" onSubmit={saveIdentity} aria-labelledby="mail-sender-title">
             <div className="event-manage-section__head"><h2 id="mail-sender-title">{t("manage.mail.sender.title")}</h2><p>{t("manage.mail.sender.intro")}</p></div>
-            <dl className="event-manage-mail__facts">
-                <div><dt>{t("manage.mail.sender.from")}</dt><dd>{settings.SenderName} <span>&lt;{settings.SenderAddress}&gt;</span></dd></div>
-                <div><dt>{t("manage.mail.sender.replyTo")}</dt><dd>{settings.ReplyTo || "—"}</dd></div>
-            </dl>
-            {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
-        </section>
-
-        <form className="event-manage-section" onSubmit={saveSettings} aria-labelledby="mail-contact-title">
-            <div className="event-manage-section__head"><h2 id="mail-contact-title">{t("manage.mail.contact.title")}</h2></div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-contact" title={t("manage.mail.contact.email")} help={t("manage.mail.contact.emailHelp")} />
-                    <input id="mail-contact" className="event-manage-input" type="email" value={settingsForm.contactEmail} placeholder={t("manage.mail.contact.emailPlaceholder")} disabled={disabled} maxLength={254} onChange={change => setSettingsDraft({...settingsForm, contactEmail: change.target.value})} />
-                    <small>{t("manage.mail.contact.emailHint")}</small>
+                    <ManageFieldLabel htmlFor="mail-sender-name" title={t("manage.mail.identity.name")} help={t("manage.mail.sender.nameHelp")} />
+                    <input id="mail-sender-name" className="event-manage-input" value={idForm.senderName} placeholder={inherited.Sender.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={identityInvalid === "senderName"} onChange={change => setIdentityDraft({...idForm, senderName: change.target.value})} />
                 </div>
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-reminder" title={t("manage.mail.contact.reminder")} help={t("manage.mail.contact.reminderHelp")} />
-                    <input id="mail-reminder" className="event-manage-input" type="number" inputMode="numeric" min={0} max={168} step={1} value={settingsForm.startReminderHours} disabled={disabled} onChange={change => setSettingsDraft({...settingsForm, startReminderHours: change.target.value})} />
-                    <small>{t(!settingsValidation && hours === 0 ? "manage.mail.contact.reminderOff" : "manage.mail.contact.reminderHint")}</small>
+                    <ManageFieldLabel htmlFor="mail-sender-address" title={t("manage.mail.identity.address")} help={t("manage.mail.sender.addressHelp")} />
+                    <input id="mail-sender-address" className="event-manage-input" type="email" value={idForm.senderAddress} placeholder={inherited.Sender.Address} disabled={disabled} maxLength={254} aria-invalid={identityInvalid === "senderAddress"} onChange={change => setIdentityDraft({...idForm, senderAddress: change.target.value})} />
                 </div>
             </div>
-            {settingsDirty && settingsValidation && <p className="event-manage-validation" role="alert">{settingsValidation}</p>}
-            {canManage && settingsDirty && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !!settingsValidation} busy={busy === "settings"}>{t("common.save")}</EventButton></div>}
+            <div className="event-manage-section__head"><h2 id="mail-replyto-title">{t("manage.mail.replyTo.title")}</h2><p>{t("manage.mail.replyTo.intro")}</p></div>
+            <div className="event-manage-fields-two">
+                <div className="event-manage-field">
+                    <ManageFieldLabel htmlFor="mail-replyto-name" title={t("manage.mail.identity.name")} help={t("manage.mail.replyTo.nameHelp")} />
+                    <input id="mail-replyto-name" className="event-manage-input" value={idForm.replyToName} placeholder={inherited.ReplyTo.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={identityInvalid === "replyToName"} onChange={change => setIdentityDraft({...idForm, replyToName: change.target.value})} />
+                </div>
+                <div className="event-manage-field">
+                    <ManageFieldLabel htmlFor="mail-replyto-address" title={t("manage.mail.identity.address")} help={t("manage.mail.replyTo.addressHelp")} />
+                    <input id="mail-replyto-address" className="event-manage-input" type="email" value={idForm.replyToAddress} placeholder={inherited.ReplyTo.Address} disabled={disabled} maxLength={254} aria-invalid={identityInvalid === "replyToAddress"} onChange={change => setIdentityDraft({...idForm, replyToAddress: change.target.value})} />
+                </div>
+            </div>
+            <small>{t("manage.mail.identity.inheritHint")}</small>
+            {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
+            {identityDirty && identityInvalid && <p className="event-manage-validation" role="alert">{t(`manage.mail.validation.${identityInvalid}`)}</p>}
+            {canManage && identityDirty && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !!identityInvalid} busy={busy === "identity"}>{t("common.save")}</EventButton></div>}
         </form>
 
         <form className="event-manage-section" onSubmit={saveSMTP} aria-labelledby="mail-smtp-title">
             <div className="event-manage-section__head"><h2 id="mail-smtp-title">{t("manage.mail.smtp.title")}</h2><p>{settings.SMTP ? t("manage.mail.smtp.via", {host: settings.SMTP.Host, port: settings.SMTP.Port}) : t("manage.mail.smtp.notConfigured")} {t("manage.mail.smtp.fallbackNote")}</p></div>
             <div className="event-manage-mail__smtp">
                 <div className="event-manage-field event-manage-mail__host">
-                    <ManageFieldLabel htmlFor="mail-smtp-host" title={t("manage.mail.smtp.host")} help={t("manage.mail.smtp.hostHelp")} />
+                    <ManageFieldLabel htmlFor="mail-smtp-host" title={t("manage.mail.smtp.host")} help={t("manage.mail.smtp.hostHelp")} required />
                     <input id="mail-smtp-host" className="event-manage-input" value={form.host} placeholder="smtp.example.com" autoComplete="off" spellCheck={false} disabled={disabled} onChange={change => changeSMTP({host: change.target.value})} />
                 </div>
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-smtp-port" title={t("manage.mail.smtp.port")} help={t("manage.mail.smtp.portHelp")} />
+                    <ManageFieldLabel htmlFor="mail-smtp-port" title={t("manage.mail.smtp.port")} help={t("manage.mail.smtp.portHelp")} required />
                     <input id="mail-smtp-port" className="event-manage-input" type="number" inputMode="numeric" min={1} max={65535} value={form.port} disabled={disabled} onChange={change => changeSMTP({port: change.target.value})} />
                 </div>
-                <label className="event-manage-field">{t("manage.mail.smtp.encryption")}<EventSelect ariaLabel={t("manage.mail.smtp.encryption")} value={form.tlsMode} options={tlsModeOptions} disabled={disabled} onValueChange={changeTLS} /></label>
+                <div className="event-manage-field">
+                    <ManageFieldLabel title={t("manage.mail.smtp.encryption")} help={t("manage.mail.smtp.encryptionHelp")} />
+                    <EventSelect ariaLabel={t("manage.mail.smtp.encryption")} value={form.tlsMode} options={tlsModeOptions} disabled={disabled} onValueChange={changeTLS} />
+                </div>
             </div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">

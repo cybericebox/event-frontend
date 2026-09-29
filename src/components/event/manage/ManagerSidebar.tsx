@@ -4,7 +4,6 @@ import {useState} from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  AtSign,
   Bell,
   CalendarDays,
   ChevronDown,
@@ -70,7 +69,7 @@ const groups: Group[] = [
     {id: "notifications", label: t("manage.nav.group.notifications"), items: [
         {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: Bell},
         {href: "/manage/email", label: t("manage.nav.email"), icon: Mail},
-        {href: "/manage/mail", label: t("manage.nav.mail"), icon: AtSign},
+        {href: "/manage/mail", label: t("manage.nav.mail"), icon: SlidersHorizontal},
     ]},
 ];
 

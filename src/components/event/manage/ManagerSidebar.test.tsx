@@ -64,9 +64,9 @@ describe("participation navigation", () => {
         ]);
     });
 
-    it("lists the mail section under notifications", () => {
+    it("lists the settings page under notifications", () => {
         renderSidebar(0);
         fireEvent.click(screen.getByRole("button", {name: "Сповіщення"}));
-        expect(screen.getByRole("link", {name: "Пошта"}).getAttribute("href")).toBe("/manage/mail");
+        expect(screen.getByRole("link", {name: "Налаштування"}).getAttribute("href")).toBe("/manage/mail");
     });
 });

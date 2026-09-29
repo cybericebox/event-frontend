@@ -1,12 +1,8 @@
 import {describe, expect, it} from "vitest";
-import {mailTabFromParam, mailTabHref} from "./mailTabs";
+import {mailTabs} from "./mailTabs";
 
-describe("mail section tabs", () => {
-    it("maps the tab parameter", () => {
-        expect(mailTabFromParam("journal")).toBe("journal");
-        expect(mailTabFromParam(undefined)).toBe("settings");
-        expect(mailTabFromParam("other")).toBe("settings");
-        expect(mailTabHref("settings")).toBe("/manage/mail");
-        expect(mailTabHref("journal")).toBe("/manage/mail?tab=journal");
+describe("settings page tabs", () => {
+    it("has the mail tab", () => {
+        expect(mailTabs.map(tab => [tab.value, tab.label])).toEqual([["mail", "Пошта"]]);
     });
 });
