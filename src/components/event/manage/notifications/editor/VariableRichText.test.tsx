@@ -31,4 +31,37 @@ describe("VariableRichText", () => {
     const field = screen.getByRole("textbox", { name: "Тема" })
     expect(fireEvent.keyDown(field, { key: "Enter" })).toBe(false)
   })
+
+  it("flags an unknown variable and converts tokens once the list loads", () => {
+    const { rerender } = render(<VariableRichText value="{{.event_name}} {{.ghost}}" onChange={vi.fn()} variables={[]} dotted ariaLabel="Тема" />)
+    const field = screen.getByRole("textbox", { name: "Тема" })
+    expect(field.querySelector("[data-var]")).toBeNull()
+    rerender(<VariableRichText value="{{.event_name}} {{.ghost}}" onChange={vi.fn()} variables={variables} dotted ariaLabel="Тема" />)
+    expect(field.querySelector('[data-var="event_name"]')?.getAttribute("data-invalid")).toBeNull()
+    expect(field.querySelector('[data-var="ghost"]')?.getAttribute("data-invalid")).toBe("true")
+  })
+
+  it("turns a token typed by hand into a pill and keeps the stored form", () => {
+    const onChange = vi.fn()
+    render(<VariableRichText value="" onChange={onChange} variables={variables} dotted ariaLabel="Тема" />)
+    const field = screen.getByRole("textbox", { name: "Тема" })
+    field.textContent = "Захід {{event_name}}"
+    const range = document.createRange()
+    range.setStart(field.firstChild as Text, field.textContent.length)
+    range.collapse(true)
+    window.getSelection()?.removeAllRanges()
+    window.getSelection()?.addRange(range)
+    fireEvent.input(field)
+    expect(field.querySelector('[data-var="event_name"]')).toBeTruthy()
+    expect(onChange).toHaveBeenLastCalledWith("Захід {{.event_name}}")
+  })
+
+  it("normalizes pasted tokens on blur", () => {
+    render(<VariableRichText value="" onChange={vi.fn()} variables={variables} dotted ariaLabel="Тема" />)
+    const field = screen.getByRole("textbox", { name: "Тема" })
+    field.textContent = "{{ .event_name }} {{ghost}}"
+    fireEvent.blur(field)
+    expect(field.querySelector('[data-var="event_name"]')?.getAttribute("data-invalid")).toBeNull()
+    expect(field.querySelector('[data-var="ghost"]')?.getAttribute("data-invalid")).toBe("true")
+  })
 })

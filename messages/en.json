@@ -3661,6 +3661,7 @@
   "manage.tpl.editor.textLineHeight": "Body line height",
   "manage.tpl.editor.toolbar": "Formatting toolbar",
   "manage.tpl.editor.underline": "Underline",
+  "manage.tpl.editor.unknownVariable": "Unknown variable “{name}”: this notification type does not have it. Remove it or pick a variable from the list.",
   "manage.tpl.editor.uploadImage": "Upload",
   "manage.tpl.editor.variableExample": "Example",
   "manage.tpl.exPh.cleanView": "Clean view",

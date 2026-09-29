@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import DOMPurify from "isomorphic-dompurify"
 import { Bold, Braces, ChevronDown, Italic } from "lucide-react"
 import { t } from "@/i18n/t"
-import type { VariableDef } from "./variableUtils"
+import { INVALID_PILL_CLASS, VARIABLE_TOKEN, unknownVariableHint, type VariableDef } from "./variableUtils"
 import { VariablePickerMenu } from "./VariablePickerMenu"
 import { historyDirection, placeCaretAtEnd, TemplateFieldHistory } from "./templateFieldHistory"
 import { HoverTooltip } from "./HoverTooltip"
@@ -42,16 +42,26 @@ export function normalizeInAppBody(html: string): string {
   return Array.from(root.childNodes).map(visit).join("").replace(/(?:<br>)+$/, "")
 }
 
-function variablePill(name: string): HTMLSpanElement {
+const VALID_PILL_CLASS = "mx-0.5 rounded border border-(--ib-line) bg-(--ib-soft) px-1 text-(--ib-action)"
+const INVALID_PILL_STYLE = `${INVALID_PILL_CLASS} mx-0.5 rounded border border-(--ib-danger) bg-(--ib-danger-bg) px-1 text-(--ib-danger) underline decoration-wavy`
+
+function variablePill(name: string, invalid = false): HTMLSpanElement {
   const pill = document.createElement("span")
   pill.dataset.var = name
   pill.contentEditable = "false"
-  pill.className = "mx-0.5 rounded border border-(--ib-line) bg-(--ib-soft) px-1 text-(--ib-action)   "
+  pill.className = invalid ? INVALID_PILL_STYLE : VALID_PILL_CLASS
+  if (invalid) {
+    pill.dataset.invalid = "true"
+    pill.title = unknownVariableHint(name)
+  }
   pill.textContent = name
   return pill
 }
 
+// Every {{token}} in the text becomes a pill: valid for a declared variable,
+// flagged red for an unknown one. Skipped while the list is empty (not loaded).
 function decorateVariables(editor: HTMLElement, variables: VariableDef[]) {
+  if (variables.length === 0) return
   const known = new Set(variables.map((item) => item.name))
   const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT)
   const nodes: Text[] = []
@@ -59,15 +69,14 @@ function decorateVariables(editor: HTMLElement, variables: VariableDef[]) {
   for (const node of nodes) {
     if (node.parentElement?.dataset.var) continue
     const text = node.textContent ?? ""
-    const pattern = /\{\{\.?([A-Za-z_]\w*)\}\}/g
+    const pattern = new RegExp(VARIABLE_TOKEN.source, "g")
     let match: RegExpExecArray | null
     let last = 0
     const fragment = document.createDocumentFragment()
     let replaced = false
     while ((match = pattern.exec(text))) {
-      if (!known.has(match[1])) continue
       fragment.appendChild(document.createTextNode(text.slice(last, match.index)))
-      fragment.appendChild(variablePill(match[1]))
+      fragment.appendChild(variablePill(match[1], !known.has(match[1])))
       last = pattern.lastIndex
       replaced = true
     }

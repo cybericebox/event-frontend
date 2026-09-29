@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  convertTypedToken,
   htmlToRawSingleLine,
   insertVariablePill,
   rawToHtml,
@@ -78,6 +79,9 @@ export function VariableRichText({
   }, [showDropdown]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    // A token typed out by hand ({{name}}) becomes a pill at once — valid or
+    // flagged as unknown — instead of staying plain text.
+    convertTypedToken(variables.map((variable) => variable.name));
     const raw = htmlToRawSingleLine(e.currentTarget.innerHTML, { dotted });
     historyRef.current.record(raw);
     lastRawRef.current = raw;
@@ -180,6 +184,14 @@ export function VariableRichText({
     [dotted, onChange, restoreFocus]
   );
 
+  // Pasted or edited tokens that never passed through typing get their pills on blur.
+  const normalizeOnBlur = () => {
+    const div = divRef.current;
+    if (!div || variables.length === 0) return;
+    const html = rawToHtml(htmlToRawSingleLine(div.innerHTML, { dotted }), variables.map((variable) => variable.name), { dotted });
+    if (html !== div.innerHTML) div.innerHTML = html;
+  };
+
   const closePicker = () => {
     setShowDropdown(false);
     restoreFocus(savedRangeRef.current);
@@ -193,6 +205,7 @@ export function VariableRichText({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onBlur={normalizeOnBlur}
         onKeyUp={() => { const selection = window.getSelection(); if (selection?.rangeCount) savedRangeRef.current = selection.getRangeAt(0).cloneRange() }}
         onMouseUp={() => { const selection = window.getSelection(); if (selection?.rangeCount) savedRangeRef.current = selection.getRangeAt(0).cloneRange() }}
         data-placeholder={placeholder}
@@ -200,6 +213,7 @@ export function VariableRichText({
           "variable-richtext min-h-[2rem] px-3 py-1.5 text-sm rounded-md border border-(--ib-control) bg-(--ib-surface) text-(--ib-ink)",
           "outline-none focus-visible:ring-2 focus-visible:ring-(--ib-action) focus-visible:",
           "[&_.var-pill]:mx-0.5 [&_.var-pill]:rounded [&_.var-pill]:border [&_.var-pill]:border-(--ib-line) [&_.var-pill]:bg-(--ib-soft) [&_.var-pill]:px-1 [&_.var-pill]:text-(--ib-action) dark:[&_.var-pill]:border-(--ib-line) dark:[&_.var-pill]:bg-amber-900/40 dark:[&_.var-pill]:text-(--ib-action)",
+          "[&_.var-pill-invalid]:border-(--ib-danger) [&_.var-pill-invalid]:bg-(--ib-danger-bg) [&_.var-pill-invalid]:text-(--ib-danger) [&_.var-pill-invalid]:underline [&_.var-pill-invalid]:decoration-wavy",
           "[&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-(--ib-dim) [&:empty]:before:pointer-events-none",
           variables.length > 0 && "pr-11",
           className

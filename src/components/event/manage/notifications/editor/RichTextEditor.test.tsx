@@ -44,4 +44,36 @@ describe("RichTextEditor", () => {
     render(<RichTextEditor value={state} onChange={vi.fn()} variables={variables} disabled />)
     expect(screen.queryByRole("toolbar")).toBeNull()
   })
+
+  it("turns a {{token}} stored as plain text into a variable and flags an unknown one", async () => {
+    const plain = {
+      root: {
+        children: [{ children: [text("Привіт, {{event_name}}! Також {{ .ghost }}.")], direction: "ltr", format: "", indent: 0, type: "paragraph", version: 1, textFormat: 0, textStyle: "" }],
+        direction: "ltr", format: "", indent: 0, type: "root", version: 1,
+      },
+    }
+    const onChange = vi.fn()
+    render(<RichTextEditor value={plain} onChange={onChange} variables={variables} showVariableNames />)
+    await waitFor(() => expect(document.querySelector('[data-notif-variable="event_name"]')).toBeTruthy())
+    expect(document.querySelector('[data-notif-variable="event_name"]')?.hasAttribute("data-notif-variable-invalid")).toBe(false)
+    expect(document.querySelector('[data-notif-variable-invalid="ghost"]')).toBeTruthy()
+    expect(document.body.textContent).not.toContain("{{")
+    const saved = JSON.stringify(onChange.mock.calls.at(-1)?.[0])
+    expect(saved).toContain('"varName":"event_name"')
+    expect(saved).toContain('"varName":"ghost"')
+  })
+
+  it("does not convert plain tokens while the list is empty or the editor is read-only", async () => {
+    const plain = {
+      root: {
+        children: [{ children: [text("Hi {{event_name}}")], direction: "ltr", format: "", indent: 0, type: "paragraph", version: 1, textFormat: 0, textStyle: "" }],
+        direction: "ltr", format: "", indent: 0, type: "root", version: 1,
+      },
+    }
+    const { unmount } = render(<RichTextEditor value={plain} onChange={vi.fn()} variables={[]} />)
+    await waitFor(() => expect(document.body.textContent).toContain("Hi {{event_name}}"))
+    unmount()
+    render(<RichTextEditor value={plain} onChange={vi.fn()} variables={variables} disabled />)
+    await waitFor(() => expect(document.body.textContent).toContain("Hi {{event_name}}"))
+  })
 })

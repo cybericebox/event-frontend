@@ -9,12 +9,23 @@
  * emits or parses the matching token form.  The pill span is identical in both
  * modes — the dot only appears inside the raw token string.
  *
+ * Reading is lenient: a token is `{{Name}}`, `{{.Name}}`, `{{ Name }}` or
+ * `{{ .Name }}` in either field kind (the backend substitutes all of them).
+ * Writing keeps the field's canonical form.  A name outside the field's
+ * variable list becomes an INVALID pill (flagged, red) instead of staying
+ * plain text; while the list is empty (not loaded yet) nothing is converted.
+ *
  * Security: variable names are constrained to \w+ (alphanumeric + _).
  * Literal text passed through rawToHtml is always HTML-escaped.
  * This editor is admin-only; content is authored by admins.
  */
 
+import { t } from "@/i18n/t"
+
 export type VariableDef = { name: string; description?: string; example?: string }
+
+/** Any accepted spelling of a variable token; group 1 is the name. */
+export const VARIABLE_TOKEN = /\{\{\s*\.?\s*([A-Za-z_]\w*)\s*\}\}/
 
 // ── HTML escaping ─────────────────────────────────────────────────────────────
 
@@ -29,8 +40,18 @@ function escapeHtml(text: string): string {
 
 // ── Pill helpers ──────────────────────────────────────────────────────────────
 
-function pillHtml(name: string): string {
+export const INVALID_PILL_CLASS = 'var-pill-invalid'
+
+export function unknownVariableHint(name: string): string {
+  return t('manage.tpl.editor.unknownVariable', { name })
+}
+
+function pillHtml(name: string, invalid = false): string {
   // data-var holds the canonical name (no dot); pill text is just the name.
+  if (invalid) {
+    const hint = escapeHtml(unknownVariableHint(name))
+    return `<span class="var-pill ${INVALID_PILL_CLASS}" data-var="${name}" data-invalid="true" title="${hint}">${name}</span>`
+  }
   return `<span class="var-pill" data-var="${name}">${name}</span>`
 }
 
@@ -49,11 +70,12 @@ function stripPills(html: string, opts?: { dotted?: boolean }): string {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * Convert a raw string with {{Name}} (or {{.Name}} when opts.dotted) tokens
- * to pill-HTML for display in a contentEditable.
+ * Convert a raw string with variable tokens to pill-HTML for display in a
+ * contentEditable.
  *
  * - Known variables (present in `variables`) become pill spans.
- * - Unknown tokens are left as escaped plain text (no pill).
+ * - Unknown names become INVALID pills (flagged) — but only once the list is
+ *   loaded; with an empty list tokens stay escaped plain text.
  * - All non-token literal text is HTML-escaped.
  *
  * Idempotent: existing pill spans are stripped to tokens first.
@@ -67,9 +89,7 @@ export function rawToHtml(
   // Strip any existing pills so calling rawToHtml twice is safe.
   const plain = stripPills(raw ?? '', opts)
 
-  // Build a regex that matches the correct token form.
-  const prefix = opts?.dotted ? '\\.' : ''
-  const tokenRe = new RegExp(`\\{\\{${prefix}(\\w+)\\}\\}`, 'g')
+  const tokenRe = new RegExp(VARIABLE_TOKEN.source, 'g')
 
   const parts: string[] = []
   let lastIndex = 0
@@ -82,8 +102,10 @@ export function rawToHtml(
     const name = match[1]
     if (known.has(name)) {
       parts.push(pillHtml(name))
+    } else if (known.size > 0) {
+      parts.push(pillHtml(name, true))
     } else {
-      // Unknown token — leave as escaped plain text.
+      // List not loaded yet — leave as escaped plain text.
       parts.push(escapeHtml(match[0]))
     }
     lastIndex = tokenRe.lastIndex
@@ -170,5 +192,56 @@ export function insertVariablePill(name: string): boolean {
   sel.removeAllRanges()
   sel.addRange(cursor)
 
+  return true
+}
+
+/**
+ * Turn a just-typed complete token (`{{name}}`, `{{.name}}`, `{{ name }}`)
+ * that ends at the caret into a pill: valid for a name in `known`, INVALID
+ * otherwise.  Does nothing while `known` is empty (list not loaded).
+ *
+ * Returns true when a pill was inserted.
+ */
+export function convertTypedToken(known: string[]): boolean {
+  if (known.length === 0) return false
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false
+
+  const range = sel.getRangeAt(0)
+  const node = range.startContainer
+  if (node.nodeType !== Node.TEXT_NODE) return false
+
+  const text = node.textContent ?? ''
+  const offset = range.startOffset
+  const before = text.slice(0, offset)
+  const match = new RegExp(`${VARIABLE_TOKEN.source}$`).exec(before)
+  if (!match) return false
+
+  const name = match[1]
+  const invalid = !known.includes(name)
+  const pill = document.createElement('span')
+  pill.className = invalid ? `var-pill ${INVALID_PILL_CLASS}` : 'var-pill'
+  pill.setAttribute('data-var', name)
+  pill.setAttribute('contenteditable', 'false')
+  if (invalid) {
+    pill.setAttribute('data-invalid', 'true')
+    pill.setAttribute('title', unknownVariableHint(name))
+  }
+  pill.textContent = name
+
+  const deleteRange = document.createRange()
+  deleteRange.setStart(node, match.index)
+  deleteRange.setEnd(node, offset)
+  deleteRange.deleteContents()
+  deleteRange.insertNode(pill)
+
+  const spacer = document.createTextNode('\u200B')
+  pill.after(spacer)
+
+  const cursor = document.createRange()
+  cursor.setStartAfter(spacer)
+  cursor.collapse(true)
+  sel.removeAllRanges()
+  sel.addRange(cursor)
   return true
 }

@@ -3661,6 +3661,7 @@
   "manage.tpl.editor.textLineHeight": "Міжрядковий інтервал тексту",
   "manage.tpl.editor.toolbar": "Панель форматування",
   "manage.tpl.editor.underline": "Підкреслений",
+  "manage.tpl.editor.unknownVariable": "Невідома змінна «{name}»: такої немає в цьому типі сповіщення. Видаліть її або виберіть змінну зі списку.",
   "manage.tpl.editor.uploadImage": "Завантажити",
   "manage.tpl.editor.variableExample": "Приклад",
   "manage.tpl.exPh.cleanView": "Чистий вигляд",

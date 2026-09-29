@@ -31,4 +31,20 @@ describe("InAppBodyEditor", () => {
     render(<InAppBodyEditor value="" onChange={vi.fn()} variables={[]} disabled />)
     expect(screen.getByRole("textbox", { name: "Текст" }).getAttribute("contenteditable")).toBe("false")
   })
+
+  it("decorates every spelling of a known variable and flags an unknown one", () => {
+    render(<InAppBodyEditor value="{{.event_name}} {{ event_name }} {{.ghost}}" onChange={vi.fn()} variables={[{ name: "event_name", description: "Назва" }]} />)
+    const field = screen.getByRole("textbox", { name: "Текст" })
+    expect(field.querySelectorAll('[data-var="event_name"]')).toHaveLength(2)
+    expect(field.querySelector('[data-var="event_name"]')?.getAttribute("data-invalid")).toBeNull()
+    expect(field.querySelector('[data-var="ghost"]')?.getAttribute("data-invalid")).toBe("true")
+  })
+
+  it("leaves tokens as text until the variable list loads", () => {
+    const { rerender } = render(<InAppBodyEditor value="Hi {{.event_name}}" onChange={vi.fn()} variables={[]} />)
+    const field = screen.getByRole("textbox", { name: "Текст" })
+    expect(field.querySelector("[data-var]")).toBeNull()
+    rerender(<InAppBodyEditor value="Hi {{.event_name}}" onChange={vi.fn()} variables={[{ name: "event_name", description: "Назва" }]} />)
+    expect(field.querySelector('[data-var="event_name"]')).toBeTruthy()
+  })
 })
