@@ -120,8 +120,9 @@ export function smtpInput(form: SMTPForm): SMTPInput {
     };
 }
 
-export type MailJournalFilters = {type: string | null; result: MailResult | null; transport: MailTransport | null; channel: string};
-export const emptyMailJournalFilters: MailJournalFilters = {type: null, result: null, transport: null, channel: "email"};
+export type MailJournalFilters = {type: string | null; status: string | null; result: MailResult | null; transport: MailTransport | null; channel: string};
+export const emptyMailJournalFilters: MailJournalFilters = {type: null, status: null, result: null, transport: null, channel: "email"};
+export const mailDispatchStatuses = ["pending", "started", "done", "error"] as const;
 export const mailJournalPageSize = 25;
 
 export function mailJournalQueryParams(filters: MailJournalFilters, cursor: string | null = null, limit = mailJournalPageSize): URLSearchParams {
@@ -129,6 +130,7 @@ export function mailJournalQueryParams(filters: MailJournalFilters, cursor: stri
     params.set("limit", String(limit));
     if (filters.channel) params.set("channel", filters.channel);
     if (filters.type) params.set("type", filters.type);
+    if (filters.status) params.set("status", filters.status);
     if (filters.result) params.set("result", filters.result);
     if (filters.transport) params.set("transport", filters.transport);
     if (cursor) params.set("cursor", cursor);

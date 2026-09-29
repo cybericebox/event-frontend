@@ -129,7 +129,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
                         <span>{group.label}</span><ChevronDown size={15} aria-hidden="true" />
                     </button>
                     <div id={`event-manage-group-${group.id}`} className="event-manage-sidebar__items" hidden={!isOpen}>
-                        {items.map(item => <Link className="ib-admin-side__item" href={item.href} key={item.href} aria-current={pathname === item.href ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}}><item.icon size={16} aria-hidden="true" /><SideLabel text={item.label} /></Link>)}
+                        {items.map(item => <Link className="ib-admin-side__item" href={item.href} key={item.href} aria-current={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}}><item.icon size={16} aria-hidden="true" /><SideLabel text={item.label} /></Link>)}
                         {group.id === "pages" && <>
                             {[...(pages ?? [])].sort(comparePageOrder).map(page => {
                                 const editorSlug = page.Draft?.Slug ?? page.Slug;

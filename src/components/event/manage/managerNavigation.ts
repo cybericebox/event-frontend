@@ -1,4 +1,5 @@
 import type {ManagePage} from "@/api/manage";
+import {signalLabel} from "@/api/manageNotifications";
 import {t} from "@/i18n/t";
 
 export function managerLocationTitle(pathname: string, pages: ManagePage[]): string {
@@ -26,6 +27,10 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/surveys") return t("manage.nav.surveys");
     if (pathname === "/manage/notifications") return t("manage.nav.notifications");
     if (pathname === "/manage/email") return t("manage.nav.email");
+    // A template page is named after its signal.
+    for (const base of ["/manage/notifications/", "/manage/email/"]) {
+        if (pathname.startsWith(base)) return signalLabel(decodeURIComponent(pathname.slice(base.length))).title;
+    }
     if (pathname === "/manage/mail") return t("manage.nav.mail");
     if (pathname === "/manage/mail-journal") return t("manage.nav.mailJournal");
     if (pathname === "/manage/content/pages/new") return t("manage.nav.newPage");

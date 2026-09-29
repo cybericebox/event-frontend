@@ -18,9 +18,12 @@ export function templateMode(template: Owned | undefined): TemplateMode {
 }
 
 // A draft first, then the published version, then older ones; newest first within a status.
-export function orderedVersions<T extends Versioned>(items: T[], signal: string): T[] {
+export function orderedVersions<T extends Versioned & Partial<Owned>>(items: T[], signal: string): T[] {
     const rank = (item: T) => item.Status === "draft" ? 0 : item.Status === "published" ? 1 : 2;
-    return items.filter(item => item.NotificationType === signal).sort((a, b) => rank(a) - rank(b) || b.UpdatedAt.localeCompare(a.UpdatedAt));
+    const ofSignal = items.filter(item => item.NotificationType === signal);
+    // Once the event has its own copy, the platform template is not offered any more.
+    const own = ofSignal.filter(item => item.Source !== "platform");
+    return (own.length ? own : ofSignal).sort((a, b) => rank(a) - rank(b) || b.UpdatedAt.localeCompare(a.UpdatedAt));
 }
 
 // Sample value of every template variable of a signal: the catalog default,
@@ -50,4 +53,15 @@ export function insertAtCaret(value: string, text: string, start: number | null,
 
 export function variableToken(name: string): string {
     return `{{.${name}}}`;
+}
+
+export type ListStatus = "published" | "draft" | "unpublished" | "platform";
+
+// What the list shows for a signal: the event's own effective version
+// (published, else draft, else older) or the untouched platform template.
+export function listStatus(versions: Array<Owned>): {status: ListStatus; draftPending: boolean} {
+    const own = versions.filter(item => item.Source === "event");
+    const has = (status: Versioned["Status"]) => own.some(item => item.Status === status);
+    const status: ListStatus = has("published") ? "published" : has("draft") ? "draft" : has("unpublished") ? "unpublished" : "platform";
+    return {status, draftPending: has("published") && has("draft")};
 }

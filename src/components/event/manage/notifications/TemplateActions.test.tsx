@@ -14,7 +14,7 @@ beforeAll(() => {
 
 function setup(mode: TemplateMode, onReset = vi.fn().mockResolvedValue(true)) {
     const handlers = {onCustomize: vi.fn(), onEdit: vi.fn(), onRestore: vi.fn(), onReset};
-    render(<TemplateActions mode={mode} status="Опублікована" canManage busy={false} {...handlers} />);
+    render(<TemplateActions mode={mode} canManage busy={false} {...handlers} />);
     return handlers;
 }
 

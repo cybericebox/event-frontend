@@ -62,5 +62,8 @@ describe("Журнал надсилання", () => {
         fireEvent.click(await screen.findByRole("menuitemradio", {name: "Помилка"}));
         await waitFor(() => expect(urls.at(-1)).toContain("result=error"));
         expect(urls.at(-1)).not.toContain("cursor=");
+        fireEvent.pointerDown(screen.getByRole("button", {name: "Статус надсилання"}), {button: 0, ctrlKey: false});
+        fireEvent.click(await screen.findByRole("menuitemradio", {name: "Очікує"}));
+        await waitFor(() => expect(urls.at(-1)).toContain("status=pending"));
     });
 });

@@ -3,7 +3,7 @@
 import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {
-    emptyMailJournalFilters, getEventMailJournal, journalTarget, mailResultLabels, mailTransportLabel,
+    emptyMailJournalFilters, getEventMailJournal, journalTarget, mailDispatchStatuses, mailResultLabels, mailTransportLabel,
     mailTransportLabels, type MailJournalFilters, type MailResult, type MailTransport,
 } from "@/api/manageMail";
 import {signalLabel, signalLabels} from "@/api/manageNotifications";
@@ -30,7 +30,7 @@ export function MailJournal() {
         queryFn: () => getEventMailJournal(eventID, filters, pages.cursor, pages.pageSize),
         refetchOnWindowFocus: false, placeholderData: previous => previous,
     });
-    const filtered = filters.type !== null || filters.result !== null || filters.transport !== null || filters.channel !== emptyMailJournalFilters.channel;
+    const filtered = filters.type !== null || filters.status !== null || filters.result !== null || filters.transport !== null || filters.channel !== emptyMailJournalFilters.channel;
     const email = filters.channel === "email";
     const items = query.data?.Items ?? [];
     const busy = query.isFetching && !!query.data;
@@ -44,10 +44,12 @@ export function MailJournal() {
     const channelOptions = [{value: "email", label: t("manage.mail.channel.email")}, {value: "in_app", label: t("manage.mail.channel.inApp")}];
     const typeOptions = [{value: all, label: t("manage.mail.journal.allTypes")}, ...Object.keys(signalLabels).map(type => ({value: type, label: signalLabel(type).title}))];
     const transportOptions = [{value: all, label: t("manage.mail.journal.allTransports")}, ...Object.entries(mailTransportLabels).map(([value, label]) => ({value, label}))];
+    const statusOptions = [{value: all, label: t("manage.mail.journal.allStatuses")}, ...mailDispatchStatuses.map(value => ({value, label: t(`manage.mail.journal.status.${value}`)}))];
     const resultOptions = [{value: all, label: t("manage.mail.journal.allResults")}, ...(["done", "error"] as const).map(value => ({value, label: mailResultLabels[value]}))];
 
     const toolbar = <>
         <EventSelect ariaLabel={t("manage.mail.journal.typeLabel")} value={filters.type ?? all} options={typeOptions} onValueChange={value => changeFilters({type: value === all ? null : value})} />
+        <EventSelect ariaLabel={t("manage.mail.journal.statusLabel")} value={filters.status ?? all} options={statusOptions} onValueChange={value => changeFilters({status: value === all ? null : value})} />
         <EventSelect ariaLabel={t("manage.mail.journal.channel")} value={filters.channel} options={channelOptions} onValueChange={value => changeFilters({channel: value, transport: value === "email" ? filters.transport : null})} />
         <EventSelect ariaLabel={t("manage.mail.journal.result")} value={filters.result ?? all} options={resultOptions} onValueChange={value => changeFilters({result: value === all ? null : value as MailResult})} />
         {email && <EventSelect ariaLabel={t("manage.mail.journal.transport")} value={filters.transport ?? all} options={transportOptions} onValueChange={value => changeFilters({transport: value === all ? null : value as MailTransport})} />}
