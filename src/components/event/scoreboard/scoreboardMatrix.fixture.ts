@@ -20,10 +20,10 @@ export function infoAvailability(audience: Audience, visibility: Visibility, pha
     return phase === "before" ? "not_started" : "available";
 }
 
-// Whether the API serves the results to this viewer now.
-export function apiReadable(audience: Audience, visibility: Visibility, phase: Phase): boolean {
-    if (audience === "staff") return true;
-    return infoAvailability(audience, visibility, phase) === "available";
+// Whether the API serves the results to this viewer: its audience reads the
+// table in every phase (before the start: the teams with no points yet).
+export function apiReadable(audience: Audience, visibility: Visibility): boolean {
+    return audience === "staff" || visibility === 2 || (visibility === 1 && audience === "participant");
 }
 
 // The freeze applies to non-staff while it is active (it ends at the finish).

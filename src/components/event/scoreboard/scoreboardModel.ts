@@ -26,20 +26,18 @@ export type ScoreboardAccess = {
     // The results are read now (the API serves them to this viewer).
     fetch: boolean;
     // The table block message instead of rows, or null for the rows.
-    message: "scoreboard.hidden" | "scoreboard.participantsOnly" | "scoreboard.afterStart" | null;
-    // «Відкрити Live»: staff only; participants and guests have this page,
-    // projector PCs get a screen link.
-    live: boolean;
+    message: "scoreboard.hidden" | "scoreboard.participantsOnly" | null;
 };
 
 // What the results page shows to one viewer: `base` is the availability of
 // the public or participant info (the guest or participant view), `staff`
-// the viewer's manage access, `started` the event phase.
-export function scoreboardAccess(base: ResultsAvailability, staff: boolean, started: boolean): ScoreboardAccess {
+// the viewer's manage access. Before the start the audience reads the table
+// too: the admitted teams with no points yet. Live is a staff screen opened
+// from /manage, so this page has no Live action.
+export function scoreboardAccess(base: ResultsAvailability, staff: boolean): ScoreboardAccess {
     const availability = viewerResultsAvailability(base, staff);
     const nav = resultsLinkVisible(availability);
-    if (availability === "hidden") return {nav, fetch: false, message: "scoreboard.hidden", live: false};
-    if (availability === "participants_only") return {nav, fetch: false, message: "scoreboard.participantsOnly", live: false};
-    if (!started) return {nav, fetch: false, message: "scoreboard.afterStart", live: staff};
-    return {nav, fetch: true, message: null, live: staff};
+    if (availability === "hidden") return {nav, fetch: false, message: "scoreboard.hidden"};
+    if (availability === "participants_only") return {nav, fetch: false, message: "scoreboard.participantsOnly"};
+    return {nav, fetch: true, message: null};
 }

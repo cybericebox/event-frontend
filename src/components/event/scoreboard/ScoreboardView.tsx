@@ -1,7 +1,6 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {ExternalLink} from "lucide-react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {getManageResults, resultsLiveURL, ResultsUnavailableError, type ManageResultsSnapshot} from "@/api/manageResults";
@@ -23,7 +22,7 @@ import {ScoreTable, type ScoreTableState} from "./ScoreTable";
 import "@/components/event/manage/manageTable.css";
 import "./scoreboard.css";
 
-const deniedMessages = {hidden: "scoreboard.hidden", participants_only: "scoreboard.participantsOnly", not_started: "scoreboard.afterStart"} as const;
+const deniedMessages = {hidden: "scoreboard.hidden", participants_only: "scoreboard.participantsOnly"} as const;
 const POLL_SECONDS = 30;
 // The stream's server check period for this page (the staff live screen sets
 // its own). 10 s ±20 %, drawn once per page, so viewers do not tick in step.
@@ -42,8 +41,7 @@ export function ScoreboardView() {
     const [now, setNow] = useState(() => Date.now());
     const [search, setSearch] = useState("");
     const started = !!event && Date.parse(event.StartTime) <= now;
-    // "not_started" opens by itself at the start; the others need the organizer.
-    const view = scoreboardAccess(base, access.staff, started);
+    const view = scoreboardAccess(base, access.staff);
     const readable = view.fetch;
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), started ? 30000 : 1000);
@@ -95,16 +93,21 @@ export function ScoreboardView() {
     if (denied) state = {kind: "empty", message: t(denied)};
     else if (results.isError) state = {kind: "custom", content: <EventLoadError message={t("scoreboard.loadFailed")} onRetry={() => void results.refetch()} />};
     else if (!data) state = {kind: "loading"};
-    else if (data.Scoreboard.length === 0) state = {kind: "empty", message: t("scoreboard.empty")};
+    else if (data.Scoreboard.length === 0) state = {kind: "empty", message: t(teamMode ? "scoreboard.noTeams" : "scoreboard.noParticipants")};
     else if (rows.length === 0) state = {kind: "empty", message: t("scoreboard.emptySearch")};
     else state = {kind: "rows", rows};
 
     const ownRow = !!data && !!ownTeamID && data.Scoreboard.some(entry => entry.TeamID === ownTeamID);
     const frozen = !!data?.Freeze.Applied;
     const finished = !!event.FinishTime && Date.parse(event.FinishTime) <= now;
-    const chartEnd = Math.max(Date.parse(event.StartTime) + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now));
-    const sub = data ? t("scoreboard.sub", {units: unitCount(data.TotalTeams, teamMode), status: frozen ? t("scoreboard.status.frozen") : finished ? t("scoreboard.status.final") : t("scoreboard.status.current")})
-        : !started && denied === "scoreboard.afterStart" ? t("scoreboard.status.notStarted") : null;
+    const startAt = Date.parse(event.StartTime);
+    const finishAt = event.FinishTime ? Date.parse(event.FinishTime) : null;
+    // Before the start the axes span the planned event (or two hours).
+    const chartEnd = !started ? finishAt ?? startAt + 2 * 3_600_000 : Math.max(startAt + 60000, Math.min(finishAt ?? Number.POSITIVE_INFINITY, now));
+    const chartIDs = data && started ? chartTeamIDs(data, ownTeamID) : [];
+    const chartNote = !data ? undefined : !started ? t("scoreboard.chartAfterStart") : data.Scoreboard.length === 0 ? t(teamMode ? "scoreboard.noTeams" : "scoreboard.noParticipants") : undefined;
+    const status = frozen ? t("scoreboard.status.frozen") : !started ? t("scoreboard.status.beforeStart") : finished ? t("scoreboard.status.final") : t("scoreboard.status.current");
+    const sub = data ? t("scoreboard.sub", {units: unitCount(data.TotalTeams, teamMode), status}) : null;
     const trimmed = !!data && data.Display.RowsLimit !== null && data.TotalTeams > data.Display.RowsLimit;
 
     return <div className="event-results">
@@ -113,14 +116,11 @@ export function ScoreboardView() {
             <header className="ib-page-header">
                 <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("scoreboard.title")}</h1>{sub && <p className="ib-page-header__sub">{sub}</p>}</div></div>
             </header>
-            {(readable || view.live) && <div className="event-results__actions">
-                {readable && <LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: POLL_SECONDS}} updatedAt={results.dataUpdatedAt} />}
-                {view.live && <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> {t("scoreboard.openLive")}</a>}
-            </div>}
+            {readable && <div className="event-results__actions"><LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: POLL_SECONDS}} updatedAt={results.dataUpdatedAt} /></div>}
         </div>
-        {data && data.Display.ChartEnabled && data.Scoreboard.length > 0 && <div className="event-results__chart rounded-lg border border-border bg-card p-4">
-            <p className="mb-2 text-sm font-semibold text-foreground">{t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
-            <ScoreChart snapshot={data} teamIDs={chartTeamIDs(data, ownTeamID)} ownTeamID={ownTeamID} startTime={new Date(event.StartTime)} finishTime={new Date(chartEnd)} />
+        {data && data.Display.ChartEnabled && <div className="event-results__chart rounded-lg border border-border bg-card p-4" data-testid="score-chart">
+            <p className="mb-2 text-sm font-semibold text-foreground">{chartIDs.length === 0 ? t("scoreboard.chartTitlePlain") : t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
+            <ScoreChart snapshot={data} teamIDs={chartIDs} ownTeamID={ownTeamID} startTime={new Date(startAt)} finishTime={new Date(chartEnd)} note={chartNote} />
         </div>}
         <ScoreTable event={event} state={state} ownTeamID={ownTeamID} teamMode={teamMode} search={search} onSearch={setSearch} />
         {(frozen && ownRow || trimmed) && <p className="ib-ranking-note">

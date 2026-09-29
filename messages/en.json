@@ -2397,7 +2397,6 @@
   "participation.vpn.note": "Required for infrastructure challenges.",
   "participation.vpn.setup": "Set up VPN",
   "participation.vpn.title": "VPN",
-  "scoreboard.afterStart": "The ranking appears after the start",
   "scoreboard.chartTitle": "Points over time · top {top}",
   "scoreboard.chartTitleOwn": "Points over time · top {top} and you",
   "scoreboard.chartTitleOwnTeam": "Points over time · top {top} and your team",
@@ -2407,7 +2406,6 @@
   "scoreboard.col.points": "Points",
   "scoreboard.col.solved": "Solved",
   "scoreboard.col.team": "Team",
-  "scoreboard.empty": "No results yet",
   "scoreboard.frozenMessage": "The table shows the state at the freeze. Final results come after the finish.",
   "scoreboard.frozenOwn": "Your points keep updating; the rank is as of the freeze.",
   "scoreboard.frozenOwnTeam": "Your team's points keep updating; the rank is as of the freeze.",
@@ -2775,8 +2773,6 @@
   "scoreboard.searchParticipants": "Search participants",
   "scoreboard.tableLabel": "Ranking",
   "scoreboard.emptySearch": "Nothing matches this search",
-  "scoreboard.status.notStarted": "The event has not started yet",
-  "scoreboard.openLive": "Open Live",
   "scoreboard.status.current": "current ranking",
   "scoreboard.status.final": "final ranking",
   "manage.live.undo": "Undo (⌘Z / Ctrl+Z)",
@@ -2828,5 +2824,10 @@
   "manage.live.links.revokeTitle": "Revoke the link?",
   "manage.live.links.revokeBody": "Screens with this link stop showing Live at once.",
   "manage.live.links.revoked": "Link revoked",
-  "manage.live.links.error": "Could not change the screen link."
+  "manage.live.links.error": "Could not change the screen link.",
+  "scoreboard.noTeams": "No admitted teams yet",
+  "scoreboard.noParticipants": "No admitted participants yet",
+  "scoreboard.chartAfterStart": "The chart appears after the start",
+  "scoreboard.chartTitlePlain": "Points over time",
+  "scoreboard.status.beforeStart": "before the start"
 }

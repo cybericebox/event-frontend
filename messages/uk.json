@@ -2397,7 +2397,6 @@
   "participation.vpn.note": "Потрібен для завдань з інфраструктурою.",
   "participation.vpn.setup": "Налаштувати VPN",
   "participation.vpn.title": "VPN",
-  "scoreboard.afterStart": "Рейтинг зʼявиться після початку",
   "scoreboard.chartTitle": "Бали за часом · топ-{top}",
   "scoreboard.chartTitleOwn": "Бали за часом · топ-{top} і ви",
   "scoreboard.chartTitleOwnTeam": "Бали за часом · топ-{top} і ваша команда",
@@ -2407,7 +2406,6 @@
   "scoreboard.col.points": "Бали",
   "scoreboard.col.solved": "Розвʼязано",
   "scoreboard.col.team": "Команда",
-  "scoreboard.empty": "Ще немає результатів",
   "scoreboard.frozenMessage": "Таблиця показує стан на момент заморожування. Підсумки — після фіналу.",
   "scoreboard.frozenOwn": "Ваші бали оновлюються, місце — на момент заморожування.",
   "scoreboard.frozenOwnTeam": "Бали вашої команди оновлюються, місце — на момент заморожування.",
@@ -2775,8 +2773,6 @@
   "scoreboard.searchParticipants": "Пошук учасника",
   "scoreboard.tableLabel": "Рейтинг",
   "scoreboard.emptySearch": "Нічого не знайдено за цим запитом",
-  "scoreboard.status.notStarted": "Захід ще не почався",
-  "scoreboard.openLive": "Відкрити Live",
   "scoreboard.status.current": "актуальний рейтинг",
   "scoreboard.status.final": "підсумковий рейтинг",
   "manage.live.undo": "Скасувати зміну (⌘Z / Ctrl+Z)",
@@ -2828,5 +2824,10 @@
   "manage.live.links.revokeTitle": "Відкликати посилання?",
   "manage.live.links.revokeBody": "Екрани з цим посиланням одразу перестануть показувати Live.",
   "manage.live.links.revoked": "Посилання відкликано",
-  "manage.live.links.error": "Не вдалося змінити посилання для екрана."
+  "manage.live.links.error": "Не вдалося змінити посилання для екрана.",
+  "scoreboard.noTeams": "Ще немає допущених команд",
+  "scoreboard.noParticipants": "Ще немає допущених учасників",
+  "scoreboard.chartAfterStart": "Графік зʼявиться після початку",
+  "scoreboard.chartTitlePlain": "Бали за часом",
+  "scoreboard.status.beforeStart": "до старту"
 }
