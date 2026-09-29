@@ -32,8 +32,8 @@ function backoff(attempt: number): number {
 
 function OutageDialog({onCheck}: {onCheck: () => Promise<void>}) {
     const ref = useRef<HTMLDialogElement>(null);
-    const titleID = useId();
-    const attempt = useRef(0);
+    const titleId = useId();
+    const attemptRef = useRef(0);
     const [deadline, setDeadline] = useState(() => Date.now() + backoff(0));
     const [now, setNow] = useState(() => Date.now());
     const [checking, setChecking] = useState(false);
@@ -46,12 +46,12 @@ function OutageDialog({onCheck}: {onCheck: () => Promise<void>}) {
         try {
             await onCheck();
         } finally {
-            attempt.current += 1;
+            attemptRef.current += 1;
             checkingRef.current = false;
             setChecking(false);
             const at = Date.now();
             setNow(at);
-            setDeadline(at + backoff(attempt.current));
+            setDeadline(at + backoff(attemptRef.current));
         }
     }, [onCheck]);
 
@@ -74,11 +74,11 @@ function OutageDialog({onCheck}: {onCheck: () => Promise<void>}) {
     }, [checking, deadline, check]);
 
     const seconds = Math.max(1, Math.ceil((deadline - now) / 1000));
-    return <dialog ref={ref} className="ib-modal ib-modal--sm event-service-gate" role="alertdialog" aria-modal="true" aria-labelledby={titleID}
+    return <dialog ref={ref} className="ib-modal ib-modal--sm event-service-gate" role="alertdialog" aria-modal="true" aria-labelledby={titleId}
         onCancel={event => event.preventDefault()}>
         <div className="ib-modal__body event-service-gate__body">
             <EventBrandLogo className="event-service-gate__logo" size={48} />
-            <h2 className="ib-modal__title" id={titleID}>{t("shell.unavailable.title")}</h2>
+            <h2 className="ib-modal__title" id={titleId}>{t("shell.unavailable.title")}</h2>
             <p className="ib-modal__desc">{t("shell.unavailable.body")}</p>
             <p className="event-service-gate__hint" aria-live="polite">{checking ? t("shell.unavailable.checking") : t("shell.unavailable.nextTry", {seconds})}</p>
         </div>
