@@ -1,21 +1,33 @@
 import {describe, expect, it} from "vitest";
 import {
-    emptyMailJournalFilters, journalTarget, mailJournalQueryParams, mailSettingsError, mailSettingsInput,
+    emptyMailJournalFilters, identityError, identityForm, identityInput, journalTarget, mailJournalQueryParams,
     mailTransportLabel, smtpError, smtpForm, smtpInput, type MailJournalItem,
 } from "./manageMail";
 
-describe("event mail settings form", () => {
-    it("accepts an empty contact address and reminder hours 0–168", () => {
-        expect(mailSettingsError({contactEmail: "", startReminderHours: "0"})).toBe("");
-        expect(mailSettingsError({contactEmail: "team@example.com", startReminderHours: "168"})).toBe("");
-        expect(mailSettingsError({contactEmail: "nope", startReminderHours: "24"})).not.toBe("");
-        expect(mailSettingsError({contactEmail: "", startReminderHours: "169"})).not.toBe("");
-        expect(mailSettingsError({contactEmail: "", startReminderHours: "2.5"})).not.toBe("");
-        expect(mailSettingsError({contactEmail: "", startReminderHours: ""})).not.toBe("");
+describe("event mail identity form", () => {
+    const empty = {senderName: "", senderAddress: "", replyToName: "", replyToAddress: ""};
+
+    it("starts from the event's own values", () => {
+        expect(identityForm({Sender: {Name: "CTF", Address: "ctf@example.com"}, ReplyTo: {Name: "", Address: "team@example.com"}}))
+            .toEqual({senderName: "CTF", senderAddress: "ctf@example.com", replyToName: "", replyToAddress: "team@example.com"});
+    });
+
+    it("accepts empty fields (they inherit) and valid addresses", () => {
+        expect(identityError(empty)).toBe("");
+        expect(identityError({...empty, senderAddress: "ctf@example.com", replyToAddress: "team@example.com"})).toBe("");
+    });
+
+    it("rejects bad addresses and names over 64 characters", () => {
+        expect(identityError({...empty, senderAddress: "nope"})).toBe("senderAddress");
+        expect(identityError({...empty, replyToAddress: "a@b"})).toBe("replyToAddress");
+        expect(identityError({...empty, senderName: "x".repeat(65)})).toBe("senderName");
+        expect(identityError({...empty, senderName: "x".repeat(64)})).toBe("");
+        expect(identityError({...empty, replyToName: "x".repeat(65)})).toBe("replyToName");
     });
 
     it("trims the payload", () => {
-        expect(mailSettingsInput({contactEmail: " team@example.com ", startReminderHours: " 12 "})).toEqual({ContactEmail: "team@example.com", StartReminderHours: 12});
+        expect(identityInput({senderName: " CTF ", senderAddress: " a@b.co ", replyToName: "", replyToAddress: " r@b.co "}))
+            .toEqual({Sender: {Name: "CTF", Address: "a@b.co"}, ReplyTo: {Name: "", Address: "r@b.co"}});
     });
 });
 

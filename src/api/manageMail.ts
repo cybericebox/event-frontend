@@ -3,7 +3,7 @@ import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
-// W7 «Пошта»: event sender identity, contact address, start reminder,
+// W7 «Пошта»: event sender and reply-to identity, start reminder,
 // optional event SMTP and the delivery journal (spec 2026-09-29 §6).
 
 export type MailTLSMode = "starttls" | "tls";
@@ -26,10 +26,12 @@ const smtpSchema = z.object({
     Host: z.string(), Port: z.number().int(), TLSMode: z.string(), Username: z.string(),
     PasswordSet: z.boolean(), UpdatedAt: z.string().nullable().optional(),
 });
+const partySchema = z.object({Name: z.string().nullable().transform(value => value ?? ""), Address: z.string().nullable().transform(value => value ?? "")});
+const identitySchema = z.object({Sender: partySchema, ReplyTo: partySchema});
 const settingsSchema = z.object({
-    ContactEmail: z.string().nullable().transform(value => value ?? ""),
+    Identity: identitySchema,
+    Inherited: identitySchema,
     StartReminderHours: z.number().int(),
-    SenderName: z.string(), SenderAddress: z.string(), ReplyTo: z.string(),
     SMTP: smtpSchema.nullable(),
     PlatformConfigured: z.boolean(),
 });
@@ -52,6 +54,8 @@ const journalPageSchema = z.object({
     Total: z.number().int(), Items: z.array(journalItemSchema), NextCursor: z.string().nullable().optional(),
 });
 
+export type MailParty = z.infer<typeof partySchema>;
+export type MailIdentity = z.infer<typeof identitySchema>;
 export type EventMailSettings = z.infer<typeof settingsSchema>;
 export type EventMailSMTP = z.infer<typeof smtpSchema>;
 export type MailTestResult = z.infer<typeof testResultSchema>;
@@ -61,25 +65,36 @@ export type MailJournalPage = z.infer<typeof journalPageSchema>;
 
 // --- form state and payload builders ---
 
-export type MailSettingsForm = {contactEmail: string; startReminderHours: string};
-export type MailSettingsInput = {ContactEmail: string; StartReminderHours: number};
+export type IdentityForm = {senderName: string; senderAddress: string; replyToName: string; replyToAddress: string};
+export type IdentityInput = {Sender: MailParty; ReplyTo: MailParty};
+export type ReminderInput = {StartReminderHours: number};
 
-export function mailSettingsForm(settings: EventMailSettings): MailSettingsForm {
-    return {contactEmail: settings.ContactEmail, startReminderHours: String(settings.StartReminderHours)};
+export const maxMailNameLength = 64;
+export type IdentityError = "" | "senderName" | "senderAddress" | "replyToName" | "replyToAddress";
+
+export function identityForm(identity: MailIdentity): IdentityForm {
+    return {senderName: identity.Sender.Name, senderAddress: identity.Sender.Address, replyToName: identity.ReplyTo.Name, replyToAddress: identity.ReplyTo.Address};
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function mailSettingsError(form: MailSettingsForm): string {
-    const email = form.contactEmail.trim();
-    if (email && !emailPattern.test(email)) return t("manage.mail.validation.contactEmail");
-    const hours = form.startReminderHours.trim();
-    if (!/^\d+$/.test(hours) || Number(hours) > 168) return t("manage.mail.validation.reminderHours");
+// The first invalid field, or "" when the form can be saved. Empty fields
+// inherit the platform values, so they are always valid.
+export function identityError(form: IdentityForm): IdentityError {
+    if (form.senderName.trim().length > maxMailNameLength) return "senderName";
+    const sender = form.senderAddress.trim();
+    if (sender && !emailPattern.test(sender)) return "senderAddress";
+    if (form.replyToName.trim().length > maxMailNameLength) return "replyToName";
+    const reply = form.replyToAddress.trim();
+    if (reply && !emailPattern.test(reply)) return "replyToAddress";
     return "";
 }
 
-export function mailSettingsInput(form: MailSettingsForm): MailSettingsInput {
-    return {ContactEmail: form.contactEmail.trim(), StartReminderHours: Number(form.startReminderHours.trim())};
+export function identityInput(form: IdentityForm): IdentityInput {
+    return {
+        Sender: {Name: form.senderName.trim(), Address: form.senderAddress.trim()},
+        ReplyTo: {Name: form.replyToName.trim(), Address: form.replyToAddress.trim()},
+    };
 }
 
 export type SMTPForm = {host: string; port: string; tlsMode: MailTLSMode; username: string; password: string; clearPassword: boolean};
@@ -151,7 +166,12 @@ export async function getEventMailSettings(eventID: string): Promise<EventMailSe
     return request(eventID, "mail", settingsSchema);
 }
 
-export async function putEventMailSettings(eventID: string, input: MailSettingsInput): Promise<EventMailSettings> {
+export async function putEventMailIdentity(eventID: string, input: IdentityInput): Promise<EventMailSettings> {
+    return savedSettings(eventID, await request(eventID, "mail/identity", z.unknown().optional(), "PUT", input));
+}
+
+// The start reminder is edited with the email templates (notif-templates).
+export async function putEventMailReminder(eventID: string, input: ReminderInput): Promise<EventMailSettings> {
     return savedSettings(eventID, await request(eventID, "mail", z.unknown().optional(), "PUT", input));
 }
 
