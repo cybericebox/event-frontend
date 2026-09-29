@@ -11,6 +11,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {clockLabel, freezeStartAt} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 
 function inRange(value: number, min: number, max: number) {
     return Number.isInteger(value) && value >= min && value <= max;
@@ -58,13 +59,13 @@ export default function ResultsSettingsPage() {
         <section className="event-manage-section"><div className="event-manage-field"><ManageFieldLabel title={t("manage.results.settings.visibility")} help={t("manage.results.settings.visibilityHelp")} required /><EventSelect ariaLabel={t("manage.results.settings.visibility")} value={String(value.ScoreboardVisibility)} options={["0", "1", "2"].map(option => ({value: option, label: t(`manage.results.settings.visibility.${option}`)}))} onValueChange={next => change({ScoreboardVisibility: Number(next) as 0 | 1 | 2})} disabled={disabled} /></div></section>
         <section className="event-manage-section" aria-labelledby="results-freeze-title">
             <div className="event-manage-section__head"><h2 id="results-freeze-title">{t("manage.results.settings.freeze")}</h2><p>{t("manage.results.settings.freezeHelp")}</p></div>
-            <label className="event-manage-form__switch"><input type="checkbox" checked={value.FreezeEnabled} disabled={disabled} onChange={event => change({FreezeEnabled: event.target.checked})} />{t("manage.results.settings.freezeEnabled")}</label>
+            <EventSwitch checked={value.FreezeEnabled} disabled={disabled} onCheckedChange={checked => change({FreezeEnabled: checked})} label={t("manage.results.settings.freezeEnabled")} />
             {value.FreezeEnabled && <label className="event-manage-field">{t("manage.results.settings.freezeMinutes")}<input className="event-manage-input event-results-settings__number" type="number" min={1} max={1440} value={value.FreezeMinutes} disabled={disabled} onChange={event => change({FreezeMinutes: Number(event.target.value)})} />
                 <small>{!inRange(value.FreezeMinutes, 1, 1440) ? t("manage.results.settings.freezeMinutesRange") : freezeAt && event.FinishTime ? t("manage.results.settings.freezeAt", {freeze: clockLabel(freezeAt), finish: clockLabel(event.FinishTime)}) : t("manage.results.settings.freezeDependsOnFinish")}</small></label>}
         </section>
         <section className="event-manage-section" aria-labelledby="results-chart-title">
             <div className="event-manage-section__head"><h2 id="results-chart-title">{t("manage.results.settings.chart")}</h2><p>{t("manage.results.settings.chartHelp")}</p></div>
-            <label className="event-manage-form__switch"><input type="checkbox" checked={value.ChartEnabled} disabled={disabled} onChange={event => change({ChartEnabled: event.target.checked})} />{t("manage.results.settings.chartEnabled")}</label>
+            <EventSwitch checked={value.ChartEnabled} disabled={disabled} onCheckedChange={checked => change({ChartEnabled: checked})} label={t("manage.results.settings.chartEnabled")} />
             {value.ChartEnabled && <label className="event-manage-field">{teamMode ? t("manage.results.settings.chartTeams") : t("manage.results.settings.chartParticipants")}<input className="event-manage-input event-results-settings__number" type="number" min={1} max={10} value={value.ChartTeams} disabled={disabled} onChange={event => change({ChartTeams: Number(event.target.value)})} /><small>{inRange(value.ChartTeams, 1, 10) ? t("manage.results.settings.chartTop") : t("manage.results.settings.chartRange")}</small></label>}
         </section>
         <section className="event-manage-section" aria-labelledby="results-rows-title">

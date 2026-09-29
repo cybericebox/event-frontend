@@ -11,6 +11,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 
 const scoringModes = () => [
     {value: "0", label: t("manage.scoring.mode.fixed")},
@@ -69,7 +70,7 @@ export default function ScoringPage() {
             </div>}
             {dynamic && !valid && !modeProblem && <p className="event-manage-validation" role="alert">{t(value.Mode === 3 ? "manage.scoring.invalidTime" : "manage.scoring.invalid")}</p>}
         </section>
-        <section className="event-manage-section"><ManageFieldLabel title={t("manage.scoring.force")} help={t("manage.scoring.forceHelp")} /><label className="event-exercise-editor__check"><input type="checkbox" checked={value.ForceEventScoring} onChange={event => update({ForceEventScoring: event.target.checked})} disabled={!canManage || saving} /> {t("manage.scoring.forceLabel")}</label></section>
+        <section className="event-manage-section"><ManageFieldLabel title={t("manage.scoring.force")} help={t("manage.scoring.forceHelp")} /><EventSwitch className="event-manage-form__switch" checked={value.ForceEventScoring} onCheckedChange={checked => update({ForceEventScoring: checked})} disabled={!canManage || saving} label={t("manage.scoring.forceLabel")} /></section>
         {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }

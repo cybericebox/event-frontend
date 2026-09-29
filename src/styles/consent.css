@@ -18,12 +18,14 @@
 .cb-consent__policy{padding-top:var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .cb-consent__actions--panel{margin-top:var(--ib-4);justify-content:flex-end}
 
-/* switch: a native checkbox (role=switch), 36×20 track with a sliding knob */
-.cb-switch{appearance:none;flex:none;position:relative;width:36px;height:20px;margin:0;border:1px solid var(--ib-control);border-radius:999px;background:var(--ib-surface);cursor:pointer;transition:background-color var(--ib-dur-fast),border-color var(--ib-dur-fast)}
-.cb-switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--ib-dim);transition:transform var(--ib-dur-fast),background-color var(--ib-dur-fast)}
+/* switch: a native checkbox (role=switch) drawn as the ds-v2 .ib-switch — 32×18 track, 12px knob */
+.cb-switch{appearance:none;flex:none;position:relative;width:32px;height:18px;margin:0;border:1px solid var(--ib-control);border-radius:var(--ib-r-pill,999px);background:var(--ib-field-bg,var(--ib-surface));cursor:pointer;transition:background-color var(--ib-dur,160ms) var(--ib-ease,ease),border-color var(--ib-dur,160ms) var(--ib-ease,ease)}
+.cb-switch::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--ib-control);transition:transform var(--ib-dur,160ms) var(--ib-ease,ease),background-color var(--ib-dur,160ms) var(--ib-ease,ease)}
+.cb-switch:hover:not(:disabled,:checked){border-color:var(--ib-dim)}
+.cb-switch:hover:not(:disabled,:checked)::after{background:var(--ib-dim)}
 .cb-switch:checked{background:var(--ib-action);border-color:var(--ib-action)}
-.cb-switch:checked::after{transform:translateX(16px);background:var(--ib-on-action)}
-.cb-switch:disabled{opacity:.55;cursor:default}
+.cb-switch:checked::after{transform:translateX(14px);background:var(--ib-on-action)}
+.cb-switch:disabled{opacity:.5;cursor:not-allowed}
 .cb-switch:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
 
 @media (max-width:640px){

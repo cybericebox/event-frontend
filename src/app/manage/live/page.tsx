@@ -16,6 +16,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 
 const aspects = {"16:9": 16 / 9, "16:10": 16 / 10, "4:3": 4 / 3, "5:3": 5 / 3};
 const dragMime = "application/x-live-widget";
@@ -38,10 +39,7 @@ function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boo
         finally {setBusy(false);}
     }
     const hint = t(settings.isError ? "manage.live.freeze.readError" : settings.data && !settings.data.FreezeEnabled ? "manage.live.freeze.disabled" : "manage.live.freeze.immediate");
-    return <label className="event-live-editor__check">
-        <input type="checkbox" checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || busy || !settings.data} onChange={event => void change(event.target.checked)} />
-        <span>{t("manage.live.freeze.label")}<small>{hint}</small></span>
-    </label>;
+    return <EventSwitch className="event-live-editor__freeze" checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || busy || !settings.data} onCheckedChange={value => void change(value)} label={<>{t("manage.live.freeze.label")}<small>{hint}</small></>} />;
 }
 
 function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos: string[]; disabled: boolean; onChange: (logos: string[]) => void}) {
@@ -328,7 +326,7 @@ export default function ManageLivePage() {
                         <label>{t("manage.live.prop.mode")}<select value={String(selected.props.mode ?? "fixed")} disabled={locked} onChange={changeEvent => updateProp("mode", changeEvent.target.value)}><option value="fixed">{t("manage.live.prop.modeFixed")}</option><option value="carousel">{t("manage.live.prop.modeCarousel")}</option></select></label>
                         {selected.props.mode === "carousel" && <>
                             <label>{t("manage.live.prop.speed")}<select value={String(selected.props.speed ?? "normal")} disabled={locked} onChange={changeEvent => updateProp("speed", changeEvent.target.value)}><option value="slow">{t("manage.live.prop.speedSlow")}</option><option value="normal">{t("manage.live.prop.speedNormal")}</option><option value="fast">{t("manage.live.prop.speedFast")}</option></select></label>
-                            <label className="event-live-editor__checkbox"><input type="checkbox" checked={selected.props.paused === true} disabled={locked} onChange={changeEvent => updateProp("paused", changeEvent.target.checked)} /> {t("manage.live.prop.paused")}</label>
+                            <EventSwitch checked={selected.props.paused === true} disabled={locked} onCheckedChange={checked => updateProp("paused", checked)} label={t("manage.live.prop.paused")} />
                         </>}
                         <LogoField eventID={eventID} logos={Array.isArray(selected.props.logos) ? selected.props.logos.filter((value): value is string => typeof value === "string") : []} disabled={locked} onChange={logos => updateProp("logos", logos)} />
                     </>}

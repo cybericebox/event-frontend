@@ -25,6 +25,7 @@ import {updateBlockRichText} from "./richTextBlockUpdate";
 import {t} from "@/i18n/t";
 import {BusyMark} from "@/components/ui/EventButton";
 import {actionWarning} from "./previewScenario";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 
 export {FieldLabel} from "./FieldLabel";
 
@@ -422,7 +423,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
             <div className="event-manage-field"><FieldLabel label={t("manage.blocks.showFrom.label")} help={t("manage.blocks.showFrom.help")} /><EventSelect ariaLabel={t("manage.blocks.showFrom.aria")} value={source} options={[{value: "none", label: t("manage.blocks.showFrom.none")}, {value: "event", label: t("manage.blocks.showFrom.event")}, {value: "custom", label: t("manage.blocks.date.custom")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, showFromSource: value as "none" | "event" | "custom", showFromVariable: "", showFromDate: ""})} /></div>
             {source === "event" && <div className={`event-manage-field${errorField === "showFromVariable" ? " is-invalid" : ""}`}><FieldLabel label={t("manage.blocks.showFrom.eventDate")} required help={t("manage.blocks.showFrom.eventDateHelp")} /><EventSelect ariaLabel={t("manage.blocks.showFrom.eventDateAria")} value={block.showFromVariable ?? ""} placeholder={t("manage.blocks.date.pick")} options={catalog.filter(item => item.format === "date-time").map(item => ({value: item.name, label: item.label}))} disabled={!canEdit} onValueChange={value => {const variable = contentVariableByName.get(value); onUpdate(variable ? {...withBinding(block, variable), showFromVariable: variable.name} : {...block, showFromVariable: ""});}} />{errorField === "showFromVariable" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>}
             {source === "custom" && <div className={`event-manage-field${errorField === "showFromDate" ? " is-invalid" : ""}`}><FieldLabel label={t("manage.blocks.showFrom.custom")} required help={t("manage.blocks.showFrom.customHelp")} /><EventDateTimePicker ariaLabel={t("manage.blocks.showFrom.customAria")} value={localDateTime(block.showFromDate ?? "", true)} showSeconds disabled={!canEdit} onChange={value => onUpdate({...block, showFromDate: value ? new Date(value).toISOString() : ""})} />{errorField === "showFromDate" && <p className="event-content-editor__field-error" role="alert">{errorMessage}</p>}</div>}
-            <label className="event-manage-field"><FieldLabel label={t("manage.blocks.hideAfter.label")} help={t("manage.blocks.hideAfter.help")} /><span className="event-content-editor__checkbox"><input type="checkbox" checked={!!block.hideAfterFinish} disabled={!canEdit} onChange={event => onUpdate({...block, hideAfterFinish: event.target.checked})} />{t("manage.blocks.hideAfter.checkbox")}</span></label>
+            <div className="event-manage-field"><FieldLabel label={t("manage.blocks.hideAfter.label")} help={t("manage.blocks.hideAfter.help")} /><EventSwitch className="event-manage-form__switch" checked={!!block.hideAfterFinish} disabled={!canEdit} onCheckedChange={checked => onUpdate({...block, hideAfterFinish: checked})} label={t("manage.blocks.hideAfter.checkbox")} /></div>
         </>;
     }
 
@@ -612,7 +613,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
             </>}
             {block.type === "divider" && <div className="event-content-editor__item">
                 <div className="event-manage-field"><FieldLabel label={t("manage.blocks.divider.spacing")} required help={t("manage.blocks.divider.spacingHelp")} /><EventSelect value={block.size ?? "md"} ariaLabel={t("manage.blocks.divider.spacingAria")} options={[{value: "sm", label: t("manage.blocks.size.small")}, {value: "md", label: t("manage.blocks.size.medium")}, {value: "lg", label: t("manage.blocks.size.large")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, size: value})} /></div>
-                <label className="event-manage-field"><FieldLabel label={t("manage.blocks.divider.line")} help={t("manage.blocks.divider.lineHelp")} /><input type="checkbox" checked={!!block.line} disabled={!canEdit} onChange={event => onUpdate({...block, line: event.target.checked})} /></label>
+                <div className="event-manage-field"><FieldLabel label={t("manage.blocks.divider.line")} help={t("manage.blocks.divider.lineHelp")} /><EventSwitch className="event-manage-form__switch" checked={!!block.line} disabled={!canEdit} onCheckedChange={checked => onUpdate({...block, line: checked})} ariaLabel={t("manage.blocks.divider.line")} /></div>
             </div>}
             <div className={`event-manage-field${anchorProblem || errorField === "anchor" ? " is-invalid" : ""}`}>
                 <FieldLabel label={t("manage.blocks.anchor.label")} help={t("manage.blocks.anchor.help")} />

@@ -109,8 +109,8 @@
 .event-live-editor__toolbar label,.event-live-editor__properties label{display:grid;gap:5px;font-size:var(--ib-fs-12);color:var(--ib-dim)}
 .event-live-editor__toolbar select,.event-live-editor__toolbar input,.event-live-editor__properties input,.event-live-editor__properties select,.event-live-editor__properties textarea{width:100%;min-height:36px;padding:6px 9px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-ink);font:inherit}
 .event-live-editor__properties textarea{min-height:calc(2lh + 14px);max-height:80vh;overflow-x:hidden;overflow-y:auto;resize:vertical}
-.event-live-editor__properties label.event-live-editor__checkbox{display:flex;align-items:center;gap:8px;color:var(--ib-ink)}
-.event-live-editor__properties .event-live-editor__checkbox input{width:16px;min-height:16px;height:16px;padding:0}
+.event-live-editor__toolbar label.ib-switch,.event-live-editor__properties label.ib-switch{display:inline-flex;gap:var(--ib-2);color:var(--ib-ink);font-size:var(--ib-fs-13)}
+.event-live-editor__toolbar .ib-switch>input,.event-live-editor__properties .ib-switch>input{width:32px;min-height:0;height:18px;padding:0;border:0}
 .event-live-editor__toolbar select{min-width:135px}
 .event-live-editor__grid-options{display:flex;align-items:center;gap:var(--ib-3);flex-wrap:wrap}
 .event-live-editor__custom-grid{display:flex;align-items:end;gap:var(--ib-2);flex-wrap:wrap}
@@ -134,10 +134,7 @@
 .event-live-editor__properties .ib-btn{justify-self:start}
 .event-live-editor__note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-live-editor__range{display:flex;align-items:center;gap:8px;color:var(--ib-ink)}
-.event-live-editor__check{display:flex!important;align-items:flex-start;gap:8px;max-width:300px;color:var(--ib-ink)!important;font-size:var(--ib-fs-13)!important}
-.event-live-editor__check input{width:16px!important;min-height:16px!important;height:16px;margin:2px 0 0;padding:0!important}
-.event-live-editor__check span{display:grid;gap:2px}
-.event-live-editor__check small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-live-editor__freeze{max-width:300px}
 .event-live-editor__warnings{display:grid;gap:var(--ib-2);padding:var(--ib-3) var(--ib-4);border:1px solid var(--ib-warn);border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink)}
 .event-live-editor__warnings h2{margin:0;color:var(--ib-warn);font-size:var(--ib-fs-14,14px)}
 .event-live-editor__warnings ul{display:grid;gap:4px;margin:0;padding:0;list-style:none}

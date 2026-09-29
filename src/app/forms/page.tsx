@@ -14,6 +14,7 @@ import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventCheckbox} from "@/components/ui/EventCheckbox";
 
 function visible(condition: {fieldKey: string; operator: string; value: string | number | boolean} | undefined, answers: EventFormAnswers): boolean {
     if (!condition) return true;
@@ -71,9 +72,9 @@ function FormsPage() {
                     return <div className="event-join-question" key={block.id}><label htmlFor={fieldID}><strong>{block.label}</strong>{block.required && <span className="event-field-required" aria-label={t("forms.field.required")}>*</span>}</label>{block.help && <p>{block.help}</p>}
                         {block.input === "long_text" ? <textarea id={fieldID} className="event-join-input" rows={4} value={String(answers[key] ?? "")} onChange={e => update(key, e.target.value)} />
                             : block.input === "number" ? <input id={fieldID} className="event-join-input" type="number" value={typeof answers[key] === "number" ? answers[key] as number : ""} onChange={e => update(key, e.target.value === "" ? "" : Number(e.target.value))} />
-                            : block.input === "checkbox" ? <label className="event-join-choice"><input id={fieldID} type="checkbox" checked={answers[key] === true} onChange={e => update(key, e.target.checked)} />{t("common.yes")}</label>
+                            : block.input === "checkbox" ? <EventCheckbox className="event-join-choice" id={fieldID} checked={answers[key] === true} onCheckedChange={checked => update(key, checked)} label={t("common.yes")} />
                             : block.input === "select" ? <select id={fieldID} className="event-join-input" value={String(answers[key] ?? "")} onChange={e => update(key, e.target.value)}><option value="">{t("common.chooseOption")}</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
-                            : block.input === "multi_select" ? <div className="event-join-options" id={fieldID}>{(block.options ?? []).map(option => <label className="event-join-choice" key={option}><input type="checkbox" checked={Array.isArray(answers[key]) && (answers[key] as string[]).includes(option)} onChange={e => {const previous = Array.isArray(answers[key]) ? answers[key] as string[] : []; update(key, e.target.checked ? [...previous, option] : previous.filter(item => item !== option));}} />{option}</label>)}</div>
+                            : block.input === "multi_select" ? <div className="event-join-options" id={fieldID}>{(block.options ?? []).map(option => <EventCheckbox className="event-join-choice" key={option} checked={Array.isArray(answers[key]) && (answers[key] as string[]).includes(option)} onCheckedChange={checked => {const previous = Array.isArray(answers[key]) ? answers[key] as string[] : []; update(key, checked ? [...previous, option] : previous.filter(item => item !== option));}} label={option} />)}</div>
                             : <input id={fieldID} className="event-join-input" type="text" value={String(answers[key] ?? "")} onChange={e => update(key, e.target.value)} />}</div>;
                 }
                 if (block.type === "section") return <h3 key={block.id}>{block.label}</h3>;

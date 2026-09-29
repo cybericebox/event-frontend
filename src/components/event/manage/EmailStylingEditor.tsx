@@ -3,6 +3,7 @@
 import type {ManageEmailTemplateInput} from "@/api/manageEmailTemplates";
 import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "./ManageFieldLabel";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 
 const colors = [
     {key: "text_color", titleKey: "manage.email.styling.textColor", token: "", fallback: "#333333"},
@@ -21,6 +22,6 @@ export function EmailStylingEditor({styling, onChange, disabled}: {
         const value = typeof styling[color.key] === "string" ? styling[color.key] as string : color.token || color.fallback;
         const automatic = !!color.token && value === color.token;
         const hex = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : color.fallback;
-        return <div className="event-email-styling__field" key={color.key}><ManageFieldLabel title={t(color.titleKey)} help={t(color.token ? "manage.email.styling.autoHelp" : "manage.email.styling.textHelp")} /><div className="event-email-styling__control"><input type="color" aria-label={t("manage.email.styling.colorLabel", {name: t(color.titleKey)})} value={hex} disabled={disabled || automatic} onChange={event => change(color.key, event.target.value)} /><span>{automatic ? t("manage.email.styling.eventColor") : hex.toUpperCase()}</span></div>{color.token && <label className="event-manage-form__switch"><input type="checkbox" checked={automatic} disabled={disabled} onChange={event => change(color.key, event.target.checked ? color.token : hex)} />{t("manage.email.styling.auto")}</label>}</div>;
+        return <div className="event-email-styling__field" key={color.key}><ManageFieldLabel title={t(color.titleKey)} help={t(color.token ? "manage.email.styling.autoHelp" : "manage.email.styling.textHelp")} /><div className="event-email-styling__control"><input type="color" aria-label={t("manage.email.styling.colorLabel", {name: t(color.titleKey)})} value={hex} disabled={disabled || automatic} onChange={event => change(color.key, event.target.value)} /><span>{automatic ? t("manage.email.styling.eventColor") : hex.toUpperCase()}</span></div>{color.token && <EventSwitch className="event-manage-form__switch" checked={automatic} disabled={disabled} onCheckedChange={checked => change(color.key, checked ? color.token : hex)} label={t("manage.email.styling.auto")} />}</div>;
     })}</div></details>;
 }

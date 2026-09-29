@@ -12,6 +12,7 @@ import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 
 type ScheduleDraft = {
     PublishAt: string;
@@ -115,7 +116,7 @@ export default function ManageSchedulePage() {
                 <ManageDateField id="publish-at" title={t("manage.schedule.publish")} help={lifecycle.data.Status === "not_published" ? t("manage.schedule.publishHelp") : t("manage.schedule.publishedHelp")} value={draft.PublishAt} onChange={value => setDraft({...draft, PublishAt: value})} disabled={!canManage || saving || lifecycle.data.Status !== "not_published"} required />
                 <ManageDateField id="start-at" title={t("manage.schedule.start")} help={t("manage.schedule.startHelp")} value={draft.StartAt} onChange={value => setDraft({...draft, StartAt: value})} disabled={!canManage || saving} required />
             </div>
-            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.scheduledEnd")} help={t("manage.schedule.scheduledEndHelp")} /><label className="event-manage-check"><input type="checkbox" checked={draft.ScheduledEnd} onChange={event => setDraft({...draft, ScheduledEnd: event.target.checked})} disabled={!canManage || saving} /><span><strong>{t("manage.schedule.scheduleEnd")}</strong></span></label></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.scheduledEnd")} help={t("manage.schedule.scheduledEndHelp")} /><EventSwitch className="event-manage-form__switch" checked={draft.ScheduledEnd} onCheckedChange={checked => setDraft({...draft, ScheduledEnd: checked})} disabled={!canManage || saving} label={t("manage.schedule.scheduleEnd")} /></div>
             {draft.ScheduledEnd && <div className="event-manage-fields-two">
                 <ManageDateField id="finish-at" title={t("manage.schedule.finish")} help={t("manage.schedule.finishHelp")} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
                 <ManageDateField id="withdraw-at" title={t("manage.schedule.withdraw")} help={t("manage.schedule.withdrawHelp")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />

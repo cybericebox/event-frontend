@@ -27,6 +27,7 @@ import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 
 type ChallengeDraft = Pick<EventBoardChallenge, "Points" | "HintsEnabled" | "Published">;
 type Board = {attachment: EventExerciseAttachment; challenges: EventBoardChallenge[]};
@@ -257,8 +258,8 @@ export function ExerciseAttachments() {
                                 <div className="event-exercise-editor__task-head"><strong>{challenge.Snapshot.name}</strong><span>{challenge.Published ? t("manage.exercises.challenge.onBoard") : t("manage.exercises.challenge.hidden")}</span></div>
                                 <div className="event-exercise-editor__controls">
                                     <label className="event-manage-field">{t("manage.exercises.challenge.points")}<input className="event-manage-input" type="number" min={1} step={1} value={draft.Points} onChange={event => updateDraft(challenge, {Points: Number(event.target.value)})} disabled={!canManage || busy} /></label>
-                                    <label className="event-exercise-editor__check"><input type="checkbox" checked={draft.HintsEnabled} onChange={event => updateDraft(challenge, {HintsEnabled: event.target.checked})} disabled={!canManage || busy} /> {t("manage.exercises.hints.title")}</label>
-                                    <label className="event-exercise-editor__check"><input type="checkbox" checked={draft.Published} onChange={event => updateDraft(challenge, {Published: event.target.checked})} disabled={!canManage || busy} /> {t("manage.exercises.challenge.showOnBoard")}</label>
+                                    <EventSwitch className="event-manage-form__switch" checked={draft.HintsEnabled} onCheckedChange={checked => updateDraft(challenge, {HintsEnabled: checked})} disabled={!canManage || busy} label={t("manage.exercises.hints.title")} />
+                                    <EventSwitch className="event-manage-form__switch" checked={draft.Published} onCheckedChange={checked => updateDraft(challenge, {Published: checked})} disabled={!canManage || busy} label={t("manage.exercises.challenge.showOnBoard")} />
                                     {changed && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={!canManage || busy || !Number.isInteger(draft.Points) || draft.Points < 1} onClick={() => void saveChallenge(attachment.ID, challenge)}>{t("common.save")}</button>}
                                 </div>
                                 {challenge.Hints.length > 0 && <ChallengeHintCosts key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} canManage={canManage} onSaved={refreshBoards} />}
