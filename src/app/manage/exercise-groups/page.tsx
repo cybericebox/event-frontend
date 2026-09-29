@@ -2,6 +2,7 @@
 
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {BoardDisplaySettings} from "@/components/event/manage/BoardDisplaySettings";
 import {ArrowDown, ArrowUp, Plus, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
@@ -138,6 +139,7 @@ export default function ExerciseGroupsPage() {
 
     return <div className="event-manage-settings event-challenge-manager">
         <header className="event-manage-heading"><div><h1>Групи й порядок</h1><p>Створіть розділи дошки та розташуйте завдання всередині кожного набору.</p></div></header>
+        <BoardDisplaySettings eventID={event.EventID} canManage={canManage} />
         <section className="event-manage-section" aria-labelledby="challenge-groups-title">
             <div className="event-manage-section__head"><h2 id="challenge-groups-title">Групи</h2><p>Групи визначають розділи, у яких учасники бачать завдання.</p></div>
             {groups.length === 0 ? <p className="event-challenge-manager__empty">Груп поки немає. Завдання відображатимуться без групи.</p> : <ol className="event-challenge-manager__list">
