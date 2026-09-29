@@ -92,7 +92,7 @@ describe("consent", () => {
         expect(consent.shouldShowBanner("G-TEST", {analytics: true})).toBe(false);
         expect(consent.shouldShowBanner("G-TEST", {analytics: false})).toBe(false);
         expect(consent.shouldShowBanner(undefined, null)).toBe(false);
-        expect(consent.parseConsent("ib_theme=dark; cib_consent=analytics:granted")).toEqual({analytics: true});
+        expect(consent.parseConsent("cib_theme=dark; cib_consent=analytics:granted")).toEqual({analytics: true});
         expect(consent.parseConsent("xcib_consent=analytics:granted")).toBeNull();
     });
 });
