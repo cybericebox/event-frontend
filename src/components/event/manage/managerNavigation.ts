@@ -21,6 +21,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/surveys") return "Опитування";
     if (pathname === "/manage/notifications") return "Сповіщення на сайті";
     if (pathname === "/manage/email") return "Електронні листи";
+    if (pathname === "/manage/mail") return "Пошта";
     if (pathname === "/manage/content/pages/new") return "Нова сторінка";
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Title;

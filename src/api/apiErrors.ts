@@ -28,6 +28,10 @@ export const ApiErrorCode = {
     TeamFieldNotEditable: 1714,
     TeamFieldsLocked: 1715,
     NothingToAnnul: 1930,
+    MailSMTPInvalid: 2101,
+    MailSecretsKeyMissing: 2102,
+    MailNotificationRequired: 2103,
+    MailSettingsInvalid: 2104,
 } as const;
 
 export type ApiErrorCodeValue = typeof ApiErrorCode[keyof typeof ApiErrorCode];
@@ -65,6 +69,10 @@ const messages: Partial<Record<number, string>> = {
     [ApiErrorCode.TeamNotAdmitted]: "Команду ще не допущено до завдань.",
     [ApiErrorCode.TeamFieldNotEditable]: "Це поле команди не можна змінити після створення.",
     [ApiErrorCode.TeamFieldsLocked]: "Поля команди не можна змінити після завершення події.",
+    [ApiErrorCode.MailSMTPInvalid]: "Перевірте хост, порт і режим TLS.",
+    [ApiErrorCode.MailSecretsKeyMissing]: "Пароль SMTP не можна зберегти: на платформі не налаштовано ключ шифрування.",
+    [ApiErrorCode.MailNotificationRequired]: "Це сповіщення обовʼязкове, його не можна вимкнути.",
+    [ApiErrorCode.MailSettingsInvalid]: "Перевірте контактну пошту й години нагадування.",
 };
 
 // Returns a user-facing message for a known backend code, or the fallback.

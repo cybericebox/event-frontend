@@ -3,7 +3,7 @@
 import {useState} from "react";
 import Link from "next/link";
 import {
-    ArrowLeft, Bell, CalendarDays, ChevronDown,
+    ArrowLeft, AtSign, Bell, CalendarDays, ChevronDown,
     FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
     Mail, MonitorPlay, Palette, Plus, Send, Server, Settings2,
     SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
@@ -49,6 +49,7 @@ const groups: Group[] = [
     {id: "notifications", label: "Сповіщення", items: [
         {href: "/manage/notifications", label: "На сайті", icon: Bell},
         {href: "/manage/email", label: "Електронні листи", icon: Mail},
+        {href: "/manage/mail", label: "Пошта", icon: AtSign},
     ]},
 ];
 

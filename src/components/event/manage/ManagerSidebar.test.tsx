@@ -50,4 +50,10 @@ describe("participation navigation", () => {
         fireEvent.click(screen.getByRole("button", {name: "Завдання"}));
         expect(screen.getByRole("link", {name: "Стенди"})).toBeTruthy();
     });
+
+    it("lists the mail section under notifications", () => {
+        renderSidebar(0);
+        fireEvent.click(screen.getByRole("button", {name: "Сповіщення"}));
+        expect(screen.getByRole("link", {name: "Пошта"}).getAttribute("href")).toBe("/manage/mail");
+    });
 });
