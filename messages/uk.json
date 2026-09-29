@@ -2380,5 +2380,11 @@
   "vpn.steps.download": "Завантажте конфіг. Він особистий — не передавайте його іншим.",
   "vpn.steps.import": "Імпортуйте файл у WireGuard і ввімкніть тунель.",
   "vpn.steps.install": "Встановіть WireGuard: {link}.",
-  "vpn.steps.probePage": "сторінку перевірки"
+  "vpn.steps.probePage": "сторінку перевірки",
+  "consent.title": "Аналітичні cookie",
+  "consent.text": "Ми хочемо використовувати Google Analytics, щоб розуміти, як відвідувачі користуються платформою. Аналітичні cookie встановлюються лише з вашої згоди; відмова не обмежує жодних функцій. Докладніше — у {link}.",
+  "consent.policyLink": "Політиці cookie",
+  "consent.accept": "Прийняти аналітику",
+  "consent.reject": "Відхилити",
+  "consent.settings": "Налаштування cookie"
 }

@@ -2380,5 +2380,11 @@
   "vpn.steps.download": "Download the config. It is personal — do not share it.",
   "vpn.steps.import": "Import the file into WireGuard and turn on the tunnel.",
   "vpn.steps.install": "Install WireGuard: {link}.",
-  "vpn.steps.probePage": "the check page"
+  "vpn.steps.probePage": "the check page",
+  "consent.title": "Analytics cookies",
+  "consent.text": "We would like to use Google Analytics to understand how visitors use the platform. Analytics cookies are set only with your consent; declining does not limit any features. See the {link} for details.",
+  "consent.policyLink": "Cookie Policy",
+  "consent.accept": "Accept analytics",
+  "consent.reject": "Decline",
+  "consent.settings": "Cookie settings"
 }

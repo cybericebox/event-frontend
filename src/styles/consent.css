@@ -1,0 +1,16 @@
+/* Analytics consent banner: fixed to the bottom, non-blocking, hairline border instead
+   of a shadow. Two equal (default) buttons. Stacks under 640 px. Tokens only. */
+.cb-consent{position:fixed;z-index:60;left:var(--ib-4);right:var(--ib-4);bottom:var(--ib-4);margin:0 auto;max-width:880px;display:flex;align-items:center;gap:var(--ib-6);padding:var(--ib-4) var(--ib-5);background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-body);font-size:var(--ib-fs-14);line-height:var(--ib-lh-body)}
+.cb-consent:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.cb-consent__text{flex:1;min-width:0}
+.cb-consent__title{color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.cb-consent__text a{color:var(--ib-ink);text-decoration:underline;text-underline-offset:3px}
+.cb-consent__actions{display:flex;gap:var(--ib-2);flex:none}
+@media (max-width:640px){
+  .cb-consent{flex-direction:column;align-items:stretch;gap:var(--ib-3);left:var(--ib-2);right:var(--ib-2);bottom:var(--ib-2)}
+  .cb-consent__actions>*{flex:1}
+}
+/* «Налаштування cookie»: a button that reads as a footer link */
+.cb-consent-link{padding:0;border:0;background:none;color:var(--ib-dim);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}
+.cb-consent-link:hover{color:var(--ib-ink)}
+.cb-consent-link:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
