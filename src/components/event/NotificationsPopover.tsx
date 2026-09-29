@@ -26,7 +26,7 @@ function announceRead() {
     } catch { /* Polling still synchronizes read state. */ }
 }
 
-export function NotificationsPopover() {
+export function NotificationsPopover({eventID}: {eventID?: string}) {
     const [open, setOpen] = useState(false);
     const [items, setItems] = useState<InboxItem[]>([]);
     const [popIns, setPopIns] = useState<InboxItem[]>([]);
@@ -48,7 +48,7 @@ export function NotificationsPopover() {
     const refresh = useCallback(async (): Promise<InboxItem[] | null> => {
         const current = ++revision.current;
         try {
-            const page = await getInbox();
+            const page = await getInbox(eventID);
             if (current !== revision.current) return null;
             olderRef.current = page.NextCursor;
             setOlder(page.NextCursor);
@@ -65,7 +65,7 @@ export function NotificationsPopover() {
         } finally {
             if (current === revision.current) setLoading(false);
         }
-    }, []);
+    }, [eventID]);
 
     const loadOlder = useCallback(async () => {
         const before = olderRef.current;
@@ -74,7 +74,7 @@ export function NotificationsPopover() {
         loadingOlderRef.current = true;
         setLoadingOlder(true);
         try {
-            const page = await getInbox(before);
+            const page = await getInbox(eventID, before);
             if (current !== revision.current) return;
             olderRef.current = page.NextCursor;
             setOlder(page.NextCursor);
@@ -89,7 +89,7 @@ export function NotificationsPopover() {
             loadingOlderRef.current = false;
             setLoadingOlder(false);
         }
-    }, []);
+    }, [eventID]);
 
     useEffect(() => {
         if (!open || !older || loading || !scrollRef.current || !lastRef.current || typeof IntersectionObserver === "undefined") return;
@@ -109,7 +109,7 @@ export function NotificationsPopover() {
             busy = true;
             try {
                 if (!initialized) {
-                    const baseline = await pollInbox();
+                    const baseline = await pollInbox(eventID);
                     if (!active) return;
                     cursor.current = baseline.Cursor ?? zeroCursor;
                     unreadRef.current = baseline.UnreadCount;
@@ -118,7 +118,7 @@ export function NotificationsPopover() {
                     await refresh();
                     return;
                 }
-                const result = await pollInbox(cursor.current ?? zeroCursor);
+                const result = await pollInbox(eventID, cursor.current ?? zeroCursor);
                 if (!active) return;
                 cursor.current = result.Cursor ?? cursor.current;
                 const fresh = result.NewInbox.filter(item => !item.ReadAt);
@@ -159,7 +159,7 @@ export function NotificationsPopover() {
             window.removeEventListener("cybericebox:inbox-updated", whenVisible);
             window.removeEventListener("storage", onStorage);
         };
-    }, [refresh]);
+    }, [refresh, eventID]);
 
     async function read(item: InboxItem): Promise<boolean> {
         if (item.ReadAt) return true;
@@ -179,7 +179,7 @@ export function NotificationsPopover() {
 
     async function readAll() {
         try {
-            await markInboxAllRead();
+            await markInboxAllRead(eventID);
             unreadRef.current = 0;
             setUnread(0);
             setItems(current => current.map(item => ({...item, ReadAt: item.ReadAt ?? new Date().toISOString()})));
@@ -224,7 +224,7 @@ export function NotificationsPopover() {
                             <NotificationMessageCard icon={item.Icon} tone={item.Tone} accentColor={item.AccentColor} title={item.Title}
                                 body={item.Body ? <span dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(item.Body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []})}} /> : undefined}
                                 unread={!item.ReadAt} compact
-                                timestamp={<time dateTime={item.CreatedAt}>{new Date(item.CreatedAt).toLocaleString("uk-UA")}</time>}
+                                timestamp={<><time dateTime={item.CreatedAt}>{new Date(item.CreatedAt).toLocaleString("uk-UA")}</time>{!item.EventID && <span className="event-notification-card__source">Платформа</span>}</>}
                                 actions={href ? <a href={href} onClick={event => {event.preventDefault(); void follow(item, href);}}>Відкрити</a> : !item.ReadAt ? <button type="button" onClick={() => void read(item)}>Позначити прочитаним</button> : undefined}
                             />
                         </li>;

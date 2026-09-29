@@ -6,6 +6,10 @@ const itemSchema = z.object({
     AutoDismissMs: z.number().nullable().optional(),
     Actions: z.array(z.object({label: z.string(), href: z.string()})).nullable().optional().catch(null),
     ReadAt: z.string().nullable(), CreatedAt: z.string(),
+    // M5: the Event the item belongs to; null for system/account items.
+    EventID: z.string().nullable().optional().transform(value => value ?? null),
+    EventName: z.string().nullable().optional().transform(value => value ?? null),
+    EventTag: z.string().nullable().optional().transform(value => value ?? null),
 });
 const cursorSchema = z.object({ID: z.string(), CreatedAt: z.string()});
 const listSchema = z.object({Data: z.object({Items: z.array(itemSchema), NextCursor: cursorSchema.nullable()})});
@@ -28,15 +32,23 @@ async function inboxRequest(path = "", method = "GET"): Promise<unknown> {
     return response.json();
 }
 
-export async function getInbox(before?: InboxCursor): Promise<InboxPage> {
+// `?event=` narrows the inbox to that Event plus items without an Event (M5).
+export function inboxQuery(eventID: string | undefined, params: Record<string, string> = {}): string {
+    const query = new URLSearchParams(params);
+    if (eventID) query.set("event", eventID);
+    const value = query.toString();
+    return value ? `?${value}` : "";
+}
+
+export async function getInbox(eventID?: string, before?: InboxCursor): Promise<InboxPage> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {Items: [], NextCursor: null};
-    const query = before ? `?${new URLSearchParams({before_id: before.ID, before_at: before.CreatedAt})}` : "";
+    const query = inboxQuery(eventID, before ? {before_id: before.ID, before_at: before.CreatedAt} : {});
     return listSchema.parse(await inboxRequest(query)).Data;
 }
 
-export async function pollInbox(since?: InboxCursor): Promise<InboxPoll> {
+export async function pollInbox(eventID?: string, since?: InboxCursor): Promise<InboxPoll> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {Cursor: null, NewInbox: [], UnreadCount: 0};
-    const query = since ? `?${new URLSearchParams({since_id: since.ID, since_at: since.CreatedAt})}` : "";
+    const query = inboxQuery(eventID, since ? {since_id: since.ID, since_at: since.CreatedAt} : {});
     return pollSchema.parse(await inboxRequest(`/poll${query}`)).Data;
 }
 
@@ -45,7 +57,7 @@ export async function markInboxRead(id: string): Promise<void> {
     await inboxRequest(`/${encodeURIComponent(id)}/read`, "PATCH");
 }
 
-export async function markInboxAllRead(): Promise<void> {
+export async function markInboxAllRead(eventID?: string): Promise<void> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return;
-    await inboxRequest("/read-all", "PATCH");
+    await inboxRequest(`/read-all${inboxQuery(eventID)}`, "PATCH");
 }

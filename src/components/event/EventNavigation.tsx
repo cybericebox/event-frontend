@@ -81,7 +81,7 @@ export function EventHeaderActions({event, authenticated, approved = false}: Pic
         {authenticated && <>
             <span className="event-header-divider" aria-hidden="true" />
             {approved && <VpnHeaderButton />}
-            <NotificationsPopover />
+            <NotificationsPopover eventID={event.EventID} />
             <AccountMenu event={event} approved={approved} />
         </>}
         {!authenticated && <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>Увійти</a>}

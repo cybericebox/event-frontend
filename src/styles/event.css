@@ -141,3 +141,4 @@ body.event-root main{overflow-x:visible}
 @media(max-width:600px){.event-join-banner{align-items:flex-start;flex-direction:column;margin:var(--ib-4);padding:var(--ib-4)}.event-join-page{padding:var(--ib-4)}.event-join-card{padding:var(--ib-5)}}
 @media(max-width:767px){.event-landing,.event-guest-main>.ib-blocks,.event-page-content>.ib-blocks{padding:var(--ib-4) var(--ib-4) var(--ib-8);gap:0}.event-landing>.ib-blocks{padding:0}}
 .ib-footer--event .ib-footer__inner{max-width:1280px;padding-inline:var(--ib-6)}
+.event-notification-card__source{display:inline-flex;align-items:center;margin-left:var(--ib-2);padding:0 6px;border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-dim);font-size:11px;font-weight:var(--ib-w-medium);line-height:18px;vertical-align:1px}
