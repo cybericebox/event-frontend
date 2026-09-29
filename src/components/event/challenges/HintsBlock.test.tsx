@@ -31,7 +31,8 @@ describe("HintsBlock", () => {
         expect(screen.getByText("Дивіться у заголовки")).toBeTruthy();
         expect(screen.getByText(/Відкрито: Андрій/)).toBeTruthy();
         expect(screen.getByText("· −50 балів")).toBeTruthy();
-        expect(screen.getByText(/Підказка 2 · Покроково/)).toBeTruthy();
+        expect(screen.getByText(/^Підказка 2/)).toBeTruthy();
+        expect(screen.queryByText(/Покроково/)).toBeNull();
         expect(screen.getAllByRole("button", {name: "Відкрити підказку"})).toHaveLength(2);
     });
 
@@ -76,5 +77,6 @@ describe("HintsBlock", () => {
     it("never offers unlocking on the moderators board", () => {
         render(<HintsBlock challenge={challenge} eventID="e" moderators chargeMode="reward" onUnlocked={() => {}} />);
         expect(screen.queryByRole("button", {name: "Відкрити підказку"})).toBeNull();
+        expect(screen.getByText(/Підказка 2 · Покроково/)).toBeTruthy();
     });
 });

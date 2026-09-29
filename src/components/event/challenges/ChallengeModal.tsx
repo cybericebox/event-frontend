@@ -82,7 +82,8 @@ function HintText({text}: {text: string}) {
     return document ? <div className="ib-cmodal__desc event-cmodal__hint-text"><EventRichTextView value={document} /></div> : <p>{text}</p>;
 }
 
-// Hints: participants unlock one by one (paid ones after a confirm); the
+// Hints: participants see each hint's price, never its level (moderators do);
+// participants unlock one by one (paid ones after a confirm); the
 // moderators board shows every text and never unlocks.
 export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlocked}: {
     challenge: OwnChallenge; eventID: string; moderators: boolean; chargeMode: HintChargeMode; onUnlocked: () => void;
@@ -115,7 +116,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         </p>}
         <ul className="event-cmodal__hints">{challenge.Hints.map((hint, index) => <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
-                <span className="event-cmodal__hint-title">{t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
+                <span className="event-cmodal__hint-title">{moderators ? t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)}) : t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
                 {!moderators && !hint.Unlocked && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
                     onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>{t("challenges.hints.unlock")}</EventButton>}
             </div>

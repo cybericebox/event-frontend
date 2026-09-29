@@ -15,13 +15,22 @@ export function hintLevelLabel(level: HintLevel): string {
 type HintNode = Record<string, unknown>;
 const asHintNode = (value: unknown): HintNode | null => value && typeof value === "object" && !Array.isArray(value) ? value as HintNode : null;
 
+// Hints carry no text alignment: element formats (strings) are dropped,
+// text formats (numbers: bold, code…) stay.
+function withoutAlignment(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(withoutAlignment);
+    const node = asHintNode(value);
+    if (!node) return value;
+    return Object.fromEntries(Object.entries(node).map(([key, item]) => [key, key === "format" && typeof item === "string" ? "" : withoutAlignment(item)]));
+}
+
 // A hint text is a serialized rich-text document; older exercises stored
-// plain text. Returns the document, or null for plain text.
+// plain text. Returns the document (alignment removed), or null for plain text.
 export function hintDocument(text: string): HintNode | null {
     if (!text.trimStart().startsWith("{")) return null;
     try {
         const parsed = asHintNode(JSON.parse(text));
-        return asHintNode(parsed?.root)?.type === "root" ? parsed : null;
+        return asHintNode(parsed?.root)?.type === "root" ? withoutAlignment(parsed) as HintNode : null;
     } catch {
         return null;
     }

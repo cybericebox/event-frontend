@@ -81,6 +81,13 @@ describe("hint text and level", () => {
         expect(hintDocument(JSON.stringify({text: "x"}))).toBeNull();
     });
 
+    it("drops text alignment but keeps text formats", () => {
+        const aligned = {root: {type: "root", format: "", children: [{type: "paragraph", format: "center", children: [{type: "text", text: "x", format: 1}]}]}};
+        const read = hintDocument(JSON.stringify(aligned)) as typeof aligned;
+        expect(read.root.children[0].format).toBe("");
+        expect(read.root.children[0].children[0].format).toBe(1);
+    });
+
     it("gives a one-line excerpt", () => {
         expect(hintPlainText(JSON.stringify(doc))).toBe("Look at headers docs.");
         expect(hintPlainText("  plain  ")).toBe("plain");

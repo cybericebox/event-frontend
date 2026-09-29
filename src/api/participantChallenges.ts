@@ -11,7 +11,8 @@ export type HintLevel = (typeof HINT_LEVELS)[number];
 export const hintLevelSchema = z.enum(HINT_LEVELS).catch("nudge");
 // Content arrives only once the team unlocked the hint (moderators see every text);
 // it is a serialized rich-text document, or plain text from older exercises.
-// Cost is what the team pays now, or what it paid.
+// Cost is what the team pays now, or what it paid. Level comes only on the
+// moderators board; participants never receive it (default fills the gap).
 export const hintSchema = z.object({
     ID: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int().default(0), Unlocked: z.boolean().default(false),
     Content: z.string().nullish().transform(value => value ?? null),
