@@ -14,12 +14,28 @@ export function decayProblem(mode: number, lifecycle: Pick<ManageLifecycle, "Joi
     return "";
 }
 
-// Dynamic: max → min with a positive min; the floor (1–100 %) only for 1 and 2.
-export function dynamicValid(profile: DynamicProfile): boolean {
+// An empty or partial number reads as NaN, which the validation reports.
+export const numberOf = (value: string) => value.trim() === "" ? Number.NaN : Number(value);
+
+export type DynamicErrors = {max: string; min: string; floor: string};
+
+// Per-field errors of a dynamic profile ("" = fine): «Від» (max) above «До»
+// (min), «До» a whole number of at least 1 (the server requires positive
+// points), «Поріг, %» 1–100 (time decay has no threshold).
+export function dynamicErrors(profile: DynamicProfile): DynamicErrors {
     const {Mode, MinPoints, MaxPoints, FloorAtPercent} = profile;
-    if (Mode === 0) return true;
-    return Number.isInteger(MinPoints) && MinPoints > 0 && Number.isInteger(MaxPoints) && MaxPoints > MinPoints
-        && (Mode === 3 || (Number.isInteger(FloorAtPercent) && FloorAtPercent >= 1 && FloorAtPercent <= 100));
+    const whole = (value: number) => Number.isInteger(value);
+    const min = !whole(MinPoints) || MinPoints < 1 ? t("manage.challenges.scoring.minInvalid") : "";
+    const max = !whole(MaxPoints) || MaxPoints < 1 ? t("manage.challenges.scoring.maxInvalid")
+        : !min && MaxPoints <= MinPoints ? t("manage.challenges.scoring.maxAboveMin") : "";
+    const floor = Mode === 3 || (whole(FloorAtPercent) && FloorAtPercent >= 1 && FloorAtPercent <= 100) ? "" : t("manage.challenges.scoring.floorInvalid");
+    return {max, min, floor};
+}
+
+export function dynamicValid(profile: DynamicProfile): boolean {
+    if (profile.Mode === 0) return true;
+    const errors = dynamicErrors(profile);
+    return !errors.max && !errors.min && !errors.floor;
 }
 
 export function staticPointsValid(value: string, required: boolean): boolean {

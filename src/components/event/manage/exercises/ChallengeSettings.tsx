@@ -15,10 +15,13 @@ import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {t} from "@/i18n/t";
-import {decayOptions, decayProblem, dynamicValid, staticPointsValid, type ScoringMode} from "./scoringModel";
+import {decayOptions, decayProblem, dynamicErrors, dynamicValid, numberOf, staticPointsValid, type ScoringMode} from "./scoringModel";
 import "./challengesManage.css";
 
 type ScoringDraft = {Mode: ScoringMode; StaticPoints: string; MinPoints: number; MaxPoints: number; FloorAtPercent: number; ForceEventScoring: boolean};
+
+// An empty field stays empty (NaN) instead of showing NaN.
+const shown = (value: number) => Number.isNaN(value) ? "" : value;
 
 function draftOf(value: ManageScoring): ScoringDraft {
     return {Mode: value.Mode, StaticPoints: value.StaticPoints === null ? "" : String(value.StaticPoints), MinPoints: value.MinPoints, MaxPoints: value.MaxPoints, FloorAtPercent: value.FloorAtPercent, ForceEventScoring: value.ForceEventScoring};
@@ -56,6 +59,7 @@ export function ChallengeSettings() {
     const dynamic = value.Mode !== 0;
     const problem = dynamic ? decayProblem(value.Mode, lifecycle.data) : "";
     const valid = dynamic ? dynamicValid(value) : staticPointsValid(value.StaticPoints, true);
+    const errors = dynamic ? dynamicErrors(value) : {max: "", min: "", floor: ""};
     const disabled = !canManage || saving;
     const update = (patch: Partial<ScoringDraft>) => setEdit({eventID, value: {...value, ...patch}});
 
@@ -99,13 +103,19 @@ export function ChallengeSettings() {
                 <div className="event-manage-field"><ManageFieldLabel title={t("manage.challenges.scoring.decay")} help={t("manage.scoring.modeHelp")} />
                     <EventSelect ariaLabel={t("manage.challenges.scoring.decay")} value={String(value.Mode)} options={decayOptions()} onValueChange={mode => update({Mode: Number(mode) as ScoringMode})} disabled={disabled} /></div>
                 <div className={value.Mode === 3 ? "event-manage-fields-two" : "event-manage-fields-three"}>
-                    <div className="event-manage-field"><ManageFieldLabel htmlFor="score-max" title={t("manage.scoring.max")} help={t("manage.scoring.maxHelp")} required /><input id="score-max" className="event-manage-input" type="number" min={value.MinPoints + 1} step={1} value={value.MaxPoints} onChange={changeEvent => update({MaxPoints: Number(changeEvent.target.value)})} disabled={disabled} /></div>
-                    <div className="event-manage-field"><ManageFieldLabel htmlFor="score-min" title={t("manage.scoring.min")} help={t("manage.scoring.minHelp")} required /><input id="score-min" className="event-manage-input" type="number" min={1} step={1} value={value.MinPoints} onChange={changeEvent => update({MinPoints: Number(changeEvent.target.value)})} disabled={disabled} /></div>
-                    {value.Mode !== 3 && <div className="event-manage-field"><ManageFieldLabel htmlFor="score-floor" title={t("manage.scoring.floor")} help={t("manage.scoring.floorHelp")} required /><input id="score-floor" className="event-manage-input" type="number" min={1} max={100} step={1} value={value.FloorAtPercent} onChange={changeEvent => update({FloorAtPercent: Number(changeEvent.target.value)})} disabled={disabled} /></div>}
+                    <div className="event-manage-field"><ManageFieldLabel htmlFor="score-max" title={t("manage.scoring.max")} help={t("manage.scoring.maxHelp")} required />
+                        <input id="score-max" className="event-manage-input" type="number" min={2} step={1} required value={shown(value.MaxPoints)} aria-invalid={!!errors.max} aria-describedby={errors.max ? "score-max-error" : undefined} onChange={changeEvent => update({MaxPoints: numberOf(changeEvent.target.value)})} disabled={disabled} />
+                        {errors.max && <p className="event-manage-validation" id="score-max-error" role="alert">{errors.max}</p>}</div>
+                    <div className="event-manage-field"><ManageFieldLabel htmlFor="score-min" title={t("manage.scoring.min")} help={t("manage.scoring.minHelp")} required />
+                        <input id="score-min" className="event-manage-input" type="number" min={1} step={1} required value={shown(value.MinPoints)} aria-invalid={!!errors.min} aria-describedby={errors.min ? "score-min-error" : undefined} onChange={changeEvent => update({MinPoints: numberOf(changeEvent.target.value)})} disabled={disabled} />
+                        {errors.min && <p className="event-manage-validation" id="score-min-error" role="alert">{errors.min}</p>}</div>
+                    {value.Mode !== 3 && <div className="event-manage-field"><ManageFieldLabel htmlFor="score-floor" title={t("manage.scoring.floor")} help={t("manage.scoring.floorHelp")} required />
+                        <input id="score-floor" className="event-manage-input" type="number" min={1} max={100} step={1} required value={shown(value.FloorAtPercent)} aria-invalid={!!errors.floor} aria-describedby={errors.floor ? "score-floor-error" : undefined} onChange={changeEvent => update({FloorAtPercent: numberOf(changeEvent.target.value)})} disabled={disabled} />
+                        {errors.floor && <p className="event-manage-validation" id="score-floor-error" role="alert">{errors.floor}</p>}</div>}
                 </div>
             </div>}
             {problem && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{problem}</p>}
-            {!valid && !problem && <p className="event-manage-validation" id={dynamic ? undefined : "static-points-error"} role="alert">{dynamic ? t(value.Mode === 3 ? "manage.scoring.invalidTime" : "manage.scoring.invalid") : t("manage.challenges.scoring.staticInvalid")}</p>}
+            {!dynamic && !valid && <p className="event-manage-validation" id="static-points-error" role="alert">{t("manage.challenges.scoring.staticInvalid")}</p>}
             <div className="event-challenge-settings__force">
                 <EventSwitch className="event-manage-form__switch" checked={value.ForceEventScoring} onCheckedChange={checked => update({ForceEventScoring: checked})} disabled={disabled} label={t("manage.challenges.scoring.force")} />
                 <p>{t("manage.challenges.scoring.forceNote")}</p>

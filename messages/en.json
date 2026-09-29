@@ -2017,8 +2017,6 @@
   "manage.schedule.withdrawHelp": "After this time the event site is no longer public.\n\nClosing must be later than the end.",
   "manage.scoring.floor": "Threshold, %",
   "manage.scoring.floorHelp": "Share of participants or teams after which points reach the minimum.",
-  "manage.scoring.invalid": "Enter whole numbers: minimum above zero, maximum greater than the minimum, threshold from 1 to 100%.",
-  "manage.scoring.invalidTime": "Enter whole numbers: minimum above zero, maximum greater than the minimum.",
   "manage.scoring.max": "Maximum points",
   "manage.scoring.maxHelp": "Points a challenge gives at first. Must be greater than the minimum.",
   "manage.scoring.min": "Minimum points",
@@ -2624,5 +2622,10 @@
   "manage.challenges.set.collapse": "Collapse the set {name}",
   "manage.challenges.set.hintsShown": "Tasks with hints: {count}. Participants see hints in {shown}.",
   "manage.challenges.set.hintsOffTasks": "Tasks with hints: {count}. Hidden: «Show hints» is off in the tasks.",
-  "manage.challenges.set.hintsOffEvent": "Tasks with hints: {count}. Hidden: «Disable hints for all tasks» is on in the settings."
+  "manage.challenges.set.hintsOffEvent": "Tasks with hints: {count}. Hidden: «Disable hints for all tasks» is on in the settings.",
+  "manage.challenges.scoring.minInvalid": "A whole number from 1.",
+  "manage.challenges.scoring.maxInvalid": "A whole number from 2.",
+  "manage.challenges.scoring.maxAboveMin": "Must be above the lower bound.",
+  "manage.challenges.scoring.floorInvalid": "A whole number from 1 to 100.",
+  "manage.challenges.task.staticPointsHelp": "Points this task gives. A whole number above zero."
 }

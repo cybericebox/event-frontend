@@ -61,4 +61,19 @@ describe("TaskRow", () => {
         fireEvent.click(row);
         expect(screen.getByText("Зараз підказки вимкнено для всіх завдань у налаштуваннях.")).toBeTruthy();
     });
+
+    it("marks own scoring fields required and blocks saving with inline errors", () => {
+        renderRow();
+        fireEvent.click(screen.getByRole("button", {expanded: false}));
+        const kind = screen.getByRole("button", {name: "Оцінювання завдання SQL injection"});
+        expect(kind.closest(".event-manage-field")?.querySelector(".event-field-required")).toBeNull();
+        // Radix menus open on pointerdown; pick «Статичне».
+        fireEvent.pointerDown(kind, {button: 0, ctrlKey: false});
+        fireEvent.click(screen.getByRole("menuitemradio", {name: "Статичне"}));
+        const points = screen.getByRole("spinbutton", {name: /Бали за завдання/});
+        expect(points.closest(".event-manage-field")?.querySelector(".event-field-required")).toBeTruthy();
+        fireEvent.change(points, {target: {value: ""}});
+        expect(screen.getByText("Укажіть бали за завдання: ціле число більше за нуль.")).toBeTruthy();
+        expect((screen.getByRole("button", {name: "Зберегти"}) as HTMLButtonElement).disabled).toBe(true);
+    });
 });

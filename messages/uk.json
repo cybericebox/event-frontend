@@ -2017,8 +2017,6 @@
   "manage.schedule.withdrawHelp": "Після цього часу сайт заходу перестане бути публічним.\n\nЗакриття має бути пізніше завершення.",
   "manage.scoring.floor": "Поріг, %",
   "manage.scoring.floorHelp": "Частка учасників або команд, після якої бали досягають мінімуму.",
-  "manage.scoring.invalid": "Укажіть цілі значення: мінімум понад нуль, максимум більший за мінімум, поріг від 1 до 100%.",
-  "manage.scoring.invalidTime": "Укажіть цілі значення: мінімум понад нуль, максимум більший за мінімум.",
   "manage.scoring.max": "Максимум балів",
   "manage.scoring.maxHelp": "Скільки балів завдання дає спочатку. Має бути більше мінімуму.",
   "manage.scoring.min": "Мінімум балів",
@@ -2624,5 +2622,10 @@
   "manage.challenges.set.collapse": "Згорнути набір {name}",
   "manage.challenges.set.hintsShown": "Завдань із підказками: {count}. Учасники бачать підказки в {shown}.",
   "manage.challenges.set.hintsOffTasks": "Завдань із підказками: {count}. Приховані: у завданнях вимкнено «Показувати підказки».",
-  "manage.challenges.set.hintsOffEvent": "Завдань із підказками: {count}. Приховані: у налаштуваннях увімкнено «Вимкнути підказки для всіх завдань»."
+  "manage.challenges.set.hintsOffEvent": "Завдань із підказками: {count}. Приховані: у налаштуваннях увімкнено «Вимкнути підказки для всіх завдань».",
+  "manage.challenges.scoring.minInvalid": "Ціле число від 1.",
+  "manage.challenges.scoring.maxInvalid": "Ціле число від 2.",
+  "manage.challenges.scoring.maxAboveMin": "Має бути більше за нижню межу.",
+  "manage.challenges.scoring.floorInvalid": "Ціле число від 1 до 100.",
+  "manage.challenges.task.staticPointsHelp": "Скільки балів дає це завдання. Ціле число більше за нуль."
 }

@@ -10,13 +10,14 @@ import {
 import type {ManageLifecycle, ManageScoring} from "@/api/manage";
 import {hintLevelLabel, hintPlainText} from "@/components/event/challenges/hintModel";
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
+import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import {attachmentActionError, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
 import {descriptionFirstLine} from "./challengeOrder";
-import {decayOptions, decayProblem, dynamicValid, scoringSummary, staticPointsValid, type DynamicProfile, type ScoringMode} from "./scoringModel";
+import {decayOptions, decayProblem, dynamicErrors, dynamicValid, numberOf, scoringSummary, staticPointsValid, type DynamicProfile, type ScoringMode} from "./scoringModel";
 import {hintIndicator, taskBadges, type HintIndicator, type StandReadiness} from "./taskRowModel";
 
 type ScoringKind = "event" | "static" | "dynamic";
@@ -31,6 +32,19 @@ function scoringDraftOf(challenge: EventBoardChallenge): ScoringDraft {
 
 // Board fields the per-challenge PUT always sends in full.
 const boardFields = (challenge: EventBoardChallenge) => ({Points: challenge.Points, HintsEnabled: challenge.HintsEnabled, Published: challenge.Published});
+
+// A required whole-number field with the /manage required marker and its
+// inline error.
+function RequiredNumber({id, title, help, value, min, max, error, disabled, onChange}: {
+    id: string; title: string; help: string; value: string; min: number; max?: number; error: string; disabled: boolean; onChange: (value: string) => void;
+}) {
+    return <div className="event-manage-field event-task__number">
+        <ManageFieldLabel htmlFor={id} title={title} help={help} required />
+        <input id={id} className="event-manage-input" type="number" inputMode="numeric" min={min} max={max} step={1} required value={Number.isNaN(Number(value)) ? "" : value}
+            aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} onChange={changeEvent => onChange(changeEvent.target.value)} disabled={disabled} />
+        {error && <p className="event-manage-validation" id={`${id}-error`} role="alert">{error}</p>}
+    </div>;
+}
 
 // «Оцінювання» of one task: as the event, or its own static / dynamic value.
 function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disabled, onSaved}: {
@@ -49,6 +63,8 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
     const locked = disabled || saving || forced;
     const eventPoints = scoring.StaticPoints ?? challenge.Points;
     const updateProfile = (patch: Partial<DynamicProfile>) => setDraft({...draft, profile: {...draft.profile, ...patch}});
+    const errors = draft.kind === "dynamic" ? dynamicErrors(draft.profile) : {max: "", min: "", floor: ""};
+    const fieldID = `task-${challenge.ID}`;
 
     async function save() {
         if (locked || !changed || !valid || problem) return;
@@ -79,18 +95,20 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
             <div className="event-manage-field event-task__kind">{t("manage.challenges.task.scoringKind")}
                 <EventSelect ariaLabel={t("manage.challenges.task.scoringKindFor", {name: challenge.Snapshot.name})} value={draft.kind} options={kinds} onValueChange={kind => setDraft({...draft, kind: kind as ScoringKind})} disabled={locked} /></div>
             {draft.kind === "event" && <p className="event-task__summary">{scoringSummary(scoring, eventPoints)}</p>}
-            {draft.kind === "static" && <label className="event-manage-field event-task__number">{t("manage.challenges.scoring.staticPoints")}
-                <input className="event-manage-input" type="number" inputMode="numeric" min={1} step={1} value={draft.points} aria-invalid={!valid} onChange={changeEvent => setDraft({...draft, points: changeEvent.target.value})} disabled={locked} /></label>}
+            {draft.kind === "static" && <RequiredNumber id={`${fieldID}-points`} title={t("manage.challenges.scoring.staticPoints")} help={t("manage.challenges.task.staticPointsHelp")}
+                value={draft.points} min={1} error={valid ? "" : t("manage.challenges.scoring.staticInvalid")} disabled={locked} onChange={points => setDraft({...draft, points})} />}
             {draft.kind === "dynamic" && <>
                 <div className="event-manage-field event-task__kind">{t("manage.challenges.scoring.decay")}
                     <EventSelect ariaLabel={t("manage.challenges.scoring.decay")} value={String(draft.profile.Mode)} options={decayOptions()} onValueChange={mode => updateProfile({Mode: Number(mode) as ScoringMode})} disabled={locked} /></div>
-                <label className="event-manage-field event-task__number">{t("manage.challenges.task.from")}<input className="event-manage-input" type="number" min={draft.profile.MinPoints + 1} step={1} value={draft.profile.MaxPoints} onChange={changeEvent => updateProfile({MaxPoints: Number(changeEvent.target.value)})} disabled={locked} /></label>
-                <label className="event-manage-field event-task__number">{t("manage.challenges.task.to")}<input className="event-manage-input" type="number" min={1} step={1} value={draft.profile.MinPoints} onChange={changeEvent => updateProfile({MinPoints: Number(changeEvent.target.value)})} disabled={locked} /></label>
-                {draft.profile.Mode !== 3 && <label className="event-manage-field event-task__number">{t("manage.scoring.floor")}<input className="event-manage-input" type="number" min={1} max={100} step={1} value={draft.profile.FloorAtPercent} onChange={changeEvent => updateProfile({FloorAtPercent: Number(changeEvent.target.value)})} disabled={locked} /></label>}
+                <RequiredNumber id={`${fieldID}-max`} title={t("manage.challenges.task.from")} help={t("manage.scoring.maxHelp")} value={String(draft.profile.MaxPoints)} min={2}
+                    error={errors.max} disabled={locked} onChange={value => updateProfile({MaxPoints: numberOf(value)})} />
+                <RequiredNumber id={`${fieldID}-min`} title={t("manage.challenges.task.to")} help={t("manage.scoring.minHelp")} value={String(draft.profile.MinPoints)} min={1}
+                    error={errors.min} disabled={locked} onChange={value => updateProfile({MinPoints: numberOf(value)})} />
+                {draft.profile.Mode !== 3 && <RequiredNumber id={`${fieldID}-floor`} title={t("manage.scoring.floor")} help={t("manage.scoring.floorHelp")} value={String(draft.profile.FloorAtPercent)} min={1} max={100}
+                    error={errors.floor} disabled={locked} onChange={value => updateProfile({FloorAtPercent: numberOf(value)})} />}
             </>}
         </div>
         {problem && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{problem}</p>}
-        {!valid && !problem && <p className="event-manage-validation" role="alert">{draft.kind === "static" ? t("manage.challenges.scoring.staticInvalid") : t(draft.profile.Mode === 3 ? "manage.scoring.invalidTime" : "manage.scoring.invalid")}</p>}
         {changed && !forced && <button className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid || !!problem} onClick={() => void save()}>{t("common.save")}</button>}
     </section>;
 }
