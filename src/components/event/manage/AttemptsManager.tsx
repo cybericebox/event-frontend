@@ -16,6 +16,7 @@ import {DialogModal} from "@/components/event/DialogModal";
 import {useEventStream} from "@/utils/eventStream";
 import {useManager} from "./ManagerShell";
 import {t, tPlural} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 const all = "all";
 
@@ -163,7 +164,7 @@ export function AttemptsManager() {
                 {filtered && <button className="ib-btn ib-btn--sm" type="button" onClick={() => changeFilters(emptyAttemptFilters)}>{t("manage.attempts.filter.reset")}</button>}
             </div>
         </section>
-        {items.length === 0 ? <section className="event-manage-section"><p className="event-challenge-manager__empty">{t("manage.attempts.empty")}</p></section> : <div className="event-attempts-manager__layout">
+        {items.length === 0 ? <section className="event-manage-section"><EmptyState message={t("manage.attempts.empty")} /></section> : <div className="event-attempts-manager__layout">
             <section className="event-manage-section event-attempts-manager__list" aria-label={t("manage.attempts.list")}>
                 {items.map(attempt => <button className={`event-attempts-manager__row${selectedID === attempt.ID ? " is-selected" : ""}`} type="button" key={attempt.ID} aria-pressed={selectedID === attempt.ID} onClick={() => select(attempt)}>
                     <span className="event-attempts-manager__row-title"><strong>{attempt.ChallengeName || t("manage.attempts.challenge")}</strong><span className={attempt.Correct ? "is-correct" : "is-incorrect"}>{attemptStatus(attempt)}</span></span>
@@ -173,7 +174,7 @@ export function AttemptsManager() {
                 <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={pageIndex === 0} onClick={previousPage}>{t("common.back")}</button><span>{t("manage.attempts.page", {number: pageIndex + 1})}</span><button className="ib-btn ib-btn--sm" type="button" disabled={!pageQuery.data?.NextCursor} onClick={nextPage}>{t("common.next")}</button></div>
             </section>
             <section className="event-manage-section event-attempts-manager__detail" aria-label={t("manage.attempts.detail")}>
-                {!selected ? <p className="event-challenge-manager__empty">{t("manage.attempts.selectHint")}</p> : <>
+                {!selected ? <EmptyState compact message={t("manage.attempts.selectHint")} /> : <>
                     <div className="event-manage-section__head"><h2>{selected.ChallengeName || t("manage.attempts.challenge")}</h2><p>{selected.ParticipantName || t("manage.attempts.participant")}{teamMode && selected.TeamName ? ` · ${selected.TeamName}` : ""} · {t("manage.attempts.timeUtc", {time: timestamp(selected.ReceivedAt)})}</p></div>
                     <dl className="event-attempts-manager__facts"><div><dt>{t("manage.attempts.answer")}</dt><dd><code>{selected.Answer}</code></dd></div><div><dt>{t("manage.attempts.automaticCheck")}</dt><dd>{selected.AutomaticCorrect ? t("manage.attempts.right") : t("manage.attempts.wrong")}</dd></div><div><dt>{t("manage.attempts.currentResult")}</dt><dd>{attemptStatus(selected)}</dd></div></dl>
                     <div className="event-attempts-manager__expected"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setShowExpected(value => !value)}>{showExpected ? t("manage.attempts.hideExpected") : t("manage.attempts.showExpected")}</button>{showExpected && <code>{selected.ExpectedFlag}</code>}</div>

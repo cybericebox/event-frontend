@@ -14,6 +14,7 @@ import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
 import {t} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 const aspects = {"16:9": 16 / 9, "16:10": 16 / 10, "4:3": 4 / 3, "5:3": 5 / 3};
 const dragMime = "application/x-live-widget";
@@ -73,7 +74,7 @@ function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos
             <button type="button" aria-label={t("manage.live.logos.up")} disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>
             <button type="button" aria-label={t("manage.live.logos.down")} disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>
             <button type="button" aria-label={t("manage.live.logos.remove")} disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>
-        </li>)}</ul> : <p>{t("manage.live.logos.empty")}</p>}
+        </li>)}</ul> : <EmptyState compact message={t("manage.live.logos.empty")} />}
         <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden disabled={disabled || busy} onChange={event => void upload(event.target.files)} />
         <button className="ib-btn" type="button" disabled={disabled || busy || logos.length >= maxLogos} onClick={() => input.current?.click()}><ImageUp size={16} /> {t(busy ? "manage.live.logos.uploading" : "manage.live.logos.upload")}</button>
         <small>{t("manage.live.logos.hint")}</small>

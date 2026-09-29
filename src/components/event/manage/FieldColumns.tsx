@@ -9,6 +9,7 @@ import type {FormField} from "@/api/manageParticipantForm";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {formatAnswer, moveColumn, resolveColumns, toSavedColumns, type FieldColumn} from "./listColumns";
 import {t} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 export function useFieldColumns(eventID: string, list: ManagedList, fields: FormField[], enabled = true) {
     const query = useQuery({queryKey: ["event-management-list-columns", eventID, list], queryFn: () => getManageListColumns(eventID, list), enabled, refetchOnWindowFocus: false});
@@ -52,7 +53,7 @@ export function FieldColumnsButton({eventID, list, columns, canManage}: {eventID
 export function AnswersList({fields, answers}: {fields: FormField[]; answers: Record<string, unknown>}) {
     const known = new Set(fields.map(field => field.key));
     const extra = Object.entries(answers).filter(([key]) => !known.has(key));
-    if (fields.length === 0 && extra.length === 0) return <p className="event-challenge-manager__empty">{t("manage.fields.noAnswers")}</p>;
+    if (fields.length === 0 && extra.length === 0) return <EmptyState compact message={t("manage.fields.noAnswers")} />;
     return <dl className="event-form-responses__answers">
         {fields.map(field => <div key={field.key}><dt>{field.label || field.key}</dt><dd>{formatAnswer(answers[field.key])}</dd></div>)}
         {extra.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{formatAnswer(value)}</dd></div>)}

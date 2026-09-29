@@ -24,6 +24,7 @@ import {
 import {InfrastructureIcon} from "./InfrastructureIcon";
 import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 type ChallengeDraft = Pick<EventBoardChallenge, "Points" | "HintsEnabled" | "Published">;
 type Board = {attachment: EventExerciseAttachment; challenges: EventBoardChallenge[]};
@@ -209,7 +210,7 @@ export function ExerciseAttachments() {
     return <>
         {scoringQuery.data.ForceEventScoring && <p className="event-manage-notice">{t("manage.exercises.forcedScoring")}</p>}
         <section className="event-manage-section" aria-label={t("manage.exercises.sets")}>
-            {boards.length === 0 && detached.length === 0 && <p className="event-challenge-manager__empty">{t("manage.exercises.empty")}</p>}
+            {boards.length === 0 && detached.length === 0 && <EmptyState message={t("manage.exercises.empty")} />}
             {boards.map(({attachment, challenges}) => {
                 const kind = attachmentKind(attachment);
                 const editURL = exercisesAppURL(exercisesOrigin, "detail", {exerciseID: attachment.ExerciseID, eventID, returnURL});
@@ -244,7 +245,7 @@ export function ExerciseAttachments() {
                     {attachment.Fork?.SourceUpdateAvailable && <div className="event-exercise-set__notice">
                         <span><strong>{t("manage.exercises.sourceUpdateAvailable", {number: attachment.Fork.SourceLatestVersionNumber})}</strong> {t("manage.exercises.copyNotUpdated")}</span>
                     </div>}
-                    {challenges.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.exercises.setEmpty")}</p> : <div className="event-exercise-editor__tasks">
+                    {challenges.length === 0 ? <EmptyState compact message={t("manage.exercises.setEmpty")} /> : <div className="event-exercise-editor__tasks">
                         {challenges.map(challenge => {
                             const draft = drafts[challenge.ID] ?? {Points: challenge.Points, HintsEnabled: challenge.HintsEnabled, Published: challenge.Published};
                             const changed = draft.Points !== challenge.Points || draft.HintsEnabled !== challenge.HintsEnabled || draft.Published !== challenge.Published;

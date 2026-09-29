@@ -15,6 +15,7 @@ import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel, standStatusLabel, standStatusTone, standTeamName, type StatusTone} from "@/components/event/manage/standStatus";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {t} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 const timeFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 const formatTime = (value: string | null) => value ? timeFormat.format(new Date(value)) : null;
@@ -86,15 +87,15 @@ function ModeratorChallengesDialog({eventID, open, onClose}: {eventID: string; o
 
     return <Dialog open={open} onOpenChange={next => {if (!next) onClose();}}><DialogContent className="max-h-[90dvh] max-w-[min(640px,calc(100vw-24px))] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("manage.labs.moderators.title")}</DialogTitle><DialogDescription>{t("manage.labs.moderators.description")}</DialogDescription></DialogHeader>
-        {challenges.isPending ? <p className="event-participants-table__dim">{t("manage.exercises.attachDialog.previewLoading")}</p>
+        {challenges.isPending ? <EventLoading compact />
             : challenges.isError ? <div className="event-manage-notice" role="alert">{standErrorMessage(challenges.error, t("manage.labs.moderators.loadFailed"))}<button className="ib-btn ib-btn--sm" type="button" onClick={() => void challenges.refetch()}>{t("common.retry")}</button></div>
-            : challenges.data.length === 0 ? <p className="event-participants-table__dim">{t("manage.labs.moderators.empty")}</p>
+            : challenges.data.length === 0 ? <EmptyState compact message={t("manage.labs.moderators.empty")} />
             : <ul className="event-stands__challenges">{challenges.data.map(challenge => {
                 const lab = runtime[challenge.ChallengeID];
                 return <li key={challenge.ChallengeID}>
                     <div className="event-stands__challenge-head"><strong>{challenge.Name || challenge.ChallengeID.slice(0, 8)}</strong><small>{readinessLabel[challenge.Readiness]}</small></div>
                     {challenge.Lab ? <div className="event-stands__challenge-lab"><StatusBadge label={labStatusLabel[challenge.Lab.Status]} tone={labStatusTone[challenge.Lab.Status]} />{challenge.Lab.Status === "ready" && lab === undefined && <button className="ib-btn ib-btn--sm" type="button" onClick={() => void loadLab(challenge.ChallengeID)}>{t("manage.labs.moderators.showAddresses")}</button>}</div> : <small className="event-participants-table__dim">{t("manage.labs.moderators.noLab")}</small>}
-                    {lab === "loading" && <small className="event-participants-table__dim">{t("manage.labs.moderators.addressesLoading")}</small>}
+                    {lab === "loading" && <EventLoading compact label={t("manage.labs.moderators.addressesLoading")} />}
                     {lab === "error" && <small className="event-stands__error">{t("manage.labs.moderators.labFailed")} <button className="ib-btn ib-btn--sm" type="button" onClick={() => void loadLab(challenge.ChallengeID)}>{t("common.retry")}</button></small>}
                     {lab && typeof lab === "object" && (lab.Access.length === 0 ? <small className="event-participants-table__dim">{t("manage.labs.moderators.noWeb", {cidr: lab.VPNCIDR || "—"})}</small> : <ul className="event-stands__access">{lab.Access.map(entry => <li key={`${entry.Device}-${entry.Port}`}><span>{entry.Device}:{entry.Port}</span>{entry.URL ? <a href={entry.URL} target="_blank" rel="noreferrer">{entry.URL}</a> : <span>{entry.Protocol}</span>}</li>)}</ul>)}
                 </li>;
@@ -152,7 +153,7 @@ export default function ManageLabsPage() {
         <ScheduleSection key={`${labs.DeployLeadMinutes}-${labs.TeardownDelayMinutes}`} eventID={eventID} labs={labs} canManage={canManage} />
         <div className="event-stands__summary" role="status">{summary.map(entry => <div key={entry.label}><span>{entry.label}</span><strong>{entry.value}</strong></div>)}</div>
         <section className="event-manage-section event-stands__table">
-            {items.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.labs.empty")}</p> : <div className="event-participants-table"><table>
+            {items.length === 0 ? <EmptyState message={t("manage.labs.empty")} /> : <div className="event-participants-table"><table>
                 <thead><tr><th>{t("manage.labs.column.team")}</th><th>{t("manage.labs.column.status")}</th><th>{t("manage.labs.column.updated")}</th><th>{t("manage.labs.column.reason")}</th><th><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
                 <tbody>{items.map(stand => {
                     const open = expanded === stand.TeamID;

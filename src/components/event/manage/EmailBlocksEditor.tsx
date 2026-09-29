@@ -7,6 +7,7 @@ import type {ManageEmailBlock} from "@/api/manageEmailTemplates";
 import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "./ManageFieldLabel";
 import {emailBlockTitle, emailRichText, emailRichTextBlock, isSimpleEmailRichText} from "./emailBlocks";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 export function EmailBlocksEditor({blocks, onChange, onUploadImage, imageURL, disabled}: {
     blocks: ManageEmailBlock[]; onChange: (blocks: ManageEmailBlock[]) => void;
@@ -23,7 +24,7 @@ export function EmailBlocksEditor({blocks, onChange, onUploadImage, imageURL, di
     };
 
     return <div className="event-email-blocks"><div className="event-manage-section__head"><h2>{t("manage.email.blocks.title")}</h2><p>{t("manage.email.blocks.intro")}</p></div>
-        {blocks.length === 0 && <p className="event-manage-notifications__empty">{t("manage.email.blocks.empty")}</p>}
+        {blocks.length === 0 && <EmptyState compact message={t("manage.email.blocks.empty")} />}
         <div className="event-email-blocks__list">{blocks.map((block, index) => <section className="event-email-blocks__item" key={`${block.type}-${index}`}><div className="event-email-blocks__head"><strong>{t("manage.email.blocks.heading", {number: index + 1, title: emailBlockTitle(block)})}</strong><div><button type="button" aria-label={t("manage.email.blocks.moveUp", {number: index + 1})} disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={16} /></button><button type="button" aria-label={t("manage.email.blocks.moveDown", {number: index + 1})} disabled={disabled || index === blocks.length - 1} onClick={() => move(index, 1)}><ArrowDown size={16} /></button><button type="button" aria-label={t("manage.email.blocks.remove", {number: index + 1})} disabled={disabled} onClick={() => remove(index)}><Trash2 size={16} /></button></div></div>
             {block.type === "rich_text" ? <div className="event-manage-field"><ManageFieldLabel title={t("manage.email.blocks.textLabel", {number: index + 1})} help={t("manage.email.blocks.textHelp")} htmlFor={`event-email-block-${index}`} /><textarea className="event-manage-input" id={`event-email-block-${index}`} rows={Math.max(4, emailRichText(block).split("\n").length + 1)} disabled={disabled || !isSimpleEmailRichText(block)} value={emailRichText(block)} onChange={e => update(index, emailRichTextBlock(e.target.value))} />{!isSimpleEmailRichText(block) && <><small>{t("manage.email.blocks.formatted")}</small>{!disabled && <button className="ib-btn ib-btn--sm" type="button" onClick={() => update(index, emailRichTextBlock(emailRichText(block)))}>{t("manage.email.blocks.toPlain")}</button>}</>}</div> : null}
             {block.type === "button" ? <div className="event-manage-fields-two"><label className="event-manage-field"><span>{t("manage.email.blocks.buttonText")}</span><input className="event-manage-input" value={String(block.label ?? "")} disabled={disabled} onChange={e => update(index, {...block, label: e.target.value})} /></label><label className="event-manage-field"><span>{t("manage.email.blocks.link")}</span><input className="event-manage-input" value={String(block.url ?? "")} disabled={disabled} onChange={e => update(index, {...block, url: e.target.value})} placeholder="https://…" /></label></div> : null}

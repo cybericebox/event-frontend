@@ -11,6 +11,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {t, tPlural} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {useManager} from "./ManagerShell";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 const all = "all";
 
@@ -69,7 +70,7 @@ export function MailJournal() {
             </div>
         </section>
         <section className="event-manage-section event-manage-mail__journal" aria-label={t("manage.mail.tab.journal")}>
-            {items.length === 0 ? <p className="event-challenge-manager__empty">{t(filtered ? "manage.mail.journal.emptyFiltered" : "manage.mail.journal.empty")}</p> : <div className="event-participants-table"><table>
+            {items.length === 0 ? <EmptyState message={t(filtered ? "manage.mail.journal.emptyFiltered" : "manage.mail.journal.empty")} /> : <div className="event-participants-table"><table>
                 <thead><tr>
                     <th scope="col">{t("manage.mail.journal.col.time")}</th>
                     <th scope="col">{t("manage.mail.journal.col.recipient")}</th>

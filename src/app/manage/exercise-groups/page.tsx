@@ -15,6 +15,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t, tPlural} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 type Board = {attachment: EventExerciseAttachment; challenges: EventBoardChallenge[]};
 
@@ -142,7 +143,7 @@ export default function ExerciseGroupsPage() {
         <BoardDisplaySettings eventID={event.EventID} canManage={canManage} />
         <section className="event-manage-section" aria-labelledby="challenge-groups-title">
             <div className="event-manage-section__head"><h2 id="challenge-groups-title">{t("manage.exercises.groups.groups")}</h2><p>{t("manage.exercises.groups.groupsHelp")}</p></div>
-            {groups.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.exercises.groups.empty")}</p> : <ol className="event-challenge-manager__list">
+            {groups.length === 0 ? <EmptyState message={t("manage.exercises.groups.empty")} /> : <ol className="event-challenge-manager__list">
                 {groups.map((group, index) => <li className="event-challenge-manager__group" key={group.ID}>
                     {editing?.id === group.ID ? <form className="event-challenge-manager__rename" onSubmit={event => {event.preventDefault(); void rename(group);}}>
                         <input className="event-manage-input" aria-label={t("manage.exercises.groups.newName")} maxLength={80} value={editing.name} onChange={event => setEditing({...editing, name: event.target.value})} disabled={busy} autoFocus />
@@ -164,9 +165,9 @@ export default function ExerciseGroupsPage() {
         </section>
         <section className="event-manage-section" aria-labelledby="challenge-order-title">
             <div className="event-manage-section__head"><h2 id="challenge-order-title">{t("manage.exercises.groups.board")}</h2><p>{t("manage.exercises.groups.boardHelp")}</p></div>
-            {boards.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.exercises.groups.noSets")}</p> : boards.map((board, boardIndex) => <div className="event-challenge-manager__board" key={board.attachment.ID}>
+            {boards.length === 0 ? <EmptyState message={t("manage.exercises.groups.noSets")} /> : boards.map((board, boardIndex) => <div className="event-challenge-manager__board" key={board.attachment.ID}>
                 <h3>{board.attachment.ExerciseName || t("manage.exercises.groups.setNumber", {number: boardIndex + 1})} <span>· {taskCount(board.challenges.length)}</span></h3>
-                {board.challenges.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.exercises.setEmpty")}</p> : <ol className="event-challenge-manager__list">
+                {board.challenges.length === 0 ? <EmptyState compact message={t("manage.exercises.setEmpty")} /> : <ol className="event-challenge-manager__list">
                     {board.challenges.map((challenge, index) => <li className="event-challenge-manager__task" key={challenge.ID}>
                         <div className="event-challenge-manager__task-name"><span className="event-challenge-manager__position">{index + 1}</span><strong>{challenge.Snapshot.name}</strong></div>
                         <EventSelect ariaLabel={t("manage.exercises.groups.challengeGroup", {name: challenge.Snapshot.name})} value={challenge.GroupID ?? "none"} options={[{value: "none", label: t("manage.exercises.groups.none")}, ...groups.map(group => ({value: group.ID, label: group.Name}))]} onValueChange={value => void setGroup(board, challenge, value === "none" ? "" : value)} disabled={!canManage || busy} />

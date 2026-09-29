@@ -13,6 +13,8 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {t, tPlural} from "@/i18n/t";
 import {attachmentActionError} from "./attachmentModel";
 import {InfrastructureIcon} from "./InfrastructureIcon";
+import {EmptyState} from "@/components/ui/EmptyState";
+import {EventLoading} from "@/components/event/EventLoading";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
@@ -79,9 +81,9 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
                 <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
                 <div className="event-manage-participants__filters">{infrastructureFilters.map(option => <button key={option} className="event-manage-participants__filter" type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
             </div>
-            {catalog.isPending ? <p className="event-challenge-manager__empty">{t("manage.exercises.attachDialog.catalogLoading")}</p>
+            {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />
                 : catalog.isError ? <div className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.exercises.attachDialog.catalogFailed")} <button className="ib-btn ib-btn--sm" type="button" onClick={() => void catalog.refetch()}>{t("common.retry")}</button></div>
-                : catalog.data.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.exercises.attachDialog.noResults")}</p>
+                : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
                 : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}>
                     <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached} onClick={() => select(choice)}>
                         <span className="event-exercise-picker__name"><strong>{choice.Name}</strong>{choice.Infrastructure && <InfrastructureIcon interactive={false} />}</span>
@@ -93,7 +95,7 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
                     </button>
                 </li>)}</ul>}
             {selected && <div className="event-exercise-editor__preview" aria-live="polite">
-                {preview.isPending ? <p>{t("manage.exercises.attachDialog.previewLoading")}</p> : preview.isError ? <p role="alert">{t("manage.exercises.attachDialog.previewFailed")}</p> : <>
+                {preview.isPending ? <EventLoading compact /> : preview.isError ? <p role="alert">{t("manage.exercises.attachDialog.previewFailed")}</p> : <>
                     <div className="event-exercise-editor__preview-head"><h3>{preview.data.Name}</h3>
                         {variantCount > 1 && <EventSelect ariaLabel={t("manage.exercises.attachDialog.previewVariant")} value={String(variant)} options={Array.from({length: variantCount}, (_, index) => ({value: String(index), label: t("manage.exercises.attachDialog.variant", {number: index + 1})}))} onValueChange={value => setVariant(Number(value))} />}
                     </div>

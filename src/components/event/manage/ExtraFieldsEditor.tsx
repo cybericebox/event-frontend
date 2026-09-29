@@ -15,6 +15,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {createFormField, isFormField, validateParticipantForm} from "@/components/event/manage/participantFormEditor";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 const emptyForm: ParticipantFormInput = {Enabled: false, Required: false, Document: {blocks: []}};
 const inputOptions: {value: FormField["input"]; label: string}[] = [
@@ -45,7 +46,7 @@ function FormPreview({blocks, selectedID, scope}: {blocks: FormBlock[]; selected
                 <input className="event-manage-input" type={block.input === "number" ? "number" : "text"} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} />}
         </div>}
         {!isFormField(block) && !["section", "text", "divider"].includes(block.type) && <span>{t("manage.fields.preview.unknownBlock", {type: block.type})}</span>}
-    </div>)}{blocks.length === 0 && <p>{t("manage.fields.preview.empty")}</p>}</div>;
+    </div>)}{blocks.length === 0 && <EmptyState compact message={t("manage.fields.preview.empty")} />}</div>;
 }
 
 export function ExtraFieldsEditor({scope}: {scope: "participant" | "team"}) {
@@ -99,7 +100,7 @@ export function ExtraFieldsEditor({scope}: {scope: "participant" | "team"}) {
         <div className="event-manage-form__head"><p>{scope === "team" ? t("manage.fields.introTeam") : t("manage.fields.introParticipant")}</p><span className="event-attempts-manager__total">{query.data ? t("manage.fields.version", {version: query.data.Version}) : t("manage.fields.notSaved")}</span></div>
         <section className="event-manage-section event-manage-form__settings"><div className="event-manage-field"><ManageFieldLabel title={t("manage.fields.title")} help={scope === "team" ? t("manage.fields.enabledHelpTeam") : t("manage.fields.enabledHelpParticipant")} /><label className="event-manage-form__switch"><input type="checkbox" checked={draft.Enabled} onChange={e => change({...draft, Enabled: e.target.checked, Required: e.target.checked && draft.Required})} disabled={!canManage || saving} />{t("manage.fields.show")}</label></div><div className="event-manage-field"><ManageFieldLabel title={t("manage.fields.required")} help={scope === "team" ? t("manage.fields.requiredHelpTeam") : t("manage.fields.requiredHelpParticipant")} /><label className="event-manage-form__switch"><input type="checkbox" checked={draft.Required} onChange={e => change({...draft, Required: e.target.checked})} disabled={!canManage || saving || !draft.Enabled} />{t("manage.fields.requireFill")}</label></div></section>
         <div className="event-manage-content__layout"><div className="event-content-editor"><div className="event-content-editor__top"><div><h2>{t("manage.fields.editor.title")}</h2><p>{t("manage.fields.editor.subtitle")}</p></div><span>{blocks.length}</span></div>
-            {blocks.length === 0 && <div className="event-content-editor__empty"><strong>{t("manage.fields.editor.empty")}</strong><span>{t("manage.fields.editor.emptyHint")}</span></div>}
+            {blocks.length === 0 && <EmptyState message={t("manage.fields.editor.empty")} />}
             <div className="event-content-editor__stack">{blocks.map((block, index) => {
                 const preceding = blocks.slice(0, index).filter(isFormField).filter(field => field.input !== "multi_select");
                 const conditionSource = isFormField(block) ? preceding.find(field => field.key === block.condition?.fieldKey) : undefined;

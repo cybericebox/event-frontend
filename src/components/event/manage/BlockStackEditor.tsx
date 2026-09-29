@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useRef, useState, type ReactNode} from "react";
-import {Eye, Plus, Type} from "lucide-react";
+import {Eye, Plus} from "lucide-react";
 import toast from "react-hot-toast";
 import {ContentBlocks, contentBlockVisible} from "@/components/event/content/ContentBlocks";
 import type {ContentBlock, ContentDocument, ContentValue, PageBlockType} from "@/types/eventContent";
@@ -12,6 +12,7 @@ import {blockValidationIndex} from "./validatePageBlocks";
 import {EditedDocumentContext} from "./useEventLinkOptions";
 import {t, tPlural} from "@/i18n/t";
 import {currentPreviewPhase, previewPageAccess, previewPhases, previewValues, previewViewers, type PreviewPhase, type PreviewViewer} from "./previewScenario";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 const undoMilliseconds = 6000;
 
@@ -119,7 +120,7 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
         <div className="event-content-editor">
             {before}
             <div className="event-content-editor__top"><div><h2>{t("manage.blocks.stack.title")}</h2><p>{t("manage.blocks.stack.hint")}</p></div><span>{tPlural("manage.blocks.count", document.blocks.length)}</span></div>
-            {document.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>{t("manage.blocks.stack.empty")}</strong><span>{t("manage.blocks.stack.emptyHint")}</span></div>}
+            {document.blocks.length === 0 && <EmptyState message={t("manage.blocks.stack.emptyMessage")} />}
             <div className="event-content-editor__stack">{document.blocks.map((block, index) => <PageBlockEditor key={block.id} eventID={eventID} coverImage={coverImage} block={block} index={index} count={document.blocks.length} anchorsInUse={document.blocks.filter(item => item.id !== block.id).flatMap(item => [item.id, item.anchor ?? ""])} values={values} catalog={catalog} canEdit={canEdit} selected={selectedBlockID === block.id} error={invalidBlockIndex === index ? validation ?? undefined : undefined}
                 onSelect={() => select(block.id)} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDuplicate={() => duplicateBlock(block)} onDelete={() => deleteBlock(block, index)} />)}</div>
             {canEdit && <div className="event-content-editor__add" aria-label={t("manage.blocks.stack.add")}>{blockPalette.filter(item => item.type !== "hero" || !document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
@@ -133,8 +134,8 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
                 <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.phase")}>{previewPhases.map(item => <button key={item.value} type="button" aria-pressed={activePhase === item.value} onClick={() => setPhase(item.value)}>{item.label}</button>)}</div>
             </div>
             <div className="event-manage-content__preview-window" ref={previewRef}>
-                {accessNotice ? <div className="event-content-editor__empty"><strong>{accessNotice}</strong><span>{t("manage.blocks.preview.switchViewer")}</span></div>
-                    : <div className={previewClassName}>{document.blocks.length === 0 && <div className="event-content-editor__empty">{t("manage.blocks.preview.empty")}</div>}<ContentBlocks document={document} variables={shownValues} title={previewTitle} selectedBlockId={selectedBlockID ?? undefined} coverImage={coverImage} eventID={eventID} preview previewViewer={viewer} /></div>}
+                {accessNotice ? <EmptyState message={t("manage.blocks.preview.accessNotice", {notice: accessNotice})} />
+                    : <div className={previewClassName}>{document.blocks.length === 0 && <EmptyState message={t("manage.blocks.preview.empty")} />}<ContentBlocks document={document} variables={shownValues} title={previewTitle} selectedBlockId={selectedBlockID ?? undefined} coverImage={coverImage} eventID={eventID} preview previewViewer={viewer} /></div>}
             </div>
         </aside>
     </div></EditedDocumentContext.Provider>;

@@ -10,6 +10,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {useEventStream} from "@/utils/eventStream";
 import {clockLabel, freezeLeadMinutes} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
+import {EmptyState} from "@/components/ui/EmptyState";
 
 const number = new Intl.NumberFormat("uk-UA");
 const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
@@ -70,7 +71,7 @@ export default function ManageResultsPage() {
             ? <button className="ib-btn" type="button" disabled={busy === "open"} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</button>
             : <button className="ib-btn ib-btn--primary" type="button" disabled={busy === "open"} onClick={() => void toggleOpened(true)}>{t("manage.results.freeze.open")}</button>)}</section>}
         <section className="event-manage-section"><div className="event-manage-section__head"><h2>{t("manage.results.ranking")}</h2><p>{teamMode ? t("manage.results.unrankedTeams") : t("manage.results.unrankedParticipants")}</p></div>
-            {results.Teams.length === 0 ? <p className="event-challenge-manager__empty">{t("manage.results.empty")}</p> : <div className="event-manage-results__table" role="table" aria-label={t("manage.results.tableLabel")}>
+            {results.Teams.length === 0 ? <EmptyState message={t("manage.results.empty")} /> : <div className="event-manage-results__table" role="table" aria-label={t("manage.results.tableLabel")}>
                 <div className="event-manage-results__table-head" role="row"><span role="columnheader">{t("manage.results.column.rank")}</span><span role="columnheader">{teamMode ? t("manage.attempts.team") : t("manage.attempts.participant")}</span><span role="columnheader">{t("manage.results.column.points")}</span><span role="columnheader">{t("manage.results.column.solved")}</span><span role="columnheader">{t("manage.results.column.lastSolve")}</span></div>
                 {results.Teams.map(entry => <div className="event-manage-results__row" role="row" key={entry.TeamID}>
                     <span role="cell" className="event-manage-results__rank">{entry.Rank ?? "—"}</span>
