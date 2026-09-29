@@ -4,7 +4,7 @@ import {useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, LogOut, Menu, Network, UserRound, Users, X} from "lucide-react";
+import {ChevronDown, LogOut, Menu, UserRound, Users, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
@@ -13,6 +13,7 @@ import {getCurrentUser, profilePictureUrl} from "@/api/clientAuth";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
+import {VpnHeaderButton} from "./vpn/EventVpn";
 import {ManagerEntry} from "./manage/ManagerEntry";
 import {NotificationsPopover} from "./NotificationsPopover";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
@@ -22,8 +23,6 @@ type Props = {
     event: PublicEventInfo;
     authenticated: boolean;
     approved?: boolean;
-    hasTeam?: boolean;
-    useVPN?: boolean;
     canViewResults?: boolean;
     // Account and participation are still loading: show a neutral bar
     // instead of guest navigation that would flash for signed-in users.
@@ -37,7 +36,7 @@ function identityHref(path: string, event: PublicEventInfo) {
     return `https://id.${domain}${path}?return_to=${encodeURIComponent(back)}`;
 }
 
-function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "event" | "approved" | "hasTeam" | "useVPN">>) {
+function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved">>) {
     const [open, setOpen] = useState(false);
     const [signOutError, setSignOutError] = useState(false);
     const router = useRouter();
@@ -68,8 +67,7 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
         ) : initials}</span></button></PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="event-account__menu">
             <a href={identityHref("/profile", event)}><UserRound size={16} />Профіль</a>
-            {approved && <Link href="/team" onClick={() => setOpen(false)}><Users size={16} />{event.Participation === 0 ? "Моя участь" : "Моя команда"}</Link>}
-            {approved && hasTeam && useVPN && <Link href="/vpn" onClick={() => setOpen(false)}><Network size={16} />Підключення VPN</Link>}
+            {approved && <Link href="/participation" onClick={() => setOpen(false)}><Users size={16} />Моя участь</Link>}
             <div className="event-account__theme"><span>Тема оформлення</span><ThemeToggle /></div>
             <button type="button" onClick={() => void leave()}><LogOut size={16} />Вийти</button>
             {signOutError && <p className="event-account__error" role="alert">Не вдалося вийти. Повторіть спробу.</p>}
@@ -77,19 +75,20 @@ function AccountMenu({event, approved, hasTeam, useVPN}: Required<Pick<Props, "e
     </Popover>;
 }
 
-export function EventHeaderActions({event, authenticated, approved = false, hasTeam = false, useVPN = false}: Omit<Props, "canViewResults">) {
+export function EventHeaderActions({event, authenticated, approved = false}: Pick<Props, "event" | "authenticated" | "approved">) {
     return <>
         <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div>
         {authenticated && <>
             <span className="event-header-divider" aria-hidden="true" />
+            {approved && <VpnHeaderButton />}
             <NotificationsPopover />
-            <AccountMenu event={event} approved={approved} hasTeam={hasTeam} useVPN={useVPN} />
+            <AccountMenu event={event} approved={approved} />
         </>}
         {!authenticated && <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>Увійти</a>}
     </>;
 }
 
-export function EventNavbar({event, authenticated, approved = false, hasTeam = false, useVPN = false, canViewResults = false, pending = false}: Props) {
+export function EventNavbar({event, authenticated, approved = false, canViewResults = false, pending = false}: Props) {
     const path = usePathname();
     const [open, setOpen] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
@@ -119,11 +118,12 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
         : pages.data ?? [], [managedPages.data, pages.data]);
     const links = useMemo(() => pending ? [] : [
         ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-        ...(approved ? [{href: "/challenges", label: "Завдання"}] : []),
+        // Managers check tasks on the same board as the hidden moderators team.
+        ...(approved || managementAccess.data?.CanManage ? [{href: "/challenges", label: "Завдання"}] : []),
         ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) ? [{href: "/scoreboard", label: "Результати"}] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-    ], [pending, approved, canViewResults, event, navigationPages]);
+    ], [pending, approved, canViewResults, event, navigationPages, managementAccess.data?.CanManage]);
 
     useLayoutEffect(() => {
         const nav = navRef.current;
@@ -172,7 +172,7 @@ export function EventNavbar({event, authenticated, approved = false, hasTeam = f
             <div className="ib-navbar__actions">
                 {pending ? <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div> : <>
                 {authenticated && <ManagerEntry eventID={event.EventID} variant="nav" />}
-                <EventHeaderActions event={event} authenticated={authenticated} approved={approved} hasTeam={hasTeam} useVPN={useVPN} />
+                <EventHeaderActions event={event} authenticated={authenticated} approved={approved} />
                 </>}
                 {!pending && <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? "Закрити меню" : "Відкрити меню"} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>}
             </div>
