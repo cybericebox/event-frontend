@@ -1,6 +1,0 @@
-@import url("/event-page-builder-v49.css");
-/* Keep the standalone action visually connected to neighboring page blocks. */
-.ib-block-cta:not(.ib-mass){background:var(--ib-paper)}
-.ib-block-cta--buttons-only.ib-block{--ib-block-py:var(--ib-4)}
-.event-manage-content__preview-window .ib-block-cta--buttons-only{--ib-block-py:var(--ib-4)}
-.event-content-editor__checkbox{display:inline-flex;align-items:center;gap:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-ink)}

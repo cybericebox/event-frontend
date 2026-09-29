@@ -1,7 +1,7 @@
 "use client";
 
 // Categorized inbox (docs/INBOX-DESIGN.md §3, §8): a one-to-one copy of main-frontend's
-// components/site/InboxButton.tsx; only imports and styling (public/event-inbox-v2.css) differ.
+// components/site/InboxButton.tsx; only imports and styling (src/styles/event-inbox.css) differ.
 
 import {useCallback, useEffect, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";

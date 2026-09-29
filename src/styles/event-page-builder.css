@@ -261,3 +261,59 @@
 .ib-block-hero--timer-xl .ib-timer__ribbon-unit strong,.ib-block-countdown--timer-xl .ib-timer__ribbon-unit strong{font-size:clamp(48px,7cqi,88px)}
 .ib-block-hero--timer-xl .ib-timer__rings-unit,.ib-block-countdown--timer-xl .ib-timer__rings-unit{width:clamp(112px,15cqi,160px)}
 @container ib-blocks (max-width:480px){.ib-timer__matrix-cell{min-height:90px;padding:var(--ib-2) var(--ib-3)}.ib-timer__matrix-cell strong,.ib-block-hero--timer-xl .ib-timer__matrix-cell strong,.ib-block-countdown--timer-xl .ib-timer__matrix-cell strong{font-size:clamp(34px,10cqi,54px)}.ib-timer__ribbon-strip{width:100%}.ib-timer__ribbon-unit{flex:1 0 50%;min-width:0;padding:var(--ib-2)}.ib-timer__ribbon-unit:nth-child(odd){border-left:0}.ib-timer__ribbon-unit:nth-child(n+3){border-top:1px solid var(--ib-on-brand-3)}.ib-timer__ribbon-unit strong,.ib-block-hero--timer-xl .ib-timer__ribbon-unit strong,.ib-block-countdown--timer-xl .ib-timer__ribbon-unit strong{font-size:clamp(36px,10cqi,55px)}.ib-timer__rings-list{display:grid;grid-template-columns:repeat(2,max-content)}.ib-timer__rings-unit,.ib-block-hero--timer-xl .ib-timer__rings-unit,.ib-block-countdown--timer-xl .ib-timer__rings-unit{width:clamp(76px,24cqi,108px)}.ib-timer__rings-unit strong{font-size:clamp(28px,8cqi,40px)}}
+.ib-block-countdown--center .ib-block-countdown__side,.ib-block-countdown--timer-only .ib-block-countdown__side{width:100%;max-width:100%}
+.ib-timer--matrix{width:390px;max-width:100%}
+.ib-timer__matrix-grid{width:100%}
+.event-content-editor__item-head .event-content-editor__item-delete{color:var(--ib-danger)}
+.ib-block-cta__acts{width:100%}
+.ib-block-cta--actions-start .ib-block-cta__acts{margin-right:0;justify-content:flex-start}
+.ib-block-cta--actions-center .ib-block-cta__acts{justify-content:center}
+.ib-block-cta--actions-end .ib-block-cta__acts{justify-content:flex-end}
+@container ib-blocks (max-width:480px){.ib-block-countdown .ib-timer--compact .ib-timer__value{font-size:clamp(20px,6cqi,30px)}.ib-block-countdown--timer-xl .ib-timer--compact .ib-timer__value{font-size:clamp(24px,7cqi,34px)}}
+.ib-timer--compact .ib-timer__value{display:inline-flex;flex-wrap:wrap;align-items:baseline;column-gap:.35em;row-gap:.1em;max-width:100%;white-space:normal}
+.ib-timer__compact-days,.ib-timer__compact-clock{white-space:nowrap}
+/* Locally owned Lexical editor, shared with the event's read-only rich text view. */
+.event-lexical{position:relative;min-width:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-body)}
+.event-lexical:focus-within{border-color:var(--ib-action)}
+.event-lexical.is-invalid{border-color:var(--ib-danger);outline:1px solid var(--ib-danger)}
+.event-lexical__toolbar-wrap{position:relative;border-bottom:1px solid var(--ib-line)}
+.event-lexical__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:6px}
+.event-lexical__group{display:flex;align-items:center;gap:2px;margin-right:4px;padding-right:6px;border-right:1px solid var(--ib-line)}
+.event-lexical__group--end{margin-left:auto;margin-right:0;padding-right:0;border-right:0}
+.event-lexical__tool{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-body);cursor:pointer}
+.event-lexical__tool:hover{background:var(--ib-soft)}
+.event-lexical__tool.is-active{background:var(--ib-brand);color:var(--ib-on-brand)}
+.event-lexical__menu{z-index:1000;min-width:150px;padding:4px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-raised)}
+.event-lexical__menu .ib-listbox__opt{display:flex;align-items:center;gap:8px}
+.event-lexical__body{position:relative}
+.event-lexical__editor{min-height:180px;padding:12px 14px;outline:none;font-size:var(--ib-fs-14);line-height:1.55}
+.event-lexical__placeholder{position:absolute;top:12px;left:14px;pointer-events:none;color:var(--ib-dim);font-size:var(--ib-fs-14)}
+.event-lexical__editor::selection,.event-lexical__editor *::selection{background:#b5b0d1;color:#1f1b3a}
+.event-lexical__paragraph{margin:0 0 .55em}
+.event-lexical__h1{margin:.65em 0 .3em;font-size:1.65em;font-weight:700}
+.event-lexical__h2{margin:.65em 0 .3em;font-size:1.35em;font-weight:700}
+.event-lexical__h3{margin:.65em 0 .3em;font-size:1.12em;font-weight:650}
+.event-lexical__h4{margin:.65em 0 .3em;font-size:1.05em;font-weight:650}
+.event-lexical__h5{margin:.65em 0 .3em;font-size:1em;font-weight:650}
+.event-lexical__h6{margin:.65em 0 .3em;font-size:.92em;font-weight:650}
+.event-lexical__bold{font-weight:700}.event-lexical__italic{font-style:italic}.event-lexical__underline{text-decoration:underline}.event-lexical__strike{text-decoration:line-through}
+.event-lexical__inline-code{padding:1px 4px;border-radius:3px;background:var(--ib-soft);font-family:monospace}
+.event-lexical__quote{margin:.7em 0;padding:.3em 0 .3em 14px;border-left:2px solid var(--ib-line);color:var(--ib-dim)}
+.event-lexical__code{display:block;margin:.7em 0;padding:12px;border-radius:var(--ib-r-sm);background:var(--ib-soft);font-family:monospace;white-space:pre-wrap}
+.event-lexical__ul{margin:.4em 0;padding-left:1.5em;list-style:disc}.event-lexical__ol{margin:.4em 0;padding-left:1.5em;list-style:decimal}.event-lexical__li{margin:.2em 0}
+.event-lexical__link{color:var(--ib-action);text-decoration:underline}
+.event-lexical__variable{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid #dfbd52;border-radius:6px;background:#f7db75;color:#3f330c;line-height:1.3;white-space:nowrap;vertical-align:baseline}
+.event-lexical__variable.is-selected{outline:2px solid var(--ib-brand);outline-offset:1px}
+.event-lexical__picker{position:absolute;right:6px;top:100%;z-index:1000;display:grid;gap:2px;width:min(340px,calc(100vw - 24px));max-height:300px;overflow:auto;padding:8px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-raised)}
+.event-lexical__picker input,.event-lexical__link-input input{min-height:36px;padding:0 10px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-body)}
+.event-lexical__picker button{display:grid;gap:1px;padding:7px;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-body);text-align:left;cursor:pointer}.event-lexical__picker button:hover{background:var(--ib-soft)}
+.event-lexical__picker code{font-size:var(--ib-fs-11);color:var(--ib-dim)}
+.event-lexical__link-input{display:flex;gap:8px;padding:8px;border-top:1px solid var(--ib-line)}.event-lexical__link-input input{flex:1;min-width:0}.event-lexical__link-input button{padding:0 12px;border:0;border-radius:var(--ib-r-sm);background:var(--ib-brand);color:var(--ib-on-brand);cursor:pointer}.event-lexical__link-input button:disabled{opacity:.5;cursor:default}
+.event-rich-text-field>.is-invalid .event-lexical{border-color:var(--ib-danger);outline:1px solid var(--ib-danger)}
+.event-rich-text-field__link{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding:8px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-soft)}
+.event-rich-text-field__link>.event-select,.event-rich-text-field__link>input{flex:1 1 180px;min-width:0}.event-rich-text-field__link>small{flex-basis:100%;color:var(--ib-dim)}
+/* Keep the standalone action visually connected to neighboring page blocks. */
+.ib-block-cta:not(.ib-mass){background:var(--ib-paper)}
+.ib-block-cta--buttons-only.ib-block{--ib-block-py:var(--ib-4)}
+.event-manage-content__preview-window .ib-block-cta--buttons-only{--ib-block-py:var(--ib-4)}
+.event-content-editor__checkbox{display:inline-flex;align-items:center;gap:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-ink)}

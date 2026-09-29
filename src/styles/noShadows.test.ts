@@ -1,8 +1,7 @@
 /**
  * Design rule: no shadows. Separation comes from a border (--ib-line) and surface contrast.
  * Fails on Tailwind shadow utilities (shadow-none is fine) in src/**\/*.{ts,tsx}, and on
- * box-shadow / text-shadow / drop-shadow() / shadow tokens in src/**\/*.css and in the public/*.css
- * files the root layout links (with their @import chain). Focus styles are
+ * box-shadow / text-shadow / drop-shadow() / shadow tokens in src/**\/*.css. Focus styles are
  * the only exception: a box-shadow inside a :focus / :focus-visible / :focus-within rule.
  */
 import { describe, it, expect } from "vitest"
@@ -10,20 +9,6 @@ import fs from "node:fs"
 import path from "node:path"
 
 const SRC = path.resolve(import.meta.dirname, "..")
-const PUBLIC = path.resolve(SRC, "../public")
-
-// Versioned stylesheets linked from app/layout.tsx, plus everything they @import.
-function linkedPublicCss(): string[] {
-  const queue = [...fs.readFileSync(path.join(SRC, "app/layout.tsx"), "utf8").matchAll(/href="\/([\w.-]+\.css)"/g)].map((m) => m[1])
-  const seen = new Set<string>()
-  while (queue.length) {
-    const name = queue.shift()!
-    if (seen.has(name)) continue
-    seen.add(name)
-    for (const m of fs.readFileSync(path.join(PUBLIC, name), "utf8").matchAll(/@import url\("\/([\w.-]+\.css)"\)/g)) queue.push(m[1])
-  }
-  return [...seen].map((name) => path.join(PUBLIC, name))
-}
 
 function files(dir: string, ext: RegExp): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -55,7 +40,7 @@ describe("no shadows", () => {
 
   it("has no box-shadow outside focus styles in CSS", () => {
     const hits: string[] = []
-    for (const file of [...files(SRC, /\.css$/), ...linkedPublicCss()]) {
+    for (const file of files(SRC, /\.css$/)) {
       const text = stripComments(fs.readFileSync(file, "utf8"))
       for (const match of text.matchAll(/(--[\w-]*shadow[\w-]*|box-shadow|text-shadow|filter)\s*:\s*([^;}]*)/g)) {
         const [, prop, value] = match

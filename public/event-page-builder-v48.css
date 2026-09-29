@@ -1,4 +1,0 @@
-@import url("/event-page-builder-v47.css");
-@container ib-blocks (max-width:480px){.ib-block-countdown .ib-timer--compact .ib-timer__value{font-size:clamp(20px,6cqi,30px)}.ib-block-countdown--timer-xl .ib-timer--compact .ib-timer__value{font-size:clamp(24px,7cqi,34px)}}
-.ib-timer--compact .ib-timer__value{display:inline-flex;flex-wrap:wrap;align-items:baseline;column-gap:.35em;row-gap:.1em;max-width:100%;white-space:normal}
-.ib-timer__compact-days,.ib-timer__compact-clock{white-space:nowrap}

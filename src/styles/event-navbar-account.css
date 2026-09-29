@@ -1,0 +1,28 @@
+/* Event navigation uses the platform administration topbar action rhythm. */
+.event-navbar .ib-navbar__actions,
+.event-manage-shell .ib-topbar__actions{gap:12px}
+.event-header-divider{display:block;width:1px;height:20px;flex:none;background:var(--ib-line)}
+.event-account__trigger,
+.event-account__avatar{width:36px;height:36px}
+.event-account__trigger{padding:0;background:transparent}
+.event-account__trigger:hover{background:transparent}
+.event-account__avatar{font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium);line-height:1;text-align:center}
+.event-manage-brand{display:flex;align-items:center;gap:var(--ib-3);min-width:0;flex:1;color:inherit;text-decoration:none}
+.event-manage-brand:hover{color:inherit;text-decoration:none}
+.event-manage-brand .ib-admin-side__title{flex:1}
+.event-manage-brand:focus-visible{outline:2px solid var(--ib-on-brand);outline-offset:2px;border-radius:var(--ib-r)}
+.event-manage-frame>.event-manage-shell{height:100dvh}
+.event-manage-shell .ib-topbar__crumbs{font-size:var(--ib-fs-14)}
+.event-account__theme{display:none}
+@media(max-width:640px){.event-account__menu{width:min(290px,calc(100vw - 24px))}.event-account__theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}.event-account__theme .event-theme-toggle{flex:none}.event-account__theme .event-theme-toggle button{width:32px;height:32px;min-height:0;padding:0;justify-content:center}.event-header-theme--account{display:none}}
+@container ib-navbar (max-width:480px){.event-navbar .ib-navbar__actions .event-header-theme:not(.event-header-theme--account){display:none}}
+@media(max-width:760px){
+  .event-navbar .ib-navbar__actions .event-header-theme--desktop{display:none}
+  .event-header-divider{display:none}
+  .event-account__menu{width:min(290px,calc(100vw - 24px))}
+  .event-account__theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
+  .event-account__theme .event-theme-toggle{flex:none}
+  .event-account__theme .event-theme-toggle button{width:32px;height:32px;min-height:0;padding:0;justify-content:center}
+  .event-navbar__mobile-theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding-top:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+}
+@media(max-width:760px){.event-header-divider{display:none}}

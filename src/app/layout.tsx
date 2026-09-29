@@ -42,6 +42,14 @@ import "@/styles/category-rail.css";
 import "@/styles/challenge-modal.css";
 import "@/styles/event-participant.css";
 import "@/styles/event-manage.css";
+import "@/styles/event-inbox.css";
+import "@/styles/event-navbar-account.css";
+import "@/styles/event-manage-brand.css";
+import "@/styles/event-manage-access.css";
+import "@/styles/event-action-toast.css";
+import "@/styles/event-page-builder.css";
+import "@/styles/event-manage-layout.css";
+import "@/styles/event-page-frame.css";
 import type React from "react";
 import {Analytics} from "@/components/consent/Analytics";
 import {GeistSans} from "geist/font/sans";
@@ -112,24 +120,6 @@ export default async function RootLayout({
         <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} suppressHydrationWarning>
         <head>
             <script dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} />
-            {/* The development edge caches Next's stable CSS chunk URL; this versioned asset keeps inbox styles current. */}
-            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS is required behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-inbox-v2.css" />
-            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-navbar-v5.css" />
-            {/* The development edge caches Next's CSS chunk; keep new management controls current. */}
-            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-manage-brand-v13.css" />
-            {/* eslint-disable-next-line @next/next/no-css-tags -- The development edge caches stable Next CSS chunk URLs. */}
-            <link rel="stylesheet" href="/event-manage-access-v5.css" />
-            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS stays fresh behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-action-toast-v2.css" />
-            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS avoids stale constructor styles behind the development edge. */}
-            <link rel="stylesheet" href="/event-page-builder-v50.css" />
-            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS keeps the manage page frame current behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-manage-layout-v5.css" />
-            {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS keeps the participant page frame current behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-page-frame-v5.css" />
         </head>
         <body className="event-root">
         <Providers>
