@@ -31,6 +31,8 @@
   "manage.teams.manage": "Керувати",
   "manage.teams.manageLabel": "Керувати командою {name}",
   "manage.teams.moreMembers": "+{count}",
+  "manage.teams.pendingConfirmation": "очікує підтвердження",
+  "manage.teams.pendingCount": "Очікують підтвердження: {count}",
   "manage.teams.search": "Пошук за назвою",
   "role.super_admin": "Суперадміністратор",
   "role.admin": "Адміністратор",

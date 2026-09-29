@@ -31,6 +31,8 @@
   "manage.teams.manage": "Manage",
   "manage.teams.manageLabel": "Manage team {name}",
   "manage.teams.moreMembers": "+{count}",
+  "manage.teams.pendingConfirmation": "awaiting confirmation",
+  "manage.teams.pendingCount": "Awaiting confirmation: {count}",
   "manage.teams.search": "Search by name",
   "role.super_admin": "Super administrator",
   "role.admin": "Administrator",
