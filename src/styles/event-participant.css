@@ -1,0 +1,104 @@
+/* Participant pages (W3): local glue around the copied ds-v2 components
+   (challenge-board, challenge-tile, category-rail, challenge-modal, banner, modal).
+   Only tokens; no shadows except overlays, no left-border accents, no dots. */
+
+/* ── page frame ───────────────────────────────────────────────────────────── */
+.event-challenges,.event-participation{display:flex;flex-direction:column;min-width:0}
+.event-challenges__banners,.event-participation__banners{gap:var(--ib-2);margin-bottom:var(--ib-5)}
+.event-challenges__banners .ib-banner,.event-participation__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
+.event-challenges__countdown{display:flex;min-height:40vh;align-items:center;justify-content:center}
+
+/* The page scrolls, not the board: category headers stick under the 60px navbar. */
+.event-board .ib-board__body{overflow:visible}
+.event-board .ib-board__cat{top:61px}
+.event-board .ib-board__bar{position:relative;z-index:3}
+
+/* «Рейка»: the toolbar sits above the rail like in prototypes/event.html */
+.event-rail{display:flex;flex-direction:column;gap:var(--ib-3)}
+.event-rail__bar{display:flex;align-items:center;flex-wrap:wrap;gap:var(--ib-3);padding-bottom:var(--ib-3);border-bottom:1px solid var(--ib-line)}
+.event-rail__bar .ib-input-wrap{width:240px;margin-left:auto}
+.event-rail .ib-rail{min-height:min(640px,70vh);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);overflow:hidden}
+@media (max-width:720px){
+  .event-rail__bar .ib-input-wrap,.event-board .ib-board__search{width:100%;margin-left:0}
+}
+
+/* Locked tile — unsolved prerequisites. Quiet well, dashed hairline, never opens. */
+:root,[data-theme="light"]{--ib-tile-locked-bg:var(--ib-paper)}
+[data-theme="dark"]{--ib-tile-locked-bg:var(--ib-surface)}
+.ib-tile.is-locked,.ib-tile.is-locked:hover{background:var(--ib-tile-locked-bg);border:1px dashed var(--ib-control);color:var(--ib-dim);cursor:not-allowed}
+.ib-tile.is-locked .ib-tile__name{font-weight:var(--ib-w-medium)}
+.ib-tile.is-locked .ib-tile__pts{flex:none;margin-right:0;color:var(--ib-faint)}
+.ib-tile__lock{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:var(--ib-fs-11);color:var(--ib-dim)}
+.ib-tile__lock svg{display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-2px}
+
+/* ── challenge window extras ─────────────────────────────────────────────── */
+.event-vpn-badge svg{width:13px;height:13px}
+.event-cmodal__hosts{display:grid;gap:6px}
+.event-cmodal__hints{margin:0;padding:0;list-style:none;border-top:1px solid var(--ib-line)}
+.event-cmodal__hints li{padding:var(--ib-2) 2px;border-bottom:1px solid var(--ib-line)}
+.event-cmodal__hints p{margin-top:var(--ib-1);color:var(--ib-body)}
+.event-cmodal__hint-title{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.event-cmodal__hint-title .ib-num{font-weight:var(--ib-w-regular);color:var(--ib-dim)}
+.event-cmodal__note{margin-top:18px}
+.event-cmodal__closed{margin-top:18px;padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);background:var(--ib-soft);color:var(--ib-body)}
+.event-cmodal__closed b{color:var(--ib-ink)}
+
+/* ── generic dialog: ds-v2 .ib-modal on a native <dialog> (top layer) ───── */
+dialog.ib-modal{margin:auto;padding:0;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);overflow:hidden}
+dialog.ib-modal:not([open]){display:none}
+dialog.ib-modal::backdrop{background:var(--ib-backdrop)}
+dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
+
+/* ── VPN ─────────────────────────────────────────────────────────────────── */
+.event-vpn-button svg{width:20px;height:20px}
+.event-vpn-button.is-ready{--_fg:var(--ib-ok);--_fg-h:var(--ib-ok)}
+.event-vpn-button.is-failed{--_fg:var(--ib-danger);--_fg-h:var(--ib-danger)}
+.event-vpn-stand{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);background:var(--ib-soft)}
+.event-vpn-stand>svg{width:20px;height:20px;flex:none;margin-top:1px;color:var(--ib-dim)}
+.event-vpn-stand.is-ready>svg{color:var(--ib-ok)}
+.event-vpn-stand.is-failed>svg{color:var(--ib-danger)}
+.event-vpn-stand.is-creating>svg,.event-vpn-stand.is-not_deployed>svg{color:var(--ib-warn)}
+.event-vpn-stand b{display:block;color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.event-vpn-stand span{display:block;margin-top:2px;font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.event-vpn-steps{margin:0;padding-left:20px;display:grid;gap:var(--ib-2);color:var(--ib-body);line-height:var(--ib-lh-body)}
+.event-vpn-steps code{font:var(--ib-fs-13) var(--ib-mono);color:var(--ib-ink)}
+.event-vpn-note{font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.event-inline-icon{display:inline-block;width:14px;height:14px;vertical-align:-2px}
+
+/* ── «Моя участь» ────────────────────────────────────────────────────────── */
+.event-participation{max-width:880px;margin:0 auto;width:100%}
+.event-part{padding:var(--ib-6) 0;border-top:1px solid var(--ib-line)}
+.event-part:first-of-type{border-top:0;padding-top:var(--ib-2)}
+.event-part__head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-4);margin-bottom:var(--ib-4)}
+.event-part__head h2{font-size:var(--ib-fs-18,18px);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.event-part__head p{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.event-part__rows{display:grid;grid-template-columns:minmax(140px,200px) minmax(0,1fr);border-top:1px solid var(--ib-line)}
+.event-part__rows>dt,.event-part__rows>dd{min-height:44px;padding:var(--ib-2) 0;border-bottom:1px solid var(--ib-line);display:flex;align-items:center;gap:var(--ib-2);min-width:0}
+.event-part__rows>dt{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.event-part__rows>dd{color:var(--ib-ink);flex-wrap:wrap}
+.event-part__rows>dd .event-part__end{margin-left:auto;display:flex;gap:var(--ib-2)}
+.event-part__muted{color:var(--ib-dim)}
+.event-part__note{margin-top:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.event-part__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);margin-top:var(--ib-4)}
+.event-part__inline{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2);width:100%}
+.event-part__inline .ib-input{flex:1 1 220px;min-width:0}
+.event-part__form{display:grid;gap:var(--ib-4)}
+.event-part__choice{display:grid;grid-template-columns:1fr 1fr;gap:var(--ib-4)}
+.event-part__choice>section{padding:var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
+.event-part__choice h3{font-size:var(--ib-fs-16);color:var(--ib-ink);margin-bottom:var(--ib-1)}
+.event-part__choice p{font-size:var(--ib-fs-13);color:var(--ib-dim);margin-bottom:var(--ib-4)}
+.event-part__code{font:var(--ib-fs-14) var(--ib-mono);letter-spacing:.2em;color:var(--ib-ink)}
+.event-members{width:100%;border-collapse:collapse;font-size:var(--ib-fs-14)}
+.event-members th{padding:0 var(--ib-2) var(--ib-2) 0;border-bottom:1px solid var(--ib-line);text-align:left;font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-dim)}
+.event-members td{height:44px;padding:0 var(--ib-2) 0 0;border-bottom:1px solid var(--ib-line);color:var(--ib-ink)}
+.event-members tr.is-own td{font-weight:var(--ib-w-semibold)}
+.event-members td.is-actions{text-align:right;white-space:nowrap}
+.event-members td.is-actions .ib-btn+.ib-btn{margin-left:var(--ib-1)}
+.event-part__field-value{white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:640px){
+  .event-part__rows{grid-template-columns:1fr}
+  .event-part__rows>dt{min-height:0;padding-bottom:0;border-bottom:0}
+  .event-part__choice{grid-template-columns:1fr}
+}
+.event-part__subhead{margin:var(--ib-6) 0 var(--ib-3);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.event-part .ib-btn svg{width:14px;height:14px}

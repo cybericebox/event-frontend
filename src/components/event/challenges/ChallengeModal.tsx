@@ -1,43 +1,262 @@
 "use client";
 
-import {Download, File} from "lucide-react";
-import {challengeAttachmentUrl, type OwnChallenge} from "@/api/participantChallenges";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {Badge} from "@/components/ui/badge";
-import {FlagSubmit} from "./FlagSubmit";
-import {ChallengeDescription} from "./ChallengeDescription";
+import {useEffect, useId, useRef, useState, type FormEvent} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {Network} from "lucide-react";
+import {ApiErrorCode} from "@/api/apiErrors";
+import {
+    challengeAttachmentUrl, challengeFiles, getChallengeSolves, getOwnChallengeLab, ParticipantChallengeError, submitChallenge,
+    type OwnChallenge,
+} from "@/api/participantChallenges";
+import {checkModeratorFlag, moderatorFileUrl} from "@/api/moderatorsBoard";
+import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
+import {EventRichTextView} from "@/components/event/content/EventRichTextView";
+import {richTextHasContent} from "@/components/event/content/richTextState";
+import {useEventVpn} from "@/components/event/vpn/EventVpn";
+import {difficultyLabel, formatClock, formatFileSize, solvesLabel} from "./challengeBoardModel";
 
-export function ChallengeModal({challenge, eventID, teamMode, eventFinished, open, onOpenChange, onSubmitted}: {
+export type BoardMode = "participant" | "moderators";
+type Message = {text: string; tone: "error" | "warn"} | null;
+
+const svg = (path: React.ReactNode) => <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{path}</svg>;
+const ICON = {
+    x: svg(<path d="M6 6l12 12M18 6L6 18" />),
+    dl: svg(<path d="M12 4v11M7 10l5 5 5-5M5 20h14" />),
+    copy: svg(<><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>),
+    check: svg(<path d="M5 12.5l4.5 4.5L19 7.5" />),
+    ext: svg(<path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />),
+};
+
+// Participant errors on submit; the rate limit carries its own countdown.
+function submitMessage(error: unknown): Message {
+    if (error instanceof ParticipantChallengeError) {
+        if (error.code === ApiErrorCode.TeamNotAdmitted) return {text: "Команду ще не допущено до завдань", tone: "warn"};
+        if (error.status === 409 || error.status === 403) return {text: "Відповіді зараз не приймаються", tone: "warn"};
+    }
+    return {text: "Не вдалося надіслати. Спробуйте ще раз", tone: "warn"};
+}
+
+function CopyField({value, url}: {value: string; url?: string}) {
+    const [copied, setCopied] = useState(false);
+    return <div className="ib-copy">
+        <span className="ib-copy__value" title={value}>{value}</span>
+        <button type="button" className={`ib-btn ib-btn--sm ib-copy__btn${copied ? " is-copied" : ""}`} aria-label="Копіювати адресу" onClick={() => {
+            void navigator.clipboard?.writeText(value).then(() => {
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 1600);
+            }).catch(() => {});
+        }}>
+            <span className="ib-copy__idle">{ICON.copy}Копіювати</span>
+            <span className="ib-copy__done">{ICON.check}Скопійовано</span>
+        </button>
+        {url && <a className="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" href={url} target="_blank" rel="noopener noreferrer" aria-label="Відкрити сервіс">{ICON.ext}</a>}
+    </div>;
+}
+
+function HostBlock({lab, pending}: {lab: LabRuntime | undefined; pending: boolean}) {
+    const access = lab?.Access ?? [];
+    const web = access.some(item => /^https?$/i.test(item.Protocol) || !!item.URL);
+    return <section className="ib-cmodal__blk">
+        <h3>{web ? "Сервіс" : "Підключення"}</h3>
+        {access.length
+            ? <div className="event-cmodal__hosts">{access.map(item => {
+                const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
+                return <CopyField key={`${item.Device}-${item.Port}`} value={value} url={item.URL || undefined} />;
+            })}</div>
+            : <p className="ib-cmodal__hint">{pending ? "Перевіряємо адресу сервісу…" : "Сервіс ще готується. Адреса з’явиться, щойно стенд буде готовий."}</p>}
+        <p className="ib-cmodal__hint">Доступно через VPN команди.</p>
+    </section>;
+}
+
+// React port of ds-v2 IB.ChallengeModal on a native <dialog>.
+export function ChallengeModal({challenge, eventID, mode, teamMode, finished, showDifficulty, showHints, onClose, onAccepted}: {
     challenge: OwnChallenge | null;
     eventID: string;
+    mode: BoardMode;
     teamMode: boolean;
-    eventFinished: boolean;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSubmitted: () => void;
+    finished: boolean;
+    showDifficulty: boolean;
+    showHints: boolean;
+    onClose: () => void;
+    onAccepted: (challengeID: string) => void;
 }) {
-    if (!challenge) return null;
-    return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90dvh] max-w-[min(640px,calc(100vw-24px))] overflow-y-auto">
-        <DialogHeader>
-            <DialogTitle>{challenge.Snapshot.name}</DialogTitle>
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-                {challenge.GroupName && <span className="text-sm text-muted-foreground">{challenge.GroupName}</span>}
-                <Badge variant="outline" className="font-mono">{challenge.Points}</Badge>
-                {challenge.SolvedAt && <Badge variant="outline" className="border-success/40 bg-success/10 text-success">Вирішено</Badge>}
+    const ref = useRef<HTMLDialogElement>(null);
+    const opener = useRef<Element | null>(null);
+    const titleRef = useRef<HTMLHeadingElement>(null);
+    const flagRef = useRef<HTMLInputElement>(null);
+    const id = useId();
+    const vpn = useEventVpn();
+    const [tab, setTab] = useState<"task" | "solves">("task");
+    const [answer, setAnswer] = useState("");
+    const [message, setMessage] = useState<Message>(null);
+    const [busy, setBusy] = useState(false);
+    const [accepted, setAccepted] = useState(false);
+    const [waitUntil, setWaitUntil] = useState(0);
+    const [now, setNow] = useState(() => Date.now());
+    const challengeID = challenge?.EventChallengeID;
+    const moderators = mode === "moderators";
+
+    const lab = useQuery({
+        queryKey: ["event-challenge-lab", mode, eventID, challengeID],
+        queryFn: () => moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!),
+        enabled: !!challenge?.Infrastructure && !challenge.Locked,
+        retry: false, refetchInterval: 30000, refetchOnWindowFocus: false,
+    });
+    const solvesVisible = !moderators && challenge?.SolveCount !== null && challenge?.SolveCount !== undefined;
+    const solves = useQuery({
+        queryKey: ["event-challenge-solves", eventID, challengeID],
+        queryFn: () => getChallengeSolves(eventID, challengeID!),
+        enabled: solvesVisible && tab === "solves",
+        retry: false, refetchOnWindowFocus: false,
+    });
+
+    useEffect(() => {
+        const dialog = ref.current;
+        if (!dialog) return;
+        if (challengeID && !dialog.open) {
+            opener.current = document.activeElement;
+            dialog.showModal();
+            (flagRef.current ?? titleRef.current)?.focus();
+        } else if (!challengeID && dialog.open) {
+            dialog.close();
+        }
+    }, [challengeID]);
+
+    // A new challenge starts on its task tab with a clean flag form.
+    const [shownID, setShownID] = useState(challengeID);
+    if (shownID !== challengeID) {
+        setShownID(challengeID);
+        setTab("task");
+        setAnswer("");
+        setMessage(null);
+        setAccepted(false);
+    }
+
+    const waiting = waitUntil > now;
+    useEffect(() => {
+        if (!waiting) return;
+        const timer = window.setInterval(() => setNow(Date.now()), 1000);
+        return () => window.clearInterval(timer);
+    }, [waiting]);
+    const waitSeconds = Math.max(0, Math.ceil((waitUntil - now) / 1000));
+
+    async function submit(event: FormEvent) {
+        event.preventDefault();
+        if (!challenge || busy || waiting) return;
+        const value = answer.trim();
+        if (!value) {
+            setMessage({text: "Введіть прапор", tone: "error"});
+            flagRef.current?.focus();
+            return;
+        }
+        setBusy(true);
+        setMessage(null);
+        try {
+            const correct = moderators
+                ? await checkModeratorFlag(eventID, challenge.EventChallengeID, value)
+                : (await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID())).Correct;
+            if (correct) {
+                setAccepted(true);
+                setAnswer("");
+                if (!moderators) {
+                    onAccepted(challenge.EventChallengeID);
+                    titleRef.current?.focus();
+                }
+            } else {
+                setMessage({text: "Прапор не прийнято", tone: "error"});
+                flagRef.current?.focus();
+            }
+        } catch (error) {
+            if (error instanceof ParticipantChallengeError && error.status === 429) {
+                const seconds = error.retryAfter ?? 30;
+                setWaitUntil(Date.now() + seconds * 1000);
+                setNow(Date.now());
+                setMessage(null);
+            } else {
+                setMessage(submitMessage(error));
+            }
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    const files = challenge ? challengeFiles(challenge) : [];
+    const solved = !!challenge?.SolvedAt;
+    const count = solves.data?.length ?? challenge?.SolveCount ?? 0;
+    const hints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
+    const fileUrl = (fileID: string) => moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
+
+    return <dialog ref={ref} className="ib-cmodal" aria-labelledby={`${id}-t`}
+        onClose={() => { onClose(); if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus(); }}
+        onClick={event => {
+            if (event.target !== ref.current) return;
+            const box = ref.current.getBoundingClientRect();
+            if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) ref.current.close();
+        }}>
+        {challenge && <>
+            <header className="ib-cmodal__head">
+                <p className="ib-cmodal__meta">
+                    <span>{challenge.GroupName || "Інші завдання"}</span><span aria-hidden="true">·</span>
+                    <span className="ib-num">{challenge.Points} балів</span>
+                    {showDifficulty && <span className="ib-tag">{difficultyLabel[challenge.Snapshot.difficulty]}</span>}
+                    {solved && <span className="ib-tag ib-tag--ok">{ICON.check}Розвʼязано</span>}
+                    {challenge.ContentUpdatedAt && <span className="ib-tag">Оновлено {formatClock(challenge.ContentUpdatedAt)}</span>}
+                    {moderators && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">Не опубліковано</span>}
+                    {challenge.Infrastructure && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />Потрібен VPN</button>}
+                </p>
+                <h2 className="ib-cmodal__title" id={`${id}-t`} tabIndex={-1} ref={titleRef}>{challenge.Snapshot.name}</h2>
+                <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label="Закрити" onClick={() => ref.current?.close()}>{ICON.x}</button>
+            </header>
+            <div className="ib-tabs ib-cmodal__tabs" role="tablist" aria-label="Розділи завдання">
+                <button type="button" role="tab" id={`${id}-tab1`} aria-controls={`${id}-p1`} aria-selected={tab === "task"} tabIndex={tab === "task" ? 0 : -1} onClick={() => setTab("task")}
+                    onKeyDown={event => { if (solvesVisible && ["ArrowRight", "ArrowLeft", "End"].includes(event.key)) { event.preventDefault(); setTab("solves"); } }}>Завдання</button>
+                {solvesVisible && <button type="button" role="tab" id={`${id}-tab2`} aria-controls={`${id}-p2`} aria-selected={tab === "solves"} tabIndex={tab === "solves" ? 0 : -1} onClick={() => setTab("solves")}
+                    onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{solvesLabel(count)}</button>}
             </div>
-        </DialogHeader>
-        <ChallengeDescription document={challenge.Snapshot.description} />
-        {challenge.Snapshot.attachments.length > 0 && <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Прикріплені файли</h3>
-            <div className="flex flex-col gap-2">{challenge.Snapshot.attachments.map(file =>
-                <a key={file.file_id} href={challengeAttachmentUrl(eventID, challenge.EventChallengeID, file.file_id)} className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 no-underline hover:border-primary/50">
-                    <File className="size-4 shrink-0 text-primary" />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{file.name}</span>
-                    <Download className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                </a>)}</div>
-        </section>}
-        <section><h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Здати прапор</h3>
-            <FlagSubmit eventID={eventID} challengeID={challenge.EventChallengeID} solved={!!challenge.SolvedAt} eventFinished={eventFinished} teamMode={teamMode} onSubmitted={onSubmitted} />
-        </section>
-    </DialogContent></Dialog>;
+            <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
+                <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} /> : <p>Опис завдання відсутній.</p>}</div>
+                {files.length > 0 && <section className="ib-cmodal__blk">
+                    <h3>Файли</h3>
+                    <ul className="ib-cmodal__files">{files.map(file => <li key={file.FileID}>
+                        <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
+                    </li>)}</ul>
+                </section>}
+                {challenge.Infrastructure && <HostBlock lab={lab.data} pending={lab.isPending} />}
+                {hints.length > 0 && <section className="ib-cmodal__blk">
+                    <h3>Підказки</h3>
+                    <ul className="event-cmodal__hints">{hints.map((hint, index) => <li key={hint.ID}>
+                        <span className="event-cmodal__hint-title">Підказка {index + 1}{hint.Cost > 0 && <span className="ib-num"> · −{hint.Cost} балів</span>}</span>
+                        {hint.Content ? <p>{hint.Content}</p> : <p className="ib-cmodal__hint">Вміст підказки відкриває організатор.</p>}
+                    </li>)}</ul>
+                </section>}
+                {moderators && <p className="ib-cmodal__hint event-cmodal__note">Перевірка від імені команди модераторів не впливає на результати.</p>}
+                {accepted && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? "Прапор правильний" : "Прапор прийнято"}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}
+                {!accepted && solved && !moderators && <div className="ib-cmodal__ok" role="status">{ICON.check}{teamMode ? "Розвʼязано вашою командою" : "Розвʼязано"}<span className="ib-num">{formatClock(challenge.SolvedAt!, true)}</span></div>}
+                {!solved && finished && !moderators && <p className="event-cmodal__closed" role="status"><b>Подію завершено.</b> Відповіді більше не приймаються.</p>}
+                {(moderators || (!solved && !finished && !accepted)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
+                    <label htmlFor={`${id}-flag`}>Прапор</label>
+                    <div className="ib-cmodal__row">
+                        <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
+                            aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer}
+                            onChange={event => { setAnswer(event.target.value); if (message?.tone === "error") setMessage(null); if (moderators) setAccepted(false); }} />
+                        <button className={`ib-btn ib-btn--primary${busy ? " is-loading" : ""}`} type="submit" disabled={busy || waiting} aria-busy={busy || undefined}>{busy ? "Перевіряємо…" : "Надіслати"}</button>
+                    </div>
+                    <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role="alert">
+                        {waiting ? `Забагато спроб · через ${waitSeconds} с` : message?.text}
+                    </p>
+                </form>}
+            </div>
+            {solvesVisible && <div className="ib-cmodal__body" id={`${id}-p2`} role="tabpanel" aria-labelledby={`${id}-tab2`} hidden={tab !== "solves"}>
+                {solves.isPending ? <p className="ib-cmodal__empty">Завантажуємо рішення…</p>
+                    : solves.isError ? <div className="ib-cmodal__empty"><b>Список рішень недоступний</b>Результати зараз приховано.</div>
+                    : !solves.data.length ? <div className="ib-cmodal__empty"><b>Ще ніхто не розвʼязав</b>Станьте першими.</div>
+                    : <table className="ib-cmodal__solves">
+                        <thead><tr><th className="is-n">#</th><th>{teamMode ? "Команда" : "Учасник"}</th><th className="is-t">Час</th></tr></thead>
+                        <tbody>{solves.data.map((row, index) => <tr key={`${row.TeamName}-${row.SolvedAt}`} className={row.Own ? "is-own" : undefined}>
+                            <td className="is-n">{index + 1}</td><td>{row.TeamName}</td><td className="is-t">{formatClock(row.SolvedAt, true)}</td>
+                        </tr>)}</tbody>
+                    </table>}
+            </div>}
+        </>}
+    </dialog>;
 }
