@@ -289,6 +289,7 @@
   "content.join.rejected": "Заявку відхилено",
   "content.landing.failed": "Не вдалося завантажити головну сторінку",
   "content.landing.loading": "Завантажуємо головну сторінку…",
+  "content.page.empty": "Сторінка поки порожня.",
   "content.page.failed": "Не вдалося завантажити сторінку",
   "content.page.loading": "Завантажуємо сторінку…",
   "content.page.missing": "Сторінку не знайдено або доступ обмежено",

@@ -6,6 +6,10 @@ import {apiHost} from "@/utils/origins";
 
 export type {PublicEventInfo} from "@/types/publicEventInfo";
 
+// A server render waits on these reads; a hung API must end in the error or outage
+// state instead of streaming the route loader forever.
+export const SERVER_FETCH_TIMEOUT_MS = 10_000;
+
 // The server fetch uses the incoming event host as Origin because the API
 // resolves its event tenant from that header. It can read public events only:
 // the host-only API session cookie is never sent to the event frontend server.
@@ -21,6 +25,7 @@ export const getPublicEventInfo = cache(async (): Promise<PublicEventInfo | null
             ...(internalOrigin ? {Host: apiHost} : {}),
         },
         cache: "no-store",
+        signal: AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS),
     });
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`Event info request failed: ${response.status}`);

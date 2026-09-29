@@ -289,6 +289,7 @@
   "content.join.rejected": "Application rejected",
   "content.landing.failed": "Couldn't load the home page",
   "content.landing.loading": "Loading the home page…",
+  "content.page.empty": "This page is empty for now.",
   "content.page.failed": "Couldn't load the page",
   "content.page.loading": "Loading the page…",
   "content.page.missing": "Page not found or access is restricted",

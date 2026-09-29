@@ -1,6 +1,6 @@
 import {headers} from "next/headers";
 import {z} from "zod";
-import {getPublicEventInfo} from "./publicEventInfo";
+import {getPublicEventInfo, SERVER_FETCH_TIMEOUT_MS} from "./publicEventInfo";
 import {EventContentSchema, EventPageContentSchema, type EventContent, type EventPageContent} from "@/types/eventContent";
 import {apiHost} from "@/utils/origins";
 
@@ -15,6 +15,7 @@ async function publicPageAvailable(slug: string): Promise<boolean> {
     const response = await fetch(`${internalOrigin ?? `https://${apiHost}`}/api/events/${event.EventID}/content/pages/${encodeURIComponent(slug)}/access`, {
         headers: {Origin: `https://${host}`, ...(internalOrigin ? {Host: apiHost} : {})},
         cache: "no-store",
+        signal: AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS),
     });
     if (response.status === 404) return false;
     if (!response.ok) throw new Error(`Event page access request failed: ${response.status}`);
@@ -37,6 +38,7 @@ async function fetchContent(path: string, revalidate?: number): Promise<unknown 
         ...(revalidate
             ? {next: {revalidate, tags: [`event-content:${event.EventID}`]}}
             : {cache: "no-store" as const}),
+        signal: AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS),
     });
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`Event content request failed: ${response.status}`);

@@ -1,3 +1,4 @@
+import {EmptyState} from "@/components/ui/EmptyState";
 import type {CSSProperties} from "react";
 import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {EventRichTextView} from "./EventRichTextView";
@@ -95,6 +96,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
     const primaryID = headingBlockID(blocks, coverImage);
     return <div className="ib-blocks">
         {!primaryID && title && <h1 className="ib-visually-hidden">{title}</h1>}
+        {!preview && !blocks.length && <EmptyState message={t("content.page.empty")} />}
         {blocks.map((block, blockIndex) => {
             const Heading = block.id === primaryID ? "h1" : "h2";
             const declared = new Map((block.variables ?? []).map(variable => [variable.name, variable.format]));
