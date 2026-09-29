@@ -1756,7 +1756,6 @@
   "manage.overview.startAtHelp": "From this time participants can solve challenges.\n\nThe start cannot be earlier than publication.",
   "manage.overview.startBeforePublish": "The start must not be earlier than publication.",
   "manage.overview.steps": "Setup steps",
-  "manage.overview.summaryReadyText": "Now you can fill in the home page and view the site as a visitor.",
   "manage.overview.summarySetup": "Start by defining participation rules",
   "manage.overview.summarySetupText": "Two decisions are needed to schedule the event. Content, challenges and the site look can be set up later.",
   "manage.overview.title": "Overview",
