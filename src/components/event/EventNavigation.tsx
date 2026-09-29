@@ -4,7 +4,7 @@ import {Fragment, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, House, LogOut, Menu, Settings, UserRound, Users, X, type LucideIcon, Puzzle} from "lucide-react";
+import {ChevronDown, Menu, Users, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
@@ -19,7 +19,9 @@ import {NotificationsPopover} from "./NotificationsPopover";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
-import {accountLinks, type AccountLinkKey} from "@/utils/accountMenu";
+import {ACCOUNT_MENU_ICON_PROPS, ACCOUNT_MENU_ICONS, ACCOUNT_MENU_LABELS, accountMenu} from "@/utils/accountMenu";
+import {openConsentSettings} from "@/utils/consent";
+import {COOKIE_POLICY_HREF} from "@/components/consent/CookieSettingsLink";
 import {t} from "@/i18n/t";
 import {initials} from "@/utils/initials";
 
@@ -39,13 +41,8 @@ function identityHref(path: string, event: PublicEventInfo) {
     return `${idOrigin}${path}?return_to=${encodeURIComponent(`${back}/`)}`;
 }
 
-// Unified account menu (utils/accountMenu): same labels and icons in every app.
-const ACCOUNT_ITEMS: Record<AccountLinkKey, {label: string; icon: LucideIcon}> = {
-    profile: {label: "account.profile", icon: UserRound},
-    admin: {label: "account.admin", icon: Settings},
-    exercises: {label: "account.exercises", icon: Puzzle},
-    main: {label: "account.main", icon: House},
-};
+// Unified account menu (utils/accountMenu): same entries, labels and icons in every app;
+// the event's own items follow the platform links.
 
 function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved">>) {
     const [open, setOpen] = useState(false);
@@ -62,10 +59,11 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
         enabled: !!profile.data && !adminTier,
         retry: false, refetchOnWindowFocus: false,
     });
-    const links = accountLinks("event", {
+    const entries = accountMenu("event", {
         adminTier, catalog: adminTier || catalog.data === true,
         returnTo: typeof window !== "undefined" ? window.location.href : `${eventOrigin(event.Tag)}/`,
     }, {id: idOrigin, admin: adminOrigin, exercises: exercisesOrigin, main: mainOrigin});
+    const contextAt = entries.findIndex(entry => entry.kind === "divider");
     const picture = profilePictureUrl(profile.data?.Picture ?? "");
     const avatarInitials = initials(profile.data?.FirstName, profile.data?.LastName, profile.data?.Email);
     const leave = async () => {
@@ -86,16 +84,31 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
             <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
         ) : avatarInitials}</span></button></PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="event-account__menu">
-            {links.map(({key, href}) => {
-                const {label, icon: Icon} = ACCOUNT_ITEMS[key];
-                return <Fragment key={key}>
-                    <a href={href}><Icon size={16} />{t(label)}</a>
-                    {/* The event's own item sits right under the profile. */}
-                    {key === "profile" && approved && <Link href="/participation" onClick={() => setOpen(false)}><Users size={16} />{t("account.participation")}</Link>}
+            {entries.map((entry, i) => {
+                if (entry.kind === "divider") return <Fragment key={i}>
+                    {/* The event context sits right after the platform links. */}
+                    {i === contextAt && <>
+                        {approved && <Link href="/participation" onClick={() => setOpen(false)}><Users {...ACCOUNT_MENU_ICON_PROPS} />{t("account.participation")}</Link>}
+                        <div className="event-account__theme"><span>{t("theme.label")}</span><ThemeToggle /></div>
+                    </>}
+                    <hr className="event-account__sep" />
                 </Fragment>;
+                if (entry.kind === "cookies") {
+                    const Icon = ACCOUNT_MENU_ICONS.cookies;
+                    // A link to the cookie policy; with JS the menu closes and the consent panel opens instead.
+                    return <a key={i} href={COOKIE_POLICY_HREF} aria-label={t(ACCOUNT_MENU_LABELS.cookiesAria)} onClick={e => {
+                        e.preventDefault();
+                        setOpen(false);
+                        window.setTimeout(openConsentSettings, 0);
+                    }}><Icon {...ACCOUNT_MENU_ICON_PROPS} />{t(ACCOUNT_MENU_LABELS.cookies)}</a>;
+                }
+                if (entry.kind === "signOut") {
+                    const Icon = ACCOUNT_MENU_ICONS.signOut;
+                    return <button key={i} type="button" onClick={() => void leave()}><Icon {...ACCOUNT_MENU_ICON_PROPS} />{t(ACCOUNT_MENU_LABELS.signOut)}</button>;
+                }
+                const Icon = ACCOUNT_MENU_ICONS[entry.key];
+                return <a key={entry.key} href={entry.href}><Icon {...ACCOUNT_MENU_ICON_PROPS} />{t(ACCOUNT_MENU_LABELS[entry.key])}</a>;
             })}
-            <div className="event-account__theme"><span>{t("theme.label")}</span><ThemeToggle /></div>
-            <button type="button" onClick={() => void leave()}><LogOut size={16} />{t("account.signOut")}</button>
             {signOutError && <p className="event-account__error" role="alert">{t("account.signOutFailed")}</p>}
         </PopoverContent>
     </Popover>;

@@ -24,6 +24,9 @@ body.event-root main{overflow-x:visible}
 .event-account__menu{z-index:70;width:220px;padding:var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised)}
 .event-account__menu a,.event-account__menu button{display:flex;align-items:center;gap:var(--ib-2);width:100%;min-height:40px;padding:0 var(--ib-3);border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-body);font:var(--ib-w-medium) var(--ib-fs-13)/1 var(--ib-font);text-align:left;text-decoration:none;cursor:pointer}
 .event-account__menu a:hover,.event-account__menu button:hover{background:var(--ib-soft);color:var(--ib-ink);text-decoration:none}
+.event-account__menu a>svg,.event-account__menu button>svg{flex:none;color:var(--ib-dim)}
+.event-account__menu a:hover>svg,.event-account__menu button:hover>svg,.event-account__menu a:focus-visible>svg,.event-account__menu button:focus-visible>svg{color:var(--ib-ink)}
+.event-account__sep{height:1px;margin:var(--ib-1) calc(-1 * var(--ib-1));border:0;background:var(--ib-line)}
 .event-account__theme{display:none}
 @media(max-width:760px){.event-account__menu{width:min(290px,calc(100vw - 24px))}.event-account__theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}.event-account__theme .event-theme-toggle{flex:none}.event-account__theme .event-theme-toggle button{width:32px;height:32px;min-height:0;padding:0;justify-content:center}.event-header-theme--desktop,.event-header-divider{display:none}}
 .event-account__error{margin:var(--ib-2) var(--ib-3);color:var(--ib-danger);font-size:var(--ib-fs-12)}

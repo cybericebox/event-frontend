@@ -1,12 +1,7 @@
 {
-  "account.admin": "Administration",
-  "account.exercises": "Challenge catalog",
-  "account.main": "Home",
   "account.menu": "Account menu",
   "account.participation": "My participation",
-  "account.profile": "Profile",
   "account.signIn": "Sign in",
-  "account.signOut": "Sign out",
   "account.signOutFailed": "Couldn't sign out. Try again.",
   "challenges.board.allCategories": "All",
   "challenges.board.categories": "Categories",
@@ -2397,5 +2392,11 @@
   "consent.analytics.title": "Analytics",
   "consent.analytics.text": "Helps us understand how you use the site so we can improve it (Google Analytics).",
   "consent.saveChoice": "Save choice",
+  "accountMenu.profile": "Profile",
+  "accountMenu.home": "Home",
+  "accountMenu.admin": "Administration",
+  "accountMenu.exercises": "Exercise catalog",
+  "accountMenu.signOut": "Sign out",
+  "consent.menuLabel": "Cookies",
   "consent.settings": "Cookie settings"
 }

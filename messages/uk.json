@@ -1,12 +1,7 @@
 {
-  "account.admin": "Адміністрування",
-  "account.exercises": "Каталог завдань",
-  "account.main": "Головна",
   "account.menu": "Меню акаунта",
   "account.participation": "Моя участь",
-  "account.profile": "Профіль",
   "account.signIn": "Увійти",
-  "account.signOut": "Вийти",
   "account.signOutFailed": "Не вдалося вийти. Повторіть спробу.",
   "challenges.board.allCategories": "Усі",
   "challenges.board.categories": "Категорії",
@@ -2397,5 +2392,11 @@
   "consent.analytics.title": "Аналітика",
   "consent.analytics.text": "Допомагає нам зрозуміти, як ви користуєтеся сайтом, щоб покращувати його (Google Analytics).",
   "consent.saveChoice": "Зберегти вибір",
+  "accountMenu.profile": "Профіль",
+  "accountMenu.home": "Головна",
+  "accountMenu.admin": "Адміністрування",
+  "accountMenu.exercises": "Каталог завдань",
+  "accountMenu.signOut": "Вийти",
+  "consent.menuLabel": "Файли cookie",
   "consent.settings": "Налаштування файлів cookie"
 }
