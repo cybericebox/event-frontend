@@ -38,6 +38,18 @@ describe("manage list requests", () => {
         expect(Object.fromEntries(url().searchParams)).toEqual({pageSize: "100", search: "Blue", admission: "notAdmitted"});
     });
 
+    it("sends answer filters as a JSON array", async () => {
+        const url = stubList();
+        await getManageParticipants(eventID, {kind: "participants", fields: [{Key: "city", Op: "contains", Value: "Київ"}, {Key: "agree", Op: "bool", Value: true}]}, null);
+        expect(JSON.parse(url().searchParams.get("filters") ?? "")).toEqual([{Key: "city", Op: "contains", Value: "Київ"}, {Key: "agree", Op: "bool", Value: true}]);
+    });
+
+    it("omits empty answer filters for teams", async () => {
+        const url = stubList();
+        await getManageTeams(eventID, null, {fields: []});
+        expect(url().searchParams.has("filters")).toBe(false);
+    });
+
     it("keeps the default team page without filters", async () => {
         const url = stubList();
         await getManageTeams(eventID, null);

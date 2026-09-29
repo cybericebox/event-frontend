@@ -40,3 +40,26 @@
   .event-manage-table__size{justify-content:flex-start}
 }
 .event-manage-team-details{display:grid;gap:var(--ib-4)}
+/* Toolbar popovers: «Колонки» and «Фільтри». DS surface, 1px line, no shadow. */
+.event-manage-table__tool{gap:var(--ib-2)}
+.event-manage-table__tool-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 var(--ib-1);border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-ink);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
+.event-manage-table__reset{margin-left:auto}
+.event-manage-table__popover{z-index:50;display:grid;gap:var(--ib-3);width:min(var(--ib-popover-w,376px),calc(100vw - 24px));max-height:min(70dvh,560px);padding:var(--ib-3);overflow:auto;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink);outline:none}
+.event-manage-table__popover-head{display:grid;gap:var(--ib-1)}
+.event-manage-table__popover-head strong{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-manage-table__popover-head small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-manage-table__popover-foot{display:flex;justify-content:flex-end}
+.event-manage-table__columns{display:grid;gap:2px;margin:0;padding:0;list-style:none}
+.event-manage-table__columns li{display:flex;align-items:center;gap:var(--ib-2);min-height:40px;padding:0 var(--ib-1);border:1px solid transparent;border-radius:var(--ib-r-sm)}
+.event-manage-table__columns li[draggable="true"]{cursor:grab}
+.event-manage-table__columns li.is-dragging{opacity:.5}
+.event-manage-table__columns li.is-over{border-color:var(--ib-action)}
+.event-manage-table__grip{display:inline-flex;color:var(--ib-faint)}
+.event-manage-table__grip.is-disabled{visibility:hidden}
+.event-manage-table__column-label{flex:1;min-width:0;overflow:hidden;font-size:var(--ib-fs-13);text-overflow:ellipsis;white-space:nowrap}
+.event-manage-table__column-move{display:inline-flex;gap:2px}
+.event-manage-table__filters{display:grid;gap:var(--ib-3)}
+.event-manage-table__filter{display:grid;gap:var(--ib-2);min-width:0;margin:0;padding:0;border:0}
+.event-manage-table__filter legend{margin-bottom:var(--ib-2);padding:0;color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
+.event-manage-table__filter .event-select{width:100%}
+.event-manage-table__filter-options{display:grid;gap:var(--ib-2)}
