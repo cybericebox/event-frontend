@@ -255,7 +255,7 @@ export default function ManageTeamsPage() {
                     <td><div className="event-manage-table__actions">
                         {canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button>}
                         <button className="ib-btn ib-btn--sm" type="button" aria-label={t("manage.teams.manageLabel", {name: team.Name})} onClick={() => {setEditing(null); setManagedID(team.ID);}}>{t("manage.teams.manage")}</button>
-                        {canManage && <button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={busy} onClick={() => ask({kind: "delete", team})}><Trash2 size={16} /></button>}
+                        {canManage && <EventTooltip content={t("manage.teams.deleteLabel", {name: team.Name})} silent>{() => <button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={busy} onClick={() => ask({kind: "delete", team})}><Trash2 size={16} /></button>}</EventTooltip>}
                     </div></td>
                 </tr>;
             })}</tbody>

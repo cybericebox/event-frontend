@@ -16,6 +16,7 @@ import Link from "next/link";
 import {eventOrigin, idOrigin} from "@/utils/origins";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 function signInHref(event: PublicEventInfo): string {
     const back = eventOrigin(event.Tag);
@@ -67,7 +68,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
             <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
             <div className="ib-admin-shell__main">
                 <header className="ib-topbar">
-                    <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>
+                    <EventTooltip content={t("manage.shell.openMenu")} silent>{() => <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>}</EventTooltip>
                     <ol className="ib-topbar__crumbs"><li aria-current="page">{managerLocationTitle(pathname, pages.data ?? [])}</li></ol>
                     <div className="ib-topbar__actions">{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>

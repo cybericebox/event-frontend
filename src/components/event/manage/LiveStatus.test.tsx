@@ -29,11 +29,11 @@ describe("live status", () => {
         const onRefresh = vi.fn();
         render(<LiveStatus freshness={{kind: "manual", onRefresh, refreshing: false}} updatedAt={at} />);
         expect(screen.queryByText("Наживо")).toBeNull();
-        fireEvent.click(screen.getByRole("button", {name: "Оновити дані"}));
+        fireEvent.click(screen.getByRole("button", {name: "Оновити список"}));
         expect(onRefresh).toHaveBeenCalledOnce();
         cleanup();
         render(<LiveStatus freshness={{kind: "manual", onRefresh, refreshing: true}} updatedAt={at} />);
-        expect((screen.getByRole("button", {name: "Оновити дані"}) as HTMLButtonElement).disabled).toBe(true);
+        expect((screen.getByRole("button", {name: "Оновити список"}) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it("describes polling", () => {

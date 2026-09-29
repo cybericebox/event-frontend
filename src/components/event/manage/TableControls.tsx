@@ -90,8 +90,8 @@ function ColumnRow({columns, index, canManage, move, onVisibleChange}: {
             : <span className="event-manage-table__grip is-disabled" aria-hidden="true"><GripVertical size={16} /></span>}
         <span className="event-manage-table__column-label">{column.label}</span>
         <span className="event-manage-table__column-move">
-            <button className="ib-icon-btn ib-icon-btn--sm" type="button" data-column-control="up" aria-label={t("manage.table.columns.moveUp", {label: column.label})} disabled={!movable || index === 0 || columns[index - 1]?.locked} onClick={() => move(index, index - 1)}><ArrowUp size={14} /></button>
-            <button className="ib-icon-btn ib-icon-btn--sm" type="button" data-column-control="down" aria-label={t("manage.table.columns.moveDown", {label: column.label})} disabled={!movable || index === columns.length - 1} onClick={() => move(index, index + 1)}><ArrowDown size={14} /></button>
+            <EventTooltip content={t("manage.table.columns.moveUp", {label: column.label})} silent>{() => <button className="ib-icon-btn ib-icon-btn--sm" type="button" data-column-control="up" aria-label={t("manage.table.columns.moveUp", {label: column.label})} disabled={!movable || index === 0 || columns[index - 1]?.locked} onClick={() => move(index, index - 1)}><ArrowUp size={14} /></button>}</EventTooltip>
+            <EventTooltip content={t("manage.table.columns.moveDown", {label: column.label})} silent>{() => <button className="ib-icon-btn ib-icon-btn--sm" type="button" data-column-control="down" aria-label={t("manage.table.columns.moveDown", {label: column.label})} disabled={!movable || index === columns.length - 1} onClick={() => move(index, index + 1)}><ArrowDown size={14} /></button>}</EventTooltip>
         </span>
         <EventSwitch checked={column.visible} disabled={!canManage || !!column.locked} ariaLabel={t("manage.table.columns.show", {label: column.label})} onCheckedChange={onVisibleChange} />
     </li>;

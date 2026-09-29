@@ -38,8 +38,8 @@ export function LiveStatus({freshness, updatedAt}: {freshness: DataFreshness; up
             {state && <span className="event-live-status__state"><Icon size={16} aria-hidden="true" />{state}</span>}
             <span className="event-live-status__updated">{updated}</span>
         </span>}</EventTooltip>
-        {freshness.kind === "manual" && <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.live.refresh")} disabled={freshness.refreshing} onClick={freshness.onRefresh}>
+        {freshness.kind === "manual" && <EventTooltip content={t("manage.live.refresh")} silent>{() => <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.live.refresh")} disabled={freshness.refreshing} onClick={freshness.onRefresh}>
             <RefreshCw size={16} aria-hidden="true" />
-        </button>}
+        </button>}</EventTooltip>}
     </div>;
 }

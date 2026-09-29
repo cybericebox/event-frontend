@@ -97,7 +97,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
     return <aside className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")}>
         <div className="ib-admin-side__head">
             <Link href="/" className="event-manage-brand" aria-label={t("manage.shell.toEventSite")}><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>{t("manage.nav.eventManagement")}</small></div></Link>
-            <button className="ib-admin-side__close" type="button" aria-label={t("manage.shell.closeMenu")} onClick={onNavigate}><X size={18} /></button>
+            <EventTooltip content={t("manage.shell.closeMenu")} silent>{() => <button className="ib-admin-side__close" type="button" aria-label={t("manage.shell.closeMenu")} onClick={onNavigate}><X size={18} /></button>}</EventTooltip>
         </div>
         <nav className="ib-admin-side__nav" aria-label={t("manage.nav.sections")}>
             <Link className="ib-admin-side__item" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.overview")}</span></Link>

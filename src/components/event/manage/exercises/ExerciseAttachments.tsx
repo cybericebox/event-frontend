@@ -30,6 +30,7 @@ import {useBoardSets} from "./useBoardSets";
 import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type Action =
     {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string};
@@ -127,10 +128,10 @@ export function ExerciseAttachments() {
                     <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a, [role=alert]")) toggle(); }}>
                         <div className="event-exercise-set__title">
                             {/* Tree-style disclosure: right when collapsed, down when open. */}
-                            <button type="button" className="ib-icon-btn ib-icon-btn--sm event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`}
+                            <EventTooltip content={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} silent>{() => <button type="button" className="ib-icon-btn ib-icon-btn--sm event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`}
                                 aria-label={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} onClick={toggle}>
                                 <ChevronRight className="event-exercise-set__chevron" size={18} aria-hidden="true" />
-                            </button>
+                            </button>}</EventTooltip>
                             <h3 id={`set-${attachment.ID}`}>{name}</h3>
                             <SetStatusIcon status={status} />
                             <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />

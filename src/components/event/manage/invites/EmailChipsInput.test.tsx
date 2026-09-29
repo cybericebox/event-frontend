@@ -20,7 +20,7 @@ describe("EmailChipsInput", () => {
         fireEvent.change(input, {target: {value: "A@Example.test "}});
         fireEvent.change(input, {target: {value: "b@example.test"}});
         fireEvent.keyDown(input, {key: "Enter"});
-        expect(screen.getAllByText(/@example\.test$/).map(node => node.textContent)).toEqual(["a@example.test", "b@example.test"]);
+        expect(screen.getAllByText(/@example\.test$/, {selector: ".event-chip__text"}).map(node => node.textContent)).toEqual(["a@example.test", "b@example.test"]);
         expect((input as HTMLInputElement).value).toBe("");
     });
 

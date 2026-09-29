@@ -72,9 +72,9 @@ function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos
         {logos.length ? <ul>{logos.map((logo, index) => <li key={`${logo}-${index}`}>
             {liveLogoURL(logo) ? <img src={liveLogoURL(logo)!} alt="" /> : <span className="event-live-editor__logo-broken">?</span>}
             <EventTooltip content={logo} className="event-live-editor__logo-tip">{id => <span className="event-live-editor__logo-name" aria-describedby={id}>{logo.includes("/content-images/") ? t("manage.live.logos.file", {number: index + 1}) : logo}</span>}</EventTooltip>
-            <button type="button" aria-label={t("manage.live.logos.up")} disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>
-            <button type="button" aria-label={t("manage.live.logos.down")} disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>
-            <button type="button" aria-label={t("manage.live.logos.remove")} disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>
+            <EventTooltip content={t("manage.live.logos.up")} silent>{() => <button type="button" aria-label={t("manage.live.logos.up")} disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>}</EventTooltip>
+            <EventTooltip content={t("manage.live.logos.down")} silent>{() => <button type="button" aria-label={t("manage.live.logos.down")} disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>}</EventTooltip>
+            <EventTooltip content={t("manage.live.logos.remove")} silent>{() => <button type="button" aria-label={t("manage.live.logos.remove")} disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>}</EventTooltip>
         </li>)}</ul> : <EmptyState compact message={t("manage.live.logos.empty")} />}
         <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden disabled={disabled || busy} onChange={event => void upload(event.target.files)} />
         <EventButton className="ib-btn" type="button" disabled={disabled || busy || logos.length >= maxLogos} onClick={() => input.current?.click()} busy={busy}><ImageUp size={16} /> {t("manage.live.logos.upload")}</EventButton>

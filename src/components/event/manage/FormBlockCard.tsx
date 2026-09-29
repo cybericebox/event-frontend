@@ -89,15 +89,15 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
         {/* The whole row toggles the card except its action buttons; the title and
             chevron buttons have no handlers of their own, their clicks bubble here. */}
         <div className="event-content-editor__block-head" onClick={event => {if (outsideActions(event.target)) onToggle();}}>
+            {canEdit && <div className="event-content-editor__block-actions event-content-editor__block-grip"><EventTooltip content={t("manage.blocks.drag.tooltip")}>{id => <button type="button" className="event-content-editor__drag" {...sortable.handleProps} aria-label={t("manage.blocks.drag.aria", {n})} aria-describedby={`${id} ${sortable.handleProps["aria-describedby"]}`} disabled={disabled}><GripVertical size={16} /></button>}</EventTooltip></div>}
             <button type="button" className="event-content-editor__block-title" aria-expanded={open} aria-controls={bodyID}><span className="event-content-editor__order">{n}</span><CardTitle block={block} scope={scope} /></button>
             {canEdit && <div className="event-content-editor__block-actions">
-                <EventTooltip content={t("manage.blocks.drag.tooltip")}>{id => <button type="button" className="event-content-editor__drag" {...sortable.handleProps} aria-label={t("manage.blocks.drag.aria", {n})} aria-describedby={`${id} ${sortable.handleProps["aria-describedby"]}`} disabled={disabled}><GripVertical size={16} /></button>}</EventTooltip>
-                <button type="button" aria-label={t("manage.fields.editor.moveUp", {n})} disabled={index === 0 || disabled} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>
-                <button type="button" aria-label={t("manage.fields.editor.moveDown", {n})} disabled={index === blocks.length - 1 || disabled} onClick={() => onMove(1)}><ArrowDown size={16} /></button>
-                <button type="button" aria-label={t("manage.blocks.duplicateAria", {n})} disabled={disabled} onClick={onDuplicate}><Copy size={16} /></button>
-                <button className="event-content-editor__danger" type="button" aria-label={t("manage.fields.editor.delete", {n})} disabled={disabled} onClick={onDelete}><Trash2 size={16} /></button>
+                <EventTooltip content={t("manage.fields.editor.moveUp", {n})} silent>{() => <button type="button" aria-label={t("manage.fields.editor.moveUp", {n})} disabled={index === 0 || disabled} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
+                <EventTooltip content={t("manage.fields.editor.moveDown", {n})} silent>{() => <button type="button" aria-label={t("manage.fields.editor.moveDown", {n})} disabled={index === blocks.length - 1 || disabled} onClick={() => onMove(1)}><ArrowDown size={16} /></button>}</EventTooltip>
+                <EventTooltip content={t("manage.blocks.duplicateAria", {n})} silent>{() => <button type="button" aria-label={t("manage.blocks.duplicateAria", {n})} disabled={disabled} onClick={onDuplicate}><Copy size={16} /></button>}</EventTooltip>
+                <EventTooltip content={t("manage.fields.editor.delete", {n})} silent>{() => <button className="event-content-editor__danger" type="button" aria-label={t("manage.fields.editor.delete", {n})} disabled={disabled} onClick={onDelete}><Trash2 size={16} /></button>}</EventTooltip>
             </div>}
-            <button type="button" className="event-content-editor__block-toggle" aria-expanded={open} aria-controls={bodyID} aria-label={toggleLabel}><ChevronDown size={18} aria-hidden="true" /></button>
+            <EventTooltip content={toggleLabel} silent>{() => <button type="button" className="event-content-editor__block-toggle" aria-expanded={open} aria-controls={bodyID} aria-label={toggleLabel}><ChevronDown size={18} aria-hidden="true" /></button>}</EventTooltip>
         </div>
         {error && open && <p className="event-content-editor__block-error" role="alert">{error}</p>}
         {open && <div className="event-content-editor__block-body" id={bodyID}>{isFormField(block) ? <>

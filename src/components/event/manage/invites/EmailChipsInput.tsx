@@ -68,7 +68,7 @@ export function EmailChipsInput({id, chips, onChange, disabled = false, placehol
             // The hint covers only the address, so the remove button keeps its own focus and name.
             return <span key={chip.email} className={`ib-tag event-chip${chip.valid ? "" : " is-invalid"}`}>
                 {hint ? <EventTooltip content={hint} className="event-chip__tip">{() => text}</EventTooltip> : text}
-                <button className="event-chip__remove" type="button" disabled={disabled} aria-label={t("manage.invites.chips.remove", {email: chip.email})} onClick={event => {event.stopPropagation(); remove(chip.email);}}><X aria-hidden="true" /></button>
+                <EventTooltip content={t("manage.invites.chips.remove", {email: chip.email})} silent>{() => <button className="event-chip__remove" type="button" disabled={disabled} aria-label={t("manage.invites.chips.remove", {email: chip.email})} onClick={event => {event.stopPropagation(); remove(chip.email);}}><X aria-hidden="true" /></button>}</EventTooltip>
             </span>;
         })}
         <input ref={input} id={id} className="event-chips__input" type="text" inputMode="email" autoComplete="off" value={draft} disabled={disabled}

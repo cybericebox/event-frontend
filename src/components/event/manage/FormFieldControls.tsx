@@ -9,6 +9,7 @@ import {FieldLabel} from "@/components/event/manage/FieldLabel";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type Props = {blocks: FormBlock[]; index: number; disabled: boolean; onChange: (blocks: FormBlock[]) => void};
 
@@ -31,9 +32,9 @@ export function FormOptionsEditor({blocks, index, disabled, onChange}: Props) {
             return <div className="event-form-options__row" key={position}>
                 <input className="event-manage-input" value={option} aria-label={t("manage.fields.editor.option", {n: position + 1})} aria-invalid={!!problem} aria-describedby={problem ? errorID : undefined} placeholder={t("manage.fields.editor.option", {n: position + 1})} disabled={disabled} onChange={e => onChange(renameOption(blocks, index, position, e.target.value))} />
                 {!disabled && <div className="event-content-editor__block-actions">
-                    <button type="button" aria-label={t("manage.fields.editor.moveOptionUp", {n: position + 1})} disabled={position === 0} onClick={() => onChange(moveOption(blocks, index, position, -1))}><ArrowUp size={16} /></button>
-                    <button type="button" aria-label={t("manage.fields.editor.moveOptionDown", {n: position + 1})} disabled={position === options.length - 1} onClick={() => onChange(moveOption(blocks, index, position, 1))}><ArrowDown size={16} /></button>
-                    <button className="event-content-editor__danger" type="button" aria-label={t("manage.fields.editor.removeOption", {n: position + 1})} disabled={options.length === 1} onClick={() => onChange(removeOption(blocks, index, position))}><Trash2 size={16} /></button>
+                    <EventTooltip content={t("manage.fields.editor.moveOptionUp", {n: position + 1})} silent>{() => <button type="button" aria-label={t("manage.fields.editor.moveOptionUp", {n: position + 1})} disabled={position === 0} onClick={() => onChange(moveOption(blocks, index, position, -1))}><ArrowUp size={16} /></button>}</EventTooltip>
+                    <EventTooltip content={t("manage.fields.editor.moveOptionDown", {n: position + 1})} silent>{() => <button type="button" aria-label={t("manage.fields.editor.moveOptionDown", {n: position + 1})} disabled={position === options.length - 1} onClick={() => onChange(moveOption(blocks, index, position, 1))}><ArrowDown size={16} /></button>}</EventTooltip>
+                    <EventTooltip content={t("manage.fields.editor.removeOption", {n: position + 1})} silent>{() => <button className="event-content-editor__danger" type="button" aria-label={t("manage.fields.editor.removeOption", {n: position + 1})} disabled={options.length === 1} onClick={() => onChange(removeOption(blocks, index, position))}><Trash2 size={16} /></button>}</EventTooltip>
                 </div>}
                 {problem && <p className="event-content-editor__field-error" id={errorID}>{problem}</p>}
             </div>;
@@ -137,7 +138,7 @@ export function FormConditionEditor({blocks, index, disabled, onChange}: Props) 
                     : source?.input === "select"
                         ? <EventSelect ariaLabel={t("manage.fields.editor.conditionValue", {n})} value={String(condition.value)} options={(source.options ?? []).filter(option => option.trim()).map(option => ({value: option, label: option}))} disabled={disabled} onValueChange={value => update({...condition, value})} />
                         : <input className="event-manage-input" aria-label={t("manage.fields.editor.conditionValue", {n})} type={source?.input === "number" ? "number" : "text"} value={String(condition.value)} onChange={e => update({...condition, value: source?.input === "number" && e.target.value !== "" ? Number(e.target.value) : e.target.value})} disabled={disabled} placeholder={t("manage.fields.editor.value")} />}
-                {!disabled && <button type="button" className="event-content-editor__rule-remove" aria-label={t("manage.fields.editor.removeCondition", {n})} onClick={() => update(undefined)}><X size={16} /></button>}
+                {!disabled && <EventTooltip content={t("manage.fields.editor.removeCondition", {n})} silent>{() => <button type="button" className="event-content-editor__rule-remove" aria-label={t("manage.fields.editor.removeCondition", {n})} onClick={() => update(undefined)}><X size={16} /></button>}</EventTooltip>}
             </div>}
             {!condition && !disabled && <button className="ib-btn ib-btn--sm" type="button" disabled={sources.length === 0} onClick={() => update(defaultCondition(blocks, index))}><Plus size={15} /> {t("manage.fields.editor.addCondition")}</button>}
         </div>}

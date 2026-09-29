@@ -11,6 +11,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {filterChips, nextSort, NUMBER_OPS, TEXT_OPS, withoutFilter, type FilterDraft, type FilterDrafts, type FilterSpec, type TableSort} from "./tableFilterModel";
 import {t} from "@/i18n/t";
 import "./tableFilters.css";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 function FilterControl({spec, draft, onChange}: {spec: FilterSpec; draft: FilterDraft; onChange: (draft: FilterDraft) => void}) {
     switch (spec.kind) {
@@ -79,7 +80,7 @@ export function TableFilterChips({specs, drafts, onChange, onReset, extra}: {spe
     if (chips.length === 0) return null;
     return <div className="event-table-filters__chips" role="group" aria-label={t("manage.table.filters.active")}>
         {chips.map(chip => <span key={chip.key} className="event-table-filters__chip"><span>{chip.text}</span>
-            <button type="button" className="event-table-filters__chip-remove" aria-label={t("manage.table.filters.remove", {filter: chip.text})} onClick={chip.onRemove}><X size={14} aria-hidden="true" /></button>
+            <EventTooltip content={t("manage.table.filters.remove", {filter: chip.text})} silent>{() => <button type="button" className="event-table-filters__chip-remove" aria-label={t("manage.table.filters.remove", {filter: chip.text})} onClick={chip.onRemove}><X size={14} aria-hidden="true" /></button>}</EventTooltip>
         </span>)}
         <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" onClick={onReset}>{t("manage.table.filters.reset")}</button>
     </div>;

@@ -196,10 +196,10 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
     return <li className={`event-task${open ? " is-open" : ""}`}>
         {/* The row toggles the task; its buttons and links keep their own action. */}
         <div className="event-task__row" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a")) toggle(); }}>
-            <button type="button" className="event-task__toggle" aria-expanded={open} aria-controls={panelID}
+            <EventTooltip content={t(open ? "manage.challenges.task.collapse" : "manage.challenges.task.expand", {name: challenge.Snapshot.name})} silent>{() => <button type="button" className="event-task__toggle" aria-expanded={open} aria-controls={panelID}
                 aria-label={t(open ? "manage.challenges.task.collapse" : "manage.challenges.task.expand", {name: challenge.Snapshot.name})} onClick={toggle}>
                 <ChevronRight className="event-task__chevron" size={16} aria-hidden="true" />
-            </button>
+            </button>}</EventTooltip>
             <span className="event-task__text"><strong>{challenge.Snapshot.name}</strong>{line && <span>{line}</span>}</span>
             <span className="event-task__badges">
                 {hints && <HintMark hints={hints} />}
