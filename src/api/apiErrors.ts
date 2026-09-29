@@ -27,6 +27,7 @@ export const ApiErrorCode = {
     TeamNotAdmitted: 1713,
     TeamFieldNotEditable: 1714,
     TeamFieldsLocked: 1715,
+    NothingToAnnul: 1930,
 } as const;
 
 export type ApiErrorCodeValue = typeof ApiErrorCode[keyof typeof ApiErrorCode];
