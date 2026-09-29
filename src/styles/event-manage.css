@@ -123,12 +123,16 @@
 .event-manage-mode{font-size:var(--ib-fs-12);color:var(--ib-dim);white-space:nowrap}
 .event-manage-entry{gap:var(--ib-2);white-space:nowrap}
 @media(max-width:767px){.ib-navbar__actions>.event-manage-entry{display:none}}
-/* Page frame, one rule for every /manage page and sub-tab: the page spans the whole content area and its left edge
-   sits on the title and tab bar (no max-width, no centring). Title -> tabs -> first block keep one gap (--ib-6);
+/* Page frame, one rule for every /manage page and sub-tab: the page's left edge sits on the title and tab bar
+   (no per-page widths, no centring; the shared frame width is set below). Title -> tabs -> first block keep one gap (--ib-6);
    grid pages declare their row gap in --event-manage-flow so the heading and tabs subtract it. */
 .event-manage-settings,.event-manage-setup,.event-manage-content,.event-manage-registration,.event-live-editor{--event-manage-flow:0px;width:100%;max-width:none;margin:0;padding-bottom:var(--ib-12)}
 .event-manage-general,.event-manage-appearance,.event-manage-registration,.event-manage-mail,.event-manage-participants,.event-manage-teams,.event-manage-results,.event-stands,.event-live-editor{--event-manage-flow:var(--ib-4)}
 [role="tabpanel"]>:is(.event-manage-settings,.event-manage-content){padding-bottom:0}
+/* Frame width: one 1440px frame centred in the content area, so every title starts at the same x; tables and lists
+   fill the frame, settings forms stop at 1200px inside it, left-aligned on the title. */
+.event-manage-shell .ib-admin-shell__scroll>*{max-width:1440px;margin-inline-start:max(0px,calc((100% - 1440px) / 2))}
+.event-manage-shell .ib-admin-shell__scroll>:is(.event-manage-general,.event-manage-appearance,.event-manage-schedule,.event-manage-setup,.event-manage-mail),.event-manage-shell [role="tabpanel"]>.event-manage-general{max-width:1200px}
 .event-manage-general,.event-manage-appearance{display:grid;gap:var(--ib-4)}
 .event-manage-general .event-manage-section,.event-manage-appearance .event-manage-section{gap:var(--ib-4);padding:var(--ib-5)}
 .event-manage-general textarea.event-manage-input{min-height:86px}
