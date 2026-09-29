@@ -43,7 +43,10 @@ describe("TaskRow", () => {
         expect(screen.getByText("Підказка 1")).toBeTruthy();
         expect((screen.getByLabelText(/Вартість підказки 1/) as HTMLInputElement).value).toBe("20");
         expect(screen.getByRole("switch", {name: "Показувати учасникам"})).toBeTruthy();
-        expect(screen.getByRole("button", {name: "Прибрати із заходу"})).toBeTruthy();
+        fireEvent.pointerDown(screen.getByRole("button", {name: "Дії із завданням SQL injection"}), {button: 0, ctrlKey: false});
+        const items = screen.getAllByRole("menuitem");
+        expect(items.map(item => item.textContent)).toEqual(["Редагувати" + "Щоб редагувати, спершу створіть копію набору для заходу.", "Прибрати із заходу"]);
+        expect(items[0].getAttribute("aria-disabled")).toBe("true");
     });
 
     it("locks task scoring when the event scoring applies to all tasks", () => {

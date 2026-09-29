@@ -2687,12 +2687,14 @@
   "manage.challenges.blockers.open": "До завдань",
   "manage.challenges.set.forkTip": "Створює власну копію для заходу. Її можна редагувати, оновлення з каталогу більше не підтягуються.",
   "manage.challenges.set.editTip": "Редагувати набір",
-  "manage.challenges.set.more": "Інші дії з набором {name}",
+  "manage.challenges.set.more": "Дії з набором {name}",
   "manage.challenges.set.update": "Оновити до нової версії",
   "manage.challenges.set.infraMissingBefore": "Увімкніть інфраструктуру для заходу або приберіть набір: попросіть адміністратора платформи увімкнути інфраструктуру до публікації.",
   "manage.challenges.set.infraMissingAfter": "Приберіть набір із заходу — інфраструктуру після публікації увімкнути не можна.",
   "manage.exercises.attachDialog.needsInfrastructureAfter": "Потрібна інфраструктура — після публікації її не увімкнути",
   "manage.challenges.set.forkBroken": "Копія не допоможе: набору потрібна інфраструктура, якої в заходу немає.",
   "manage.exercises.attachDialog.noInfrastructure": "У заходу немає інфраструктури — набори зі стендами додати не можна.",
-  "manage.exercises.attachDialog.noInfrastructureBefore": "Її може увімкнути адміністратор платформи до публікації."
+  "manage.exercises.attachDialog.noInfrastructureBefore": "Її може увімкнути адміністратор платформи до публікації.",
+  "manage.challenges.groups.groupMenu": "Дії з групою {name}",
+  "manage.challenges.task.menu": "Дії із завданням {name}"
 }

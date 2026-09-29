@@ -2687,12 +2687,14 @@
   "manage.challenges.blockers.open": "Open tasks",
   "manage.challenges.set.forkTip": "Creates the event's own copy. It is editable; catalog updates are no longer pulled in.",
   "manage.challenges.set.editTip": "Edit the set",
-  "manage.challenges.set.more": "More actions for {name}",
+  "manage.challenges.set.more": "Actions for the set {name}",
   "manage.challenges.set.update": "Update to the new version",
   "manage.challenges.set.infraMissingBefore": "Enable infrastructure for the event or remove the set: ask the platform administrator to enable infrastructure before publication.",
   "manage.challenges.set.infraMissingAfter": "Remove the set from the event — infrastructure cannot be enabled after publication.",
   "manage.exercises.attachDialog.needsInfrastructureAfter": "Needs infrastructure — it cannot be enabled after publication",
   "manage.challenges.set.forkBroken": "A copy will not help: the set needs infrastructure the event does not have.",
   "manage.exercises.attachDialog.noInfrastructure": "The event has no infrastructure — sets with stands cannot be added.",
-  "manage.exercises.attachDialog.noInfrastructureBefore": "The platform administrator can enable it before publication."
+  "manage.exercises.attachDialog.noInfrastructureBefore": "The platform administrator can enable it before publication.",
+  "manage.challenges.groups.groupMenu": "Actions for the group {name}",
+  "manage.challenges.task.menu": "Actions for {name}"
 }

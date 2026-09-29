@@ -1,8 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {MoreHorizontal, Pencil, Plus, Trash2} from "lucide-react";
+import {FolderInput, Pencil, Plus, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
     createEventChallengeGroup, deleteEventChallengeGroup, reorderEventChallengeGroups, reorderGroupChallenges,
@@ -18,6 +17,7 @@ import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t, tPlural} from "@/i18n/t";
 import {groupBuckets, orderedGroups, type GroupTask} from "./challengeOrder";
+import {ActionMenu} from "./ActionMenu";
 import {GroupNameDialog} from "./GroupNameDialog";
 import {SortableList} from "./SortableList";
 import {useBoardSets} from "./useBoardSets";
@@ -149,10 +149,10 @@ export function ChallengeGroupsManager() {
                         selected: selected === group.ID,
                         onSelect: () => setSelectedID(group.ID),
                         content: <span className="event-group-order__label"><strong>{group.Name}</strong><small>{count(group.ID)}</small></span>,
-                        actions: canManage && <>
-                            <button className="ib-icon-btn ib-icon-btn--sm" type="button" title={t("manage.exercises.groups.rename")} aria-label={t("manage.challenges.groups.renameNamed", {name: group.Name})} disabled={busy} onClick={() => setNaming({group, key: Date.now()})}><Pencil size={16} aria-hidden="true" /></button>
-                            <button className="ib-icon-btn ib-icon-btn--sm" type="button" title={t("manage.exercises.groups.deleteGroup")} aria-label={t("manage.exercises.groups.deleteGroupNamed", {name: group.Name})} disabled={busy} onClick={() => {setRemoveError(""); setRemoving(group);}}><Trash2 size={16} aria-hidden="true" /></button>
-                        </>,
+                        actions: canManage && <ActionMenu label={t("manage.challenges.groups.groupMenu", {name: group.Name})} disabled={busy} items={[
+                            {key: "rename", label: t("manage.exercises.groups.rename"), icon: Pencil, onSelect: () => setNaming({group, key: Date.now()})},
+                            {key: "delete", label: t("manage.exercises.groups.deleteGroup"), icon: Trash2, danger: true, onSelect: () => {setRemoveError(""); setRemoving(group);}},
+                        ]} />,
                     })} />}
                 <button type="button" className={`event-group-order__none${selected === null ? " is-selected" : ""}`} aria-pressed={selected === null} onClick={() => setSelectedID(noGroup)}>
                     <span className="event-group-order__label"><strong>{t("manage.exercises.groups.none")}</strong><small>{count(null)}</small></span>
@@ -166,12 +166,9 @@ export function ChallengeGroupsManager() {
                         itemID={task => task.challenge.ID} itemName={task => task.challenge.Snapshot.name} disabled={!canManage || busy} onReorder={ids => void reorderTasks(ids)}
                         renderItem={(task, index) => ({
                             content: <span className="event-group-order__task"><span className="event-group-order__position">{index + 1}</span><strong>{task.challenge.Snapshot.name}</strong><small>{task.attachment.ExerciseName}</small></span>,
-                            actions: canManage && <DropdownMenu.Root>
-                                <DropdownMenu.Trigger className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.challenges.groups.taskMenu", {name: task.challenge.Snapshot.name})} disabled={busy}><MoreHorizontal size={16} aria-hidden="true" /></DropdownMenu.Trigger>
-                                <DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-select__menu" sideOffset={4} align="end" collisionPadding={8}>
-                                    <DropdownMenu.Item className="ib-listbox__opt event-select__option" onSelect={() => setMoving({task, target: ""})}>{t("manage.challenges.groups.moveTo")}</DropdownMenu.Item>
-                                </DropdownMenu.Content></DropdownMenu.Portal>
-                            </DropdownMenu.Root>,
+                            actions: canManage && <ActionMenu label={t("manage.challenges.groups.taskMenu", {name: task.challenge.Snapshot.name})} disabled={busy} items={[
+                                {key: "move", label: t("manage.challenges.groups.moveTo"), icon: FolderInput, onSelect: () => setMoving({task, target: ""})},
+                            ]} />,
                         })} />}
             </section>
         </div>

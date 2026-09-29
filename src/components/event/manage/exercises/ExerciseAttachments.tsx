@@ -144,7 +144,6 @@ export function ExerciseAttachments() {
                         </p>
                         {mismatch && <div className="event-exercise-set__warning" role="alert">
                             <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t(published ? "manage.challenges.set.infraMissingAfter" : "manage.challenges.set.infraMissingBefore")}</span>
-                            {canManage && <button className="ib-btn ib-btn--sm ib-btn--danger" type="button" disabled={busy} onClick={() => setAction({kind: "detach", attachment, attempts: attachment.HasAttempts})}>{t("manage.challenges.task.remove")}</button>}
                         </div>}
                     </header>
                     {open && <div className="event-exercise-set__body" id={`set-tasks-${attachment.ID}`}>

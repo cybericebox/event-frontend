@@ -35,6 +35,8 @@ button.event-sortable__main{cursor:pointer}
 .event-exercise-set__warning{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-13);cursor:default}
 .event-exercise-set__warning strong{margin-right:var(--ib-1);font-weight:var(--ib-w-semibold)}
 .event-exercise-set__warning .ib-btn{flex:none}
+.event-exercise-picker .event-exercise-editor__search{width:100%}
+.event-exercise-picker .event-exercise-editor__search .event-manage-field{max-width:none}
 .event-exercise-picker__notice{margin:0;padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink);font-size:var(--ib-fs-13);line-height:var(--ib-lh-ui)}
 .event-exercise-picker__reason{grid-column:1/-1;color:var(--ib-danger);font-size:var(--ib-fs-12)}
 .event-manage-blockers{display:grid;gap:var(--ib-2);margin-bottom:var(--ib-5);padding:var(--ib-3) var(--ib-4);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger)}
@@ -62,7 +64,7 @@ button.event-sortable__main{cursor:pointer}
 .event-task__summary{margin:0;align-self:flex-end;padding-bottom:10px;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-task__note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-task__save{justify-self:start}
-.event-task__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
+.event-task__actions{display:flex;justify-content:flex-end;gap:var(--ib-2);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
 .event-task__actions svg{width:14px;height:14px}
 
 /* «Налаштування». */
@@ -84,7 +86,12 @@ button.event-sortable__main{cursor:pointer}
 }
 
 /* Action menus («⋯»): as wide as their labels (not the icon trigger), DS
-   listbox look (1px border, no shadow), icon + label items. */
-.event-action-menu{z-index:80;width:max-content;min-width:220px;max-width:calc(100vw - 24px);outline:0}
-.event-action-menu__item{height:auto;min-height:var(--ib-control-h);white-space:nowrap}
-.event-action-menu__item>svg{visibility:visible;margin-left:0;color:var(--ib-dim)}
+   listbox look (1px border, no shadow), icon + label items; removing last
+   in danger colour after a separator; a disabled item says why. */
+.event-action-menu{z-index:80;width:max-content;min-width:220px;max-width:min(360px,calc(100vw - 24px));outline:0}
+.event-action-menu__item{height:auto;min-height:var(--ib-control-h);padding-top:6px;padding-bottom:6px;color:var(--ib-ink);text-decoration:none}
+.event-action-menu__item>svg{visibility:visible;margin-left:0;align-self:flex-start;margin-top:2px;color:var(--ib-dim)}
+.event-action-menu__text{display:grid;gap:2px;min-width:0;white-space:normal}
+.event-action-menu__text small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-action-menu__item.is-danger,.event-action-menu__item.is-danger>svg{color:var(--ib-danger)}
+.event-action-menu__separator{height:1px;margin:var(--ib-1) 0;background:var(--ib-line)}
