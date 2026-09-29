@@ -1,5 +1,6 @@
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import {tPlural} from "@/i18n/t";
+import {jitter} from "@/utils/jitter";
 import {resultsLinkVisible, viewerResultsAvailability, type ResultsAvailability} from "@/types/resultsAvailability";
 
 // «6 команд» / «1 учасник» — the scoreboard counts in the event's wording.
@@ -40,4 +41,26 @@ export function scoreboardAccess(base: ResultsAvailability, staff: boolean): Sco
     if (availability === "hidden") return {nav, fetch: false, message: "scoreboard.hidden"};
     if (availability === "participants_only") return {nav, fetch: false, message: "scoreboard.participantsOnly"};
     return {nav, fetch: true, message: null};
+}
+
+export const RESULTS_POLL_SECONDS = 30;
+const MAX_POLL_MS = 5 * 60_000;
+
+// The results page polls (no stream): 30 s ±20 % so viewers do not reach the
+// server in step; after failures the delay doubles up to 5 minutes.
+export function resultsPollDelay(failures: number, random: () => number = Math.random): number {
+    const base = Math.min(MAX_POLL_MS, RESULTS_POLL_SECONDS * 1000 * 2 ** Math.max(0, failures));
+    return jitter(base, random);
+}
+
+// The poll cursor: the revision after which changes are asked for, and the
+// viewer's freeze state from the previous poll (null before the first one).
+export type PollCursor = {since: number; freezeKey: string | null};
+
+// What a poll answer means: new visible changes or a required snapshot reload
+// the snapshot (the server ranks, the page never recomputes scores); otherwise
+// the cursor moves on, past changes a frozen viewer does not get.
+export function applyResultsPoll(cursor: PollCursor, answer: {Revision: number; Changes: unknown[]; SnapshotRequired: boolean; FreezeKey: string}): {cursor: PollCursor; reload: boolean} {
+    if (answer.SnapshotRequired || answer.Changes.length > 0) return {cursor: {since: cursor.since, freezeKey: answer.FreezeKey}, reload: true};
+    return {cursor: {since: Math.max(cursor.since, answer.Revision), freezeKey: answer.FreezeKey}, reload: false};
 }

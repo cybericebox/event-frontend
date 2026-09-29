@@ -1,18 +1,17 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {cleanup, render, screen} from "@testing-library/react";
-import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {act, cleanup, render, screen, waitFor} from "@testing-library/react";
+import {focusManager, QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ScoreboardView} from "./ScoreboardView";
 import {apiReadable, audiences, freezeApplied, infoAvailability, phases, visibilities, type Phase} from "./scoreboardMatrix.fixture";
 
-const state = vi.hoisted(() => ({staff: false, event: null as Record<string, unknown> | null, participant: null as Record<string, unknown> | null, getResults: vi.fn()}));
+const state = vi.hoisted(() => ({staff: false, event: null as Record<string, unknown> | null, participant: null as Record<string, unknown> | null, getResults: vi.fn(), getChanges: vi.fn()}));
 
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.event}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => state.participant}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
-vi.mock("@/utils/eventStream", () => ({useEventStream: () => "live"}));
 vi.mock("./ScoreChart", () => ({ScoreChart: ({teamIDs, note}: {teamIDs: string[]; note?: string}) => <div data-testid="chart-plot" data-lines={teamIDs.length}>{note}</div>}));
-vi.mock("@/api/manageResults", async importOriginal => ({...await importOriginal<object>(), getManageResults: state.getResults}));
+vi.mock("@/api/manageResults", async importOriginal => ({...await importOriginal<object>(), getManageResults: state.getResults, getResultsChanges: state.getChanges}));
 
 const hour = 3_600_000;
 function event(startOffset: number, availability: string) {
@@ -29,6 +28,8 @@ beforeEach(() => {
     state.staff = false;
     state.participant = null;
     state.getResults.mockReset();
+    state.getChanges.mockReset();
+    state.getChanges.mockResolvedValue({Revision: 1, Changes: [], SnapshotRequired: false, FreezeKey: ""});
     state.getResults.mockResolvedValue({Revision: 1, GeneratedAt: new Date().toISOString(), TotalTeams: 1, Timeline: [],
         Scoreboard: [{Rank: 1, TeamID: "00000000-0000-4000-8000-000000000001", TeamName: "Альфа", Points: 300, Solved: 2, LastSolveAt: null}],
         Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
@@ -83,6 +84,50 @@ it("lets the staff read results shown to participants only, with no Live action 
     expect(screen.queryByRole("link", {name: "Відкрити Live"})).toBeNull();
 });
 
+it("polls without a stream and explains «Автооновлення»", async () => {
+    const opened = vi.fn();
+    vi.stubGlobal("EventSource", class {constructor() {opened();}});
+    state.event = event(-hour, "available");
+    state.getResults.mockResolvedValue(snapshot(300, false, {Enabled: true, FrozenAt: "2026-09-29T15:30:00Z", Active: true, Applied: true}));
+    renderView();
+    expect(await screen.findByText("Альфа")).toBeTruthy();
+    expect(screen.getByText("Автооновлення")).toBeTruthy();
+    expect(opened).not.toHaveBeenCalled();
+    expect(document.body.innerHTML).toContain("Сторінка сама перевіряє нові результати приблизно кожні 30 с.");
+    expect(document.body.innerHTML).toMatch(/Рейтинг заморожено о \d\d:\d\d\./);
+    vi.unstubAllGlobals();
+});
+
+it("polls the changes after its snapshot and reloads only for visible changes", async () => {
+    state.event = event(-hour, "available");
+    state.getResults.mockResolvedValue({...snapshot(300, false), Revision: 4});
+    renderView();
+    expect(await screen.findByText("Альфа")).toBeTruthy();
+    const poll = async () => {
+        await act(async () => {focusManager.setFocused(false); focusManager.setFocused(true);});
+    };
+    // Nothing new: the cursor stays, no snapshot reload.
+    state.getChanges.mockResolvedValueOnce({Revision: 4, Changes: [], SnapshotRequired: false, FreezeKey: ""});
+    await poll();
+    await waitFor(() => expect(state.getChanges).toHaveBeenLastCalledWith("event-1", 4, null));
+    expect(state.getResults).toHaveBeenCalledTimes(1);
+    // Other teams' solves hidden by a freeze move the cursor only.
+    state.getChanges.mockResolvedValueOnce({Revision: 6, Changes: [], SnapshotRequired: false, FreezeKey: "f"});
+    await poll();
+    await waitFor(() => expect(state.getChanges).toHaveBeenLastCalledWith("event-1", 4, ""));
+    state.getChanges.mockResolvedValueOnce({Revision: 7, Changes: [{Revision: 7, Kind: "team_challenge_solved"}], SnapshotRequired: false, FreezeKey: "f"});
+    await poll();
+    await waitFor(() => expect(state.getChanges).toHaveBeenLastCalledWith("event-1", 6, "f"));
+    // A visible change reloads the snapshot; its revision is the next cursor.
+    await waitFor(() => expect(state.getResults).toHaveBeenCalledTimes(2));
+    state.getResults.mockResolvedValue({...snapshot(400, false), Revision: 7});
+    state.getChanges.mockResolvedValueOnce({Revision: 7, Changes: [], SnapshotRequired: true, FreezeKey: ""});
+    await poll();
+    await waitFor(() => expect(state.getResults).toHaveBeenCalledTimes(3));
+    expect(await screen.findByText("400")).toBeTruthy();
+    focusManager.setFocused(undefined);
+});
+
 it("explains a closed ranking inside the table block", () => {
     state.event = event(-hour, "participants_only");
     renderView();
@@ -120,7 +165,7 @@ describe("results page matrix: audience × visibility × phase × freeze × char
                 expect(await screen.findByText("Альфа")).toBeTruthy();
                 expect(screen.getByText(phase === "before" ? "0" : "300", {selector: "td.event-scoreboard__points"})).toBeTruthy();
                 expect(screen.queryByText("Таблиця показує стан на момент заморожування. Підсумки — після фіналу.") !== null).toBe(applied);
-                expect(screen.getByText("Наживо")).toBeTruthy();
+                expect(screen.getByText("Автооновлення")).toBeTruthy();
                 expect(screen.getByText(/^Оновлено /)).toBeTruthy();
                 const plot = screen.queryByTestId("chart-plot");
                 expect(plot !== null).toBe(chart);

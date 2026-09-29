@@ -45,7 +45,9 @@ function apiBase(): string {
 export async function getManageResults(eventID: string, view: ResultsView = "page"): Promise<ManageResultsSnapshot> {
     const query = view === "live" ? "?view=live" : "";
     const response = await fetch(`${apiBase()}/events/${encodeURIComponent(eventID)}/results${query}`, {
-        credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
+        // The page polls: "no-cache" revalidates with the ETag, so an unchanged
+        // snapshot is a 304 served from the browser cache.
+        credentials: "include", cache: view === "page" ? "no-cache" : "no-store", headers: {Accept: "application/json"},
     });
     if (response.status === 403) {
         const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
@@ -54,6 +56,22 @@ export async function getManageResults(eventID: string, view: ResultsView = "pag
     }
     if (!response.ok) throw new ManageApiError(response.status);
     return z.object({Data: resultsSnapshotSchema}).parse(await response.json()).Data;
+}
+
+const changesSchema = z.object({Revision: z.number().int(), Changes: z.array(z.object({Revision: z.number().int(), Kind: z.string()}).passthrough()), SnapshotRequired: z.boolean(), FreezeKey: z.string()});
+export type ResultsChanges = z.infer<typeof changesSchema>;
+
+// «Автооновлення»: one poll of the result changes after `since` (the stream's
+// change window, without a held connection). "no-cache" revalidates with the
+// ETag, so an unchanged answer is a 304 from the browser cache.
+export async function getResultsChanges(eventID: string, since: number, freezeKey: string | null): Promise<ResultsChanges> {
+    const params = new URLSearchParams({since: String(since)});
+    if (freezeKey !== null) params.set("freeze", freezeKey);
+    const response = await fetch(`${apiBase()}/events/${encodeURIComponent(eventID)}/results/changes?${params}`, {
+        credentials: "include", cache: "no-cache", headers: {Accept: "application/json"},
+    });
+    if (!response.ok) throw new ManageApiError(response.status);
+    return z.object({Data: changesSchema}).parse(await response.json()).Data;
 }
 
 // SSE of result changes after the given snapshot revision. EventSource cannot

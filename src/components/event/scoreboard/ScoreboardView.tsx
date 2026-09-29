@@ -1,21 +1,19 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {getManageResults, resultsLiveURL, ResultsUnavailableError, type ManageResultsSnapshot} from "@/api/manageResults";
+import {getManageResults, getResultsChanges, ResultsUnavailableError} from "@/api/manageResults";
 import {resultsAvailability} from "@/types/resultsAvailability";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventBanner} from "@/components/event/EventBanner";
-import {useEventStream} from "@/utils/eventStream";
-import {jitter} from "@/utils/jitter";
-import {frozenBannerTitle, frozenSinceLabel, nextFreezeBoundary} from "@/utils/resultsFreeze";
+import {clockLabel, frozenBannerTitle, frozenSinceLabel, nextFreezeBoundary} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
 import {LiveStatus} from "@/components/event/manage/LiveStatus";
-import {chartTeamIDs, scoreboardAccess, searchScoreboard, unitCount} from "./scoreboardModel";
+import {applyResultsPoll, chartTeamIDs, RESULTS_POLL_SECONDS, resultsPollDelay, scoreboardAccess, searchScoreboard, unitCount, type PollCursor} from "./scoreboardModel";
 import {ScoreChart} from "./ScoreChart";
 import {ScoreTable, type ScoreTableState} from "./ScoreTable";
 // LiveStatus is styled with the manage table sheet.
@@ -23,10 +21,6 @@ import "@/components/event/manage/manageTable.css";
 import "./scoreboard.css";
 
 const deniedMessages = {hidden: "scoreboard.hidden", participants_only: "scoreboard.participantsOnly"} as const;
-const POLL_SECONDS = 30;
-// The stream's server check period for this page (the staff live screen sets
-// its own). 10 s ±20 %, drawn once per page, so viewers do not tick in step.
-const STREAM_SECONDS = 10;
 
 // The participant and guest «Результати»: a chart of the leaders (plus the
 // viewer's own team) above a searchable ranking. The page exists in every
@@ -49,27 +43,40 @@ export function ScoreboardView() {
     }, [started]);
     const queryClient = useQueryClient();
     const queryKey = ["event-public-results", event?.EventID];
-    const revision = queryClient.getQueryData<ManageResultsSnapshot>(queryKey)?.Revision;
-    const [pacing] = useState(() => ({streamSeconds: Math.round(jitter(STREAM_SECONDS * 1000) / 1000), reloadMs: jitter(2000)}));
-    // Realtime: every change reloads the snapshot (the server applies the
-    // freeze), spread over the viewers; 30 s ±20 % polling only when the
-    // stream keeps failing. A hidden tab neither streams nor polls.
-    const stream = useEventStream({
-        url: () => {
-            const url = event && revision !== undefined ? resultsLiveURL(event.EventID, revision) : null;
-            return url && `${url}&pollInterval=${pacing.streamSeconds}`;
-        },
-        events: ["result-change"], resetEvents: ["snapshot-required"],
-        onChange: () => void queryClient.invalidateQueries({queryKey}),
-        enabled: !!event && readable && revision !== undefined,
-        debounceMs: pacing.reloadMs, pauseWhenHidden: true,
-    });
     const results = useQuery({
         queryKey,
         queryFn: () => getManageResults(event!.EventID),
         enabled: !!event && readable && !access.pending,
         retry: false,
-        refetchInterval: stream === "fallback" ? () => jitter(POLL_SECONDS * 1000) : false,
+        refetchOnWindowFocus: false,
+    });
+    // «Автооновлення», no stream per viewer: every 30 s ±20 % the page asks
+    // for the result changes after its snapshot (an unchanged answer is a
+    // 304) and reloads the snapshot only when something visible changed. It
+    // backs off after errors, pauses in a hidden tab and checks at once when
+    // the tab is shown again.
+    const cursor = useRef<PollCursor | null>(null);
+    const snapshotRevision = results.data?.Revision;
+    const snapshotAt = results.dataUpdatedAt;
+    useEffect(() => {
+        if (snapshotRevision !== undefined) cursor.current = {since: snapshotRevision, freezeKey: cursor.current?.freezeKey ?? null};
+    }, [snapshotRevision, snapshotAt]);
+    const polls = useQuery({
+        queryKey: ["event-public-results-changes", event?.EventID],
+        queryFn: async () => {
+            const current = cursor.current!;
+            const step = applyResultsPoll(current, await getResultsChanges(event!.EventID, current.since, current.freezeKey));
+            cursor.current = step.cursor;
+            if (step.reload) await queryClient.invalidateQueries({queryKey});
+            return step.cursor.since;
+        },
+        enabled: !!event && readable && snapshotRevision !== undefined,
+        initialData: () => snapshotRevision, initialDataUpdatedAt: () => snapshotAt,
+        staleTime: RESULTS_POLL_SECONDS * 1000 * 0.8,
+        retry: false,
+        refetchInterval: query => resultsPollDelay(query.state.fetchFailureCount),
+        refetchIntervalInBackground: false,
+        refetchOnWindowFocus: "always",
     });
     // The freeze starts and ends by the clock: reload right after each boundary.
     const freeze = results.data?.Freeze;
@@ -108,6 +115,7 @@ export function ScoreboardView() {
     const chartNote = !data ? undefined : !started ? t("scoreboard.chartAfterStart") : data.Scoreboard.length === 0 ? t(teamMode ? "scoreboard.noTeams" : "scoreboard.noParticipants") : undefined;
     const status = frozen ? t("scoreboard.status.frozen") : !started ? t("scoreboard.status.beforeStart") : finished ? t("scoreboard.status.final") : t("scoreboard.status.current");
     const sub = data ? t("scoreboard.sub", {units: unitCount(data.TotalTeams, teamMode), status}) : null;
+    const pollHint = [t("scoreboard.pollHint", {seconds: RESULTS_POLL_SECONDS}), frozen && data?.Freeze.FrozenAt ? t("scoreboard.pollHintFrozen", {time: clockLabel(data.Freeze.FrozenAt)}) : ""].filter(Boolean).join(" ");
     const trimmed = !!data && data.Display.RowsLimit !== null && data.TotalTeams > data.Display.RowsLimit;
 
     return <div className="event-results">
@@ -116,7 +124,7 @@ export function ScoreboardView() {
             <header className="ib-page-header">
                 <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("scoreboard.title")}</h1>{sub && <p className="ib-page-header__sub">{sub}</p>}</div></div>
             </header>
-            {readable && <div className="event-results__actions"><LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: POLL_SECONDS}} updatedAt={results.dataUpdatedAt} /></div>}
+            {readable && <div className="event-results__actions"><LiveStatus freshness={{kind: "polling", seconds: RESULTS_POLL_SECONDS, failing: polls.isError}} updatedAt={Math.max(results.dataUpdatedAt, polls.dataUpdatedAt)} hint={pollHint} /></div>}
         </div>
         {data && data.Display.ChartEnabled && <div className="event-results__chart rounded-lg border border-border bg-card p-4" data-testid="score-chart">
             <p className="mb-2 text-sm font-semibold text-foreground">{chartIDs.length === 0 ? t("scoreboard.chartTitlePlain") : t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>

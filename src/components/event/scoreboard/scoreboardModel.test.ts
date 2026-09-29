@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {chartTeamIDs, searchScoreboard, unitCount} from "./scoreboardModel";
+import {applyResultsPoll, chartTeamIDs, resultsPollDelay, searchScoreboard, unitCount} from "./scoreboardModel";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 
 const snapshot = (chartTeams: number) => ({
@@ -26,5 +26,22 @@ describe("scoreboard model", () => {
     it("searches by name and keeps the places", () => {
         expect(searchScoreboard(snapshot(2), " C ").map(entry => [entry.TeamID, entry.Rank])).toEqual([["c", 3]]);
         expect(searchScoreboard(snapshot(2), "")).toHaveLength(4);
+    });
+
+    it("polls every 30 s ±20 % and backs off after failures", () => {
+        expect(resultsPollDelay(0, () => 0)).toBe(24_000);
+        expect(resultsPollDelay(0, () => 1)).toBe(36_000);
+        expect(resultsPollDelay(1, () => 0.5)).toBe(60_000);
+        expect(resultsPollDelay(2, () => 0.5)).toBe(120_000);
+        expect(resultsPollDelay(10, () => 0.5)).toBe(300_000);
+    });
+
+    it("moves the poll cursor or asks for the snapshot", () => {
+        const start = {since: 5, freezeKey: null};
+        expect(applyResultsPoll(start, {Revision: 5, Changes: [], SnapshotRequired: false, FreezeKey: ""})).toEqual({cursor: {since: 5, freezeKey: ""}, reload: false});
+        // Frozen: other teams' solves move the cursor without a reload.
+        expect(applyResultsPoll(start, {Revision: 9, Changes: [], SnapshotRequired: false, FreezeKey: "f"})).toEqual({cursor: {since: 9, freezeKey: "f"}, reload: false});
+        expect(applyResultsPoll(start, {Revision: 7, Changes: [{}], SnapshotRequired: false, FreezeKey: ""}).reload).toBe(true);
+        expect(applyResultsPoll(start, {Revision: 5, Changes: [], SnapshotRequired: true, FreezeKey: "f"})).toEqual({cursor: {since: 5, freezeKey: "f"}, reload: true});
     });
 });
