@@ -20,7 +20,8 @@ export const ParticipantEventInfoSchema = z.object({
     MaxTeamSize: z.number().int().nullish(),
     // Board presentation (event settings) and whether any task needs the team VPN.
     ShowDifficulty: z.boolean().default(true),
-    ShowHints: z.boolean().default(true),
+    // Hints hidden for every task (a task shows hints only when it enables them).
+    HintsDisabled: z.boolean().default(false),
     HasInfrastructureChallenges: z.boolean().default(false),
     // How paid hints are charged: reduce the challenge reward, or the balance at unlock.
     HintChargeMode: z.enum(["reward", "balance"]).catch("reward"),

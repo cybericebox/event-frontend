@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {ChevronRight, Pencil} from "lucide-react";
+import {ChevronRight, Lightbulb, LightbulbOff, Pencil} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
     updateEventBoardChallenge, updateEventChallengeHintCosts, updateEventChallengeScoring,
@@ -12,11 +12,12 @@ import {hintLevelLabel, hintPlainText} from "@/components/event/challenges/hintM
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import {attachmentActionError, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
 import {descriptionFirstLine} from "./challengeOrder";
 import {decayOptions, decayProblem, dynamicValid, scoringSummary, staticPointsValid, type DynamicProfile, type ScoringMode} from "./scoringModel";
-import {taskBadges, type StandReadiness} from "./taskRowModel";
+import {hintIndicator, taskBadges, type StandReadiness} from "./taskRowModel";
 
 type ScoringKind = "event" | "static" | "dynamic";
 type ScoringDraft = {kind: ScoringKind; points: string; profile: DynamicProfile};
@@ -95,8 +96,8 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
 }
 
 // «Підказки»: on/off plus the event's price per hint (the catalog sets only the level).
-function TaskHints({eventID, attachmentID, challenge, disabled, onSaved}: {
-    eventID: string; attachmentID: string; challenge: EventBoardChallenge; disabled: boolean; onSaved: () => Promise<unknown>;
+function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, onSaved}: {
+    eventID: string; attachmentID: string; challenge: EventBoardChallenge; hintsDisabled: boolean; disabled: boolean; onSaved: () => Promise<unknown>;
 }) {
     const [drafts, setDrafts] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
@@ -130,6 +131,7 @@ function TaskHints({eventID, attachmentID, challenge, disabled, onSaved}: {
         <h4 id={`task-hints-${challenge.ID}`}>{t("manage.exercises.hints.title")}</h4>
         {challenge.Hints.length === 0 ? <p className="event-task__note">{t("manage.challenges.task.noHints")}</p> : <>
             <EventSwitch className="event-manage-form__switch" checked={challenge.HintsEnabled} onCheckedChange={checked => void toggle(checked)} disabled={locked} label={t("manage.challenges.task.hintsEnabled")} />
+            {hintsDisabled && <p className="event-task__note">{t("manage.challenges.task.hintsDisabledByEvent")}</p>}
             <ol className="event-exercise-hints__list">{challenge.Hints.map((hint, index) => {
                 const value = drafts[hint.ID] ?? String(hint.Cost);
                 const text = hintPlainText(hint.Text);
@@ -152,7 +154,7 @@ function TaskHints({eventID, attachmentID, challenge, disabled, onSaved}: {
     </section>;
 }
 
-// «Дошка»: whether participants see the task.
+// «Показ»: whether participants see the task.
 function TaskBoard({eventID, attachmentID, challenge, disabled, onSaved}: {
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; disabled: boolean; onSaved: () => Promise<unknown>;
 }) {
@@ -167,29 +169,36 @@ function TaskBoard({eventID, attachmentID, challenge, disabled, onSaved}: {
         finally {setSaving(false);}
     }
     return <section className="event-task__section" aria-labelledby={`task-board-${challenge.ID}`}>
-        <h4 id={`task-board-${challenge.ID}`}>{t("manage.challenges.board.title")}</h4>
+        <h4 id={`task-board-${challenge.ID}`}>{t("manage.challenges.task.displayTitle")}</h4>
         <EventSwitch className="event-manage-form__switch" checked={challenge.Published} onCheckedChange={checked => void toggle(checked)} disabled={disabled || saving} label={t("manage.exercises.challenge.showOnBoard")} />
     </section>;
 }
 
 // One task of a set: a thin row (name, first description line, badges) that
-// expands into «Оцінювання», «Підказки» and «Дошка».
-export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, stand, canManage, editURL, onSaved, onRemove}: {
+// expands into «Оцінювання», «Підказки» and «Показ».
+export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, editURL, onSaved, onRemove}: {
     eventID: string; attachment: EventExerciseAttachment; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;
-    stand: StandReadiness | null; canManage: boolean; editURL: string | null; onSaved: () => Promise<unknown>; onRemove: () => void;
+    hintsDisabled: boolean; stand: StandReadiness | null; canManage: boolean; editURL: string | null; onSaved: () => Promise<unknown>; onRemove: () => void;
 }) {
     const [open, setOpen] = useState(false);
+    const hints = hintIndicator(challenge, hintsDisabled);
     const line = descriptionFirstLine(challenge.Snapshot.description);
     const panelID = `task-panel-${challenge.ID}`;
     return <li className={`event-task${open ? " is-open" : ""}`}>
         <button type="button" className="event-task__row" aria-expanded={open} aria-controls={panelID} onClick={() => setOpen(current => !current)}>
             <ChevronRight className="event-task__chevron" size={16} aria-hidden="true" />
             <span className="event-task__text"><strong>{challenge.Snapshot.name}</strong>{line && <span>{line}</span>}</span>
-            <span className="event-task__badges">{taskBadges(challenge, stand).map(badge => <span key={badge.key} className={`ib-tag ib-tag--sm${badge.tone ? ` ib-tag--${badge.tone}` : ""}`}>{badge.label}</span>)}</span>
+            <span className="event-task__badges">
+                {hints && <EventTooltip content={hints.tooltip}>{id => <span className={`event-task__hints${hints.shown ? "" : " is-hidden"}`} aria-describedby={id}>
+                    {hints.shown ? <Lightbulb size={14} aria-hidden="true" /> : <LightbulbOff size={14} aria-hidden="true" />}{hints.count}
+                    <span className="event-manage-visually-hidden">{hints.tooltip}</span>
+                </span>}</EventTooltip>}
+                {taskBadges(challenge, stand).map(badge => <span key={badge.key} className={`ib-tag ib-tag--sm${badge.tone ? ` ib-tag--${badge.tone}` : ""}`}>{badge.label}</span>)}
+            </span>
         </button>
         {open && <div className="event-task__panel" id={panelID}>
             <TaskScoring key={`${challenge.Points}:${JSON.stringify(challenge.ScoringOverride)}`} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} scoring={scoring} lifecycle={lifecycle} disabled={!canManage} onSaved={onSaved} />
-            <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} disabled={!canManage} onSaved={onSaved} />
+            <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} />
             <TaskBoard eventID={eventID} attachmentID={attachment.ID} challenge={challenge} disabled={!canManage} onSaved={onSaved} />
             {canManage && <div className="event-task__actions">
                 {editURL

@@ -149,6 +149,6 @@ export function ChallengesBoard() {
     if (challenges.isError) return <Page banners={finishedBanner || undefined}><Empty title={t("challenges.loadFailed.title")}>{t("challenges.loadFailed.body")} <button type="button" className="ib-btn ib-btn--sm" onClick={() => void challenges.refetch()}>{t("common.retry")}</button></Empty></Page>;
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data} teamMode={teamMode} finished={finished}
-        showDifficulty={info?.ShowDifficulty ?? true} showHints={info?.ShowHints ?? true} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}
+        showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}
         onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} />;
 }

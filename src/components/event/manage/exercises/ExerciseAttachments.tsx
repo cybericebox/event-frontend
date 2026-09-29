@@ -9,7 +9,7 @@ import {
     type EventBoardChallenge, type EventExerciseAttachment,
 } from "@/api/manageChallenges";
 import {ApiErrorCode} from "@/api/apiErrors";
-import {getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
+import {getManageConfig, getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
 import {getManageLabs} from "@/api/manageLabs";
 import {EventLoading} from "@/components/event/EventLoading";
 import {DialogModal} from "@/components/event/DialogModal";
@@ -58,6 +58,7 @@ export function ExerciseAttachments() {
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const scoringQuery = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const lifecycleQuery = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
+    const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const sets = board.sets.data ?? [];
     const infrastructure = sets.some(set => set.attachment.Infrastructure);
     // Stand readiness is optional: a failure only hides the stand badges.
@@ -96,8 +97,8 @@ export function ExerciseAttachments() {
         });
     }
 
-    if (board.pending || scoringQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} />;
-    if (board.failed || scoringQuery.isError || lifecycleQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.exercises.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch();}}>{t("common.retry")}</button></div>;
+    if (board.pending || scoringQuery.isPending || lifecycleQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
+    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.exercises.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}}>{t("common.retry")}</button></div>;
 
     const copy = action && actionCopy(action);
     return <>
@@ -145,7 +146,7 @@ export function ExerciseAttachments() {
                         </div>}
                         {challenges.length === 0 ? <EmptyState compact message={t("manage.exercises.setEmpty")} /> : <ul className="event-task-list">
                             {challenges.map(challenge => <TaskRow key={challenge.ID} eventID={eventID} attachment={attachment} challenge={challenge}
-                                scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
+                                scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} hintsDisabled={configQuery.data.HintsDisabled} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
                                 canManage={canManage} editURL={editURL} onSaved={board.refreshSets} onRemove={() => setAction({kind: "remove", attachment, challenge})} />)}
                         </ul>}
                     </div>}

@@ -14,12 +14,23 @@ export function standReadiness(challengeID: string, labs: ManageLabs | undefined
 }
 
 // Status badges of a collapsed task row.
-export function taskBadges(challenge: Pick<EventBoardChallenge, "Published" | "ScoringOverride" | "HintsEnabled" | "Hints">, stand: StandReadiness | null): TaskBadge[] {
+export function taskBadges(challenge: Pick<EventBoardChallenge, "Published" | "ScoringOverride">, stand: StandReadiness | null): TaskBadge[] {
     const badges: TaskBadge[] = [challenge.Published
         ? {key: "board", label: t("manage.exercises.challenge.onBoard"), tone: "ok"}
         : {key: "board", label: t("manage.exercises.challenge.hidden")}];
     if (challenge.ScoringOverride) badges.push({key: "scoring", label: t("manage.challenges.task.ownScoring")});
-    if (challenge.HintsEnabled && challenge.Hints.length > 0) badges.push({key: "hints", label: t("manage.exercises.hints.title")});
     if (stand) badges.push(stand === "ready" ? {key: "stand", label: t("manage.challenges.task.standReady"), tone: "ok"} : {key: "stand", label: t("manage.challenges.task.standNotReady"), tone: "warn"});
     return badges;
+}
+
+export type HintIndicator = {count: number; shown: boolean; tooltip: string};
+
+// The collapsed row's hint indicator: shown only when the task has hints;
+// hidden (muted) when the task has them off or the event disables them all.
+export function hintIndicator(challenge: Pick<EventBoardChallenge, "HintsEnabled" | "Hints">, hintsDisabled: boolean): HintIndicator | null {
+    const count = challenge.Hints.length;
+    if (count === 0) return null;
+    if (hintsDisabled) return {count, shown: false, tooltip: t("manage.challenges.task.hintsOffEvent", {count})};
+    if (!challenge.HintsEnabled) return {count, shown: false, tooltip: t("manage.challenges.task.hintsOffTask", {count})};
+    return {count, shown: true, tooltip: t("manage.challenges.task.hintsShown", {count})};
 }

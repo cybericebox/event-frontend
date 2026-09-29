@@ -23,7 +23,8 @@ export const ManageConfigSchema = z.object({
     InfrastructureAllowed: z.boolean().default(false),
     AllowPseudonyms: z.boolean().default(false),
     ShowDifficulty: z.boolean().default(true),
-    ShowHints: z.boolean().default(true),
+    // Hides hints of every task; it can never force them on (each task decides).
+    HintsDisabled: z.boolean().default(false),
     // reward (default): unlocked hints reduce the solve's reward; balance: charged at unlock.
     HintChargeMode: z.enum(["reward", "balance"]).catch("reward"),
     Theme: themeSchema,
@@ -41,7 +42,7 @@ export function manageConfigInput(config: ManageConfig): ManageConfigInput {
         PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture,
         MaxTeamSize: config.MaxTeamSize, MinTeamSize: config.MinTeamSize, MaxTeams: config.MaxTeams,
         AllowPseudonyms: config.AllowPseudonyms,
-        ShowDifficulty: config.ShowDifficulty, ShowHints: config.ShowHints, HintChargeMode: config.HintChargeMode,
+        ShowDifficulty: config.ShowDifficulty, HintsDisabled: config.HintsDisabled, HintChargeMode: config.HintChargeMode,
     };
 }
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;

@@ -41,7 +41,9 @@ button.event-sortable__main{cursor:pointer}
 .event-task__text{display:flex;align-items:baseline;gap:var(--ib-3);flex:1;min-width:0}
 .event-task__text strong{flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
 .event-task__text span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim);font-size:var(--ib-fs-13)}
-.event-task__badges{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--ib-1);flex:none}
+.event-task__badges{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-1);flex:none}
+.event-task__hints{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:0 var(--ib-1);color:var(--ib-ink);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium)}
+.event-task__hints.is-hidden{color:var(--ib-dim);text-decoration:line-through;opacity:.7}
 .event-task__panel{display:grid;gap:var(--ib-5);padding:var(--ib-4) var(--ib-4) var(--ib-4) calc(var(--ib-3) + 16px + var(--ib-3));border-top:1px solid var(--ib-line)}
 .event-task__section{display:grid;gap:var(--ib-3)}
 .event-task__section+.event-task__section{padding-top:var(--ib-5);border-top:1px solid var(--ib-line)}
@@ -60,7 +62,8 @@ button.event-sortable__main{cursor:pointer}
 .event-challenge-settings__fields{display:grid;gap:var(--ib-4)}
 .event-challenge-settings__fields>.event-manage-field{max-width:280px}
 .event-challenge-settings__force{display:grid;gap:var(--ib-1);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
-.event-challenge-settings__force p{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-challenge-settings__switch{display:grid;gap:var(--ib-1)}
+.event-challenge-settings__force p,.event-challenge-settings__switch p{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 
 @media(max-width:900px){.event-group-order{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:640px){
