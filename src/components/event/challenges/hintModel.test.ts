@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {ParticipantChallengeError} from "@/api/participantChallenges";
-import {hintConfirmText, hintCostLabel, hintModeNote, hintNeedsConfirm, hintUnlockError} from "./hintModel";
+import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintPlainText, hintUnlockError} from "./hintModel";
 
 vi.mock("@/utils/origins", async (importOriginal) => ({
     ...await importOriginal<typeof import("@/utils/origins")>(),
@@ -42,7 +42,7 @@ describe("hint copy", () => {
 describe("hint unlock API", () => {
     it("posts the unlock and returns the revealed hint", async () => {
         const fetchStub = vi.fn().mockResolvedValue(new Response(JSON.stringify({Data: {
-            ID: "h1", Cost: 50, Unlocked: true, Content: "Подивіться на robots.txt.", UnlockedAt: "2026-09-29T10:00:00Z", UnlockedByName: "Олена Коваль",
+            ID: "h1", Level: "direction", Cost: 50, Unlocked: true, Content: "Подивіться на robots.txt.", UnlockedAt: "2026-09-29T10:00:00Z", UnlockedByName: "Олена Коваль",
         }}), {status: 200}));
         vi.stubGlobal("fetch", fetchStub);
         const api = await import("@/api/participantChallenges");
@@ -50,7 +50,7 @@ describe("hint unlock API", () => {
         const [url, init] = fetchStub.mock.calls[0];
         expect(url).toBe("https://api.example.org/api/events/01900000-0000-7000-8000-000000000001/teams/challenges/c1/hints/h1/unlock");
         expect(init).toMatchObject({method: "POST", credentials: "include"});
-        expect(unlocked).toEqual({ID: "h1", Cost: 50, Unlocked: true, Content: "Подивіться на robots.txt.", UnlockedAt: "2026-09-29T10:00:00Z", UnlockedByName: "Олена Коваль"});
+        expect(unlocked).toEqual({ID: "h1", Level: "direction", Cost: 50, Unlocked: true, Content: "Подивіться на robots.txt.", UnlockedAt: "2026-09-29T10:00:00Z", UnlockedByName: "Олена Коваль"});
     });
 
     it("maps a refused unlock to a participant error", async () => {
@@ -62,7 +62,31 @@ describe("hint unlock API", () => {
     it("parses a board hint with nulls from the API", () => {
         return import("@/api/participantChallenges").then(api => {
             expect(api.hintSchema.parse({ID: "h", Cost: 5, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: null}))
-                .toEqual({ID: "h", Cost: 5, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""});
+                .toEqual({ID: "h", Level: "nudge", Cost: 5, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""});
+            expect(api.hintSchema.parse({ID: "h", Level: "someday", Cost: 0}).Level).toBe("nudge");
         });
+    });
+});
+
+describe("hint text and level", () => {
+    const doc = {root: {type: "root", children: [
+        {type: "paragraph", children: [{type: "text", text: "Look at "}, {type: "text", text: "headers", format: 1}]},
+        {type: "paragraph", children: [{type: "link", url: "https://x.test", children: [{type: "text", text: "docs"}]}, {type: "text", text: "."}]},
+    ]}};
+
+    it("reads a rich-text document, and plain text from older exercises", () => {
+        expect(hintDocument(JSON.stringify(doc))).toEqual(doc);
+        expect(hintDocument("Look at headers")).toBeNull();
+        expect(hintDocument("{not json")).toBeNull();
+        expect(hintDocument(JSON.stringify({text: "x"}))).toBeNull();
+    });
+
+    it("gives a one-line excerpt", () => {
+        expect(hintPlainText(JSON.stringify(doc))).toBe("Look at headers docs.");
+        expect(hintPlainText("  plain  ")).toBe("plain");
+    });
+
+    it("labels the level", () => {
+        expect(hintLevelLabel("near_solution")).toBe("Майже розвʼязок");
     });
 });

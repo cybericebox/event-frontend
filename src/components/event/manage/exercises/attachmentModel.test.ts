@@ -3,7 +3,7 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentVersionLabel, detachWithConfirm, exercisesAppURL, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
 
-const hint = (patch: Partial<{ID: string; Cost: number; DefaultCost: number; Overridden: boolean}>) => ({ID: "h", Text: "", Cost: 10, DefaultCost: 10, Overridden: false, ...patch});
+const hint = (patch: Partial<{ID: string; Cost: number; Overridden: boolean}>) => ({ID: "h", Text: "", Level: "nudge" as const, Cost: 10, Overridden: false, ...patch});
 
 describe("attachment labels", () => {
     it("uses the catalog version number, not the event revision", () => {

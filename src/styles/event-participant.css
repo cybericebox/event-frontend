@@ -48,6 +48,7 @@
 .event-cmodal__hint-head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);min-height:28px}
 .event-cmodal__hint-head .ib-btn{flex:none}
 .event-cmodal__hints .ib-cmodal__hint{margin-top:var(--ib-1)}
+.event-cmodal__hint-text{margin-top:var(--ib-1)}
 .event-cmodal__hint-mode{margin:0 0 var(--ib-2)}
 .event-cmodal__note{margin-top:18px}
 .event-cmodal__closed{margin-top:18px;padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);background:var(--ib-soft);color:var(--ib-body)}

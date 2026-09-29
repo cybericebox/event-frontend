@@ -33,7 +33,7 @@ export function exercisesAppURL(origin: string, page: "detail" | "new", input: {
     return `${origin}/${page}?${query.toString()}`;
 }
 
-// Hint cost drafts: "" resets to the default cost (null), a number overrides it.
+// Hint price drafts: "" clears the price (null → free), a number sets it.
 // Only hints whose effective value changes are sent.
 export function hintCostChanges(hints: EventChallengeHint[], drafts: Record<string, string>): HintCostInput[] {
     return hints.flatMap((hint): HintCostInput[] => {

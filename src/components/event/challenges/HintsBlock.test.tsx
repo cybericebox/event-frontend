@@ -19,9 +19,9 @@ afterEach(() => { cleanup(); unlock.mockReset(); });
 const challenge = {
     EventChallengeID: "c1", HintCostTotal: 0,
     Hints: [
-        {ID: "h1", Cost: 0, Unlocked: true, Content: "Дивіться у заголовки", UnlockedAt: "2026-09-29T09:12:00Z", UnlockedByName: "Андрій"},
-        {ID: "h2", Cost: 50, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""},
-        {ID: "h3", Cost: 0, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""},
+        {ID: "h1", Level: "nudge", Cost: 0, Unlocked: true, Content: "Дивіться у заголовки", UnlockedAt: "2026-09-29T09:12:00Z", UnlockedByName: "Андрій"},
+        {ID: "h2", Level: "steps", Cost: 50, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""},
+        {ID: "h3", Level: "direction", Cost: 0, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""},
     ],
 } as unknown as OwnChallenge;
 
@@ -31,6 +31,7 @@ describe("HintsBlock", () => {
         expect(screen.getByText("Дивіться у заголовки")).toBeTruthy();
         expect(screen.getByText(/Відкрито: Андрій/)).toBeTruthy();
         expect(screen.getByText("· −50 балів")).toBeTruthy();
+        expect(screen.getByText(/Підказка 2 · Покроково/)).toBeTruthy();
         expect(screen.getAllByRole("button", {name: "Відкрити підказку"})).toHaveLength(2);
     });
 
@@ -62,6 +63,14 @@ describe("HintsBlock", () => {
         fireEvent.click(screen.getAllByRole("button", {name: "Відкрити підказку"})[1]);
         expect(await screen.findByRole("alert")).toBeTruthy();
         expect(screen.getByText("Підказки для цього завдання вимкнено")).toBeTruthy();
+    });
+
+    it("renders a rich-text hint formatted", () => {
+        const content = JSON.stringify({root: {type: "root", children: [{type: "paragraph", children: [{type: "text", text: "curl -I", format: 16}]}]}});
+        const rich = {...challenge, Hints: [{...challenge.Hints[0], Content: content}]} as OwnChallenge;
+        const {container} = render(<HintsBlock challenge={rich} eventID="e" moderators={false} chargeMode="reward" onUnlocked={() => {}} />);
+        expect(container.querySelector("code")?.textContent).toBe("curl -I");
+        expect(screen.queryByText(content)).toBeNull();
     });
 
     it("never offers unlocking on the moderators board", () => {

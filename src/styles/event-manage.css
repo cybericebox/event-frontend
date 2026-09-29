@@ -286,8 +286,9 @@ textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
 .event-exercise-hints>.ib-btn{justify-self:start}
 .event-exercise-hints__title{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
 .event-exercise-hints__list{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
-.event-exercise-hints__item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--ib-3);font-size:var(--ib-fs-13)}
+.event-exercise-hints__item{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:var(--ib-3);font-size:var(--ib-fs-13)}
 .event-exercise-hints__name{white-space:nowrap;font-weight:var(--ib-w-medium)}
+.event-exercise-hints__level{white-space:nowrap;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-exercise-hints__text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim)}
 .event-exercise-hints__cost{display:flex;align-items:center;gap:var(--ib-2)}
 .event-exercise-hints__cost .event-manage-input{width:96px}

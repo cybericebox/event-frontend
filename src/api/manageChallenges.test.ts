@@ -26,7 +26,7 @@ const attachment = (n: number, extra: Record<string, unknown> = {}) => ({
 const challenge = {
     ID: uid(11), TaskID: uid(12), GroupID: null, PrerequisiteIDs: null, Order: 0, Points: 100, ScoringOverride: null, HintsEnabled: true, Published: true,
     Snapshot: {name: "Перший крок"},
-    Hints: [{ID: uid(111), Text: "Заголовки", DefaultCost: 0, Cost: 15, Overridden: true}, {ID: uid(112), Text: "Cookie", DefaultCost: 50, Cost: 50, Overridden: false}],
+    Hints: [{ID: uid(111), Text: "Заголовки", Level: "steps", Cost: 15, Overridden: true}, {ID: uid(112), Text: "Cookie", Cost: 0, Overridden: false}],
 };
 
 describe("event challenge scoring", () => {
@@ -119,7 +119,8 @@ describe("hints", () => {
         expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercises/${uid(10)}/challenges/${uid(11)}/hints`);
         expect(fetchMock.mock.calls[0][1]).toMatchObject({method: "PUT", body: JSON.stringify({Costs: [{HintID: uid(111), Cost: 15}, {HintID: uid(112), Cost: null}]})});
         expect(changed.PrerequisiteIDs).toEqual([]);
-        expect(changed.Hints[0]).toMatchObject({Cost: 15, DefaultCost: 0, Overridden: true});
+        expect(changed.Hints[0]).toMatchObject({Cost: 15, Level: "steps", Overridden: true});
+        expect(changed.Hints[1]).toMatchObject({Cost: 0, Level: "nudge", Overridden: false});
     });
 
     it("maps invalid hint costs", async () => {

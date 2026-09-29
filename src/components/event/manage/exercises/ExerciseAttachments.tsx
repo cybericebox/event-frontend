@@ -22,6 +22,7 @@ import {
     hintCostChanges, hintCostDraftValid, isDetached,
 } from "./attachmentModel";
 import {InfrastructureIcon} from "./InfrastructureIcon";
+import {hintLevelLabel, hintPlainText} from "@/components/event/challenges/hintModel";
 import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -85,7 +86,7 @@ function ChallengeScoringEditor({eventID, attachmentID, challenge, lifecycle, ca
     </div>;
 }
 
-// Per-event hint costs: empty = the exercise's default cost.
+// Per-event hint prices: the catalog gives only the level; unset = free (0).
 function ChallengeHintCosts({eventID, attachmentID, challenge, canManage, onSaved}: {
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; canManage: boolean; onSaved: () => Promise<unknown>;
 }) {
@@ -109,16 +110,18 @@ function ChallengeHintCosts({eventID, attachmentID, challenge, canManage, onSave
     return <div className="event-exercise-hints">
         <span className="event-exercise-hints__title">{t("manage.exercises.hints.title")}</span>
         <ol className="event-exercise-hints__list">{challenge.Hints.map((hint, index) => {
-            const value = drafts[hint.ID] ?? (hint.Overridden ? String(hint.Cost) : "");
+            const value = drafts[hint.ID] ?? String(hint.Cost);
+            const text = hintPlainText(hint.Text);
             return <li className="event-exercise-hints__item" key={hint.ID}>
                 <span className="event-exercise-hints__name">{t("manage.exercises.unlocks.hintNumber", {number: index + 1})}</span>
-                <span className="event-exercise-hints__text" title={hint.Text}>{hint.Text || t("manage.exercises.hints.noText")}</span>
+                <span className="event-exercise-hints__level">{hintLevelLabel(hint.Level)}</span>
+                <span className="event-exercise-hints__text" title={text || undefined}>{text || t("manage.exercises.hints.noText")}</span>
                 <label className="event-exercise-hints__cost">
                     <span className="event-manage-visually-hidden">{t("manage.exercises.hints.costLabel", {number: index + 1})}</span>
-                    <input className="event-manage-input" type="number" inputMode="numeric" min={0} max={10000} step={1} value={value} placeholder={String(hint.DefaultCost)}
+                    <input className="event-manage-input" type="number" inputMode="numeric" min={0} max={10000} step={1} value={value} placeholder="0"
                         aria-invalid={!hintCostDraftValid(value)} disabled={!canManage || saving}
                         onChange={event => setDrafts(current => ({...current, [hint.ID]: event.target.value}))} />
-                    <span className="event-exercise-hints__unit">{hint.Overridden || value !== "" ? t("manage.exercises.hints.points") : t("manage.exercises.hints.default")}</span>
+                    <span className="event-exercise-hints__unit">{t("manage.exercises.hints.points")}</span>
                 </label>
             </li>;
         })}</ol>

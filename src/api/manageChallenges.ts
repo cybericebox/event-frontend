@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
+import {hintLevelSchema} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
@@ -33,7 +34,8 @@ const attachmentSchema = z.object({
     PublishedCount: z.number().int().default(0),
     HasAttempts: z.boolean().default(false),
 });
-const challengeHintSchema = z.object({ID: id, Text: z.string(), DefaultCost: z.number().int(), Cost: z.number().int(), Overridden: z.boolean()});
+// Cost is the event's price (0 until set); Overridden says a price is set.
+const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int(), Overridden: z.boolean()});
 const challengeSchema = z.object({
     ID: id, TaskID: id, GroupID: id.nullable(), PrerequisiteIDs: z.array(id).nullable().transform(value => value ?? []),
     Order: z.number().int(), Points: z.number().int(), ScoringOverride: scoringOverrideSchema.nullable(), HintsEnabled: z.boolean(), Published: z.boolean(),
@@ -110,6 +112,6 @@ export const revertEventExercise = (eventID: string, attachmentID: string) => re
 export const detachEventExercise = (eventID: string, attachmentID: string, confirm = false) => request(eventID, `exercises/${attachmentID}${confirm ? "?confirm=true" : ""}`, z.unknown(), "DELETE").then(() => undefined);
 export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean; Published: boolean}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
 export const updateEventChallengeScoring = (eventID: string, attachmentID: string, challengeID: string, override: ChallengeScoringOverride | null) => request(eventID, `exercises/${attachmentID}/challenges/scoring`, z.object({updated: z.number().int()}), "PUT", {ChallengeIDs: [challengeID], Override: override});
-// Cost null resets the hint to the exercise's default cost.
+// Cost null clears the event's price (the hint becomes free).
 export const updateEventChallengeHintCosts = (eventID: string, attachmentID: string, challengeID: string, costs: HintCostInput[]) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}/hints`, challengeSchema, "PUT", {Costs: costs});
 export const getHintUnlocks = (eventID: string) => request(eventID, "hint-unlocks", z.array(hintUnlockSchema).nullable().transform(value => value ?? []));

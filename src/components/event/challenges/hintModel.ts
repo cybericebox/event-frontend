@@ -1,11 +1,50 @@
 import {ApiErrorCode} from "@/api/apiErrors";
-import {ParticipantChallengeError, type ChallengeHint} from "@/api/participantChallenges";
+import {ParticipantChallengeError, type ChallengeHint, type HintLevel} from "@/api/participantChallenges";
 import {t, tPlural} from "@/i18n/t";
 
 export type HintChargeMode = "reward" | "balance";
 
 export function pointsLabel(points: number): string {
     return tPlural("challenges.points", points);
+}
+
+export function hintLevelLabel(level: HintLevel): string {
+    return t(`challenges.hint.level.${level}`);
+}
+
+type HintNode = Record<string, unknown>;
+const asHintNode = (value: unknown): HintNode | null => value && typeof value === "object" && !Array.isArray(value) ? value as HintNode : null;
+
+// A hint text is a serialized rich-text document; older exercises stored
+// plain text. Returns the document, or null for plain text.
+export function hintDocument(text: string): HintNode | null {
+    if (!text.trimStart().startsWith("{")) return null;
+    try {
+        const parsed = asHintNode(JSON.parse(text));
+        return asHintNode(parsed?.root)?.type === "root" ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+// One-line excerpt of a hint text (the organizer's price list).
+export function hintPlainText(text: string): string {
+    const document = hintDocument(text);
+    if (!document) return text.trim();
+    const parts: string[] = [];
+    const walk = (value: unknown) => {
+        if (Array.isArray(value)) { value.forEach(walk); return; }
+        const node = asHintNode(value);
+        if (!node) return;
+        if (node.type === "text" && typeof node.text === "string") parts.push(node.text);
+        else if (node.type === "variable" && typeof node.varName === "string") parts.push(node.varName);
+        else if (node.type === "linebreak") parts.push(" ");
+        walk(node.children);
+        // Blocks read as separate phrases; inline links do not.
+        if (Array.isArray(node.children) && node.type !== "link") parts.push(" ");
+    };
+    walk(document.root);
+    return parts.join("").replace(/\s+/g, " ").trim();
 }
 
 // «−30 балів» or «безкоштовно».

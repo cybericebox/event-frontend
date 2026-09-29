@@ -19,7 +19,7 @@ import {DialogModal} from "@/components/event/DialogModal";
 import {difficultyLabel, formatClock, formatFileSize, solvesLabel} from "./challengeBoardModel";
 import {t} from "@/i18n/t";
 import {richMessage} from "./richMessage";
-import {hintConfirmText, hintCostLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
+import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
 import {BusyMark, EventButton} from "@/components/ui/EventButton";
 
 export type BoardMode = "participant" | "moderators";
@@ -75,6 +75,13 @@ function HostBlock({lab, pending}: {lab: LabRuntime | undefined; pending: boolea
     </section>;
 }
 
+// A hint text renders formatted like the description; plain text from older
+// exercises stays a paragraph.
+function HintText({text}: {text: string}) {
+    const document = hintDocument(text);
+    return document ? <div className="ib-cmodal__desc event-cmodal__hint-text"><EventRichTextView value={document} /></div> : <p>{text}</p>;
+}
+
 // Hints: participants unlock one by one (paid ones after a confirm); the
 // moderators board shows every text and never unlocks.
 export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlocked}: {
@@ -108,11 +115,11 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         </p>}
         <ul className="event-cmodal__hints">{challenge.Hints.map((hint, index) => <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
-                <span className="event-cmodal__hint-title">{t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
+                <span className="event-cmodal__hint-title">{t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
                 {!moderators && !hint.Unlocked && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
                     onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>{t("challenges.hints.unlock")}</EventButton>}
             </div>
-            {hint.Content && <p>{hint.Content}</p>}
+            {hint.Content && <HintText text={hint.Content} />}
             {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">{t("challenges.hints.unlockedBy", {name: hint.UnlockedByName})}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
         </li>)}</ul>
         {error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
