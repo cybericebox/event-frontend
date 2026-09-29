@@ -13,12 +13,12 @@ import {
 } from "@/api/manageMail";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
-import {DialogModal} from "@/components/event/DialogModal";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "./ManageFieldLabel";
 import {useManager} from "./ManagerShell";
 import {EventButton} from "@/components/ui/EventButton";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {PasswordInput} from "@/components/ui/PasswordInput";
 
 function errorText(error: unknown, fallback: string) {
@@ -36,6 +36,7 @@ export function MailSettingsPanel() {
     const [busy, setBusy] = useState<"settings" | "smtp" | "test" | "reset" | null>(null);
     const [test, setTest] = useState<MailTestResult | null>(null);
     const [confirmReset, setConfirmReset] = useState(false);
+    const [resetError, setResetError] = useState("");
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.mail.settings.loading")} />;
     if (query.isError) return <EventLoadError message={t("manage.mail.settings.loadError")} onRetry={() => void query.refetch()} />;
@@ -116,7 +117,7 @@ export function MailSettingsPanel() {
             setTest(null);
             setConfirmReset(false);
             toast.success(t("manage.mail.smtp.resetDone"));
-        } catch (error) {toast.error(errorText(error, t("manage.mail.smtp.resetError")));}
+        } catch (error) {setResetError(errorText(error, t("manage.mail.smtp.resetError")));}
         finally {setBusy(null);}
     }
 
@@ -182,15 +183,16 @@ export function MailSettingsPanel() {
                 <span>{test.Sent ? (test.Transport ? t("manage.mail.smtp.testSentVia", {recipient: test.Recipient, transport: mailTransportLabel(test.Transport)}) : t("manage.mail.smtp.testSent", {recipient: test.Recipient})) : test.Error || t("manage.mail.smtp.testRejected")}</span>
             </div>}
             {canManage && <div className="event-manage-section__actions event-manage-mail__actions">
-                {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => setConfirmReset(true)}>{t("manage.mail.smtp.usePlatform")}</button>}
+                {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => {setResetError(""); setConfirmReset(true);}}>{t("manage.mail.smtp.usePlatform")}</button>}
                 <EventButton className="ib-btn" type="button" disabled={disabled || !canTest} onClick={() => void runTest()} busy={busy === "test"}>{t("manage.mail.smtp.test")}</EventButton>
                 <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !smtpDirty || !!smtpValidation} busy={busy === "smtp"}>{t("common.save")}</EventButton>
             </div>}
         </form>
 
-        <DialogModal open={confirmReset} onClose={() => {if (busy !== "reset") setConfirmReset(false);}} title={t("manage.mail.smtp.resetTitle")} description={t("manage.mail.smtp.resetDescription")}
-            footer={<><button className="ib-btn" type="button" disabled={busy === "reset"} onClick={() => setConfirmReset(false)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy === "reset"} onClick={() => void resetSMTP()} busy={busy === "reset"}>{t("manage.mail.smtp.switch")}</EventButton></>}>
+        <ConfirmDialog open={confirmReset} onCancel={() => setConfirmReset(false)} tone="danger" busy={busy === "reset"} error={resetError}
+            title={t("manage.mail.smtp.resetTitle")} description={t("manage.mail.smtp.resetDescription")}
+            confirmLabel={t("manage.mail.smtp.switch")} onConfirm={() => void resetSMTP()}>
             <p className="event-manage-mail__hint">{t("manage.mail.smtp.resetHint")}</p>
-        </DialogModal>
+        </ConfirmDialog>
     </div>;
 }

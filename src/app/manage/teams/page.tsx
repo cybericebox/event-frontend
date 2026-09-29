@@ -26,6 +26,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 
 const sentAt = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
 const MEMBER_TAGS = 3;
@@ -66,6 +67,8 @@ export default function ManageTeamsPage() {
     const [answersTeam, setAnswersTeam] = useState<ManageTeam | null>(null);
     const [memberChoices, setMemberChoices] = useState<Record<string, string>>({});
     const [busy, setBusy] = useState(false);
+    const [confirm, setConfirm] = useState<{kind: "delete"; team: ManageTeam} | {kind: "remove" | "captain"; team: ManageTeam; userID: string; name: string} | null>(null);
+    const [confirmError, setConfirmError] = useState("");
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
     const fields = formFields(fieldsQuery.data?.Document.blocks);
     const specs: FilterSpec[] = [
@@ -131,38 +134,64 @@ export default function ManageTeamsPage() {
         finally {setBusy(false);}
     }
 
+    function ask(next: NonNullable<typeof confirm>) {
+        if (!canManage || busy) return;
+        setConfirmError("");
+        setConfirm(next);
+    }
+
+    function confirmDialog(open: boolean) {
+        const current = confirm;
+        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone={current?.kind === "captain" ? "default" : "danger"} busy={busy} error={confirmError}
+            title={t(current?.kind === "captain" ? "manage.teams.captainTitle" : current?.kind === "remove" ? "manage.teams.removeMemberTitle" : "manage.teams.deleteTitle")}
+            description={current?.kind === "captain" ? undefined : t(current?.kind === "remove" ? "manage.teams.removeMemberBody" : "manage.teams.deleteBody")}
+            subject={current ? current.kind === "delete" ? current.team.Name : current.name : undefined}
+            confirmLabel={t(current?.kind === "captain" ? "manage.teams.makeCaptain" : current?.kind === "remove" ? "manage.teams.removeMember" : "manage.teams.deleteConfirm")}
+            onConfirm={() => {
+                if (!current) return;
+                if (current.kind === "delete") void removeTeam(current.team);
+                else if (current.kind === "remove") void changeMember(current.team, current.userID, "remove");
+                else void transferCaptain(current.team, current.userID);
+            }} />;
+    }
+
     async function removeTeam(team: ManageTeam) {
-        if (!canManage || busy || !window.confirm(t("manage.teams.confirmDelete", {name: team.Name}))) return;
+        if (!canManage || busy) return;
         setBusy(true);
         try {
             await deleteManageTeam(eventID, team.ID);
+            setConfirm(null);
             await refresh();
             toast.success(t("manage.teams.deleted"));
-        } catch {toast.error(t("manage.teams.deleteFailed"));}
+        } catch {setConfirmError(t("manage.teams.deleteFailed"));}
         finally {setBusy(false);}
     }
 
     async function changeMember(team: ManageTeam, userID: string, action: "add" | "remove") {
         if (!canManage || busy || !userID) return;
-        if (action === "remove" && !window.confirm(t("manage.teams.confirmRemoveMember"))) return;
         setBusy(true);
         try {
             await changeManageTeamMember(eventID, team.ID, userID, action);
             setMemberChoices(current => ({...current, [team.ID]: ""}));
+            if (action === "remove") setConfirm(null);
             await refresh();
             toast.success(action === "add" ? t("manage.teams.memberAdded") : t("manage.teams.memberRemoved"));
-        } catch (error) {toast.error(failure(error, t("manage.teams.memberFailed")));}
+        } catch (error) {
+            if (action === "remove") setConfirmError(failure(error, t("manage.teams.memberFailed")));
+            else toast.error(failure(error, t("manage.teams.memberFailed")));
+        }
         finally {setBusy(false);}
     }
 
     async function transferCaptain(team: ManageTeam, userID: string) {
-        if (!canManage || busy || !window.confirm(t("manage.teams.confirmCaptain"))) return;
+        if (!canManage || busy) return;
         setBusy(true);
         try {
             await transferManageTeamCaptain(eventID, team.ID, userID);
+            setConfirm(null);
             await refresh();
             toast.success(t("manage.teams.captainChanged"));
-        } catch (error) {toast.error(failure(error, t("manage.teams.captainFailed")));}
+        } catch (error) {setConfirmError(failure(error, t("manage.teams.captainFailed")));}
         finally {setBusy(false);}
     }
 
@@ -222,7 +251,7 @@ export default function ManageTeamsPage() {
                     <td><div className="event-manage-table__actions">
                         {canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button>}
                         <button className="ib-btn ib-btn--sm" type="button" aria-label={t("manage.teams.manageLabel", {name: team.Name})} onClick={() => {setEditing(null); setManagedID(team.ID);}}>{t("manage.teams.manage")}</button>
-                        {canManage && <button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={busy} onClick={() => void removeTeam(team)}><Trash2 size={16} /></button>}
+                        {canManage && <button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={busy} onClick={() => ask({kind: "delete", team})}><Trash2 size={16} /></button>}
                     </div></td>
                 </tr>;
             })}</tbody>
@@ -237,13 +266,15 @@ export default function ManageTeamsPage() {
                     {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={busy} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
                     {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={busy} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={busy} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={busy || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={fieldsQuery.data} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={busy} /></div>}</div>}
                     {fields.length > 0 && <div className="event-manage-teams__members"><div className="event-manage-teams__members-head"><h3>{t("manage.fields.title")}</h3><button className="ib-btn ib-btn--sm" type="button" onClick={() => setAnswersTeam(team)}>{t("manage.teams.allAnswers")}</button></div>{fieldColumns.length > 0 && <dl className="event-manage-teams__fields">{fieldColumns.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{formatAnswer(team.ExtraFields[column.key])}</dd></div>)}</dl>}</div>}
-                    <div className="event-manage-teams__members"><h3>{t("manage.teams.roster")}</h3>{team.Members.length === 0 ? <EmptyState compact message={t("manage.teams.noMembers")} /> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: person.Pseudonym})}</small>}{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void transferCaptain(team, person.UserID)}>{t("manage.teams.makeCaptain")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void changeMember(team, person.UserID, "remove")}>{t("manage.teams.removeMember")}</button></div>}</div>)}</div>
+                    <div className="event-manage-teams__members"><h3>{t("manage.teams.roster")}</h3>{team.Members.length === 0 ? <EmptyState compact message={t("manage.teams.noMembers")} /> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: person.Pseudonym})}</small>}{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "captain", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.makeCaptain")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "remove", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.removeMember")}</button></div>}</div>)}</div>
                     {team.PendingInvitations.length > 0 && <div className="event-manage-teams__members"><h3>{t("manage.teams.invited")}</h3>{team.PendingInvitations.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{person.Email || person.Name || person.UserID.slice(0, 8)}</strong>{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}<small>{t("manage.teams.pendingConfirmation")}</small><small>{person.InvitationSentAt ? t("manage.participants.sentAt", {date: sentAt.format(new Date(person.InvitationSentAt))}) : t("manage.participants.notSent")}</small></span></div>)}</div>}
                     {canManage && <div className="event-manage-teams__assign"><div className="event-manage-field"><span>{t("manage.teams.addMember")}</span><EventSelect ariaLabel={t("manage.teams.addMemberTo", {name: team.Name})} value={choice} placeholder={t("manage.teams.chooseParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={value => setMemberChoices(current => ({...current, [team.ID]: value}))} disabled={busy || available.length === 0} /></div><button className="ib-btn" type="button" disabled={busy || !choice} onClick={() => void changeMember(team, choice, "add")}>{t("common.add")}</button></div>}
                     {canManage && participantsQuery.hasNextPage && <EventButton className="ib-btn event-manage-teams__load-more" type="button" disabled={participantsQuery.isFetchingNextPage} onClick={() => void participantsQuery.fetchNextPage()} busy={participantsQuery.isFetchingNextPage}>{t("manage.teams.loadMore")}</EventButton>}
                 </div>;
             })()}
+            {confirmDialog(!!confirm && confirm.kind !== "delete")}
         </DialogContent></Dialog>
+        {confirmDialog(confirm?.kind === "delete")}
         <Dialog open={answersTeam !== null} onOpenChange={open => {if (!open) setAnswersTeam(null);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{answersTeam?.Name}</DialogTitle><DialogDescription>{t("manage.teams.answersDescription")}</DialogDescription></DialogHeader>{answersTeam && <AnswersList fields={fields} answers={answersTeam.ExtraFields} />}</DialogContent></Dialog>
     </div>;
 }

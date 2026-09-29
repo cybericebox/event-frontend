@@ -16,12 +16,12 @@ import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
-import {DialogModal} from "@/components/event/DialogModal";
 import {difficultyLabel, formatClock, formatFileSize, solvesLabel} from "./challengeBoardModel";
 import {t} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
 import {BusyMark, EventButton} from "@/components/ui/EventButton";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 
 export type BoardMode = "participant" | "moderators";
 type Message = {text: string; tone: "error" | "warn"} | null;
@@ -125,12 +125,12 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
             {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">{t("challenges.hints.unlockedBy", {name: hint.UnlockedByName})}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
         </li>)}</ul>
         {error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
-        <DialogModal open={!!confirm} onClose={() => { if (!busyID) setConfirm(null); }} title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
+        <ConfirmDialog open={!!confirm} onCancel={() => setConfirm(null)} busy={!!busyID}
+            title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
             description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
-            footer={<><button className="ib-btn" type="button" disabled={!!busyID} onClick={() => setConfirm(null)}>{t("common.cancel")}</button>
-                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} onClick={() => confirm && void unlock(confirm.hint)} busy={!!busyID}>{t("challenges.hints.confirm")}</EventButton></>}>
+            confirmLabel={t("challenges.hints.confirm")} onConfirm={() => confirm && void unlock(confirm.hint)}>
             <p className="ib-cmodal__hint">{t("challenges.hints.teamSees")}</p>
-        </DialogModal>
+        </ConfirmDialog>
     </section>;
 }
 

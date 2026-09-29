@@ -16,6 +16,7 @@ import {eventOrigin, idOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventButton} from "@/components/ui/EventButton";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 
 function signInHref(eventTag: string | undefined): string | null {
     const back = eventTag ? eventOrigin(eventTag) : "";
@@ -37,6 +38,8 @@ export default function InvitePage() {
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
     const [expired, setExpired] = useState(false);
+    const [declining, setDeclining] = useState(false);
+    const [declineError, setDeclineError] = useState("");
 
     async function refreshStatus(status: number) {
         if (!event) return;
@@ -70,7 +73,7 @@ export default function InvitePage() {
     }
 
     async function decline() {
-        if (!event || working || !window.confirm(t("invite.declineConfirm"))) return;
+        if (!event || working) return;
         setError("");
         setWorking(true);
         try {
@@ -78,7 +81,7 @@ export default function InvitePage() {
             await refreshStatus(ParticipationStatusEnum.NoParticipationStatus);
             router.push("/");
         } catch (failure) {
-            setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("invite.declineFailed")));
+            setDeclineError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("invite.declineFailed")));
         } finally {setWorking(false);}
     }
 
@@ -99,7 +102,9 @@ export default function InvitePage() {
                 <p>{invitation.InvitedTeamName ? t("invite.acceptHintTeam") : t("invite.acceptHint")}</p>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
-                <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()} busy={working}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => void decline()}>{t("invite.decline")}</button></div>
+                <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()} busy={working}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => {setDeclineError(""); setDeclining(true);}}>{t("invite.decline")}</button></div>
+                <ConfirmDialog open={declining} onCancel={() => setDeclining(false)} tone="danger" busy={working} error={declineError}
+                    title={t("invite.declineTitle")} description={t("invite.declineBody")} confirmLabel={t("invite.decline")} onConfirm={() => void decline()} />
             </>}
     </div></div>;
 }

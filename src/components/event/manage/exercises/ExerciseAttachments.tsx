@@ -12,7 +12,7 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {getManageConfig, getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
 import {getManageLabs} from "@/api/manageLabs";
 import {EventLoading} from "@/components/event/EventLoading";
-import {DialogModal} from "@/components/event/DialogModal";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {
     attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentScopeTip, attachmentVersionLabel, detachWithConfirm, exercisesAppURL,
@@ -27,7 +27,6 @@ import {useBoardSets} from "./useBoardSets";
 import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
-import {EventButton} from "@/components/ui/EventButton";
 
 type Action =
     | {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string}
@@ -171,13 +170,8 @@ export function ExerciseAttachments() {
                 </header>
             </article>)}
         </section>
-        <DialogModal open={!!action} onClose={() => { if (!busy) setAction(null); }} title={copy?.title ?? ""} description={copy?.description}
-            footer={action?.error ? <button className="ib-btn" type="button" onClick={() => setAction(null)}>{t("common.close")}</button> : <>
-                <button className="ib-btn" type="button" disabled={busy} onClick={() => setAction(null)}>{t("common.cancel")}</button>
-                <EventButton className={`ib-btn ${copy?.danger ? "ib-btn--danger" : "ib-btn--primary"}`} type="button" disabled={busy} onClick={() => void runAction()} busy={busy}>{copy?.confirm}</EventButton>
-            </>}>
-            {action?.error ? <p className="event-manage-feedback event-manage-feedback--error" role="alert">{action.error}</p>
-                : <p className="event-exercise-set__dialog-name">{action?.kind === "remove" ? action.challenge.Snapshot.name : action?.attachment.ExerciseName}</p>}
-        </DialogModal>
+        <ConfirmDialog open={!!action} onCancel={() => setAction(null)} tone={copy?.danger ? "danger" : "default"} busy={busy} disabled={!!action?.error} error={action?.error}
+            title={copy?.title ?? ""} description={copy?.description} subject={action?.kind === "remove" ? action.challenge.Snapshot.name : action?.attachment.ExerciseName}
+            cancelLabel={action?.error ? t("common.close") : undefined} confirmLabel={copy?.confirm ?? ""} onConfirm={() => void runAction()} />
     </>;
 }

@@ -11,6 +11,7 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {zoneLabel} from "@/components/ui/dateTimePicker";
 import {DialogModal} from "@/components/event/DialogModal";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {useEventStream} from "@/utils/eventStream";
 import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
@@ -68,7 +69,7 @@ function AttemptsLog() {
     const [showExpected, setShowExpected] = useState(false);
     const [saving, setSaving] = useState(false);
     const [filters, setFilters] = useState<AttemptFilters>(emptyAttemptFilters);
-    const [annul, setAnnul] = useState<{attempt: ManageAttempt; reason: string} | null>(null);
+    const [annul, setAnnul] = useState<{attempt: ManageAttempt; reason: string; error?: string} | null>(null);
     const [annulling, setAnnulling] = useState(false);
     const [exporting, setExporting] = useState(false);
     // Realtime: the stream says "changed", the page refetches; polling when SSE fails.
@@ -123,8 +124,7 @@ function AttemptsLog() {
         finally {setSaving(false);}
     }
 
-    async function confirmAnnul(submitEvent: FormEvent<HTMLFormElement>) {
-        submitEvent.preventDefault();
+    async function confirmAnnul() {
         if (!annul || !annul.reason.trim() || annulling) return;
         setAnnulling(true);
         try {
@@ -134,7 +134,8 @@ function AttemptsLog() {
             setDraft(null);
             toast.success(t("manage.attempts.annul.done", {count: result.Rejected}));
         } catch (error) {
-            toast.error(error instanceof ManageApiError && error.code === ApiErrorCode.NothingToAnnul ? t("manage.attempts.annul.nothing") : t("manage.attempts.annul.failed"));
+            const message = error instanceof ManageApiError && error.code === ApiErrorCode.NothingToAnnul ? t("manage.attempts.annul.nothing") : t("manage.attempts.annul.failed");
+            setAnnul(current => current && {...current, error: message});
         } finally {setAnnulling(false);}
     }
 
@@ -203,9 +204,10 @@ function AttemptsLog() {
                 {canManage && selected.Correct && <div className="event-attempts-manager__annul"><div><strong>{t("manage.attempts.annul.title")}</strong><p>{teamMode ? t("manage.attempts.annul.hintTeam") : t("manage.attempts.annul.hintParticipant")}</p></div><button className="ib-btn ib-btn--danger" type="button" onClick={() => setAnnul({attempt: selected, reason: ""})}>{t("manage.attempts.annul.confirm")}</button></div>}
             </div>}
         </DialogModal>
-        <DialogModal open={!!annul} onClose={() => { if (!annulling) setAnnul(null); }} title={t("manage.attempts.annul.dialogTitle")} description={annul ? t("manage.attempts.annul.description", {challenge: annul.attempt.ChallengeName || t("manage.attempts.challenge"), name: teamMode ? annul.attempt.TeamName : annul.attempt.ParticipantName}) : undefined}
-            footer={<><button className="ib-btn" type="button" disabled={annulling} onClick={() => setAnnul(null)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--danger" type="submit" form="annul-solve-form" disabled={annulling || !annul?.reason.trim()} busy={annulling}>{t("manage.attempts.annul.confirm")}</EventButton></>}>
-            <form id="annul-solve-form" onSubmit={confirmAnnul}><label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={annul?.reason ?? ""} onChange={changeEvent => setAnnul(current => current && {...current, reason: changeEvent.target.value})} placeholder={t("manage.attempts.annul.reasonPlaceholder")} maxLength={1000} disabled={annulling} required /></label></form>
-        </DialogModal>
+        <ConfirmDialog open={!!annul} onCancel={() => setAnnul(null)} tone="danger" busy={annulling} disabled={!annul?.reason.trim()} error={annul?.error}
+            title={t("manage.attempts.annul.dialogTitle")} description={annul ? t("manage.attempts.annul.description", {challenge: annul.attempt.ChallengeName || t("manage.attempts.challenge"), name: teamMode ? annul.attempt.TeamName : annul.attempt.ParticipantName}) : undefined}
+            confirmLabel={t("manage.attempts.annul.confirm")} onConfirm={() => void confirmAnnul()}>
+            <label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={annul?.reason ?? ""} onChange={changeEvent => setAnnul(current => current && {...current, reason: changeEvent.target.value})} placeholder={t("manage.attempts.annul.reasonPlaceholder")} maxLength={1000} disabled={annulling} required /></label>
+        </ConfirmDialog>
     </>;
 }

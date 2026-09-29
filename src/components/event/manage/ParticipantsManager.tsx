@@ -11,6 +11,7 @@ import {getManageParticipantForm} from "@/api/manageParticipantForm";
 import {decideManageParticipant, getManageParticipantsTable, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
 import {getManageTeams} from "@/api/manageTeams";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {AnswersList, AnswerValue} from "./FieldColumns";
 import {fieldColumnDefinitions, formFields, type TableColumn} from "./listColumns";
 import {TableColumnsPopover, useTableColumns} from "./TableControls";
@@ -43,6 +44,8 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const queryClient = useQueryClient();
     const [tab, setTab] = useState<ParticipantTab>(initialTab);
     const [busyID, setBusyID] = useState<string | null>(null);
+    const [confirm, setConfirm] = useState<{kind: "reject" | "revoke"; participant: ManageParticipant} | null>(null);
+    const [confirmError, setConfirmError] = useState("");
     const [opened, setOpened] = useState<ManageParticipant | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
     const showAnswers = tab !== "invitations";
@@ -107,13 +110,32 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     }
 
     function decide(participant: ManageParticipant, action: "approve" | "reject") {
-        if (action === "reject" && !window.confirm(t("manage.participants.confirmReject", {name: personName(participant)}))) return;
+        if (action === "reject") {ask("reject", participant); return;}
         void run(participant, () => decideManageParticipant(eventID, participant.UserID, action), action === "approve" ? t("manage.participants.approved") : t("manage.participants.rejected"), t("manage.participants.decideFailed"));
     }
 
     function revoke(participant: ManageParticipant) {
-        if (!window.confirm(t("manage.participants.confirmRevoke", {name: participant.Email || personName(participant)}))) return;
-        void run(participant, () => revokeManageInvitation(eventID, participant.UserID), t("manage.participants.revoked"), t("manage.participants.revokeFailed"));
+        ask("revoke", participant);
+    }
+
+    function ask(kind: "reject" | "revoke", participant: ManageParticipant) {
+        if (!canManage || busyID) return;
+        setConfirmError("");
+        setConfirm({kind, participant});
+    }
+
+    async function runConfirmed() {
+        if (!confirm || !canManage || busyID) return;
+        const {kind, participant} = confirm;
+        setBusyID(participant.UserID);
+        setConfirmError("");
+        try {
+            await (kind === "reject" ? decideManageParticipant(eventID, participant.UserID, "reject") : revokeManageInvitation(eventID, participant.UserID));
+            setConfirm(null);
+            await refresh();
+            toast.success(t(kind === "reject" ? "manage.participants.rejected" : "manage.participants.revoked"));
+        } catch (error) {setConfirmError(errorText(error, t(kind === "reject" ? "manage.participants.decideFailed" : "manage.participants.revokeFailed")));}
+        finally {setBusyID(null);}
     }
 
     function resend(participant: ManageParticipant) {
@@ -191,5 +213,10 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             <DialogHeader><DialogTitle>{opened ? personName(opened) : ""}</DialogTitle><DialogDescription>{[opened?.Pseudonym && t("manage.participants.pseudonym", {pseudonym: opened.Pseudonym}), opened?.Email, opened && !opened.Invited && t("manage.participants.submittedAt", {date: date.format(new Date(opened.CreatedAt))})].filter(Boolean).join(" · ")}</DialogDescription></DialogHeader>
             {opened && <AnswersList fields={fields} answers={opened.Answers} />}
         </DialogContent></Dialog>
+        <ConfirmDialog open={confirm !== null} onCancel={() => setConfirm(null)} tone="danger" busy={!!busyID} error={confirmError}
+            title={t(confirm?.kind === "revoke" ? "manage.participants.revokeTitle" : "manage.participants.rejectTitle")}
+            description={confirm?.kind === "revoke" ? t("manage.participants.revokeBody") : undefined}
+            subject={confirm ? confirm.kind === "revoke" ? confirm.participant.Email || personName(confirm.participant) : personName(confirm.participant) : undefined}
+            confirmLabel={t(confirm?.kind === "revoke" ? "manage.participants.revoke" : "manage.participants.reject")} onConfirm={() => void runConfirmed()} />
     </div>;
 }

@@ -18,6 +18,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 
 const timeFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 const formatTime = (value: string | null) => value ? timeFormat.format(new Date(value)) : null;
@@ -112,6 +113,7 @@ export default function ManageLabsPage() {
     const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), refetchInterval: 15_000, refetchOnWindowFocus: false, retry: (count, failure) => !isInfrastructureNotAllowed(failure) && count < 2});
     const [expanded, setExpanded] = useState<string | null>(null);
     const [confirm, setConfirm] = useState<ManageStand | null>(null);
+    const [confirmError, setConfirmError] = useState("");
     const [busy, setBusy] = useState(false);
     const [challengesOpen, setChallengesOpen] = useState(false);
 
@@ -123,7 +125,7 @@ export default function ManageLabsPage() {
             await queryClient.invalidateQueries({queryKey: ["event-management-labs", eventID]});
             toast.success(t("manage.labs.recreate.started"));
             setConfirm(null);
-        } catch (failure) {toast.error(standErrorMessage(failure, t("manage.labs.recreate.failed")));}
+        } catch (failure) {setConfirmError(standErrorMessage(failure, t("manage.labs.recreate.failed")));}
         finally {setBusy(false);}
     }
 
@@ -167,7 +169,7 @@ export default function ManageLabsPage() {
                             <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason || t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason || "—"}</span>}</td>
                             <td><div className="event-manage-participants__actions event-stands__actions">
                                 {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
-                                {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setConfirm(stand)}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
+                                {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
                             </div></td>
                         </tr>
                         {open && <tr className="event-stands__labs"><td colSpan={5}><ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{lab.Reason}</small>}</li>)}</ul></td></tr>}
@@ -175,10 +177,9 @@ export default function ManageLabsPage() {
                 })}</tbody>
             </table></div>}
         </section>
-        <Dialog open={confirm !== null} onOpenChange={next => {if (!next && !busy) setConfirm(null);}}><DialogContent className="max-w-[min(480px,calc(100vw-24px))]">
-            <DialogHeader><DialogTitle>{t("manage.labs.recreate.title")}</DialogTitle><DialogDescription>{t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}</DialogDescription></DialogHeader>
-            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setConfirm(null)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--danger" type="button" disabled={busy} onClick={() => void recreate()} busy={busy}>{t("manage.labs.recreate.confirm")}</EventButton></div>
-        </DialogContent></Dialog>
+        <ConfirmDialog open={confirm !== null} onCancel={() => {if (!busy) setConfirm(null);}} tone="danger" busy={busy} error={confirmError}
+            title={t("manage.labs.recreate.title")} description={t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}
+            confirmLabel={t("manage.labs.recreate.confirm")} onConfirm={() => void recreate()} />
         <ModeratorChallengesDialog eventID={eventID} open={challengesOpen} onClose={() => setChallengesOpen(false)} />
     </div>;
 }

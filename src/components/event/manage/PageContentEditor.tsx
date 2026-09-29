@@ -11,7 +11,7 @@ import type {ContentDocument} from "@/types/eventContent";
 import {FieldLabel} from "./PageBlockEditor";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventTooltip} from "@/components/ui/EventTooltip";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {useManager} from "./ManagerShell";
 import {EventLoading} from "../EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -21,7 +21,6 @@ import {beforeChallenges, comparePageOrder} from "../content/pageNavigationOrder
 import {BlockStackEditor} from "./BlockStackEditor";
 import {DraftBar} from "./DraftBar";
 import {t} from "@/i18n/t";
-import {EventButton} from "@/components/ui/EventButton";
 
 const emptyPage: ManagePageInput = {
     Slug: "", Title: "", Document: {blocks: []}, Visibility: 0, Navigation: 1, NavigationAfter: "",
@@ -188,6 +187,8 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={() => void discardDraft()} />
         <BlockStackEditor editorKey={`${eventID}:${key}`} eventID={eventID} coverImage={event.PreviewPicture ?? ""} document={draft.Document} catalog={catalog} values={values} validation={documentError}
             canEdit={canManage && !busy} pageVisibility={draft.Visibility} previewTitle={draft.Title || t("manage.content.page.new")} before={settings} onChange={changeDocument} />
-        <Dialog open={deleteOpen} onOpenChange={open => {if (!busy) setDeleteOpen(open);}}><DialogContent className="event-page-delete-dialog"><DialogHeader><DialogTitle>{t("manage.content.page.deleteTitle", {title: page.data?.Title ?? ""})}</DialogTitle><DialogDescription>{t("manage.content.page.deleteBody")}</DialogDescription></DialogHeader><div className="event-page-delete-dialog__actions"><button className="ib-btn" type="button" disabled={!!busy} onClick={() => setDeleteOpen(false)}>{t("manage.content.page.keep")}</button><EventButton className="ib-btn ib-btn--danger-solid" type="button" disabled={!!busy} onClick={() => void remove()} busy={!!busy}>{t("manage.content.page.delete")}</EventButton></div></DialogContent></Dialog>
+        <ConfirmDialog open={deleteOpen} onCancel={() => {if (!busy) setDeleteOpen(false);}} tone="danger" busy={!!busy}
+            title={t("manage.content.page.deleteTitle", {title: page.data?.Title ?? ""})} description={t("manage.content.page.deleteBody")}
+            cancelLabel={t("manage.content.page.keep")} confirmLabel={t("manage.content.page.delete")} onConfirm={() => void remove()} />
     </div>;
 }

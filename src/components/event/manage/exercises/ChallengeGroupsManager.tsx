@@ -10,6 +10,7 @@ import {
 } from "@/api/manageChallenges";
 import {ManageApiError} from "@/api/manage";
 import {DialogModal} from "@/components/event/DialogModal";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventLoading} from "@/components/event/EventLoading";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -172,12 +173,9 @@ export function ChallengeGroupsManager() {
         {naming && <GroupNameDialog key={naming.key} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
             otherNames={sorted.filter(group => group.ID !== naming.group?.ID).map(group => group.Name)}
             onClose={() => setNaming(null)} onSubmit={name => void (naming.group ? rename(naming.group, name) : create(name))} />}
-        <DialogModal open={!!removing} onClose={() => { if (!busy) setRemoving(null); }} title={t("manage.challenges.groups.deleteTitle")}
+        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} title={t("manage.challenges.groups.deleteTitle")}
             description={removing ? bucketOf(removing.ID).tasks.length > 0 ? tPlural("manage.exercises.groups.deleteConfirmWithTasks", bucketOf(removing.ID).tasks.length, {name: removing.Name}) : t("manage.exercises.groups.deleteConfirm", {name: removing.Name}) : undefined}
-            footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => setRemoving(null)}>{t("common.cancel")}</button>
-                <EventButton className="ib-btn ib-btn--danger" type="button" disabled={busy} busy={busy} onClick={() => void remove()}>{t("manage.exercises.groups.deleteGroup")}</EventButton></>}>
-            <p className="event-exercise-set__dialog-name">{removing?.Name}</p>
-        </DialogModal>
+            subject={removing?.Name} confirmLabel={t("manage.exercises.groups.deleteGroup")} onConfirm={() => void remove()} />
         <DialogModal open={!!moving} onClose={() => { if (!busy) setMoving(null); }} title={t("manage.challenges.groups.moveTitle")}
             description={moving ? t("manage.challenges.groups.moveDescription", {name: moving.task.challenge.Snapshot.name}) : undefined}
             footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => setMoving(null)}>{t("common.cancel")}</button>

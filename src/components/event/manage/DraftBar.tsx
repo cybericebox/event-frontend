@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {RotateCcw, Send} from "lucide-react";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 
@@ -48,6 +48,8 @@ export function DraftBar({state, busy, canManage, invalid, onSave, onPublish, on
             <EventButton className="ib-btn" type="button" disabled={!state.dirty || invalid || !!busy} onClick={onSave} busy={busy === "save"}>{t("common.save")}</EventButton>
             <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canPublish || invalid || !!busy} onClick={onPublish} busy={busy === "publish"}><Send size={16} /> {t("manage.editor.draft.publish")}</EventButton>
         </div>}
-        <Dialog open={confirmDiscard} onOpenChange={open => {if (!busy) setConfirmDiscard(open);}}><DialogContent className="event-page-delete-dialog"><DialogHeader><DialogTitle>{t("manage.editor.draft.discardTitle")}</DialogTitle><DialogDescription>{t("manage.editor.draft.discardBody")}</DialogDescription></DialogHeader><div className="event-page-delete-dialog__actions"><button className="ib-btn" type="button" disabled={!!busy} onClick={() => setConfirmDiscard(false)}>{t("manage.editor.draft.keep")}</button><EventButton className="ib-btn ib-btn--danger-solid" type="button" disabled={!!busy} onClick={() => {onDiscardDraft?.(); setConfirmDiscard(false);}} busy={busy === "discard"}>{t("manage.editor.draft.discard")}</EventButton></div></DialogContent></Dialog>
+        <ConfirmDialog open={confirmDiscard} onCancel={() => {if (!busy) setConfirmDiscard(false);}} tone="danger" busy={busy === "discard"} disabled={!!busy}
+            title={t("manage.editor.draft.discardTitle")} description={t("manage.editor.draft.discardBody")}
+            cancelLabel={t("manage.editor.draft.keep")} confirmLabel={t("manage.editor.draft.discard")} onConfirm={() => {onDiscardDraft?.(); setConfirmDiscard(false);}} />
     </div>;
 }

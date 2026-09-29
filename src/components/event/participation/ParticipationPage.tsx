@@ -26,6 +26,7 @@ import {missingMembers} from "@/components/event/challenges/challengeBoardModel"
 import {t, tPlural} from "@/i18n/t";
 import {changedEditableAnswers, formatAnswer, formFields, rosterLine} from "./participationModel";
 import {EventButton} from "@/components/ui/EventButton";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {isFileAnswer, selfAnswerFileUrl} from "@/api/answerFiles";
 import {formatDateAnswer} from "@/components/event/DateAnswerInput";
 import {dateModeOf} from "@/components/event/manage/participantFormEditor";
@@ -44,17 +45,16 @@ function Section({title, note, children}: {title: string; note?: ReactNode; chil
 
 type Confirm = {title: string; text: string; action: string; danger?: boolean; run: () => Promise<void>} | null;
 
-function ConfirmDialog({confirm, onClose}: {confirm: Confirm; onClose: () => void}) {
+function TeamConfirm({confirm, onClose}: {confirm: Confirm; onClose: () => void}) {
     const [busy, setBusy] = useState(false);
-    return <DialogModal open={!!confirm} onClose={() => { if (!busy) onClose(); }} title={confirm?.title ?? ""}
-        footer={<><button type="button" className="ib-btn" disabled={busy} onClick={onClose}>{t("common.cancel")}</button>
-            <EventButton type="button" className={`ib-btn ${confirm?.danger ? "ib-btn--danger-solid" : "ib-btn--primary"}`} disabled={busy} onClick={async () => {
-                if (!confirm) return;
-                setBusy(true);
-                try { await confirm.run(); onClose(); } finally { setBusy(false); }
-            }} busy={busy}>{confirm?.action}</EventButton></>}>
-        <p>{confirm?.text}</p>
-    </DialogModal>;
+    const [error, setError] = useState("");
+    return <ConfirmDialog open={!!confirm} onCancel={() => {setError(""); onClose();}} tone={confirm?.danger ? "danger" : "default"} busy={busy} error={error}
+        title={confirm?.title ?? ""} description={confirm?.text} confirmLabel={confirm?.action ?? ""} onConfirm={async () => {
+            if (!confirm) return;
+            setBusy(true);
+            setError("");
+            try { await confirm.run(); onClose(); } catch (failure) { setError(failure instanceof Error ? failure.message : ""); } finally { setBusy(false); }
+        }} />;
 }
 
 function FieldsEditor({form, answers, onCancel, onSave}: {form: ParticipantForm; answers: ParticipantAnswers; onCancel: () => void; onSave: (answers: ParticipantAnswers) => Promise<void>}) {
@@ -231,12 +231,14 @@ function TeamSection({event, info, team, started, finished}: {event: PublicEvent
         queryClient.invalidateQueries({queryKey: ["event-team-members", event.EventID]}),
         queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]}),
     ]);
-    const run = (action: () => Promise<void>, done: string, fallback: string) => async () => {
+    // inline: a confirmation shows the failure itself, so it gets the text instead of a toast.
+    const run = (action: () => Promise<void>, done: string, fallback: string, inline = false) => async () => {
         try {
             await action();
             await refresh();
             toast.success(done);
         } catch (error) {
+            if (inline) throw new Error(errorText(error, fallback));
             toast.error(errorText(error, fallback));
             throw error;
         }
@@ -255,8 +257,8 @@ function TeamSection({event, info, team, started, finished}: {event: PublicEvent
         } catch { /* toast shown */ }
     };
     const memberActions = (member: TeamMember) => captain && rosterOpen && !member.Own && <>
-        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"))})}>{t("participation.team.makeCaptain")}</button>
-        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"))})}>{t("participation.team.kickAction")}</button>
+        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
+        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>
     </>;
     const min = team.MinTeamSize ?? info.MinTeamSize;
     const missing = missingMembers(team.MemberCount, min);
@@ -270,7 +272,7 @@ function TeamSection({event, info, team, started, finished}: {event: PublicEvent
             <FieldRow label={t("participation.team.roster")}><span>{rosterLine(team.MemberCount, team.MaxTeamSize ?? info.MaxTeamSize, min)}</span>{team.Admitted !== false && <span className="ib-tag ib-tag--ok">{t("participation.team.admitted")}</span>}</FieldRow>
             {team.JoinCode && <FieldRow label={t("participation.team.joinCode")}><span className="event-part__code" aria-label={t("participation.team.codeHidden")}>••••••••</span>
                 <span className="event-part__end"><button type="button" className="ib-btn ib-btn--sm" onClick={() => void copy()}><Copy aria-hidden="true" />{t("participation.team.copy")}</button>
-                    {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.newCodeTitle"), text: t("participation.team.newCodeText"), action: t("participation.team.newCode"), run: run(() => regenerateEventTeamCode(event.EventID, team.ID), t("participation.team.codeUpdated"), t("participation.team.codeUpdateFailed"))})}>{t("participation.team.newCode")}</button>}</span>
+                    {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.newCodeTitle"), text: t("participation.team.newCodeText"), action: t("participation.team.newCode"), run: run(() => regenerateEventTeamCode(event.EventID, team.ID), t("participation.team.codeUpdated"), t("participation.team.codeUpdateFailed"), true)})}>{t("participation.team.newCode")}</button>}</span>
             </FieldRow>}
         </dl>
         <h3 className="event-part__subhead">{t("participation.team.members")}</h3>
@@ -294,10 +296,10 @@ function TeamSection({event, info, team, started, finished}: {event: PublicEvent
         </>}
         {rosterOpen && own && <div className="event-part__actions">
             {captain
-                ? <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"))})}>{t("participation.team.disband")}</button>
-                : <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.leaveTitle"), text: t("participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"))})}>{t("participation.team.leave")}</button>}
+                ? <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"), true)})}>{t("participation.team.disband")}</button>
+                : <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.leaveTitle"), text: t("participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"), true)})}>{t("participation.team.leave")}</button>}
         </div>}
-        <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
+        <TeamConfirm confirm={confirm} onClose={() => setConfirm(null)} />
     </Section>;
 }
 
