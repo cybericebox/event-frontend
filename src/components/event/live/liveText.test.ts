@@ -12,8 +12,13 @@ describe("liveTextSize", () => {
         expect(liveTextSize("timer", 624, 1).effective).toBe(34);
     });
 
+    it("caps the unit by the width on screens narrower than 16:9", () => {
+        expect(liveTextSize("body", 1080, 1, 1440).natural).toBeCloseTo(liveTextSize("body", 810, 1).natural);
+        expect(liveTextSize("body", 1080, 1, 2560).natural).toBe(liveTextSize("body", 1080, 1).natural);
+    });
+
     it("exposes the same formula to CSS", () => {
-        expect(liveTextVars(1.2)).toMatchObject({"--live-u": "calc(100cqh / 36 * 1.2)", "--live-fs-body": "max(19px, calc(var(--live-u) * 0.87))"});
+        expect(liveTextVars(1.2)).toMatchObject({"--live-u": "calc(min(100cqh, 100cqw * 9 / 16) / 36 * 1.2)", "--live-fs-body": "max(19px, calc(var(--live-u) * 0.87))"});
     });
 });
 
@@ -25,7 +30,8 @@ describe("liveTextWarnings", () => {
     it("warns about small body text and captions on the 1040×624 LED wall", () => {
         const warnings = liveTextWarnings(led);
         const table = warnings.filter(item => item.id === "table").map(item => item.text).join("\n");
-        expect(table).toMatch(/основний текст 15 px, підписи 10 px/);
+        // 1040×624 is narrower than 16:9, so the unit follows the width.
+        expect(table).toMatch(/основний текст 14 px, підписи 9 px/);
         expect(table).toMatch(/19 px \/ 14 px/);
     });
 

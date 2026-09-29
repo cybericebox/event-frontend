@@ -221,9 +221,9 @@ export function LiveCanvas({layout, event, results, sample = false, selectedID, 
     const [canvasRef, canvasSize] = useElementSize<HTMLDivElement>();
     // Effective text sizes of this canvas: the same numbers as liveText.
     const metrics = useMemo(() => ({
-        caption: liveTextSize("caption", canvasSize.height, layout.screen.textScale).effective,
-        body: liveTextSize("body", canvasSize.height, layout.screen.textScale).effective,
-    }), [canvasSize.height, layout.screen.textScale]);
+        caption: liveTextSize("caption", canvasSize.height, layout.screen.textScale, canvasSize.width || undefined).effective,
+        body: liveTextSize("body", canvasSize.height, layout.screen.textScale, canvasSize.width || undefined).effective,
+    }), [canvasSize.height, canvasSize.width, layout.screen.textScale]);
     const [now, setNow] = useState(0);
     useEffect(() => {const frame = requestAnimationFrame(() => setNow(Date.now())); const timer = setInterval(() => setNow(Date.now()), 1000); return () => {cancelAnimationFrame(frame); clearInterval(timer);};}, []);
     const style = useMemo(() => ({

@@ -7,6 +7,7 @@ import {Maximize, Minimize, MonitorCheck} from "lucide-react";
 import {getLiveLayoutVersion, getLiveScreenByLink, getPublishedLiveLayout, LiveScreenLinkError, type LiveLayout} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas} from "./LiveCanvas";
+import {liveFormatLayout, pickLiveFormat} from "./liveFormats";
 import {useLiveResults} from "./useLiveResults";
 import {useFullscreen, useIdle, useWakeLock, useWindowSize, type WakeLockState} from "./liveScreenHooks";
 import {t} from "@/i18n/t";
@@ -67,6 +68,8 @@ export function LiveScreen({event, token, initialLayout}: {event: PublicEventInf
         if (version.data !== undefined && layoutQuery.data && version.data !== layoutQuery.data.version) void queryClient.invalidateQueries({queryKey: ["event-live-screen-layout", eventID]});
     }, [version.data, layoutQuery.data, queryClient, eventID]);
     const {results} = useLiveResults(eventID, layoutQuery.isSuccess, {token, refreshSeconds: layoutQuery.data?.refreshSeconds});
+    // The shape of the window picks the layout: the nearest saved format.
+    const windowSize = useWindowSize();
     const fullscreen = useFullscreen();
     const wake = useWakeLock(true);
     const idle = useIdle(3000);
@@ -93,7 +96,9 @@ export function LiveScreen({event, token, initialLayout}: {event: PublicEventInf
     if (token && (layoutQuery.error ?? results.error) instanceof LiveScreenLinkError && ((layoutQuery.error ?? results.error) as LiveScreenLinkError).status === 403) return <LiveLinkClosed />;
     if (layoutQuery.isError) return <main className="live-fullscreen"><EventLoadError message={t("live.loadFailed")} onRetry={() => void layoutQuery.refetch()} /></main>;
     if (!layoutQuery.data) return <main className="live-fullscreen"><EventLoading event={event} label={t("live.loading")} /></main>;
-    const layout = layoutQuery.data;
+    const base = layoutQuery.data;
+    const [windowWidth, windowHeight] = windowSize.split("@")[0].split("×").map(Number);
+    const layout = base.screen.anchor === "top-left" ? base : liveFormatLayout(base, pickLiveFormat(base, windowWidth / windowHeight));
     const style = {"--live-screen-width": `${layout.screen.width}px`, "--live-screen-height": `${layout.screen.height}px`} as CSSProperties;
     return <main className={`live-fullscreen${layout.screen.anchor === "top-left" ? " live-fullscreen--anchor" : ""}${idle ? " is-idle" : ""}`} style={style}>
         <div className="live-area">

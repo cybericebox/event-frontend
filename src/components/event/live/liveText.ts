@@ -15,20 +15,24 @@ export const liveTextRoles = {
 } as const;
 export type LiveTextRole = keyof typeof liveTextRoles;
 
-export function liveUnit(height: number, textScale: number): number {
-    return height / 36 * textScale;
+// u = height / 36, but never more than a 16:9 box of this width allows, so
+// a layout made for 16:9 keeps its text inside the widgets on narrower
+// screens (4:3, 5:4) — «text scales to height», capped by width.
+export function liveUnit(height: number, textScale: number, width: number = Number.POSITIVE_INFINITY): number {
+    return Math.min(height, width * 9 / 16) / 36 * textScale;
 }
 
-export function liveTextSize(role: LiveTextRole, height: number, textScale: number): {natural: number; effective: number} {
+export function liveTextSize(role: LiveTextRole, height: number, textScale: number, width?: number): {natural: number; effective: number} {
     const {k, min} = liveTextRoles[role];
-    const natural = Math.round(liveUnit(height, textScale) * k * 10) / 10;
+    const natural = Math.round(liveUnit(height, textScale, width) * k * 10) / 10;
     return {natural, effective: Math.max(min, natural)};
 }
 
-// CSS custom properties for .live-canvas: u follows the canvas height (a size
-// container), so the full-window screen and the fixed LED area both scale.
+// CSS custom properties for .live-canvas: u follows the canvas (a size
+// container) — its height, capped by its width as in liveUnit — so the
+// full-window screen and the fixed LED area both scale.
 export function liveTextVars(textScale: number): Record<string, string> {
-    const vars: Record<string, string> = {"--live-u": `calc(100cqh / 36 * ${textScale})`};
+    const vars: Record<string, string> = {"--live-u": `calc(min(100cqh, 100cqw * 9 / 16) / 36 * ${textScale})`};
     for (const [role, {k, min}] of Object.entries(liveTextRoles)) vars[`--live-fs-${role}`] = `max(${min}px, calc(var(--live-u) * ${k}))`;
     return vars;
 }
@@ -46,17 +50,17 @@ export type LiveTextWarning = {id: string; text: string};
 // padding is --live-pad).
 export function liveWidgetBox(layout: LiveLayout, item: LiveWidget): {width: number; height: number} {
     const {width, height, textScale} = layout.screen;
-    const pad = Math.max(6, liveUnit(height, textScale) * 0.4);
+    const pad = Math.max(6, liveUnit(height, textScale, width) * 0.4);
     return {width: item.w * width / layout.grid.cols - 2 * pad, height: item.h * height / layout.grid.rows - 2 * pad};
 }
 
 // Rows of a table or recent-solves widget on the real screen: the same rule
 // the screen renders with.
 export function liveListFit(layout: LiveLayout, item: LiveWidget): LiveListGeometry & {rows: number} {
-    const {height, textScale} = layout.screen;
+    const {height, width, textScale} = layout.screen;
     const rows = item.type === "table" ? numberProp(item, "rowsPerPage", 10) : numberProp(item, "rows", 5);
-    const geometry = liveListGeometry({height: liveWidgetBox(layout, item).height, caption: liveTextSize("caption", height, textScale).effective,
-        body: liveTextSize("body", height, textScale).effective, rows, header: item.type === "table"});
+    const geometry = liveListGeometry({height: liveWidgetBox(layout, item).height, caption: liveTextSize("caption", height, textScale, width).effective,
+        body: liveTextSize("body", height, textScale, width).effective, rows, header: item.type === "table"});
     return {...geometry, rows};
 }
 
@@ -69,8 +73,8 @@ function numberProp(item: LiveWidget, key: string, fallback: number): number {
 // natural size falls under its floor is raised to the floor on screen, and a
 // widget whose content no longer fits at the effective sizes is named.
 export function liveTextWarnings(layout: LiveLayout): LiveTextWarning[] {
-    const {height, textScale} = layout.screen;
-    const size = (role: LiveTextRole) => liveTextSize(role, height, textScale);
+    const {height, width, textScale} = layout.screen;
+    const size = (role: LiveTextRole) => liveTextSize(role, height, textScale, width);
     const heading = size("caption").effective * 1.2 + size("caption").effective * 0.5;
     const warnings: LiveTextWarning[] = [];
     for (const item of layout.widgets) {

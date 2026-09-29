@@ -118,8 +118,10 @@ function LogosFields({eventID, widget, disabled, onProp}: {eventID: string; widg
 
 // Settings of the selected widget: the header with its name and removal,
 // «Відображення» (its own content) and «Розташування й розмір».
-export function LiveWidgetSettings({event, layout, widget, disabled, onPlace, onProp, onDistribute, onRemove}: {
+export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabled = disabled, onPlace, onProp, onDistribute, onRemove}: {
     event: PublicEventInfo; layout: LiveLayout; widget: LiveWidget; disabled: boolean;
+    // An «auto» screen shape takes its placement from the base.
+    placeDisabled?: boolean;
     onPlace: (next: LiveWidget) => void; onProp: (key: string, value: PropValue) => void;
     onDistribute: (axis: DistributeAxis) => void; onRemove: () => void;
 }) {
@@ -157,11 +159,11 @@ export function LiveWidgetSettings({event, layout, widget, disabled, onPlace, on
         <Section title={t("manage.live.section.place")}>
             <div className="event-live-settings__cells">{(["x", "y", "w", "h"] as const).map(key => <LiveField key={key} label={t(`manage.live.pos.${key}`)}
                 help={t(`manage.live.pos.${key}Help`, {min: key === "w" ? minimum.w : minimum.h, cols: layout.grid.cols, rows: layout.grid.rows})} required>
-                {id => <LiveNumberInput id={id} value={widget[key]} min={key === "w" ? minimum.w : key === "h" ? minimum.h : 1} max={48} disabled={disabled} onChange={value => onPlace({...widget, [key]: value})} />}
+                {id => <LiveNumberInput id={id} value={widget[key]} min={key === "w" ? minimum.w : key === "h" ? minimum.h : 1} max={48} disabled={placeDisabled} onChange={value => onPlace({...widget, [key]: value})} />}
             </LiveField>)}</div>
             <div className="event-live-settings__distribute">
-                <EventTooltip content={t("manage.live.distributeRowTitle")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled={disabled} aria-describedby={id} onClick={() => onDistribute("row")}><Columns3 size={16} /> {t("manage.live.distributeRow")}</button>}</EventTooltip>
-                <EventTooltip content={t("manage.live.distributeColumnTitle")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled={disabled} aria-describedby={id} onClick={() => onDistribute("column")}><Rows3 size={16} /> {t("manage.live.distributeColumn")}</button>}</EventTooltip>
+                <EventTooltip content={t("manage.live.distributeRowTitle")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled={placeDisabled} aria-describedby={id} onClick={() => onDistribute("row")}><Columns3 size={16} /> {t("manage.live.distributeRow")}</button>}</EventTooltip>
+                <EventTooltip content={t("manage.live.distributeColumnTitle")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled={placeDisabled} aria-describedby={id} onClick={() => onDistribute("column")}><Rows3 size={16} /> {t("manage.live.distributeColumn")}</button>}</EventTooltip>
             </div>
         </Section>
     </div>;

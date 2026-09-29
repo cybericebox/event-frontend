@@ -91,11 +91,18 @@ describe("live editor", () => {
         } finally {vi.useRealTimers();}
     });
 
-    it("switches the screen format and keeps the layout valid", () => {
+    it("previews other screen shapes automatically and lets a shape get its own layout", () => {
         mount();
-        fireEvent.click(screen.getByRole("button", {name: "4:3"}));
+        fireEvent.click(screen.getByRole("tab", {name: "4:3"}));
         expect(screen.getAllByText(/1440×1080/).length).toBeGreaterThan(0);
+        expect(screen.getByText(/будується автоматично з основного/)).toBeTruthy();
+        expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
+        fireEvent.click(screen.getByRole("button", {name: "Власна розкладка"}));
+        expect(screen.getByRole("tab", {name: "4:3 · власна"})).toBeTruthy();
+        expect(screen.queryByText(/будується автоматично з основного/)).toBeNull();
         expect(document.querySelector(".event-live-editor__error")).toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: "16:9 · основний"}));
+        expect(screen.getAllByText(/1920×1080/).length).toBeGreaterThan(0);
     });
 
     it("applies a layout template from the dialog and marks later edits", () => {

@@ -2902,5 +2902,19 @@
   "manage.live.templates.help": "Готова розкладка віджетів. Застосування замінює поточні віджети; скасувати можна через ⌘Z / Ctrl+Z.",
   "manage.live.gridHelp": "На скільки клітинок поділено екран. Віджети займають цілі клітинки; дрібніша сітка — точніше розміщення.",
   "manage.live.gridCellsHelp": "Колонки від {minCols} до {maxCols}, рядки від {minRows} до {maxRows}. Застосовується, коли поле втрачає фокус або натиснуто Enter.",
-  "manage.live.validation.timerTarget": "Для таймера з власною датою вкажіть дату й час."
+  "manage.live.validation.timerTarget": "Для таймера з власною датою вкажіть дату й час.",
+  "manage.live.baseFormat": "Основний формат",
+  "manage.live.baseFormatHelp": "Форма екрана, для якої ви збираєте основну розкладку. Інші формати (16:9, 16:10, 4:3) підлаштовуються автоматично або мають власну розкладку — вкладки над полотном.",
+  "manage.live.format.tabs": "Формат екрана",
+  "manage.live.format.base": "{name} · основний",
+  "manage.live.format.custom": "{name} · власна",
+  "manage.live.format.customSize": "{width}×{height}",
+  "manage.live.format.mode": "Розкладка формату",
+  "manage.live.format.mode.auto": "Автоматично",
+  "manage.live.format.mode.custom": "Власна розкладка",
+  "manage.live.format.modeHelp": "«Автоматично» — розкладка береться з основного формату ({name}): віджети зберігають порядок і частки екрана, текст підганяється, нічого не обрізається й не перекривається. «Власна розкладка» — ті самі віджети, розставлені окремо для цього формату.",
+  "manage.live.format.autoNote": "Цей формат будується автоматично з основного ({name}). Щоб переставити віджети саме тут, увімкніть «Власна розкладка».",
+  "manage.live.paletteBaseOnly": "Віджети додаються й прибираються в основному форматі ({name}).",
+  "manage.live.validation.formatGrid": "Сітка формату {name} має неправильний розмір.",
+  "manage.live.validation.formatConflicts": "У форматі {name} віджети перетинаються або виходять за сітку — перемістіть їх."
 }

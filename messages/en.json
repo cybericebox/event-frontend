@@ -2902,5 +2902,19 @@
   "manage.live.templates.help": "A ready widget layout. Applying it replaces the current widgets; undo with ⌘Z / Ctrl+Z.",
   "manage.live.gridHelp": "How many cells the screen is split into. Widgets take whole cells; a finer grid places them more precisely.",
   "manage.live.gridCellsHelp": "Columns from {minCols} to {maxCols}, rows from {minRows} to {maxRows}. Applied when the field loses focus or on Enter.",
-  "manage.live.validation.timerTarget": "Set the date and time of the custom timer."
+  "manage.live.validation.timerTarget": "Set the date and time of the custom timer.",
+  "manage.live.baseFormat": "Base format",
+  "manage.live.baseFormatHelp": "The screen shape you build the main layout for. Other formats (16:9, 16:10, 4:3) adapt automatically or get their own layout — tabs above the canvas.",
+  "manage.live.format.tabs": "Screen format",
+  "manage.live.format.base": "{name} · base",
+  "manage.live.format.custom": "{name} · own",
+  "manage.live.format.customSize": "{width}×{height}",
+  "manage.live.format.mode": "Format layout",
+  "manage.live.format.mode.auto": "Automatic",
+  "manage.live.format.mode.custom": "Own layout",
+  "manage.live.format.modeHelp": "«Automatic» — the layout comes from the base format ({name}): widgets keep their order and share of the screen, text fits, nothing clips or overlaps. «Own layout» — the same widgets arranged separately for this format.",
+  "manage.live.format.autoNote": "This format is built automatically from the base ({name}). To move widgets here, switch on «Own layout».",
+  "manage.live.paletteBaseOnly": "Widgets are added and removed in the base format ({name}).",
+  "manage.live.validation.formatGrid": "The {name} format grid has a wrong size.",
+  "manage.live.validation.formatConflicts": "In the {name} format widgets overlap or leave the grid — move them."
 }

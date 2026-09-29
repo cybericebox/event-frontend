@@ -22,6 +22,12 @@ export const liveLayoutSchema = z.object({
     // Results refresh on the open screen, 2–30 s; layouts stored before the
     // setting existed get the default.
     refreshSeconds: z.number().int().optional().transform(value => value || liveRefreshDefault),
+    // Other screen shapes (liveFormats.ts): «auto» or a «custom» placement.
+    formats: z.record(z.string(), z.object({
+        mode: z.enum(["auto", "custom"]),
+        grid: z.object({cols: z.number().int(), rows: z.number().int()}).optional(),
+        placements: z.array(z.object({id: z.string(), x: z.number().int(), y: z.number().int(), w: z.number().int(), h: z.number().int()})).optional(),
+    })).optional(),
 });
 export type LiveLayout = z.output<typeof liveLayoutSchema>;
 export type LiveWidget = LiveLayout["widgets"][number];

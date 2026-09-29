@@ -37,6 +37,7 @@ function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boo
 }
 
 const themes = ["dark", "light"] as const;
+const baseRatios = {"16:9": 16 / 9, "16:10": 16 / 10, "4:3": 4 / 3, "5:3": 5 / 3};
 
 // Settings of the whole screen, shown while no widget is selected.
 export function LiveScreenSettings({eventID, event, layout, results, sample, canManage, disabled, onChange}: {
@@ -65,6 +66,14 @@ export function LiveScreenSettings({eventID, event, layout, results, sample, can
             {() => <EventSelect ariaLabel={t("manage.live.refreshInterval")} value={String(layout.refreshSeconds)} disabled={disabled}
                 options={[...new Set([...liveRefreshOptions, layout.refreshSeconds])].sort((a, b) => a - b).map(value => ({value: String(value), label: t("manage.live.seconds", {count: value})}))}
                 onValueChange={value => onChange({...layout, refreshSeconds: Number(value)})} />}
+        </LiveField>
+        <LiveField label={t("manage.live.baseFormat")} help={t("manage.live.baseFormatHelp")} required>
+            {() => <EventSelect ariaLabel={t("manage.live.baseFormat")} value={layout.aspect} disabled={disabled}
+                onValueChange={value => {
+                    const aspect = value as LiveLayout["aspect"];
+                    onChange({...layout, aspect, screen: {...layout.screen, width: aspect === "custom" ? layout.screen.width : Math.round(layout.screen.height * baseRatios[aspect])}});
+                }}
+                options={(["16:9", "16:10", "4:3", "5:3", "custom"] as const).map(value => ({value, label: value === "custom" ? t("manage.live.aspectCustom") : value}))} />}
         </LiveField>
         <LiveField label={t("manage.live.anchor")} help={t("manage.live.anchorHelp")} required>
             {() => <EventSelect ariaLabel={t("manage.live.anchor")} value={layout.screen.anchor} disabled={disabled} onValueChange={value => onChange({...layout, screen: {...layout.screen, anchor: value as LiveLayout["screen"]["anchor"]}})}
