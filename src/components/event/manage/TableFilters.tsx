@@ -6,6 +6,7 @@ import {ArrowDown, ArrowUp, ArrowUpDown, SlidersHorizontal, X} from "lucide-reac
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
+import {EventTimePicker} from "@/components/ui/EventTimePicker";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {filterChips, nextSort, NUMBER_OPS, TEXT_OPS, withoutFilter, type FilterDraft, type FilterDrafts, type FilterSpec, type TableSort} from "./tableFilterModel";
 import {t} from "@/i18n/t";
@@ -41,9 +42,13 @@ function FilterControl({spec, draft, onChange}: {spec: FilterSpec; draft: Filter
         </div>;
     }
     case "date":
+        if (spec.mode === "time") return <div className="event-table-filters__range">
+            <EventTimePicker allowClear value={draft.from ?? ""} ariaLabel={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={value => onChange({...draft, from: value})} />
+            <EventTimePicker allowClear value={draft.to ?? ""} ariaLabel={t("manage.table.filters.toLabel", {label: spec.label})} onChange={value => onChange({...draft, to: value})} />
+        </div>;
         return <div className="event-table-filters__range event-table-filters__range--dates">
-            <EventDateTimePicker allowClear value={draft.from ?? ""} placeholder={t("manage.table.filters.from")} ariaLabel={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={value => onChange({...draft, from: value})} />
-            <EventDateTimePicker allowClear value={draft.to ?? ""} placeholder={t("manage.table.filters.to")} ariaLabel={t("manage.table.filters.toLabel", {label: spec.label})} onChange={value => onChange({...draft, to: value})} />
+            <EventDateTimePicker allowClear dateOnly={spec.mode === "date"} value={draft.from ?? ""} placeholder={t("manage.table.filters.from")} ariaLabel={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={value => onChange({...draft, from: value})} />
+            <EventDateTimePicker allowClear dateOnly={spec.mode === "date"} value={draft.to ?? ""} placeholder={t("manage.table.filters.to")} ariaLabel={t("manage.table.filters.toLabel", {label: spec.label})} onChange={value => onChange({...draft, to: value})} />
         </div>;
     }
 }

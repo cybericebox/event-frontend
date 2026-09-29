@@ -12,6 +12,24 @@ const specs: FilterSpec[] = [
     ...fieldFilterSpecs([field("cv", "file"), field("age", "number"), field("langs", "multi_select", ["Go"])]),
 ];
 
+describe("date modes", () => {
+    const dated = fieldFilterSpecs([
+        {...field("day", "date"), dateMode: "date" as const},
+        {...field("slot", "date"), dateMode: "time" as const},
+        {...field("at", "date"), dateMode: "datetime" as const},
+    ]);
+
+    it("keeps the mode of «Дата / час» questions and sends matching bounds", () => {
+        expect(dated.map(spec => spec.mode)).toEqual(["date", "time", "datetime"]);
+        expect(toTableFilters(dated, {day: {from: "2026-09-01"}, slot: {from: "09:00", to: "9:5"}, at: {to: "2026-09-29T12:00"}})).toEqual([
+            {Key: "day", Op: "range", Type: "date", From: "2026-09-01"},
+            {Key: "slot", Op: "range", Type: "time", From: "09:00"},
+            {Key: "at", Op: "range", Type: "date", To: new Date("2026-09-29T12:00").toISOString().replace(/\.\d{3}Z$/, "Z")},
+        ]);
+        expect(filterChips(dated, {slot: {from: "09:00", to: "18:00"}}).map(chip => chip.text)).toEqual(["slot: 09:00 – 18:00"]);
+    });
+});
+
 describe("typed operators", () => {
     const typed: FilterSpec[] = [{key: "@members", label: "Учасники", kind: "number"}, {key: "@email", label: "Пошта", kind: "contains"}];
 
