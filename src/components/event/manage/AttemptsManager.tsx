@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, type FormEvent, type KeyboardEvent} from "react";
+import {useEffect, useState, type FormEvent, type KeyboardEvent} from "react";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -16,6 +16,7 @@ import {useEventStream} from "@/utils/eventStream";
 import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
 import {HintUnlocksLog} from "./HintUnlocksLog";
+import {LiveStatus, type DataFreshness} from "./LiveStatus";
 import {journalViews, type JournalView} from "./journalViews";
 import {journalTime, PeriodFilters, useJournalOptions} from "./journalShared";
 import {t} from "@/i18n/t";
@@ -43,6 +44,8 @@ export function AttemptsManager({initialView = "attempts"}: {initialView?: Journ
     const [view, setView] = useState<JournalView>(initialView);
     const {event} = useManager();
     const teamMode = event.Participation === 1;
+    // The open view reports how its data stays fresh; the header shows it.
+    const [status, setStatus] = useState<{freshness: DataFreshness; updatedAt: number} | null>(null);
 
     function switchView(next: JournalView) {
         setView(next);
@@ -50,15 +53,17 @@ export function AttemptsManager({initialView = "attempts"}: {initialView?: Journ
     }
 
     return <div className="event-manage-settings event-journal">
-        <header className="event-manage-heading"><div><h1>{t("manage.journal.title")}</h1><p>{view === "hints" ? t("manage.journal.subtitleHints") : teamMode ? t("manage.attempts.subtitleTeams") : t("manage.attempts.subtitle")}</p></div></header>
+        <header className="event-manage-heading"><div><h1>{t("manage.journal.title")}</h1><p>{view === "hints" ? t("manage.journal.subtitleHints") : teamMode ? t("manage.attempts.subtitleTeams") : t("manage.attempts.subtitle")}</p></div>{status && <LiveStatus freshness={status.freshness} updatedAt={status.updatedAt} />}</header>
         <div className="ib-seg event-journal__views" role="group" aria-label={t("manage.journal.views")}>
             {journalViews.map(item => <button key={item} type="button" aria-pressed={view === item} onClick={() => switchView(item)}>{t(`manage.journal.view.${item}`)}</button>)}
         </div>
-        {view === "attempts" ? <AttemptsLog /> : <HintUnlocksLog />}
+        {view === "attempts" ? <AttemptsLog onStatus={setStatus} /> : <HintUnlocksLog onStatus={setStatus} />}
     </div>;
 }
 
-function AttemptsLog() {
+const ATTEMPTS_POLL_SECONDS = 10;
+
+function AttemptsLog({onStatus}: {onStatus: (status: {freshness: DataFreshness; updatedAt: number}) => void}) {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const teamMode = event.Participation === 1;
@@ -75,7 +80,9 @@ function AttemptsLog() {
     const [exporting, setExporting] = useState(false);
     // Realtime: the stream says "changed", the page refetches; polling when SSE fails.
     const stream = useEventStream({url: () => attemptsLiveURL(eventID), events: ["attempts-changed"], onChange: () => void queryClient.invalidateQueries({queryKey: ["event-manage-attempts", eventID]}), enabled: true});
-    const pageQuery = useQuery({queryKey: ["event-manage-attempts", eventID, filters, pages.cursor, pages.pageSize], queryFn: () => getManageAttempts(eventID, filters, pages.cursor, pages.pageSize), refetchOnWindowFocus: false, refetchInterval: stream === "fallback" ? 10_000 : false, placeholderData: previous => previous});
+    const pageQuery = useQuery({queryKey: ["event-manage-attempts", eventID, filters, pages.cursor, pages.pageSize], queryFn: () => getManageAttempts(eventID, filters, pages.cursor, pages.pageSize), refetchOnWindowFocus: false, refetchInterval: stream === "fallback" ? ATTEMPTS_POLL_SECONDS * 1000 : false, placeholderData: previous => previous});
+    const updatedAt = pageQuery.dataUpdatedAt;
+    useEffect(() => {onStatus({freshness: {kind: "stream", mode: stream, pollSeconds: ATTEMPTS_POLL_SECONDS}, updatedAt});}, [onStatus, stream, updatedAt]);
     // A stale cursor is rejected by the server: go back to the first page.
     if (pageQuery.error instanceof AttemptsCursorError && pages.cursor !== null) pages.reset();
     const items = pageQuery.data?.Items ?? [];
@@ -160,7 +167,6 @@ function AttemptsLog() {
         <PeriodFilters from={filters.from} to={filters.to} onChange={changeFilters} />
         {filtered && <button className="ib-btn ib-btn--sm" type="button" onClick={() => changeFilters(emptyAttemptFilters)}>{t("manage.attempts.filter.reset")}</button>}
         <div className="event-journal__actions">
-            <span className="event-manage-table__dim">{stream === "fallback" ? t("manage.attempts.stream.fallback") : stream === "live" ? t("manage.attempts.stream.live") : t("manage.attempts.stream.connecting")}</span>
             {canManage && <EventButton className="ib-btn ib-btn--sm" type="button" disabled={exporting} onClick={() => void exportCSV()} busy={exporting}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>}
         </div>
     </>;

@@ -61,6 +61,30 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
 }) {
     const ready = state === "ready";
     const scrollRef = useRef<HTMLDivElement>(null);
+    const sectionRef = useRef<HTMLElement>(null);
+    // Full height: the block fills the page's scroll area below whatever sits
+    // above it (page header, tabs), so rows scroll inside while the column
+    // headers, toolbar and pagination stay in view. The CSS min-height keeps
+    // short viewports usable (the page scrolls then).
+    useEffect(() => {
+        const section = sectionRef.current;
+        const page = section?.closest<HTMLElement>(".ib-admin-shell__scroll");
+        if (!section || !page || typeof ResizeObserver === "undefined") return;
+        const update = () => {
+            const pageStyle = getComputedStyle(page);
+            const holder = section.parentElement;
+            const after = holder ? parseFloat(getComputedStyle(holder).paddingBottom) || 0 : 0;
+            const top = section.getBoundingClientRect().top - page.getBoundingClientRect().top + page.scrollTop;
+            const height = Math.floor(page.clientHeight - top - (parseFloat(pageStyle.paddingBottom) || 0) - after);
+            const value = `${Math.max(0, height)}px`;
+            if (section.style.getPropertyValue("--event-manage-table-fill") !== value) section.style.setProperty("--event-manage-table-fill", value);
+        };
+        update();
+        const observer = new ResizeObserver(update);
+        observer.observe(page);
+        if (section.parentElement) observer.observe(section.parentElement);
+        return () => observer.disconnect();
+    }, []);
     // States sit in a sticky layer as wide as the visible scroll area, so
     // they stay centered when a narrow screen scrolls the table sideways.
     useEffect(() => {
@@ -72,7 +96,7 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
         observer.observe(scroll);
         return () => observer.disconnect();
     }, []);
-    return <section className="event-manage-table">
+    return <section ref={sectionRef} className="event-manage-table">
         {toolbar && <div className="event-manage-table__toolbar">{toolbar}</div>}
         <div ref={scrollRef} className="event-manage-table__scroll" aria-busy={state === "loading" || busy}>
             <table className={ready ? busy ? "is-busy" : undefined : "is-state"}>

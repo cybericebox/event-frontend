@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getHintUnlocks, type HintUnlock} from "@/api/manageChallenges";
 import {hintCostLabel} from "@/components/event/challenges/hintModel";
@@ -9,6 +9,7 @@ import {parseLocal, zoneLabel} from "@/components/ui/dateTimePicker";
 import {useManager} from "./ManagerShell";
 import {journalTime, PeriodFilters, useJournalOptions} from "./journalShared";
 import {MANAGE_PAGE_SIZES, ManageTable, ManageTablePagination} from "./ManageTable";
+import type {DataFreshness} from "./LiveStatus";
 import {t} from "@/i18n/t";
 
 const all = "all";
@@ -31,14 +32,18 @@ export function filterHintUnlocks(items: HintUnlock[], filters: HintFilters): Hi
 }
 
 // «Підказки» view of «Журнал спроб»: who opened which hint, when and for how much.
-export function HintUnlocksLog() {
+const HINTS_POLL_SECONDS = 30;
+
+export function HintUnlocksLog({onStatus}: {onStatus?: (status: {freshness: DataFreshness; updatedAt: number}) => void}) {
     const {event} = useManager();
     const teamMode = event.Participation === 1;
     const options = useJournalOptions();
     const [filters, setFilters] = useState<HintFilters>(emptyHintFilters);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(MANAGE_PAGE_SIZES[0]);
-    const unlocks = useQuery({queryKey: ["event-hint-unlocks", event.EventID], queryFn: () => getHintUnlocks(event.EventID), refetchInterval: 30_000, refetchOnWindowFocus: false});
+    const unlocks = useQuery({queryKey: ["event-hint-unlocks", event.EventID], queryFn: () => getHintUnlocks(event.EventID), refetchInterval: HINTS_POLL_SECONDS * 1000, refetchOnWindowFocus: false});
+    const updatedAt = unlocks.dataUpdatedAt;
+    useEffect(() => {onStatus?.({freshness: {kind: "polling", seconds: HINTS_POLL_SECONDS}, updatedAt});}, [onStatus, updatedAt]);
     const matching = filterHintUnlocks(unlocks.data ?? [], filters);
     const pages = Math.max(1, Math.ceil(matching.length / pageSize));
     const current = Math.min(page, pages);

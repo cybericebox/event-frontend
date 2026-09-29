@@ -20,6 +20,7 @@ import {TableColumnsPopover, useTableColumns} from "@/components/event/manage/Ta
 import {SortHeader, TableFilterChips, TableFiltersButton} from "@/components/event/manage/TableFilters";
 import {fieldFilterSpecs, type FilterSpec} from "@/components/event/manage/tableFilterModel";
 import {useTableState} from "@/components/event/manage/useTableState";
+import {LiveStatus} from "@/components/event/manage/LiveStatus";
 import {fieldColumnDefinitions, formFields, formatAnswer, type TableColumn} from "@/components/event/manage/listColumns";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
@@ -229,7 +230,7 @@ export default function ManageTeamsPage() {
             : teams.length === 0 ? "empty" : "ready";
 
     return <div className="event-manage-settings event-manage-teams">
-        <header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1><p>{t("manage.teams.subtitle")}</p></div><div className="event-manage-heading__actions">{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>{t("manage.teams.create")}</button>}</div></header>
+        <header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1><p>{t("manage.teams.subtitle")}</p></div><div className="event-manage-heading__actions"><LiveStatus freshness={{kind: "manual", onRefresh: () => {void teamsQuery.refetch(); void participantsQuery.refetch();}, refreshing: teamsQuery.isFetching}} updatedAt={teamsQuery.dataUpdatedAt} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>{t("manage.teams.create")}</button>}</div></header>
         <CreateTeamDialog eventID={eventID} open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
         <TeamInvitationDialog key={inviteTeam?.ID ?? "closed"} eventID={eventID} team={inviteTeam} onClose={() => setInviteTeam(null)} onSent={refresh} />
         <ManageTable event={event} state={tableState} busy={teamsQuery.isFetching && !teamsQuery.isPending} loadingLabel={t("manage.teams.loading")} errorMessage={t("manage.teams.loadFailed")}
