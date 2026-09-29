@@ -11,6 +11,7 @@ const event = {
     StartTime: "2026-09-28T00:00:00Z", FinishTime: null, Status: 2,
     Participation: 0, Registration: 1, CanViewResults: false, CanViewParticipants: false,
     PreviewDescription: "", PreviewPicture: "", LogoURL: "", FaviconURL: "",
+    ShowStartCountdown: true, ShowFinishCountdown: true, FinishCountdownMinutes: 10,
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
 } satisfies PublicEventInfo;
 

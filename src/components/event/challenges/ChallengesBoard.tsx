@@ -13,7 +13,7 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
-import {CountdownTimer} from "@/components/Countdown";
+import {EventCountdown} from "@/components/event/EventCountdown";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventBanner} from "@/components/event/EventBanner";
 import {EventVpnProvider} from "@/components/event/vpn/EventVpn";
@@ -40,7 +40,7 @@ function useClock(event: PublicEventInfo | null) {
     return {started, finished};
 }
 
-function Page({banners, sub, view, onView, children}: {banners?: ReactNode; sub?: ReactNode; view?: BoardView; onView?: (view: BoardView) => void; children?: ReactNode}) {
+function Page({banners, sub, view, onView, countdown, children}: {banners?: ReactNode; sub?: ReactNode; view?: BoardView; onView?: (view: BoardView) => void; countdown?: ReactNode; children?: ReactNode}) {
     return <div className="event-challenges">
         {banners && <div className="ib-banner-stack event-challenges__banners">{banners}</div>}
         <header className="ib-page-header">
@@ -51,13 +51,14 @@ function Page({banners, sub, view, onView, children}: {banners?: ReactNode; sub?
                 </div></div>}
             </div>
         </header>
+        {countdown}
         {children}
     </div>;
 }
 
-function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, banners}: {
+function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, banners, countdown}: {
     eventID: string; mode: BoardMode; challenges: OwnChallenge[]; teamMode: boolean; finished: boolean;
-    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; banners?: ReactNode;
+    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; banners?: ReactNode; countdown?: ReactNode;
 }) {
     const key = boardViewKey(userID);
     // The board renders only after client-side queries, so reading storage here never races hydration.
@@ -82,7 +83,7 @@ function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, s
         writeBoardView(window.localStorage, key, next);
     };
     const open = (challenge: OwnChallenge) => setSelectedID(challenge.EventChallengeID);
-    return <Page banners={banners} sub={challenges.length ? sub : undefined} view={challenges.length ? view : undefined} onView={changeView}>
+    return <Page banners={banners} countdown={countdown} sub={challenges.length ? sub : undefined} view={challenges.length ? view : undefined} onView={changeView}>
         {!categories.length ? <EmptyState message={t("challenges.emptyMessage")} />
             : view === "rail" ? <RailBoard categories={categories} acceptedID={acceptedID} onOpen={open} />
             : <TilesBoard categories={categories} acceptedID={acceptedID} onOpen={open} />}
@@ -141,11 +142,12 @@ export function ChallengesBoard() {
         const title = missing > 0 ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title");
         return <Page banners={<EventBanner tone="warning" title={title} message={t("challenges.notAdmitted.message")} action={<Link className="ib-btn ib-btn--sm" href="/participation">{t("challenges.myParticipation")}</Link>} />} />;
     }
-    if (!started) return <Page><div className="event-challenges__countdown"><CountdownTimer text={t("challenges.countdown")} until={new Date(event.StartTime)} /></div></Page>;
+    const countdown = <EventCountdown event={event} hint={t("countdown.start.challenges")} showFinished={false} />;
+    if (!started) return <Page countdown={countdown}><EmptyState message={t("challenges.beforeStart")} /></Page>;
     if (challenges.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (challenges.isError) return <Page banners={finishedBanner || undefined}><EventLoadError message={t("challenges.loadFailed.title")} onRetry={() => void challenges.refetch()} /></Page>;
+    if (challenges.isError) return <Page banners={finishedBanner || undefined} countdown={countdown}><EventLoadError message={t("challenges.loadFailed.title")} onRetry={() => void challenges.refetch()} /></Page>;
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data} teamMode={teamMode} finished={finished}
         showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}
-        onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} />;
+        onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} countdown={countdown} />;
 }

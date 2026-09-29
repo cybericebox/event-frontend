@@ -5,7 +5,7 @@ import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CalendarDays, Info} from "lucide-react";
 import {toast} from "react-hot-toast";
-import {getManageConfig, getManageLifecycle, ManageApiError, putManageLifecycle, type ManageLifecycle} from "@/api/manage";
+import {getManageConfig, getManageLifecycle, manageConfigInput, ManageApiError, putManageConfig, putManageLifecycle, type ManageLifecycle} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageDateField} from "@/components/event/manage/ManageDateField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
@@ -22,6 +22,10 @@ type ScheduleDraft = {
     WithdrawAt: string;
     ScheduledEnd: boolean;
 };
+
+type CountdownDraft = {ShowStart: boolean; ShowFinish: boolean; Minutes: number};
+
+const validMinutes = (minutes: number) => Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440;
 
 function localDateTime(iso: string | null): string {
     if (!iso) return "";
@@ -59,6 +63,9 @@ export default function ManageSchedulePage() {
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchInterval: false, refetchOnWindowFocus: false});
     const [edited, setEdited] = useState<{eventID: string; value: ScheduleDraft} | null>(null);
     const [saving, setSaving] = useState(false);
+
+    const [countdownEdited, setCountdownEdited] = useState<{eventID: string; value: CountdownDraft} | null>(null);
+    const [countdownSaving, setCountdownSaving] = useState(false);
 
     const draft = edited?.eventID === eventID ? edited.value : lifecycle.data ? toDraft(lifecycle.data) : null;
     const setDraft = (value: ScheduleDraft) => setEdited({eventID, value});
@@ -101,6 +108,29 @@ export default function ManageSchedulePage() {
         } finally { setSaving(false); }
     }
 
+    const savedCountdown: CountdownDraft | null = config.data ? {ShowStart: config.data.ShowStartCountdown, ShowFinish: config.data.ShowFinishCountdown, Minutes: config.data.FinishCountdownMinutes} : null;
+    const countdown = countdownEdited?.eventID === eventID ? countdownEdited.value : savedCountdown;
+    const setCountdown = (value: CountdownDraft) => setCountdownEdited({eventID, value});
+    const countdownDirty = !!countdown && JSON.stringify(countdown) !== JSON.stringify(savedCountdown);
+
+    async function saveCountdown(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!countdown || !config.data || !canManage || countdownSaving || !validMinutes(countdown.Minutes)) return;
+        setCountdownSaving(true);
+        try {
+            const updated = await putManageConfig(eventID, {
+                ...manageConfigInput(config.data),
+                ShowStartCountdown: countdown.ShowStart, ShowFinishCountdown: countdown.ShowFinish, FinishCountdownMinutes: countdown.Minutes,
+            });
+            queryClient.setQueryData(["event-management-config", eventID], updated);
+            setCountdownEdited(null);
+            toast.success(t("manage.schedule.countdown.saved"));
+        } catch (failure) {
+            const status = failure instanceof ManageApiError ? failure.status : 0;
+            toast.error(status === 409 ? t("manage.schedule.countdown.error.conflict") : status === 400 ? t("manage.schedule.countdown.error.rejected") : t("manage.schedule.countdown.error.saveFailed"));
+        } finally { setCountdownSaving(false); }
+    }
+
     if (lifecycle.isError || config.isError) return <EventLoadError message={t("manage.schedule.loadFailed")} onRetry={() => { void lifecycle.refetch(); void config.refetch(); }} />;
     if (lifecycle.isPending || config.isPending || !draft) return <EventLoading event={event} />;
     if (!lifecycle.data) return null;
@@ -125,5 +155,16 @@ export default function ManageSchedulePage() {
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving}>{t("manage.schedule.save")}</EventButton></div>
         </form>
+        {countdown && <form className="event-manage-section" onSubmit={saveCountdown}>
+            <div className="event-manage-section__head"><h2>{t("manage.schedule.countdown.title")}</h2><p>{t("manage.schedule.countdown.help")}</p></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showStart")} help={t("manage.schedule.countdown.showStartHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowStart} onCheckedChange={checked => setCountdown({...countdown, ShowStart: checked})} disabled={!canManage || countdownSaving} label={t("manage.schedule.countdown.startSwitch")} /></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showFinish")} help={t("manage.schedule.countdown.showFinishHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowFinish} onCheckedChange={checked => setCountdown({...countdown, ShowFinish: checked})} disabled={!canManage || countdownSaving} label={t("manage.schedule.countdown.finishSwitch")} /></div>
+            {countdown.ShowFinish && <div className="event-manage-field">
+                <ManageFieldLabel htmlFor="countdown-finish-minutes" title={t("manage.schedule.countdown.minutes")} help={t("manage.schedule.countdown.minutesHelp")} required />
+                <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage || countdownSaving} aria-invalid={!validMinutes(countdown.Minutes)} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
+                {!validMinutes(countdown.Minutes) && <small className="event-manage-validation" role="alert">{t("manage.schedule.countdown.minutesRange")}</small>}
+            </div>}
+            <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || countdownSaving || !countdownDirty || !validMinutes(countdown.Minutes)} busy={countdownSaving}>{t("manage.schedule.countdown.save")}</EventButton></div>
+        </form>}
     </div>;
 }

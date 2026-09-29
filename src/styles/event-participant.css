@@ -11,7 +11,6 @@
 .event-results__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
 /* ds-v2 ranking-table: the frozen board note under the table */
 .ib-ranking-note{margin:calc(var(--ib-2) - var(--ib-4)) 0 0;font-size:var(--ib-fs-12);color:var(--ib-faint)}
-.event-challenges__countdown{display:flex;min-height:40vh;align-items:center;justify-content:center}
 
 /* The page scrolls, not the board: category headers stick under the 60px navbar. */
 .event-board .ib-board__body{overflow:visible}
@@ -112,3 +111,24 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 }
 .event-part__subhead{margin:var(--ib-6) 0 var(--ib-3);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
 .event-part .ib-btn svg{width:14px;height:14px}
+
+/* ── countdown at the top of «Завдання» / «Результати» ───────────────────────
+   Compact block in the event theme: label left, large digits right. It takes
+   its own height only (flex:none), so the empty state below keeps filling and
+   centring the rest of the page. */
+.event-countdown{display:flex;flex:none;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--ib-3) var(--ib-6);padding:var(--ib-4) var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:color-mix(in srgb,var(--ib-surface),var(--ev-brand) 6%)}
+.event-challenges>.event-countdown{margin-bottom:var(--ib-5)}
+.event-countdown--finish{border-color:var(--ib-warn)}
+.event-countdown--finished{justify-content:center;background:var(--ib-surface)}
+.event-countdown__text{display:grid;gap:var(--ib-1);min-width:0}
+.event-countdown__label{color:var(--ib-ink);font-size:var(--ib-fs-16);font-weight:var(--ib-w-semibold)}
+.event-countdown__hint{color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-countdown__clock{display:flex;flex-wrap:wrap;gap:var(--ib-5)}
+.event-countdown__cell{display:grid;justify-items:center;gap:var(--ib-1);min-width:56px}
+.event-countdown__cell strong{color:var(--ib-ink);font:var(--ib-w-semibold) clamp(30px,5vw,48px)/1 var(--ib-mono);font-variant-numeric:tabular-nums}
+.event-countdown__cell span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-countdown--finish .event-countdown__cell strong{color:var(--ib-warn)}
+@media (max-width:640px){
+  .event-countdown{flex-direction:column;align-items:stretch;text-align:center;padding:var(--ib-4)}
+  .event-countdown__clock{justify-content:center;gap:var(--ib-4)}
+}

@@ -19,6 +19,11 @@ export const PublicEventInfoSchema = z.object({
     LogoURL: z.string().default(""),
     FaviconURL: z.string().default(""),
     Theme: EventThemeSchema,
+    // Participant countdown on «Завдання» and «Результати»: to the start, and to the finish
+    // during its last FinishCountdownMinutes.
+    ShowStartCountdown: z.boolean().default(true),
+    ShowFinishCountdown: z.boolean().default(true),
+    FinishCountdownMinutes: z.number().int().min(1).max(1440).default(10),
 });
 
 export type PublicEventInfo = z.infer<typeof PublicEventInfoSchema>;

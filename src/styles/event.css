@@ -92,7 +92,7 @@ body.event-root main{overflow-x:visible}
 .event-page-content{display:flex;flex:1 0 auto;flex-direction:column}
 .event-page-content>:last-child{flex:1 0 auto}
 .event-page-content>.event-private-preview-banner:last-child{flex:none}
-.event-page-content .ib-board__empty,.event-challenges__countdown{display:flex;flex:1 0 auto;flex-direction:column;align-items:center;justify-content:center}
+.event-page-content .ib-board__empty{display:flex;flex:1 0 auto;flex-direction:column;align-items:center;justify-content:center}
 /* The event footer is the platform credit alone. */
 .ib-footer--event .ib-footer__org>span:first-child{margin:0}
 /* Route loading, content errors: centred in the content frame, not the viewport. */

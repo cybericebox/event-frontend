@@ -10,6 +10,7 @@ import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventBanner} from "@/components/event/EventBanner";
+import {EventCountdown} from "@/components/event/EventCountdown";
 import {clockLabel, frozenBannerTitle, frozenSinceLabel, nextFreezeBoundary} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
 import {LiveStatus} from "@/components/event/manage/LiveStatus";
@@ -126,6 +127,7 @@ export function ScoreboardView() {
             </header>
             {readable && <div className="event-results__actions"><LiveStatus freshness={{kind: "polling", seconds: RESULTS_POLL_SECONDS, failing: polls.isError}} updatedAt={Math.max(results.dataUpdatedAt, polls.dataUpdatedAt)} hint={pollHint} /></div>}
         </div>
+        <EventCountdown event={event} hint={t("countdown.start.results")} />
         {data && data.Display.ChartEnabled && <div className="event-results__chart rounded-lg border border-border bg-card p-4" data-testid="score-chart">
             <p className="mb-2 text-sm font-semibold text-foreground">{chartIDs.length === 0 ? t("scoreboard.chartTitlePlain") : t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
             <ScoreChart snapshot={data} teamIDs={chartIDs} ownTeamID={ownTeamID} startTime={new Date(startAt)} finishTime={new Date(chartEnd)} note={chartNote} />
