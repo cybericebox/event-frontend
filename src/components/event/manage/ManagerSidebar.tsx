@@ -52,10 +52,10 @@ const groups: Group[] = [
         {href: "/manage/teams", label: t("manage.nav.teams"), icon: Users, teamsOnly: true},
     ]},
     {id: "challenges", label: t("manage.nav.group.challenges"), items: [
+        {href: "/manage/challenge-settings", label: t("manage.nav.challengeSettings"), icon: SlidersHorizontal},
         {href: "/manage/exercise-groups", label: t("manage.nav.exerciseGroups"), icon: Layers3},
         {href: "/manage/exercises", label: t("manage.nav.exercises"), icon: Puzzle},
         {href: "/manage/labs", label: t("manage.nav.labs"), icon: Server, infrastructureOnly: true},
-        {href: "/manage/scoring", label: t("manage.nav.scoring"), icon: SlidersHorizontal},
         {href: "/manage/submissions", label: t("manage.nav.submissions"), icon: Send},
     ]},
     {id: "pages", label: t("manage.nav.pages"), items: [

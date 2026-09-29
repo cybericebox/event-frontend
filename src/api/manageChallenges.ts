@@ -39,7 +39,9 @@ const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevel
 const challengeSchema = z.object({
     ID: id, TaskID: id, GroupID: id.nullable(), PrerequisiteIDs: z.array(id).nullable().transform(value => value ?? []),
     Order: z.number().int(), Points: z.number().int(), ScoringOverride: scoringOverrideSchema.nullable(), HintsEnabled: z.boolean(), Published: z.boolean(),
-    Snapshot: z.object({name: z.string()}),
+    // Place inside the group across the event's sets; null sorts after the ordered ones.
+    BoardOrder: z.number().int().nullish().transform(value => value ?? null),
+    Snapshot: z.object({name: z.string(), description: z.unknown().optional()}),
     Hints: z.array(challengeHintSchema).nullish().transform(value => value ?? []),
 });
 const groupSchema = z.object({ID: id, Name: z.string(), Order: z.number().int(), CreatedAt: z.string()});
@@ -97,6 +99,10 @@ export const deleteEventChallengeGroup = (eventID: string, groupID: string) => r
 export const getEventExerciseAttachments = (eventID: string) => request(eventID, "exercises", z.array(attachmentSchema));
 export const getEventBoardChallenges = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/challenges`, z.array(challengeSchema));
 export const setEventChallengeGroup = (eventID: string, attachmentID: string, challenge: EventBoardChallenge, groupID: string | null) => request(eventID, `exercises/${attachmentID}/challenges/${challenge.ID}/relations`, z.null(), "PUT", {GroupID: groupID, PrerequisiteIDs: challenge.PrerequisiteIDs});
+// Complete order of one group's challenges across the event's sets (null = «Без групи»).
+export const reorderGroupChallenges = (eventID: string, groupID: string | null, challengeIDs: string[]) => request(eventID, "challenge-order", z.null(), "PUT", {GroupID: groupID, ChallengeIDs: challengeIDs});
+// «Прибрати із заходу»: the task stays in the catalog; refused (409) once teams attempted it.
+export const removeEventChallenge = (eventID: string, attachmentID: string, challengeID: string) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, z.unknown(), "DELETE").then(() => undefined);
 export const reorderEventBoardChallenges = (eventID: string, attachmentID: string, challengeIDs: string[]) => request(eventID, `exercises/${attachmentID}/challenges/order`, z.null(), "PUT", {ChallengeIDs: challengeIDs});
 // Own event exercises first, then the catalog ones available to the event.
 export const getPublishedExerciseChoices = (eventID: string, search: string, infrastructure: InfrastructureFilter = "all") => request(eventID, `exercise-catalog?${catalogQuery(search, infrastructure)}`, z.array(catalogChoiceSchema));

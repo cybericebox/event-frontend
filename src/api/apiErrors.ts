@@ -38,6 +38,7 @@ export const ApiErrorCode = {
     HintCostsInvalid: 1931,
     HintNotFound: 1932,
     HintsDisabled: 1933,
+    ChallengeRemoveHasAttempts: 1936,
     MailSMTPInvalid: 2101,
     MailSecretsKeyMissing: 2102,
     MailNotificationRequired: 2103,

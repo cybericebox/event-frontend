@@ -66,7 +66,10 @@ export type ManageLifecycleInput = Pick<ManageLifecycle, "JoinPolicy" | "Publish
 export const ManageScoringSchema = z.object({
     Mode: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
     MinPoints: z.number().int(), MaxPoints: z.number().int(), FloorAtPercent: z.number().int(),
-    ForceEventScoring: z.boolean(), UpdatedAt: z.string(),
+    ForceEventScoring: z.boolean(),
+    // Static scoring's one value; null = each task's own points.
+    StaticPoints: z.number().int().nullish().transform(value => value ?? null),
+    UpdatedAt: z.string(),
 });
 export type ManageScoring = z.infer<typeof ManageScoringSchema>;
 export type ManageScoringInput = Omit<ManageScoring, "UpdatedAt">;

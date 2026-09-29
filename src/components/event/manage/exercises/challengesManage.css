@@ -1,0 +1,73 @@
+/* /manage challenges group: «Налаштування», «Групи й порядок», «Завдання». */
+
+/* Sortable list: grip + main + actions on one thin row. */
+.event-sortable{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
+.event-sortable__row{display:flex;align-items:center;gap:var(--ib-2);min-width:0;min-height:44px;padding:0 var(--ib-2);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
+.event-sortable__row.is-selected{border-color:var(--ib-action);background:var(--ib-soft)}
+.event-sortable__row.is-dragging{opacity:.5}
+.event-sortable__row.is-over{border-color:var(--ib-action);border-style:dashed}
+.event-sortable__grip{display:grid;place-items:center;flex:none;width:20px;height:28px;color:var(--ib-dim);cursor:grab}
+.event-sortable__grip:active{cursor:grabbing}
+.event-sortable__main{display:flex;align-items:center;flex:1;min-width:0;min-height:42px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left}
+button.event-sortable__main{cursor:pointer}
+.event-sortable__actions{display:flex;align-items:center;flex:none;gap:2px}
+
+/* «Групи й порядок»: groups | tasks of the selected group. */
+.event-group-order{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:var(--ib-5);align-items:start}
+.event-group-order__groups,.event-group-order__tasks{display:grid;gap:var(--ib-3);min-width:0}
+.event-group-order__label{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3);width:100%;min-width:0}
+.event-group-order__label strong,.event-group-order__task strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-group-order__label small,.event-group-order__task small{flex:none;color:var(--ib-dim);font-size:var(--ib-fs-12);white-space:nowrap}
+.event-group-order__none{display:flex;align-items:center;min-height:44px;padding:0 var(--ib-3) 0 34px;border:1px dashed var(--ib-line);border-radius:var(--ib-r);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-group-order__none.is-selected{border-style:solid;border-color:var(--ib-action);background:var(--ib-soft)}
+.event-group-order__create{display:flex;gap:var(--ib-2);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
+.event-group-order__create .event-manage-input{flex:1;min-width:0}
+.event-group-order__create .ib-btn{flex:none}
+.event-group-order__rename{display:flex;align-items:center;gap:var(--ib-2);width:100%;min-width:0;padding:var(--ib-1) 0}
+.event-group-order__rename .event-manage-input{flex:1;min-width:0}
+.event-group-order__task{display:flex;align-items:center;gap:var(--ib-3);min-width:0}
+.event-group-order__task small{overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+.event-group-order__position{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:var(--ib-r);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12)}
+
+/* «Завдання»: collapsible sets with thin task rows. */
+.event-exercise-set__toggle{display:flex;align-items:center;gap:var(--ib-2);min-width:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-exercise-set__chevron,.event-task__chevron{flex:none;color:var(--ib-dim);transition:transform .15s ease}
+.event-exercise-set.is-open .event-exercise-set__chevron,.event-task.is-open .event-task__chevron{transform:rotate(90deg)}
+.event-exercise-set__body{display:grid;gap:var(--ib-3)}
+.event-task-list{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
+.event-task{border:1px solid var(--ib-line);border-radius:var(--ib-r)}
+.event-task.is-open{border-color:var(--ib-control)}
+.event-task__row{display:flex;align-items:center;gap:var(--ib-3);width:100%;min-height:44px;padding:var(--ib-2) var(--ib-3);border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-task__text{display:flex;align-items:baseline;gap:var(--ib-3);flex:1;min-width:0}
+.event-task__text strong{flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-task__text span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-task__badges{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--ib-1);flex:none}
+.event-task__panel{display:grid;gap:var(--ib-5);padding:var(--ib-4) var(--ib-4) var(--ib-4) calc(var(--ib-3) + 16px + var(--ib-3));border-top:1px solid var(--ib-line)}
+.event-task__section{display:grid;gap:var(--ib-3)}
+.event-task__section+.event-task__section{padding-top:var(--ib-5);border-top:1px solid var(--ib-line)}
+.event-task__section h4{margin:0;font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
+.event-task__fields{display:flex;flex-wrap:wrap;align-items:end;gap:var(--ib-4)}
+.event-task__kind{width:240px}
+.event-task__number{width:120px}
+.event-task__summary{margin:0;padding-bottom:10px;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-task__note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-task__save{justify-self:start}
+.event-task__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
+.event-task__actions svg{width:14px;height:14px}
+
+/* «Налаштування». */
+.event-challenge-settings__kind{margin:0;padding:0;border:0}
+.event-challenge-settings__fields{display:grid;gap:var(--ib-4)}
+.event-challenge-settings__fields>.event-manage-field{max-width:280px}
+.event-challenge-settings__force{display:grid;gap:var(--ib-1);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
+.event-challenge-settings__force p{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+
+@media(max-width:900px){.event-group-order{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){
+  .event-task__row{flex-wrap:wrap}
+  .event-task__text{flex-basis:calc(100% - 40px);flex-direction:column;gap:2px}
+  .event-task__text strong{max-width:100%}
+  .event-task__badges{justify-content:flex-start;padding-left:28px}
+  .event-task__panel{padding:var(--ib-4)}
+  .event-task__kind,.event-task__number{width:100%}
+}
