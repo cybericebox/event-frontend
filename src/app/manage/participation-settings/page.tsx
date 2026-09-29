@@ -43,7 +43,7 @@ export default function ParticipationSettingsPage() {
     }
 
     if (configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || lifecycleQuery.isError || !config) return <EventLoadError message={t("manage.participation.loadFailed")} onRetry={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}} />;
+    if (configQuery.isError || lifecycleQuery.isError || !config) return <EventLoadError message={t("manage.participation.loadFailed")} error={configQuery.error ?? lifecycleQuery.error} onRetry={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}} />;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <header className="event-manage-heading"><div><h1>{t("manage.participation.title")}</h1><p>{t("manage.participation.subtitle")}</p></div></header>
@@ -59,10 +59,9 @@ export default function ParticipationSettingsPage() {
             </div>}
             <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>{t("manage.participation.lockWarning")}</span></div>
         </section>
-        <section className="event-manage-section">
-            <ManageFieldLabel title={t("manage.participation.infrastructure")} help={t("manage.participation.infrastructureHelp")} />
-            <p className="event-manage-readonly-note">{configQuery.data?.InfrastructureAllowed ? t("manage.participation.infrastructureAllowed") : t("manage.participation.infrastructureDenied")}</p>
-        </section>
+        {!locked && <section className="event-manage-section">
+            <p className="event-manage-readonly-note" data-testid="infrastructure-note">{configQuery.data?.InfrastructureAllowed ? t("manage.participation.infrastructureOn") : t("manage.participation.infrastructureHint")}</p>
+        </section>}
         {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }
