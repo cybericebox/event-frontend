@@ -14,7 +14,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel, standStatusLabel, standStatusTone, standTeamName, type StatusTone} from "@/components/event/manage/standStatus";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
@@ -88,8 +88,8 @@ function ModeratorChallengesDialog({eventID, open, onClose}: {eventID: string; o
         } catch {setRuntime(current => ({...current, [challengeID]: "error"}));}
     }
 
-    return <Dialog open={open} onOpenChange={next => {if (!next) onClose();}}><DialogContent className="max-h-[90dvh] max-w-[min(640px,calc(100vw-24px))] overflow-y-auto">
-        <DialogHeader><DialogTitle>{t("manage.labs.moderators.title")}</DialogTitle><DialogDescription>{t("manage.labs.moderators.description")}</DialogDescription></DialogHeader>
+    return <ManageDialog open={open} onOpenChange={next => {if (!next) onClose();}} size="md" title={t("manage.labs.moderators.title")} description={t("manage.labs.moderators.description")}
+        footer={<button className="ib-btn" type="button" onClick={onClose}>{t("common.close")}</button>}>
         {challenges.isPending ? <EventLoading compact />
             : challenges.isError ? <EventLoadError compact message={standErrorMessage(challenges.error, t("manage.labs.moderators.loadFailed"))} error={challenges.error} onRetry={() => void challenges.refetch()} />
             : challenges.data.length === 0 ? <EmptyState compact message={t("manage.labs.moderators.empty")} />
@@ -103,7 +103,7 @@ function ModeratorChallengesDialog({eventID, open, onClose}: {eventID: string; o
                     {lab && typeof lab === "object" && (lab.Access.length === 0 ? <small className="event-participants-table__dim">{t("manage.labs.moderators.noWeb", {cidr: lab.VPNCIDR || "—"})}</small> : <ul className="event-stands__access">{lab.Access.map(entry => <li key={`${entry.Device}-${entry.Port}`}><span>{entry.Device}:{entry.Port}</span>{entry.URL ? <a href={entry.URL} target="_blank" rel="noreferrer">{entry.URL}</a> : <span>{entry.Protocol}</span>}</li>)}</ul>)}
                 </li>;
             })}</ul>}
-    </DialogContent></Dialog>;
+    </ManageDialog>;
 }
 
 export default function ManageLabsPage() {

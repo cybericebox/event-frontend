@@ -4,7 +4,12 @@ import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-libr
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {ManageParticipant} from "@/api/manageParticipants";
+import {decideManageParticipant} from "@/api/manageParticipants";
 import {ParticipantsManager} from "./ParticipantsManager";
+
+// jsdom has no top-layer dialog (ConfirmDialog is native).
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 
 let form: ParticipantForm;
 let rows: ManageParticipant[];
@@ -21,6 +26,7 @@ vi.mock("@/api/manageStaffFields", () => ({
 }));
 vi.mock("@/api/manageParticipants", async original => ({
     ...(await original() as object),
+    decideManageParticipant: vi.fn(async () => ({})),
     getManageParticipantsTable: async () => ({Items: rows, Total: rows.length, Page: 1, PageSize: 25, Counts: {Participants: rows.length, Applications: 0, Invitations: 0}}),
 }));
 
@@ -84,5 +90,33 @@ describe("staff-only fields (participants table)", () => {
         fireEvent.click(screen.getByText("Олена Коваль").closest("tr")!);
         const dialog = await screen.findByRole("dialog");
         await waitFor(() => expect(within(dialog).queryByText("Службові поля")).toBeNull());
+    });
+});
+
+describe("participant dialog", () => {
+    it("is the standard centred modal", async () => {
+        renderManager();
+        await screen.findByText("Олена Коваль");
+        fireEvent.click(screen.getByText("Олена Коваль").closest("tr")!);
+        const dialog = await screen.findByRole("dialog");
+        expect(dialog.classList.contains("ib-modal")).toBe(true);
+        expect(dialog.parentElement?.classList.contains("ib-modal-backdrop")).toBe(true);
+        expect(within(dialog).getByText("Київ")).toBeTruthy();
+    });
+
+    it("approves and rejects a pending application from the footer", async () => {
+        rows = [person("cccccccc-3", "Марта Іваненко", {Status: 1, Answers: {city: "Одеса"}})];
+        render(<QueryClientProvider client={new QueryClient()}><ParticipantsManager initialTab="applications" /></QueryClientProvider>);
+        await screen.findByText("Марта Іваненко");
+        fireEvent.click(screen.getByText("Марта Іваненко").closest("tr")!);
+        const dialog = await screen.findByRole("dialog");
+        fireEvent.click(within(dialog).getByRole("button", {name: "Підтвердити"}));
+        await waitFor(() => expect(decideManageParticipant).toHaveBeenCalledWith("e1", "cccccccc-3", "approve"));
+        await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+        fireEvent.click(screen.getByText("Марта Іваненко").closest("tr")!);
+        fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", {name: "Відхилити"}));
+        const confirm = await screen.findByRole("alertdialog");
+        fireEvent.click(within(confirm).getByRole("button", {name: "Відхилити"}));
+        await waitFor(() => expect(decideManageParticipant).toHaveBeenCalledWith("e1", "cccccccc-3", "reject"));
     });
 });

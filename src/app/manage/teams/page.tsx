@@ -25,7 +25,7 @@ import {LiveStatus} from "@/components/event/manage/LiveStatus";
 import {fieldColumnDefinitions, formFields, formatAnswer, type TableColumn} from "@/components/event/manage/listColumns";
 import {hasStaffFields, StaffFieldsPanel} from "@/components/event/manage/StaffFieldsPanel";
 import {EventSelect} from "@/components/ui/EventSelect";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
@@ -280,8 +280,8 @@ export default function ManageTeamsPage() {
                 </tr>;
             })}</tbody>
         </ManageTable>
-        <Dialog open={managed !== null} onOpenChange={open => {if (!open && !busy) {setManagedID(null); setEditing(null);}}}><DialogContent className="max-h-[90dvh] max-w-[min(640px,calc(100vw-24px))] overflow-y-auto">
-            <DialogHeader><DialogTitle>{managed?.Name}</DialogTitle><DialogDescription>{t("manage.teams.detailsDescription")}</DialogDescription></DialogHeader>
+        <ManageDialog open={managed !== null} onOpenChange={open => {if (!open && !busy) {setManagedID(null); setEditing(null);}}} size="md" title={managed?.Name ?? ""} description={t("manage.teams.detailsDescription")}
+            footer={<button className="ib-btn" type="button" onClick={() => {if (!busy) {setManagedID(null); setEditing(null);}}}>{t("common.close")}</button>}>
             {managed && (() => {
                 const team = managed;
                 const choice = memberChoices[team.ID] ?? "";
@@ -308,8 +308,9 @@ export default function ManageTeamsPage() {
                 </div>;
             })()}
             {confirmDialog(!!confirm && confirm.kind !== "delete")}
-        </DialogContent></Dialog>
+        </ManageDialog>
         {confirmDialog(confirm?.kind === "delete")}
-        <Dialog open={answersTeam !== null} onOpenChange={open => {if (!open) setAnswersTeam(null);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{answersTeam?.Name}</DialogTitle><DialogDescription>{t("manage.teams.answersDescription")}</DialogDescription></DialogHeader>{answersTeam && <AnswersList fields={fields} answers={answersTeam.ExtraFields} />}</DialogContent></Dialog>
+        <ManageDialog open={answersTeam !== null} onOpenChange={open => {if (!open) setAnswersTeam(null);}} size="md" title={answersTeam?.Name ?? ""} description={t("manage.teams.answersDescription")}
+            footer={<button className="ib-btn" type="button" onClick={() => setAnswersTeam(null)}>{t("common.close")}</button>}>{answersTeam && <AnswersList fields={fields} answers={answersTeam.ExtraFields} />}</ManageDialog>
     </div>;
 }

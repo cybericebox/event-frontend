@@ -10,7 +10,8 @@ import {getManageConfig} from "@/api/manage";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
 import {decideManageParticipant, getManageParticipantsTable, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
 import {getManageTeams} from "@/api/manageTeams";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {ManageDialog} from "./invites/ManageDialog";
+import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {AnswersList, AnswerValue} from "./FieldColumns";
 import {fieldColumnDefinitions, formFields, type TableColumn} from "./listColumns";
@@ -111,6 +112,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         try {
             await action();
             await refresh();
+            if (opened?.UserID === participant.UserID && participant.Status === 1) setOpened(null);
             toast.success(success);
         } catch (error) {toast.error(errorText(error, failure));}
         finally {setBusyID(null);}
@@ -139,6 +141,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         try {
             await (kind === "reject" ? decideManageParticipant(eventID, participant.UserID, "reject") : revokeManageInvitation(eventID, participant.UserID));
             setConfirm(null);
+            if (kind === "reject") setOpened(null);
             await refresh();
             toast.success(t(kind === "reject" ? "manage.participants.rejected" : "manage.participants.revoked"));
         } catch (error) {setConfirmError(errorText(error, t(kind === "reject" ? "manage.participants.decideFailed" : "manage.participants.revokeFailed")));}
@@ -188,8 +191,18 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         }
     }
 
+    // Rendered inside the participant dialog while it is open (Radix hides everything outside it), else on the page.
+    function confirmDialog(open: boolean) {
+        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone="danger" busy={!!busyID} error={confirmError}
+            title={t(confirm?.kind === "revoke" ? "manage.participants.revokeTitle" : "manage.participants.rejectTitle")}
+            description={confirm?.kind === "revoke" ? t("manage.participants.revokeBody") : undefined}
+            subject={confirm ? confirm.kind === "revoke" ? confirm.participant.Email || personName(confirm.participant) : personName(confirm.participant) : undefined}
+            confirmLabel={t(confirm?.kind === "revoke" ? "manage.participants.revoke" : "manage.participants.reject")} onConfirm={() => void runConfirmed()} />;
+    }
+
     const pseudonymShown = shown.some(column => column.key === "@pseudonym");
     const items = query.data?.Items ?? [];
+    const current = opened ? items.find(item => item.UserID === opened.UserID) ?? opened : null;
     const tableState = query.isPending ? "loading" : query.isError && !query.data ? "error" : items.length === 0 ? "empty" : "ready";
     return <div className="event-manage-settings event-manage-participants">
         <header className="event-manage-heading"><div><h1>{t("manage.nav.participants")}</h1><p>{teamMode ? t("manage.participants.subtitleTeams") : t("manage.participants.subtitle")}</p></div><div className="event-manage-heading__actions"><LiveStatus freshness={{kind: "manual", onRefresh: () => void query.refetch(), refreshing: query.isFetching}} updatedAt={query.dataUpdatedAt} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setInviteOpen(true)}>{t("manage.participants.invite.title")}</button>}</div></header>
@@ -219,15 +232,21 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
                 </div></td>}
             </tr>)}</tbody>
         </ManageTable>
-        <Dialog open={opened !== null} onOpenChange={value => {if (!value) setOpened(null);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto">
-            <DialogHeader><DialogTitle>{opened ? personName(opened) : ""}</DialogTitle><DialogDescription>{[opened?.Pseudonym && t("manage.participants.pseudonym", {pseudonym: opened.Pseudonym}), opened?.Email, opened && !opened.Invited && t("manage.participants.submittedAt", {date: date.format(new Date(opened.CreatedAt))})].filter(Boolean).join(" · ")}</DialogDescription></DialogHeader>
-            {opened && <AnswersList fields={fields} answers={opened.Answers} />}
-            {opened && formQuery.data && hasStaffFields(formQuery.data) && <StaffFieldsPanel key={opened.UserID} eventID={eventID} scope="participant" subjectID={opened.UserID} form={formQuery.data} answers={opened.Answers} canManage={canManage} onSaved={refresh} />}
-        </DialogContent></Dialog>
-        <ConfirmDialog open={confirm !== null} onCancel={() => setConfirm(null)} tone="danger" busy={!!busyID} error={confirmError}
-            title={t(confirm?.kind === "revoke" ? "manage.participants.revokeTitle" : "manage.participants.rejectTitle")}
-            description={confirm?.kind === "revoke" ? t("manage.participants.revokeBody") : undefined}
-            subject={confirm ? confirm.kind === "revoke" ? confirm.participant.Email || personName(confirm.participant) : personName(confirm.participant) : undefined}
-            confirmLabel={t(confirm?.kind === "revoke" ? "manage.participants.revoke" : "manage.participants.reject")} onConfirm={() => void runConfirmed()} />
+        <ManageDialog open={current !== null} onOpenChange={value => {if (!value) setOpened(null);}} size="md"
+            title={current ? personName(current) : ""}
+            description={current ? [current.Pseudonym && t("manage.participants.pseudonym", {pseudonym: current.Pseudonym}), current.Email, !current.Invited && t("manage.participants.submittedAt", {date: date.format(new Date(current.CreatedAt))})].filter(Boolean).join(" · ") : undefined}
+            footer={<>
+                <button className="ib-btn" type="button" onClick={() => setOpened(null)}>{t("common.close")}</button>
+                {canManage && current && tab === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={!!busyID} busy={!!busyID && !confirm} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}
+                {canManage && current && current.Status === 1 && tab === "applications" && <>
+                    <button className="ib-btn" type="button" disabled={!!busyID} onClick={() => decide(current, "reject")}>{t("manage.participants.reject")}</button>
+                    <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} busy={!!busyID && !confirm} onClick={() => decide(current, "approve")}>{t("manage.participants.approve")}</EventButton>
+                </>}
+            </>}>
+            {current && <AnswersList fields={fields} answers={current.Answers} />}
+            {current && formQuery.data && hasStaffFields(formQuery.data) && <StaffFieldsPanel key={current.UserID} eventID={eventID} scope="participant" subjectID={current.UserID} form={formQuery.data} answers={current.Answers} canManage={canManage} onSaved={refresh} />}
+            {confirmDialog(confirm !== null && current !== null)}
+        </ManageDialog>
+        {confirmDialog(confirm !== null && current === null)}
     </div>;
 }
