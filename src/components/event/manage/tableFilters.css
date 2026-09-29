@@ -5,7 +5,7 @@
 .event-table-filters__item legend{margin-bottom:var(--ib-2);padding:0;color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-table-filters__item .event-select{width:100%}
 .event-table-filters__options{display:grid;gap:var(--ib-2)}
-.event-table-filters__range{display:grid;grid-template-columns:1fr 1fr;gap:var(--ib-2)}
+.event-table-filters__range{display:grid;grid-template-columns:1fr 1fr;gap:var(--ib-2);align-items:center}
 .event-table-filters__range--dates{grid-template-columns:1fr}
 .event-table-filters__chips{display:flex;flex-basis:100%;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
 .event-table-filters__chip{display:inline-flex;align-items:center;gap:var(--ib-1);max-width:100%;min-height:28px;padding:0 var(--ib-1) 0 var(--ib-2);border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-ink);font-size:var(--ib-fs-12)}
@@ -18,6 +18,11 @@
 .event-table-filters__sort.is-active,.event-table-filters__sort:hover{color:var(--ib-ink)}
 .event-table-filters__sort.is-active svg{color:var(--ib-ink)}
 .event-table-filters__sort:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
-.event-table-filters__row{display:grid;grid-template-columns:minmax(120px,auto) 1fr;gap:var(--ib-2);align-items:start}
+.event-table-filters__row{display:grid;grid-template-columns:minmax(120px,auto) 1fr;gap:var(--ib-2);align-items:center}
 .event-table-filters__row .event-table-filters__op{width:100%}
 .event-table-filters__row>:only-child{grid-column:1/-1}
+/* Every control of a filter row has the DS input height and the DS focus
+   ring (one 2px inset outline, action border) — selects and pickers too. */
+.event-table-filters .ib-input,.event-table-filters .event-select,.event-table-filters .event-date-picker__trigger{box-sizing:border-box;height:var(--ib-control-h-lg);min-height:var(--ib-control-h-lg)}
+.event-table-filters .event-date-picker__time input{height:var(--ib-control-h-lg)}
+.event-table-filters .event-select:focus-visible,.event-table-filters .event-select[aria-expanded="true"],.event-table-filters .event-date-picker__trigger:focus-visible{outline:2px solid var(--ib-action);outline-offset:-1px;border-color:var(--ib-action)}

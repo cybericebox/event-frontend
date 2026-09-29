@@ -19,7 +19,7 @@ function FilterControl({spec, draft, onChange}: {spec: FilterSpec; draft: Filter
         return <div className="event-table-filters__row">
             <EventSelect className="event-table-filters__op" ariaLabel={t("manage.table.filters.opLabel", {label: spec.label})} value={op} onValueChange={value => onChange({op: value, text: value === "contains" ? draft.text : undefined})}
                 options={TEXT_OPS.map(value => ({value, label: t(`manage.table.filters.op.${value}`)}))} />
-            {op === "contains" && <input className="ib-input ib-input--sm" type="search" value={draft.text ?? ""} maxLength={100} placeholder={t("manage.table.filters.contains")}
+            {op === "contains" && <input className="ib-input" type="search" value={draft.text ?? ""} maxLength={100} placeholder={t("manage.table.filters.contains")}
                 aria-label={t("manage.table.filters.containsLabel", {label: spec.label})} onChange={event => onChange({op, text: event.target.value})} />}
         </div>;
     }
@@ -36,9 +36,9 @@ function FilterControl({spec, draft, onChange}: {spec: FilterSpec; draft: Filter
             <EventSelect className="event-table-filters__op" ariaLabel={t("manage.table.filters.opLabel", {label: spec.label})} value={op} onValueChange={value => onChange({...draft, op: value})}
                 options={NUMBER_OPS.map(value => ({value, label: t(`manage.table.filters.op.${value}`)}))} />
             {op === "between" ? <div className="event-table-filters__range">
-                <input className="ib-input ib-input--sm" type="number" value={draft.from ?? ""} placeholder={t("manage.table.filters.min")} aria-label={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={event => onChange({...draft, from: event.target.value})} />
-                <input className="ib-input ib-input--sm" type="number" value={draft.to ?? ""} placeholder={t("manage.table.filters.max")} aria-label={t("manage.table.filters.toLabel", {label: spec.label})} onChange={event => onChange({...draft, to: event.target.value})} />
-            </div> : <input className="ib-input ib-input--sm" type="number" value={draft.from ?? ""} aria-label={t("manage.table.filters.valueLabel", {label: spec.label})} onChange={event => onChange({...draft, from: event.target.value})} />}
+                <input className="ib-input" type="number" value={draft.from ?? ""} placeholder={t("manage.table.filters.min")} aria-label={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={event => onChange({...draft, from: event.target.value})} />
+                <input className="ib-input" type="number" value={draft.to ?? ""} placeholder={t("manage.table.filters.max")} aria-label={t("manage.table.filters.toLabel", {label: spec.label})} onChange={event => onChange({...draft, to: event.target.value})} />
+            </div> : <input className="ib-input" type="number" value={draft.from ?? ""} aria-label={t("manage.table.filters.valueLabel", {label: spec.label})} onChange={event => onChange({...draft, from: event.target.value})} />}
         </div>;
     }
     case "date":
