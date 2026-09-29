@@ -1840,6 +1840,7 @@
   "manage.invites.csv.columnsNote": "Інші колонки не враховуються.",
   "manage.invites.csv.template": "Завантажити шаблон",
   "manage.invites.csv.fileHint": "Файл CSV",
+  "manage.invites.csv.dropOverlay": "Відпустіть файл, щоб завантажити CSV",
   "manage.invites.csv.row": "Рядок {row}. {message}",
   "manage.invites.csv.more": "І ще помилок: {count}",
   "manage.invites.csv.issue.empty": "У файлі немає даних.",

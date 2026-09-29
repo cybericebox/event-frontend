@@ -1,6 +1,6 @@
 "use client";
 
-import {useRef, useState, type DragEvent, type KeyboardEvent} from "react";
+import {useImperativeHandle, useRef, useState, type DragEvent, type KeyboardEvent, type Ref} from "react";
 import {FileText, Upload, X} from "lucide-react";
 import {BusyMark} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
@@ -23,12 +23,16 @@ export function formatFileSize(bytes: number): string {
     return t("ui.filePicker.sizeMB", {size: number(bytes / 1024 / 1024)});
 }
 
+// Lets a larger drop target (a whole dialog) hand files to the picker, which
+// then checks them exactly as if they were dropped on it.
+export type FilePickerHandle = {take: (files: File[]) => void};
+
 // DS file picker: a dashed drop zone («Перетягніть файл сюди або» + «Обрати
 // файл») that opens the native picker on click, Enter or Space, and checks a
 // dropped or picked file against `accept` and `maxBytes` before handing it on.
 // With a file it shows the name, size and a remove button. `compact` is the
 // one-line variant for dialogs.
-export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxBytes, hint, error, busy = false, compact = false, disabled = false, describedBy}: {
+export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxBytes, hint, error, busy = false, compact = false, disabled = false, describedBy, pickerRef}: {
     id: string;
     fileName: string | null;
     fileSize?: number;
@@ -43,6 +47,7 @@ export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxByte
     compact?: boolean;
     disabled?: boolean;
     describedBy?: string;
+    pickerRef?: Ref<FilePickerHandle>;
 }) {
     const input = useRef<HTMLInputElement>(null);
     const [over, setOver] = useState(false);
@@ -62,6 +67,8 @@ export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxByte
         setProblem(list.length > 1 ? {text: t("ui.filePicker.onlyOne"), blocking: false} : null);
         onFile(file);
     }
+
+    useImperativeHandle(pickerRef, () => ({take: files => {if (!inactive) take(files);}}));
 
     function open() { if (!inactive) input.current?.click(); }
     function key(event: KeyboardEvent<HTMLDivElement>) {

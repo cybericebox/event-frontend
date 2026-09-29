@@ -1840,6 +1840,7 @@
   "manage.invites.csv.columnsNote": "Other columns are ignored.",
   "manage.invites.csv.template": "Download template",
   "manage.invites.csv.fileHint": "A CSV file",
+  "manage.invites.csv.dropOverlay": "Drop the file to load the CSV",
   "manage.invites.csv.row": "Row {row}. {message}",
   "manage.invites.csv.more": "And {count} more issues",
   "manage.invites.csv.issue.empty": "The file has no data.",

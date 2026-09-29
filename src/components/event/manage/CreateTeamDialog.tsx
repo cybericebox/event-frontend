@@ -1,6 +1,6 @@
 "use client";
 
-import {useId, useState, type FormEvent} from "react";
+import {useCallback, useId, useRef, useState, type FormEvent} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
@@ -14,6 +14,7 @@ import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {CsvField} from "./invites/CsvField";
+import type {FilePickerHandle} from "@/components/ui/EventFilePicker";
 import {EmailChipsInput} from "./invites/EmailChipsInput";
 import {ManageDialog} from "./invites/ManageDialog";
 import {addChips, chipName, validChips, type EmailChip} from "./invites/emailChips";
@@ -55,6 +56,20 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
 }) {
     const id = useId();
     const [mode, setMode] = useState<Mode>("manual");
+    const csvPicker = useRef<FilePickerHandle | null>(null);
+    // A CSV dropped in manual mode waits here until the CSV field mounts.
+    const droppedCsv = useRef<File[] | null>(null);
+    const attachCsvPicker = useCallback((handle: FilePickerHandle | null) => {
+        csvPicker.current = handle;
+        if (handle && droppedCsv.current) {handle.take(droppedCsv.current); droppedCsv.current = null;}
+    }, []);
+
+    // A file dropped anywhere on the dialog goes to the CSV field, switching to it.
+    function dropCsv(files: File[]) {
+        if (mode === "csv") {csvPicker.current?.take(files); return;}
+        droppedCsv.current = files;
+        setMode("csv"); setServerIssues([]);
+    }
     const [name, setName] = useState("");
     const [chips, setChips] = useState<EmailChip[]>([]);
     const [captain, setCaptain] = useState("");
@@ -145,6 +160,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     }
 
     return <ManageDialog open={open} onOpenChange={next => {if (!next) close(); else onOpenChange(true);}} title={t("manage.teams.newTitle")} description={t("manage.teams.batch.description")} onSubmit={submit} size="md"
+        fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: dropCsv, disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={mode === "manual" ? !canCreateManual : !canCreateCsv} busy={busy}>{mode === "manual" ? t("manage.teams.create") : t("manage.teams.batch.createAll", {count: csvTeams.length})}</EventButton></>}>
         <div className="ib-seg event-modal__modes" role="group" aria-label={t("manage.teams.batch.mode")}>
@@ -172,7 +188,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
         </> : <>
             <CsvField label={t("manage.teams.batch.csv")} columns={teamColumns} required={["team", "email", "captain"]}
                 examples={[[t("manage.invites.template.team"), t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), t("manage.invites.template.captain")], [t("manage.invites.template.team"), t("manage.invites.template.email2"), t("manage.invites.template.firstName2"), t("manage.invites.template.lastName2"), ""]]}
-                templateName={t("manage.invites.template.teamFile")} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
+                templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
             <p className="ib-field__hint">{t("manage.teams.batch.captainMarks")}</p>
             {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}
         </>}

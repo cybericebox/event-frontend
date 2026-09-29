@@ -1,11 +1,12 @@
 "use client";
 
-import {useId, useState, type FormEvent} from "react";
+import {useId, useRef, useState, type FormEvent} from "react";
 import {toast} from "react-hot-toast";
 import {sendInvitations, type InvitationResult} from "@/api/manageInvites";
 import {EventButton} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
 import {CsvField} from "./invites/CsvField";
+import type {FilePickerHandle} from "@/components/ui/EventFilePicker";
 import {EmailChipsInput} from "./invites/EmailChipsInput";
 import {ManageDialog} from "./invites/ManageDialog";
 import {addChips, validChips, type EmailChip} from "./invites/emailChips";
@@ -33,6 +34,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     const [csvIssues, setCsvIssues] = useState<CsvIssue[]>([]);
     const [failures, setFailures] = useState<InvitationResult[]>([]);
     const [busy, setBusy] = useState(false);
+    const csvPicker = useRef<FilePickerHandle>(null);
     const valid = validChips(chips);
     const invalidCount = chips.length - valid.length;
     const canSend = !busy && valid.length > 0 && valid.length <= invitationLimit && invalidCount === 0;
@@ -78,6 +80,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     const title = team ? t("manage.teams.invite.title", {name: team.Name}) : t("manage.participants.invite.title");
     return <ManageDialog open={open} onOpenChange={next => {if (!busy) {if (!next) reset(); onOpenChange(next);}}} title={title}
         description={team ? t("manage.invites.teamDescription") : t("manage.invites.description")} onSubmit={submit}
+        fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: files => csvPicker.current?.take(files), disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => {reset(); onOpenChange(false);}}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canSend} busy={busy}>{t("manage.participants.invite.send")}</EventButton></>}>
         <div className="ib-field">
@@ -87,7 +90,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
         </div>
         <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName")]]}
-            templateName={t("manage.invites.template.inviteFile")} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
+            templateName={t("manage.invites.template.inviteFile")} pickerRef={csvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
         {failures.length > 0 && <ul className="event-modal__issues" role="status">{failures.map(result => <li key={result.Email}>{invitationFailureText(result)}</li>)}</ul>}
     </ManageDialog>;
 }

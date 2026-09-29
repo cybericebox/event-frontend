@@ -2,6 +2,9 @@
    divider above the actions; email chips input; DS file picker. */
 .event-modal-backdrop{overflow:auto}
 .event-modal{max-height:calc(100dvh - 2 * var(--ib-4))}
+.event-modal{position:relative}
+.event-modal__drop{position:absolute;inset:var(--ib-3);z-index:5;display:grid;place-content:center;justify-items:center;gap:var(--ib-2);padding:var(--ib-5);border:1px dashed var(--ib-action);border-radius:var(--ib-r-lg);background:color-mix(in srgb,var(--ib-action) 8%,var(--ib-raised,var(--ib-surface)));color:var(--ib-ink);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);text-align:center;pointer-events:none}
+.event-modal__drop svg{color:var(--ib-action)}
 .event-modal:focus{outline:none}
 .event-modal__form{display:flex;flex-direction:column;min-height:0}
 .event-modal .ib-modal__foot{border-top:0;padding-top:0}
