@@ -6,7 +6,9 @@ import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {ManagerShell} from "./ManagerShell";
 import {EventLoading} from "../EventLoading";
 import {EventBrandProvider} from "../EventBrandLogo";
+import {OutageShell} from "../OutageShell";
 import {idOrigin} from "@/utils/origins";
+import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
 export function ManagerBootstrap({children}: {children: ReactNode}) {
@@ -31,13 +33,13 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
     if (event.isPending) return <EventLoading full label={t("manage.shell.loadingEvent")} />;
     if (event.isError) {
         const status = event.error instanceof ClientEventInfoError ? event.error.status : 0;
-        const unavailable = status === 0 || status >= 500;
+        // An outage keeps the /manage frame; the outage modal covers it and the
+        // query refetches once the API answers.
+        if (isOutageError(event.error, status)) return <OutageShell manage />;
         return <div className="event-shell-state" role="alert">
-            <h1>{unavailable ? t("manage.shell.serverUnavailableTitle") : t("manage.shell.eventNotFoundTitle")}</h1>
-            <p>{unavailable ? t("manage.shell.serverUnavailableBody") : t("manage.shell.eventNotFoundBody")}</p>
-            {unavailable
-                ? <button className="ib-btn" onClick={() => void event.refetch()}>{t("common.retry")}</button>
-                : <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>{t("common.signIn")}</a>}
+            <h1>{t("manage.shell.eventNotFoundTitle")}</h1>
+            <p>{t("manage.shell.eventNotFoundBody")}</p>
+            <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>{t("common.signIn")}</a>
         </div>;
     }
     return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data}>{children}</ManagerShell></EventBrandProvider>;

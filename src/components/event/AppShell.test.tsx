@@ -5,7 +5,7 @@ import {renderToString} from "react-dom/server";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {AppShell} from "./AppShell";
 
-vi.mock("next/navigation", () => ({usePathname: () => "/"}));
+vi.mock("next/navigation", () => ({usePathname: () => "/", useRouter: () => ({refresh: () => {}})}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: () => new Promise(() => {}), getJoinStatus: () => new Promise(() => {}), getOwnTeam: () => new Promise(() => {})}));
 vi.mock("@/api/participantEventInfo", () => ({getParticipantEventInfo: () => new Promise(() => {})}));
 vi.mock("./GuestShell", () => ({GuestShell: ({children}: {children: React.ReactNode}) => <main>{children}</main>}));

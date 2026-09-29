@@ -12,7 +12,7 @@ import {AppShell} from "@/components/event/AppShell";
 // next/font needs the Next compiler
 vi.mock("geist/font/sans", () => ({GeistSans: {variable: "font-sans"}}));
 vi.mock("geist/font/mono", () => ({GeistMono: {variable: "font-mono"}}));
-vi.mock("next/navigation", () => ({usePathname: () => "/"}));
+vi.mock("next/navigation", () => ({usePathname: () => "/", useRouter: () => ({refresh: () => {}})}));
 
 const noop = () => {};
 const error = Object.assign(new Error("secret stack detail"), {digest: "d1"});
@@ -42,13 +42,17 @@ describe("error pages", () => {
         expect(html).not.toContain("secret stack detail");
     });
 
-    it("an unavailable event (server fetch failed) shows the error screen with its texts", () => {
+    it("an unavailable event (server fetch failed) keeps the shell frame under the outage modal", () => {
         const client = new QueryClient();
         const html = renderToStaticMarkup(<QueryClientProvider client={client}><AppShell event={null} unavailable><p>page</p></AppShell></QueryClientProvider>);
+        expect(html).toContain("ib-navbar");
+        expect(html).toContain("crest-128");
+        expect(html).toContain('role="alertdialog"');
         expect(html).toContain(uk["shell.unavailable.title"]);
         expect(html).toContain(uk["shell.unavailable.body"]);
-        expect(html).toContain(">Оновити<");
+        expect(html).toContain(uk["shell.unavailable.retryNow"]);
         expect(html).not.toContain(">page<");
+        expect(html).not.toContain(uk["error.page.reload"]);
     });
 
     it("the texts exist in both catalogs", () => {

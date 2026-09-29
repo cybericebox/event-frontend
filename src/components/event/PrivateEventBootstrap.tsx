@@ -10,7 +10,9 @@ import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {GuestShell} from "./GuestShell";
 import {EventLoading} from "./EventLoading";
 import {EventBrandProvider} from "./EventBrandLogo";
+import {OutageShell} from "./OutageShell";
 import {idOrigin} from "@/utils/origins";
+import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
 const PrivateEventContext = createContext<PublicEventInfo | null>(null);
@@ -48,13 +50,13 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
     if (identity.isError || access.isError) {
         const status = identity.error instanceof ClientEventInfoError ? identity.error.status
             : access.error instanceof ManageApiError ? access.error.status : 0;
-        const unavailable = status === 0 || status >= 500;
+        // An outage keeps the guest frame under the outage modal; the queries
+        // refetch once the API answers.
+        if (isOutageError(identity.error ?? access.error, status)) return <OutageShell />;
         return <div className="event-shell-state" role="alert">
-            <h1>{unavailable ? t("shell.unavailable.title") : t("shell.preview.notFound")}</h1>
-            <p>{unavailable ? t("shell.preview.unavailableBody") : t("shell.preview.managersOnly")}</p>
-            {unavailable
-                ? <button className="ib-btn" onClick={() => void (identity.isError ? identity.refetch() : access.refetch())}>{t("common.retry")}</button>
-                : <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>{t("account.signIn")}</a>}
+            <h1>{t("shell.preview.notFound")}</h1>
+            <p>{t("shell.preview.managersOnly")}</p>
+            <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>{t("account.signIn")}</a>
         </div>;
     }
     const event = identity.data!;

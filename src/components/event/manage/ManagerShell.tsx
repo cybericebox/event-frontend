@@ -8,10 +8,12 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
 import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavigation";
+import {OutageShell} from "../OutageShell";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {managerLocationTitle} from "./managerNavigation";
 import Link from "next/link";
 import {eventOrigin, idOrigin} from "@/utils/origins";
+import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
 function signInHref(event: PublicEventInfo): string {
@@ -48,6 +50,8 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
     if (access.isPending) return <EventLoading event={event} full label={t("manage.shell.checkingAccess")} />;
     if (access.isError) {
         const status = access.error instanceof ManageApiError ? access.error.status : 0;
+        // An outage keeps the frame under the outage modal; access refetches on recovery.
+        if (isOutageError(access.error, status)) return <OutageShell manage event={event} />;
         return <div className="event-shell-state" role="alert">
             <h1>{status === 403 ? t("manage.shell.forbiddenTitle") : status === 401 ? t("manage.shell.signInTitle") : t("manage.shell.loadFailedTitle")}</h1>
             <p>{status === 403 ? t("manage.shell.forbiddenBody") : status === 401 ? t("manage.shell.signInBody") : t("manage.shell.loadFailedBody")}</p>

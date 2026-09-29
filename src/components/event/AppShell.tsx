@@ -13,15 +13,26 @@ import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 import {EventLoading} from "./EventLoading";
-import {EventErrorScreen} from "./EventErrorScreen";
+import {EventServiceStatusGate} from "./EventServiceStatusGate";
+import {OutageShell} from "./OutageShell";
 import {reservedPageSlugs} from "./content/pageSlugs";
 import {t} from "@/i18n/t";
 
-export function AppShell({children, event, unavailable}: {
+type Props = {
     children: ReactNode;
     event: PublicEventInfo | null;
     unavailable: boolean;
-}) {
+};
+
+// The outage modal is mounted once over every shell state; the page stays underneath.
+export function AppShell(props: Props) {
+    return <>
+        <ShellContent {...props} />
+        <EventServiceStatusGate serverUnavailable={props.unavailable} />
+    </>;
+}
+
+function ShellContent({children, event, unavailable}: Props) {
     const pathname = usePathname();
     const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
     const isLive = pathname === "/live";
@@ -50,8 +61,9 @@ export function AppShell({children, event, unavailable}: {
     });
 
     if (unavailable) {
-        // The server-side event fetch failed: no event data, so the platform crest shows.
-        return <EventErrorScreen page title={t("shell.unavailable.title")} body={t("shell.unavailable.body")} onRetry={() => window.location.reload()} />;
+        // The server-side event fetch failed: no event data, so the bare frame with the
+        // platform crest stays under the outage modal until the event loads again.
+        return <OutageShell manage={isManagement} />;
     }
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
