@@ -31,7 +31,6 @@ const identitySchema = z.object({Sender: partySchema, ReplyTo: partySchema});
 const settingsSchema = z.object({
     Identity: identitySchema,
     Inherited: identitySchema,
-    StartReminderHours: z.number().int(),
     SMTP: smtpSchema.nullable(),
     PlatformConfigured: z.boolean(),
 });
@@ -67,7 +66,6 @@ export type MailJournalPage = z.infer<typeof journalPageSchema>;
 
 export type IdentityForm = {senderName: string; senderAddress: string; replyToName: string; replyToAddress: string};
 export type IdentityInput = {Sender: MailParty; ReplyTo: MailParty};
-export type ReminderInput = {StartReminderHours: number};
 
 export const maxMailNameLength = 64;
 export type IdentityError = "" | "senderName" | "senderAddress" | "replyToName" | "replyToAddress";
@@ -168,11 +166,6 @@ export async function getEventMailSettings(eventID: string): Promise<EventMailSe
 
 export async function putEventMailIdentity(eventID: string, input: IdentityInput): Promise<EventMailSettings> {
     return savedSettings(eventID, await request(eventID, "mail/identity", z.unknown().optional(), "PUT", input));
-}
-
-// The start reminder is edited with the email templates (notif-templates).
-export async function putEventMailReminder(eventID: string, input: ReminderInput): Promise<EventMailSettings> {
-    return savedSettings(eventID, await request(eventID, "mail", z.unknown().optional(), "PUT", input));
 }
 
 export async function putEventMailSMTP(eventID: string, input: SMTPInput): Promise<EventMailSettings> {
