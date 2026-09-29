@@ -6,6 +6,7 @@ import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {visibleFieldKeys} from "@/components/event/formVisibility";
 import {t} from "@/i18n/t";
+import {EventCheckbox} from "@/components/ui/EventCheckbox";
 
 function present(value: ParticipantAnswers[string] | undefined): boolean {
     return value !== undefined && value !== "" && (!Array.isArray(value) || value.length > 0);
@@ -44,9 +45,9 @@ export function ParticipantFormFields({form, answers, onChange, idPrefix = "join
                 return <div className="event-join-question" key={block.id}><label htmlFor={id}><strong>{block.label}</strong>{block.required && <span className="event-field-required" aria-label={t("forms.field.required")}>*</span>}</label>{block.help && <p>{block.help}</p>}
                     {block.input === "long_text" ? <textarea id={id} className="event-join-input" rows={4} value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />
                         : block.input === "number" ? <input id={id} className="event-join-input" type="number" value={typeof answers[key] === "number" ? answers[key] as number : ""} onChange={e => update(e.target.value === "" ? "" : Number(e.target.value))} />
-                        : block.input === "checkbox" ? <label className="event-join-choice"><input id={id} type="checkbox" checked={answers[key] === true} onChange={e => update(e.target.checked)} />{t("common.yes")}</label>
+                        : block.input === "checkbox" ? <EventCheckbox className="event-join-choice" id={id} checked={answers[key] === true} onCheckedChange={checked => update(checked)} label={t("common.yes")} />
                         : block.input === "select" ? <select id={id} className="event-join-input" value={String(answers[key] ?? "")} onChange={e => update(e.target.value)}><option value="">{t("common.chooseOption")}</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
-                        : block.input === "multi_select" ? <div className="event-join-options" id={id}>{(block.options ?? []).map(option => <label className="event-join-choice" key={option}><input type="checkbox" checked={Array.isArray(answers[key]) && (answers[key] as string[]).includes(option)} onChange={e => {const previous = Array.isArray(answers[key]) ? answers[key] as string[] : []; update(e.target.checked ? [...previous, option] : previous.filter(item => item !== option));}} />{option}</label>)}</div>
+                        : block.input === "multi_select" ? <div className="event-join-options" id={id}>{(block.options ?? []).map(option => <EventCheckbox className="event-join-choice" key={option} checked={Array.isArray(answers[key]) && (answers[key] as string[]).includes(option)} onCheckedChange={checked => {const previous = Array.isArray(answers[key]) ? answers[key] as string[] : []; update(checked ? [...previous, option] : previous.filter(item => item !== option));}} label={option} />)}</div>
                         : <input id={id} className="event-join-input" type="text" value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />}
                 </div>;
             }
