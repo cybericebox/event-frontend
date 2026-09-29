@@ -18,6 +18,7 @@ import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "./ManageFieldLabel";
 import {useManager} from "./ManagerShell";
 import {EventButton} from "@/components/ui/EventButton";
+import {PasswordInput} from "@/components/ui/PasswordInput";
 
 function errorText(error: unknown, fallback: string) {
     return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback);
@@ -167,7 +168,7 @@ export function MailSettingsPanel() {
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-smtp-password" title={t("manage.mail.smtp.password")} help={t("manage.mail.smtp.passwordHelp")} />
-                    <input id="mail-smtp-password" className="event-manage-input" type="password" value={form.password} autoComplete="new-password" placeholder={settings.SMTP?.PasswordSet && !form.clearPassword ? t("manage.mail.smtp.passwordSaved") : ""} disabled={disabled || form.clearPassword} onChange={change => changeSMTP({password: change.target.value})} />
+                    <PasswordInput id="mail-smtp-password" value={form.password} autoComplete="new-password" placeholder={settings.SMTP?.PasswordSet && !form.clearPassword ? t("manage.mail.smtp.passwordSaved") : ""} disabled={disabled || form.clearPassword} onChange={change => changeSMTP({password: change.target.value})} />
                     {settings.SMTP?.PasswordSet && <div className="event-manage-mail__password">
                         <small>{t(form.clearPassword ? "manage.mail.smtp.passwordWillClear" : "manage.mail.smtp.passwordKeep")}</small>
                         {canManage && <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" disabled={disabled} onClick={() => changeSMTP({clearPassword: !form.clearPassword, password: ""})}>{t(form.clearPassword ? "manage.mail.smtp.keepPassword" : "manage.mail.smtp.clearPassword")}</button>}

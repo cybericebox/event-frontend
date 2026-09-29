@@ -50,3 +50,8 @@
 .ib-input__reveal:hover,.ib-input__reveal.is-hover{color:var(--ib-ink);background:color-mix(in srgb,var(--ib-ink) 6%,transparent)}
 .ib-input__reveal:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
 .ib-input:disabled~.ib-input__reveal{display:none}
+
+/* PasswordInput — input + eye .ib-icon-btn--sm (inside an .ib-tip) on the right; hidden while disabled */
+.event-password{position:relative;width:100%;min-width:0}
+.event-password>input:not(:disabled){padding-right:44px}
+.event-password>.ib-tip{position:absolute;right:4px;top:50%;transform:translateY(-50%)}
