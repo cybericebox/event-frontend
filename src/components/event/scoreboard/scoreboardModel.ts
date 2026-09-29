@@ -27,18 +27,21 @@ export type ScoreboardAccess = {
     fetch: boolean;
     // The table block message instead of rows, or null for the rows.
     message: "scoreboard.hidden" | "scoreboard.participantsOnly" | "scoreboard.afterStart" | null;
-    // «Відкрити Live»: staff always, everyone else while the ranking is readable.
+    // «Відкрити Live»: staff always, everyone else while the ranking is
+    // readable and the live screen is open to them.
     live: boolean;
 };
 
 // What the results page shows to one viewer: `base` is the availability of
 // the public or participant info (the guest or participant view), `staff`
-// the viewer's manage access, `started` the event phase.
-export function scoreboardAccess(base: ResultsAvailability, staff: boolean, started: boolean): ScoreboardAccess {
+// the viewer's manage access, `started` the event phase, `liveOpen` whether
+// the live screen audience includes this viewer (participant info
+// CanOpenLive, or public info LiveAudience "public" for guests).
+export function scoreboardAccess(base: ResultsAvailability, staff: boolean, started: boolean, liveOpen = false): ScoreboardAccess {
     const availability = viewerResultsAvailability(base, staff);
     const nav = resultsLinkVisible(availability);
     if (availability === "hidden") return {nav, fetch: false, message: "scoreboard.hidden", live: false};
     if (availability === "participants_only") return {nav, fetch: false, message: "scoreboard.participantsOnly", live: false};
     if (!started) return {nav, fetch: false, message: "scoreboard.afterStart", live: staff};
-    return {nav, fetch: true, message: null, live: true};
+    return {nav, fetch: true, message: null, live: staff || liveOpen};
 }

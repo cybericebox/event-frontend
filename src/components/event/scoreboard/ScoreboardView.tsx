@@ -39,7 +39,8 @@ export function ScoreboardView() {
     const [search, setSearch] = useState("");
     const started = !!event && Date.parse(event.StartTime) <= now;
     // "not_started" opens by itself at the start; the others need the organizer.
-    const view = scoreboardAccess(base, access.staff, started);
+    const liveOpen = participant ? participant.participantInfo.CanOpenLive : event?.LiveAudience === "public";
+    const view = scoreboardAccess(base, access.staff, started, liveOpen);
     const readable = view.fetch;
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), started ? 30000 : 1000);

@@ -30,3 +30,27 @@ export function apiReadable(audience: Audience, visibility: Visibility, phase: P
 export function freezeApplied(audience: Audience, phase: Phase, freezeActive: boolean): boolean {
     return freezeActive && phase === "during" && audience !== "staff";
 }
+
+export type LiveAudience = "staff" | "participants" | "public";
+export const liveAudiences: LiveAudience[] = ["staff", "participants", "public"];
+
+// The organizer's live audience narrowed by the results visibility (public
+// info LiveAudience).
+export function effectiveLiveAudience(audience: LiveAudience, visibility: Visibility): LiveAudience {
+    if (visibility === 0) return "staff";
+    return visibility === 1 && audience === "public" ? "participants" : audience;
+}
+
+// participant info CanOpenLive: results readable now and Live open to participants.
+export function canOpenLive(visibility: Visibility, phase: Phase, live: LiveAudience): boolean {
+    return apiReadable("participant", visibility, phase) && effectiveLiveAudience(live, visibility) !== "staff";
+}
+
+// Whether «Відкрити Live» should show: staff always; the others while the
+// ranking is readable and the live audience includes them.
+export function liveButton(audience: Audience, visibility: Visibility, phase: Phase, live: LiveAudience): boolean {
+    if (audience === "staff") return true;
+    if (!apiReadable(audience, visibility, phase)) return false;
+    const effective = effectiveLiveAudience(live, visibility);
+    return audience === "participant" ? effective !== "staff" : effective === "public";
+}
