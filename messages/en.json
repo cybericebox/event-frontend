@@ -1946,7 +1946,7 @@
   "manage.shell.checkingAccess": "Checking event management access…",
   "manage.shell.closeMenu": "Close menu",
   "manage.shell.documentTitle": "{name} | Cyber ICE Box",
-  "manage.shell.entry": "Administration",
+  "manage.shell.entry": "Event management",
   "manage.shell.eventNotFoundBody": "Sign in with a moderator account for this event.",
   "manage.shell.eventNotFoundTitle": "Event not found or access is restricted",
   "manage.shell.forbiddenBody": "Your account is not assigned to manage this event.",

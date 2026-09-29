@@ -1946,7 +1946,7 @@
   "manage.shell.checkingAccess": "Перевіряємо доступ до керування подією…",
   "manage.shell.closeMenu": "Закрити меню",
   "manage.shell.documentTitle": "{name} | Cyber ICE Box",
-  "manage.shell.entry": "Адміністрування",
+  "manage.shell.entry": "Керування подією",
   "manage.shell.eventNotFoundBody": "Увійдіть в обліковий запис модератора цієї події.",
   "manage.shell.eventNotFoundTitle": "Подію не знайдено або доступ обмежено",
   "manage.shell.forbiddenBody": "Ваш обліковий запис не призначено для керування цією подією.",
