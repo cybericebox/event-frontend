@@ -10,6 +10,7 @@ import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
 import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavigation";
 import {OutageShell} from "../OutageShell";
+import {useAnalyticsAccess} from "./analytics/useAnalyticsAccess";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {managerLocationTitle} from "./managerNavigation";
 import Link from "next/link";
@@ -49,6 +50,8 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         retry: false, refetchOnWindowFocus: false,
     });
 
+    const analytics = useAnalyticsAccess(event.EventID, !!access.data);
+
     if (access.isPending) return <EventLoading event={event} full label={t("manage.shell.checkingAccess")} />;
     if (access.isError) {
         const status = access.error instanceof ManageApiError ? access.error.status : 0;
@@ -65,7 +68,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
     return <div className="event-manage-frame">
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <div className="ib-admin-shell__layout">
-            <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
+            <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} analytics={analytics.data} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
             <div className="ib-admin-shell__main">
                 <header className="ib-topbar">
                     <EventTooltip content={t("manage.shell.openMenu")} silent>{() => <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>}</EventTooltip>

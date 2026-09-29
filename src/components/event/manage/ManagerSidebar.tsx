@@ -6,6 +6,11 @@ import {
   ArrowLeft,
   Bell,
   CalendarDays,
+  ChartNoAxesCombined,
+  ClipboardList,
+  Gauge,
+  ShieldCheck,
+  TrendingUp,
   ChevronDown,
   FilePenLine,
   FileText,
@@ -15,12 +20,12 @@ import {
   MonitorPlay,
   Palette,
   Plus,
+  ScrollText,
   Send,
   Server,
   Settings2,
   SlidersHorizontal,
   Trophy,
-  ScrollText,
   UserRound,
   Users,
   UsersRound,
@@ -29,6 +34,7 @@ import {
   Puzzle,
 } from "lucide-react";
 import type {ManagePage} from "@/api/manage";
+import type {AnalyticsAccess} from "@/api/manageAnalytics";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {EventBrandLogo} from "../EventBrandLogo";
 import {comparePageOrder} from "../content/pageNavigationOrder";
@@ -36,7 +42,7 @@ import "./managerSidebar.css";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
-type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean};
+type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
 type Group = {id: string; label: string; items: Item[]};
 
 // Пауза: повернути до навігації, коли з'явиться механізм призупинення заходу.
@@ -67,10 +73,22 @@ const groups: Group[] = [
         {href: "/manage/results", label: t("manage.nav.results"), icon: Trophy},
         {href: "/manage/live", label: t("manage.nav.live"), icon: MonitorPlay},
     ]},
+    // Shown only to the viewers with analytics access (§7); «Стенди» needs infrastructure, «Доброчесність» the sensitive level.
+    {id: "analytics", label: t("manage.nav.group.analytics"), items: [
+        {href: "/manage/analytics", label: t("manage.nav.analyticsOverview"), icon: Gauge},
+        {href: "/manage/analytics/participants", label: t("manage.nav.analytics.participants"), icon: UsersRound},
+        {href: "/manage/analytics/tasks", label: t("manage.nav.analytics.tasks"), icon: ClipboardList},
+        {href: "/manage/analytics/progress", label: t("manage.nav.analytics.progress"), icon: TrendingUp},
+        {href: "/manage/analytics/stands", label: t("manage.nav.analytics.stands"), icon: Server, infrastructureOnly: true},
+        {href: "/manage/analytics/integrity", label: t("manage.nav.analytics.integrity"), icon: ShieldCheck, sensitiveOnly: true},
+        {href: "/manage/analytics/communications", label: t("manage.nav.analytics.communications"), icon: Mail},
+        {href: "/manage/analytics/report", label: t("manage.nav.analytics.report"), icon: ChartNoAxesCombined},
+    ]},
     {id: "notifications", label: t("manage.nav.group.notifications"), items: [
         {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: Bell},
         {href: "/manage/email", label: t("manage.nav.email"), icon: Mail},
         {href: "/manage/mail", label: t("manage.nav.mail"), icon: SlidersHorizontal},
+        {href: "/manage/mail-journal", label: t("manage.nav.mailJournal"), icon: ScrollText},
     ]},
 ];
 
@@ -79,20 +97,21 @@ function SideLabel({text, hint = text}: {text: string; hint?: string}) {
     return <EventTooltip content={hint} className="event-manage-sidebar__tip" truncated>{() => <span className="ib-admin-side__label">{text}</span>}</EventTooltip>;
 }
 
-export function ManagerSidebar({event, pathname, pages, pagesError, canManage, infrastructureAllowed, onRetryPages, onNavigate}: {
+export function ManagerSidebar({event, pathname, pages, pagesError, canManage, infrastructureAllowed, analytics, onRetryPages, onNavigate}: {
     event: PublicEventInfo;
     pathname: string;
     pages?: ManagePage[];
     pagesError: boolean;
     canManage: boolean;
     infrastructureAllowed: boolean;
+    // What the viewer may see of the analytics; without it the group is hidden.
+    analytics?: AnalyticsAccess;
     onRetryPages: () => void;
     onNavigate: () => void;
-        {href: "/manage/mail-journal", label: t("manage.nav.mailJournal"), icon: ScrollText},
 }) {
     const [openGroupID, setOpenGroupID] = useState<string | null>(null);
     const teamMode = event.Participation === 1;
-    const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructureAllowed);
+    const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructureAllowed) && (!item.sensitiveOnly || !!analytics?.Sensitive);
     const openGroup = (groupID: string) => setOpenGroupID(groupID);
 
     return <aside className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")}>
@@ -102,7 +121,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
         </div>
         <nav className="ib-admin-side__nav" aria-label={t("manage.nav.sections")}>
             <Link className="ib-admin-side__item" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.overview")}</span></Link>
-            {groups.map(group => {
+            {groups.filter(group => group.id !== "analytics" || analytics?.Sections).map(group => {
                 const isOpen = openGroupID === group.id;
                 const items = group.items.filter(showItem);
                 return <section className="event-manage-sidebar__group" key={group.id} aria-label={group.label}>

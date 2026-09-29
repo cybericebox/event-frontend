@@ -3,6 +3,10 @@ import {t} from "@/i18n/t";
 
 export function managerLocationTitle(pathname: string, pages: ManagePage[]): string {
     if (pathname === "/manage") return t("manage.nav.overview");
+    if (pathname === "/manage/analytics") return t("manage.nav.analyticsOverview");
+    for (const section of ["participants", "tasks", "progress", "stands", "integrity", "communications", "report"]) {
+        if (pathname === `/manage/analytics/${section}`) return t(`manage.nav.analytics.${section}`);
+    }
     if (pathname === "/manage/settings") return t("manage.nav.settings");
     if (pathname === "/manage/appearance") return t("manage.nav.appearance");
     if (pathname === "/manage/participation-settings") return t("manage.nav.participationSettings");
@@ -23,10 +27,10 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/notifications") return t("manage.nav.notifications");
     if (pathname === "/manage/email") return t("manage.nav.email");
     if (pathname === "/manage/mail") return t("manage.nav.mail");
+    if (pathname === "/manage/mail-journal") return t("manage.nav.mailJournal");
     if (pathname === "/manage/content/pages/new") return t("manage.nav.newPage");
     // The editor address follows the draft slug while a draft exists.
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Draft?.Slug ?? item.Slug}` || pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Draft?.Title ?? page.Title;
-    if (pathname === "/manage/mail-journal") return t("manage.nav.mailJournal");
     return t("manage.nav.pages");
 }

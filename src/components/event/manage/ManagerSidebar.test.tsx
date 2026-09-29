@@ -69,6 +69,40 @@ describe("participation navigation", () => {
         renderSidebar(0);
         fireEvent.click(screen.getByRole("button", {name: "Сповіщення"}));
         expect(screen.getByRole("link", {name: "Налаштування"}).getAttribute("href")).toBe("/manage/mail");
-    });
         expect(screen.getByRole("link", {name: "Журнал надсилання"}).getAttribute("href")).toBe("/manage/mail-journal");
+    });
+
+    describe("analytics group", () => {
+        function renderAnalytics(analytics: {Sections: boolean; Sensitive: boolean} | undefined, infrastructure = false) {
+            render(<ManagerSidebar event={{...event, Participation: 1}} pathname="/manage/analytics" pages={[]} pagesError={false} canManage infrastructureAllowed={infrastructure} analytics={analytics} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
+            const heading = screen.queryByRole("button", {name: "Аналітика"});
+            if (heading) fireEvent.click(heading);
+        }
+        const items = () => Array.from(document.getElementById("event-manage-group-analytics")!.querySelectorAll("a")).map(link => [link.textContent?.trim(), link.getAttribute("href")]);
+
+        it("is hidden until the viewer is known to have analytics access", () => {
+            renderAnalytics(undefined);
+            expect(screen.queryByRole("button", {name: "Аналітика"})).toBeNull();
+            cleanup();
+            renderAnalytics({Sections: false, Sensitive: false});
+            expect(screen.queryByRole("button", {name: "Аналітика"})).toBeNull();
+        });
+
+        it("lists the sections in order and leaves out stands and integrity without the right", () => {
+            renderAnalytics({Sections: true, Sensitive: false});
+            expect(items()).toEqual([
+                ["Огляд", "/manage/analytics"],
+                ["Учасники", "/manage/analytics/participants"],
+                ["Завдання", "/manage/analytics/tasks"],
+                ["Прогрес", "/manage/analytics/progress"],
+                ["Комунікації", "/manage/analytics/communications"],
+                ["Звіт", "/manage/analytics/report"],
+            ]);
+        });
+
+        it("adds stands for infrastructure events and integrity for the sensitive level", () => {
+            renderAnalytics({Sections: true, Sensitive: true}, true);
+            expect(items().map(([label]) => label)).toEqual(["Огляд", "Учасники", "Завдання", "Прогрес", "Стенди", "Доброчесність", "Комунікації", "Звіт"]);
+        });
+    });
 });
