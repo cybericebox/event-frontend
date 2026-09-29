@@ -31,13 +31,14 @@ const card = (label: string) => screen.getByRole("region", {name: label});
 const chevron = (region: HTMLElement) => within(region).getByRole("button", {name: /Розгорнути блок|Згорнути блок/});
 
 describe.each(["participant", "team"] as const)("field cards (%s)", scope => {
-    it("start collapsed with the question, its * and small hints on one line", async () => {
+    it("start collapsed with only the question, its * and muted icons", async () => {
         await renderEditor(scope);
         const first = card("Питання 1");
         expect(chevron(first).getAttribute("aria-expanded")).toBe("false");
         expect(within(first).queryByRole("textbox")).toBeNull();
         expect(within(first).getByText("*")).toBeTruthy();
-        expect(within(first).getByText("Число")).toBeTruthy();
+        expect(within(first).queryByText("Число")).toBeNull();
+        expect(within(first).getByRole("button", {name: /Курс/}).textContent).toMatch(/^1Курс\*/);
         expect(within(first).getByRole("img", {name: scope === "team" ? "Можна змінювати після створення" : "Учасник може змінити після реєстрації"})).toBeTruthy();
         expect(within(card("Питання 2")).getByRole("img", {name: "Показується за умовою"})).toBeTruthy();
     });
@@ -54,12 +55,9 @@ describe.each(["participant", "team"] as const)("field cards (%s)", scope => {
         expect(chevron(card("Питання 2")).getAttribute("aria-expanded")).toBe("false");
     });
 
-    it("open a new or duplicated card and collapse or expand all", async () => {
+    it("open a new or duplicated card", async () => {
         await renderEditor(scope);
-        fireEvent.click(screen.getByRole("button", {name: "Розгорнути все"}));
-        expect(screen.getAllByRole("button", {name: "Згорнути блок"})).toHaveLength(2);
-        fireEvent.click(screen.getByRole("button", {name: "Згорнути все"}));
-        expect(screen.queryAllByRole("button", {name: "Згорнути блок"})).toHaveLength(0);
+        expect(screen.queryByRole("button", {name: /Згорнути все|Розгорнути все/})).toBeNull();
         fireEvent.click(within(card("Питання 2")).getByRole("button", {name: "Дублювати блок 2"}));
         expect(chevron(card("Питання 3")).getAttribute("aria-expanded")).toBe("true");
         expect(within(card("Питання 3")).getByDisplayValue("Група")).toBeTruthy();

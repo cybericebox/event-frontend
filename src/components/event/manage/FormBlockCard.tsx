@@ -1,5 +1,6 @@
 "use client";
 
+import type {ReactNode} from "react";
 import {ArrowDown, ArrowUp, ChevronDown, Copy, GitBranch, GripVertical, PencilLine, Trash2} from "lucide-react";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {EventRichTextEditor} from "@/components/event/manage/EventLexicalEditor";
@@ -32,8 +33,12 @@ function blockKind(block: FormBlock): string {
     return block.type;
 }
 
-// One line of the collapsed card: the question and its *, then small hints
-// (answer type, editable later, shown on condition) that give way first.
+// One line of the collapsed card: the question and its *, then small muted
+// icons with tooltips (editable later, shown on condition).
+function CardIcon({label, children}: {label: string; children: ReactNode}) {
+    return <EventTooltip content={label}>{id => <span className="event-form-card__icon" role="img" aria-label={label} aria-describedby={id}>{children}</span>}</EventTooltip>;
+}
+
 function CardTitle({block, scope}: {block: FormBlock; scope: FieldsScope}) {
     if (!isFormField(block)) {
         const summary = block.type === "section" ? block.label : block.type === "text" ? richTextPlainText(block.richText) : "";
@@ -43,11 +48,10 @@ function CardTitle({block, scope}: {block: FormBlock; scope: FieldsScope}) {
     return <span className="event-form-card__title">
         <span className={`event-form-card__question${block.label.trim() ? "" : " is-empty"}`}>{block.label.trim() || t("manage.fields.editor.untitledQuestion")}</span>
         {block.required && <span className="event-field-required" aria-label={t("manage.fields.requiredField")}>*</span>}
-        <span className="event-form-card__meta">
-            <span>{inputOptions.find(option => option.value === block.input)?.label}</span>
-            {block.editable && <span className="event-form-card__icon" title={editable} role="img" aria-label={editable}><PencilLine size={14} aria-hidden="true" /></span>}
-            {block.condition && <span className="event-form-card__icon" title={t("manage.fields.card.conditional")} role="img" aria-label={t("manage.fields.card.conditional")}><GitBranch size={14} aria-hidden="true" /></span>}
-        </span>
+        {(block.editable || block.condition) && <span className="event-form-card__meta">
+            {block.editable && <CardIcon label={editable}><PencilLine size={14} aria-hidden="true" /></CardIcon>}
+            {block.condition && <CardIcon label={t("manage.fields.card.conditional")}><GitBranch size={14} aria-hidden="true" /></CardIcon>}
+        </span>}
     </span>;
 }
 

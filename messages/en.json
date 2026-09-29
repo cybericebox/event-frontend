@@ -1245,8 +1245,6 @@
   "manage.fields.editor.unsupported": "This block can be previewed, but its settings are not available here.",
   "manage.fields.editor.untitledQuestion": "Untitled question",
   "manage.fields.editor.value": "Value",
-  "manage.fields.editor.collapseAll": "Collapse all",
-  "manage.fields.editor.expandAll": "Expand all",
   "manage.fields.card.conditional": "Shown on condition",
   "manage.fields.editor.fileTypes": "Allowed formats",
   "manage.fields.editor.fileTypesFor": "Allowed formats of question {n}",

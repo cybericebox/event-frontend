@@ -1245,8 +1245,6 @@
   "manage.fields.editor.unsupported": "Цей блок можна переглянути, але налаштування для нього тут недоступні.",
   "manage.fields.editor.untitledQuestion": "Питання без назви",
   "manage.fields.editor.value": "Значення",
-  "manage.fields.editor.collapseAll": "Згорнути все",
-  "manage.fields.editor.expandAll": "Розгорнути все",
   "manage.fields.card.conditional": "Показується за умовою",
   "manage.fields.editor.fileTypes": "Дозволені формати",
   "manage.fields.editor.fileTypesFor": "Дозволені формати питання {n}",
