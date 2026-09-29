@@ -2381,18 +2381,18 @@
   "vpn.steps.import": "Імпортуйте файл у WireGuard і ввімкніть тунель.",
   "vpn.steps.install": "Встановіть WireGuard: {link}.",
   "vpn.steps.probePage": "сторінку перевірки",
-  "consent.label": "Згода на cookie",
+  "consent.label": "Згода на використання файлів cookie",
   "consent.text": "Ми використовуємо файли cookie, щоб сайт працював, і — за вашою згодою — щоб покращувати його. {link}",
-  "consent.policyLink": "Політика cookie",
+  "consent.policyLink": "Політика файлів cookie",
   "consent.policy": "Докладніше: {link}.",
   "consent.acceptAll": "Прийняти всі",
   "consent.customize": "Налаштувати",
-  "consent.panelTitle": "Налаштування cookie",
+  "consent.panelTitle": "Налаштування файлів cookie",
   "consent.necessary.title": "Необхідні",
   "consent.necessary.text": "Вхід, безпека та збереження вашого вибору (сесія, згода, reCAPTCHA). Завжди ввімкнені.",
   "consent.analytics.title": "Аналітика",
   "consent.analytics.text": "Google Analytics: показує, як відвідувачі користуються сайтом. Вимкнено, доки ви не ввімкнете.",
   "consent.acceptSelected": "Прийняти вибрані",
   "consent.rejectAll": "Відхилити всі",
-  "consent.settings": "Налаштування cookie"
+  "consent.settings": "Налаштування файлів cookie"
 }
