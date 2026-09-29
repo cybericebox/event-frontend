@@ -532,6 +532,13 @@ button.event-content-editor__block-title{padding:0;border:0;background:none;colo
 .event-content-editor__block-actions .event-content-editor__danger{color:var(--ib-danger)}
 /* The drag handle leads the header, as in the ordered lists; actions and the chevron stay right. */
 .event-content-editor__block-grip{margin-inline-start:calc(var(--ib-2) * -1);margin-inline-end:calc(var(--ib-2) * -1)}
+/* On a collapsed card the actions show on hover or keyboard focus (always on
+   touch); they keep their space, so nothing jumps. The grip and the chevron
+   always show, and an expanded card always shows its actions. */
+.event-content-editor__block:not(.is-open)>.event-content-editor__block-head>.event-content-editor__block-actions:not(.event-content-editor__block-grip){opacity:0;transition:opacity .12s ease}
+.event-content-editor__block:not(.is-open):hover>.event-content-editor__block-head>.event-content-editor__block-actions,.event-content-editor__block:not(.is-open):focus-within>.event-content-editor__block-head>.event-content-editor__block-actions{opacity:1}
+@media (hover:none),(pointer:coarse){.event-content-editor__block:not(.is-open)>.event-content-editor__block-head>.event-content-editor__block-actions:not(.event-content-editor__block-grip){opacity:1}}
+@media (prefers-reduced-motion:reduce){.event-content-editor__block-head>.event-content-editor__block-actions{transition:none}}
 .event-rich-markdown__toolbar .event-rich-markdown__heading-trigger{position:relative;display:grid;place-items:center;width:45px}
 .event-rich-markdown__heading-trigger>svg:last-child{position:absolute;right:2px;top:50%;transform:translateY(-50%)}
 .event-rich-markdown__variable-token{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid #dfbd52;border-radius:6px;background:#f7db75;color:#3f330c;line-height:1.3;white-space:nowrap;vertical-align:baseline}
