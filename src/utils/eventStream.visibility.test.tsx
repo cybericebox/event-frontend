@@ -56,3 +56,39 @@ it("keeps streaming in a hidden tab without pauseWhenHidden", () => {
     setHidden(true);
     expect(FakeEventSource.open[0].closed).toBe(false);
 });
+
+class ListeningEventSource {
+    static last: ListeningEventSource | null = null;
+    onopen: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    listeners = new Map<string, () => void>();
+    constructor(public url: string) { ListeningEventSource.last = this; }
+    addEventListener(name: string, handler: () => void) { this.listeners.set(name, handler); }
+    emit(name: string) { this.listeners.get(name)?.(); }
+    close() {}
+}
+
+it("marks the page alive on open, on listed events and on heartbeats", () => {
+    vi.stubGlobal("EventSource", ListeningEventSource);
+    const onAlive = vi.fn();
+    const onChange = vi.fn();
+    renderHook(() => useEventStream({url: () => "https://api.example.org/live", events: ["attempts-changed"], onChange, onAlive, enabled: true}));
+    const source = ListeningEventSource.last!;
+    source.onopen?.();
+    source.emit("heartbeat");
+    source.emit("attempts-changed");
+    expect(onAlive).toHaveBeenCalledTimes(3);
+    vi.advanceTimersByTime(1000);
+    expect(onChange).toHaveBeenCalledOnce();
+});
+
+it("keeps retrying after falling back to polling", () => {
+    renderHook(() => useEventStream({url: () => "https://api.example.org/live", events: [], onChange: vi.fn(), enabled: true}));
+    for (let attempt = 0; attempt < 3; attempt++) {
+        FakeEventSource.open.at(-1)?.onerror?.();
+        vi.advanceTimersByTime(10_000);
+    }
+    const opened = FakeEventSource.open.length;
+    vi.advanceTimersByTime(40_000);
+    expect(FakeEventSource.open.length).toBe(opened + 1);
+});

@@ -15,10 +15,11 @@ describe("live status", () => {
         expect(screen.getByRole("tooltip").textContent).toBe("Зміни надходять одразу через живий потік.");
     });
 
-    it("says when the stream is down or reconnecting", () => {
+    it("says «Перепідключення…» while the stream reconnects or polls silently", () => {
         render(<LiveStatus freshness={{kind: "stream", mode: "fallback", pollSeconds: 10}} updatedAt={at} />);
-        expect(screen.getByText("Не підключено")).toBeTruthy();
-        expect(screen.getByRole("tooltip").textContent).toBe("Живий потік недоступний. Дані оновлюються кожні 10 с.");
+        expect(screen.getByText("Перепідключення…")).toBeTruthy();
+        expect(screen.queryByText("Не підключено")).toBeNull();
+        expect(screen.getByRole("tooltip").textContent).toBe("Живий потік перепідключається. Поки що дані оновлюються кожні 10 с.");
         cleanup();
         render(<LiveStatus freshness={{kind: "stream", mode: "connecting", pollSeconds: 10}} updatedAt={0} />);
         expect(screen.getByText("Перепідключення…")).toBeTruthy();
@@ -34,11 +35,5 @@ describe("live status", () => {
         cleanup();
         render(<LiveStatus freshness={{kind: "manual", onRefresh, refreshing: true}} updatedAt={at} />);
         expect((screen.getByRole("button", {name: "Оновити список"}) as HTMLButtonElement).disabled).toBe(true);
-    });
-
-    it("describes polling", () => {
-        render(<LiveStatus freshness={{kind: "polling", seconds: 30}} updatedAt={at} />);
-        expect(screen.getByText("Автооновлення")).toBeTruthy();
-        expect(screen.getByRole("tooltip").textContent).toBe("Дані оновлюються автоматично кожні 30 с.");
     });
 });

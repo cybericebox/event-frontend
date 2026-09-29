@@ -1,7 +1,9 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useQuery} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {attemptsLiveURL} from "@/api/manageAttempts";
+import {useEventStream} from "@/utils/eventStream";
 import {getHintUnlocks, type HintUnlock} from "@/api/manageChallenges";
 import {hintCostLabel} from "@/components/event/challenges/hintModel";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -32,6 +34,7 @@ export function filterHintUnlocks(items: HintUnlock[], filters: HintFilters): Hi
 }
 
 // «Підказки» view of «Журнал спроб»: who opened which hint, when and for how much.
+// Silent fallback while the journal stream reconnects.
 const HINTS_POLL_SECONDS = 30;
 
 export function HintUnlocksLog({onStatus}: {onStatus?: (status: {freshness: DataFreshness; updatedAt: number}) => void}) {
@@ -41,9 +44,13 @@ export function HintUnlocksLog({onStatus}: {onStatus?: (status: {freshness: Data
     const [filters, setFilters] = useState<HintFilters>(emptyHintFilters);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(MANAGE_PAGE_SIZES[0]);
-    const unlocks = useQuery({queryKey: ["event-hint-unlocks", event.EventID], queryFn: () => getHintUnlocks(event.EventID), refetchInterval: HINTS_POLL_SECONDS * 1000, refetchOnWindowFocus: false});
-    const updatedAt = unlocks.dataUpdatedAt;
-    useEffect(() => {onStatus?.({freshness: {kind: "polling", seconds: HINTS_POLL_SECONDS}, updatedAt});}, [onStatus, updatedAt]);
+    const queryClient = useQueryClient();
+    const [aliveAt, setAliveAt] = useState(0);
+    // Realtime: the journal stream says "hints-changed", the list reloads.
+    const stream = useEventStream({url: () => attemptsLiveURL(event.EventID), events: ["hints-changed"], onChange: () => void queryClient.invalidateQueries({queryKey: ["event-hint-unlocks", event.EventID]}), onAlive: () => setAliveAt(Date.now()), enabled: true});
+    const unlocks = useQuery({queryKey: ["event-hint-unlocks", event.EventID], queryFn: () => getHintUnlocks(event.EventID), refetchInterval: stream === "fallback" ? HINTS_POLL_SECONDS * 1000 : false, refetchOnWindowFocus: false});
+    const updatedAt = Math.max(unlocks.dataUpdatedAt, aliveAt);
+    useEffect(() => {onStatus?.({freshness: {kind: "stream", mode: stream, pollSeconds: HINTS_POLL_SECONDS}, updatedAt});}, [onStatus, stream, updatedAt]);
     const matching = filterHintUnlocks(unlocks.data ?? [], filters);
     const pages = Math.max(1, Math.ceil(matching.length / pageSize));
     const current = Math.min(page, pages);

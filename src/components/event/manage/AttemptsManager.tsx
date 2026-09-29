@@ -79,9 +79,10 @@ function AttemptsLog({onStatus}: {onStatus: (status: {freshness: DataFreshness; 
     const [annulling, setAnnulling] = useState(false);
     const [exporting, setExporting] = useState(false);
     // Realtime: the stream says "changed", the page refetches; polling when SSE fails.
-    const stream = useEventStream({url: () => attemptsLiveURL(eventID), events: ["attempts-changed"], onChange: () => void queryClient.invalidateQueries({queryKey: ["event-manage-attempts", eventID]}), enabled: true});
+    const [aliveAt, setAliveAt] = useState(0);
+    const stream = useEventStream({url: () => attemptsLiveURL(eventID), events: ["attempts-changed"], onChange: () => void queryClient.invalidateQueries({queryKey: ["event-manage-attempts", eventID]}), onAlive: () => setAliveAt(Date.now()), enabled: true});
     const pageQuery = useQuery({queryKey: ["event-manage-attempts", eventID, filters, pages.cursor, pages.pageSize], queryFn: () => getManageAttempts(eventID, filters, pages.cursor, pages.pageSize), refetchOnWindowFocus: false, refetchInterval: stream === "fallback" ? ATTEMPTS_POLL_SECONDS * 1000 : false, placeholderData: previous => previous});
-    const updatedAt = pageQuery.dataUpdatedAt;
+    const updatedAt = Math.max(pageQuery.dataUpdatedAt, aliveAt);
     useEffect(() => {onStatus({freshness: {kind: "stream", mode: stream, pollSeconds: ATTEMPTS_POLL_SECONDS}, updatedAt});}, [onStatus, stream, updatedAt]);
     // A stale cursor is rejected by the server: go back to the first page.
     if (pageQuery.error instanceof AttemptsCursorError && pages.cursor !== null) pages.reset();

@@ -70,7 +70,8 @@ export default function ManageResultsPage() {
     const queryKey = ["event-management-moderator-results", eventID];
     const revision = queryClient.getQueryData<ModeratorResults>(queryKey)?.Revision;
     // Moderators are never frozen: the public stream only signals changes.
-    const stream = useEventStream({url: () => revision === undefined ? null : resultsLiveURL(eventID, revision), events: ["result-change"], resetEvents: ["snapshot-required"], onChange: () => void queryClient.invalidateQueries({queryKey}), enabled: revision !== undefined});
+    const [aliveAt, setAliveAt] = useState(0);
+    const stream = useEventStream({url: () => revision === undefined ? null : resultsLiveURL(eventID, revision), events: ["result-change"], resetEvents: ["snapshot-required"], onChange: () => void queryClient.invalidateQueries({queryKey}), onAlive: () => setAliveAt(Date.now()), enabled: revision !== undefined});
     const query = useQuery({queryKey, queryFn: () => getModeratorResults(eventID), refetchInterval: stream === "fallback" ? RESULTS_POLL_SECONDS * 1000 : false, refetchOnWindowFocus: false});
     const teams = query.data?.Teams ?? [];
     const withHints = teams.some(team => team.Hints > 0);
@@ -128,7 +129,7 @@ export default function ManageResultsPage() {
         <header className="event-manage-heading">
             <div><h1>{t("manage.results.title")}</h1><p>{teamMode ? t("manage.results.subtitleTeams") : t("manage.results.subtitle")}</p></div>
             <div className="event-manage-heading__actions">
-                <LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: RESULTS_POLL_SECONDS}} updatedAt={query.dataUpdatedAt} />
+                <LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: RESULTS_POLL_SECONDS}} updatedAt={Math.max(query.dataUpdatedAt, aliveAt)} />
                 <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> {t("manage.results.openLive")}</a>
             </div>
         </header>
