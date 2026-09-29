@@ -13,6 +13,7 @@ import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 import {EventLoading} from "./EventLoading";
+import {EventErrorScreen} from "./EventErrorScreen";
 import {reservedPageSlugs} from "./content/pageSlugs";
 import {t} from "@/i18n/t";
 
@@ -49,11 +50,8 @@ export function AppShell({children, event, unavailable}: {
     });
 
     if (unavailable) {
-        return <div className="event-shell-state" role="status">
-            <h1>{t("shell.unavailable.title")}</h1>
-            <p>{t("shell.unavailable.body")}</p>
-            <button className="ib-btn" onClick={() => window.location.reload()}>{t("common.retry")}</button>
-        </div>;
+        // The server-side event fetch failed: no event data, so the platform crest shows.
+        return <EventErrorScreen page title={t("shell.unavailable.title")} body={t("shell.unavailable.body")} onRetry={() => window.location.reload()} />;
     }
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
