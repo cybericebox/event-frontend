@@ -100,7 +100,7 @@
 .live-canvas--edit .live-widget:active{cursor:grabbing}
 .live-widget__resize{position:absolute;right:0;bottom:0;width:calc(22px / var(--live-preview-scale,1));height:calc(22px / var(--live-preview-scale,1));cursor:nwse-resize;background:linear-gradient(135deg,transparent 55%,#aeb3ff 56%)}
 
-.event-live-editor{display:grid;gap:var(--ib-4);max-width:1700px;margin:auto;padding-bottom:var(--ib-6)}
+.event-live-editor{display:grid;gap:var(--ib-4)}
 .event-live-editor__heading{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ib-3);flex-wrap:wrap}
 .event-live-editor__heading h1{margin:0;color:var(--ib-ink);font-size:var(--ib-fs-24)}
 .event-live-editor__heading p{margin:.35em 0 0;color:var(--ib-dim)}
