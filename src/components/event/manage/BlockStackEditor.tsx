@@ -10,13 +10,8 @@ import {PageBlockEditor} from "./PageBlockEditor";
 import {blockPalette, createPageBlock, duplicatePageBlock} from "./blockPalette";
 import {blockValidationIndex} from "./validatePageBlocks";
 import {EditedDocumentContext} from "./useEventLinkOptions";
+import {t, tPlural} from "@/i18n/t";
 import {currentPreviewPhase, previewPageAccess, previewPhases, previewValues, previewViewers, type PreviewPhase, type PreviewViewer} from "./previewScenario";
-
-function blockCountLabel(count: number): string {
-    if (count % 10 === 1 && count % 100 !== 11) return `${count} блок`;
-    if ([2, 3, 4].includes(count % 10) && (count % 100 < 12 || count % 100 > 14)) return `${count} блоки`;
-    return `${count} блоків`;
-}
 
 const undoMilliseconds = 6000;
 
@@ -103,12 +98,12 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
     }
     function duplicateBlock(block: ContentBlock) {
         insertAfter(duplicatePageBlock(block), block.id);
-        toast.success("Блок продубльовано");
+        toast.success(t("manage.blocks.toast.duplicated"));
     }
     // Delete without a confirmation dialog: the toast offers to restore the block.
     function deleteBlock(block: ContentBlock, index: number) {
         onChange(current => ({blocks: current.blocks.filter(item => item.id !== block.id)}));
-        toast(item => <span className="event-undo-toast"><span>Блок видалено</span><button className="ib-btn ib-btn--sm" type="button" onClick={() => {
+        toast(item => <span className="event-undo-toast"><span>{t("manage.blocks.toast.deleted")}</span><button className="ib-btn ib-btn--sm" type="button" onClick={() => {
             onChange(current => {
                 if (current.blocks.some(existing => existing.id === block.id)) return current;
                 const blocks = [...current.blocks];
@@ -117,29 +112,29 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
             });
             select(block.id);
             toast.dismiss(item.id);
-        }}>Відновити</button></span>, {id: `undo-${block.id}`, duration: undoMilliseconds});
+        }}>{t("common.restore")}</button></span>, {id: `undo-${block.id}`, duration: undoMilliseconds});
     }
 
     return <EditedDocumentContext.Provider value={edited}><div className="event-manage-content__layout">
         <div className="event-content-editor">
             {before}
-            <div className="event-content-editor__top"><div><h2>Блоки сторінки</h2><p>Перетягніть блок за ручку або скористайтеся стрілками. Так само вони з’являться на сайті.</p></div><span>{blockCountLabel(document.blocks.length)}</span></div>
-            {document.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>Сторінка поки порожня</strong><span>Додайте перший блок, щоб почати.</span></div>}
+            <div className="event-content-editor__top"><div><h2>{t("manage.blocks.stack.title")}</h2><p>{t("manage.blocks.stack.hint")}</p></div><span>{tPlural("manage.blocks.count", document.blocks.length)}</span></div>
+            {document.blocks.length === 0 && <div className="event-content-editor__empty"><Type size={24} /><strong>{t("manage.blocks.stack.empty")}</strong><span>{t("manage.blocks.stack.emptyHint")}</span></div>}
             <div className="event-content-editor__stack">{document.blocks.map((block, index) => <PageBlockEditor key={block.id} eventID={eventID} coverImage={coverImage} block={block} index={index} count={document.blocks.length} anchorsInUse={document.blocks.filter(item => item.id !== block.id).flatMap(item => [item.id, item.anchor ?? ""])} values={values} catalog={catalog} canEdit={canEdit} selected={selectedBlockID === block.id} error={invalidBlockIndex === index ? validation ?? undefined : undefined}
                 onSelect={() => select(block.id)} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDuplicate={() => duplicateBlock(block)} onDelete={() => deleteBlock(block, index)} />)}</div>
-            {canEdit && <div className="event-content-editor__add" aria-label="Додати блок">{blockPalette.filter(item => item.type !== "hero" || !document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
+            {canEdit && <div className="event-content-editor__add" aria-label={t("manage.blocks.stack.add")}>{blockPalette.filter(item => item.type !== "hero" || !document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
             {validation && invalidBlockIndex === null && <p className="event-manage-validation" role="alert">{validation}</p>}
         </div>
 
-        <aside className="event-manage-content__preview" aria-label="Попередній перегляд чернетки">
-            <div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>Попередній перегляд</h2><p>{selectedHidden ? "Вибраний блок за цих умов приховано." : "Чернетка так, як її побачить вибраний відвідувач."}</p></div></div>
+        <aside className="event-manage-content__preview" aria-label={t("manage.blocks.preview.aria")}>
+            <div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>{t("manage.blocks.preview.title")}</h2><p>{selectedHidden ? t("manage.blocks.preview.selectedHidden") : t("manage.blocks.preview.hint")}</p></div></div>
             <div className="event-preview-switches">
-                <div className="ib-seg ib-seg--sm" role="group" aria-label="Хто дивиться">{previewViewers.map(item => <button key={item.value} type="button" aria-pressed={viewer === item.value} onClick={() => setViewer(item.value)}>{item.label}</button>)}</div>
-                <div className="ib-seg ib-seg--sm" role="group" aria-label="Етап події">{previewPhases.map(item => <button key={item.value} type="button" aria-pressed={activePhase === item.value} onClick={() => setPhase(item.value)}>{item.label}</button>)}</div>
+                <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.viewer")}>{previewViewers.map(item => <button key={item.value} type="button" aria-pressed={viewer === item.value} onClick={() => setViewer(item.value)}>{item.label}</button>)}</div>
+                <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.phase")}>{previewPhases.map(item => <button key={item.value} type="button" aria-pressed={activePhase === item.value} onClick={() => setPhase(item.value)}>{item.label}</button>)}</div>
             </div>
             <div className="event-manage-content__preview-window" ref={previewRef}>
-                {accessNotice ? <div className="event-content-editor__empty"><strong>{accessNotice}</strong><span>Перемкніть, хто дивиться, щоб побачити сторінку.</span></div>
-                    : <div className={previewClassName}>{document.blocks.length === 0 && <div className="event-content-editor__empty">Додайте блок, щоб побачити сторінку.</div>}<ContentBlocks document={document} variables={shownValues} title={previewTitle} selectedBlockId={selectedBlockID ?? undefined} coverImage={coverImage} eventID={eventID} preview previewViewer={viewer} /></div>}
+                {accessNotice ? <div className="event-content-editor__empty"><strong>{accessNotice}</strong><span>{t("manage.blocks.preview.switchViewer")}</span></div>
+                    : <div className={previewClassName}>{document.blocks.length === 0 && <div className="event-content-editor__empty">{t("manage.blocks.preview.empty")}</div>}<ContentBlocks document={document} variables={shownValues} title={previewTitle} selectedBlockId={selectedBlockID ?? undefined} coverImage={coverImage} eventID={eventID} preview previewViewer={viewer} /></div>}
             </div>
         </aside>
     </div></EditedDocumentContext.Provider>;

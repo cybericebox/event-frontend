@@ -1,5 +1,7 @@
 // Readable block anchors: lowercase latin letters, digits and hyphens (the
 // backend rule), unique on the page and different from other block ids.
+import {t} from "@/i18n/t";
+
 export const anchorPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const maxAnchorLength = 64;
 
@@ -17,7 +19,7 @@ export function anchorFromText(text: string): string {
 
 export function anchorError(anchor: string, inUse: string[]): string | null {
     if (!anchor) return null;
-    if (anchor.length > maxAnchorLength || !anchorPattern.test(anchor)) return "Латинські малі літери, цифри й дефіси, до 64 символів.";
-    if (inUse.includes(anchor)) return "Такий якір уже є на цій сторінці.";
+    if (anchor.length > maxAnchorLength || !anchorPattern.test(anchor)) return t("manage.blocks.anchor.invalid", {max: maxAnchorLength});
+    if (inUse.includes(anchor)) return t("manage.blocks.anchor.taken");
     return null;
 }
