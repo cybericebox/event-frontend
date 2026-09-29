@@ -17,7 +17,7 @@ import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
 import {HintUnlocksLog} from "./HintUnlocksLog";
 import {LiveStatus, type DataFreshness} from "./LiveStatus";
-import {journalViews, type JournalView} from "./journalViews";
+import {journalFiltersFromParams, journalViews, type JournalFilterParams, type JournalView} from "./journalViews";
 import {journalTime, PeriodFilters, useJournalOptions} from "./journalShared";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
@@ -39,7 +39,7 @@ function ResultTag({attempt}: {attempt: ManageAttempt}) {
 }
 
 // «Журнал спроб»: solution attempts and opened hints, one view at a time.
-export function AttemptsManager({initialView = "attempts"}: {initialView?: JournalView}) {
+export function AttemptsManager({initialView = "attempts", initialFilters = {}}: {initialView?: JournalView; initialFilters?: JournalFilterParams}) {
     const router = useRouter();
     const [view, setView] = useState<JournalView>(initialView);
     const {event} = useManager();
@@ -67,7 +67,7 @@ export function AttemptsManager({initialView = "attempts"}: {initialView?: Journ
         <div className="ib-seg event-journal__views" role="group" aria-label={t("manage.journal.views")}>
             {journalViews.map(item => <button key={item} type="button" aria-pressed={view === item} onClick={() => switchView(item)}>{t(`manage.journal.view.${item}`)}</button>)}
         </div>
-        {view === "attempts" ? <AttemptsLog live={live} onStatus={setStatus} /> : <HintUnlocksLog live={live} onStatus={setStatus} />}
+        {view === "attempts" ? <AttemptsLog live={live} onStatus={setStatus} initialFilters={initialFilters} /> : <HintUnlocksLog live={live} onStatus={setStatus} />}
     </div>;
 }
 
@@ -76,7 +76,7 @@ const ATTEMPTS_POLL_SECONDS = 10;
 // The journal's one live connection, shared by both views.
 export type JournalLive = {stream: StreamMode; aliveAt: number};
 
-function AttemptsLog({live: {stream, aliveAt}, onStatus}: {live: JournalLive; onStatus: (status: {freshness: DataFreshness; updatedAt: number}) => void}) {
+function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live: JournalLive; onStatus: (status: {freshness: DataFreshness; updatedAt: number}) => void; initialFilters: JournalFilterParams}) {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const teamMode = event.Participation === 1;
@@ -87,7 +87,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus}: {live: JournalLive; on
     const [draft, setDraft] = useState<{id: string; decision: AttemptDecision; reason: string} | null>(null);
     const [showExpected, setShowExpected] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [filters, setFilters] = useState<AttemptFilters>(emptyAttemptFilters);
+    const [filters, setFilters] = useState<AttemptFilters>(() => ({...emptyAttemptFilters, ...journalFiltersFromParams(initialFilters)}));
     const [annul, setAnnul] = useState<{attempt: ManageAttempt; reason: string; error?: string} | null>(null);
     const [annulling, setAnnulling] = useState(false);
     const [exporting, setExporting] = useState(false);

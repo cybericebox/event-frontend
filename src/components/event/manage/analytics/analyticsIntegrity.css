@@ -1,0 +1,9 @@
+/* «Доброчесність»: the thresholds panel and the notes around the signal table. */
+.event-integrity__notice{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-integrity-thresholds{display:grid;gap:var(--ib-4);padding-bottom:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
+.event-integrity-thresholds__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--ib-4);padding:0 var(--ib-5)}
+.event-integrity-thresholds__input{display:flex;align-items:center;gap:var(--ib-2)}
+.event-integrity-thresholds__input .ib-input{min-width:0}
+.event-integrity-thresholds__input span{color:var(--ib-dim);font-size:var(--ib-fs-13);white-space:nowrap}
+.event-integrity-thresholds__actions{display:flex;justify-content:flex-end;gap:var(--ib-2);padding:0 var(--ib-5)}
+.event-integrity__details{min-width:260px;overflow-wrap:anywhere}
