@@ -43,7 +43,9 @@ export function ManageTableSearch({value, onChange, label}: {value: string; onCh
 
 export type ManageTableState = "loading" | "error" | "empty" | "ready";
 
-export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, busy = false, toolbar, footer, children}: {
+// The table, its header row and the footer always render; loading, error and
+// empty states fill the body area under the header, centered.
+export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, busy = false, toolbar, footer, head, children}: {
     event: PublicEventInfo;
     state: ManageTableState;
     loadingLabel: string;
@@ -53,15 +55,21 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
     busy?: boolean;
     toolbar?: ReactNode;
     footer?: ReactNode;
+    head: ReactNode;
     children?: ReactNode;
 }) {
+    const ready = state === "ready";
     return <section className="event-manage-table">
         {toolbar && <div className="event-manage-table__toolbar">{toolbar}</div>}
         <div className="event-manage-table__scroll" aria-busy={state === "loading" || busy}>
-            {state === "loading" ? <EventLoading event={event} label={loadingLabel} />
-                : state === "error" ? <div className="event-block-state" role="alert"><p className="ib-empty__text">{errorMessage}</p><button className="ib-btn ib-btn--sm" type="button" onClick={onRetry}>{t("common.retry")}</button></div>
-                    : state === "empty" ? <EmptyState message={emptyMessage} />
-                        : <table className={busy ? "is-busy" : undefined}>{children}</table>}
+            <table className={ready ? busy ? "is-busy" : undefined : "is-state"}>
+                <thead>{head}</thead>
+                {ready ? children : <tbody><tr><td className="event-manage-table__state" colSpan={1000}>
+                    {state === "loading" ? <EventLoading event={event} label={loadingLabel} />
+                        : state === "error" ? <div className="event-block-state" role="alert"><p className="ib-empty__text">{errorMessage}</p><button className="ib-btn ib-btn--sm" type="button" onClick={onRetry}>{t("common.retry")}</button></div>
+                            : <EmptyState message={emptyMessage} />}
+                </td></tr></tbody>}
+            </table>
         </div>
         {footer}
     </section>;

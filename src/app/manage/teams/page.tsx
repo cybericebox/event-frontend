@@ -220,8 +220,8 @@ export default function ManageTeamsPage() {
                     options={[{value: "all", label: t("manage.teams.filter.all")}, {value: "admitted", label: t("manage.teams.filter.admitted")}, {value: "notAdmitted", label: t("manage.teams.filter.notAdmitted")}]} />
             </>}
             footer={<ManageTablePagination event={event} page={pages.page} pageSize={pageSize} total={teamsQuery.data?.Total ?? 0} hasNext={!!teamsQuery.data?.NextCursor} busy={teamsQuery.isFetching}
-                onPrevious={pages.previous} onNext={() => pages.next(teamsQuery.data?.NextCursor)} onPageSize={pages.setPageSize} />}>
-            <thead><tr>
+                onPrevious={pages.previous} onNext={() => pages.next(teamsQuery.data?.NextCursor)} onPageSize={pages.setPageSize} />}
+            head={<tr>
                 <th scope="col">{t("manage.teams.col.name")}</th>
                 <th scope="col">{t("manage.teams.col.captain")}</th>
                 <th scope="col">{t("manage.teams.col.members")}</th>
@@ -229,7 +229,7 @@ export default function ManageTeamsPage() {
                 <th scope="col">{t("manage.teams.col.created")}</th>
                 {fieldColumns.map(column => <th scope="col" key={column.key}>{column.label}</th>)}
                 <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.teams.col.actions")}</span></th>
-            </tr></thead>
+            </tr>}>
             <tbody>{teams.map(team => {
                 const captain = team.Members.find(member => member.UserID === team.CaptainID);
                 const others = team.Members.filter(member => member.UserID !== team.CaptainID);

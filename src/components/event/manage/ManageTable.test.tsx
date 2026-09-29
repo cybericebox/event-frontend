@@ -16,16 +16,18 @@ const event = {
 
 function table(state: "loading" | "error" | "empty" | "ready", onRetry = vi.fn()) {
     return render(<ManageTable event={event} state={state} loadingLabel="Завантажуємо" emptyMessage="Порожньо" errorMessage="Помилка" onRetry={onRetry}
-        footer={<div>footer</div>}><tbody><tr><td>рядок</td></tr></tbody></ManageTable>);
+        footer={<div>footer</div>} head={<tr><th scope="col">Назва</th></tr>}><tbody><tr><td>рядок</td></tr></tbody></ManageTable>);
 }
 
 describe("manage table states", () => {
     it("renders the loader, the empty state, the error and the rows inside the same block", () => {
         table("loading");
-        expect(screen.getByRole("status", {name: "Завантажуємо"})).toBeTruthy();
+        expect(screen.getByRole("status", {name: "Завантажуємо"}).closest("tbody")).toBeTruthy();
+        expect(screen.getByRole("columnheader", {name: "Назва"})).toBeTruthy();
         cleanup();
         table("empty");
-        expect(screen.getByText("Порожньо").closest("[data-empty-state]")).toBeTruthy();
+        expect(screen.getByText("Порожньо").closest("[data-empty-state]")?.closest("tbody")).toBeTruthy();
+        expect(screen.getByRole("columnheader", {name: "Назва"})).toBeTruthy();
         expect(screen.getByText("footer")).toBeTruthy();
         cleanup();
         const onRetry = vi.fn();

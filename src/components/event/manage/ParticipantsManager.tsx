@@ -152,8 +152,8 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
                     options={[{value: "all", label: t("manage.participants.filter.statusAll")}, {value: "1", label: statusNames[1]}, {value: "3", label: statusNames[3]}]} />}
             </>}
             footer={<ManageTablePagination event={event} page={pages.page} pageSize={pageSize} total={query.data?.Total ?? 0} hasNext={!!query.data?.NextCursor} busy={query.isFetching}
-                onPrevious={pages.previous} onNext={() => pages.next(query.data?.NextCursor)} onPageSize={pages.setPageSize} />}>
-            <thead><tr>
+                onPrevious={pages.previous} onNext={() => pages.next(query.data?.NextCursor)} onPageSize={pages.setPageSize} />}
+            head={<tr>
                 <th scope="col">{tab === "invitations" ? t("manage.participants.col.address") : t("manage.participants.col.name")}</th>
                 {tab !== "invitations" && <th scope="col">{t("manage.participants.col.emailAddress")}</th>}
                 <th scope="col">{t("manage.participants.col.status")}</th>
@@ -161,7 +161,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
                 <th scope="col">{dateLabel}</th>
                 {showAnswers && fieldColumns.map(column => <th scope="col" key={column.key}>{column.label}</th>)}
                 {canManage && <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.participants.col.actions")}</span></th>}
-            </tr></thead>
+            </tr>}>
             <tbody>{items.map(participant => <tr key={participant.UserID} className={showAnswers ? "is-clickable" : undefined} tabIndex={showAnswers ? 0 : undefined} aria-label={showAnswers ? t("manage.participants.answersFor", {name: personName(participant)}) : undefined} onClick={() => open(participant)} onKeyDown={event => onRowKey(event, participant)}>
                 <td><div className="event-manage-table__person">
                     {tab === "invitations" ? <><strong>{participant.Email || personName(participant)}</strong>{participant.Name && <small>{participant.Name}</small>}</>
