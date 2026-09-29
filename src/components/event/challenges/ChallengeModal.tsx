@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useId, useRef, useState, type FormEvent} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {useQuery} from "@tanstack/react-query";
@@ -314,7 +315,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
             </div>
             {solvesVisible && <div className="ib-cmodal__body ib-cmodal__body--solves" id={`${id}-p2`} role="tabpanel" aria-labelledby={`${id}-tab2`} hidden={tab !== "solves"}>
                 {solves.isPending ? <EventLoading compact label={t("challenges.solves.loading")} />
-                    : solves.isError ? <div className="ib-cmodal__empty"><b>{t("challenges.solves.unavailableTitle")}</b>{t("challenges.solves.unavailableBody")}</div>
+                    : solves.isError ? <EventLoadError compact message={t("challenges.solves.unavailableTitle")} onRetry={() => void solves.refetch()} />
                     : !solves.data.length ? <EmptyState compact message={t("challenges.solves.emptyMessage")} />
                     : <table className="ib-cmodal__solves">
                         <thead><tr><th className="is-n">#</th><th>{teamMode ? t("scoreboard.col.team") : t("scoreboard.col.participant")}</th><th className="is-t">{t("challenges.solves.time")}</th></tr></thead>

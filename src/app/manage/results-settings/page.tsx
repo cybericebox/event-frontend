@@ -7,6 +7,7 @@ import {getResultsSettings, putResultsSettings, resultsSettingsInput, type Resul
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {clockLabel, freezeStartAt} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
@@ -50,7 +51,7 @@ export default function ResultsSettingsPage() {
     }
 
     if (settingsQuery.isPending) return <EventLoading event={event} />;
-    if (settingsQuery.isError || !value) return <div className="event-manage-error" role="alert"><h1>{t("manage.results.settings.loadFailed")}</h1><button className="ib-btn" onClick={() => {void settingsQuery.refetch();}}>{t("common.retry")}</button></div>;
+    if (settingsQuery.isError || !value) return <EventLoadError message={t("manage.results.settings.loadFailed")} onRetry={() => {void settingsQuery.refetch();}} />;
 
     const freezeAt = freezeStartAt(event.FinishTime, value.FreezeMinutes);
     const teamMode = event.Participation === 1;

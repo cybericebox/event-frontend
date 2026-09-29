@@ -10,6 +10,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageDateField} from "@/components/event/manage/ManageDateField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
@@ -100,7 +101,7 @@ export default function ManageSchedulePage() {
         } finally { setSaving(false); }
     }
 
-    if (lifecycle.isError || config.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.schedule.loadFailed")}</h1><button className="ib-btn" onClick={() => { void lifecycle.refetch(); void config.refetch(); }}>{t("common.retry")}</button></div>;
+    if (lifecycle.isError || config.isError) return <EventLoadError message={t("manage.schedule.loadFailed")} onRetry={() => { void lifecycle.refetch(); void config.refetch(); }} />;
     if (lifecycle.isPending || config.isPending || !draft) return <EventLoading event={event} />;
     if (!lifecycle.data) return null;
 

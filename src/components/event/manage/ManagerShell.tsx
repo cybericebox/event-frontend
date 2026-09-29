@@ -1,6 +1,7 @@
 "use client";
 
 import {createContext, useContext, useState, type ReactNode} from "react";
+import {EventErrorScreen} from "@/components/event/EventErrorScreen";
 import {usePathname} from "next/navigation";
 import {useQuery} from "@tanstack/react-query";
 import {Menu} from "lucide-react";
@@ -52,10 +53,11 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         const status = access.error instanceof ManageApiError ? access.error.status : 0;
         // An outage keeps the frame under the outage modal; access refetches on recovery.
         if (isOutageError(access.error, status)) return <OutageShell manage event={event} />;
+        if (status !== 401 && status !== 403) return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} onRetry={() => void access.refetch()} page />;
         return <div className="event-shell-state" role="alert">
-            <h1>{status === 403 ? t("manage.shell.forbiddenTitle") : status === 401 ? t("manage.shell.signInTitle") : t("manage.shell.loadFailedTitle")}</h1>
-            <p>{status === 403 ? t("manage.shell.forbiddenBody") : status === 401 ? t("manage.shell.signInBody") : t("manage.shell.loadFailedBody")}</p>
-            {status === 401 ? <a className="ib-btn ib-btn--primary" href={signInHref(event)}>{t("common.signIn")}</a> : status === 403 ? <Link className="ib-btn" href="/">{t("manage.shell.toEventSite")}</Link> : <button className="ib-btn" onClick={() => void access.refetch()}>{t("common.retry")}</button>}
+            <h1>{status === 403 ? t("manage.shell.forbiddenTitle") : t("manage.shell.signInTitle")}</h1>
+            <p>{status === 403 ? t("manage.shell.forbiddenBody") : t("manage.shell.signInBody")}</p>
+            {status === 401 ? <a className="ib-btn ib-btn--primary" href={signInHref(event)}>{t("common.signIn")}</a> : <Link className="ib-btn" href="/">{t("manage.shell.toEventSite")}</Link>}
         </div>;
     }
 

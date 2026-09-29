@@ -12,6 +12,7 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {getManageConfig, getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
 import {getManageLabs} from "@/api/manageLabs";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {DialogModal} from "@/components/event/DialogModal";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {
@@ -98,7 +99,7 @@ export function ExerciseAttachments() {
     }
 
     if (board.pending || scoringQuery.isPending || lifecycleQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
-    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.exercises.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}}>{t("common.retry")}</button></div>;
+    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.exercises.loadFailed")} onRetry={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}} />;
 
     const copy = action && actionCopy(action);
     return <>

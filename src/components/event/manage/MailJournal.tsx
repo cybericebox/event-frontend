@@ -8,6 +8,7 @@ import {
 } from "@/api/manageMail";
 import {signalLabel, signalLabels} from "@/api/manageNotifications";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {t, tPlural} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {useManager} from "./ManagerShell";
@@ -49,7 +50,7 @@ export function MailJournal() {
     }
 
     if (query.isPending && !query.data) return <EventLoading event={event} label={t("manage.mail.journal.loading")} />;
-    if (query.isError && !query.data) return <div className="event-manage-error" role="alert"><h1>{t("manage.mail.journal.loadError")}</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
+    if (query.isError && !query.data) return <EventLoadError message={t("manage.mail.journal.loadError")} onRetry={() => void query.refetch()} />;
 
     const items = query.data?.Items ?? [];
     const channelOptions = [{value: "email", label: t("manage.mail.channel.email")}, {value: "in_app", label: t("manage.mail.channel.inApp")}];

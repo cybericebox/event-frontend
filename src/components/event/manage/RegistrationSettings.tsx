@@ -8,6 +8,7 @@ import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, pu
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
@@ -64,7 +65,7 @@ export function RegistrationSettings() {
 
     const scheduleHint = t("manage.registration.scheduleHint").split("{link}");
     if (configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || lifecycleQuery.isError || !config || !lifecycle) return <div className="event-manage-error" role="alert"><h2>{t("manage.registration.loadFailed")}</h2><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>{t("common.retry")}</button></div>;
+    if (configQuery.isError || lifecycleQuery.isError || !config || !lifecycle) return <EventLoadError message={t("manage.registration.loadFailed")} onRetry={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}} />;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <section className="event-manage-section">

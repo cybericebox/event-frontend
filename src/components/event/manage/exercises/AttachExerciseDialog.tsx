@@ -1,6 +1,7 @@
 "use client";
 
 import {useState, type FormEvent} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery} from "@tanstack/react-query";
 import {Search} from "lucide-react";
 import {toast} from "react-hot-toast";
@@ -83,7 +84,7 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
                 <div className="event-manage-participants__filters">{infrastructureFilters.map(option => <button key={option} className="event-manage-participants__filter" type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
             </div>
             {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />
-                : catalog.isError ? <div className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.exercises.attachDialog.catalogFailed")} <button className="ib-btn ib-btn--sm" type="button" onClick={() => void catalog.refetch()}>{t("common.retry")}</button></div>
+                : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} onRetry={() => void catalog.refetch()} />
                 : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
                 : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}>
                     <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached} onClick={() => select(choice)}>
@@ -96,7 +97,7 @@ export function AttachExerciseDialog({eventID, open, onClose, onAttached}: {
                     </button>
                 </li>)}</ul>}
             {selected && <div className="event-exercise-editor__preview" aria-live="polite">
-                {preview.isPending ? <EventLoading compact /> : preview.isError ? <p role="alert">{t("manage.exercises.attachDialog.previewFailed")}</p> : <>
+                {preview.isPending ? <EventLoading compact /> : preview.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.previewFailed")} onRetry={() => void preview.refetch()} /> : <>
                     <div className="event-exercise-editor__preview-head"><h3>{preview.data.Name}</h3>
                         {variantCount > 1 && <EventSelect ariaLabel={t("manage.exercises.attachDialog.previewVariant")} value={String(variant)} options={Array.from({length: variantCount}, (_, index) => ({value: String(index), label: t("manage.exercises.attachDialog.variant", {number: index + 1})}))} onValueChange={value => setVariant(Number(value))} />}
                     </div>

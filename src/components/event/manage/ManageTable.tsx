@@ -1,6 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {Search} from "lucide-react";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {EventBrandLogo} from "@/components/event/EventBrandLogo";
@@ -78,7 +79,7 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
                 <thead>{head}</thead>
                 {ready ? children : <tbody><tr><td className="event-manage-table__state" colSpan={1000}><div className="event-manage-table__state-view">
                     {state === "loading" ? <EventLoading event={event} label={loadingLabel} />
-                        : state === "error" ? <div className="event-block-state" role="alert"><p className="ib-empty__text">{errorMessage}</p><button className="ib-btn ib-btn--sm" type="button" onClick={onRetry}>{t("common.retry")}</button></div>
+                        : state === "error" ? <EventLoadError message={errorMessage} onRetry={onRetry} />
                             : <EmptyState message={emptyMessage} />}
                 </div></td></tr></tbody>}
             </table>

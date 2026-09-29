@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, type ReactNode} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
 import {useQuery} from "@tanstack/react-query";
 import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
@@ -43,7 +44,7 @@ export function LiveBootstrap() {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
         if (status === 401 || (status === 404 && event.isError)) return <State title={t("live.signIn.title")} text={t("live.signIn.text")} action={<a className="ib-btn ib-btn--primary" href={signInHref()}>{t("account.signIn")}</a>} />;
         if (status === 403) return <State title={t("live.forbidden.title")} text={t("live.forbidden.text")} action={<Link className="ib-btn" href="/">{t("live.toSite")}</Link>} />;
-        return <State title={t("live.openFailed.title")} text={t("live.openFailed.text")} action={<button className="ib-btn" type="button" onClick={() => void (event.isError ? event.refetch() : access.refetch())}>{t("common.retry")}</button>} />;
+        return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} /></main>;
     }
     if (!event.data || !access.data) return <main className="live-fullscreen"><EventLoading event={event.data} label={t("live.checkingAccess")} /></main>;
     return <LiveScreen event={event.data} />;

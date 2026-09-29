@@ -16,6 +16,7 @@ import {
     resetManageNotificationSubscription, channelSignals, signalGroups, signalLabel,
 } from "@/api/manageNotifications";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmailBlocksEditor} from "@/components/event/manage/EmailBlocksEditor";
 import {EmailStylingEditor} from "@/components/event/manage/EmailStylingEditor";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
@@ -129,7 +130,7 @@ export default function ManageEmailPage() {
     }
 
     if (subscriptions.isPending || templates.isPending) return <EventLoading event={event} label={t("manage.email.loading")} />;
-    if (subscriptions.isError || templates.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.email.loadError")}</h1><button className="ib-btn" type="button" onClick={() => {void subscriptions.refetch(); void templates.refetch();}}>{t("common.retry")}</button></div>;
+    if (subscriptions.isError || templates.isError) return <EventLoadError message={t("manage.email.loadError")} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} />;
     if (!signals.length) return <div className="event-manage-content event-manage-notifications event-manage-email"><header className="event-manage-heading"><div><h1>{t("manage.email.title")}</h1></div></header><section className="event-manage-section"><EmptyState message={t("manage.email.none")} /></section></div>;
 
     return <div className="event-manage-content event-manage-notifications event-manage-email">

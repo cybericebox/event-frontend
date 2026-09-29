@@ -8,6 +8,7 @@ import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, ma
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 
@@ -42,7 +43,7 @@ export default function ParticipationSettingsPage() {
     }
 
     if (configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || lifecycleQuery.isError || !config) return <div className="event-manage-error" role="alert"><h1>{t("manage.participation.loadFailed")}</h1><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>{t("common.retry")}</button></div>;
+    if (configQuery.isError || lifecycleQuery.isError || !config) return <EventLoadError message={t("manage.participation.loadFailed")} onRetry={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}} />;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <header className="event-manage-heading"><div><h1>{t("manage.participation.title")}</h1><p>{t("manage.participation.subtitle")}</p></div></header>

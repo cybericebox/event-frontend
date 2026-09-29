@@ -11,6 +11,7 @@ import {
     updateManageInAppTemplate, type ManageInAppTemplate, type ManageInAppTemplateInput,
 } from "@/api/manageNotifications";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {NotificationMessageCard} from "@/components/event/NotificationMessageCard";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -85,7 +86,7 @@ export default function ManageNotificationsPage() {
     }
 
     if (subscriptions.isPending || templates.isPending) return <EventLoading event={event} label={t("manage.notifications.loading")} />;
-    if (subscriptions.isError || templates.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.notifications.loadError")}</h1><button className="ib-btn" type="button" onClick={() => {void subscriptions.refetch(); void templates.refetch();}}>{t("common.retry")}</button></div>;
+    if (subscriptions.isError || templates.isError) return <EventLoadError message={t("manage.notifications.loadError")} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} />;
 
     if (!signals.length) return <div className="event-manage-content event-manage-notifications"><header className="event-manage-heading"><div><h1>{t("manage.notifications.title")}</h1></div></header><section className="event-manage-section"><EmptyState message={t("manage.notifications.none")} /></section></div>;
     return <div className="event-manage-content event-manage-notifications">

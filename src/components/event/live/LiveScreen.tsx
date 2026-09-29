@@ -1,6 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useState, type CSSProperties} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Maximize, Minimize, MonitorCheck} from "lucide-react";
 import {getLiveLayoutVersion, getPublishedLiveLayout, type LiveLayout} from "@/api/manageLive";
@@ -72,7 +73,7 @@ export function LiveScreen({event}: {event: PublicEventInfo}) {
         return () => window.removeEventListener("keydown", onKey);
     }, [onKey]);
 
-    if (layoutQuery.isError) return <main className="live-fullscreen"><div className="live-fullscreen__state" role="alert"><h1>{t("live.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => void layoutQuery.refetch()}>{t("common.retry")}</button></div></main>;
+    if (layoutQuery.isError) return <main className="live-fullscreen"><EventLoadError message={t("live.loadFailed")} onRetry={() => void layoutQuery.refetch()} /></main>;
     if (!layoutQuery.data) return <main className="live-fullscreen"><EventLoading event={event} label={t("live.loading")} /></main>;
     const layout = layoutQuery.data;
     const style = {"--live-screen-width": `${layout.screen.width}px`, "--live-screen-height": `${layout.screen.height}px`} as CSSProperties;

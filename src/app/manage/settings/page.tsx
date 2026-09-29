@@ -10,6 +10,7 @@ import {getManageConfig, getManageName, ManageApiError, putManageGeneral} from "
 import {BrandDraftField, useBrandDraft} from "@/components/event/manage/BrandDraftField";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
@@ -54,7 +55,7 @@ export default function ManageGeneralPage() {
     }
 
     if (nameQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
-    if (nameQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.settings.loadError")}</h1><button className="ib-btn" onClick={() => {void nameQuery.refetch(); void configQuery.refetch();}}>{t("common.retry")}</button></div>;
+    if (nameQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.settings.loadError")} onRetry={() => {void nameQuery.refetch(); void configQuery.refetch();}} />;
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <header className="event-manage-heading"><div><h1>{t("manage.settings.title")}</h1><p>{t("manage.settings.intro")}</p></div></header>
         {!canManage && <p className="event-manage-notice">{t("common.viewOnly")}</p>}

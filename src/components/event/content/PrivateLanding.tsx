@@ -1,6 +1,7 @@
 "use client";
 
 import {useQuery} from "@tanstack/react-query";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {getManageContent} from "@/api/manage";
 import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
 import {ContentBlocks} from "./ContentBlocks";
@@ -17,10 +18,7 @@ export function PrivateLanding() {
     });
 
     if (!event || content.isPending) return <EventLoading event={event} label={t("content.landing.loading")} />;
-    if (content.isError) return <div className="event-shell-state" role="alert">
-        <h1>{t("content.landing.failed")}</h1>
-        <button className="ib-btn" onClick={() => void content.refetch()}>{t("common.retry")}</button>
-    </div>;
+    if (content.isError) return <EventLoadError message={t("content.landing.failed")} onRetry={() => void content.refetch()} />;
     return <div className="event-landing ib-blocks">
         <ContentBlocks document={content.data.Landing} variables={content.data.Variables} title={event.Name} coverImage={event.PreviewPicture} eventID={event.EventID} />
     </div>;

@@ -9,6 +9,7 @@ import {toast} from "react-hot-toast";
 import {getManageParticipantForm, putManageParticipantForm, type FormBlock, type FormField, type ParticipantFormInput} from "@/api/manageParticipantForm";
 import {getManageTeamFields, putManageTeamFields} from "@/api/manageTeamFields";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {createFormField, duplicateBlock, isFormField, participantFormProblem, removeBlock} from "@/components/event/manage/participantFormEditor";
@@ -110,7 +111,7 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
     }
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.fields.loading")} />;
-    if (query.isError) return <div className="event-manage-error" role="alert"><h2>{t("manage.fields.loadFailed")}</h2><button className="ib-btn" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
+    if (query.isError) return <EventLoadError message={t("manage.fields.loadFailed")} onRetry={() => void query.refetch()} />;
 
     return <div className="event-manage-content event-manage-form">
         <div className="event-manage-form__head"><p>{scope === "team" ? t("manage.fields.introTeam") : t("manage.fields.introParticipant")}</p><span className="event-attempts-manager__total">{query.data ? t("manage.fields.version", {version: query.data.Version}) : t("manage.fields.notSaved")}</span></div>

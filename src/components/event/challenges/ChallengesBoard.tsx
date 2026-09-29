@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useState, type ReactNode} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import Link from "next/link";
 import {useQuery} from "@tanstack/react-query";
@@ -105,7 +106,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     if (!access.data?.CanManage) return <Page><Empty title={t("challenges.participantsOnly")}><br /><Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link></Empty></Page>;
     const banner = <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
     if (board.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (board.isError) return <Page banners={banner}><Empty title={t("challenges.moderators.unavailableTitle")}>{t("challenges.moderators.unavailableBody")} <button type="button" className="ib-btn ib-btn--sm" onClick={() => void board.refetch()}>{t("common.retry")}</button></Empty></Page>;
+    if (board.isError) return <Page banners={banner}><EventLoadError message={t("challenges.moderators.unavailableTitle")} onRetry={() => void board.refetch()} /></Page>;
     return <EventVpnProvider eventID={event.EventID} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
         <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode finished={finished} showDifficulty showHints
             userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner} />
@@ -146,7 +147,7 @@ export function ChallengesBoard() {
     }
     if (!started) return <Page><div className="event-challenges__countdown"><CountdownTimer text={t("challenges.countdown")} until={new Date(event.StartTime)} /></div></Page>;
     if (challenges.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (challenges.isError) return <Page banners={finishedBanner || undefined}><Empty title={t("challenges.loadFailed.title")}>{t("challenges.loadFailed.body")} <button type="button" className="ib-btn ib-btn--sm" onClick={() => void challenges.refetch()}>{t("common.retry")}</button></Empty></Page>;
+    if (challenges.isError) return <Page banners={finishedBanner || undefined}><EventLoadError message={t("challenges.loadFailed.title")} onRetry={() => void challenges.refetch()} /></Page>;
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data} teamMode={teamMode} finished={finished}
         showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}

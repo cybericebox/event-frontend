@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {getManageResults, resultsLiveURL, ResultsUnavailableError, type ManageResultsSnapshot} from "@/api/manageResults";
@@ -69,7 +70,7 @@ export function ScoreboardView() {
     if (denied === "participants_only") return <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">{t("scoreboard.participantsOnly")}</p></Centered>;
     if (denied === "not_started") return <Centered>{started ? <p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">{t("scoreboard.afterStart")}</p> : <CountdownTimer text={t("scoreboard.afterStart")} until={new Date(event.StartTime)} />}</Centered>;
     if (results.isPending) return <EventLoading label={t("scoreboard.loadingResults")} />;
-    if (results.isError) return <Centered><p className="text-sm text-destructive">{t("scoreboard.loadFailed")}</p></Centered>;
+    if (results.isError) return <EventLoadError message={t("scoreboard.loadFailed")} onRetry={() => void results.refetch()} />;
 
     const data = results.data;
     const teamMode = event.Participation === 1;

@@ -12,6 +12,9 @@
 .ib-empty__action{display:flex;gap:var(--ib-2);margin-top:var(--ib-1)}
 
 .ib-empty--error .ib-empty__icon{color:var(--ib-danger)}
+/* load error (EventLoadError): one line of help and an optional error code under the title */
+.ib-empty__hint{max-width:44ch;color:var(--ib-dim);font-size:var(--ib-fs-13);line-height:var(--ib-lh-ui);text-wrap:balance}
+.ib-empty__code{color:var(--ib-faint);font-family:var(--ib-mono);font-size:var(--ib-fs-12)}
 /* у поповері / вузьких колонках */
 .ib-empty--compact{padding:var(--ib-8) var(--ib-4);gap:var(--ib-2)}
 .ib-empty--compact .ib-empty__action{margin-top:0}

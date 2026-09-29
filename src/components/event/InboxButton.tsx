@@ -4,6 +4,7 @@
 // components/site/InboxButton.tsx; only imports and styling (public/event-inbox-v2.css) differ.
 
 import {useCallback, useEffect, useRef, useState} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {createPortal} from "react-dom";
 import DOMPurify from "isomorphic-dompurify";
 import {Bell, Check, ChevronRight, X} from "lucide-react";
@@ -361,10 +362,10 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                         })}
                     </div>
                 </div>}
-                {error && <p role="alert" className="event-notifications__error">{error}</p>}
+                {error && items.length > 0 && <p role="alert" className="event-notifications__error">{error}</p>}
                 <div ref={scrollAreaRef} id="inbox-tabpanel" role={tabs.length ? "tabpanel" : undefined} aria-labelledby={tabs.length ? `inbox-tab-${tab}` : undefined} className="event-notifications__scroll">
                     {/* loading and empty share one centered box of the same height, so nothing jumps */}
-                    {loading ? <EventLoading compact label={t("common.loading")} /> : items.length === 0 ? <EmptyState compact message={emptyMessage} /> : <ul className="event-notifications__list">{items.map((item, index) => {
+                    {loading ? <EventLoading compact label={t("common.loading")} /> : items.length === 0 ? error ? <EventLoadError compact message={error} onRetry={() => { void refresh() }} /> : <EmptyState compact message={emptyMessage} /> : <ul className="event-notifications__list">{items.map((item, index) => {
                         const href = safeHref(item.Link ?? "");
                         const resolved = !!item.ResolvedAt;
                         const unreadItem = isUnread(item);

@@ -10,6 +10,7 @@ import {BlockStackEditor} from "@/components/event/manage/BlockStackEditor";
 import {DraftBar} from "@/components/event/manage/DraftBar";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {validateLanding} from "@/components/event/manage/validatePageBlocks";
 import type {ContentDocument} from "@/types/eventContent";
 import {t} from "@/i18n/t";
@@ -84,7 +85,7 @@ export default function ManageLandingPage() {
         } catch (error) { failure(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
     }
 
-    if (content.isError || variables.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.content.landing.loadFailed")}</h1><button className="ib-btn" onClick={() => void Promise.all([content.refetch(), variables.refetch()])}>{t("common.retry")}</button></div>;
+    if (content.isError || variables.isError) return <EventLoadError message={t("manage.content.landing.loadFailed")} onRetry={() => void Promise.all([content.refetch(), variables.refetch()])} />;
     if (content.isPending || variables.isPending || !draft) return <EventLoading event={event} label={t("manage.content.landing.loading")} />;
 
     return <div className="event-manage-content">

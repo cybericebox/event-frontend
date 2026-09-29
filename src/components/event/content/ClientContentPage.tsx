@@ -1,6 +1,7 @@
 "use client";
 
 import {useQuery} from "@tanstack/react-query";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {z} from "zod";
 import {getManageContent, getManagePage, ManageApiError} from "@/api/manage";
 import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
@@ -44,9 +45,9 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
     if (!eventID || page.isPending) return <EventLoading event={privateEvent} label={t("content.page.loading")} />;
     if (page.isError) {
         const missing = page.error instanceof ManageApiError && [403, 404].includes(page.error.status);
+        if (!missing) return <EventLoadError message={t("content.page.failed")} onRetry={() => void page.refetch()} />;
         return <div className="event-shell-state" role="alert">
-            <h1>{missing ? t("content.page.missing") : t("content.page.failed")}</h1>
-            {!missing && <button className="ib-btn" onClick={() => void page.refetch()}>{t("common.retry")}</button>}
+            <h1>{t("content.page.missing")}</h1>
         </div>;
     }
     return <ContentBlocks document={page.data.Page.Document} variables={page.data.Variables} title={page.data.Page.Title} coverImage={privateEvent?.PreviewPicture} eventID={eventID} />;

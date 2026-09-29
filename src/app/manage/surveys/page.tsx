@@ -12,6 +12,7 @@ import {toast} from "react-hot-toast";
 import {createManageGenericForm, getManageGenericForms, sendManageGenericForm, updateManageGenericForm, type ManageGenericFormInput} from "@/api/manageFormResponses";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {createFormField, isFormField, validateParticipantForm} from "@/components/event/manage/participantFormEditor";
@@ -105,7 +106,7 @@ function SurveysPage() {
     }
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.surveys.loading")} />;
-    if (query.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.surveys.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
+    if (query.isError) return <EventLoadError message={t("manage.surveys.loadFailed")} onRetry={() => void query.refetch()} />;
 
     return <div className="event-manage-content event-manage-surveys">
         <header className="event-manage-heading"><div><h1>{t("manage.nav.surveys")}</h1><p>{t("manage.surveys.subtitle")}</p></div><span className="event-attempts-manager__total">{tPlural("manage.surveys.count", query.data.length)}</span></header>

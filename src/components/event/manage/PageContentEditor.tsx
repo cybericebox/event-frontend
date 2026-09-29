@@ -14,6 +14,7 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {useManager} from "./ManagerShell";
 import {EventLoading} from "../EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {validateLanding} from "./validatePageBlocks";
 import {reservedPageSlugs} from "../content/pageSlugs";
 import {beforeChallenges, comparePageOrder} from "../content/pageNavigationOrder";
@@ -167,7 +168,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         }
     }
 
-    if (page.isError || pages.isError || config.isError || content.isError || definitions.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.content.page.loadFailed")}</h1><button className="ib-btn" onClick={() => void Promise.all([page.refetch(), pages.refetch(), config.refetch(), content.refetch(), definitions.refetch()])}>{t("common.retry")}</button></div>;
+    if (page.isError || pages.isError || config.isError || content.isError || definitions.isError) return <EventLoadError message={t("manage.content.page.loadFailed")} onRetry={() => void Promise.all([page.refetch(), pages.refetch(), config.refetch(), content.refetch(), definitions.refetch()])} />;
     if ((!isNew && page.isPending) || pages.isPending || config.isPending || content.isPending || definitions.isPending) return <EventLoading event={event} label={t("manage.content.page.loading")} />;
 
     const settings = <div className={`event-manage-page-details${detailsOpen ? "" : " is-collapsed"}`} aria-label={t("manage.content.page.settings")}>

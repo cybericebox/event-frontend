@@ -9,6 +9,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageDateField} from "@/components/event/manage/ManageDateField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
@@ -37,7 +38,7 @@ export default function ManageIndex() {
     const [error, setError] = useState("");
 
     if (config.isPending || lifecycle.isPending) return <EventLoading event={event} label={t("manage.overview.loading")} />;
-    if (config.isError || lifecycle.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.overview.loadError")}</h1><button className="ib-btn" onClick={() => { void config.refetch(); void lifecycle.refetch(); }}>{t("common.retry")}</button></div>;
+    if (config.isError || lifecycle.isError) return <EventLoadError message={t("manage.overview.loadError")} onRetry={() => { void config.refetch(); void lifecycle.refetch(); }} />;
 
     const participation = participationDraft ?? config.data.Participation;
     const maxTeamSize = maxTeamSizeDraft ?? (config.data.Participation === 1 ? String(config.data.MaxTeamSize) : "");

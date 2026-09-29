@@ -6,6 +6,7 @@ import {toast} from "react-hot-toast";
 import {Download, RefreshCw} from "lucide-react";
 import {downloadResultsCSV, getModeratorResults, resultsLiveURL, setResultsOpened, type ModeratorResults} from "@/api/manageResults";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {useEventStream} from "@/utils/eventStream";
 import {clockLabel, freezeLeadMinutes} from "@/utils/resultsFreeze";
@@ -55,7 +56,7 @@ export default function ManageResultsPage() {
     }
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.results.loading")} />;
-    if (query.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.results.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
+    if (query.isError) return <EventLoadError message={t("manage.results.loadFailed")} onRetry={() => void query.refetch()} />;
 
     const results = query.data;
     const teamMode = event.Participation === 1;

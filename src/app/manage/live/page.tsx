@@ -13,6 +13,7 @@ import {liveTextWarnings} from "@/components/event/live/liveText";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
@@ -113,7 +114,7 @@ export default function ManageLivePage() {
         return () => observer.disconnect();
     }, [screen, nativeWidth]);
 
-    if (editor.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.live.loadError")}</h1><button className="ib-btn" onClick={() => void editor.refetch()}>{t("common.retry")}</button></div>;
+    if (editor.isError) return <EventLoadError message={t("manage.live.loadError")} onRetry={() => void editor.refetch()} />;
     if (editor.isPending || !layout) return <EventLoading event={event} label={t("manage.live.loading")} />;
 
     const locked = !canManage || preview;

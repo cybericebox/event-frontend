@@ -11,6 +11,7 @@ import {
 import {ManageApiError} from "@/api/manage";
 import {DialogModal} from "@/components/event/DialogModal";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
@@ -40,7 +41,7 @@ export function ChallengeGroupsManager() {
     const [taskOrder, setTaskOrder] = useState<{groupID: string | null; ids: string[]} | null>(null);
 
     if (board.pending) return <EventLoading event={event} />;
-    if (board.failed) return <div className="event-manage-error" role="alert"><h1>{t("manage.exercises.groups.loadFailed")}</h1><button className="ib-btn" type="button" onClick={board.retry}>{t("common.retry")}</button></div>;
+    if (board.failed) return <EventLoadError message={t("manage.exercises.groups.loadFailed")} onRetry={board.retry} />;
 
     const sorted = orderedGroups(board.groups.data ?? []);
     const groups = groupOrder ? groupOrder.map(id => sorted.find(group => group.ID === id)).filter((group): group is EventChallengeGroup => !!group) : sorted;

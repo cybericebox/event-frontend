@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -70,7 +71,7 @@ export default function JoinPage() {
         <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>
         <h1>{t("join.title")}</h1>
         {!event || identity.isPending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <EventLoading event={event} label={t("join.loading")} />
-            : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <div role="alert"><p>{t("join.loadFailed")}</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())}>{t("common.retry")}</button></div>
+            : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <EventLoadError message={t("join.loadFailed")} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
             : !identity.data ? <p>{t("join.signInHint")}</p>
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>{t("invite.already")}</p>
             : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>{t("join.pending")}</p>

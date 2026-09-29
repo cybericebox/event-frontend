@@ -10,6 +10,7 @@ import {
     type LabRuntime, type ManageLabs, type ManageStand,
 } from "@/api/manageLabs";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel, standStatusLabel, standStatusTone, standTeamName, type StatusTone} from "@/components/event/manage/standStatus";
@@ -89,7 +90,7 @@ function ModeratorChallengesDialog({eventID, open, onClose}: {eventID: string; o
     return <Dialog open={open} onOpenChange={next => {if (!next) onClose();}}><DialogContent className="max-h-[90dvh] max-w-[min(640px,calc(100vw-24px))] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("manage.labs.moderators.title")}</DialogTitle><DialogDescription>{t("manage.labs.moderators.description")}</DialogDescription></DialogHeader>
         {challenges.isPending ? <EventLoading compact />
-            : challenges.isError ? <div className="event-manage-notice" role="alert">{standErrorMessage(challenges.error, t("manage.labs.moderators.loadFailed"))}<button className="ib-btn ib-btn--sm" type="button" onClick={() => void challenges.refetch()}>{t("common.retry")}</button></div>
+            : challenges.isError ? <EventLoadError compact message={standErrorMessage(challenges.error, t("manage.labs.moderators.loadFailed"))} onRetry={() => void challenges.refetch()} />
             : challenges.data.length === 0 ? <EmptyState compact message={t("manage.labs.moderators.empty")} />
             : <ul className="event-stands__challenges">{challenges.data.map(challenge => {
                 const lab = runtime[challenge.ChallengeID];
@@ -138,7 +139,7 @@ export default function ManageLabsPage() {
     if (labsQuery.isPending) return <EventLoading event={event} label={t("manage.labs.loading")} />;
     if (labsQuery.isError) {
         if (isInfrastructureNotAllowed(labsQuery.error)) return <div className="event-manage-settings event-stands">{heading}<div className="event-manage-notice">{t("manage.labs.notAllowed")}</div></div>;
-        return <div className="event-manage-error" role="alert"><h1>{t("manage.labs.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => void labsQuery.refetch()}>{t("common.retry")}</button></div>;
+        return <EventLoadError message={t("manage.labs.loadFailed")} onRetry={() => void labsQuery.refetch()} />;
     }
     const labs = labsQuery.data;
     const items = orderStands(labs.Items);

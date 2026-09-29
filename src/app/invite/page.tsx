@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -87,7 +88,7 @@ export default function InvitePage() {
     return <div className="event-join-page"><div className="event-join-card">
         <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>
         {!event || identity.isPending || (identity.data && (info.isPending || (actionable && form.isPending))) ? <><h1>{t("invite.title")}</h1><EventLoading event={event} label={t("invite.loading")} /></>
-            : identity.isError || info.isError || (actionable && form.isError) ? <><h1>{t("invite.title")}</h1><div role="alert"><p>{t("invite.loadFailed")}</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : info.isError ? info.refetch() : form.refetch())}>{t("common.retry")}</button></div></>
+            : identity.isError || info.isError || (actionable && form.isError) ? <><h1>{t("invite.title")}</h1><EventLoadError message={t("invite.loadFailed")} onRetry={() => void (identity.isError ? identity.refetch() : info.isError ? info.refetch() : form.refetch())} /></>
             : !identity.data ? <><h1>{t("invite.title")}</h1><p>{t("invite.signInHint")}</p>{signIn ? <a className="ib-btn ib-btn--primary" href={signIn}>{t("account.signIn")}</a> : <p>{t("invite.signInTop")}</p>}</>
             : invitation?.Status === ParticipationStatusEnum.ApprovedParticipationStatus ? <><h1>{t("invite.alreadyTitle")}</h1><p>{t("invite.already")}</p>{home}</>
             : !invitation?.Invited || invitation.Status !== ParticipationStatusEnum.PendingParticipationStatus ? <><h1>{t("invite.notFoundTitle")}</h1><p>{t("invite.notFound")}</p>{home}</>

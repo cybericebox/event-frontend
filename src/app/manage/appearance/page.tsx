@@ -13,6 +13,7 @@ import {deriveTheme, whiteTextContrast} from "@/components/event/manage/deriveTh
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {resolveEventLogoURL} from "@/components/event/EventBrandLogo";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {t} from "@/i18n/t";
@@ -81,7 +82,7 @@ export default function ManageAppearancePage() {
     }
 
     if (configQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || !configQuery.data) return <div className="event-manage-error" role="alert"><h1>{t("manage.appearance.loadFailed")}</h1><button className="ib-btn" onClick={() => void configQuery.refetch()}>{t("common.retry")}</button></div>;
+    if (configQuery.isError || !configQuery.data) return <EventLoadError message={t("manage.appearance.loadFailed")} onRetry={() => void configQuery.refetch()} />;
 
     return <form className="event-manage-settings event-manage-appearance" onSubmit={save}>
         <header className="event-manage-heading"><div><h1>{t("manage.appearance.title")}</h1><p>{t("manage.appearance.lead")}</p></div></header>

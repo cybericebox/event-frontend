@@ -1,6 +1,7 @@
 "use client";
 
 import {type ReactNode} from "react";
+import {EventErrorScreen} from "@/components/event/EventErrorScreen";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getJoinStatus, getOwnTeam} from "@/api/clientAuth";
 import {getParticipantEventInfo} from "@/api/participantEventInfo";
@@ -91,7 +92,7 @@ function ShellContent({children, event, unavailable}: Props) {
     }
     const authenticated = !!currentUser.data;
     if (approved && participantInfo.data?.EventID !== event.EventID) {
-        return <div className="event-shell-state" role="alert"><h1>{t("shell.eventFailed")}</h1></div>;
+        return <EventErrorScreen title={t("shell.eventFailed")} onRetry={() => window.location.reload()} page />;
     }
     return approved && !!participantInfo.data
         ? <ParticipantShell event={event} participantInfo={participantInfo.data} ownTeam={ownTeam.data ?? null}>{children}</ParticipantShell>

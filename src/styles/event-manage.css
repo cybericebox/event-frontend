@@ -432,7 +432,6 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-manage-preview__body strong{flex-basis:100%;font-size:var(--ib-fs-16)}
 .event-manage-preview__accent{color:var(--ib-accent);font-weight:var(--ib-w-semibold)}
 .event-manage-preview__note{color:var(--ib-dim);font-size:var(--ib-fs-12)}
-.event-manage-loading,.event-manage-error{display:grid;justify-content:center;gap:var(--ib-4);padding:var(--ib-12);color:var(--ib-dim);text-align:center}
 @media(max-width:1100px){.event-manage-grid{grid-template-columns:minmax(0,1fr)}.event-manage-preview{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}.event-manage-preview__head,.event-manage-preview__note{grid-column:1/-1}}
 @media(max-width:640px){.event-manage-heading{flex-direction:column}.event-manage-section{padding:var(--ib-4)}.event-manage-fields-two,.event-manage-fields-three,.event-manage-preview{grid-template-columns:minmax(0,1fr)}.event-manage-preview__head,.event-manage-preview__note{grid-column:auto}.event-manage-mode{display:none}}
 @media(max-width:640px){.event-brand-palette-dialog__actions{justify-content:stretch}.event-brand-palette-dialog__actions .ib-btn{flex:1}}

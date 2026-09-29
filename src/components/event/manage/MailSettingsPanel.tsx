@@ -12,6 +12,7 @@ import {
     type MailTLSMode, type SMTPForm,
 } from "@/api/manageMail";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {DialogModal} from "@/components/event/DialogModal";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
@@ -37,7 +38,7 @@ export function MailSettingsPanel() {
     const [confirmReset, setConfirmReset] = useState(false);
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.mail.settings.loading")} />;
-    if (query.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.mail.settings.loadError")}</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
+    if (query.isError) return <EventLoadError message={t("manage.mail.settings.loadError")} onRetry={() => void query.refetch()} />;
 
     const settings = query.data;
     const savedSettings = mailSettingsForm(settings);

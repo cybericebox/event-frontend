@@ -32,7 +32,7 @@ describe("manage table states", () => {
         cleanup();
         const onRetry = vi.fn();
         table("error", onRetry);
-        fireEvent.click(screen.getByRole("button", {name: "Повторити"}));
+        fireEvent.click(screen.getByRole("button", {name: "Спробувати ще раз"}));
         expect(onRetry).toHaveBeenCalledOnce();
         cleanup();
         table("ready");
