@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {apiOrigin, requireApiOrigin} from "@/utils/origins";
+import {catalogAllowed} from "@/utils/accountMenu";
 
 const meSchema = z.object({
     ID: z.string().uuid(),
@@ -7,6 +8,7 @@ const meSchema = z.object({
     LastName: z.string().default(""),
     Email: z.string().default(""),
     Picture: z.string().default(""),
+    Role: z.string().default("user"),
 });
 export type CurrentUser = z.infer<typeof meSchema>;
 export const joinInfoSchema = z.object({
@@ -49,6 +51,17 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     const response = await fetch(apiUrl("/auth/me"), {credentials: "include", cache: "no-store"});
     if (response.status === 401) return null;
     return readData(response, meSchema);
+}
+
+const exerciseAccessSchema = z.object({
+    IsAdmin: z.boolean().default(false),
+    Events: z.array(z.unknown()).nullish(),
+});
+
+// GET /exercises/access: whether the exercise catalog opens for this user.
+export async function getCatalogAccess(): Promise<boolean> {
+    const response = await fetch(apiUrl("/exercises/access"), {credentials: "include", cache: "no-store"});
+    return catalogAllowed(await readData(response, exerciseAccessSchema));
 }
 
 export function profilePictureUrl(picture: string): string | undefined {

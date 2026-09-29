@@ -1,5 +1,5 @@
 // All service origins derive from the one public domain as <service>.<domain>.
-// NEXT_PUBLIC_{API,ID,EXERCISES}_DOMAIN override a single host (bare host, no
+// NEXT_PUBLIC_{API,ID,EXERCISES,ADMIN}_DOMAIN override a single host (bare host, no
 // scheme), e.g. to point this app at another backend. Event sites always stay
 // <tag>.<domain>. Empty origin means the domain is not configured.
 const domain = process.env.NEXT_PUBLIC_DOMAIN?.trim() ?? "";
@@ -13,6 +13,9 @@ export const apiHost = host(process.env.NEXT_PUBLIC_API_DOMAIN, domain && `api.$
 export const apiOrigin = origin(apiHost);
 export const idOrigin = origin(host(process.env.NEXT_PUBLIC_ID_DOMAIN, domain && `id.${domain}`));
 export const exercisesOrigin = origin(host(process.env.NEXT_PUBLIC_EXERCISES_DOMAIN, domain && `exercises.${domain}`));
+export const adminOrigin = origin(host(process.env.NEXT_PUBLIC_ADMIN_DOMAIN, domain && `admin.${domain}`));
+// The platform landing (apex).
+export const mainOrigin = origin(domain);
 
 // API origin for calls that cannot work without one.
 export function requireApiOrigin(): string {

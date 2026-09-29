@@ -1,15 +1,15 @@
 "use client";
 
-import {useLayoutEffect, useMemo, useRef, useState} from "react";
+import {Fragment, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, LogOut, Menu, UserRound, Users, X} from "lucide-react";
+import {ChevronDown, Flag, House, LogOut, Menu, Settings, UserRound, Users, X, type LucideIcon} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
 import {signOut} from "@/api/authAPI";
-import {getCurrentUser, profilePictureUrl} from "@/api/clientAuth";
+import {getCatalogAccess, getCurrentUser, profilePictureUrl} from "@/api/clientAuth";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
@@ -18,7 +18,8 @@ import {ManagerEntry} from "./manage/ManagerEntry";
 import {NotificationsPopover} from "./NotificationsPopover";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
-import {eventOrigin, idOrigin} from "@/utils/origins";
+import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
+import {accountLinks, type AccountLinkKey} from "@/utils/accountMenu";
 
 type Props = {
     event: PublicEventInfo;
@@ -36,6 +37,14 @@ function identityHref(path: string, event: PublicEventInfo) {
     return `${idOrigin}${path}?return_to=${encodeURIComponent(`${back}/`)}`;
 }
 
+// Unified account menu (utils/accountMenu): same labels and icons in every app.
+const ACCOUNT_ITEMS: Record<AccountLinkKey, {label: string; icon: LucideIcon}> = {
+    profile: {label: "Профіль", icon: UserRound},
+    admin: {label: "Адміністрування", icon: Settings},
+    exercises: {label: "Каталог завдань", icon: Flag},
+    main: {label: "Головна", icon: House},
+};
+
 function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved">>) {
     const [open, setOpen] = useState(false);
     const [signOutError, setSignOutError] = useState(false);
@@ -45,6 +54,16 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
         queryKey: ["event-current-user"], queryFn: getCurrentUser,
         retry: false, refetchOnWindowFocus: false,
     });
+    const adminTier = !!profile.data && profile.data.Role !== "user";
+    const catalog = useQuery({
+        queryKey: ["event-catalog-access"], queryFn: getCatalogAccess,
+        enabled: !!profile.data && !adminTier,
+        retry: false, refetchOnWindowFocus: false,
+    });
+    const links = accountLinks("event", {
+        adminTier, catalog: adminTier || catalog.data === true,
+        returnTo: typeof window !== "undefined" ? window.location.href : `${eventOrigin(event.Tag)}/`,
+    }, {id: idOrigin, admin: adminOrigin, exercises: exercisesOrigin, main: mainOrigin});
     const picture = profilePictureUrl(profile.data?.Picture ?? "");
     const initials = `${profile.data?.FirstName?.trim()?.[0] ?? ""}${profile.data?.LastName?.trim()?.[0] ?? ""}`.toLocaleUpperCase("uk-UA")
         || profile.data?.Email?.trim()?.[0]?.toLocaleUpperCase("uk-UA") || "?";
@@ -66,8 +85,14 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
             <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
         ) : initials}</span></button></PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="event-account__menu">
-            <a href={identityHref("/profile", event)}><UserRound size={16} />Профіль</a>
-            {approved && <Link href="/participation" onClick={() => setOpen(false)}><Users size={16} />Моя участь</Link>}
+            {links.map(({key, href}) => {
+                const {label, icon: Icon} = ACCOUNT_ITEMS[key];
+                return <Fragment key={key}>
+                    <a href={href}><Icon size={16} />{label}</a>
+                    {/* The event's own item sits right under the profile. */}
+                    {key === "profile" && approved && <Link href="/participation" onClick={() => setOpen(false)}><Users size={16} />Моя участь</Link>}
+                </Fragment>;
+            })}
             <div className="event-account__theme"><span>Тема оформлення</span><ThemeToggle /></div>
             <button type="button" onClick={() => void leave()}><LogOut size={16} />Вийти</button>
             {signOutError && <p className="event-account__error" role="alert">Не вдалося вийти. Повторіть спробу.</p>}

@@ -9,6 +9,7 @@ data:
   API_DOMAIN: ""
   ID_DOMAIN: ""
   EXERCISES_DOMAIN: ""
+  ADMIN_DOMAIN: ""
   # Optional Google Analytics 4 measurement id (G-…). Empty → analytics off.
   GOOGLE_ANALYTICS_ID: ""
 

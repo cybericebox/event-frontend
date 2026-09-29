@@ -12,6 +12,7 @@ The Docker image reads these at container start.
 | `NEXT_PUBLIC_API_DOMAIN` | no | `api.<domain>` | API host (bare host, no scheme). |
 | `NEXT_PUBLIC_ID_DOMAIN` | no | `id.<domain>` | ID app host. |
 | `NEXT_PUBLIC_EXERCISES_DOMAIN` | no | `exercises.<domain>` | Exercises app host. |
+| `NEXT_PUBLIC_ADMIN_DOMAIN` | no | `admin.<domain>` | Admin app host. |
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | analytics off | Google Analytics 4 measurement id (`G-…`). |
 | `INTERNAL_API_ORIGIN` | no | public API origin | In-cluster API origin for server-side requests. |
 
