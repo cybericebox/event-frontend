@@ -373,12 +373,6 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-manage-participants__filter[aria-pressed="true"],.event-manage-participants__filter[aria-selected="true"]{border-color:var(--ib-brand);background:var(--ib-brand);color:var(--ib-on-brand)}
 .event-manage-participants__count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;padding:0 var(--ib-1);border-radius:999px;background:var(--ib-soft);color:var(--ib-body);font-size:var(--ib-fs-12)}
 .event-manage-participants__filter[aria-pressed="true"] .event-manage-participants__count{background:var(--ib-on-brand);color:var(--ib-brand)}
-.event-manage-participants__list{gap:0;padding:0;overflow:hidden}
-.event-manage-participants__row{display:flex;align-items:center;gap:var(--ib-4);padding:var(--ib-4);border-bottom:1px solid var(--ib-line)}
-.event-manage-participants__row:last-child{border-bottom:0}
-.event-manage-participants__identity{display:grid;gap:var(--ib-1);flex:1;min-width:0}
-.event-manage-participants__identity strong{font-size:var(--ib-fs-14)}
-.event-manage-participants__identity span,.event-manage-participants__identity small{color:var(--ib-dim);font-size:var(--ib-fs-12);overflow-wrap:anywhere}
 .event-manage-participants__status{flex:none;font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-manage-participants__status.is-1{color:var(--ib-warn)}
 .event-manage-participants__status.is-2{color:var(--ib-ok)}
@@ -397,14 +391,11 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-participants-table__person{display:grid;gap:var(--ib-1);min-width:160px}
 .event-participants-table__person strong{font-size:var(--ib-fs-14)}
 .event-participants-table__person small,.event-participants-table__dim{color:var(--ib-dim);font-size:var(--ib-fs-12);overflow-wrap:anywhere}
-.event-participants-table__answer{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .event-participants-table .event-manage-participants__actions{justify-content:flex-end}
 .event-field-columns{display:grid;gap:0;margin:0;padding:0;list-style:none}
 .event-field-columns li{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) 0;border-bottom:1px solid var(--ib-line)}
 .event-field-columns li:last-child{border-bottom:0}
 .event-manage-teams{display:grid;gap:var(--ib-4)}
-.event-manage-teams__list{display:grid;gap:var(--ib-4)}
-.event-manage-teams__card{gap:var(--ib-4)}
 .event-manage-teams__head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--ib-4)}
 .event-manage-teams__head h2,.event-manage-teams__members h3{margin:0;font-size:var(--ib-fs-16)}
 .event-manage-teams__head p,.event-manage-teams__members p{margin:var(--ib-1) 0 0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
@@ -426,7 +417,7 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-manage-teams__fields dt{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-manage-teams__fields dd{margin:var(--ib-1) 0 0;font-size:var(--ib-fs-13);overflow-wrap:anywhere}
 @media(max-width:760px){.event-manage-teams__edit{grid-template-columns:minmax(0,1fr)}.event-manage-teams__head,.event-manage-teams__member,.event-manage-teams__assign{align-items:stretch;flex-direction:column}.event-manage-teams__head-actions,.event-manage-teams__member>div{flex-wrap:wrap}.event-manage-teams__assign>.event-manage-field{max-width:none}}
-@media(max-width:760px){.event-manage-participants__row{align-items:flex-start;flex-wrap:wrap}.event-manage-participants__identity{flex-basis:100%}.event-manage-participants__actions{width:100%;flex-wrap:wrap}}
+@media(max-width:760px){.event-manage-participants__actions{width:100%;flex-wrap:wrap}}
 @media(max-width:760px){.event-manage-results__summary{grid-template-columns:minmax(0,1fr)}.event-manage-results__table-head{display:none}.event-manage-results__row{grid-template-columns:42px minmax(0,1fr) auto;gap:var(--ib-3)}.event-manage-results__time{grid-column:2/-1}.event-manage-results__rank{align-self:start}.event-manage-results__points{align-self:start}}
 @media(max-width:760px){.event-challenge-manager__group,.event-challenge-manager__task{flex-wrap:wrap}.event-challenge-manager__group-main,.event-challenge-manager__rename,.event-challenge-manager__task-name{flex-basis:100%}.event-challenge-manager__task .event-select{width:min(100%,260px)}.event-challenge-manager__actions{margin-left:0}.event-challenge-manager__create{align-items:stretch;flex-direction:column}.event-challenge-manager__create .event-manage-field{width:100%;max-width:none}}
 @media(max-width:640px){.event-exercise-editor__search,.event-exercise-editor__choice{align-items:stretch;flex-direction:column}.event-exercise-editor__search .event-manage-field{max-width:none}.event-exercise-editor__controls>.ib-btn{margin-left:0}}
