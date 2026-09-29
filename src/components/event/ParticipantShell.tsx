@@ -9,6 +9,7 @@ import {EventNavbar} from "./EventNavigation";
 import {EventVpnProvider} from "./vpn/EventVpn";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {t} from "@/i18n/t";
+import {PlatformCredit} from "./PlatformCredit";
 import {CookieSettingsButton} from "@/components/consent/CookieSettingsButton";
 
 type ParticipantContextValue = {event: PublicEventInfo; participantInfo: ParticipantEventInfo; ownTeam: OwnTeam | null};
@@ -26,6 +27,6 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
     return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><EventVpnProvider eventID={event.EventID} enabled={vpn}><div className="event-guest-shell">
         <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <main className="event-guest-main"><div className="event-page-content">{children}</div></main>
-        <footer className="ib-footer ib-footer--event"><div className="ib-footer__inner"><div className="ib-footer__row"><span className="ib-footer__org"><b>{event.Name}</b><span>CyberICEBox</span></span><nav className="ib-footer__links" aria-label={t("shell.footerLinks")}><Link href="/challenges">{t("nav.challenges")}</Link><CookieSettingsButton /></nav></div></div></footer>
+        <footer className="ib-footer ib-footer--event"><div className="ib-footer__inner"><div className="ib-footer__row"><span className="ib-footer__org"><b>{event.Name}</b><PlatformCredit /></span><nav className="ib-footer__links" aria-label={t("shell.footerLinks")}><Link href="/challenges">{t("nav.challenges")}</Link><CookieSettingsButton /></nav></div></div></footer>
     </div></EventVpnProvider></ParticipantContext.Provider>;
 }

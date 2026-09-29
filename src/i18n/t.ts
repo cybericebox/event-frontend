@@ -7,6 +7,7 @@
 // the `active` import below.
 import en from "../../messages/en.json"
 import uk from "../../messages/uk.json"
+import {createElement, Fragment, type ReactNode} from "react"
 
 // `en` defines the canonical key set; `uk` is what users see.
 const active = uk as Record<string, string>
@@ -27,6 +28,18 @@ export function t(key: MessageKey | (string & {}), vars?: MessageVars): string {
   if (!vars) return message
   return message.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in vars ? String(vars[name]) : match)
+}
+
+/**
+ * Like t(), but placeholders may be elements (a link): returns the text split
+ * around them (keyed fragments), ready to render as children.
+ */
+export function tRich(key: MessageKey | (string & {}), vars: Record<string, ReactNode>): ReactNode[] {
+  return t(key).split(/(\{\w+\})/).map((part, i) => {
+    const name = /^\{(\w+)\}$/.exec(part)?.[1]
+    // the split of a fixed message never reorders, so the position is a stable key
+    return createElement(Fragment, {key: i}, name !== undefined && name in vars ? vars[name] : part)
+  })
 }
 
 const pluralRules = new Intl.PluralRules(activeLocale)

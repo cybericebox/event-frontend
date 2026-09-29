@@ -1,6 +1,6 @@
 /* Footer — platform footer (default) and event footer (--event).
    Source: proto/platform3.html (.ft) and proto/event3.html (.lfoot).
-   Platform: brand + links row, then «© 2026 ХНУРЕ» + support line. Event: organizer line + links.
+   Platform: brand + links row, then «© 2026 ХНУРЕ» + support line. Event: organizer line (+ «Cyber ICE Box · ХНУРЕ») + links.
    Narrow container (<640px): rows stack. */
 
 .ib-footer{container:ib-footer/inline-size;background:var(--ib-surface);border-top:1px solid var(--ib-line);color:var(--ib-dim)}
@@ -17,6 +17,11 @@
 :is(.ib-footer__legal,.ib-footer__support) a{color:var(--ib-ink);font-weight:var(--ib-w-medium);text-decoration:none;border-radius:2px}
 :is(.ib-footer__legal,.ib-footer__support) a:hover{color:var(--ib-accent)}
 :is(.ib-footer__legal,.ib-footer__support) a:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+/* platform credit «Cyber ICE Box · ХНУРЕ»: platform colours, never the event's (crest ice on hover) */
+.ib-footer__credit a{color:var(--ib-ink);font-weight:var(--ib-w-medium);text-decoration:none;border-radius:2px}
+.ib-footer__credit a:hover{color:#1070A0}
+[data-theme="dark"] .ib-footer__credit a:hover{color:#7FD0FA}
+.ib-footer__credit a:focus-visible{outline:2px solid var(--ib-ink);outline-offset:2px}
 
 /* event footer: one row, organizer line left, links right */
 .ib-footer--event .ib-footer__inner{max-width:none;padding:0 var(--ib-12)}
