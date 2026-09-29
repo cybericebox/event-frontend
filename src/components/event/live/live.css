@@ -108,6 +108,7 @@
 .event-live-editor__toolbar{display:flex;gap:var(--ib-3);align-items:end;flex-wrap:wrap;padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
 .event-live-editor__toolbar label,.event-live-editor__properties label{display:grid;gap:5px;font-size:var(--ib-fs-12);color:var(--ib-dim)}
 .event-live-editor__toolbar select,.event-live-editor__toolbar input,.event-live-editor__properties input,.event-live-editor__properties select,.event-live-editor__properties textarea{width:100%;min-height:36px;padding:6px 9px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-ink);font:inherit}
+.event-live-editor__properties textarea{min-height:calc(2lh + 14px);max-height:80vh;overflow-x:hidden;overflow-y:auto;resize:vertical}
 .event-live-editor__properties label.event-live-editor__checkbox{display:flex;align-items:center;gap:8px;color:var(--ib-ink)}
 .event-live-editor__properties .event-live-editor__checkbox input{width:16px;min-height:16px;height:16px;padding:0}
 .event-live-editor__toolbar select{min-width:135px}

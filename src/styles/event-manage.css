@@ -209,7 +209,10 @@
 .event-manage-field{display:grid;align-content:start;gap:var(--ib-2);min-width:0;color:var(--ib-ink);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium)}
 .event-manage-field small{color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-regular);line-height:var(--ib-lh-ui)}
 .event-manage-input{width:100%;min-width:0;min-height:var(--ib-control-h-lg);padding:0 var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-ink);font:var(--ib-w-regular) var(--ib-fs-14)/var(--ib-lh-ui) var(--ib-font)}
-textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
+textarea.event-manage-input{padding:var(--ib-3)}
+/* Multi-line fields: the rows height is the default and the floor; content scrolls inside and the grip resizes vertically only. */
+textarea.event-manage-input,textarea.event-join-input{resize:vertical;overflow-x:hidden;overflow-y:auto;max-height:80vh;min-height:calc(attr(rows type(<number>),2)*1lh + 2*var(--ib-3) + 2px)}
+textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*var(--ib-2) + 2px)}
 .event-manage-input:focus-visible{border-color:var(--ib-action)}
 .event-manage-input:disabled{opacity:.65;cursor:not-allowed}
 .event-manage-color{display:flex;align-items:center;gap:var(--ib-2)}
@@ -579,6 +582,8 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-content-editor__hint{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-body)}
 .event-content-editor__textarea{min-height:170px;line-height:var(--ib-lh-body)}
 .event-content-editor__textarea--compact{min-height:84px;line-height:var(--ib-lh-body)}
+/* Multi-line badge fields: min-height is the default height; content scrolls inside, the grip resizes vertically only. */
+.event-content-editor__textarea,.event-content-editor__textarea--compact{height:0;max-height:80vh;overflow-x:hidden;overflow-y:auto;resize:vertical}
 .event-content-editor__field-label{display:inline-flex;align-items:center;gap:3px}
 .event-content-editor__field-control{position:relative;min-width:0}
 .event-content-editor__field-control>.event-manage-input{padding-right:48px}
@@ -776,8 +781,10 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-lexical__tool.is-active{background:var(--ib-brand);color:var(--ib-on-brand)}
 .event-lexical__menu{z-index:1000;min-width:150px;padding:4px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-raised)}
 .event-lexical__menu .ib-listbox__opt{display:flex;align-items:center;gap:8px}
-.event-lexical__body{position:relative}
-.event-lexical__editor{min-height:180px;padding:12px 14px;outline:none;font-size:var(--ib-fs-14);line-height:1.55}
+/* The toolbar stays above; the body scrolls inside. min-height is the default height, the grip resizes vertically only. */
+.event-lexical__body{position:relative;display:flex;flex-direction:column;height:0;min-height:180px;max-height:80vh;overflow-x:hidden;overflow-y:auto;resize:vertical}
+.event-lexical__body>*{flex:1 0 auto}
+.event-lexical__editor{padding:12px 14px;outline:none;font-size:var(--ib-fs-14);line-height:1.55}
 .event-lexical__placeholder{position:absolute;top:12px;left:14px;pointer-events:none;color:var(--ib-dim);font-size:var(--ib-fs-14)}
 .event-lexical__editor::selection,.event-lexical__editor *::selection{background:#b5b0d1;color:#1f1b3a}
 .event-lexical__paragraph{margin:0 0 .55em}
