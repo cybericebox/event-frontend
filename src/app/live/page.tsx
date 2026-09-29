@@ -1,6 +1,7 @@
 import {LiveBootstrap} from "@/components/event/live/LiveBootstrap";
 
-// Managers only (L1): the browser checks access with its own session.
+// Staff under their own session, or a projector PC with a screen link
+// (/live#screen=…); participants and guests have the results page.
 export default function LivePage() {
     return <LiveBootstrap />;
 }

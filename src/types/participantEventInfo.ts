@@ -7,8 +7,6 @@ export const ParticipantEventInfoSchema = z.object({
     UseVPN: z.boolean(),
     CanViewResults: z.boolean(),
     ResultsAvailability: ResultsAvailabilitySchema.optional(),
-    // The results are readable now and the live screen is open to participants.
-    CanOpenLive: z.boolean().default(false),
     CanViewParticipants: z.boolean(),
     Participation: z.union([z.literal(0), z.literal(1)]).nullish(),
     RealName: z.string().optional(),

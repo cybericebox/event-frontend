@@ -13,9 +13,6 @@ export const PublicEventInfoSchema = z.object({
     Registration: z.number().int(),
     CanViewResults: z.boolean(),
     ResultsAvailability: ResultsAvailabilitySchema.optional(),
-    // Who may open the live screen, already narrowed by the results visibility
-    // (older API responses omit it: staff only).
-    LiveAudience: z.enum(["staff", "participants", "public"]).optional().catch(undefined),
     CanViewParticipants: z.boolean(),
     PreviewDescription: z.string(),
     PreviewPicture: z.string(),

@@ -15,14 +15,14 @@ export const freezeSchema = z.object({
 });
 const displaySchema = z.object({ChartEnabled: z.boolean(), ChartTeams: z.number().int(), RowsLimit: z.number().int().nullable()});
 const noFreeze = {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false};
-const snapshotSchema = z.object({
+export const resultsSnapshotSchema = z.object({
     Revision: z.number().int(), GeneratedAt: z.string(), Scoreboard: z.array(scoreboardEntrySchema), Timeline: z.array(timelineEntrySchema),
     TotalTeams: z.number().int().optional(),
     Freeze: freezeSchema.default(noFreeze),
     Display: displaySchema.default({ChartEnabled: true, ChartTeams: 10, RowsLimit: null}),
 }).transform(value => ({...value, TotalTeams: value.TotalTeams ?? value.Scoreboard.length}));
 
-export type ManageResultsSnapshot = z.output<typeof snapshotSchema>;
+export type ManageResultsSnapshot = z.output<typeof resultsSnapshotSchema>;
 export type ResultsFreeze = z.infer<typeof freezeSchema>;
 export type ResultsView = "page" | "live";
 
@@ -53,7 +53,7 @@ export async function getManageResults(eventID: string, view: ResultsView = "pag
         throw reason ? new ResultsUnavailableError(reason) : new ManageApiError(403);
     }
     if (!response.ok) throw new ManageApiError(response.status);
-    return z.object({Data: snapshotSchema}).parse(await response.json()).Data;
+    return z.object({Data: resultsSnapshotSchema}).parse(await response.json()).Data;
 }
 
 // SSE of result changes after the given snapshot revision. EventSource cannot
@@ -80,20 +80,14 @@ export type ModeratorResults = z.infer<typeof moderatorResultsSchema>;
 export type ModeratorResultsTeam = z.infer<typeof moderatorTeamSchema>;
 export type ModeratorResultsSolve = ModeratorResultsTeam["Solves"][number];
 
-const liveAudienceSchema = z.union([z.literal(0), z.literal(1), z.literal(2)]);
 const settingsSchema = z.object({
     ScoreboardVisibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),
     FreezeEnabled: z.boolean(), FreezeMinutes: z.number().int(), LiveFreeze: z.boolean(),
     ChartEnabled: z.boolean(), ChartTeams: z.number().int(), RowsLimit: z.number().int().nullable(),
     OpenedAt: z.string().nullable(), Freeze: freezeSchema,
-    // Who may open /live: 0 staff, 1 participants, 2 everyone; the effective
-    // value is narrowed to ScoreboardVisibility by the backend.
-    LiveAudience: liveAudienceSchema.default(0), EffectiveLiveAudience: liveAudienceSchema.default(0),
 });
 export type ResultsSettings = z.infer<typeof settingsSchema>;
-export type LiveAudience = z.infer<typeof liveAudienceSchema>;
-// LiveAudience is optional: omitted keeps the stored value.
-export type ResultsSettingsInput = Omit<ResultsSettings, "OpenedAt" | "Freeze" | "LiveAudience" | "EffectiveLiveAudience"> & {LiveAudience?: LiveAudience};
+export type ResultsSettingsInput = Omit<ResultsSettings, "OpenedAt" | "Freeze">;
 
 export function resultsSettingsInput(settings: ResultsSettings): ResultsSettingsInput {
     const {ScoreboardVisibility, FreezeEnabled, FreezeMinutes, LiveFreeze, ChartEnabled, ChartTeams, RowsLimit} = settings;

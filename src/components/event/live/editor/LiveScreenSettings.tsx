@@ -5,7 +5,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {liveRefreshOptions, type LiveLayout} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
-import {getResultsSettings, putResultsSettings, resultsSettingsInput, type LiveAudience, type ResultsSettingsInput} from "@/api/manageResults";
+import {getResultsSettings, putResultsSettings, resultsSettingsInput} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {t} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -14,48 +14,27 @@ import {EventSwitch} from "@/components/ui/EventSwitch";
 import {LiveMiniature} from "./LiveMiniature";
 import {LiveField} from "./LiveWidgetSettings";
 
-const audienceOptions: {value: LiveAudience; label: string}[] = [
-    {value: 2, label: t("manage.live.audience.public")},
-    {value: 1, label: t("manage.live.audience.participants")},
-    {value: 0, label: t("manage.live.audience.staff")},
-];
-
-// Who may open /live and whether it respects the freeze: results settings,
-// applied at once. The audience never exceeds the results visibility.
-function LiveAccessSettings({eventID, canManage}: {eventID: string; canManage: boolean}) {
+// «Враховувати заморожування результатів»: a results setting, applied at once.
+function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boolean}) {
     const queryClient = useQueryClient();
     const queryKey = ["event-management-results-settings", eventID];
     const settings = useQuery({queryKey, queryFn: () => getResultsSettings(eventID), refetchOnWindowFocus: false});
     const [busy, setBusy] = useState(false);
-    async function save(patch: Partial<ResultsSettingsInput>, success: string) {
+    async function change(value: boolean) {
         if (!settings.data) return;
         setBusy(true);
         try {
-            queryClient.setQueryData(queryKey, await putResultsSettings(eventID, {...resultsSettingsInput(settings.data), ...patch}));
+            queryClient.setQueryData(queryKey, await putResultsSettings(eventID, {...resultsSettingsInput(settings.data), LiveFreeze: value}));
             await queryClient.invalidateQueries({queryKey: ["event-live-results", eventID]});
-            toast.success(success);
-        } catch {toast.error(t("manage.live.access.error"));}
+            toast.success(t(value ? "manage.live.freeze.on" : "manage.live.freeze.off"));
+        } catch {toast.error(t("manage.live.freeze.error"));}
         finally {setBusy(false);}
     }
-    const data = settings.data;
-    const cap = (data?.ScoreboardVisibility ?? 0) as LiveAudience;
-    const capReason = t(cap === 0 ? "manage.live.audience.capHidden" : "manage.live.audience.capParticipants");
-    const narrowed = data && data.EffectiveLiveAudience !== data.LiveAudience;
-    const freezeHint = t(settings.isError ? "manage.live.freeze.readError" : data && !data.FreezeEnabled ? "manage.live.freeze.disabled" : "manage.live.freeze.immediate");
-    const disabled = !canManage || busy || !data;
-    return <>
-        <LiveField label={t("manage.live.audience.label")} hint={narrowed
-            ? t("manage.live.audience.narrowed", {audience: audienceOptions.find(option => option.value === data.EffectiveLiveAudience)!.label})
-            : t("manage.live.audience.hint")}>
-            <EventSelect ariaLabel={t("manage.live.audience.label")} value={String(data?.LiveAudience ?? 0)} disabled={disabled}
-                options={audienceOptions.map(option => ({value: String(option.value), label: option.label, disabled: option.value > cap, disabledReason: option.value > cap ? capReason : undefined}))}
-                onValueChange={value => void save({LiveAudience: Number(value) as LiveAudience}, t("manage.live.audience.saved"))} />
-        </LiveField>
-        <div className="event-live-settings__freeze">
-            <EventSwitch checked={data?.LiveFreeze ?? true} disabled={disabled} onCheckedChange={value => void save({LiveFreeze: value}, t(value ? "manage.live.freeze.on" : "manage.live.freeze.off"))} label={t("manage.live.freeze.label")} />
-            <small>{freezeHint}</small>
-        </div>
-    </>;
+    const hint = t(settings.isError ? "manage.live.freeze.readError" : settings.data && !settings.data.FreezeEnabled ? "manage.live.freeze.disabled" : "manage.live.freeze.immediate");
+    return <div className="event-live-settings__freeze">
+        <EventSwitch checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || busy || !settings.data} onCheckedChange={value => void change(value)} label={t("manage.live.freeze.label")} />
+        <small>{hint}</small>
+    </div>;
 }
 
 const themes = ["dark", "light"] as const;
@@ -88,6 +67,6 @@ export function LiveScreenSettings({eventID, event, layout, results, sample, can
                 options={[...new Set([...liveRefreshOptions, layout.refreshSeconds])].sort((a, b) => a - b).map(value => ({value: String(value), label: t("manage.live.seconds", {count: value})}))}
                 onValueChange={value => onChange({...layout, refreshSeconds: Number(value)})} />
         </LiveField>
-        <LiveAccessSettings eventID={eventID} canManage={canManage} />
+        <LiveFreezeToggle eventID={eventID} canManage={canManage} />
     </div>;
 }

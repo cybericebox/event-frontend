@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {cleanup, render, screen} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ScoreboardView} from "./ScoreboardView";
-import {apiReadable, audiences, canOpenLive, effectiveLiveAudience, freezeApplied, infoAvailability, liveAudiences, liveButton, phases, visibilities, type Phase} from "./scoreboardMatrix.fixture";
+import {apiReadable, audiences, freezeApplied, infoAvailability, phases, visibilities, type Phase} from "./scoreboardMatrix.fixture";
 
 const state = vi.hoisted(() => ({staff: false, event: null as Record<string, unknown> | null, participant: null as Record<string, unknown> | null, getResults: vi.fn()}));
 
@@ -63,17 +63,17 @@ it("explains a closed ranking inside the table block and hides Live from guests"
 
 const offsets: Record<Phase, [number, number]> = {before: [hour, 5 * hour], during: [-hour, hour], after: [-5 * hour, -hour]};
 
-describe("results page matrix: audience × visibility × phase × freeze × live audience", () => {
-    for (const audience of audiences) for (const visibility of visibilities) for (const phase of phases) for (const freezeActive of [false, true]) for (const live of liveAudiences) {
-        it(`${audience}, visibility ${visibility}, ${phase}, freeze ${freezeActive ? "active" : "off"}, live ${live}`, async () => {
+describe("results page matrix: audience × visibility × phase × freeze", () => {
+    for (const audience of audiences) for (const visibility of visibilities) for (const phase of phases) for (const freezeActive of [false, true]) {
+        it(`${audience}, visibility ${visibility}, ${phase}, freeze ${freezeActive ? "active" : "off"}`, async () => {
             const [start, finish] = offsets[phase];
             const availability = infoAvailability(audience, visibility, phase);
-            const info = {CanViewResults: availability === "available", ResultsAvailability: availability, CanOpenLive: canOpenLive(visibility, phase, live)};
+            const info = {CanViewResults: availability === "available", ResultsAvailability: availability};
             const base = {...event(start, "hidden"), FinishTime: new Date(Date.now() + finish).toISOString()};
             state.staff = audience === "staff";
             // Staff and applicants read the guest info; the participant, their own.
             const guestView = infoAvailability(audience === "participant" ? "guest" : audience, visibility, phase);
-            state.event = {...base, CanViewResults: guestView === "available", ResultsAvailability: guestView, LiveAudience: effectiveLiveAudience(live, visibility)};
+            state.event = {...base, CanViewResults: guestView === "available", ResultsAvailability: guestView};
             state.participant = audience === "participant" ? {event: state.event, participantInfo: info, ownTeam: null} : null;
             const applied = freezeApplied(audience, phase, freezeActive);
             state.getResults.mockImplementation(async () => {
@@ -99,7 +99,8 @@ describe("results page matrix: audience × visibility × phase × freeze × live
                 expect(screen.getByText("Наживо")).toBeTruthy();
                 expect(screen.getByText(/^Оновлено /)).toBeTruthy();
             }
-            expect(screen.queryByRole("link", {name: "Відкрити Live"}) !== null).toBe(liveButton(audience, visibility, phase, live));
+            // Live is a staff screen: participants and guests never get the button.
+            expect(screen.queryByRole("link", {name: "Відкрити Live"}) !== null).toBe(staff);
         });
     }
 });

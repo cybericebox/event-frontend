@@ -2,22 +2,26 @@
 
 import {useEffect} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {getManageResults, resultsLiveURL, type ManageResultsSnapshot, type ResultsView} from "@/api/manageResults";
+import {getManageResults, resultsLiveURL, type ManageResultsSnapshot} from "@/api/manageResults";
+import {getLiveScreenResultsByLink, liveScreenResultsStreamURL} from "@/api/manageLive";
 import {useEventStream} from "@/utils/eventStream";
 import {nextFreezeBoundary} from "@/utils/resultsFreeze";
 
-// Live-screen results: a snapshot reloaded on every SSE change,
-// snapshot-required reopens the stream from a fresh snapshot, and polling
-// only while the stream keeps failing. Managers read view=live; other
-// viewers read the same board as the results page. `refreshSeconds` (the
-// layout setting, 2–30 s) is the stream's server poll and the fallback poll.
-export function useLiveResults(eventID: string, enabled = true, {view = "live", refreshSeconds = 10}: {view?: ResultsView; refreshSeconds?: number} = {}) {
+// Live-screen results (the staff board, view=live): a snapshot reloaded on
+// every SSE change, snapshot-required reopens the stream from a fresh
+// snapshot, and polling only while the stream keeps failing. A screen link
+// (`token`) reads the same board through the link endpoints, without a
+// session. `refreshSeconds` (the layout setting, 2–30 s) is the stream's
+// server poll and the fallback poll.
+export function useLiveResults(eventID: string, enabled = true, {token, refreshSeconds = 10}: {token?: string; refreshSeconds?: number} = {}) {
     const queryClient = useQueryClient();
-    const queryKey = ["event-live-results", eventID, view];
+    const queryKey = ["event-live-results", eventID, token ? "link" : "staff"];
     const revision = queryClient.getQueryData<ManageResultsSnapshot>(queryKey)?.Revision;
     const stream = useEventStream({
         url: () => {
-            const url = revision === undefined ? null : resultsLiveURL(eventID, revision, view);
+            if (revision === undefined) return null;
+            if (token) return liveScreenResultsStreamURL(token, revision, refreshSeconds);
+            const url = resultsLiveURL(eventID, revision, "live");
             return url && `${url}&pollInterval=${refreshSeconds}`;
         },
         events: ["result-change"], resetEvents: ["snapshot-required"],
@@ -25,7 +29,7 @@ export function useLiveResults(eventID: string, enabled = true, {view = "live", 
         enabled: enabled && revision !== undefined,
     });
     const results = useQuery({
-        queryKey, queryFn: () => getManageResults(eventID, view), enabled, retry: false,
+        queryKey, queryFn: () => token ? getLiveScreenResultsByLink(token) : getManageResults(eventID, "live"), enabled, retry: false,
         refetchInterval: stream === "fallback" ? refreshSeconds * 1000 : false,
     });
     // The freeze starts and ends by the clock: reload right after each boundary.

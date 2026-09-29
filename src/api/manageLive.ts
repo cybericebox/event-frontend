@@ -1,6 +1,8 @@
 import {z} from "zod";
 import {ManageApiError} from "./manage";
 import {requireApiOrigin} from "@/utils/origins";
+import {resultsSnapshotSchema} from "./manageResults";
+import {PublicEventInfoSchema} from "@/types/publicEventInfo";
 import {t} from "@/i18n/t";
 
 export const liveRefreshDefault = 5;
@@ -69,16 +71,54 @@ export const publishManageLive = (eventID: string) => liveRequest(eventID, "/pub
 // through the management API, so unpublished events work too.
 export const getPublishedLiveLayout = async (eventID: string) => (await getManageLive(eventID)).Published;
 
-// Viewers who do not manage the event read the published layout from the
-// public event content (the event must be published).
-export async function getPublicLiveLayout(eventID: string): Promise<LiveLayout> {
-    const api = requireApiOrigin();
-    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/content`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
-    if (!response.ok) throw new ManageApiError(response.status);
-    return z.object({Data: z.object({Live: liveLayoutSchema})}).parse(await response.json()).Data.Live;
-}
-
 // Open live screens poll this light version and reload the layout on a change.
 export async function getLiveLayoutVersion(eventID: string): Promise<number> {
     return liveRequest(eventID, "/version", z.object({Version: z.number().int()})).then(value => value.Version);
+}
+
+// Screen links («Посилання для екрана»): a token opens this event's live
+// screen on a projector PC that is not signed in. The token comes back only
+// when a link is issued or regenerated.
+export const liveScreenExpiries = ["day", "week", "event_end"] as const;
+export type LiveScreenExpiry = typeof liveScreenExpiries[number];
+const screenLinkSchema = z.object({ID: z.string(), CreatedAt: z.string(), ExpiresAt: z.string(), Token: z.string().optional()});
+export type LiveScreenLink = z.infer<typeof screenLinkSchema>;
+
+export const listLiveScreenLinks = (eventID: string) => liveRequest(eventID, "/screen-links", z.array(screenLinkSchema));
+export const createLiveScreenLink = (eventID: string, expiry: LiveScreenExpiry) => liveRequest(eventID, "/screen-links", screenLinkSchema, "POST", {Expiry: expiry});
+export const regenerateLiveScreenLink = (eventID: string, linkID: string) => liveRequest(eventID, `/screen-links/${encodeURIComponent(linkID)}/regenerate`, screenLinkSchema, "POST");
+export const revokeLiveScreenLink = (eventID: string, linkID: string) => liveRequest(eventID, `/screen-links/${encodeURIComponent(linkID)}`, z.undefined(), "DELETE");
+
+// The URL a screen opens: the token rides in the fragment, so it never
+// reaches the event site's server logs.
+export function liveScreenURL(origin: string, token: string): string {
+    return `${origin}/live#screen=${encodeURIComponent(token)}`;
+}
+
+export function liveScreenTokenFromHash(hash: string): string | null {
+    return new URLSearchParams(hash.replace(/^#/, "")).get("screen") || null;
+}
+
+export class LiveScreenLinkError extends Error {
+    constructor(readonly status: number) {
+        super(`Live screen link request failed: ${status}`);
+    }
+}
+
+function screenURL(path: string, token: string, params: Record<string, string> = {}): string {
+    const query = new URLSearchParams({token, ...params});
+    return `${requireApiOrigin()}/api/events/self/live-screen${path}?${query}`;
+}
+
+async function screenRequest<T>(path: string, token: string, schema: z.ZodType<T>): Promise<T> {
+    // The event comes from the Origin of this site; no session is used.
+    const response = await fetch(screenURL(path, token), {credentials: "omit", cache: "no-store", headers: {Accept: "application/json"}});
+    if (!response.ok) throw new LiveScreenLinkError(response.status);
+    return z.object({Data: schema}).parse(await response.json()).Data;
+}
+
+export const getLiveScreenByLink = (token: string) => screenRequest("", token, z.object({Event: PublicEventInfoSchema, Layout: liveLayoutSchema}));
+export const getLiveScreenResultsByLink = (token: string) => screenRequest("/results", token, resultsSnapshotSchema);
+export function liveScreenResultsStreamURL(token: string, revision: number, refreshSeconds: number): string {
+    return screenURL("/results/live", token, {lastEventId: String(revision), pollInterval: String(refreshSeconds)});
 }
