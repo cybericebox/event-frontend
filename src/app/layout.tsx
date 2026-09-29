@@ -49,6 +49,7 @@ import {headers} from "next/headers";
 import {getPublicEventInfo} from "@/api/publicEventInfo";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 import {EventBrandProvider} from "@/components/event/EventBrandLogo";
+import {apiOrigin} from "@/utils/origins";
 
 const FALLBACK_TITLE = "Cyber ICE Box";
 
@@ -65,7 +66,7 @@ export async function generateMetadata(): Promise<Metadata> {
         return {
             title: name,
             description: `${name} | Cyber ICE Box Platform`,
-            icons: {icon: event.FaviconURL && process.env.NEXT_PUBLIC_DOMAIN ? `https://api.${process.env.NEXT_PUBLIC_DOMAIN}${event.FaviconURL}` : "/platform-favicon.ico"},
+            icons: {icon: event.FaviconURL && apiOrigin ? `${apiOrigin}${event.FaviconURL}` : "/platform-favicon.ico"},
             openGraph: {
                 title: name,
                 description: `${name} | Cyber ICE Box Platform`,
