@@ -58,7 +58,7 @@ export function periodQuery(period: AnalyticsPeriod): string {
     return text ? `?${text}` : "";
 }
 
-async function analyticsRequest<T>(eventID: string, path: string, schema: z.ZodType<T>): Promise<T> {
+export async function analyticsRequest<T>(eventID: string, path: string, schema: z.ZodType<T>): Promise<T> {
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/analytics/${path}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
