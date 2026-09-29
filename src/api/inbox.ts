@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {requireApiOrigin} from "@/utils/origins";
 
 const itemSchema = z.object({
     ID: z.string(), Title: z.string(), Body: z.string(), Link: z.string(),
@@ -21,9 +22,8 @@ export type InboxPage = z.infer<typeof listSchema>["Data"];
 export type InboxPoll = z.infer<typeof pollSchema>["Data"];
 
 function inboxURL(path = ""): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    return `https://api.${domain}/api/notifications/inbox${path}`;
+    const api = requireApiOrigin();
+    return `${api}/api/notifications/inbox${path}`;
 }
 
 async function inboxRequest(path = "", method = "GET"): Promise<unknown> {

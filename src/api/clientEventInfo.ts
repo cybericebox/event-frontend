@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {PublicEventInfoSchema, type PublicEventInfo} from "@/types/publicEventInfo";
+import {requireApiOrigin} from "@/utils/origins";
 
 export class ClientEventInfoError extends Error {
     constructor(readonly status: number) {
@@ -22,9 +23,8 @@ export async function getClientEventInfo(): Promise<PublicEventInfo> {
             Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
         });
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/self/public-info`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/self/public-info`, {
         credentials: "include",
         cache: "no-store",
         headers: {Accept: "application/json"},

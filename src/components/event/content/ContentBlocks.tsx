@@ -7,6 +7,7 @@ import {formatDateTime} from "./dateDisplay";
 import {ActionBlock, type PreviewViewer} from "./ActionBlock";
 import {PartnersBlock} from "./PartnersBlock";
 import {CountdownWindow} from "./CountdownWindow";
+import {apiOrigin} from "@/utils/origins";
 
 type Value = string | number | boolean | null;
 
@@ -71,9 +72,9 @@ export function contentImageURL(source: string | undefined): string | undefined 
 
 function bannerImageURL(source: string | undefined): string | undefined {
     if (!source) return undefined;
-    if (source.startsWith("/api/events/") && process.env.NEXT_PUBLIC_DOMAIN) {
+    if (source.startsWith("/api/events/") && apiOrigin) {
         const version = source.includes("/content-images/") ? "?v=2" : "";
-        return `https://api.${process.env.NEXT_PUBLIC_DOMAIN}${source}${version}`;
+        return `${apiOrigin}${source}${version}`;
     }
     return source;
 }

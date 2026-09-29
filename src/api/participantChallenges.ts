@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {ApiErrorCode, readApiErrorCode} from "@/api/apiErrors";
 import {LabRuntimeSchema, type LabRuntime} from "@/api/manageLabs";
+import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const attachmentSchema = z.object({file_id: id, name: z.string()});
@@ -63,9 +64,8 @@ export function challengeFiles(challenge: OwnChallenge): ChallengeFile[] {
 }
 
 function baseUrl(eventID: string): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    return `https://api.${domain}/api/events/${encodeURIComponent(eventID)}/teams/challenges`;
+    const api = requireApiOrigin();
+    return `${api}/api/events/${encodeURIComponent(eventID)}/teams/challenges`;
 }
 
 async function failure(response: Response): Promise<ParticipantChallengeError> {

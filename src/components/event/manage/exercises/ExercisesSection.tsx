@@ -5,10 +5,11 @@ import {useQueryClient} from "@tanstack/react-query";
 import {Plus} from "lucide-react";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {AttachExerciseDialog} from "./AttachExerciseDialog";
-import {ExerciseAttachments, exercisesDomain, useReturnURL} from "./ExerciseAttachments";
+import {ExerciseAttachments, useReturnURL} from "./ExerciseAttachments";
 import {exercisesAppURL} from "./attachmentModel";
 import {exercisesTabFromParam, exercisesTabHref, exercisesTabs, type ExercisesTab} from "./exercisesTabs";
 import {HintUnlocksList} from "./HintUnlocksList";
+import {exercisesOrigin} from "@/utils/origins";
 
 export function ExercisesSection({initialTab}: {initialTab: string | undefined}) {
     const {event, canManage} = useManager();
@@ -26,7 +27,7 @@ export function ExercisesSection({initialTab}: {initialTab: string | undefined})
         <header className="event-manage-heading">
             <div><h1>Завдання</h1><p>Набори з каталогу й власні завдання події.</p></div>
             {canManage && <div className="event-exercise-set__actions">
-                <a className="ib-btn" href={exercisesAppURL(exercisesDomain(), "new", {eventID: event.EventID, returnURL})}>Створити завдання</a>
+                <a className="ib-btn" href={exercisesAppURL(exercisesOrigin, "new", {eventID: event.EventID, returnURL})}>Створити завдання</a>
                 <button className="ib-btn ib-btn--primary" type="button" onClick={() => setAttachOpen(true)}><Plus aria-hidden="true" />Додати набір</button>
             </div>}
         </header>

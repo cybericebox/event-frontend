@@ -11,10 +11,11 @@ import {collectFormAnswers, ParticipantFormFields} from "@/components/event/Part
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
+import {eventOrigin, idOrigin} from "@/utils/origins";
 
 function signInHref(eventTag: string | undefined): string | null {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    return domain && eventTag ? `https://id.${domain}/sign-in?return_to=${encodeURIComponent(`https://${eventTag}.${domain}/invite`)}` : null;
+    const back = eventTag ? eventOrigin(eventTag) : "";
+    return idOrigin && back ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${back}/invite`)}` : null;
 }
 
 export default function InvitePage() {

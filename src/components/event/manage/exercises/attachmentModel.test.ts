@@ -20,10 +20,10 @@ describe("attachment labels", () => {
 
 describe("exercises app links", () => {
     it("carries the exercise, the event and the encoded return URL", () => {
-        const url = exercisesAppURL("cybericebox.local", "detail", {exerciseID: "ex-1", eventID: "ev-1", returnURL: "https://arena.cybericebox.local/manage/exercises?tab=sets"});
+        const url = exercisesAppURL("https://exercises.cybericebox.local", "detail", {exerciseID: "ex-1", eventID: "ev-1", returnURL: "https://arena.cybericebox.local/manage/exercises?tab=sets"});
         expect(url).toBe("https://exercises.cybericebox.local/detail?id=ex-1&event=ev-1&return=https%3A%2F%2Farena.cybericebox.local%2Fmanage%2Fexercises%3Ftab%3Dsets");
         expect(new URL(url).searchParams.get("return")).toBe("https://arena.cybericebox.local/manage/exercises?tab=sets");
-        expect(exercisesAppURL("d.local", "new", {eventID: "ev-1", returnURL: "x"})).toBe("https://exercises.d.local/new?event=ev-1&return=x");
+        expect(exercisesAppURL("https://exercises.d.local", "new", {eventID: "ev-1", returnURL: "x"})).toBe("https://exercises.d.local/new?event=ev-1&return=x");
     });
 });
 

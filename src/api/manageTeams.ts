@@ -2,6 +2,7 @@ import {z} from "zod";
 import {manageApiError, ManageApiError} from "@/api/manage";
 import {clearMockParticipantTeam, mockTeamInvitations, mockTeamMembers, setMockParticipantTeam} from "@/api/manageParticipants";
 import type {ParticipantAnswers} from "@/api/participantForm";
+import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const optionalText = z.string().nullish().transform(value => value ?? "");
@@ -32,9 +33,8 @@ function mockTeam(team: z.input<typeof teamSchema>): ManageTeam {
 }
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(payload === undefined ? {} : {"Content-Type": "application/json"})},
         body: payload === undefined ? undefined : JSON.stringify(payload),

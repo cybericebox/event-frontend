@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError, manageApiError} from "@/api/manage";
+import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const scoringOverrideSchema = z.object({
@@ -309,9 +310,8 @@ function mockRequest(path: string, method: string, payload: unknown): unknown {
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return schema.parse(mockRequest(path, method, payload));
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(payload === undefined ? {} : {"Content-Type": "application/json"})},
         body: payload === undefined ? undefined : JSON.stringify(payload),

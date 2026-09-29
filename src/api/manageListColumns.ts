@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
+import {requireApiOrigin} from "@/utils/origins";
 
 export type ManagedList = "participants" | "teams";
 const columnSchema = z.object({Key: z.string(), Visible: z.boolean()});
@@ -10,9 +11,8 @@ export type ListColumns = z.infer<typeof listColumnsSchema>;
 const mockColumns = new Map<ManagedList, ListColumn[]>();
 
 async function request(eventID: string, list: ManagedList, method: "GET" | "PUT", columns?: ListColumn[]): Promise<ListColumns> {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/list-columns/${list}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/list-columns/${list}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(columns ? {"Content-Type": "application/json"} : {})},
         body: columns ? JSON.stringify({List: list, Columns: columns}) : undefined,

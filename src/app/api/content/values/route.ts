@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {ContentValueSchema} from "@/types/eventContent";
+import {apiHost} from "@/utils/origins";
 
 const valuesSchema = z.object({Data: z.object({Variables: z.record(z.string(), ContentValueSchema)})});
 
@@ -11,9 +12,7 @@ export async function GET(request: Request) {
         return Response.json({error: "Invalid event or page"}, {status: 400});
     }
     const host = request.headers.get("host");
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!host || !domain) return Response.json({error: "Event host unavailable"}, {status: 503});
-    const apiHost = `api.${domain}`;
+    if (!host || !apiHost) return Response.json({error: "Event host unavailable"}, {status: 503});
     const internalOrigin = process.env.INTERNAL_API_ORIGIN;
     const path = `/api/events/${eventID.data}/content${slug ? `/pages/${encodeURIComponent(slug)}` : ""}/values`;
     const response = await fetch(`${internalOrigin ?? `https://${apiHost}`}${path}`, {

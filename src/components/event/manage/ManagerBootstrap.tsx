@@ -6,6 +6,7 @@ import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {ManagerShell} from "./ManagerShell";
 import {EventLoading} from "../EventLoading";
 import {EventBrandProvider} from "../EventBrandLogo";
+import {idOrigin} from "@/utils/origins";
 
 export function ManagerBootstrap({children}: {children: ReactNode}) {
     const event = useQuery({
@@ -35,7 +36,7 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
             <p>{unavailable ? "Спробуйте повторити запит, коли з’єднання відновиться." : "Увійдіть в обліковий запис менеджера цієї події."}</p>
             {unavailable
                 ? <button className="ib-btn" onClick={() => void event.refetch()}>Повторити</button>
-                : <a className="ib-btn ib-btn--primary" href={`https://id.${process.env.NEXT_PUBLIC_DOMAIN}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>Увійти</a>}
+                : <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>Увійти</a>}
         </div>;
     }
     return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data}>{children}</ManagerShell></EventBrandProvider>;

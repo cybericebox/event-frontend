@@ -7,12 +7,12 @@ import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
 import {EventPageContentSchema, type EventPageContent} from "@/types/eventContent";
 import {ContentBlocks} from "./ContentBlocks";
 import {EventLoading} from "../EventLoading";
+import {requireApiOrigin} from "@/utils/origins";
 
 async function getVisiblePage(eventID: string, slug: string): Promise<EventPageContent | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return null;
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/content/pages/${encodeURIComponent(slug)}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/content/pages/${encodeURIComponent(slug)}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (response.status === 404) return null;

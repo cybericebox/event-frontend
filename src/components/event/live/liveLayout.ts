@@ -1,4 +1,5 @@
 import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
+import {apiOrigin} from "@/utils/origins";
 
 export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
     title: "Назва події", timer: "Таймер", chart: "Графік", table: "Таблиця",
@@ -14,8 +15,7 @@ export function liveLogoURL(value: string): string | null {
     // Mock uploads are object URLs.
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1" && value.startsWith("blob:")) return value;
     if (value.startsWith("/") && !value.startsWith("//")) {
-        const domain = process.env.NEXT_PUBLIC_DOMAIN;
-        return value.startsWith("/api/events/") && domain ? `https://api.${domain}${value}` : value;
+        return value.startsWith("/api/events/") && apiOrigin ? `${apiOrigin}${value}` : value;
     }
     try {const url = new URL(value); return url.protocol === "https:" ? url.href : null;} catch {return null;}
 }

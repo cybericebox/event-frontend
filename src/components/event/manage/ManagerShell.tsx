@@ -11,11 +11,12 @@ import {EventHeaderActions} from "../EventNavigation";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {managerLocationTitle} from "./managerNavigation";
 import Link from "next/link";
+import {eventOrigin, idOrigin} from "@/utils/origins";
 
 function signInHref(event: PublicEventInfo): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) return "/";
-    return `https://id.${domain}/sign-in?return_to=${encodeURIComponent(`https://${event.Tag}.${domain}/manage`)}`;
+    const back = eventOrigin(event.Tag);
+    if (!idOrigin || !back) return "/";
+    return `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${back}/manage`)}`;
 }
 
 const ManagerContext = createContext<{event: PublicEventInfo; canManage: boolean} | null>(null);

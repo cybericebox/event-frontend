@@ -4,6 +4,7 @@ import {createContext, useContext} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getManageContent, getManagePages} from "@/api/manage";
 import type {ContentDocument, ContentValue} from "@/types/eventContent";
+import {eventOrigin, idOrigin} from "@/utils/origins";
 
 // The document being edited: its anchors link as "#anchor" (they may not be
 // saved yet). `landing` tells the picker that "/#anchor" is this document.
@@ -33,10 +34,10 @@ export function useEventLinkOptions(eventID: string, values: Record<string, Cont
         refetchOnWindowFocus: false,
         enabled: !edited?.landing,
     });
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
     const tag = values["event.tag"];
-    const profileURL = domain && typeof tag === "string" && tag
-        ? `https://id.${domain}/profile?return_to=${encodeURIComponent(`https://${tag}.${domain}/`)}`
+    const eventSite = typeof tag === "string" && tag ? eventOrigin(tag) : "";
+    const profileURL = idOrigin && eventSite
+        ? `${idOrigin}/profile?return_to=${encodeURIComponent(`${eventSite}/`)}`
         : "";
     const landing = !edited?.landing && content.data ? content.data.LandingDraft ?? content.data.Landing : null;
     return {

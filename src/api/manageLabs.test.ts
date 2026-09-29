@@ -1,5 +1,9 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {ManageApiError} from "./manage";
+vi.mock("@/utils/origins", async (importOriginal) => ({
+    ...await importOriginal<typeof import("@/utils/origins")>(),
+    requireApiOrigin: () => "https://api.example.org",
+}));
 import {ManageLabsSchema, ModeratorChallengeSchema, getManageLabs, isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage} from "./manageLabs";
 
 afterEach(() => {vi.unstubAllEnvs(); vi.unstubAllGlobals();});
@@ -40,7 +44,6 @@ describe("labs client", () => {
     });
 
     it("sends settings to the stand settings route", async () => {
-        vi.stubEnv("NEXT_PUBLIC_DOMAIN", "example.org");
         const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({Data: {
             InfrastructureAllowed: true, LaboratoriesAvailable: true, DeployLeadMinutes: 45, TeardownDelayMinutes: 0, DeployAt: null, TeardownAt: null, ChallengesOpened: true,
             Summary: {Total: 0, NotDeployed: 0, Creating: 0, Ready: 0, Failed: 0, Removed: 0}, Items: [],

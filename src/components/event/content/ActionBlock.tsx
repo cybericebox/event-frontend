@@ -3,6 +3,7 @@
 import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
+import {eventOrigin, idOrigin} from "@/utils/origins";
 
 type Action = {label: string; kind?: "link" | "join_event"; href?: string};
 
@@ -100,9 +101,9 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !viewer, retry: false, refetchInterval: false});
     const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !!eventID && !!identity.data, retry: false, refetchInterval: false});
     const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !viewer && join.data === 1, retry: false, refetchInterval: false});
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    const signInHref = domain && eventTag
-        ? `https://id.${domain}/sign-in?return_to=${encodeURIComponent(`https://${eventTag}.${domain}/join`)}`
+    const eventSite = eventTag ? eventOrigin(eventTag) : "";
+    const signInHref = idOrigin && eventSite
+        ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${eventSite}/join`)}`
         : "/join";
     const state = hasJoin ? joinState({
         preview: viewer, windowOpen, timeWindowOpen, signInHref,

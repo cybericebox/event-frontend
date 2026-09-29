@@ -1,4 +1,5 @@
 import {manageApiError} from "@/api/manage";
+import {requireApiOrigin} from "@/utils/origins";
 
 // results-2026-09-29.csv — the export date in UTC, like the manage timestamps.
 export function csvFileName(prefix: string, at: Date = new Date()): string {
@@ -24,9 +25,8 @@ export async function downloadManageCSV(eventID: string, path: string, fileName:
         saveBlob(new Blob(["﻿" + text], {type: "text/csv;charset=utf-8"}), fileName);
         return;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {credentials: "include", cache: "no-store", headers: {Accept: "text/csv"}});
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {credentials: "include", cache: "no-store", headers: {Accept: "text/csv"}});
     if (!response.ok) throw await manageApiError(response);
     saveBlob(await response.blob(), fileName);
 }

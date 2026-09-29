@@ -2,6 +2,7 @@ import {z} from "zod";
 import {ManageApiError, manageApiError} from "@/api/manage";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import type {ResultsAvailability} from "@/types/resultsAvailability";
+import {apiOrigin, requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const scoreboardEntrySchema = z.object({
@@ -69,9 +70,8 @@ function mockSnapshot(): unknown {
 }
 
 function apiBase(): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    return `https://api.${domain}/api`;
+    const api = requireApiOrigin();
+    return `${api}/api`;
 }
 
 // The public snapshot. `view: "live"` is the projector screen (W9): nothing is
@@ -94,11 +94,10 @@ export async function getManageResults(eventID: string, view: ResultsView = "pag
 // SSE of result changes after the given snapshot revision. EventSource cannot
 // send Last-Event-ID on the first connect, so the cursor goes in the query.
 export function resultsLiveURL(eventID: string, revision: number, view: ResultsView = "page"): string | null {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) return null;
+    if (!apiOrigin) return null;
     const params = new URLSearchParams({lastEventId: String(revision)});
     if (view === "live") params.set("view", "live");
-    return `https://api.${domain}/api/events/${encodeURIComponent(eventID)}/results/live?${params}`;
+    return `${apiOrigin}/api/events/${encodeURIComponent(eventID)}/results/live?${params}`;
 }
 
 const moderatorTeamSchema = z.object({

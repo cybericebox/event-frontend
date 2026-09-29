@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {requireApiOrigin} from "@/utils/origins";
 
 const statusSchema = z.object({GatewayIP: z.ipv4(), ProbeURL: z.url()});
 const configSchema = z.object({Config: z.string().min(1)});
@@ -11,9 +12,8 @@ export class VPNApiError extends Error {
 }
 
 async function readVPN<T>(eventID: string, path: string, schema: z.ZodType<T>): Promise<T> {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/teams/labs/vpn${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/teams/labs/vpn${path}`, {
         credentials: "include",
         cache: "no-store",
         headers: {Accept: "application/json"},

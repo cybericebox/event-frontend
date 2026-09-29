@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {manageApiError, ManageApiError} from "@/api/manage";
 import {ApiErrorCode} from "@/api/apiErrors";
+import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const participantSchema = z.object({
@@ -71,13 +72,12 @@ export async function getManageParticipants(eventID: string, filter: Participant
         const start = cursor ? Math.max(0, filtered.findIndex(item => item.UserID === cursor) + 1) : 0;
         return pageSchema.parse({Items: filtered.slice(start, start + pageSize), Total: filtered.length, NextCursor: filtered.length > start + pageSize ? filtered[start + pageSize - 1].UserID : undefined, Counts: mockCounts()});
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const api = requireApiOrigin();
     const params = new URLSearchParams({pageSize: String(pageSize)});
     if (filter.kind) params.set("kind", filter.kind);
     if (filter.status) params.set("status", String(filter.status));
     if (cursor) params.set("cursor", cursor);
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/participants?${params}`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants?${params}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (!response.ok) throw await manageApiError(response);
@@ -91,9 +91,8 @@ export async function decideManageParticipant(eventID: string, userID: string, a
         mockParticipants = mockParticipants.map(item => item.UserID === userID ? {...item, Status: action === "approve" ? 2 : 3, DecidedAt: new Date().toISOString()} : item);
         return;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/${action}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/${action}`, {
         method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (!response.ok) throw await manageApiError(response);
@@ -104,9 +103,8 @@ export async function setIndividualParticipantHidden(eventID: string, userID: st
         mockParticipants = mockParticipants.map(item => item.UserID === userID ? {...item, Hidden: hidden} : item);
         return;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/visibility`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/visibility`, {
         method: "PUT", credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify({Hidden: hidden}),
@@ -120,10 +118,9 @@ export async function inviteManageParticipants(eventID: string, emails: string[]
         mockParticipants = [...results.map(result => ({UserID: result.UserID, Name: "", Email: result.Email, TeamID: null, Hidden: false, Invited: true, InvitedToTeam: !!teamID, InvitedTeamID: teamID ?? null, InvitationSentAt: new Date().toISOString(), Status: 1 as const, CreatedAt: new Date().toISOString(), DecidedAt: null})), ...mockParticipants];
         return results;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const api = requireApiOrigin();
     const invitationPath = teamID ? `teams/${encodeURIComponent(teamID)}/invitations` : "participants/invitations";
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${invitationPath}`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${invitationPath}`, {
         method: "POST", credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify({Entries: emails.map(Email => ({Email}))}),
@@ -148,9 +145,8 @@ export async function resendManageInvitation(eventID: string, userID: string): P
         mockParticipants = mockParticipants.map(item => item.UserID === userID ? {...item, InvitationSentAt: sentAt} : item);
         return {UserID: userID, Email: participant.Email, InvitationSentAt: sentAt};
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/invitation/resend`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/invitation/resend`, {
         method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (!response.ok) throw await manageApiError(response);
@@ -163,9 +159,8 @@ export async function revokeManageInvitation(eventID: string, userID: string): P
         mockParticipants = mockParticipants.filter(item => item.UserID !== userID);
         return;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/invitation`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}/invitation`, {
         method: "DELETE", credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (!response.ok) throw await manageApiError(response);

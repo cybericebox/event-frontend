@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {ManageApiError} from "./manage";
+import {requireApiOrigin} from "@/utils/origins";
 
 const widgetSchema = z.object({
     id: z.string(), type: z.enum(["title", "timer", "chart", "table", "ad_table", "logos", "solves", "announcement", "qr"]),
@@ -59,9 +60,8 @@ async function liveRequest<T>(eventID: string, path: string, schema: z.ZodType<T
         }
         return schema.parse(mockEditor);
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/content/live${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/content/live${path}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(payload === undefined ? {} : {"Content-Type": "application/json"})},
         body: payload === undefined ? undefined : JSON.stringify(payload),

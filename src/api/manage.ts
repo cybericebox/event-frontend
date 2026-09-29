@@ -6,6 +6,7 @@ import {EventThemeSchema} from "@/types/eventTheme";
 import {ContentDocumentSchema, ContentValueSchema, type ContentDocument} from "@/types/eventContent";
 import {defaultMockLanding, readMockLanding, readMockLandingDraft, writeMockLanding, writeMockLandingDraft} from "@/api/mockLanding";
 import {ContentVariableCatalogSchema} from "@/components/event/content/variableCatalog";
+import {requireApiOrigin} from "@/utils/origins";
 
 const themeSchema = EventThemeSchema;
 const optionalLimit = z.number().int().positive().nullable();
@@ -296,9 +297,8 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
             return schema.parse(undefined);
         }
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
         method,
         credentials: "include",
         cache: "no-store",
@@ -329,11 +329,10 @@ export async function uploadManageBrandDraft(eventID: string, kind: "preview" | 
         mockBrandDrafts.set(id, URL.createObjectURL(file));
         return id;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const api = requireApiOrigin();
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/brand-drafts/${kind}`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/brand-drafts/${kind}`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
     if (!response.ok) throw await manageApiError(response);
@@ -343,11 +342,10 @@ export async function uploadManageBrandDraft(eventID: string, kind: "preview" | 
 
 export async function uploadManageBannerImage(eventID: string, file: File): Promise<string> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return URL.createObjectURL(file);
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const api = requireApiOrigin();
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/content-images`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/content-images`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
     if (!response.ok) throw await manageApiError(response);
@@ -357,11 +355,10 @@ export async function uploadManageBannerImage(eventID: string, file: File): Prom
 
 export async function uploadManageLogo(eventID: string, file: File): Promise<string> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return URL.createObjectURL(file);
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const api = requireApiOrigin();
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
     if (!response.ok) throw await manageApiError(response);
@@ -371,9 +368,8 @@ export async function uploadManageLogo(eventID: string, file: File): Promise<str
 
 export async function removeManageLogo(eventID: string): Promise<void> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return;
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/logo`, {
         method: "DELETE", credentials: "include", cache: "no-store",
     });
     if (!response.ok) throw await manageApiError(response);
@@ -384,11 +380,10 @@ export async function uploadManagePreviewPicture(eventID: string, file: File): P
         mockConfig = {...mockConfig, PreviewPicture: URL.createObjectURL(file)};
         return mockConfig.PreviewPicture;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const api = requireApiOrigin();
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
         method: "POST", credentials: "include", cache: "no-store", body,
     });
     if (!response.ok) throw await manageApiError(response);
@@ -401,9 +396,8 @@ export async function removeManagePreviewPicture(eventID: string): Promise<void>
         mockConfig = {...mockConfig, PreviewPicture: ""};
         return;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/preview-picture`, {
         method: "DELETE", credentials: "include", cache: "no-store",
     });
     if (!response.ok) throw await manageApiError(response);
@@ -432,9 +426,8 @@ export async function putManageLanding(eventID: string, document: ContentDocumen
         writeMockLandingDraft(ContentDocumentSchema.parse(document));
         return;
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/content/landing`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/content/landing`, {
         method: "PUT", credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify({Document: document}),

@@ -6,11 +6,11 @@ import {useQuery} from "@tanstack/react-query";
 import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {getManageAccess, ManageApiError} from "@/api/manage";
 import {LiveScreen} from "./LiveScreen";
+import {idOrigin} from "@/utils/origins";
 import "./live.css";
 
 function signInHref(): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    return domain ? `https://id.${domain}/sign-in?return_to=${encodeURIComponent(window.location.href)}` : "/";
+    return idOrigin ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}` : "/";
 }
 
 function State({title, text, action}: {title: string; text?: string; action?: ReactNode}) {

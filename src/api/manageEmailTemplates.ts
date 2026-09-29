@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {ManageApiError} from "@/api/manage";
 import {signalLabels} from "@/api/manageNotifications";
+import {apiOrigin, requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const blockSchema = z.object({type: z.string()}).passthrough();
@@ -22,8 +23,7 @@ const mockImages = new Map<string, string>();
 
 export function getManageEmailImageURL(eventID: string, fileID: string): string {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockImages.get(fileID) ?? "";
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    return domain ? `https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email/images/${encodeURIComponent(fileID)}` : "";
+    return apiOrigin ? `${apiOrigin}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email/images/${encodeURIComponent(fileID)}` : "";
 }
 
 export async function uploadManageEmailImage(eventID: string, templateID: string, file: File): Promise<{FileID: string; Url: string}> {
@@ -39,11 +39,10 @@ export async function uploadManageEmailImage(eventID: string, templateID: string
         mockImages.set(FileID, uri);
         return {FileID, Url: uri};
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
+    const api = requireApiOrigin();
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email/${encodeURIComponent(templateID)}/images`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email/${encodeURIComponent(templateID)}/images`, {
         method: "POST", credentials: "include", body,
     });
     if (!response.ok) throw new ManageApiError(response.status);
@@ -62,9 +61,8 @@ let mockTemplates = Object.entries(signalLabels).map(([signal, label], index) =>
 }));
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", body?: unknown): Promise<T> {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email${path}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(body === undefined ? {} : {"Content-Type": "application/json"})},
         ...(body === undefined ? {} : {body: JSON.stringify(body)}),

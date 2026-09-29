@@ -4,13 +4,13 @@ import {createContext, useContext, useState, type ReactNode} from "react";
 import Image from "next/image";
 import crest from "@/styles/assets/crest-128.png";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
+import {apiOrigin} from "@/utils/origins";
 
 export function resolveEventLogoURL(logoURL: string): string | null {
     if (!logoURL) return null;
     if (/^https:\/\//.test(logoURL)) return logoURL;
     if (!logoURL.startsWith("/api/events/")) return null;
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    return domain ? `https://api.${domain}${logoURL}` : null;
+    return apiOrigin ? `${apiOrigin}${logoURL}` : null;
 }
 
 const EventBrandContext = createContext("");

@@ -23,6 +23,7 @@ import {
     hintCostChanges, hintCostDraftValid, isDetached,
 } from "./attachmentModel";
 import {InfrastructureIcon} from "./InfrastructureIcon";
+import {exercisesOrigin} from "@/utils/origins";
 
 type ChallengeDraft = Pick<EventBoardChallenge, "Points" | "HintsEnabled" | "Published">;
 type Board = {attachment: EventExerciseAttachment; challenges: EventBoardChallenge[]};
@@ -43,9 +44,6 @@ export function useReturnURL(): string {
     return useSyncExternalStore(noSubscribe, () => window.location.href, () => "");
 }
 
-export function exercisesDomain(): string {
-    return process.env.NEXT_PUBLIC_DOMAIN ?? "";
-}
 
 function ChallengeScoringEditor({eventID, attachmentID, challenge, lifecycle, canManage, onSaved}: {
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; lifecycle: ManageLifecycle;
@@ -163,7 +161,6 @@ export function ExerciseAttachments() {
         enabled: attachmentsQuery.isSuccess, refetchOnWindowFocus: false,
     });
     const boards = boardsQuery.data ?? [];
-    const domain = exercisesDomain();
     const refreshBoards = () => queryClient.invalidateQueries({queryKey: ["event-exercise-boards", eventID]});
     const refreshAll = () => Promise.all([
         queryClient.invalidateQueries({queryKey: ["event-exercise-attachments", eventID]}),
@@ -221,7 +218,7 @@ export function ExerciseAttachments() {
             {boards.length === 0 && detached.length === 0 && <p className="event-challenge-manager__empty">Наборів завдань поки немає.</p>}
             {boards.map(({attachment, challenges}) => {
                 const kind = attachmentKind(attachment);
-                const editURL = exercisesAppURL(domain, "detail", {exerciseID: attachment.ExerciseID, eventID, returnURL});
+                const editURL = exercisesAppURL(exercisesOrigin, "detail", {exerciseID: attachment.ExerciseID, eventID, returnURL});
                 return <article className="event-exercise-set" key={attachment.ID} aria-labelledby={`set-${attachment.ID}`}>
                     <header className="event-exercise-set__head">
                         <div className="event-exercise-set__title">

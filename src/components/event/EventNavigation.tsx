@@ -18,6 +18,7 @@ import {ManagerEntry} from "./manage/ManagerEntry";
 import {NotificationsPopover} from "./NotificationsPopover";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
+import {eventOrigin, idOrigin} from "@/utils/origins";
 
 type Props = {
     event: PublicEventInfo;
@@ -30,10 +31,9 @@ type Props = {
 };
 
 function identityHref(path: string, event: PublicEventInfo) {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) return "/";
-    const back = `https://${event.Tag}.${domain}/`;
-    return `https://id.${domain}${path}?return_to=${encodeURIComponent(back)}`;
+    const back = eventOrigin(event.Tag);
+    if (!idOrigin || !back) return "/";
+    return `${idOrigin}${path}?return_to=${encodeURIComponent(`${back}/`)}`;
 }
 
 function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved">>) {

@@ -22,12 +22,12 @@ export function isDetached(attachment: Pick<EventExerciseAttachment, "Status">):
 }
 
 // The catalog editor lives in its own app; it returns to `returnURL` when done.
-export function exercisesAppURL(domain: string, page: "detail" | "new", input: {eventID: string; returnURL: string; exerciseID?: string}): string {
+export function exercisesAppURL(origin: string, page: "detail" | "new", input: {eventID: string; returnURL: string; exerciseID?: string}): string {
     const query = new URLSearchParams();
     if (page === "detail" && input.exerciseID) query.set("id", input.exerciseID);
     query.set("event", input.eventID);
     query.set("return", input.returnURL);
-    return `https://exercises.${domain}/${page}?${query.toString()}`;
+    return `${origin}/${page}?${query.toString()}`;
 }
 
 // Hint cost drafts: "" resets to the default cost (null), a number overrides it.

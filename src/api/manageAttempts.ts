@@ -2,6 +2,7 @@ import {z} from "zod";
 import {ManageApiError, manageApiError} from "@/api/manage";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
+import {apiOrigin, requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const attemptSchema = z.object({
@@ -90,9 +91,8 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         mockAttempts = mockAttempts.map(item => item.ID === attemptID ? {...item, Decision: input.Decision, DecisionReason: input.Reason, DecidedAt: decidedAt, DecidedBy: decidedBy, Correct: correct} : item);
         return schema.parse({AttemptID: attemptID, Decision: input.Decision, Reason: input.Reason, DecidedAt: decidedAt, DecidedBy: decidedBy, Correct: correct});
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(payload === undefined ? {} : {"Content-Type": "application/json"})},
         body: payload === undefined ? undefined : JSON.stringify(payload),
@@ -125,8 +125,7 @@ export function downloadAttemptsCSV(eventID: string, filters: AttemptFilters) {
 
 // SSE: «attempts-changed» whenever attempts or decisions of the event change.
 export function attemptsLiveURL(eventID: string): string | null {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    return domain ? `https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/solution-attempts/live` : null;
+    return apiOrigin ? `${apiOrigin}/api/events/${encodeURIComponent(eventID)}/manage/solution-attempts/live` : null;
 }
 
 export function decideManageAttempt(eventID: string, attemptID: string, decision: AttemptDecision, reason: string) {

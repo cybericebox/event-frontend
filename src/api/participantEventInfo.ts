@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {ParticipantEventInfoSchema, type ParticipantEventInfo} from "@/types/participantEventInfo";
+import {requireApiOrigin} from "@/utils/origins";
 
 export class ParticipantEventInfoError extends Error {
     constructor(readonly status: number) {
@@ -19,9 +20,8 @@ export async function getParticipantEventInfo(): Promise<ParticipantEventInfo> {
             ShowDifficulty: true, ShowHints: true, HasInfrastructureChallenges: true, HintChargeMode: "reward",
         });
     }
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/self/participant-info`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/self/participant-info`, {
         credentials: "include",
         cache: "no-store",
         headers: {Accept: "application/json"},

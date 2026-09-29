@@ -2,6 +2,11 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+vi.mock("@/utils/origins", async (importOriginal) => ({
+    ...await importOriginal<typeof import("@/utils/origins")>(),
+    idOrigin: "https://id.cybericebox-dev.pp.ua",
+    eventOrigin: (tag: string) => `https://${tag}.cybericebox-dev.pp.ua`,
+}));
 import {ActionBlock, joinState, registrationWindowOpen} from "./ActionBlock";
 
 vi.mock("@/api/clientAuth", () => ({
@@ -23,7 +28,6 @@ describe("registration action", () => {
     });
 
     it("shows a login route for guests and promotes the remaining link when registration closes", async () => {
-        vi.stubEnv("NEXT_PUBLIC_DOMAIN", "cybericebox-dev.pp.ua");
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
         const props = {id: "cta", title: "", text: "", registrationOpen: true, joinPolicy: "rolling", startAt: "2026-09-28T10:00:00Z", finishAt: "", eventID: "event-1", eventTag: "games", actions: [{label: "Приєднатися", kind: "join_event" as const}, {label: "Правила", href: "/rules"}]};
         const {rerender} = render(<QueryClientProvider client={client}><ActionBlock {...props} /></QueryClientProvider>);
@@ -31,7 +35,6 @@ describe("registration action", () => {
         rerender(<QueryClientProvider client={client}><ActionBlock {...props} registrationOpen={false} /></QueryClientProvider>);
         expect(screen.queryByRole("link", {name: "Приєднатися"})).toBeNull();
         expect(screen.getByRole("link", {name: "Правила"}).className).toContain("ib-btn--primary");
-        vi.unstubAllEnvs();
     });
 });
 

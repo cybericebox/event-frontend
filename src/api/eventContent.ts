@@ -4,6 +4,7 @@ import {z} from "zod";
 import {getPublicEventInfo} from "./publicEventInfo";
 import {EventContentSchema, EventPageContentSchema, type EventContent, type EventPageContent} from "@/types/eventContent";
 import {defaultMockLanding} from "./mockLanding";
+import {apiHost} from "@/utils/origins";
 
 export type {EventContent, EventPageContent} from "@/types/eventContent";
 
@@ -12,7 +13,6 @@ async function publicPageAvailable(slug: string): Promise<boolean> {
     if (!event) return false;
     const host = (await headers()).get("host");
     if (!host) return false;
-    const apiHost = `api.${process.env.NEXT_PUBLIC_DOMAIN}`;
     const internalOrigin = process.env.INTERNAL_API_ORIGIN;
     const response = await fetch(`${internalOrigin ?? `https://${apiHost}`}/api/events/${event.EventID}/content/pages/${encodeURIComponent(slug)}/access`, {
         headers: {Origin: `https://${host}`, ...(internalOrigin ? {Host: apiHost} : {})},
@@ -28,7 +28,6 @@ async function fetchContent(path: string, revalidate?: number): Promise<unknown 
     if (!event) return null;
     const host = (await headers()).get("host");
     if (!host) return null;
-    const apiHost = `api.${process.env.NEXT_PUBLIC_DOMAIN}`;
     const internalOrigin = process.env.INTERNAL_API_ORIGIN;
     const response = await fetch(`${internalOrigin ?? `https://${apiHost}`}/api/events/${event.EventID}/content${path}`, {
         headers: {

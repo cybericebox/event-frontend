@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {ManageApiError} from "@/api/manage";
 import {genericFormSchema} from "@/api/manageFormResponses";
+import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const pendingFormSchema = z.object({
@@ -24,9 +25,8 @@ const mockForm = genericFormSchema.parse({
 let mockCompleted = false;
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>): Promise<T> {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/forms/${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/forms/${path}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (!response.ok) throw new ManageApiError(response.status);
@@ -45,9 +45,8 @@ export async function getOwnEventForm(eventID: string, formID: string) {
 
 export async function submitEventForm(eventID: string, formID: string, formVersionID: string, answers: EventFormAnswers): Promise<void> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {mockCompleted = true; return;}
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/forms/${encodeURIComponent(formID)}/response`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/forms/${encodeURIComponent(formID)}/response`, {
         method: "POST", credentials: "include", cache: "no-store", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({FormVersionID: formVersionID, Answers: answers}),
     });

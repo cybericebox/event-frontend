@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
+import {apiOrigin} from "@/utils/origins";
 
 // SSE with a snapshot fallback: the stream only tells the page to reload.
 // "live" — the stream is open; "fallback" — it failed repeatedly, poll instead.
@@ -31,8 +32,7 @@ export function debounce(fn: () => void, wait: number): {call: () => void; cance
 }
 
 export function apiURL(path: string): string | null {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    return domain ? `https://api.${domain}/api/${path}` : null;
+    return apiOrigin ? `${apiOrigin}/api/${path}` : null;
 }
 
 // useEventStream opens url() while enabled and calls onChange (debounced) on

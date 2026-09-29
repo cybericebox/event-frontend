@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {apiOrigin, requireApiOrigin} from "@/utils/origins";
 
 const meSchema = z.object({
     ID: z.string().uuid(),
@@ -30,9 +31,8 @@ export class ClientAuthError extends Error {
 }
 
 function apiUrl(path: string): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    return `https://api.${domain}/api${path}`;
+    const api = requireApiOrigin();
+    return `${api}/api${path}`;
 }
 
 async function readData<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
@@ -54,8 +54,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 export function profilePictureUrl(picture: string): string | undefined {
     if (!picture) return undefined;
     if (picture.startsWith("/")) {
-        const domain = process.env.NEXT_PUBLIC_DOMAIN;
-        return domain ? `https://api.${domain}${picture}` : undefined;
+        return apiOrigin ? `${apiOrigin}${picture}` : undefined;
     }
     return /^https:\/\//.test(picture) ? picture : undefined;
 }

@@ -3,6 +3,7 @@ import {getManageTeamFields} from "@/api/manageTeamFields";
 import {participantFormSchema, type ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {readApiErrorCode} from "@/api/apiErrors";
+import {requireApiOrigin} from "@/utils/origins";
 
 export class EventTeamError extends Error {
     constructor(readonly status: number, readonly code?: number) {
@@ -11,9 +12,8 @@ export class EventTeamError extends Error {
 }
 
 async function send(eventID: string, path: string, body: Record<string, unknown>, method = "POST"): Promise<Response> {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/teams${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/teams${path}`, {
         method,
         credentials: "include",
         cache: "no-store",
@@ -37,9 +37,8 @@ let mockMembers: TeamMember[] = [
 
 export async function getOwnTeamMembers(eventID: string): Promise<TeamMember[]> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockMembers.map(item => ({...item}));
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/teams/mine/members`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/teams/mine/members`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
     if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response));
     return z.object({Data: memberSchema.array().nullish().transform(value => value ?? [])}).parse(await response.json()).Data;
 }
@@ -87,9 +86,8 @@ export async function updateOwnTeamFields(eventID: string, teamID: string, field
 
 export async function getSelfTeamFields(eventID: string): Promise<ParticipantForm | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return getManageTeamFields(eventID);
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/self/team-fields`, {credentials: "include", cache: "no-store"});
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/self/team-fields`, {credentials: "include", cache: "no-store"});
     if (response.status === 404) return null;
     if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response));
     return z.object({Data: participantFormSchema}).parse(await response.json()).Data;

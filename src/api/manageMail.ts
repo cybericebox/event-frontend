@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {ManageApiError, manageApiError} from "@/api/manage";
 import {ApiErrorCode} from "@/api/apiErrors";
+import {requireApiOrigin} from "@/utils/origins";
 
 // W7 «Пошта»: event sender identity, contact address, start reminder,
 // optional event SMTP and the delivery journal (spec 2026-09-29 §6).
@@ -183,9 +184,8 @@ const mockDelay = () => new Promise(resolve => setTimeout(resolve, 250));
 // --- requests ---
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", body?: unknown): Promise<T> {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    const response = await fetch(`https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(body === undefined ? {} : {"Content-Type": "application/json"})},
         ...(body === undefined ? {} : {body: JSON.stringify(body)}),

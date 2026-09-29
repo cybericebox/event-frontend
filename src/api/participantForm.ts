@@ -2,6 +2,7 @@ import {z} from "zod";
 import {getManageParticipantForm, participantFormSchema, type ParticipantForm} from "@/api/manageParticipantForm";
 import {readApiErrorCode} from "@/api/apiErrors";
 import {joinInfoSchema, type JoinInfo} from "@/api/clientAuth";
+import {requireApiOrigin} from "@/utils/origins";
 
 export type ParticipantAnswer = string | number | boolean | string[];
 export type ParticipantAnswers = Record<string, ParticipantAnswer>;
@@ -11,9 +12,8 @@ export class ParticipantJoinError extends Error {
 }
 
 function url(path: string): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    return `https://api.${domain}/api/events/self/${path}`;
+    const api = requireApiOrigin();
+    return `${api}/api/events/self/${path}`;
 }
 
 async function data<T>(response: Response, schema: z.ZodType<T>): Promise<T> {

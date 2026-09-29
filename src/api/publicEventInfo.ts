@@ -2,6 +2,7 @@ import {cache} from "react";
 import {headers} from "next/headers";
 import {z} from "zod";
 import {PublicEventInfoSchema, type PublicEventInfo} from "@/types/publicEventInfo";
+import {apiHost} from "@/utils/origins";
 
 export type {PublicEventInfo} from "@/types/publicEventInfo";
 
@@ -31,7 +32,6 @@ export const getPublicEventInfo = cache(async (): Promise<PublicEventInfo | null
     }
     const host = (await headers()).get("host");
     if (!host) return null;
-    const apiHost = `api.${process.env.NEXT_PUBLIC_DOMAIN}`;
     const internalOrigin = process.env.INTERNAL_API_ORIGIN;
     const response = await fetch(`${internalOrigin ?? `https://${apiHost}`}/api/events/self/public-info`, {
         headers: {

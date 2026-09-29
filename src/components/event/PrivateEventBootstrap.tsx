@@ -10,6 +10,7 @@ import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {GuestShell} from "./GuestShell";
 import {EventLoading} from "./EventLoading";
 import {EventBrandProvider} from "./EventBrandLogo";
+import {idOrigin} from "@/utils/origins";
 
 const PrivateEventContext = createContext<PublicEventInfo | null>(null);
 
@@ -52,7 +53,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
             <p>{unavailable ? "Спробуйте повторити запит після відновлення з’єднання." : "До публікації перегляд доступний лише менеджерам цієї події."}</p>
             {unavailable
                 ? <button className="ib-btn" onClick={() => void (identity.isError ? identity.refetch() : access.refetch())}>Повторити</button>
-                : <a className="ib-btn ib-btn--primary" href={`https://id.${process.env.NEXT_PUBLIC_DOMAIN}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>Увійти</a>}
+                : <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>Увійти</a>}
         </div>;
     }
     const event = identity.data!;

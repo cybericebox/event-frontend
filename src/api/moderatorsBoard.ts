@@ -1,13 +1,13 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import {getOwnChallenges, challengeSchema, mockHintText, type OwnChallenge} from "@/api/participantChallenges";
+import {requireApiOrigin} from "@/utils/origins";
 
 // The hidden moderators team: managers check tasks, flags and files without
 // touching results. The backend records nothing for these submissions.
 function url(eventID: string, path: string): string {
-    const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    if (!domain) throw new Error("NEXT_PUBLIC_DOMAIN is required");
-    return `https://api.${domain}/api/events/${encodeURIComponent(eventID)}/manage/labs/moderators${path}`;
+    const api = requireApiOrigin();
+    return `${api}/api/events/${encodeURIComponent(eventID)}/manage/labs/moderators${path}`;
 }
 
 export async function getModeratorsBoard(eventID: string): Promise<OwnChallenge[]> {
