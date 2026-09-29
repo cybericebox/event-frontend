@@ -1,25 +1,26 @@
 "use client";
 
-import {useId, useRef, useState} from "react";
+import {useEffect, useId, useRef, useState, type KeyboardEvent} from "react";
+import * as Popover from "@radix-ui/react-popover";
 import {CalendarDays, ChevronLeft, ChevronRight} from "lucide-react";
-import {Dialog, DialogContent, DialogDescription, DialogTitle} from "@/components/ui/dialog";
+import {calendarDays, datePart, formatLocal, monthStart, moveDay, parseLocal, stepTime, timePart, zoneLabel} from "./dateTimePicker";
 import {t} from "@/i18n/t";
+import "./eventDateTimePicker.css";
 
-const weekdays = t("ui.datePicker.weekdays").split(",");
+const weekdays = () => t("ui.datePicker.weekdays").split(",");
 const pad = (value: number) => String(value).padStart(2, "0");
-const datePart = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-
-function selectedDate(value: string): Date | null {
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
-}
 
 function dateLabel(date: Date): string {
     return new Intl.DateTimeFormat("uk-UA", {day: "numeric", month: "long", year: "numeric"}).format(date).replace(/\s*р\.$/, "");
 }
 
-export function EventDateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false}: {
+type Part = "hour" | "minute" | "second";
+const partMax: Record<Part, number> = {hour: 23, minute: 59, second: 59};
+
+// The one date-time input of the manage screens: a calendar popover and a
+// time row. Values are wall-clock strings in the viewer's own time zone
+// (shown next to the value); callers send them to the API as UTC ISO.
+export function EventDateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false, placeholder}: {
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
@@ -27,54 +28,143 @@ export function EventDateTimePicker({value, onChange, disabled = false, ariaLabe
     id?: string;
     allowClear?: boolean;
     showSeconds?: boolean;
+    placeholder?: string;
 }) {
-    const chosen = selectedDate(value);
+    const chosen = parseLocal(value);
     const [open, setOpen] = useState(false);
+    const [focused, setFocused] = useState<Date>(() => chosen ?? new Date());
+    const [month, setMonth] = useState<Date>(() => monthStart(chosen ?? new Date()));
+    const [drafts, setDrafts] = useState<Record<Part, string> | null>(null);
+    const gridRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
-    const [month, setMonth] = useState(() => chosen ? new Date(chosen.getFullYear(), chosen.getMonth(), 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    // Inside a native <dialog> (top layer) the popover must render in it.
+    const [container, setContainer] = useState<HTMLElement | null>(null);
+    const moved = useRef(false);
     const calendarId = useId();
-    const time = chosen ? `${pad(chosen.getHours())}:${pad(chosen.getMinutes())}${showSeconds ? `:${pad(chosen.getSeconds())}` : ""}` : showSeconds ? "09:00:00" : "09:00";
-    const [hourDraft, setHourDraft] = useState(time.slice(0, 2));
-    const [minuteDraft, setMinuteDraft] = useState(time.slice(3, 5));
-    const [secondDraft, setSecondDraft] = useState(time.slice(6, 8) || "00");
-    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-    const offset = (firstDay.getDay() + 6) % 7;
-    const days = Array.from({length: 42}, (_, index) => new Date(month.getFullYear(), month.getMonth(), index - offset + 1));
+    const {zone, offset} = zoneLabel(chosen ?? undefined);
+    const time = {hour: chosen?.getHours() ?? 9, minute: chosen?.getMinutes() ?? 0, second: chosen?.getSeconds() ?? 0};
+    const shown = drafts ?? {hour: pad(time.hour), minute: pad(time.minute), second: pad(time.second)};
+    const days = calendarDays(month);
 
-    function commitTime(part: "hour" | "minute" | "second", raw: string) {
-        if (!chosen || !/^\d{1,2}$/.test(raw)) {
-            if (part === "hour") setHourDraft(time.slice(0, 2));
-            else if (part === "minute") setMinuteDraft(time.slice(3, 5));
-            else setSecondDraft(time.slice(6, 8) || "00");
-            return;
+    // Keyboard moves in the grid bring focus to the new day after it renders.
+    useEffect(() => {
+        if (!open || !moved.current) return;
+        moved.current = false;
+        gridRef.current?.querySelector<HTMLButtonElement>(`[data-day="${datePart(focused)}"]`)?.focus();
+    }, [focused, open]);
+
+    function openChange(next: boolean) {
+        if (next) {
+            const start = chosen ?? new Date();
+            setFocused(start);
+            setMonth(monthStart(start));
+            setDrafts(null);
+            setContainer(triggerRef.current?.closest("dialog") ?? null);
         }
-        const next = Number(raw);
-        if (next < 0 || next > (part === "hour" ? 23 : 59)) {
-            if (part === "hour") setHourDraft(time.slice(0, 2));
-            else if (part === "minute") setMinuteDraft(time.slice(3, 5));
-            else setSecondDraft(time.slice(6, 8) || "00");
-            return;
-        }
-        const [hour, minute, second = 0] = time.split(":").map(Number);
-        if (part === "hour") setHourDraft(pad(next));
-        else if (part === "minute") setMinuteDraft(pad(next));
-        else setSecondDraft(pad(next));
-        onChange(`${datePart(chosen)}T${pad(part === "hour" ? next : hour)}:${pad(part === "minute" ? next : minute)}${showSeconds ? `:${pad(part === "second" ? next : second)}` : ""}`);
+        setOpen(next);
     }
 
-    return <div className="event-date-picker">
-        <button ref={triggerRef} id={id} type="button" className="event-manage-input event-date-picker__trigger" aria-label={ariaLabel} aria-expanded={open} aria-controls={calendarId} disabled={disabled} onClick={() => {if (!open) {setMonth(chosen ? new Date(chosen.getFullYear(), chosen.getMonth(), 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setHourDraft(time.slice(0, 2)); setMinuteDraft(time.slice(3, 5)); setSecondDraft(time.slice(6, 8) || "00");} setOpen(!open);}}>
-            <span className={chosen ? "" : "event-date-picker__placeholder"}>{chosen ? `${dateLabel(chosen)}, ${time}` : t("ui.datePicker.placeholder")}</span><CalendarDays size={17} aria-hidden="true" />
-        </button>
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent id={calendarId} className="event-date-picker__dialog" onCloseAutoFocus={event => {event.preventDefault(); triggerRef.current?.focus();}}>
-                <DialogTitle className="event-date-picker__title">{t("ui.datePicker.placeholder")}</DialogTitle>
-                <DialogDescription className="sr-only">{t("ui.datePicker.description")}</DialogDescription>
-                <div className="event-date-picker__month"><button type="button" aria-label={t("ui.datePicker.prevMonth")} onClick={() => setMonth(current => new Date(current.getFullYear(), current.getMonth() - 1, 1))}><ChevronLeft size={17} /></button><strong>{new Intl.DateTimeFormat("uk-UA", {month: "long", year: "numeric"}).format(month)}</strong><button type="button" aria-label={t("ui.datePicker.nextMonth")} onClick={() => setMonth(current => new Date(current.getFullYear(), current.getMonth() + 1, 1))}><ChevronRight size={17} /></button></div>
-                <div className="event-date-picker__weekdays">{weekdays.map(day => <span key={day}>{day}</span>)}</div>
-                <div role="grid" aria-label={t("ui.datePicker.calendar")} className="event-date-picker__days">{days.map(day => <button key={datePart(day)} type="button" className={`event-date-picker__day${day.getMonth() === month.getMonth() ? "" : " is-other-month"}${chosen && datePart(day) === datePart(chosen) ? " is-selected" : ""}`} aria-label={dateLabel(day)} aria-current={chosen && datePart(day) === datePart(chosen) ? "date" : undefined} onClick={() => {onChange(`${datePart(day)}T${time}`); setHourDraft(time.slice(0, 2)); setMinuteDraft(time.slice(3, 5)); setSecondDraft(time.slice(6, 8) || "00"); if (day.getMonth() !== month.getMonth()) setMonth(new Date(day.getFullYear(), day.getMonth(), 1));}}>{day.getDate()}</button>)}</div>
-                <div className="event-date-picker__footer"><div className="event-date-picker__time"><span>{t("ui.datePicker.time")}</span>{chosen ? <><input aria-label={t("ui.datePicker.hour")} type="number" min="0" max="23" value={hourDraft} onChange={event => setHourDraft(event.target.value)} onBlur={() => commitTime("hour", hourDraft)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); commitTime("hour", hourDraft);}}} /><span>:</span><input aria-label={t("ui.datePicker.minute")} type="number" min="0" max="59" value={minuteDraft} onChange={event => setMinuteDraft(event.target.value)} onBlur={() => commitTime("minute", minuteDraft)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); commitTime("minute", minuteDraft);}}} />{showSeconds && <><span>:</span><input aria-label={t("ui.datePicker.second")} type="number" min="0" max="59" value={secondDraft} onChange={event => setSecondDraft(event.target.value)} onBlur={() => commitTime("second", secondDraft)} onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); commitTime("second", secondDraft);}}} /></>}</> : <span className="event-date-picker__time-hint">{t("ui.datePicker.timeHint")}</span>}</div><div className="event-date-picker__actions">{allowClear && chosen && <button className="ib-btn" type="button" onClick={() => {onChange(""); setOpen(false);}}>{t("ui.datePicker.noDate")}</button>}<button className="ib-btn ib-btn--primary" type="button" onClick={() => setOpen(false)}>{t("common.done")}</button></div></div>
-            </DialogContent>
-        </Dialog>
-    </div>;
+    function emit(day: Date, parts: {hour: number; minute: number; second: number}) {
+        onChange(formatLocal(new Date(day.getFullYear(), day.getMonth(), day.getDate(), parts.hour, parts.minute, showSeconds ? parts.second : 0), showSeconds));
+    }
+
+    function pick(day: Date) {
+        setFocused(day);
+        if (day.getMonth() !== month.getMonth()) setMonth(monthStart(day));
+        emit(day, time);
+    }
+
+    function focusDay(day: Date) {
+        moved.current = true;
+        setFocused(day);
+        if (day.getMonth() !== month.getMonth() || day.getFullYear() !== month.getFullYear()) setMonth(monthStart(day));
+    }
+
+    function dayKey(event: KeyboardEvent<HTMLButtonElement>, day: Date) {
+        const next = moveDay(day, event.key, event.shiftKey);
+        if (!next) return;
+        event.preventDefault();
+        focusDay(next);
+    }
+
+    function changeMonth(delta: number) {
+        const next = new Date(month.getFullYear(), month.getMonth() + delta, 1);
+        setMonth(next);
+        setFocused(new Date(next.getFullYear(), next.getMonth(), Math.min(focused.getDate(), new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate())));
+    }
+
+    // Time works before a day is chosen too: it then applies to today.
+    function commitPart(part: Part, raw: string) {
+        if (drafts === null) return;
+        const parsed = timePart(raw, partMax[part]);
+        setDrafts(null);
+        if (parsed === null) return;
+        emit(chosen ?? new Date(), {...time, [part]: parsed});
+    }
+
+    function typePart(part: Part, raw: string) {
+        const digits = raw.replace(/\D/g, "").slice(0, 2);
+        setDrafts({...shown, [part]: digits});
+        // Two digits are a whole value: apply at once.
+        if (digits.length === 2 && timePart(digits, partMax[part]) !== null) emit(chosen ?? new Date(), {...time, [part]: Number(digits)});
+    }
+
+    function partKey(event: KeyboardEvent<HTMLInputElement>, part: Part) {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+            event.preventDefault();
+            setDrafts(null);
+            emit(chosen ?? new Date(), {...time, [part]: stepTime(time[part], event.key === "ArrowUp" ? 1 : -1, partMax[part])});
+        } else if (event.key === "Enter") {
+            event.preventDefault();
+            commitPart(part, event.currentTarget.value);
+        }
+    }
+
+    const parts: Part[] = showSeconds ? ["hour", "minute", "second"] : ["hour", "minute"];
+    const today = datePart(new Date());
+
+    return <Popover.Root open={open} onOpenChange={openChange}>
+        <Popover.Trigger ref={triggerRef} id={id} type="button" className="event-manage-input event-date-picker__trigger" aria-label={ariaLabel} aria-haspopup="dialog" disabled={disabled}>
+            <span className={chosen ? "event-date-picker__value" : "event-date-picker__placeholder"}>{chosen ? t("ui.datePicker.value", {date: dateLabel(chosen), time: `${pad(time.hour)}:${pad(time.minute)}${showSeconds ? `:${pad(time.second)}` : ""}`}) : placeholder ?? t("ui.datePicker.placeholder")}</span>
+            {chosen && <span className="event-date-picker__zone" title={zone}>{offset}</span>}
+            <CalendarDays size={17} aria-hidden="true" />
+        </Popover.Trigger>
+        <Popover.Portal container={container ?? undefined}>
+            <Popover.Content className="event-date-picker__popover" align="start" sideOffset={4} collisionPadding={8} aria-label={ariaLabel}
+                onOpenAutoFocus={event => { event.preventDefault(); gridRef.current?.querySelector<HTMLButtonElement>("[tabindex='0']")?.focus(); }}>
+                <div className="event-date-picker__month">
+                    <button type="button" aria-label={t("ui.datePicker.prevMonth")} onClick={() => changeMonth(-1)}><ChevronLeft size={17} aria-hidden="true" /></button>
+                    <strong aria-live="polite" id={`${calendarId}-month`}>{new Intl.DateTimeFormat("uk-UA", {month: "long", year: "numeric"}).format(month)}</strong>
+                    <button type="button" aria-label={t("ui.datePicker.nextMonth")} onClick={() => changeMonth(1)}><ChevronRight size={17} aria-hidden="true" /></button>
+                </div>
+                <div className="event-date-picker__weekdays" aria-hidden="true">{weekdays().map(day => <span key={day}>{day}</span>)}</div>
+                <div ref={gridRef} role="group" aria-labelledby={`${calendarId}-month`} className="event-date-picker__days">
+                    {days.map(day => {
+                        const key = datePart(day);
+                        const selected = !!chosen && key === datePart(chosen);
+                        return <button key={key} data-day={key} type="button" tabIndex={key === datePart(focused) ? 0 : -1}
+                            className={`event-date-picker__day${day.getMonth() === month.getMonth() ? "" : " is-other-month"}${selected ? " is-selected" : ""}${key === today ? " is-today" : ""}`}
+                            aria-label={dateLabel(day)} aria-pressed={selected} aria-current={key === today ? "date" : undefined}
+                            onClick={() => pick(day)} onKeyDown={event => dayKey(event, day)}>{day.getDate()}</button>;
+                    })}
+                </div>
+                <div className="event-date-picker__footer">
+                    <div className="event-date-picker__time" role="group" aria-label={t("ui.datePicker.time")}>
+                        <span>{t("ui.datePicker.time")}</span>
+                        {parts.map((part, index) => <span className="event-date-picker__part" key={part}>
+                            {index > 0 && <span aria-hidden="true">:</span>}
+                            <input aria-label={t(`ui.datePicker.${part}`)} inputMode="numeric" autoComplete="off" maxLength={2} value={shown[part]}
+                                onFocus={event => event.currentTarget.select()} onChange={event => typePart(part, event.target.value)}
+                                onBlur={event => commitPart(part, event.currentTarget.value)} onKeyDown={event => partKey(event, part)} />
+                        </span>)}
+                        <span className="event-date-picker__zone" title={zone}>{t("ui.datePicker.zone", {zone, offset})}</span>
+                    </div>
+                    <div className="event-date-picker__actions">
+                        {allowClear && chosen && <button className="ib-btn" type="button" onClick={() => { onChange(""); setOpen(false); }}>{t("ui.datePicker.noDate")}</button>}
+                        <Popover.Close className="ib-btn ib-btn--primary" type="button">{t("common.done")}</Popover.Close>
+                    </div>
+                </div>
+            </Popover.Content>
+        </Popover.Portal>
+    </Popover.Root>;
 }

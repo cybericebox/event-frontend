@@ -2,14 +2,18 @@ import {z} from "zod";
 import {ManageApiError, manageApiError} from "@/api/manage";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import {apiOrigin, requireApiOrigin} from "@/utils/origins";
+import {localToISO} from "@/components/ui/dateTimePicker";
 
 const id = z.string().uuid();
 const attemptSchema = z.object({
     ID: id, EventTeamID: id, TeamName: z.string(), TeamChallengeID: id, EventChallengeID: id, ChallengeName: z.string(),
-    EventExerciseID: id, UserID: id, ParticipantName: z.string(), Answer: z.string(),
-    ExpectedFlag: z.string(), AutomaticCorrect: z.boolean(), Decision: z.enum(["automatic", "accepted", "rejected"]),
+    EventExerciseID: id, UserID: id, ParticipantName: z.string(),
+    // null for event viewers: only managers see answers and expected flags.
+    Answer: z.string().nullable(), ExpectedFlag: z.string().nullable(), AutomaticCorrect: z.boolean(), Decision: z.enum(["automatic", "accepted", "rejected"]),
     DecisionReason: z.string().nullable(), DecidedBy: id.nullable(), DecidedAt: z.string().nullable(),
     Correct: z.boolean(), ReceivedAt: z.string(),
+    // Points the attempt brought: only the attempt that solved the task has them.
+    Points: z.number().int().nullable().optional().transform(value => value ?? null),
 });
 const pageSchema = z.object({Items: z.array(attemptSchema), Total: z.number().int(), NextCursor: id.optional()});
 const decisionSchema = z.object({AttemptID: id, Decision: z.enum(["automatic", "accepted", "rejected"]), Reason: z.string(), DecidedBy: id, DecidedAt: z.string(), Correct: z.boolean()});
@@ -18,25 +22,21 @@ export type ManageAttempt = z.infer<typeof attemptSchema>;
 export type ManageAttemptsPage = z.infer<typeof pageSchema>;
 export type AttemptDecision = ManageAttempt["Decision"];
 
-// Filters of the «Спроби» page. Period bounds are datetime-local values read
-// as UTC (the page shows UTC times); "" means no bound.
+// Filters of the «Спроби» page. Period bounds are the date-time picker's
+// wall-clock values in the viewer's time zone, sent as UTC ISO; "" = no bound.
 export type AttemptFilters = {teamID: string | null; participantID: string | null; challengeID: string | null; correct: boolean | null; from: string; to: string};
 export const emptyAttemptFilters: AttemptFilters = {teamID: null, participantID: null, challengeID: null, correct: null, from: "", to: ""};
 
-export function utcBound(value: string): string | null {
-    if (!value) return null;
-    const withSeconds = value.length === 16 ? `${value}:00` : value;
-    return Number.isNaN(Date.parse(`${withSeconds}Z`)) ? null : `${withSeconds}Z`;
-}
+export const attemptPageSizes = [25, 50, 100];
 
-export function attemptQueryParams(filters: AttemptFilters, cursor: string | null = null, pageSize: number | null = 20): URLSearchParams {
+export function attemptQueryParams(filters: AttemptFilters, cursor: string | null = null, pageSize: number | null = attemptPageSizes[0]): URLSearchParams {
     const params = new URLSearchParams();
     if (pageSize !== null) params.set("pageSize", String(pageSize));
     if (filters.teamID) params.set("teamId", filters.teamID);
     if (filters.participantID) params.set("participantId", filters.participantID);
     if (filters.challengeID) params.set("challengeId", filters.challengeID);
     if (filters.correct !== null) params.set("correct", String(filters.correct));
-    const from = utcBound(filters.from), to = utcBound(filters.to);
+    const from = localToISO(filters.from), to = localToISO(filters.to);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     if (cursor) params.set("cursor", cursor);
@@ -65,8 +65,8 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
-export function getManageAttempts(eventID: string, filters: AttemptFilters, cursor: string | null) {
-    return request(eventID, `solution-attempts?${attemptQueryParams(filters, cursor)}`, pageSchema);
+export function getManageAttempts(eventID: string, filters: AttemptFilters, cursor: string | null, pageSize = attemptPageSizes[0]) {
+    return request(eventID, `solution-attempts?${attemptQueryParams(filters, cursor, pageSize)}`, pageSchema);
 }
 
 // «Анулювати розвʼязок»: rejects every accepted attempt of the team+challenge
