@@ -11,6 +11,7 @@ import {
     challengeAttachmentUrl, challengeFiles, getChallengeSolves, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
     type ChallengeHint, type OwnChallenge,
 } from "@/api/participantChallenges";
+import {reportTaskOpened} from "@/api/taskOpenedBeacon";
 import {checkModeratorFlag, moderatorFileUrl} from "@/api/moderatorsBoard";
 import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
@@ -192,6 +193,13 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
             dialog.close();
         }
     }, [challengeID]);
+
+    // Opening an available task tells the analytics; it never blocks the modal.
+    const openable = !!challenge && !challenge.Locked;
+    useEffect(() => {
+        if (moderators || !challengeID || !openable) return;
+        reportTaskOpened(eventID, challengeID);
+    }, [moderators, eventID, challengeID, openable]);
 
     // A new challenge starts on its task tab with a clean flag form.
     const [shownID, setShownID] = useState(challengeID);
