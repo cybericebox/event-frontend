@@ -5,7 +5,7 @@ import {ExternalLink} from "lucide-react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {getManageResults, resultsLiveURL, ResultsUnavailableError, type ManageResultsSnapshot} from "@/api/manageResults";
-import {resultsAvailability, viewerResultsAvailability, type ResultsAvailability} from "@/types/resultsAvailability";
+import {resultsAvailability} from "@/types/resultsAvailability";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
@@ -14,12 +14,16 @@ import {EventBanner} from "@/components/event/EventBanner";
 import {useEventStream} from "@/utils/eventStream";
 import {frozenBannerTitle, frozenSinceLabel, nextFreezeBoundary} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
-import {chartTeamIDs, searchScoreboard, unitCount} from "./scoreboardModel";
+import {LiveStatus} from "@/components/event/manage/LiveStatus";
+import {chartTeamIDs, scoreboardAccess, searchScoreboard, unitCount} from "./scoreboardModel";
 import {ScoreChart} from "./ScoreChart";
 import {ScoreTable, type ScoreTableState} from "./ScoreTable";
+// LiveStatus is styled with the manage table sheet.
+import "@/components/event/manage/manageTable.css";
 import "./scoreboard.css";
 
-const deniedMessages: Partial<Record<ResultsAvailability, string>> = {hidden: "scoreboard.hidden", participants_only: "scoreboard.participantsOnly"};
+const deniedMessages = {hidden: "scoreboard.hidden", participants_only: "scoreboard.participantsOnly", not_started: "scoreboard.afterStart"} as const;
+const POLL_SECONDS = 30;
 
 // The participant and guest «Результати»: a chart of the leaders (plus the
 // viewer's own team) above a searchable ranking. The page exists in every
@@ -31,12 +35,12 @@ export function ScoreboardView() {
     const event = participant?.event ?? guestEvent;
     const access = useStaffAccess(event?.EventID);
     const base = participant ? resultsAvailability(participant.participantInfo) : event ? resultsAvailability(event) : "hidden";
-    const availability = viewerResultsAvailability(base, access.staff);
     const [now, setNow] = useState(() => Date.now());
     const [search, setSearch] = useState("");
     const started = !!event && Date.parse(event.StartTime) <= now;
     // "not_started" opens by itself at the start; the others need the organizer.
-    const readable = started && (availability === "available" || availability === "not_started");
+    const view = scoreboardAccess(base, access.staff, started);
+    const readable = view.fetch;
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), started ? 30000 : 1000);
         return () => clearInterval(id);
@@ -57,7 +61,7 @@ export function ScoreboardView() {
         queryFn: () => getManageResults(event!.EventID),
         enabled: !!event && readable && !access.pending,
         retry: false,
-        refetchInterval: stream === "fallback" ? 30000 : false,
+        refetchInterval: stream === "fallback" ? POLL_SECONDS * 1000 : false,
     });
     // The freeze starts and ends by the clock: reload right after each boundary.
     const freeze = results.data?.Freeze;
@@ -73,12 +77,12 @@ export function ScoreboardView() {
     if (!event || access.pending) return <EventLoading event={event} label={t("scoreboard.loadingRanking")} />;
     const teamMode = event.Participation === 1;
     const ownTeamID = participant?.ownTeam?.ID;
-    const denied: ResultsAvailability | null = results.error instanceof ResultsUnavailableError ? results.error.reason : availability === "hidden" || availability === "participants_only" ? availability : null;
-    const data = !denied && started ? results.data : undefined;
+    // A reply that closes the board (the setting changed meanwhile) wins.
+    const denied = results.error instanceof ResultsUnavailableError ? deniedMessages[results.error.reason as keyof typeof deniedMessages] ?? "scoreboard.hidden" : view.message;
+    const data = !denied ? results.data : undefined;
     const rows = data ? searchScoreboard(data, search) : [];
     let state: ScoreTableState;
-    if (denied && deniedMessages[denied]) state = {kind: "empty", message: t(deniedMessages[denied])};
-    else if (!started || denied === "not_started") state = {kind: "empty", message: t("scoreboard.afterStart")};
+    if (denied) state = {kind: "empty", message: t(denied)};
     else if (results.isError) state = {kind: "custom", content: <EventLoadError message={t("scoreboard.loadFailed")} onRetry={() => void results.refetch()} />};
     else if (!data) state = {kind: "loading"};
     else if (data.Scoreboard.length === 0) state = {kind: "empty", message: t("scoreboard.empty")};
@@ -87,20 +91,22 @@ export function ScoreboardView() {
 
     const ownRow = !!data && !!ownTeamID && data.Scoreboard.some(entry => entry.TeamID === ownTeamID);
     const frozen = !!data?.Freeze.Applied;
+    const finished = !!event.FinishTime && Date.parse(event.FinishTime) <= now;
     const chartEnd = Math.max(Date.parse(event.StartTime) + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now));
-    const status = !started ? t("scoreboard.status.notStarted") : frozen ? t("scoreboard.status.frozen") : stream === "fallback" ? t("scoreboard.status.polling") : t("scoreboard.status.live");
-    const sub = data ? t("scoreboard.sub", {units: unitCount(data.TotalTeams, teamMode), status}) : status;
+    const sub = data ? t("scoreboard.sub", {units: unitCount(data.TotalTeams, teamMode), status: frozen ? t("scoreboard.status.frozen") : finished ? t("scoreboard.status.final") : t("scoreboard.status.current")})
+        : !started && denied === "scoreboard.afterStart" ? t("scoreboard.status.notStarted") : null;
     const trimmed = !!data && data.Display.RowsLimit !== null && data.TotalTeams > data.Display.RowsLimit;
-    // The live screen opens for the event's staff only (the API serves it to them).
-    const liveOpen = access.staff;
 
     return <div className="event-results">
         {frozen && data && <div className="ib-banner-stack event-results__banners"><EventBanner tone="warning" title={frozenBannerTitle(data.Freeze)} meta={frozenSinceLabel(data.Freeze)} message={t("scoreboard.frozenMessage")} /></div>}
         <div className="event-results__head">
             <header className="ib-page-header">
-                <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("scoreboard.title")}</h1>{!denied && <p className="ib-page-header__sub">{sub}</p>}</div></div>
+                <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("scoreboard.title")}</h1>{sub && <p className="ib-page-header__sub">{sub}</p>}</div></div>
             </header>
-            {liveOpen && <div className="event-results__actions"><a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> {t("scoreboard.openLive")}</a></div>}
+            {(readable || view.live) && <div className="event-results__actions">
+                {readable && <LiveStatus freshness={{kind: "stream", mode: stream, pollSeconds: POLL_SECONDS}} updatedAt={results.dataUpdatedAt} />}
+                {view.live && <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> {t("scoreboard.openLive")}</a>}
+            </div>}
         </div>
         {data && data.Display.ChartEnabled && data.Scoreboard.length > 0 && <div className="event-results__chart rounded-lg border border-border bg-card p-4">
             <p className="mb-2 text-sm font-semibold text-foreground">{t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>

@@ -2423,8 +2423,6 @@
   "scoreboard.participants.one": "{count} participant",
   "scoreboard.participantsOnly": "The ranking is available to participants only",
   "scoreboard.status.frozen": "ranking frozen",
-  "scoreboard.status.live": "updates live",
-  "scoreboard.status.polling": "updates every 30 s",
   "scoreboard.sub": "{units} · {status}",
   "scoreboard.teams.few": "{count} teams",
   "scoreboard.teams.many": "{count} teams",
@@ -2789,5 +2787,7 @@
   "scoreboard.tableLabel": "Ranking",
   "scoreboard.emptySearch": "Nothing matches this search",
   "scoreboard.status.notStarted": "The event has not started yet",
-  "scoreboard.openLive": "Open Live"
+  "scoreboard.openLive": "Open Live",
+  "scoreboard.status.current": "current ranking",
+  "scoreboard.status.final": "final ranking"
 }

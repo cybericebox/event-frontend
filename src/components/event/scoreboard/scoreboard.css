@@ -3,7 +3,7 @@
    which keeps its height from loading to data. No shadows. */
 .event-results__head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--ib-3)}
 .event-results__head .ib-page-header{flex:1 1 320px;min-width:0}
-.event-results__actions{display:flex;flex:none;gap:var(--ib-2)}
+.event-results__actions{display:flex;flex:none;flex-wrap:wrap;align-items:center;gap:var(--ib-4)}
 .event-scoreboard{display:flex;flex-direction:column;min-height:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:hidden}
 .event-scoreboard__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
 .event-scoreboard__search{flex:1 1 240px;max-width:360px}

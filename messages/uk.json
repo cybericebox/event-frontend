@@ -2423,8 +2423,6 @@
   "scoreboard.participants.one": "{count} учасник",
   "scoreboard.participantsOnly": "Рейтинг доступний лише учасникам",
   "scoreboard.status.frozen": "рейтинг заморожено",
-  "scoreboard.status.live": "оновлюється наживо",
-  "scoreboard.status.polling": "оновлюється кожні 30 с",
   "scoreboard.sub": "{units} · {status}",
   "scoreboard.teams.few": "{count} команди",
   "scoreboard.teams.many": "{count} команд",
@@ -2789,5 +2787,7 @@
   "scoreboard.tableLabel": "Рейтинг",
   "scoreboard.emptySearch": "Нічого не знайдено за цим запитом",
   "scoreboard.status.notStarted": "Захід ще не почався",
-  "scoreboard.openLive": "Відкрити Live"
+  "scoreboard.openLive": "Відкрити Live",
+  "scoreboard.status.current": "актуальний рейтинг",
+  "scoreboard.status.final": "підсумковий рейтинг"
 }
