@@ -39,7 +39,7 @@ export function CsvField({label, columns, required, examples, templateName, file
     return <div className="ib-field">
         <span className="event-field-help"><label className="ib-field__label" htmlFor={id}>{label}</label><HelpTooltip label={t("manage.invites.csv.columnsLabel")} text={help} /></span>
         <div className="event-csv-row">
-            <EventFilePicker id={id} fileName={fileName} onFile={onFile} accept=".csv,text/csv" disabled={disabled} describedBy={issues.length ? `${id}-issues` : undefined} />
+            <EventFilePicker id={id} compact fileName={fileName} onFile={onFile} accept=".csv,text/csv" hint={t("manage.invites.csv.fileHint")} disabled={disabled} describedBy={issues.length ? `${id}-issues` : undefined} />
             <button className="ib-link ib-link--standalone event-csv-template" type="button" onClick={() => download(templateName, csvTemplate(columns, examples))}>{t("manage.invites.csv.template")}</button>
         </div>
         {issues.length > 0 && <ul className="event-modal__issues" id={`${id}-issues`} role="alert">{issues.slice(0, 50).map((issue, index) => <li key={index}>{csvIssueText(issue)}</li>)}{issues.length > 50 && <li>{t("manage.invites.csv.more", {count: issues.length - 50})}</li>}</ul>}

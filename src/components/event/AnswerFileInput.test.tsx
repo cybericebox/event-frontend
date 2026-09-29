@@ -44,6 +44,17 @@ describe("file answer", () => {
         await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Такий формат файлу не дозволено для цього питання."));
     });
 
+    it("uploads a dropped file and shows the event logo meanwhile", async () => {
+        let finish: (value: AnswerFile) => void = () => undefined;
+        const onChange = vi.fn();
+        render(<AnswerFileInput id="answer-cv" field={field} value={undefined} upload={() => new Promise(resolve => {finish = resolve;})} onChange={onChange} />);
+        fireEvent.drop(screen.getByRole("button", {name: "Обрати файл"}), {dataTransfer: {files: [new File(["%PDF"], "cv.pdf", {type: "application/pdf"})]}});
+        expect(screen.getByRole("status", {name: "Файл завантажується"})).toBeTruthy();
+        expect(screen.getByText("cv.pdf")).toBeTruthy();
+        finish(stored);
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith(stored));
+    });
+
     it("clears the answer", () => {
         const onChange = vi.fn();
         render(<AnswerFileInput id="answer-cv" field={field} value={stored} upload={vi.fn()} onChange={onChange} />);

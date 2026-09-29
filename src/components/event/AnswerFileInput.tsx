@@ -6,9 +6,7 @@ import type {FileKind, FormField} from "@/api/manageParticipantForm";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {EventFilePicker} from "@/components/ui/EventFilePicker";
 import {defaultFileMB, maxFileMB} from "@/components/event/manage/participantFormEditor";
-import {BusyMark} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
-import "./answerFile.css";
 
 const accepted: Record<FileKind, string> = {
     pdf: ".pdf,application/pdf",
@@ -40,26 +38,20 @@ export function AnswerFileInput({id, field, value, onChange, upload, disabled = 
     upload: (file: File) => Promise<AnswerFile>;
     disabled?: boolean;
 }) {
-    const [busy, setBusy] = useState(false);
+    const [pending, setPending] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const hintID = `${id}-rules`;
 
     async function choose(file: File | null) {
         setError(null);
         if (!file) {onChange(undefined); return;}
-        if (file.size > fileLimitMB(field) * 1024 * 1024) {setError(t("forms.file.tooLarge", {max: fileLimitMB(field)})); return;}
-        setBusy(true);
+        setPending(file);
         try {onChange(await upload(file));}
         catch (failure) {setError(apiErrorMessage(failure instanceof AnswerFileError ? failure.code : undefined, t("forms.file.uploadFailed")));}
-        finally {setBusy(false);}
+        finally {setPending(null);}
     }
 
-    return <div className="event-answer-file">
-        <div className="event-answer-file__row">
-            <EventFilePicker id={id} fileName={value?.name ?? null} accept={(field.fileTypes ?? []).map(kind => accepted[kind]).join(",")} disabled={disabled || busy} describedBy={hintID} onFile={file => void choose(file)} />
-            {busy && <span className="event-answer-file__busy" role="status" aria-label={t("forms.file.uploading")}><BusyMark /></span>}
-        </div>
-        <small id={hintID}>{fileRulesText(field)}</small>
-        {error && <p className="event-answer-file__error" role="alert">{error}</p>}
-    </div>;
+    // The picker checks the format and the size of a picked or dropped file.
+    return <EventFilePicker id={id} fileName={pending?.name ?? value?.name ?? null} fileSize={pending?.size ?? value?.size} busy={!!pending} error={error}
+        accept={(field.fileTypes ?? []).map(kind => accepted[kind]).join(",")} maxBytes={fileLimitMB(field) * 1024 * 1024} hint={fileRulesText(field)}
+        disabled={disabled} onFile={file => void choose(file)} />;
 }
