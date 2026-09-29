@@ -52,19 +52,19 @@ const groups: Group[] = [
     ]},
 ];
 
-export function ManagerSidebar({event, pathname, pages, pagesError, canManage, onRetryPages, onNavigate}: {
+export function ManagerSidebar({event, pathname, pages, pagesError, canManage, infrastructureAllowed, onRetryPages, onNavigate}: {
     event: PublicEventInfo;
     pathname: string;
     pages?: ManagePage[];
     pagesError: boolean;
     canManage: boolean;
+    infrastructureAllowed: boolean;
     onRetryPages: () => void;
     onNavigate: () => void;
 }) {
     const [openGroupID, setOpenGroupID] = useState<string | null>(null);
     const teamMode = event.Participation === 1;
-    const infrastructure = event.InfrastructureAllowed === true;
-    const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructure);
+    const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructureAllowed);
     const openGroup = (groupID: string) => setOpenGroupID(groupID);
 
     return <aside className="ib-admin-side ib-mass" aria-label="Керування подією">

@@ -162,7 +162,7 @@ export default function ManageLabsPage() {
                             <td className="event-participants-table__dim">{formatTime(stand.UpdatedAt) ?? "—"}</td>
                             <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason || `Лабораторій: ${stand.Labs.length}`}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason || "—"}</span>}</td>
                             <td><div className="event-manage-participants__actions event-stands__actions">
-                                {stand.Moderators && <><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />VPN-конфіг</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />Завдання</button></>}
+                                {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />VPN-конфіг</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />Завдання</button></>}
                                 {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setConfirm(stand)}><RotateCcw size={14} aria-hidden="true" />Перестворити</button>}
                             </div></td>
                         </tr>

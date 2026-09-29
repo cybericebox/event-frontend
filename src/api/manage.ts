@@ -93,7 +93,8 @@ export async function manageApiError(response: Response): Promise<ManageApiError
     return new ManageApiError(response.status, await readApiErrorCode(response));
 }
 
-const accessSchema = z.object({CanManage: z.boolean()});
+// InfrastructureAllowed is the admin's creation-time decision; it gates «Стенди».
+const accessSchema = z.object({CanManage: z.boolean(), InfrastructureAllowed: z.boolean().default(false)});
 const nameSchema = z.object({Name: z.string()});
 
 let mockConfig: ManageConfig = {
@@ -135,7 +136,7 @@ let mockPages: ManagePage[] = [{
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        if (path === "access") return schema.parse({CanManage: true});
+        if (path === "access") return schema.parse({CanManage: true, InfrastructureAllowed: true});
         if (path === "name") {
             if (method === "PUT") mockName = (payload as {Name: string}).Name;
             return schema.parse({Name: mockName});

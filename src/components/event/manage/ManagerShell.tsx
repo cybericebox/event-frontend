@@ -56,7 +56,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
     return <div className="event-manage-frame">
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <div className="ib-admin-shell__layout">
-            <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
+            <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
             <div className="ib-admin-shell__main">
                 <header className="ib-topbar">
                     <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label="Відкрити меню" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>

@@ -12,11 +12,10 @@ const event = {
     Participation: 0, Registration: 1, CanViewResults: false, CanViewParticipants: false,
     PreviewDescription: "", PreviewPicture: "", LogoURL: "", FaviconURL: "",
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
-    InfrastructureAllowed: false,
 } satisfies PublicEventInfo;
 
 function renderSidebar(participation: 0 | 1, infrastructure = false) {
-    render(<ManagerSidebar event={{...event, Participation: participation, InfrastructureAllowed: infrastructure}} pathname="/manage/participants" pages={[]} pagesError={false} canManage onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
+    render(<ManagerSidebar event={{...event, Participation: participation}} pathname="/manage/participants" pages={[]} pagesError={false} canManage infrastructureAllowed={infrastructure} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", {name: "Участь"}));
 }
 
