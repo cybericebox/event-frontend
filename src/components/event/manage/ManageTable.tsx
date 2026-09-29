@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useState, type ReactNode} from "react";
+import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
 import {Search} from "lucide-react";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {EventBrandLogo} from "@/components/event/EventBrandLogo";
@@ -59,16 +59,28 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
     children?: ReactNode;
 }) {
     const ready = state === "ready";
+    const scrollRef = useRef<HTMLDivElement>(null);
+    // States sit in a sticky layer as wide as the visible scroll area, so
+    // they stay centered when a narrow screen scrolls the table sideways.
+    useEffect(() => {
+        const scroll = scrollRef.current;
+        if (!scroll || typeof ResizeObserver === "undefined") return;
+        const update = () => scroll.style.setProperty("--event-manage-table-view", `${scroll.clientWidth}px`);
+        update();
+        const observer = new ResizeObserver(update);
+        observer.observe(scroll);
+        return () => observer.disconnect();
+    }, []);
     return <section className="event-manage-table">
         {toolbar && <div className="event-manage-table__toolbar">{toolbar}</div>}
-        <div className="event-manage-table__scroll" aria-busy={state === "loading" || busy}>
+        <div ref={scrollRef} className="event-manage-table__scroll" aria-busy={state === "loading" || busy}>
             <table className={ready ? busy ? "is-busy" : undefined : "is-state"}>
                 <thead>{head}</thead>
-                {ready ? children : <tbody><tr><td className="event-manage-table__state" colSpan={1000}>
+                {ready ? children : <tbody><tr><td className="event-manage-table__state" colSpan={1000}><div className="event-manage-table__state-view">
                     {state === "loading" ? <EventLoading event={event} label={loadingLabel} />
                         : state === "error" ? <div className="event-block-state" role="alert"><p className="ib-empty__text">{errorMessage}</p><button className="ib-btn ib-btn--sm" type="button" onClick={onRetry}>{t("common.retry")}</button></div>
                             : <EmptyState message={emptyMessage} />}
-                </td></tr></tbody>}
+                </div></td></tr></tbody>}
             </table>
         </div>
         {footer}
