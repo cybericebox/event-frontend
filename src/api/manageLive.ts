@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {ManageApiError} from "./manage";
 import {requireApiOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 const widgetSchema = z.object({
     id: z.string(), type: z.enum(["title", "timer", "chart", "table", "ad_table", "logos", "solves", "announcement", "qr"]),
@@ -25,8 +26,8 @@ export const defaultLiveLayout: LiveLayout = {
         {id: "title", type: "title", x: 1, y: 1, w: 12, h: 1, props: {}},
         {id: "chart", type: "chart", x: 1, y: 2, w: 8, h: 6, props: {}},
         {id: "table", type: "table", x: 9, y: 2, w: 4, h: 6, props: {}},
-        {id: "organizers", type: "logos", x: 1, y: 8, w: 3, h: 1, props: {mode: "fixed", title: "Організатори"}},
-        {id: "partners", type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: "Партнери"}},
+        {id: "organizers", type: "logos", x: 1, y: 8, w: 3, h: 1, props: {mode: "fixed", title: t("manage.live.defaultOrganizers")}},
+        {id: "partners", type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: t("manage.live.defaultPartners")}},
     ],
 };
 

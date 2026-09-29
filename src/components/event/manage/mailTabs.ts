@@ -1,8 +1,10 @@
+import {t} from "@/i18n/t";
+
 export type MailTab = "settings" | "journal";
 
 export const mailTabs: {value: MailTab; label: string}[] = [
-    {value: "settings", label: "Налаштування"},
-    {value: "journal", label: "Журнал відправлення"},
+    {value: "settings", label: t("manage.mail.tab.settings")},
+    {value: "journal", label: t("manage.mail.tab.journal")},
 ];
 
 // `?tab=journal` opens the delivery journal; anything else opens settings.

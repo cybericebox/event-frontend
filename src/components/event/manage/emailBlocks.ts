@@ -1,4 +1,5 @@
 import type {ManageEmailBlock} from "@/api/manageEmailTemplates";
+import {t} from "@/i18n/t";
 
 type EmailNode = {type?: string; text?: string; varName?: string; format?: string | number; children?: EmailNode[]};
 
@@ -42,11 +43,11 @@ export function emailRichTextBlock(text: string): ManageEmailBlock {
 }
 
 export function emailBlockTitle(block: ManageEmailBlock): string {
-    if (block.type === "rich_text") return "Текст";
-    if (block.type === "button") return "Кнопка";
-    if (block.type === "divider") return "Роздільник";
-    if (block.type === "logo") return "Логотип";
-    if (block.type === "image") return "Зображення";
-    if (block.type === "preset") return "Готовий блок";
-    return "Блок листа";
+    if (block.type === "rich_text") return t("manage.email.block.richText");
+    if (block.type === "button") return t("manage.email.block.button");
+    if (block.type === "divider") return t("manage.email.block.divider");
+    if (block.type === "logo") return t("manage.email.block.logo");
+    if (block.type === "image") return t("manage.email.block.image");
+    if (block.type === "preset") return t("manage.email.block.preset");
+    return t("manage.email.block.other");
 }

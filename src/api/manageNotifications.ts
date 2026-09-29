@@ -1,23 +1,29 @@
 import {z} from "zod";
 import {ManageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 const id = z.string().uuid();
+const signal = (type: string, group: string) => ({
+    title: t(`manage.notifications.signal.${type}.title`),
+    description: t(`manage.notifications.signal.${type}.description`),
+    group: t(`manage.notifications.group.${group}`),
+});
 export const signalLabels: Record<string, {title: string; description: string; group: string}> = {
-    "participant.approval_registration.submitted": {title: "Заявку подано", description: "Учасник надіслав заявку на участь.", group: "Реєстрація"},
-    "participant.approval_registration.approved": {title: "Заявку схвалено", description: "Організатор підтвердив заявку.", group: "Реєстрація"},
-    "participant.approval_registration.rejected": {title: "Заявку відхилено", description: "Організатор відхилив заявку.", group: "Реєстрація"},
-    "participant.open_registration.completed": {title: "Реєстрацію завершено", description: "Учасник приєднався через відкриту реєстрацію.", group: "Реєстрація"},
-    "participant.invitation.sent": {title: "Запрошення надіслано", description: "Учасник отримав запрошення до події.", group: "Запрошення"},
-    "participant.invitation.accepted": {title: "Запрошення прийнято", description: "Учасник прийняв запрошення.", group: "Запрошення"},
-    "participant.invitation.revoked": {title: "Запрошення скасовано", description: "Організатор скасував запрошення.", group: "Запрошення"},
-    "participant.invitation.expired": {title: "Термін запрошення минув", description: "Запрошення більше не діє.", group: "Запрошення"},
-    "participant.team_invitation.sent": {title: "Запрошення до команди", description: "Учасника запросили до команди.", group: "Запрошення"},
-    "participant.event.start_reminder": {title: "Нагадування про старт", description: "Учасники отримують нагадування перед початком події.", group: "Подія"},
-    "participant.event.finished": {title: "Захід завершено", description: "Учасники дізнаються, що подія завершилася.", group: "Подія"},
+    "participant.approval_registration.submitted": signal("participant.approval_registration.submitted", "registration"),
+    "participant.approval_registration.approved": signal("participant.approval_registration.approved", "registration"),
+    "participant.approval_registration.rejected": signal("participant.approval_registration.rejected", "registration"),
+    "participant.open_registration.completed": signal("participant.open_registration.completed", "registration"),
+    "participant.invitation.sent": signal("participant.invitation.sent", "invitations"),
+    "participant.invitation.accepted": signal("participant.invitation.accepted", "invitations"),
+    "participant.invitation.revoked": signal("participant.invitation.revoked", "invitations"),
+    "participant.invitation.expired": signal("participant.invitation.expired", "invitations"),
+    "participant.team_invitation.sent": signal("participant.team_invitation.sent", "invitations"),
+    "participant.event.start_reminder": signal("participant.event.start_reminder", "event"),
+    "participant.event.finished": signal("participant.event.finished", "event"),
 };
 
-const otherGroup = "Інше";
+const otherGroup = t("manage.notifications.group.other");
 
 // Label of a notification type; an unknown type falls back to its raw name.
 export function signalLabel(signal: string): {title: string; description: string; group: string} {

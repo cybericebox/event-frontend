@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 // W7 «Пошта»: event sender identity, contact address, start reminder,
 // optional event SMTP and the delivery journal (spec 2026-09-29 §6).
@@ -14,8 +15,8 @@ export const tlsModeOptions: {value: MailTLSMode; label: string}[] = [
     {value: "tls", label: "TLS (465)"},
 ];
 export const defaultPortByTLSMode: Record<MailTLSMode, number> = {starttls: 587, tls: 465};
-export const mailTransportLabels: Record<MailTransport, string> = {event: "SMTP заходу", platform: "Платформа", env: "Резервний (env)"};
-export const mailResultLabels: Record<MailResult, string> = {done: "Надіслано", error: "Помилка"};
+export const mailTransportLabels: Record<MailTransport, string> = {event: t("manage.mail.transport.event"), platform: t("manage.mail.transport.platform"), env: t("manage.mail.transport.env")};
+export const mailResultLabels: Record<MailResult, string> = {done: t("manage.mail.result.done"), error: t("manage.mail.result.error")};
 
 export function mailTransportLabel(value: string): string {
     return mailTransportLabels[value as MailTransport] ?? (value || "—");
@@ -71,9 +72,9 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function mailSettingsError(form: MailSettingsForm): string {
     const email = form.contactEmail.trim();
-    if (email && !emailPattern.test(email)) return "Вкажіть коректну адресу контактної пошти.";
+    if (email && !emailPattern.test(email)) return t("manage.mail.validation.contactEmail");
     const hours = form.startReminderHours.trim();
-    if (!/^\d+$/.test(hours) || Number(hours) > 168) return "Нагадування — ціле число годин від 0 до 168.";
+    if (!/^\d+$/.test(hours) || Number(hours) > 168) return t("manage.mail.validation.reminderHours");
     return "";
 }
 
@@ -90,10 +91,10 @@ export function smtpForm(smtp: EventMailSMTP | null): SMTPForm {
 }
 
 export function smtpError(form: SMTPForm): string {
-    if (!form.host.trim()) return "Вкажіть хост SMTP.";
-    if (/\s/.test(form.host.trim())) return "Хост SMTP не може містити пробілів.";
+    if (!form.host.trim()) return t("manage.mail.validation.hostRequired");
+    if (/\s/.test(form.host.trim())) return t("manage.mail.validation.hostSpaces");
     const port = form.port.trim();
-    if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) return "Порт — ціле число від 1 до 65535.";
+    if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) return t("manage.mail.validation.port");
     return "";
 }
 

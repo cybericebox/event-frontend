@@ -13,6 +13,7 @@ import {liveTextWarnings} from "@/components/event/live/liveText";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
+import {t} from "@/i18n/t";
 
 const aspects = {"16:9": 16 / 9, "16:10": 16 / 10, "4:3": 4 / 3, "5:3": 5 / 3};
 const dragMime = "application/x-live-widget";
@@ -30,14 +31,14 @@ function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boo
         try {
             queryClient.setQueryData(queryKey, await putResultsSettings(eventID, {...resultsSettingsInput(settings.data), LiveFreeze: value}));
             await queryClient.invalidateQueries({queryKey: ["event-live-results", eventID]});
-            toast.success(value ? "Live-екран враховує заморожування" : "Live-екран показує актуальний рейтинг");
-        } catch {toast.error("Не вдалося змінити налаштування заморожування.");}
+            toast.success(t(value ? "manage.live.freeze.on" : "manage.live.freeze.off"));
+        } catch {toast.error(t("manage.live.freeze.error"));}
         finally {setBusy(false);}
     }
-    const hint = settings.isError ? "Не вдалося прочитати налаштування результатів." : settings.data && !settings.data.FreezeEnabled ? "Заморожування вимкнено в «Налаштуваннях результатів»." : "Діє одразу, без публікації.";
+    const hint = t(settings.isError ? "manage.live.freeze.readError" : settings.data && !settings.data.FreezeEnabled ? "manage.live.freeze.disabled" : "manage.live.freeze.immediate");
     return <label className="event-live-editor__check">
         <input type="checkbox" checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || busy || !settings.data} onChange={event => void change(event.target.checked)} />
-        <span>Враховувати заморожування рейтингу<small>{hint}</small></span>
+        <span>{t("manage.live.freeze.label")}<small>{hint}</small></span>
     </label>;
 }
 
@@ -51,7 +52,7 @@ function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos
         const added: string[] = [];
         try {
             for (const file of Array.from(files).slice(0, maxLogos - logos.length)) added.push(await uploadManageBannerImage(eventID, file));
-        } catch {toast.error("Не вдалося завантажити логотип. Підійде PNG, JPEG, WebP або GIF до 5 МБ.");}
+        } catch {toast.error(t("manage.live.logos.uploadError"));}
         finally {
             setBusy(false);
             if (input.current) input.current.value = "";
@@ -65,20 +66,20 @@ function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos
     };
     const linkValid = !!liveLogoURL(link.trim());
     return <div className="event-live-editor__logos">
-        <span className="event-live-editor__label">Логотипи</span>
+        <span className="event-live-editor__label">{t("manage.live.logos.title")}</span>
         {logos.length ? <ul>{logos.map((logo, index) => <li key={`${logo}-${index}`}>
             {liveLogoURL(logo) ? <img src={liveLogoURL(logo)!} alt="" /> : <span className="event-live-editor__logo-broken">?</span>}
-            <span title={logo}>{logo.includes("/content-images/") ? `Файл ${index + 1}` : logo}</span>
-            <button type="button" aria-label="Вище" disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>
-            <button type="button" aria-label="Нижче" disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>
-            <button type="button" aria-label="Прибрати логотип" disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>
-        </li>)}</ul> : <p>Логотипів ще немає: показуємо логотип події.</p>}
+            <span title={logo}>{logo.includes("/content-images/") ? t("manage.live.logos.file", {number: index + 1}) : logo}</span>
+            <button type="button" aria-label={t("manage.live.logos.up")} disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>
+            <button type="button" aria-label={t("manage.live.logos.down")} disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>
+            <button type="button" aria-label={t("manage.live.logos.remove")} disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>
+        </li>)}</ul> : <p>{t("manage.live.logos.empty")}</p>}
         <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden disabled={disabled || busy} onChange={event => void upload(event.target.files)} />
-        <button className="ib-btn" type="button" disabled={disabled || busy || logos.length >= maxLogos} onClick={() => input.current?.click()}><ImageUp size={16} /> {busy ? "Завантажуємо…" : "Завантажити логотипи"}</button>
-        <small>Прозорий фон, до 5 МБ. На екрані логотипи одноколірні: білі на темній темі, темні на світлій.</small>
+        <button className="ib-btn" type="button" disabled={disabled || busy || logos.length >= maxLogos} onClick={() => input.current?.click()}><ImageUp size={16} /> {t(busy ? "manage.live.logos.uploading" : "manage.live.logos.upload")}</button>
+        <small>{t("manage.live.logos.hint")}</small>
         <div className="event-live-editor__link">
-            <input type="url" placeholder="або https://…/logo.png" value={link} disabled={disabled} onChange={event => setLink(event.target.value)} />
-            <button className="ib-btn" type="button" disabled={disabled || !linkValid || logos.length >= maxLogos} onClick={() => {onChange([...logos, link.trim()]); setLink("");}}>Додати</button>
+            <input type="url" placeholder={t("manage.live.logos.linkPlaceholder")} value={link} disabled={disabled} onChange={event => setLink(event.target.value)} />
+            <button className="ib-btn" type="button" disabled={disabled || !linkValid || logos.length >= maxLogos} onClick={() => {onChange([...logos, link.trim()]); setLink("");}}>{t("common.add")}</button>
         </div>
     </div>;
 }
@@ -112,8 +113,8 @@ export default function ManageLivePage() {
         return () => observer.disconnect();
     }, [screen, nativeWidth]);
 
-    if (editor.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити Live</h1><button className="ib-btn" onClick={() => void editor.refetch()}>Повторити</button></div>;
-    if (editor.isPending || !layout) return <EventLoading event={event} label="Завантажуємо Live…" />;
+    if (editor.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.live.loadError")}</h1><button className="ib-btn" onClick={() => void editor.refetch()}>{t("common.retry")}</button></div>;
+    if (editor.isPending || !layout) return <EventLoading event={event} label={t("manage.live.loading")} />;
 
     const locked = !canManage || preview;
     const selected = layout.widgets.find(item => item.id === selectedID) ?? null;
@@ -122,15 +123,15 @@ export default function ManageLivePage() {
     const conflicts = layoutConflicts(layout);
     const warnings = liveTextWarnings(layout);
     const validation = !liveGridValid(layout.grid.cols, layout.grid.rows)
-        ? `Сітка має бути від ${liveGridLimits.minCols}×${liveGridLimits.minRows} до ${liveGridLimits.maxCols}×${liveGridLimits.maxRows}.`
+        ? t("manage.live.validation.grid", liveGridLimits)
         : layout.screen.width < 320 || layout.screen.width > 7680 || layout.screen.height < 240 || layout.screen.height > 4320 || layout.screen.width <= layout.screen.height
-            ? "Вкажіть альбомний розмір екрана: ширина 320–7680 px, висота 240–4320 px."
+            ? t("manage.live.validation.screen")
             : conflicts.size
-                ? `Віджети перетинаються або виходять за межі сітки: ${layout.widgets.filter(item => conflicts.has(item.id)).map(item => `«${liveWidgetLabels[item.type]}»`).join(", ")}. Їх підсвічено червоним — перемістіть або зменште, щоб зберегти.`
+                ? t("manage.live.validation.conflicts", {widgets: layout.widgets.filter(item => conflicts.has(item.id)).map(item => t("manage.live.validation.widgetName", {name: liveWidgetLabels[item.type]})).join(", ")})
                 : layout.widgets.some(widget => widget.type === "logos" && Array.isArray(widget.props.logos) && widget.props.logos.some(value => typeof value !== "string" || !liveLogoURL(value)))
-                    ? "Логотип має бути завантаженим файлом, HTTPS-посиланням або шляхом сайту, що починається з /."
+                    ? t("manage.live.validation.logo")
                     : layout.widgets.some(widget => widget.type === "qr" && (typeof widget.props.url !== "string" || !/^https?:\/\/[^\s]+$/.test(widget.props.url) && !/^\/(?!\/)/.test(widget.props.url)))
-                        ? "Для QR-коду вкажіть повне посилання або шлях сайту, що починається з /."
+                        ? t("manage.live.validation.qr")
                         : "";
     const aspect = layout.aspect === "custom" ? layout.screen.width / layout.screen.height : aspects[layout.aspect];
     const screenStyle = {"--live-aspect": aspect} as CSSProperties;
@@ -139,7 +140,7 @@ export default function ManageLivePage() {
 
     function mutate(next: LiveLayout) {setOverride(next); setError("");}
     function updateWidget(next: LiveWidget) {
-        if (!canPlace(layout!, next, next.id)) {setError("Віджет перетинається з іншим або виходить за межі сітки."); return;}
+        if (!canPlace(layout!, next, next.id)) {setError(t("manage.live.error.overlap")); return;}
         mutate({...layout!, widgets: layout!.widgets.map(item => item.id === next.id ? next : item)});
     }
     function updateProp(key: string, value: string | number | boolean | string[]) {
@@ -157,7 +158,7 @@ export default function ManageLivePage() {
             working = {...working, grid: {...working.grid, rows: working.grid.rows + liveWidgetMinimums[type].h}};
             next = firstFreeWidget(working, type);
         }
-        if (!next) {setError("На сітці немає вільного місця для цього віджета."); return;}
+        if (!next) {setError(t("manage.live.error.noSpace")); return;}
         insert(working, next);
     }
     // Palette drag: the ghost shows the minimum-size widget under the pointer.
@@ -186,7 +187,7 @@ export default function ManageLivePage() {
         dragEvent.preventDefault();
         const {x, y} = dropCell(dragEvent);
         const next = widgetAt(layout!, type, x, y);
-        if (!next) {setError("Тут немає місця для цього віджета: оберіть вільні клітинки."); return;}
+        if (!next) {setError(t("manage.live.error.noSpaceHere")); return;}
         insert(layout!, next);
     }
     function pointerDown(pointerEvent: PointerEvent<HTMLButtonElement | HTMLSpanElement>, item: LiveWidget, mode: "move" | "resize") {
@@ -219,7 +220,7 @@ export default function ManageLivePage() {
         if (!liveGridValid(cols, rows)) return;
         const next = recomputeGrid(layout!, cols, rows);
         mutate(next);
-        if (layoutConflicts(next).size) setError("Не всі віджети вмістилися в нову сітку — конфлікти підсвічено червоним.");
+        if (layoutConflicts(next).size) setError(t("manage.live.error.gridConflicts"));
     }
     function distribute(axis: DistributeAxis) {
         if (!selected) return;
@@ -234,8 +235,8 @@ export default function ManageLivePage() {
             await saveManageLiveDraft(eventID, layout);
             await queryClient.invalidateQueries({queryKey: ["event-live-editor", eventID]});
             setOverride(current => JSON.stringify(current) === JSON.stringify(layout) ? null : current);
-            toast.success("Чернетку Live збережено");
-        } catch {toast.error("Не вдалося зберегти чернетку. Перевірте розташування віджетів.");}
+            toast.success(t("manage.live.draftSaved"));
+        } catch {toast.error(t("manage.live.draftSaveError"));}
         finally {setBusy(false);}
     }
     async function publish() {
@@ -245,59 +246,59 @@ export default function ManageLivePage() {
             await publishManageLive(eventID);
             await queryClient.invalidateQueries({queryKey: ["event-live-editor", eventID]});
             setOverride(current => JSON.stringify(current) === JSON.stringify(layout) ? null : current);
-            toast.success("Live-екран опубліковано");
-        } catch (failure) {toast.error(failure instanceof LiveDraftInvalidError ? "Чернетка має сітку менше 3×3. Змініть сітку й збережіть чернетку перед публікацією." : "Не вдалося опублікувати Live-екран.");}
+            toast.success(t("manage.live.published"));
+        } catch (failure) {toast.error(t(failure instanceof LiveDraftInvalidError ? "manage.live.draftInvalid" : "manage.live.publishError"));}
         finally {setBusy(false);}
     }
 
     const warned = new Set(warnings.map(item => item.id));
     return <div className="event-live-editor">
         <header className="event-live-editor__heading">
-            <div><h1>Live-екран</h1><p>Зберіть екран для проєктора або LED-стіни. Відкриває його організатор під своїм обліковим записом. Чернетка не впливає на опублікований вигляд.</p></div>
+            <div><h1>{t("manage.live.title")}</h1><p>{t("manage.live.intro")}</p></div>
             <div className="event-live-editor__actions">
-                <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} /> Відкрити екран</a>
-                <a className="ib-btn" href="/live?test=1" target="_blank" rel="noreferrer">Тест екрана</a>
-                <button className="ib-btn" type="button" onClick={() => setPreview(value => !value)}><Eye size={16} /> {preview ? "Редагувати" : "Переглянути"}</button>
+                <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} /> {t("manage.live.open")}</a>
+                <a className="ib-btn" href="/live?test=1" target="_blank" rel="noreferrer">{t("manage.live.test")}</a>
+                <button className="ib-btn" type="button" onClick={() => setPreview(value => !value)}><Eye size={16} /> {t(preview ? "manage.live.edit" : "common.view")}</button>
                 {canManage && <>
-                    <button className="ib-btn" type="button" disabled={!dirty || !!validation || busy} onClick={() => void save()}><Save size={16} /> Зберегти чернетку</button>
-                    <button className="ib-btn ib-btn--primary" type="button" disabled={dirty || !editor.data?.Draft || busy} onClick={() => void publish()}><Send size={16} /> Опублікувати</button>
+                    <button className="ib-btn" type="button" disabled={!dirty || !!validation || busy} onClick={() => void save()}><Save size={16} /> {t("manage.live.saveDraft")}</button>
+                    <button className="ib-btn ib-btn--primary" type="button" disabled={dirty || !editor.data?.Draft || busy} onClick={() => void publish()}><Send size={16} /> {t("manage.live.publish")}</button>
                 </>}
             </div>
         </header>
         <div className="event-live-editor__toolbar">
-            <label>Пресет<select disabled={locked} value="" onChange={changeEvent => {const key = changeEvent.target.value as keyof typeof livePresets; if (key in livePresets) {mutate(presetLayout(key, layout)); setSelectedID(null);}}}><option value="" disabled>Оберіть пресет</option>{Object.entries(livePresets).map(([key, preset]) => <option key={key} value={key}>{preset.label}</option>)}</select></label>
-            <label>Формат<select value={layout.aspect} disabled={locked} onChange={changeEvent => {const aspect = changeEvent.target.value as LiveLayout["aspect"]; mutate({...layout, aspect, screen: {...layout.screen, width: aspect === "custom" ? layout.screen.width : Math.round(layout.screen.height * aspects[aspect as keyof typeof aspects])}});}}>{["16:9", "16:10", "4:3", "5:3", "custom"].map(value => <option key={value} value={value}>{value === "custom" ? "Власний" : value}</option>)}</select></label>
-            <label>Тема<select value={layout.theme} disabled={locked} onChange={changeEvent => mutate({...layout, theme: changeEvent.target.value as LiveLayout["theme"]})}><option value="dark">Класика темна</option><option value="light">Класика світла</option></select></label>
-            <label>Сітка<select value={`${layout.grid.cols}x${layout.grid.rows}`} disabled={locked} onChange={changeEvent => {const [cols, rows] = changeEvent.target.value.split("x").map(Number); changeGrid(cols, rows);}}>{["12x8", "16x9", "24x16", `${layout.grid.cols}x${layout.grid.rows}`].filter((value, index, all) => all.indexOf(value) === index).map(value => <option key={value} value={value}>{value.replace("x", "×")}</option>)}</select></label>
-            <label>Масштаб тексту<span className="event-live-editor__range"><input type="range" min="80" max="150" value={Math.round(layout.screen.textScale * 100)} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, textScale: Number(changeEvent.target.value) / 100}})} />{Math.round(layout.screen.textScale * 100)}%</span></label>
+            <label>{t("manage.live.preset")}<select disabled={locked} value="" onChange={changeEvent => {const key = changeEvent.target.value as keyof typeof livePresets; if (key in livePresets) {mutate(presetLayout(key, layout)); setSelectedID(null);}}}><option value="" disabled>{t("manage.live.presetPlaceholder")}</option>{Object.entries(livePresets).map(([key, preset]) => <option key={key} value={key}>{preset.label}</option>)}</select></label>
+            <label>{t("manage.live.aspect")}<select value={layout.aspect} disabled={locked} onChange={changeEvent => {const aspect = changeEvent.target.value as LiveLayout["aspect"]; mutate({...layout, aspect, screen: {...layout.screen, width: aspect === "custom" ? layout.screen.width : Math.round(layout.screen.height * aspects[aspect as keyof typeof aspects])}});}}>{["16:9", "16:10", "4:3", "5:3", "custom"].map(value => <option key={value} value={value}>{value === "custom" ? t("manage.live.aspectCustom") : value}</option>)}</select></label>
+            <label>{t("manage.live.theme")}<select value={layout.theme} disabled={locked} onChange={changeEvent => mutate({...layout, theme: changeEvent.target.value as LiveLayout["theme"]})}><option value="dark">{t("manage.live.themeDark")}</option><option value="light">{t("manage.live.themeLight")}</option></select></label>
+            <label>{t("manage.live.grid")}<select value={`${layout.grid.cols}x${layout.grid.rows}`} disabled={locked} onChange={changeEvent => {const [cols, rows] = changeEvent.target.value.split("x").map(Number); changeGrid(cols, rows);}}>{["12x8", "16x9", "24x16", `${layout.grid.cols}x${layout.grid.rows}`].filter((value, index, all) => all.indexOf(value) === index).map(value => <option key={value} value={value}>{value.replace("x", "×")}</option>)}</select></label>
+            <label>{t("manage.live.textScale")}<span className="event-live-editor__range"><input type="range" min="80" max="150" value={Math.round(layout.screen.textScale * 100)} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, textScale: Number(changeEvent.target.value) / 100}})} />{Math.round(layout.screen.textScale * 100)}%</span></label>
             <LiveFreezeToggle eventID={eventID} canManage={canManage} />
         </div>
         {layout.aspect === "custom" && <div className="event-live-editor__toolbar">
-            <label>Ширина екрана, px<input type="number" min="320" max="7680" value={layout.screen.width} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, width: Number(changeEvent.target.value)}})} /></label>
-            <label>Висота екрана, px<input type="number" min="240" max="4320" value={layout.screen.height} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, height: Number(changeEvent.target.value)}})} /></label>
-            <label>Розміщення<select value={layout.screen.anchor} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, anchor: changeEvent.target.value as "full" | "top-left"}})}><option value="full">На весь екран</option><option value="top-left">Фіксована область зліва зверху</option></select></label>
+            <label>{t("manage.live.screenWidth")}<input type="number" min="320" max="7680" value={layout.screen.width} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, width: Number(changeEvent.target.value)}})} /></label>
+            <label>{t("manage.live.screenHeight")}<input type="number" min="240" max="4320" value={layout.screen.height} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, height: Number(changeEvent.target.value)}})} /></label>
+            <label>{t("manage.live.anchor")}<select value={layout.screen.anchor} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, anchor: changeEvent.target.value as "full" | "top-left"}})}><option value="full">{t("manage.live.anchorFull")}</option><option value="top-left">{t("manage.live.anchorTopLeft")}</option></select></label>
         </div>}
         <div className="event-live-editor__grid-options">
-            <button className="ib-btn" type="button" disabled={locked} onClick={() => {setGridCols(layout.grid.cols); setGridRows(layout.grid.rows); setCustomGrid(value => !value);}}>{customGrid ? "Сховати налаштування сітки" : "Власний розмір сітки"}</button>
-            <button className="ib-btn" type="button" disabled={locked || !liveGridValid(finer.cols, finer.rows)} title="Удвічі дрібніші клітинки: віджети зберігають розмір" onClick={() => changeGrid(finer.cols, finer.rows)}><Grid3x3 size={16} /> Дрібніша сітка</button>
+            <button className="ib-btn" type="button" disabled={locked} onClick={() => {setGridCols(layout.grid.cols); setGridRows(layout.grid.rows); setCustomGrid(value => !value);}}>{t(customGrid ? "manage.live.gridHide" : "manage.live.gridCustom")}</button>
+            <button className="ib-btn" type="button" disabled={locked || !liveGridValid(finer.cols, finer.rows)} title={t("manage.live.gridFinerTitle")} onClick={() => changeGrid(finer.cols, finer.rows)}><Grid3x3 size={16} /> {t("manage.live.gridFiner")}</button>
             {customGrid && <div className="event-live-editor__custom-grid">
-                <label>Колонки<input type="number" min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={gridCols} disabled={locked} onChange={changeEvent => setGridCols(Number(changeEvent.target.value))} /></label>
-                <label>Рядки<input type="number" min={liveGridLimits.minRows} max={liveGridLimits.maxRows} value={gridRows} disabled={locked} onChange={changeEvent => setGridRows(Number(changeEvent.target.value))} /></label>
-                <button className="ib-btn ib-btn--primary" type="button" disabled={locked || !liveGridValid(gridCols, gridRows)} onClick={() => changeGrid(gridCols, gridRows)}>Застосувати сітку</button>
+                <label>{t("manage.live.cols")}<input type="number" min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={gridCols} disabled={locked} onChange={changeEvent => setGridCols(Number(changeEvent.target.value))} /></label>
+                <label>{t("manage.live.rows")}<input type="number" min={liveGridLimits.minRows} max={liveGridLimits.maxRows} value={gridRows} disabled={locked} onChange={changeEvent => setGridRows(Number(changeEvent.target.value))} /></label>
+                <button className="ib-btn ib-btn--primary" type="button" disabled={locked || !liveGridValid(gridCols, gridRows)} onClick={() => changeGrid(gridCols, gridRows)}>{t("manage.live.gridApply")}</button>
             </div>}
         </div>
         {(error || validation) && <div className="event-live-editor__error" role="alert">{error || validation}</div>}
-        {warnings.length > 0 && <section className="event-live-editor__warnings" aria-label="Попередження про текст">
-            <h2>Дрібний текст на екрані {layout.screen.width}×{layout.screen.height}</h2>
+        {warnings.length > 0 && <section className="event-live-editor__warnings" aria-label={t("manage.live.warnings")}>
+            <h2>{t("manage.live.warningsTitle", {width: layout.screen.width, height: layout.screen.height})}</h2>
             <ul>{warnings.map((warning, index) => <li key={`${warning.id}-${index}`}><button type="button" onClick={() => setSelectedID(warning.id)}>{warning.text}</button></li>)}</ul>
         </section>}
         <div className={`event-live-editor__workspace${preview ? " is-preview" : ""}`}>
             <aside className="event-live-editor__palette">
-                <h2>Віджети</h2>
-                {livePaletteTypes.map(type => <button key={type} type="button" draggable={!locked} disabled={locked} title="Натисніть, щоб додати, або перетягніть на сітку"
+                <h2>{t("manage.live.widgets")}</h2>
+                {livePaletteTypes.map(type => <button key={type} type="button" draggable={!locked} disabled={locked} title={t("manage.live.paletteHint")}
                     onDragStart={dragEvent => {dragEvent.dataTransfer.setData(dragMime, type); dragEvent.dataTransfer.effectAllowed = "copy"; setDragType(type);}}
                     onDragEnd={() => {setDragType(null); setGhost(null);}}
-                    onClick={() => addWidget(type)}>+ {liveWidgetLabels[type]}</button>)}
+                    onClick={() => addWidget(type)}>{t("manage.live.paletteAdd", {name: liveWidgetLabels[type]})}</button>)}
             </aside>
             <div className="event-live-editor__stage">
                 <div className="event-live-editor__screen" style={screenStyle} ref={setScreen}>
@@ -309,36 +310,36 @@ export default function ManageLivePage() {
                 </div>
             </div>
             <aside className="event-live-editor__properties">
-                <h2>Властивості</h2>
+                <h2>{t("manage.live.properties")}</h2>
                 {selected ? <>
                     <p>{liveWidgetLabels[selected.type]}</p>
-                    <div className="event-live-editor__grid-fields">{(["x", "y", "w", "h"] as const).map((key, index) => <label key={key}>{["Колонка", "Рядок", "Ширина", "Висота"][index]}<input type="number" min="1" value={selected[key]} disabled={locked} onChange={changeEvent => updateWidget({...selected, [key]: Number(changeEvent.target.value)})} /></label>)}</div>
+                    <div className="event-live-editor__grid-fields">{(["x", "y", "w", "h"] as const).map(key => <label key={key}>{t(`manage.live.pos.${key}`)}<input type="number" min="1" value={selected[key]} disabled={locked} onChange={changeEvent => updateWidget({...selected, [key]: Number(changeEvent.target.value)})} /></label>)}</div>
                     <div className="event-live-editor__distribute">
-                        <button className="ib-btn" type="button" disabled={locked} title="Сусіди в цьому ряду такої ж висоти отримають рівну ширину" onClick={() => distribute("row")}><Columns3 size={16} /> Розподілити ряд рівномірно</button>
-                        <button className="ib-btn" type="button" disabled={locked} title="Сусіди в цій колонці такої ж ширини отримають рівну висоту" onClick={() => distribute("column")}><Rows3 size={16} /> Розподілити колонку рівномірно</button>
+                        <button className="ib-btn" type="button" disabled={locked} title={t("manage.live.distributeRowTitle")} onClick={() => distribute("row")}><Columns3 size={16} /> {t("manage.live.distributeRow")}</button>
+                        <button className="ib-btn" type="button" disabled={locked} title={t("manage.live.distributeColumnTitle")} onClick={() => distribute("column")}><Rows3 size={16} /> {t("manage.live.distributeColumn")}</button>
                     </div>
-                    {selected.type === "title" && <label>Підзаголовок<input value={String(selected.props.subtitle ?? "")} disabled={locked} onChange={changeEvent => updateProp("subtitle", changeEvent.target.value)} /></label>}
-                    {selected.type === "announcement" && <label>Текст оголошення<textarea value={String(selected.props.text ?? "")} disabled={locked} onChange={changeEvent => updateProp("text", changeEvent.target.value)} /></label>}
-                    {selected.type === "qr" && <label>Посилання<input type="url" value={String(selected.props.url ?? "")} disabled={locked} onChange={changeEvent => updateProp("url", changeEvent.target.value)} /></label>}
+                    {selected.type === "title" && <label>{t("manage.live.prop.subtitle")}<input value={String(selected.props.subtitle ?? "")} disabled={locked} onChange={changeEvent => updateProp("subtitle", changeEvent.target.value)} /></label>}
+                    {selected.type === "announcement" && <label>{t("manage.live.prop.announcement")}<textarea value={String(selected.props.text ?? "")} disabled={locked} onChange={changeEvent => updateProp("text", changeEvent.target.value)} /></label>}
+                    {selected.type === "qr" && <label>{t("manage.live.prop.url")}<input type="url" value={String(selected.props.url ?? "")} disabled={locked} onChange={changeEvent => updateProp("url", changeEvent.target.value)} /></label>}
                     {selected.type === "logos" && <>
-                        <label>Назва блоку<input value={String(selected.props.title ?? "")} disabled={locked} onChange={changeEvent => updateProp("title", changeEvent.target.value)} /></label>
-                        <label>Режим<select value={String(selected.props.mode ?? "fixed")} disabled={locked} onChange={changeEvent => updateProp("mode", changeEvent.target.value)}><option value="fixed">Фіксовані</option><option value="carousel">Карусель</option></select></label>
+                        <label>{t("manage.live.prop.title")}<input value={String(selected.props.title ?? "")} disabled={locked} onChange={changeEvent => updateProp("title", changeEvent.target.value)} /></label>
+                        <label>{t("manage.live.prop.mode")}<select value={String(selected.props.mode ?? "fixed")} disabled={locked} onChange={changeEvent => updateProp("mode", changeEvent.target.value)}><option value="fixed">{t("manage.live.prop.modeFixed")}</option><option value="carousel">{t("manage.live.prop.modeCarousel")}</option></select></label>
                         {selected.props.mode === "carousel" && <>
-                            <label>Швидкість<select value={String(selected.props.speed ?? "normal")} disabled={locked} onChange={changeEvent => updateProp("speed", changeEvent.target.value)}><option value="slow">Повільно</option><option value="normal">Звичайно</option><option value="fast">Швидко</option></select></label>
-                            <label className="event-live-editor__checkbox"><input type="checkbox" checked={selected.props.paused === true} disabled={locked} onChange={changeEvent => updateProp("paused", changeEvent.target.checked)} /> Зупинити рух</label>
+                            <label>{t("manage.live.prop.speed")}<select value={String(selected.props.speed ?? "normal")} disabled={locked} onChange={changeEvent => updateProp("speed", changeEvent.target.value)}><option value="slow">{t("manage.live.prop.speedSlow")}</option><option value="normal">{t("manage.live.prop.speedNormal")}</option><option value="fast">{t("manage.live.prop.speedFast")}</option></select></label>
+                            <label className="event-live-editor__checkbox"><input type="checkbox" checked={selected.props.paused === true} disabled={locked} onChange={changeEvent => updateProp("paused", changeEvent.target.checked)} /> {t("manage.live.prop.paused")}</label>
                         </>}
                         <LogoField eventID={eventID} logos={Array.isArray(selected.props.logos) ? selected.props.logos.filter((value): value is string => typeof value === "string") : []} disabled={locked} onChange={logos => updateProp("logos", logos)} />
                     </>}
-                    {selected.type === "chart" && <label>Ліній на графіку<input type="number" min="5" max="10" value={Number(selected.props.lines ?? 5)} disabled={locked} onChange={changeEvent => updateProp("lines", Number(changeEvent.target.value))} /></label>}
+                    {selected.type === "chart" && <label>{t("manage.live.prop.lines")}<input type="number" min="5" max="10" value={Number(selected.props.lines ?? 5)} disabled={locked} onChange={changeEvent => updateProp("lines", Number(changeEvent.target.value))} /></label>}
                     {selected.type === "table" && <>
-                        <label>Рядків на сторінці<input type="number" min="1" max="60" value={Number(selected.props.rowsPerPage ?? 10)} disabled={locked} onChange={changeEvent => updateProp("rowsPerPage", Number(changeEvent.target.value))} /></label>
-                        <label>Інтервал, с<input type="number" min="1" max="60" value={Number(selected.props.pageSeconds ?? 10)} disabled={locked} onChange={changeEvent => updateProp("pageSeconds", Number(changeEvent.target.value))} /></label>
+                        <label>{t("manage.live.prop.rowsPerPage")}<input type="number" min="1" max="60" value={Number(selected.props.rowsPerPage ?? 10)} disabled={locked} onChange={changeEvent => updateProp("rowsPerPage", Number(changeEvent.target.value))} /></label>
+                        <label>{t("manage.live.prop.pageSeconds")}<input type="number" min="1" max="60" value={Number(selected.props.pageSeconds ?? 10)} disabled={locked} onChange={changeEvent => updateProp("pageSeconds", Number(changeEvent.target.value))} /></label>
                     </>}
-                    {selected.type === "solves" && <label>Кількість рядків<input type="number" min="1" max="60" value={Number(selected.props.rows ?? 5)} disabled={locked} onChange={changeEvent => updateProp("rows", Number(changeEvent.target.value))} /></label>}
-                    {canManage && !preview && <button className="ib-btn" type="button" onClick={() => {mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null);}}><Trash2 size={16} /> Прибрати віджет</button>}
-                </> : <p>Оберіть віджет на сітці, щоб змінити його розташування та вміст.</p>}
+                    {selected.type === "solves" && <label>{t("manage.live.prop.rows")}<input type="number" min="1" max="60" value={Number(selected.props.rows ?? 5)} disabled={locked} onChange={changeEvent => updateProp("rows", Number(changeEvent.target.value))} /></label>}
+                    {canManage && !preview && <button className="ib-btn" type="button" onClick={() => {mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null);}}><Trash2 size={16} /> {t("manage.live.removeWidget")}</button>}
+                </> : <p>{t("manage.live.selectHint")}</p>}
             </aside>
         </div>
-        <p className="event-live-editor__note">Версія {editor.data?.Published.version}. Перетягніть віджет із палітри на сітку або натисніть, щоб додати. Віджет на сітці переміщується перетягуванням, розмір змінюється за правий нижній кут. Зміни побачать на екрані після публікації.</p>
+        <p className="event-live-editor__note">{t("manage.live.note", {version: editor.data?.Published.version ?? ""})}</p>
     </div>;
 }

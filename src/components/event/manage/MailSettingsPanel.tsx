@@ -14,6 +14,7 @@ import {
 import {EventLoading} from "@/components/event/EventLoading";
 import {DialogModal} from "@/components/event/DialogModal";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "./ManageFieldLabel";
 import {useManager} from "./ManagerShell";
 
@@ -33,8 +34,8 @@ export function MailSettingsPanel() {
     const [test, setTest] = useState<MailTestResult | null>(null);
     const [confirmReset, setConfirmReset] = useState(false);
 
-    if (query.isPending) return <EventLoading event={event} label="Завантажуємо налаштування пошти…" />;
-    if (query.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити налаштування пошти</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>Повторити</button></div>;
+    if (query.isPending) return <EventLoading event={event} label={t("manage.mail.settings.loading")} />;
+    if (query.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.mail.settings.loadError")}</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
 
     const settings = query.data;
     const savedSettings = mailSettingsForm(settings);
@@ -73,8 +74,8 @@ export function MailSettingsPanel() {
         try {
             applied(await putEventMailSettings(eventID, mailSettingsInput(settingsForm)));
             setSettingsDraft(null);
-            toast.success("Налаштування пошти збережено");
-        } catch (error) {toast.error(errorText(error, "Не вдалося зберегти налаштування пошти."));}
+            toast.success(t("manage.mail.settings.saved"));
+        } catch (error) {toast.error(errorText(error, t("manage.mail.settings.saveError")));}
         finally {setBusy(null);}
     }
 
@@ -85,8 +86,8 @@ export function MailSettingsPanel() {
         try {
             applied(await putEventMailSMTP(eventID, smtpInput(form)));
             setSMTPDraft(null);
-            toast.success("SMTP події збережено");
-        } catch (error) {toast.error(errorText(error, "Не вдалося зберегти SMTP."));}
+            toast.success(t("manage.mail.smtp.saved"));
+        } catch (error) {toast.error(errorText(error, t("manage.mail.smtp.saveError")));}
         finally {setBusy(null);}
     }
 
@@ -99,7 +100,7 @@ export function MailSettingsPanel() {
         setBusy("test");
         setTest(null);
         try {setTest(await testEventMailSMTP(eventID, input));}
-        catch (error) {toast.error(errorText(error, "Не вдалося перевірити підключення."));}
+        catch (error) {toast.error(errorText(error, t("manage.mail.smtp.testError")));}
         finally {setBusy(null);}
     }
 
@@ -111,82 +112,82 @@ export function MailSettingsPanel() {
             setSMTPDraft(null);
             setTest(null);
             setConfirmReset(false);
-            toast.success("Листи йдуть через платформний SMTP");
-        } catch (error) {toast.error(errorText(error, "Не вдалося вимкнути SMTP події."));}
+            toast.success(t("manage.mail.smtp.resetDone"));
+        } catch (error) {toast.error(errorText(error, t("manage.mail.smtp.resetError")));}
         finally {setBusy(null);}
     }
 
     return <div className="event-manage-mail__panel">
-        {!canManage && <p className="event-manage-notice">Доступний лише перегляд.</p>}
+        {!canManage && <p className="event-manage-notice">{t("common.viewOnly")}</p>}
         <section className="event-manage-section" aria-labelledby="mail-sender-title">
-            <div className="event-manage-section__head"><h2 id="mail-sender-title">Відправник</h2><p>Так листи учасникам виглядають у поштовій скриньці.</p></div>
+            <div className="event-manage-section__head"><h2 id="mail-sender-title">{t("manage.mail.sender.title")}</h2><p>{t("manage.mail.sender.intro")}</p></div>
             <dl className="event-manage-mail__facts">
-                <div><dt>Від</dt><dd>{settings.SenderName} <span>&lt;{settings.SenderAddress}&gt;</span></dd></div>
-                <div><dt>Відповідь на</dt><dd>{settings.ReplyTo || "—"}</dd></div>
+                <div><dt>{t("manage.mail.sender.from")}</dt><dd>{settings.SenderName} <span>&lt;{settings.SenderAddress}&gt;</span></dd></div>
+                <div><dt>{t("manage.mail.sender.replyTo")}</dt><dd>{settings.ReplyTo || "—"}</dd></div>
             </dl>
-            {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">Платформну пошту не налаштовано. Без власного SMTP листи не надсилаються.</p>}
+            {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
         </section>
 
         <form className="event-manage-section" onSubmit={saveSettings} aria-labelledby="mail-contact-title">
-            <div className="event-manage-section__head"><h2 id="mail-contact-title">Контакт і нагадування</h2></div>
+            <div className="event-manage-section__head"><h2 id="mail-contact-title">{t("manage.mail.contact.title")}</h2></div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-contact" title="Контактна пошта" help="Адреса для відповідей учасників (Reply-To). Якщо поле порожнє, відповіді йдуть у підтримку платформи." />
-                    <input id="mail-contact" className="event-manage-input" type="email" value={settingsForm.contactEmail} placeholder="Підтримка платформи" disabled={disabled} maxLength={254} onChange={change => setSettingsDraft({...settingsForm, contactEmail: change.target.value})} />
-                    <small>Порожньо — адреса підтримки платформи.</small>
+                    <ManageFieldLabel htmlFor="mail-contact" title={t("manage.mail.contact.email")} help={t("manage.mail.contact.emailHelp")} />
+                    <input id="mail-contact" className="event-manage-input" type="email" value={settingsForm.contactEmail} placeholder={t("manage.mail.contact.emailPlaceholder")} disabled={disabled} maxLength={254} onChange={change => setSettingsDraft({...settingsForm, contactEmail: change.target.value})} />
+                    <small>{t("manage.mail.contact.emailHint")}</small>
                 </div>
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-reminder" title="Нагадування про старт" help="За скільки годин до початку надіслати учасникам нагадування. 0 — не надсилати." />
+                    <ManageFieldLabel htmlFor="mail-reminder" title={t("manage.mail.contact.reminder")} help={t("manage.mail.contact.reminderHelp")} />
                     <input id="mail-reminder" className="event-manage-input" type="number" inputMode="numeric" min={0} max={168} step={1} value={settingsForm.startReminderHours} disabled={disabled} onChange={change => setSettingsDraft({...settingsForm, startReminderHours: change.target.value})} />
-                    <small>{!settingsValidation && hours === 0 ? "Вимкнено" : "Годин до старту, від 0 до 168"}</small>
+                    <small>{t(!settingsValidation && hours === 0 ? "manage.mail.contact.reminderOff" : "manage.mail.contact.reminderHint")}</small>
                 </div>
             </div>
             {settingsDirty && settingsValidation && <p className="event-manage-validation" role="alert">{settingsValidation}</p>}
-            {canManage && settingsDirty && <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !!settingsValidation}>{busy === "settings" ? "Зберігаємо…" : "Зберегти"}</button></div>}
+            {canManage && settingsDirty && <div className="event-manage-section__actions"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !!settingsValidation}>{t(busy === "settings" ? "common.saving" : "common.save")}</button></div>}
         </form>
 
         <form className="event-manage-section" onSubmit={saveSMTP} aria-labelledby="mail-smtp-title">
-            <div className="event-manage-section__head"><h2 id="mail-smtp-title">Власний SMTP</h2><p>{settings.SMTP ? `Листи учасникам йдуть через ${settings.SMTP.Host}:${settings.SMTP.Port}.` : "Не налаштовано — листи йдуть через платформний SMTP."} Якщо SMTP події не відповідає, лист повторно надсилається через платформний.</p></div>
+            <div className="event-manage-section__head"><h2 id="mail-smtp-title">{t("manage.mail.smtp.title")}</h2><p>{settings.SMTP ? t("manage.mail.smtp.via", {host: settings.SMTP.Host, port: settings.SMTP.Port}) : t("manage.mail.smtp.notConfigured")} {t("manage.mail.smtp.fallbackNote")}</p></div>
             <div className="event-manage-mail__smtp">
                 <div className="event-manage-field event-manage-mail__host">
-                    <ManageFieldLabel htmlFor="mail-smtp-host" title="Хост" help="Адреса SMTP-сервера, наприклад smtp.example.com." />
+                    <ManageFieldLabel htmlFor="mail-smtp-host" title={t("manage.mail.smtp.host")} help={t("manage.mail.smtp.hostHelp")} />
                     <input id="mail-smtp-host" className="event-manage-input" value={form.host} placeholder="smtp.example.com" autoComplete="off" spellCheck={false} disabled={disabled} onChange={change => changeSMTP({host: change.target.value})} />
                 </div>
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-smtp-port" title="Порт" help="Зазвичай 587 для STARTTLS і 465 для TLS." />
+                    <ManageFieldLabel htmlFor="mail-smtp-port" title={t("manage.mail.smtp.port")} help={t("manage.mail.smtp.portHelp")} />
                     <input id="mail-smtp-port" className="event-manage-input" type="number" inputMode="numeric" min={1} max={65535} value={form.port} disabled={disabled} onChange={change => changeSMTP({port: change.target.value})} />
                 </div>
-                <label className="event-manage-field">Шифрування<EventSelect ariaLabel="Шифрування" value={form.tlsMode} options={tlsModeOptions} disabled={disabled} onValueChange={changeTLS} /></label>
+                <label className="event-manage-field">{t("manage.mail.smtp.encryption")}<EventSelect ariaLabel={t("manage.mail.smtp.encryption")} value={form.tlsMode} options={tlsModeOptions} disabled={disabled} onValueChange={changeTLS} /></label>
             </div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-smtp-username" title="Користувач" help="Логін для автентифікації на SMTP-сервері." />
+                    <ManageFieldLabel htmlFor="mail-smtp-username" title={t("manage.mail.smtp.username")} help={t("manage.mail.smtp.usernameHelp")} />
                     <input id="mail-smtp-username" className="event-manage-input" value={form.username} autoComplete="off" spellCheck={false} disabled={disabled} onChange={change => changeSMTP({username: change.target.value})} />
                 </div>
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-smtp-password" title="Пароль" help="Пароль не показується після збереження. Порожнє поле залишає збережений пароль." />
-                    <input id="mail-smtp-password" className="event-manage-input" type="password" value={form.password} autoComplete="new-password" placeholder={settings.SMTP?.PasswordSet && !form.clearPassword ? "Пароль збережено" : ""} disabled={disabled || form.clearPassword} onChange={change => changeSMTP({password: change.target.value})} />
+                    <ManageFieldLabel htmlFor="mail-smtp-password" title={t("manage.mail.smtp.password")} help={t("manage.mail.smtp.passwordHelp")} />
+                    <input id="mail-smtp-password" className="event-manage-input" type="password" value={form.password} autoComplete="new-password" placeholder={settings.SMTP?.PasswordSet && !form.clearPassword ? t("manage.mail.smtp.passwordSaved") : ""} disabled={disabled || form.clearPassword} onChange={change => changeSMTP({password: change.target.value})} />
                     {settings.SMTP?.PasswordSet && <div className="event-manage-mail__password">
-                        <small>{form.clearPassword ? "Пароль буде видалено після збереження." : "Пароль збережено. Залиште поле порожнім, щоб не змінювати."}</small>
-                        {canManage && <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" disabled={disabled} onClick={() => changeSMTP({clearPassword: !form.clearPassword, password: ""})}>{form.clearPassword ? "Залишити пароль" : "Видалити пароль"}</button>}
+                        <small>{t(form.clearPassword ? "manage.mail.smtp.passwordWillClear" : "manage.mail.smtp.passwordKeep")}</small>
+                        {canManage && <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" disabled={disabled} onClick={() => changeSMTP({clearPassword: !form.clearPassword, password: ""})}>{t(form.clearPassword ? "manage.mail.smtp.keepPassword" : "manage.mail.smtp.clearPassword")}</button>}
                     </div>}
                 </div>
             </div>
             {smtpDirty && smtpValidation && <p className="event-manage-validation" role="alert">{smtpValidation}</p>}
             {test && <div className={`event-manage-mail__result${test.Sent ? "" : " is-error"}`} role="status">
-                <strong>{test.Sent ? "Підключення працює" : "Не вдалося надіслати"}</strong>
-                <span>{test.Sent ? `Тестовий лист надіслано на ${test.Recipient}${test.Transport ? ` · ${mailTransportLabel(test.Transport)}` : ""}.` : test.Error || "Сервер не прийняв лист."}</span>
+                <strong>{t(test.Sent ? "manage.mail.smtp.testOk" : "manage.mail.smtp.testFailed")}</strong>
+                <span>{test.Sent ? (test.Transport ? t("manage.mail.smtp.testSentVia", {recipient: test.Recipient, transport: mailTransportLabel(test.Transport)}) : t("manage.mail.smtp.testSent", {recipient: test.Recipient})) : test.Error || t("manage.mail.smtp.testRejected")}</span>
             </div>}
             {canManage && <div className="event-manage-section__actions event-manage-mail__actions">
-                {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => setConfirmReset(true)}>Використовувати платформний SMTP</button>}
-                <button className="ib-btn" type="button" disabled={disabled || !canTest} onClick={() => void runTest()}>{busy === "test" ? "Перевіряємо…" : "Перевірити підключення"}</button>
-                <button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !smtpDirty || !!smtpValidation}>{busy === "smtp" ? "Зберігаємо…" : "Зберегти"}</button>
+                {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => setConfirmReset(true)}>{t("manage.mail.smtp.usePlatform")}</button>}
+                <button className="ib-btn" type="button" disabled={disabled || !canTest} onClick={() => void runTest()}>{t(busy === "test" ? "manage.mail.smtp.testing" : "manage.mail.smtp.test")}</button>
+                <button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !smtpDirty || !!smtpValidation}>{t(busy === "smtp" ? "common.saving" : "common.save")}</button>
             </div>}
         </form>
 
-        <DialogModal open={confirmReset} onClose={() => {if (busy !== "reset") setConfirmReset(false);}} title="Використовувати платформний SMTP?" description="Налаштування SMTP події та збережений пароль буде видалено. Листи учасникам надсилатиме платформа."
-            footer={<><button className="ib-btn" type="button" disabled={busy === "reset"} onClick={() => setConfirmReset(false)}>Скасувати</button><button className="ib-btn ib-btn--primary" type="button" disabled={busy === "reset"} onClick={() => void resetSMTP()}>{busy === "reset" ? "Перемикаємо…" : "Перейти на платформний"}</button></>}>
-            <p className="event-manage-mail__hint">Відправник і контактна пошта не зміняться.</p>
+        <DialogModal open={confirmReset} onClose={() => {if (busy !== "reset") setConfirmReset(false);}} title={t("manage.mail.smtp.resetTitle")} description={t("manage.mail.smtp.resetDescription")}
+            footer={<><button className="ib-btn" type="button" disabled={busy === "reset"} onClick={() => setConfirmReset(false)}>{t("common.cancel")}</button><button className="ib-btn ib-btn--primary" type="button" disabled={busy === "reset"} onClick={() => void resetSMTP()}>{t(busy === "reset" ? "manage.mail.smtp.switching" : "manage.mail.smtp.switch")}</button></>}>
+            <p className="event-manage-mail__hint">{t("manage.mail.smtp.resetHint")}</p>
         </DialogModal>
     </div>;
 }

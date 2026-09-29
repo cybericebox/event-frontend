@@ -11,9 +11,10 @@ import {BrandDraftField, useBrandDraft} from "@/components/event/manage/BrandDra
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {t} from "@/i18n/t";
 
 function FieldLabel({htmlFor, title, help, required = false}: {htmlFor: string; title: string; help: string; required?: boolean}) {
-    return <div className="event-brand-field__head"><label htmlFor={htmlFor}>{title}{required && <span className="event-field-required" aria-label="Обов’язкове поле">*</span>}</label><EventTooltip content={<span className="event-brand-tooltip-copy">{help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={`Про поле «${title}»`} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip></div>;
+    return <div className="event-brand-field__head"><label htmlFor={htmlFor}>{title}{required && <span className="event-field-required" aria-label={t("manage.fields.requiredField")}>*</span>}</label><EventTooltip content={<span className="event-brand-tooltip-copy">{help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip></div>;
 }
 
 export default function ManageGeneralPage() {
@@ -44,23 +45,23 @@ export default function ManageGeneralPage() {
                 current?.EventID === eventID ? {...current, Name: result.Name, PreviewDescription: result.Config.PreviewDescription, PreviewPicture: result.Config.PreviewPicture} : current
             );
             setNameEdit(null); setDescriptionEdit(null); preview.saved(result.Config.PreviewPicture);
-            toast.success("Загальне збережено");
+            toast.success(t("manage.settings.saved"));
             router.refresh();
         } catch (error) {
-            toast.error(error instanceof ManageApiError && error.status === 409 ? "Дані змінилися. Оновіть сторінку й повторіть." : "Не вдалося зберегти загальні налаштування.");
+            toast.error(error instanceof ManageApiError && error.status === 409 ? t("manage.settings.conflict") : t("manage.settings.saveError"));
         } finally {setSaving(false);}
     }
 
     if (nameQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
-    if (nameQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити налаштування</h1><button className="ib-btn" onClick={() => {void nameQuery.refetch(); void configQuery.refetch();}}>Повторити</button></div>;
+    if (nameQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.settings.loadError")}</h1><button className="ib-btn" onClick={() => {void nameQuery.refetch(); void configQuery.refetch();}}>{t("common.retry")}</button></div>;
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
-        <header className="event-manage-heading"><div><h1>Загальне</h1><p>Назва, короткий опис і зображення прев’ю події.</p></div></header>
-        {!canManage && <p className="event-manage-notice">Доступний лише перегляд.</p>}
+        <header className="event-manage-heading"><div><h1>{t("manage.settings.title")}</h1><p>{t("manage.settings.intro")}</p></div></header>
+        {!canManage && <p className="event-manage-notice">{t("common.viewOnly")}</p>}
         <section className="event-manage-section">
-            <div className="event-manage-field"><FieldLabel htmlFor="event-name" title="Назва події" help={"Публічна назва події.\nВідображається в навігації та на сторінках."} required /><input id="event-name" className="event-manage-input" value={name} onChange={change => setNameEdit({eventID, value: change.target.value})} maxLength={255} required disabled={disabled} /></div>
-            <div className="event-manage-field"><FieldLabel htmlFor="event-description" title="Короткий опис" help={"Текст про подію.\nВикористовується в картці події та під час поширення посилання."} /><textarea id="event-description" className="event-manage-input" value={description} onChange={change => setDescriptionEdit({eventID, value: change.target.value})} maxLength={1000} rows={3} disabled={disabled} /></div>
-            <BrandDraftField id="event-preview-picture" title="Зображення прев’ю" help="Зображення для картки події та посилання. До збереження бачите лише чернетку." hint="PNG, JPEG або WebP до 5 МБ · рекомендоване співвідношення 2:1" kind="preview" draft={preview} disabled={disabled} />
+            <div className="event-manage-field"><FieldLabel htmlFor="event-name" title={t("manage.settings.name")} help={t("manage.settings.nameHelp")} required /><input id="event-name" className="event-manage-input" value={name} onChange={change => setNameEdit({eventID, value: change.target.value})} maxLength={255} required disabled={disabled} /></div>
+            <div className="event-manage-field"><FieldLabel htmlFor="event-description" title={t("manage.settings.description")} help={t("manage.settings.descriptionHelp")} /><textarea id="event-description" className="event-manage-input" value={description} onChange={change => setDescriptionEdit({eventID, value: change.target.value})} maxLength={1000} rows={3} disabled={disabled} /></div>
+            <BrandDraftField id="event-preview-picture" title={t("manage.settings.preview")} help={t("manage.settings.previewHelp")} hint={t("manage.settings.previewHint")} kind="preview" draft={preview} disabled={disabled} />
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !name.trim() || preview.uploading}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !name.trim() || preview.uploading}>{t(saving ? "common.saving" : "common.save")}</button></div>}
     </form>;
 }
