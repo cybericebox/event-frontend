@@ -13,6 +13,7 @@ import "@/styles/timer.css";
 import "@/styles/tooltip.css";
 import "@/styles/select.css";
 import "@/styles/block-facts.css";
+import "@/styles/block-partners.css";
 import "@/styles/block-timeline.css";
 import "@/styles/block-faq.css";
 import "@/styles/block-doc.css";

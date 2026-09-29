@@ -5,11 +5,16 @@ export const ContentVariableSchema = z.object({name: z.string(), format: z.enum(
 export const ContentDateDisplaySchema = z.object({format: z.enum(["date-time", "date", "time", "short", "custom"]), pattern: z.string().optional()});
 export const ContentVisibilitySchema = z.object({variable: z.string(), operator: z.string(), value: ContentValueSchema});
 export const ContentRichTextSchema = z.object({root: z.object({type: z.literal("root"), children: z.array(z.unknown())}).passthrough()}).passthrough();
-export const PageBlockTypes = ["section", "text", "hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "divider"] as const;
+export const PageBlockTypes = ["section", "text", "hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "divider", "partners"] as const;
+export const PartnerLogoSchema = z.object({name: z.string(), imageURL: z.string(), href: z.string().optional()});
+export const PartnerGroupSchema = z.object({title: z.string().optional(), items: z.array(PartnerLogoSchema)});
+export type PartnerGroup = z.infer<typeof PartnerGroupSchema>;
 export type PageBlockType = typeof PageBlockTypes[number];
 export const ContentBlockSchema = z.object({
     id: z.string(),
     type: z.enum(PageBlockTypes),
+    // Readable element id for links (#anchor, /slug#anchor).
+    anchor: z.string().optional(),
     label: z.string().optional(),
     richText: ContentRichTextSchema.optional(),
     title: z.string().optional(),
@@ -48,6 +53,7 @@ export const ContentBlockSchema = z.object({
     size: z.string().optional(),
     line: z.boolean().optional(),
     openItem: z.number().int().optional(),
+    groups: z.array(PartnerGroupSchema).optional(),
     variables: z.array(ContentVariableSchema).optional(),
     dateDisplays: z.record(z.string(), z.record(z.string(), ContentDateDisplaySchema)).optional(),
     visibility: z.array(ContentVisibilitySchema).optional(),

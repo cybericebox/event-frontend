@@ -1,0 +1,16 @@
+/* Block «partners» — copied from ds-v2 patterns/blocks/partners. Groups of logos
+   with an optional link. Every logo has the same height and a single tone
+   (grayscale, transparent background), so no partner stands out by its colours.
+   Fields: {type:'partners', title, sub, text, groups:[{title, items:[{name, imageURL, href}]}]} */
+
+.ib-block-partners__text{max-width:60ch;color:var(--ib-dim)}
+.ib-block-partners__text+.ib-block-partners__group,.ib-block__head+.ib-block-partners__group{margin-top:var(--ib-5)}
+.ib-block-partners__group+.ib-block-partners__group{margin-top:var(--ib-6)}
+.ib-block-partners__label{margin-bottom:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-block-partners__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--ib-3);margin:0;padding:0;list-style:none}
+.ib-block-partners__logo{display:flex;align-items:center;justify-content:center;height:72px;padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);color:var(--ib-ink);text-decoration:none}
+.ib-block-partners__image{display:block;width:auto;max-width:100%;height:40px;object-fit:contain;filter:grayscale(1);opacity:.85}
+.ib-block-partners__name{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);text-align:center}
+a.ib-block-partners__logo:hover{border-color:var(--ib-control)}
+a.ib-block-partners__logo:hover .ib-block-partners__image{opacity:1}
+@media (prefers-reduced-motion:no-preference){.ib-block-partners__image{transition:opacity .15s ease}}
