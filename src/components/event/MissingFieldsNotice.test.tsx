@@ -44,7 +44,7 @@ describe("MissingFieldsNotice", () => {
         answers = ownAnswers([]);
         renderNotice(team(["motto"], true));
         expect(await screen.findByText(/Організатори додали обов’язкові поля команди: Девіз\./)).toBeTruthy();
-        expect(screen.getByRole("link", {name: "Перейти до команди"}).getAttribute("href")).toBe("/team");
+        expect(screen.getByRole("link", {name: "Перейти до команди"}).getAttribute("href")).toBe("/participation?tab=team");
         expect(screen.getByText(/Заповнити їх може капітан\. Поки їх не заповнено/)).toBeTruthy();
     });
 

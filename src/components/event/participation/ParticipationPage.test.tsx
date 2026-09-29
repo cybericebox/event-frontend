@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {ReactNode} from "react";
 import {TeamRole, type TeamMember} from "@/api/eventTeams";
 import type {OwnTeam} from "@/api/clientAuth";
-import {TeamPage} from "./TeamPage";
+import {ParticipationPage} from "./ParticipationPage";
 
 const state = vi.hoisted(() => ({
     participant: null as unknown,
@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
     staff: false,
     rosterOpen: true,
     members: [] as unknown[],
+    missing: [] as string[],
     moderators: null as unknown,
 }));
 
@@ -22,6 +23,10 @@ vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.gues
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
 vi.mock("@/api/clientAuth", () => ({getRegistrationWindow: async () => ({registrationOpen: true, joinPolicy: "rolling", startAt: "", finishAt: "", rosterOpen: state.rosterOpen})}));
+vi.mock("@/api/participantForm", async importOriginal => ({
+    ...(await importOriginal<typeof import("@/api/participantForm")>()),
+    getOwnParticipantAnswers: async () => ({Form: {Fields: []}, Answers: {}, Editable: true, Missing: state.missing, Blocking: false}),
+}));
 vi.mock("@/api/moderatorsBoard", () => ({getModeratorsTeam: async () => { if (!state.moderators) throw new Error("unavailable"); return state.moderators; }}));
 vi.mock("@/api/eventTeams", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/eventTeams")>()),
@@ -38,12 +43,12 @@ const member = (id: string, name: string, role: number, own: boolean, pending = 
 
 function view() {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    return render(<QueryClientProvider client={client}><TeamPage /></QueryClientProvider>);
+    return render(<QueryClientProvider client={client}><ParticipationPage /></QueryClientProvider>);
 }
 
 beforeEach(() => {
-    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = []; state.moderators = null;
-    window.history.replaceState(null, "", "/team");
+    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = []; state.moderators = null; state.missing = [];
+    window.history.replaceState(null, "", "/participation?tab=team");
     sessionStorage.clear();
 });
 afterEach(cleanup);
@@ -105,8 +110,53 @@ it("lets organizers open the page as a captain with sample data when there is no
 
 it("asks a visitor with a join link to register first and remembers the code", async () => {
     state.guest = event;
-    window.history.replaceState(null, "", "/team?join=abc");
+    window.history.replaceState(null, "", "/participation?tab=team&join=abc");
     view();
     expect(await screen.findByText(/спершу зареєструйтеся/)).toBeTruthy();
     expect(sessionStorage.getItem("event-team-join-code")).toBe("abc");
+});
+
+const individual = {...event, Participation: 0};
+
+it("opens the team tab by default for a captain whose team is below the minimum", async () => {
+    window.history.replaceState(null, "", "/participation");
+    state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Captain, {MemberCount: 1, JoinCode: "code"})};
+    state.members = [member("1", "Олена", TeamRole.Captain, true)];
+    view();
+    expect(await screen.findByLabelText("Посилання для запрошення")).toBeTruthy();
+    expect(screen.getByRole("tab", {name: "Команда"}).getAttribute("aria-selected")).toBe("true");
+});
+
+it("opens the team tab for a captain with a pending invitation even when the minimum is met", async () => {
+    window.history.replaceState(null, "", "/participation");
+    state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Captain, {JoinCode: "code"})};
+    state.members = [member("1", "Олена", TeamRole.Captain, true), member("2", "Іван", TeamRole.Member, false), member("3", "Марія", TeamRole.Member, false, true)];
+    view();
+    expect(await screen.findByText("Очікує підтвердження")).toBeTruthy();
+});
+
+it("opens the profile by default for a complete team and for a member", async () => {
+    window.history.replaceState(null, "", "/participation");
+    state.participant = {event, participantInfo: {...info, RealName: "Олена Коваль", AllowPseudonyms: false}, ownTeam: team(TeamRole.Member)};
+    view();
+    expect(await screen.findByText("Олена Коваль")).toBeTruthy();
+    expect(screen.getByRole("tab", {name: "Профіль"}).getAttribute("aria-selected")).toBe("true");
+});
+
+it("has no tabs in individual mode, even for ?tab=team", async () => {
+    state.participant = {event: individual, participantInfo: {...info, RealName: "Олена Коваль", AllowPseudonyms: false}, ownTeam: null};
+    view();
+    expect(await screen.findByText("Олена Коваль")).toBeTruthy();
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryByRole("tab", {name: "Команда"})).toBeNull();
+});
+
+it("marks a tab whose section has missing fields", async () => {
+    window.history.replaceState(null, "", "/participation");
+    state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member, {MissingFields: ["school"]})};
+    state.missing = ["phone"];
+    view();
+    await screen.findByRole("tab", {name: /Профіль/});
+    expect((await screen.findByRole("tab", {name: /Профіль/})).textContent).toContain("Заповніть");
+    expect(screen.getByRole("tab", {name: /Команда/}).textContent).toContain("Заповніть");
 });

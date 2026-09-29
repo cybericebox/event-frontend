@@ -1,11 +1,9 @@
 "use client";
 
 import {useState, type FormEvent} from "react";
-import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {Copy} from "lucide-react";
-import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {getRegistrationWindow, type OwnTeam} from "@/api/clientAuth";
 import {
@@ -27,28 +25,11 @@ import {t, tPlural} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
-import {changedEditableAnswers, forgetJoinCode, formFields, joinCodeFromSearch, joinLink, joinLinkValidity, parseJoinCode, recalledJoinCode, rememberJoinCode, rosterLine} from "./participationModel";
+import {changedEditableAnswers, forgetJoinCode, formFields, joinLink, joinLinkValidity, parseJoinCode, rosterLine} from "./participationModel";
 import {getModeratorsTeam} from "@/api/moderatorsBoard";
 import {eventRoleLabel} from "@/utils/roles";
 import {previewMembers, previewOwnTeam} from "./participationPreview";
-import {errorText, FieldRow, FieldRows, FieldsEditor, Section, TeamConfirm, type Confirm} from "./participationParts";
-
-function PageHeading({sub}: {sub: string}) {
-    return <header className="ib-page-header"><div className="ib-page-header__top"><div className="ib-page-header__heading">
-        <h1 className="ib-page-header__title">{t("participation.team.pageTitle")}</h1>
-        <p className="ib-page-header__sub">{sub}</p>
-    </div></div></header>;
-}
-
-// A join link is opened by a visitor who may still have to sign in or register: the code waits in the session.
-function useLinkCode(): string {
-    const [code] = useState(() => {
-        const fromLink = typeof window === "undefined" ? "" : joinCodeFromSearch(window.location.search);
-        if (fromLink) rememberJoinCode(fromLink);
-        return fromLink || recalledJoinCode();
-    });
-    return code;
-}
+import {errorText, FieldRow, FieldRows, FieldsEditor, Section, TeamConfirm, useLinkCode, type Confirm} from "./participationParts";
 
 function NoTeam({event, rosterOpen, linkCode, preview}: {event: PublicEventInfo; rosterOpen: boolean; linkCode: string; preview: boolean}) {
     const queryClient = useQueryClient();
@@ -253,8 +234,8 @@ function ModeratorsTeamSection({members}: {members: {UserID: string; Name: strin
     </Section>;
 }
 
-// «Моя команда»: the roster and, for the captain, the join link and the roster management.
-export function TeamPage() {
+// The «Команда» tab of «Моя участь»: the roster and, for the captain, the join link and the roster management.
+export function TeamTab() {
     const access = useParticipantContext();
     const guest = useGuestEvent();
     const staff = useStaffAccess(guest?.EventID);
@@ -264,17 +245,7 @@ export function TeamPage() {
     const [now] = useState(() => Date.now());
     const moderators = useQuery({queryKey: ["event-moderators-team", event?.EventID], queryFn: () => getModeratorsTeam(event!.EventID), enabled: !!event && !access && staff.staff, retry: false, refetchOnWindowFocus: false});
     if (!event) return <EventLoading label={t("participation.loading")} />;
-    const participant = !!access;
-    const previewing = !participant && staff.staff;
-    if (!participant && !previewing) {
-        if (staff.pending) return <EventLoading label={t("participation.loading")} />;
-        return <div className="event-participation"><PageHeading sub={event.Name} />
-            <EmptyState message={linkCode ? t("participation.team.linkRegister") : t("participation.unavailable")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("shell.join.action")}</Link>} />
-        </div>;
-    }
-    if (event.Participation !== 1) return <div className="event-participation"><PageHeading sub={event.Name} />
-        <EmptyState message={t("participation.team.individualOnly")} action={<Link className="ib-btn" href="/participation">{t("nav.participation")}</Link>} />
-    </div>;
+    const previewing = !access && staff.staff;
     if (registration.isPending) return <EventLoading label={t("participation.loading")} />;
     if (registration.isError) return <EventLoadError message={t("participation.team.loadFailed")} error={registration.error} onRetry={() => void registration.refetch()} />;
     const rosterOpen = registration.data.rosterOpen;
@@ -283,12 +254,11 @@ export function TeamPage() {
     const realModerators = previewing && moderators.data ? moderators.data : null;
     const info = access?.participantInfo;
     const team = previewing ? previewOwnTeam() : access?.ownTeam ?? null;
-    return <div className="event-participation">
-        <PageHeading sub={finished ? t("participation.sub.finished", {name: event.Name}) : event.Name} />
+    return <>
         {realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} /></div>}
         {previewing && !realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
         {realModerators ? <ModeratorsTeamSection members={realModerators.Members} /> : team
             ? <TeamSection event={event} info={info ?? ({MinTeamSize: 2, MaxTeamSize: 4} as ParticipantEventInfo)} team={team} rosterOpen={rosterOpen} finished={finished} preview={previewing} />
             : <Section title={t("participation.team.title")} note={t("participation.noTeam.sectionNote")}><NoTeam event={event} rosterOpen={rosterOpen} linkCode={linkCode} preview={previewing} /></Section>}
-    </div>;
+    </>;
 }

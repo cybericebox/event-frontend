@@ -7,7 +7,7 @@ import {ParticipantJoinError, type ParticipantAnswers} from "@/api/participantFo
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {t} from "@/i18n/t";
-import {formatAnswer, formFields} from "./participationModel";
+import {formatAnswer, formFields, joinCodeFromSearch, recalledJoinCode, rememberJoinCode} from "./participationModel";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {isFileAnswer, selfAnswerFileUrl} from "@/api/answerFiles";
@@ -76,4 +76,14 @@ export function AnswerValue({field, value}: {field: FormField; value: unknown}) 
 
 export function FieldRow({label, children}: {label: ReactNode; children: ReactNode}) {
     return <><dt>{label}</dt><dd>{children}</dd></>;
+}
+
+// A join link is opened by a visitor who may still have to sign in or register: the code waits in the session.
+export function useLinkCode(): string {
+    const [code] = useState(() => {
+        const fromLink = typeof window === "undefined" ? "" : joinCodeFromSearch(window.location.search);
+        if (fromLink) rememberJoinCode(fromLink);
+        return fromLink || recalledJoinCode();
+    });
+    return code;
 }

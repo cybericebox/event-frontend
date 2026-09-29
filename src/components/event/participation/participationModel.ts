@@ -86,3 +86,27 @@ export function joinLinkValidity(expiresAt: string | null, now: number): {text: 
     if (at <= now) return {text: t("participation.team.link.expired", {date: expiresFormat.format(at)}), expired: true};
     return {text: t("participation.team.link.validUntil", {date: expiresFormat.format(at)}), expired: false};
 }
+
+export type ParticipationTab = "profile" | "team";
+
+// «Команда» exists only in team mode; an unknown or foreign tab opens the profile.
+export function participationTabFromParam(tab: string | null | undefined, teamMode: boolean): ParticipationTab | null {
+    if (tab === "profile") return "profile";
+    return tab === "team" && teamMode ? "team" : null;
+}
+
+// A captain whose team is not complete yet (below the minimum, or with unanswered invitations) lands on the team.
+export function defaultParticipationTab({teamMode, captain, memberCount, minSize, pending}: {teamMode: boolean; captain: boolean; memberCount: number; minSize: number; pending: number}): ParticipationTab {
+    return teamMode && captain && (memberCount < minSize || pending > 0) ? "team" : "profile";
+}
+
+export function participationTabHref(tab: ParticipationTab): string {
+    return tab === "profile" ? "/participation" : `/participation?tab=${tab}`;
+}
+
+// The old /team link (also the invitation link): the team tab, with the join code kept.
+export function teamRedirectHref(search: string): string {
+    const params = new URLSearchParams(search);
+    params.set("tab", "team");
+    return `/participation?${params.toString()}`;
+}

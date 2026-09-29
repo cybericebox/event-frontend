@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {ParticipantForm} from "@/api/manageParticipantForm";
-import {changedEditableAnswers, editableForm, formatAnswer, formFields, joinCodeFromSearch, joinLink, joinLinkValidity, parseJoinCode, rosterLine} from "./participationModel";
+import {changedEditableAnswers, editableForm, formatAnswer, formFields, defaultParticipationTab, joinCodeFromSearch, joinLink, participationTabFromParam, teamRedirectHref, joinLinkValidity, parseJoinCode, rosterLine} from "./participationModel";
 
 const form: ParticipantForm = {Version: 1, Enabled: true, Required: true, Document: {blocks: [
     {id: "a", type: "field", key: "city", input: "text", label: "Місто", editable: true},
@@ -58,3 +58,24 @@ describe("join link", () => {
     });
 });
 
+
+it("sends /team to the team tab and keeps the join code", () => {
+    expect(teamRedirectHref("")).toBe("/participation?tab=team");
+    expect(teamRedirectHref("?join=abc")).toBe("/participation?join=abc&tab=team");
+});
+
+it("knows the tab only when it exists in this mode", () => {
+    expect(participationTabFromParam("team", true)).toBe("team");
+    expect(participationTabFromParam("team", false)).toBeNull();
+    expect(participationTabFromParam("profile", false)).toBe("profile");
+    expect(participationTabFromParam("x", true)).toBeNull();
+});
+
+it("defaults to the team only for a captain with an incomplete team", () => {
+    const base = {teamMode: true, captain: true, memberCount: 3, minSize: 2, pending: 0};
+    expect(defaultParticipationTab(base)).toBe("profile");
+    expect(defaultParticipationTab({...base, memberCount: 1})).toBe("team");
+    expect(defaultParticipationTab({...base, pending: 1})).toBe("team");
+    expect(defaultParticipationTab({...base, captain: false, memberCount: 1})).toBe("profile");
+    expect(defaultParticipationTab({...base, teamMode: false, memberCount: 1})).toBe("profile");
+});

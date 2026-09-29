@@ -16,9 +16,11 @@ import {EventBanner} from "@/components/event/EventBanner";
 import {EventLoading} from "@/components/event/EventLoading";
 import {StandStatusIcon, standStatusText, useEventVpn} from "@/components/event/vpn/EventVpn";
 import {t} from "@/i18n/t";
-import {changedEditableAnswers, formFields} from "./participationModel";
+import {changedEditableAnswers, defaultParticipationTab, formFields, participationTabFromParam, participationTabHref, type ParticipationTab} from "./participationModel";
 import {previewParticipantInfo} from "./participationPreview";
-import {errorText, FieldRow, FieldRows, FieldsEditor, Section} from "./participationParts";
+import {errorText, FieldRow, FieldRows, FieldsEditor, Section, useLinkCode} from "./participationParts";
+import {TeamTab} from "./TeamPage";
+import {getOwnTeamMembers, TeamRole} from "@/api/eventTeams";
 
 function PseudonymRow({info, eventID}: {info: ParticipantEventInfo; eventID: string}) {
     const queryClient = useQueryClient();
@@ -99,32 +101,62 @@ function Heading({sub}: {sub?: string}) {
     </div></div></header>;
 }
 
-// «Мій профіль учасника»: who the participant is, their answers and the VPN. The team has its own page.
+function ProfileTab({event, info, finished, preview}: {event: PublicEventInfo; info: ParticipantEventInfo; finished: boolean; preview: boolean}) {
+    return <>
+        {preview && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
+        <SelfSection event={event} info={info} finished={finished} preview={preview} />
+        {!preview && <VpnSection />}
+    </>;
+}
+
+// «Моя участь»: the profile and, in team mode, the team as two tabs (?tab=team is deep-linkable).
 export function ParticipationPage() {
     const access = useParticipantContext();
     const guest = useGuestEvent();
     const staff = useStaffAccess(guest?.EventID);
+    const linkCode = useLinkCode();
     const [now] = useState(() => Date.now());
-    if (!access) {
-        // Organizers open the page as a participant sees it, filled with sample data.
-        if (guest && staff.staff) return <div className="event-participation">
-            <Heading sub={guest.Name} />
-            <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>
-            <SelfSection event={guest} info={previewParticipantInfo(guest.EventID)} finished={false} preview />
-        </div>;
+    const [selected, setSelected] = useState<string | null>(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("tab"));
+    const event = access?.event ?? guest;
+    const teamMode = event?.Participation === 1;
+    const info = access?.participantInfo;
+    const team = access?.ownTeam ?? null;
+    const previewing = !access && staff.staff;
+    const explicit = participationTabFromParam(selected, !!teamMode);
+    const captain = !!team && team.Role === TeamRole.Captain;
+    // The captain's default tab depends on pending invitations, so it waits for the roster.
+    const members = useQuery({queryKey: ["event-team-members", event?.EventID, team?.ID], queryFn: () => getOwnTeamMembers(event!.EventID), enabled: !!event && !!team && captain && !explicit, retry: false, refetchOnWindowFocus: false});
+    const answers = useQuery({queryKey: ["event-own-answers", event?.EventID], queryFn: () => getOwnParticipantAnswers(), enabled: !!access, retry: false, refetchOnWindowFocus: false});
+    if (!event) return <EventLoading label={t("participation.loading")} />;
+    if (!access && !previewing) {
         if (staff.pending) return <EventLoading label={t("participation.loading")} />;
         return <div className="event-participation">
             <Heading />
-            <EmptyState message={t("participation.unavailable")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("participation.noTeam.join")}</Link>} />
+            <EmptyState message={linkCode ? t("participation.team.linkRegister") : t("participation.unavailable")} action={<Link className="ib-btn ib-btn--primary" href="/join">{linkCode ? t("shell.join.action") : t("participation.noTeam.join")}</Link>} />
         </div>;
     }
-    const {event, participantInfo: info} = access;
-    if (!info) return <EventLoading label={t("participation.loading")} />;
+    if (access && !info) return <EventLoading label={t("participation.loading")} />;
+    if (!explicit && captain && members.isPending) return <EventLoading label={t("participation.loading")} />;
     const started = Date.parse(event.StartTime) <= now;
     const finished = !!event.FinishTime && Date.parse(event.FinishTime) <= now;
+    const tab = explicit ?? defaultParticipationTab({
+        teamMode: !!teamMode, captain, memberCount: team?.MemberCount ?? 0, minSize: team?.MinTeamSize ?? info?.MinTeamSize ?? 0,
+        pending: members.data?.filter(member => member.Pending).length ?? 0,
+    });
+    const missing: Record<ParticipationTab, boolean> = {profile: (answers.data?.Missing ?? []).length > 0, team: (team?.MissingFields ?? []).length > 0};
+    const tabs: {value: ParticipationTab; label: string}[] = [{value: "profile", label: t("participation.tab.profile")}, ...(teamMode ? [{value: "team" as const, label: t("participation.tab.team")}] : [])];
+    const change = (value: ParticipationTab) => {
+        setSelected(value);
+        window.history.replaceState(null, "", participationTabHref(value));
+    };
     return <div className="event-participation">
         <Heading sub={finished ? t("participation.sub.finished", {name: event.Name}) : started ? t("participation.sub.running", {name: event.Name}) : event.Name} />
-        <SelfSection event={event} info={info} finished={finished} preview={false} />
-        <VpnSection />
+        {teamMode && <div className="event-manage-participants__filters event-participation__tabs" role="tablist" aria-label={t("participation.tabs")}>{tabs.map(option =>
+            <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => change(option.value)}>
+                {option.label}{missing[option.value] && <span className="ib-tag ib-tag--warn event-part__missing">{t("participation.missing.badge")}</span>}
+            </button>)}</div>}
+        <div role={teamMode ? "tabpanel" : undefined}>
+            {tab === "team" ? <TeamTab /> : <ProfileTab event={event} info={info ?? previewParticipantInfo(event.EventID)} finished={finished} preview={previewing} />}
+        </div>
     </div>;
 }

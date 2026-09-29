@@ -4,7 +4,7 @@ import {Fragment, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, Menu, User, UserRound, Users, X, type LucideIcon} from "lucide-react";
+import {ChevronDown, Menu, User, UserRound, X, type LucideIcon} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
@@ -98,7 +98,6 @@ function AccountMenu({event, approved, pinned}: Required<Pick<Props, "event" | "
                     {/* The event context sits right after the platform links. */}
                     {i === contextAt && <>
                         {!pinned && (approved || staff) && <Link href="/participation" onClick={() => setOpen(false)}><User {...ACCOUNT_MENU_ICON_PROPS} />{t("account.participation")}</Link>}
-                        {!pinned && (approved || staff) && event.Participation === 1 && <Link href="/team" onClick={() => setOpen(false)}><Users {...ACCOUNT_MENU_ICON_PROPS} />{t("account.team")}</Link>}
                         <div className="event-account__theme"><span>{t("theme.label")}</span><ThemeToggle /></div>
                     </>}
                     <hr className="event-account__sep" />
@@ -133,19 +132,18 @@ function PinnedLink({href, Icon, label, full}: {href: string; Icon: LucideIcon; 
     </Link>}</EventTooltip>;
 }
 
-// pinned: the participant's items sit in the bar (VPN, team, profile) instead of the account menu.
+// pinned: the participant's items sit in the bar (VPN, «Моя участь») instead of the account menu.
 export function EventHeaderActions({event, authenticated, approved = false, pinned = false}: Pick<Props, "event" | "authenticated" | "approved"> & {pinned?: boolean}) {
     // Managers land on «Запити» in /manage; participants see «Усі».
     const manage = /^\/manage(\/|$)/.test(usePathname() ?? "");
-    const items = navigationRight({authenticated, approved, pinned, teamMode: event.Participation === 1});
+    const items = navigationRight({authenticated, approved, pinned});
     return <>
         <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div>
         {authenticated && <>
             <span className="event-header-divider" aria-hidden="true" />
             {items.map(item => {
                 if (item === "vpn") return <VpnHeaderButton key={item} />;
-                if (item === "team") return <PinnedLink key={item} href="/team" Icon={Users} label={t("nav.pin.team")} full={t("nav.team")} />;
-                if (item === "profile") return <PinnedLink key={item} href="/participation" Icon={UserRound} label={t("nav.pin.profile")} full={t("nav.participation")} />;
+                if (item === "participation") return <PinnedLink key={item} href="/participation" Icon={UserRound} label={t("nav.pin.participation")} full={t("nav.participation")} />;
                 if (item === "inbox") return <InboxButton key={item} defaultTab={manage ? "requests" : "all"} event={{id: event.EventID, otherEventsHref: `${mainOrigin}/?inbox`}} />;
                 return <AccountMenu key={item} event={event} approved={approved} pinned={pinned} />;
             })}
@@ -249,8 +247,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
         <nav className="ib-navbar__panel" id="event-menu" aria-label={t("nav.mobile")}>
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
             {authenticated && participant && <>
-                {event.Participation === 1 && <Link className="event-navbar__panel-pin" href="/team" aria-current={path === "/team" ? "page" : undefined} onClick={() => setOpen(false)}><Users aria-hidden="true" />{t("nav.team")}</Link>}
-                <Link className="event-navbar__panel-pin" href="/participation" aria-current={path === "/participation" ? "page" : undefined} onClick={() => setOpen(false)}><UserRound aria-hidden="true" />{t("nav.participation")}</Link>
+                                <Link className="event-navbar__panel-pin" href="/participation" aria-current={path === "/participation" ? "page" : undefined} onClick={() => setOpen(false)}><UserRound aria-hidden="true" />{t("nav.participation")}</Link>
             </>}
             {authenticated && <ManagerEntry eventID={event.EventID} variant="panel" />}
             {!authenticated && <div className="event-navbar__mobile-theme"><span>{t("theme.label")}</span><ThemeToggle /></div>}

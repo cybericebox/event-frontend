@@ -12,7 +12,7 @@ import {formFields} from "@/components/event/participation/participationModel";
 import {t} from "@/i18n/t";
 
 export const PROFILE_PATH = "/participation";
-export const TEAM_PATH = "/team";
+export const TEAM_PATH = "/participation?tab=team";
 
 function labels(form: ParticipantForm | null | undefined, keys: readonly string[]): string {
     const fields: FormField[] = formFields(form);
@@ -29,7 +29,7 @@ export function MissingFieldsNotice({eventID, ownTeam}: {eventID: string; ownTea
     const personal = answers.data?.Missing ?? [];
     const teamKeys = ownTeam?.MissingFields ?? [];
     const teamForm = useQuery({queryKey: ["event-team-fields", eventID], queryFn: () => getSelfTeamFields(), enabled: teamKeys.length > 0, refetchOnWindowFocus: false});
-    const onOwnPage = pathname === PROFILE_PATH || pathname === TEAM_PATH;
+    const onOwnPage = pathname === PROFILE_PATH;
     if (onOwnPage || (personal.length === 0 && teamKeys.length === 0)) return null;
     return <div className="ib-banner-stack">
         {personal.length > 0 && <EventBanner tone="warning" title={t("participation.missing.title")}

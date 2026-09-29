@@ -136,3 +136,4 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
   .event-countdown{flex-direction:column;align-items:stretch;text-align:center;padding:var(--ib-4)}
   .event-countdown__clock{justify-content:center;gap:var(--ib-4)}
 }
+.event-participation__tabs{margin-bottom:var(--ib-5)}
