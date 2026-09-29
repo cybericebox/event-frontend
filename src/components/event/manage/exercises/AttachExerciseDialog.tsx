@@ -91,7 +91,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                 <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
                 <div className="ib-seg ib-seg--sm">{infrastructureFilters.map(option => <button key={option} type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
             </div>
-            {!infrastructureAllowed && infrastructure !== "no" && <p className="event-exercise-picker__notice" role="status">
+            {!infrastructureAllowed && (infrastructure === "yes" || (infrastructure === "all" && !!catalog.data?.some(choice => choice.Infrastructure))) && <p className="event-exercise-picker__notice" role="status">
                 {t("manage.exercises.attachDialog.noInfrastructure")}{!published && <> {t("manage.exercises.attachDialog.noInfrastructureBefore")}</>}
             </p>}
             {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />

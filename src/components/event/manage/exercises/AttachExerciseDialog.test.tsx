@@ -56,4 +56,17 @@ describe("AttachExerciseDialog", () => {
         fireEvent.click(screen.getByRole("button", {name: "Немає"}));
         expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();
     });
+
+    it("on «Усі» warns only when a listed set needs infrastructure", async () => {
+        api.choices.mockResolvedValue([choice("a", "Plain", false)]);
+        renderDialog(false);
+        fireEvent.click(screen.getByRole("button", {name: "Усі"}));
+        await screen.findByText("Plain");
+        expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();
+        api.choices.mockResolvedValue([choice("a", "Plain", false), choice("b", "Stands", true)]);
+        fireEvent.click(screen.getByRole("button", {name: "Є"}));
+        fireEvent.click(screen.getByRole("button", {name: "Усі"}));
+        await screen.findByText("Stands");
+        expect(screen.getByRole("status", {name: ""}).textContent).toMatch(/У заходу немає інфраструктури/);
+    });
 });
