@@ -124,7 +124,10 @@ body.event-root main{overflow-x:visible}
 .event-shell-state{display:flex;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;gap:var(--ib-4);padding:var(--ib-6);background:var(--ib-paper);color:var(--ib-body);text-align:center}
 .event-shell-state h1{max-width:40ch}
 .event-shell-state p{max-width:52ch}
-.event-content-loading{display:flex;min-height:240px;flex-direction:column;align-items:center;justify-content:center;gap:var(--ib-3);padding:var(--ib-6);text-align:center}
+/* Loading and empty states share one centered box so a block keeps its size. */
+.event-block-state{display:flex;min-height:var(--event-block-state-h,240px);flex:1 1 auto;flex-direction:column;align-items:center;justify-content:center;gap:var(--ib-3);padding:var(--ib-6);text-align:center}
+.event-block-state--compact{--event-block-state-h:160px;padding:var(--ib-4)}
+.event-block-state--compact .event-loading-logo{width:40px;height:40px}
 .event-loading-logo{width:64px;height:64px;object-fit:contain;animation:event-loading-pulse 1.8s ease-in-out infinite}
 .event-loading-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 @keyframes event-loading-pulse{50%{opacity:.45;transform:scale(.94)}}
