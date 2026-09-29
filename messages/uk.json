@@ -2382,7 +2382,7 @@
   "vpn.steps.install": "Встановіть WireGuard: {link}.",
   "vpn.steps.probePage": "сторінку перевірки",
   "consent.label": "Згода на cookie",
-  "consent.text": "Ми використовуємо cookie, щоб сайт працював, і — за вашою згодою — щоб покращувати його. {link}",
+  "consent.text": "Ми використовуємо файли cookie, щоб сайт працював, і — за вашою згодою — щоб покращувати його. {link}",
   "consent.policyLink": "Політика cookie",
   "consent.policy": "Докладніше: {link}.",
   "consent.acceptAll": "Прийняти всі",
