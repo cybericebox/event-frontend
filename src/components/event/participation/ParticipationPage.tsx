@@ -57,7 +57,7 @@ function SelfSection({event, info, finished, preview}: {event: PublicEventInfo; 
     const save = async (draft: ParticipantAnswers) => {
         if (!answers.data) return;
         try {
-            const changed = changedEditableAnswers(answers.data.Form, answers.data.Answers, draft);
+            const changed = changedEditableAnswers(answers.data.Form, answers.data.Answers, draft, answers.data.Missing ?? []);
             if (Object.keys(changed).length) queryClient.setQueryData(["event-own-answers", event.EventID], await putOwnParticipantAnswers(event.EventID, changed));
             setEditing(false);
             toast.success(t("participation.fields.saved"));
@@ -75,8 +75,8 @@ function SelfSection({event, info, finished, preview}: {event: PublicEventInfo; 
         {answers.data && formFields(answers.data.Form).length > 0 && <>
             <h3 className="event-part__subhead">{t("participation.fields.title")}</h3>
             {editing
-                ? <FieldsEditor form={answers.data.Form} answers={answers.data.Answers} onCancel={() => setEditing(false)} onSave={save} />
-                : <FieldRows form={answers.data.Form} answers={answers.data.Answers} canEdit={answers.data.Editable && !finished} onEdit={() => setEditing(true)} />}
+                ? <FieldsEditor form={answers.data.Form} answers={answers.data.Answers} fillable={answers.data.Missing ?? []} onCancel={() => setEditing(false)} onSave={save} />
+                : <FieldRows form={answers.data.Form} answers={answers.data.Answers} canEdit={answers.data.Editable && !finished} missing={answers.data.Missing ?? []} onEdit={() => setEditing(true)} />}
         </>}
         {answers.isError && <EventLoadError compact message={t("participation.fields.loadFailed")} error={answers.error} onRetry={() => void answers.refetch()} />}
     </Section>;

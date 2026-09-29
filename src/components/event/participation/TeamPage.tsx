@@ -223,13 +223,13 @@ function TeamSection({event, info, team, rosterOpen, finished, preview}: {event:
         {teamFieldForm && formFields(teamFieldForm).length > 0 && <>
             <h3 className="event-part__subhead">{t("participation.team.fieldsTitle")}</h3>
             {editingFields
-                ? <FieldsEditor form={teamFieldForm} answers={team.ExtraFields as ParticipantAnswers} onCancel={() => setEditingFields(false)} onSave={async draft => {
+                ? <FieldsEditor form={teamFieldForm} answers={team.ExtraFields as ParticipantAnswers} fillable={team.MissingFields ?? []} onCancel={() => setEditingFields(false)} onSave={async draft => {
                     try {
-                        await run(() => updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft)).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"))();
+                        await run(() => updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft, team.MissingFields ?? [])).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"))();
                         setEditingFields(false);
                     } catch { /* toast shown */ }
                 }} />
-                : <FieldRows form={teamFieldForm} answers={team.ExtraFields} canEdit={captain && !finished} onEdit={() => setEditingFields(true)} />}
+                : <FieldRows form={teamFieldForm} answers={team.ExtraFields} canEdit={captain && !finished} missing={team.MissingFields ?? []} onEdit={() => setEditingFields(true)} />}
         </>}
         {rosterOpen && own && <div className="event-part__actions">
             {captain

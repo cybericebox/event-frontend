@@ -74,6 +74,9 @@ const ownAnswersSchema = z.object({
     Form: participantFormSchema,
     Answers: z.record(z.string(), z.unknown()).nullish().transform(value => (value ?? {}) as ParticipantAnswers),
     Editable: z.boolean(),
+    // Required fields the organizer asked everyone for and the caller has not filled.
+    Missing: z.array(z.string()).nullish(),
+    Blocking: z.boolean().optional(),
 });
 export type OwnParticipantAnswers = z.infer<typeof ownAnswersSchema>;
 // The caller's registration answers; only `editable` fields change after approval.

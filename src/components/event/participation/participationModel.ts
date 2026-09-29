@@ -22,11 +22,12 @@ export function editableForm(form: ParticipantForm): ParticipantForm {
     return {...form, Required: false, Document: {blocks: form.Document.blocks.filter(block => isFormField(block) && block.editable)}};
 }
 
-// Only changed editable keys are sent; the backend keeps everything else.
-export function changedEditableAnswers(form: ParticipantForm, before: ParticipantAnswers, after: ParticipantAnswers): ParticipantAnswers {
+// Only changed editable keys are sent; the backend keeps everything else. A
+// fillable key (a required field still owed) may change once, editable or not.
+export function changedEditableAnswers(form: ParticipantForm, before: ParticipantAnswers, after: ParticipantAnswers, fillable: readonly string[] = []): ParticipantAnswers {
     const changed: ParticipantAnswers = {};
     for (const field of formFields(form)) {
-        if (!field.editable || !(field.key in after)) continue;
+        if (!(field.editable || fillable.includes(field.key)) || !(field.key in after)) continue;
         if (JSON.stringify(before[field.key] ?? null) !== JSON.stringify(after[field.key] ?? null)) changed[field.key] = after[field.key];
     }
     return changed;

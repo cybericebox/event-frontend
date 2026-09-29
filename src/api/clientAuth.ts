@@ -28,6 +28,8 @@ const ownTeamSchema = z.object({
     Role: z.number().int().default(1),
     ExtraFields: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {}),
     Admitted: z.boolean().optional(), MinTeamSize: z.number().int().nullish(), MaxTeamSize: z.number().int().nullish(),
+    // Required team fields the organizer asked every team for and this team has not filled.
+    MissingFields: z.array(z.string()).nullish(), BlockingFields: z.boolean().optional(),
 });
 export type OwnTeam = z.infer<typeof ownTeamSchema>;
 

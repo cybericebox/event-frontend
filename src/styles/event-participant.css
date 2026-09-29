@@ -87,6 +87,7 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-part__rows>dd{color:var(--ib-ink);flex-wrap:wrap}
 .event-part__rows>dd .event-part__end{margin-left:auto;display:flex;gap:var(--ib-2)}
 .event-part__muted{color:var(--ib-dim)}
+.event-part__missing{margin-inline-start:8px;vertical-align:middle}
 .event-part__note{margin-top:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .event-part__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);margin-top:var(--ib-4)}
 .event-part__inline{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2);width:100%}

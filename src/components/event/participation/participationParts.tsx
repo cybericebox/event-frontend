@@ -42,7 +42,7 @@ export function TeamConfirm({confirm, onClose}: {confirm: Confirm; onClose: () =
         }} />;
 }
 
-export function FieldsEditor({form, answers, onCancel, onSave}: {form: ParticipantForm; answers: ParticipantAnswers; onCancel: () => void; onSave: (answers: ParticipantAnswers) => Promise<void>}) {
+export function FieldsEditor({form, answers, fillable = [], onCancel, onSave}: {form: ParticipantForm; answers: ParticipantAnswers; fillable?: readonly string[]; onCancel: () => void; onSave: (answers: ParticipantAnswers) => Promise<void>}) {
     const [draft, setDraft] = useState<ParticipantAnswers>(answers);
     const [busy, setBusy] = useState(false);
     return <form className="event-part__form" onSubmit={async (event: FormEvent) => {
@@ -50,17 +50,19 @@ export function FieldsEditor({form, answers, onCancel, onSave}: {form: Participa
         setBusy(true);
         try { await onSave(draft); } finally { setBusy(false); }
     }}>
-        <TeamFieldsInputs form={{...form, Required: false}} editableOnly answers={draft} onChange={(key, value) => setDraft(current => ({...current, [key]: value}))} disabled={busy} />
+        <TeamFieldsInputs form={{...form, Required: false}} editableOnly fillable={fillable} answers={draft} onChange={(key, value) => setDraft(current => ({...current, [key]: value}))} disabled={busy} />
         <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy} busy={busy}>{t("common.save")}</EventButton><button type="button" className="ib-btn" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button></div>
     </form>;
 }
 
-export function FieldRows({form, answers, canEdit, onEdit}: {form: ParticipantForm; answers: Record<string, unknown>; canEdit: boolean; onEdit: () => void}) {
+// missing: the required fields the person still owes; they carry a mark and
+// can be filled even when the field is not editable.
+export function FieldRows({form, answers, canEdit, missing = [], onEdit}: {form: ParticipantForm; answers: Record<string, unknown>; canEdit: boolean; missing?: readonly string[]; onEdit: () => void}) {
     const fields = formFields(form);
     if (!fields.length) return null;
-    const anyEditable = canEdit && fields.some(field => field.editable);
+    const anyEditable = canEdit && fields.some(field => field.editable || missing.includes(field.key));
     return <>
-        <dl className="event-part__rows">{fields.map(field => <FieldRow key={field.key} label={field.label}><span className="event-part__field-value"><AnswerValue field={field} value={answers[field.key]} /></span></FieldRow>)}</dl>
+        <dl className="event-part__rows">{fields.map(field => <FieldRow key={field.key} label={<>{field.label}{missing.includes(field.key) && <span className="ib-tag ib-tag--warn event-part__missing">{t("participation.missing.badge")}</span>}</>}><span className="event-part__field-value"><AnswerValue field={field} value={answers[field.key]} /></span></FieldRow>)}</dl>
         {anyEditable && <div className="event-part__actions"><button type="button" className="ib-btn ib-btn--sm" onClick={onEdit}>{t("participation.editFields")}</button></div>}
     </>;
 }
@@ -72,6 +74,6 @@ export function AnswerValue({field, value}: {field: FormField; value: unknown}) 
     return <>{formatAnswer(value)}</>;
 }
 
-export function FieldRow({label, children}: {label: string; children: ReactNode}) {
+export function FieldRow({label, children}: {label: ReactNode; children: ReactNode}) {
     return <><dt>{label}</dt><dd>{children}</dd></>;
 }
