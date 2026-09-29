@@ -794,3 +794,9 @@ a.event-manage-setup__step:hover{border-color:var(--ib-action);text-decoration:n
 .event-stands__table>.event-challenge-manager__empty{padding:var(--ib-6)}
 .event-manage-readonly-note{margin:0;color:var(--ib-body);font-size:var(--ib-fs-14)}
 .event-results-settings__number{max-width:160px}
+.event-manage-notifications__required{display:inline-flex;align-items:center;min-height:30px;padding:0 var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-ink);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
+.event-email-test{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r)}
+.event-email-test p{margin-top:var(--ib-1);color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-email-test .event-email-test__result{color:var(--ib-ok)}
+.event-email-test button{flex:none}
+@media(max-width:760px){.event-email-test{flex-direction:column;align-items:stretch}}

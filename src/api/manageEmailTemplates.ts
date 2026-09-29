@@ -137,6 +137,16 @@ export async function resetManageEmailTemplate(eventID: string, notificationType
     await request(eventID, `/type/${encodeURIComponent(notificationType)}`, z.unknown().optional(), "DELETE");
 }
 
+// M8: queues the template (event or inherited platform row) to the current
+// user through the regular dispatcher; the result lands in the mail journal.
+export async function sendManageEmailTemplateTest(eventID: string, templateID: string): Promise<{Recipient: string}> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
+        if (!mockTemplates.some(item => item.ID === templateID)) throw new ManageApiError(404);
+        return {Recipient: "manager@example.com"};
+    }
+    return request(eventID, `/${encodeURIComponent(templateID)}/test`, z.object({Recipient: z.string()}), "POST");
+}
+
 export async function previewManageEmailTemplate(eventID: string, input: ManageEmailTemplateInput): Promise<ManageEmailPreview> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
         const html = `<html><body style="font-family:Arial,sans-serif;color:#292841;padding:32px"><main style="max-width:600px;margin:auto"><h1 style="font-size:20px">${escapeHTML(input.Subject.replaceAll("{{.event_name}}", "Winter Arena CTF"))}</h1>${input.Body.map(block => block.type === "rich_text" ? `<p>${escapeHTML(plainText(block).replaceAll("{{event_name}}", "Winter Arena CTF"))}</p>` : block.type === "divider" ? "<hr>" : block.type === "button" ? `<p><a href="#">${escapeHTML(String(block.label ?? "Перейти"))}</a></p>` : block.type === "image" ? `<p><img style="max-width:100%" src="${mockImages.get(String(block.file_id ?? "")) ?? ""}" alt="${escapeHTML(String(block.alt ?? ""))}" /></p>` : "").join("")}</main></body></html>`;
