@@ -122,3 +122,6 @@
   .live-fullscreen:not(.live-fullscreen--anchor) .live-table th,.live-fullscreen:not(.live-fullscreen--anchor) .live-table td{padding:.45em .3em}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-title strong{white-space:normal;font-size:22px}
 }
+.live-controls__wake{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.live-controls .live-controls__help{min-height:0;padding:2px;border:0;border-radius:999px;color:rgba(255,255,255,.7)}
+.live-controls .live-controls__help:hover{background:transparent;color:#fff}

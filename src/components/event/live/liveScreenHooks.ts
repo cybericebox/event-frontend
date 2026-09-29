@@ -19,6 +19,8 @@ export function useFullscreen() {
 
 export type WakeLockState = "unsupported" | "active" | "released" | "denied";
 
+const WAKE_RETRY_MS = 30_000;
+
 // Keeps the projector from dimming. The browser drops the lock whenever the
 // page is hidden, so it is requested again when the page becomes visible.
 export function useWakeLock(enabled: boolean): WakeLockState {
@@ -42,9 +44,18 @@ export function useWakeLock(enabled: boolean): WakeLockState {
         const onVisibility = () => void acquire();
         void acquire();
         document.addEventListener("visibilitychange", onVisibility);
+        // A refused or lost lock is retried on the next click or key press
+        // (some browsers grant it only after user activation) and every 30 s.
+        const retry = () => void acquire();
+        document.addEventListener("pointerdown", retry);
+        document.addEventListener("keydown", retry);
+        const timer = setInterval(retry, WAKE_RETRY_MS);
         return () => {
             stopped = true;
             document.removeEventListener("visibilitychange", onVisibility);
+            document.removeEventListener("pointerdown", retry);
+            document.removeEventListener("keydown", retry);
+            clearInterval(timer);
             void sentinel?.release().catch(() => undefined);
         };
     }, [enabled]);
