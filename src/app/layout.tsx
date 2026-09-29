@@ -40,6 +40,7 @@ import "@/styles/challenge-modal.css";
 import "@/styles/event-participant.css";
 import "@/styles/event-manage.css";
 import type React from "react";
+import {GoogleAnalytics} from "@next/third-parties/google";
 import {GeistSans} from "geist/font/sans";
 import {GeistMono} from "geist/font/mono";
 import {Providers} from "@/utils/providers";
@@ -129,6 +130,7 @@ export default async function RootLayout({
             </EventBrandProvider>
             <EventActionToaster />
         </Providers>
+        {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />}
         </body>
         </html>
     );
