@@ -4,7 +4,7 @@ import {useState} from "react";
 import {Info} from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {
-    emptyMailJournalFilters, getEventMailJournal, journalTarget, mailDispatchStatuses, mailResultLabels, mailTransportLabel,
+    emptyMailJournalFilters, getEventMailJournal, journalTarget, mailDispatchStatuses, mailJournalTypeLabel, mailJournalTypes, mailTestType, mailResultLabels, mailTransportLabel,
     mailTransportLabels, type MailJournalFilters, type MailJournalItem, type MailResult, type MailTransport,
 } from "@/api/manageMail";
 import {signalLabel, signalLabels} from "@/api/manageNotifications";
@@ -15,6 +15,8 @@ import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
 
 const all = "all";
+
+const typeTitle = (type: string) => mailJournalTypeLabel(type, value => signalLabel(value).title);
 
 function timestamp(value: string) {
     return new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"}).format(new Date(value));
@@ -45,7 +47,7 @@ export function MailJournal() {
     }
 
     const channelOptions = [{value: "email", label: t("manage.mail.channel.email")}, {value: "in_app", label: t("manage.mail.channel.inApp")}];
-    const typeOptions = [{value: all, label: t("manage.mail.journal.allTypes")}, ...Object.keys(signalLabels).map(type => ({value: type, label: signalLabel(type).title}))];
+    const typeOptions = [{value: all, label: t("manage.mail.journal.allTypes")}, ...mailJournalTypes(Object.keys(signalLabels)).map(type => ({value: type, label: typeTitle(type)}))];
     const transportOptions = [{value: all, label: t("manage.mail.journal.allTransports")}, ...Object.entries(mailTransportLabels).map(([value, label]) => ({value, label}))];
     const statusOptions = [{value: all, label: t("manage.mail.journal.allStatuses")}, ...mailDispatchStatuses.map(value => ({value, label: t(`manage.mail.journal.status.${value}`)}))];
     const resultOptions = [{value: all, label: t("manage.mail.journal.allResults")}, ...(["done", "error"] as const).map(value => ({value, label: mailResultLabels[value]}))];
@@ -80,7 +82,7 @@ export function MailJournal() {
                 return <tr key={item.ID}>
                     <td className="event-manage-table__nowrap"><time dateTime={target?.UpdatedAt ?? item.CreatedAt}>{timestamp(target?.UpdatedAt ?? item.CreatedAt)}</time></td>
                     <td>{target?.Recipient || item.RecipientEmail || <span className="event-manage-table__dim">—</span>}</td>
-                    <td>{signalLabel(item.NotificationType).title}</td>
+                    <td>{typeTitle(item.NotificationType)}{item.NotificationType === mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}</td>
                     <td><div className="event-participants-table__person">
                         <span className={`event-manage-participants__status ${status === "done" ? "is-2" : status === "error" ? "is-3" : "is-1"}`}>{status ? mailResultLabels[status] : t("manage.mail.journal.pending")}</span>
                         {target?.Error && <small className="event-manage-mail__error">{target.Error}</small>}
@@ -88,7 +90,7 @@ export function MailJournal() {
                     </div></td>
                     {email && <td className="event-manage-table__nowrap">{target?.Transport ? mailTransportLabel(target.Transport) : <span className="event-manage-table__dim">—</span>}</td>}
                     <td className="ib-num">{target ? target.Attempts : <span className="event-manage-table__dim">—</span>}</td>
-                    <td><button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.mail.journal.detail.open", {type: signalLabel(item.NotificationType).title})} onClick={() => setDetail(item)}><Info size={16} aria-hidden="true" /></button></td>
+                    <td><button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.mail.journal.detail.open", {type: typeTitle(item.NotificationType)})} onClick={() => setDetail(item)}><Info size={16} aria-hidden="true" /></button></td>
                 </tr>;
             })}</tbody>
         </ManageTable>
@@ -96,7 +98,7 @@ export function MailJournal() {
             footer={<button className="ib-btn" type="button" onClick={() => setDetail(null)}>{t("manage.mail.journal.detail.close")}</button>}>
             {detail && <div className="event-mail-detail">
                 <dl className="event-mail-detail__facts">
-                    <div><dt>{t("manage.mail.journal.col.type")}</dt><dd>{signalLabel(detail.NotificationType).title}</dd></div>
+                    <div><dt>{t("manage.mail.journal.col.type")}</dt><dd>{typeTitle(detail.NotificationType)}</dd></div>
                     <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd>{detail.RecipientEmail || "—"}</dd></div>
                     <div><dt>{t("manage.mail.journal.detail.created")}</dt><dd><time dateTime={detail.CreatedAt}>{timestamp(detail.CreatedAt)}</time></dd></div>
                     <div><dt>{t("manage.mail.journal.col.status")}</dt><dd>{t(`manage.mail.journal.status.${detail.Status}`)}</dd></div>

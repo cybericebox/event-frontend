@@ -1594,6 +1594,8 @@
   "manage.mail.journal.transport": "Delivery method",
   "manage.mail.journal.type": "Type",
   "manage.mail.journal.typeLabel": "Email type",
+  "manage.mail.journal.smtpTest": "SMTP test",
+  "manage.mail.journal.testBadge": "Test",
   "manage.mail.result.done": "Sent",
   "manage.mail.result.error": "Error",
   "manage.mail.sectionsLabel": "Mail sections",

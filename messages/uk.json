@@ -1594,6 +1594,8 @@
   "manage.mail.journal.transport": "Спосіб надсилання",
   "manage.mail.journal.type": "Тип",
   "manage.mail.journal.typeLabel": "Тип листа",
+  "manage.mail.journal.smtpTest": "Перевірка SMTP",
+  "manage.mail.journal.testBadge": "Тест",
   "manage.mail.result.done": "Надіслано",
   "manage.mail.result.error": "Помилка",
   "manage.mail.sectionsLabel": "Розділи пошти",

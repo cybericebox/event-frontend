@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {
     emptyMailJournalFilters, identityError, identityForm, identityInput, journalTarget, mailJournalQueryParams,
-    mailTransportLabel, mailTransportLabels, withSource, smtpError, smtpForm, smtpInput, type MailJournalItem,
+    mailJournalTypeLabel, mailJournalTypes, mailTestType, mailTransportLabel, mailTransportLabels, withSource, smtpError, smtpForm, smtpInput, type MailJournalItem,
 } from "./manageMail";
 
 describe("event mail identity form", () => {
@@ -87,5 +87,18 @@ describe("placeholder sources", () => {
     it("appends where the inherited value comes from to the field help", () => {
         expect(withSource("Help.", "derived")).toBe("Help. Зараз: тег заходу та домен відправлення платформи.");
         expect(withSource("Help.", "platform")).toBe("Help. Зараз: береться з налаштувань платформи.");
+    });
+});
+
+describe("SMTP test journal kind", () => {
+    it("is offered as a type filter and labelled apart from signals", () => {
+        expect(mailJournalTypes(["flag_accepted"])).toEqual(["flag_accepted", mailTestType]);
+        expect(mailJournalTypes([mailTestType])).toEqual([mailTestType]);
+        expect(mailJournalTypeLabel(mailTestType, () => "signal")).toBe("Перевірка SMTP");
+        expect(mailJournalTypeLabel("flag_accepted", () => "signal")).toBe("signal");
+    });
+
+    it("filters the journal by the test type", () => {
+        expect(mailJournalQueryParams({...emptyMailJournalFilters, type: mailTestType}).get("type")).toBe("smtp_test");
     });
 });

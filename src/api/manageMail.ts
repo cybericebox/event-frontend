@@ -137,6 +137,19 @@ export function smtpInput(form: SMTPForm): SMTPInput {
 
 export type MailJournalFilters = {type: string | null; status: string | null; result: MailResult | null; transport: MailTransport | null; channel: string};
 export const emptyMailJournalFilters: MailJournalFilters = {type: null, status: null, result: null, transport: null, channel: "email"};
+// Journal kind of an SMTP test send from the mail settings (not a signal type).
+export const mailTestType = "smtp_test";
+
+// Label of a journal row type: the SMTP test kind, else the signal label.
+export function mailJournalTypeLabel(type: string, signalTitle: (type: string) => string): string {
+    return type === mailTestType ? t("manage.mail.journal.smtpTest") : signalTitle(type);
+}
+
+// Type filter values: the signal types plus the SMTP test kind.
+export function mailJournalTypes(signalTypes: string[]): string[] {
+    return signalTypes.includes(mailTestType) ? signalTypes : [...signalTypes, mailTestType];
+}
+
 export const mailDispatchStatuses = ["pending", "started", "done", "error"] as const;
 export const mailJournalPageSize = 25;
 

@@ -62,6 +62,18 @@ describe("Журнал надсилання", () => {
         expect(within(dialog).getByText(/timeout/)).toBeTruthy();
     });
 
+    it("marks SMTP test rows with «Тест» and filters by them", async () => {
+        const urls = mockApi([{Items: [item(1, {NotificationType: "smtp_test"}), item(2)], Total: 2}]);
+        renderJournal();
+        const table = screen.getByRole("table");
+        await waitFor(() => expect(within(table).getByText("Тест")).toBeTruthy());
+        expect(within(table).getByText("Перевірка SMTP")).toBeTruthy();
+        expect(within(table).getAllByText("Тест")).toHaveLength(1);
+        fireEvent.pointerDown(screen.getByRole("button", {name: "Тип листа"}), {button: 0, ctrlKey: false});
+        fireEvent.click(await screen.findByRole("menuitemradio", {name: "Перевірка SMTP"}));
+        await waitFor(() => expect(urls.some(url => url.includes("type=smtp_test"))).toBe(true));
+    });
+
     it("shows the empty state inside the table body", async () => {
         mockApi([{Items: [], Total: 0}]);
         renderJournal();
