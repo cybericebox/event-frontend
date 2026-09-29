@@ -1,0 +1,13 @@
+/* Manage page frame (mirrors src/styles/event-manage.css). Versioned so it reaches browsers past the development edge,
+   which caches Next's CSS chunk; the .event-manage-shell prefix outranks the older per-page widths in cached copies. */
+.event-manage-shell :is(.event-manage-settings,.event-manage-setup,.event-manage-content,.event-manage-registration,.event-live-editor,.event-manage-general,.event-manage-appearance,.event-manage-schedule,.event-manage-setup__form,.event-manage-notifications,.event-manage-email,.event-manage-results,.event-manage-participants,.event-manage-teams,.event-stands,.event-challenge-manager,.event-attempts-manager){width:100%;max-width:none;margin:0}
+.event-manage-shell :is(.event-manage-settings,.event-manage-setup,.event-manage-content,.event-manage-registration,.event-live-editor){--event-manage-flow:0px;padding-bottom:var(--ib-12)}
+.event-manage-shell :is(.event-manage-general,.event-manage-appearance,.event-manage-registration,.event-manage-mail,.event-manage-participants,.event-manage-teams,.event-manage-results,.event-stands,.event-live-editor){--event-manage-flow:var(--ib-4)}
+.event-manage-shell [role="tabpanel"]>:is(.event-manage-settings,.event-manage-content){padding-bottom:0}
+.event-manage-shell :is(.event-manage-heading,.event-live-editor__heading),.event-manage-shell :is(.event-manage-heading,.event-live-editor__heading)~[role="tablist"]{margin-bottom:calc(var(--ib-6) - var(--event-manage-flow,0px))}
+@media(min-width:1024px){
+  .event-manage-shell :is(.event-manage-general,.event-manage-appearance) .event-manage-section,.event-manage-shell .event-manage-setup__form{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--ib-6)}
+  .event-manage-shell :is(.event-manage-general,.event-manage-appearance) .event-manage-section>:not(.event-manage-field,.event-brand-field),.event-manage-shell .event-manage-setup__form>:not(.event-manage-field,.event-brand-field),
+  .event-manage-shell :is(.event-manage-general,.event-manage-appearance) .event-manage-section>:is(.event-manage-field,.event-brand-field):has(textarea,.event-manage-choice-group,.event-lexical,.event-rich-text-field),
+  .event-manage-shell .event-manage-setup__form>:is(.event-manage-field,.event-brand-field):has(textarea,.event-manage-choice-group,.event-lexical,.event-rich-text-field){grid-column:1/-1}
+}

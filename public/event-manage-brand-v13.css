@@ -1,5 +1,3 @@
-.event-manage-general{max-width:900px}
-.event-manage-appearance{max-width:1260px}
 .event-manage-general,.event-manage-appearance{display:grid;gap:var(--ib-4)}
 .event-manage-general .event-manage-heading,.event-manage-appearance .event-manage-heading{margin-bottom:var(--ib-2)}
 .event-manage-general .event-manage-section,.event-manage-appearance .event-manage-section{gap:var(--ib-4);padding:var(--ib-5)}

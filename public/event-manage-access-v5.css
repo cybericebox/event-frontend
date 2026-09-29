@@ -2,7 +2,6 @@
 .event-manage-warning{display:flex;align-items:center;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-danger);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
 .event-manage-warning svg{flex:none}
 .event-manage-general .event-manage-fields-two>.event-manage-field:nth-child(-n+2) .ib-tip__bubble{bottom:auto;top:calc(100% + 6px)}
-.event-manage-schedule{max-width:920px}
 .event-manage-status{display:inline-flex;align-items:center;gap:var(--ib-2);padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r-pill);background:var(--ib-soft);color:var(--ib-ink);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);white-space:nowrap}
 .event-manage-check{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);cursor:pointer}
 .event-manage-schedule .event-manage-field:has(.event-manage-check input:not(:checked))+.event-manage-fields-two{display:none}
