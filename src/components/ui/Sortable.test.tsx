@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {afterAll, afterEach, beforeAll, describe, expect, it, vi} from "vitest";
 import {useState} from "react";
-import {cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {Sortable, useSortableItem} from "./Sortable";
 import {moveItem} from "./sortableOrder";
 import {keyboardDrag, stackLayout} from "./sortableTestUtils";
@@ -63,6 +63,18 @@ describe("Sortable keyboard moves", () => {
         await keyboardDrag(handle("c"), 1, "drop", () => expect(states).toEqual([true]));
         await keyboardDrag(handle("a"), 1, "cancel");
         expect(states).toEqual([true, false, true, false]);
+    });
+
+    it("reports the end only after the drop animation when motion is allowed", async () => {
+        const reduced = window.matchMedia;
+        window.matchMedia = (query: string) => ({...reduced(query), matches: false});
+        const states: boolean[] = [];
+        render(<Harness onDragStateChange={dragging => states.push(dragging)} />);
+        await keyboardDrag(handle("a"), 2);
+        expect(order()).toEqual(["b", "c", "a", "d", "e"]);
+        expect(states).toEqual([true]);
+        await waitFor(() => expect(states).toEqual([true, false]));
+        window.matchMedia = reduced;
     });
 
     it("marks the dragged item's slot as the drop indicator", async () => {

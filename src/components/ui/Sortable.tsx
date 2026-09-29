@@ -2,7 +2,7 @@
 
 import {useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode} from "react";
 import {createPortal} from "react-dom";
-import {closestCenter, DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, PointerSensor, useDndContext, useSensor, useSensors, type Announcements, type CollisionDetection, type DragEndEvent, type DragStartEvent, type Modifier, type PointerSensorOptions, type PointerSensorProps, type UniqueIdentifier} from "@dnd-kit/core";
+import {closestCenter, defaultDropAnimationSideEffects, DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, PointerSensor, useDndContext, useSensor, useSensors, type Announcements, type CollisionDetection, type DropAnimation, type DragEndEvent, type DragStartEvent, type Modifier, type PointerSensorOptions, type PointerSensorProps, type UniqueIdentifier} from "@dnd-kit/core";
 import {SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 import {dropMove} from "./sortableOrder";
@@ -60,6 +60,24 @@ const pointerRow: CollisionDetection = args => {
 };
 const noSubscribe = () => () => {};
 
+// Motion: the other items slide aside and the copy settles into its slot;
+// both are off under prefers-reduced-motion.
+const motionMilliseconds = 180;
+const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
+function subscribeReducedMotion(onChange: () => void) {
+    const query = window.matchMedia?.(reducedMotionQuery);
+    query?.addEventListener("change", onChange);
+    return () => query?.removeEventListener("change", onChange);
+}
+function useReducedMotion() {
+    return useSyncExternalStore(subscribeReducedMotion, () => !!window.matchMedia?.(reducedMotionQuery).matches, () => false);
+}
+const dropAnimation: DropAnimation = {
+    duration: motionMilliseconds,
+    easing: "ease",
+    sideEffects: defaultDropAnimationSideEffects({styles: {active: {opacity: "0"}}}),
+};
+
 /**
  * One vertical sortable list: pointer (after a 4px move, so clicks still
  * work), keyboard (Space, arrows, Space/Escape) and auto-scroll. The dragged
@@ -76,6 +94,8 @@ export function Sortable({ids, itemName, onMove, onDragStateChange, children}: {
     children: ReactNode;
 }) {
     const [activeID, setActiveID] = useState<string | null>(null);
+    const reducedMotion = useReducedMotion();
+    const settle = useRef<ReturnType<typeof setTimeout>>(undefined);
     const mounted = useSyncExternalStore(noSubscribe, () => true, () => false);
     const sensors = useSensors(
         useSensor(ItemPointerSensor, {activationConstraint: {distance: 4}}),
@@ -91,17 +111,20 @@ export function Sortable({ids, itemName, onMove, onDragStateChange, children}: {
     };
 
     function start({active}: DragStartEvent) {
+        clearTimeout(settle.current);
         setActiveID(String(active.id));
         onDragStateChange?.(true);
     }
+    // Collapsed items reopen once the copy has settled into its slot.
     function finish() {
         setActiveID(null);
-        onDragStateChange?.(false);
+        if (reducedMotion) onDragStateChange?.(false);
+        else settle.current = setTimeout(() => onDragStateChange?.(false), motionMilliseconds);
     }
     function end({active, over}: DragEndEvent) {
-        finish();
         const move = dropMove(ids, String(active.id), over ? String(over.id) : null);
         if (move) onMove(move.from, move.to);
+        finish();
     }
 
     return <DndContext sensors={sensors} collisionDetection={pointerRow} modifiers={[verticalOnly]}
@@ -110,7 +133,7 @@ export function Sortable({ids, itemName, onMove, onDragStateChange, children}: {
         onDragStart={start} onDragEnd={end} onDragCancel={finish}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>{children}</SortableContext>
         {/* In a portal: a transformed ancestor (a popover) would offset a fixed overlay. */}
-        {mounted && createPortal(<DragOverlay className="ib-sortable-overlay" style={{height: "auto"}} dropAnimation={null}>{activeID ? <ActiveClone /> : null}</DragOverlay>, document.body)}
+        {mounted && createPortal(<DragOverlay className="ib-sortable-overlay" style={{height: "auto"}} dropAnimation={reducedMotion ? null : dropAnimation}>{activeID ? <ActiveClone /> : null}</DragOverlay>, document.body)}
     </DndContext>;
 }
 
@@ -147,7 +170,11 @@ function ActiveClone() {
  * disabled item neither moves nor takes a drop (a locked first column).
  */
 export function useSortableItem(id: string, disabled = false) {
-    const {attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging} = useSortable({id, disabled: {draggable: disabled, droppable: disabled}, attributes: {roleDescription: t("ui.sortable.roleDescription")}});
+    const reducedMotion = useReducedMotion();
+    const {attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging} = useSortable({
+        id, disabled: {draggable: disabled, droppable: disabled}, attributes: {roleDescription: t("ui.sortable.roleDescription")},
+        transition: reducedMotion ? null : {duration: motionMilliseconds, easing: "ease"},
+    });
     const style: CSSProperties = {transform: CSS.Translate.toString(transform), transition};
     return {
         dragging: isDragging,

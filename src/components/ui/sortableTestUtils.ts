@@ -2,7 +2,9 @@ import {act, fireEvent} from "@testing-library/react";
 
 // jsdom has no layout: every element gets a 40px-high box stacked by its index
 // among its siblings, which is what the sortable measures for list items.
+// Motion is reduced, so a drop settles at once.
 export function stackLayout() {
+    window.matchMedia = (query: string) => ({matches: query.includes("reduce"), media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false});
     const original = Element.prototype.getBoundingClientRect;
     Element.prototype.getBoundingClientRect = function (this: Element) {
         const index = this.parentElement ? Array.prototype.indexOf.call(this.parentElement.children, this) : 0;
