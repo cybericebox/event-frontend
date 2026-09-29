@@ -3,15 +3,16 @@
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {ExternalLink, Redo2, Send, Undo2} from "lucide-react";
+import {ExternalLink, LayoutTemplate, Redo2, Send, Undo2} from "lucide-react";
 import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
-import {canPlace, distributeWidgets, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteItems, livePresets, liveWidgetMinimums, liveWidgetName, presetLayout, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem} from "@/components/event/live/liveLayout";
+import {canPlace, distributeWidgets, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteItems, livePresets, liveWidgetMinimums, liveWidgetName, presetLayout, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem, type LivePresetKey} from "@/components/event/live/liveLayout";
 import {liveSampleResults} from "@/components/event/live/liveSample";
 import {liveTextWarnings} from "@/components/event/live/liveText";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {LiveMiniature, usePaletteLayouts} from "./LiveMiniature";
+import {LiveTemplateDialog} from "./LiveTemplateDialog";
 import {LiveScreenSettings} from "./LiveScreenSettings";
 import {LiveWidgetSettings} from "./LiveWidgetSettings";
 import {useLiveAutosave, type LiveSaveState} from "./useLiveAutosave";
@@ -69,7 +70,10 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const [screen, setScreen] = useState<HTMLDivElement | null>(null);
     const [scale, setScale] = useState(0);
     const [customGrid, setCustomGrid] = useState<{cols: number; rows: number} | null>(null);
-    const [pendingPreset, setPendingPreset] = useState<keyof typeof livePresets | null>(null);
+    const [templatesOpen, setTemplatesOpen] = useState(false);
+    // The last applied template and the layout it produced: the quiet
+    // «Шаблон: …» line says «змінено» once the layout moves away from it.
+    const [applied, setApplied] = useState<{key: LivePresetKey; layout: string} | null>(null);
     const [confirmRemove, setConfirmRemove] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [sampleResults] = useState(() => liveSampleResults(Date.now()));
@@ -226,10 +230,12 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         if (typeof next === "string") setError(next);
         else mutate(next);
     }
-    function applyPreset(key: keyof typeof livePresets) {
-        mutate(presetLayout(key, layout));
+    function applyTemplate(key: LivePresetKey) {
+        const next = presetLayout(key, layout);
+        mutate(next);
+        setApplied({key, layout: layoutKey(next)});
         setSelectedID(null);
-        setPendingPreset(null);
+        setTemplatesOpen(false);
         setCustomGrid(null);
     }
     function changeAspect(aspect: LiveLayout["aspect"]) {
@@ -302,10 +308,9 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         </header>
         <div className="event-live-editor__toolbar">
             <div className="event-live-editor__tool">
-                <span className="event-live-field__label">{t("manage.live.preset")}</span>
-                <EventSelect ariaLabel={t("manage.live.preset")} value="" placeholder={t("manage.live.presetPlaceholder")} disabled={locked}
-                    options={Object.entries(livePresets).map(([key, preset]) => ({value: key, label: preset.label}))}
-                    onValueChange={value => {const key = value as keyof typeof livePresets; if (layout.widgets.length) setPendingPreset(key); else applyPreset(key);}} />
+                <span className="event-live-field__label">{t("manage.live.templates.label")}</span>
+                <button className="ib-btn event-live-editor__template" type="button" disabled={locked} onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={16} /> {t("manage.live.templates.open")}</button>
+                {applied && <small className="event-live-editor__applied">{t(layoutKey(layout) === applied.layout ? "manage.live.templates.applied" : "manage.live.templates.appliedChanged", {name: livePresets[applied.key].label})}</small>}
             </div>
             <div className="event-live-editor__tool">
                 <span className="event-live-field__label">{t("manage.live.grid")}</span>
@@ -381,8 +386,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 </> : <LiveScreenSettings eventID={eventID} event={event} layout={layout} results={shownResults} sample={sample} canManage={canManage} disabled={locked} onChange={mutate} />}
             </aside>
         </div>
-        <ConfirmDialog open={pendingPreset !== null} onCancel={() => setPendingPreset(null)} title={t("manage.live.presetConfirm.title", {name: pendingPreset ? livePresets[pendingPreset].label : ""})}
-            description={t("manage.live.presetConfirm.body")} confirmLabel={t("manage.live.presetConfirm.apply")} onConfirm={() => {if (pendingPreset) applyPreset(pendingPreset);}} />
+        <LiveTemplateDialog open={templatesOpen} layout={layout} event={event} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
         <ConfirmDialog open={confirmRemove && !!selected} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
             description={t("manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
             onConfirm={() => {if (selected) mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null); setConfirmRemove(false);}} />

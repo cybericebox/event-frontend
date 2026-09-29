@@ -13,6 +13,18 @@
 .event-live-editor__toolbar{display:flex;align-items:flex-start;gap:var(--ib-3);flex-wrap:wrap}
 .event-live-editor__tool{display:grid;gap:5px;min-width:0}
 .event-live-editor__tool .event-select{width:190px}
+.event-live-editor__template{align-self:start}
+.event-live-editor__applied{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+/* «Шаблон розкладки» dialog: a grid of live template cards. */
+.event-dialog:has(.event-live-templates){--ib-modal-w:820px}
+.event-live-templates{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:var(--ib-3)}
+.event-live-template{display:grid;align-content:start;gap:6px;padding:8px;border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-paper);color:var(--ib-ink);font:inherit;text-align:left;cursor:pointer}
+.event-live-template:hover{border-color:var(--ib-dim)}
+.event-live-template[aria-checked="true"]{border-color:var(--ib-action);outline:1px solid var(--ib-action)}
+.event-live-template:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
+.event-live-template strong{font-size:var(--ib-fs-14,14px);font-weight:var(--ib-w-semibold,600)}
+.event-live-template span:last-child{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:1.35}
+.event-live-templates__warning{margin:0;color:var(--ib-warn);font-size:var(--ib-fs-13)}
 .event-live-editor__history{display:flex;gap:4px;align-self:flex-end;margin-left:auto}
 .event-live-editor__icon{justify-content:center;width:36px;padding:0}
 .event-live-editor__custom-grid>div{display:flex;align-items:center;gap:6px;color:var(--ib-dim)}

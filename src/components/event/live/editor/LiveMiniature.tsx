@@ -10,9 +10,9 @@ import type {LivePaletteItem} from "../liveLayout";
 // A live canvas rendered at its native resolution and scaled into a box, so
 // thumbnails show the real widget, text sizes included. `crop` shows only
 // the top-left cells (a single widget); the rest of the canvas is cut off.
-export function LiveMiniature({layout, event, results, sample, box, crop}: {
+export function LiveMiniature({layout, event, results, sample, box, crop, showGrid = false}: {
     layout: LiveLayout; event: PublicEventInfo; results?: ManageResultsSnapshot; sample: boolean;
-    box: {width: number; height: number}; crop?: {w: number; h: number};
+    box: {width: number; height: number}; crop?: {w: number; h: number}; showGrid?: boolean;
 }) {
     const {width, height} = layout.screen;
     const viewW = crop ? width * crop.w / layout.grid.cols : width;
@@ -21,7 +21,7 @@ export function LiveMiniature({layout, event, results, sample, box, crop}: {
     return <span className={`live-mini live-mini--${layout.theme}`} style={{width: box.width, height: box.height} as CSSProperties} aria-hidden="true">
         <span className={`live-mini__view live-mini__view--${layout.theme}`} style={{width: viewW * scale, height: viewH * scale}}>
             <span className="live-mini__native" style={{width, height, transform: `scale(${scale})`}} inert>
-                <LiveCanvas layout={layout} event={event} results={results} sample={sample} />
+                <LiveCanvas layout={layout} event={event} results={results} sample={sample} showGrid={showGrid} />
             </span>
         </span>
     </span>;

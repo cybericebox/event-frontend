@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {defaultLiveLayout, type LiveEditor as LiveEditorData} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -96,6 +96,24 @@ describe("live editor", () => {
         fireEvent.click(screen.getByRole("button", {name: "4:3"}));
         expect(screen.getAllByText(/1440×1080/).length).toBeGreaterThan(0);
         expect(document.querySelector(".event-live-editor__error")).toBeNull();
+    });
+
+    it("applies a layout template from the dialog and marks later edits", () => {
+        mount();
+        fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
+        const cards = within(screen.getByRole("radiogroup", {name: "Шаблон розкладки"})).getAllByRole("radio");
+        expect(cards).toHaveLength(5);
+        cards.forEach(card => expect(card.querySelector(".live-canvas")).not.toBeNull());
+        expect(screen.getByText(/буде замінено/)).toBeTruthy();
+        const apply = screen.getByRole("button", {name: "Застосувати"}) as HTMLButtonElement;
+        expect(apply.disabled).toBe(true);
+        fireEvent.click(screen.getByRole("radio", {name: /Лише таблиця/}));
+        expect(screen.getByRole("radio", {name: /Лише таблиця/}).getAttribute("aria-checked")).toBe("true");
+        fireEvent.click(apply);
+        expect(screen.getByText("Шаблон: Лише таблиця")).toBeTruthy();
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «Оголошення»"}));
+        expect(screen.getByText("Шаблон: Лише таблиця · змінено")).toBeTruthy();
     });
 
     it("is read-only for viewers", () => {
