@@ -24,12 +24,12 @@ export function isDetached(attachment: Pick<EventExerciseAttachment, "Status">):
     return attachment.Status === 2;
 }
 
-// The catalog editor lives in its own app; it returns to `returnURL` when done.
+// The catalog editor lives in its own app; it returns to `returnURL` (?return_to) when done.
 export function exercisesAppURL(origin: string, page: "detail" | "new", input: {eventID: string; returnURL: string; exerciseID?: string}): string {
     const query = new URLSearchParams();
     if (page === "detail" && input.exerciseID) query.set("id", input.exerciseID);
     query.set("event", input.eventID);
-    query.set("return", input.returnURL);
+    query.set("return_to", input.returnURL);
     return `${origin}/${page}?${query.toString()}`;
 }
 
