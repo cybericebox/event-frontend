@@ -78,7 +78,7 @@ export function ScoreboardView() {
     const sub = `${unitCount(data.TotalTeams, teamMode)} · ${frozen ? "рейтинг заморожено" : stream === "fallback" ? "оновлюється кожні 30 с" : "оновлюється наживо"}`;
     const trimmed = data.Display.RowsLimit !== null && data.TotalTeams > data.Display.RowsLimit;
 
-    return <div className="event-results mx-auto w-full max-w-screen-2xl">
+    return <div className="event-results">
         {frozen && <div className="ib-banner-stack event-results__banners"><EventBanner tone="warning" title={frozenBannerTitle(data.Freeze)} meta={frozenSinceLabel(data.Freeze)} message="Таблиця показує стан на момент заморожування. Підсумки — після фіналу." /></div>}
         <header className="ib-page-header">
             <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">Результати</h1><p className="ib-page-header__sub">{sub}</p></div></div>

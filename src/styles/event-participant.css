@@ -6,7 +6,8 @@
 .event-challenges,.event-participation{display:flex;flex-direction:column;min-width:0}
 .event-challenges__banners,.event-participation__banners{gap:var(--ib-2);margin-bottom:var(--ib-5)}
 .event-challenges__banners .ib-banner,.event-participation__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
-.event-results{display:flex;flex-direction:column;gap:var(--ib-4);min-width:0}
+.event-results{display:flex;flex-direction:column;gap:var(--ib-4);min-width:0;width:100%;max-width:1280px;margin:0 auto;padding:var(--ib-8) var(--ib-6) var(--ib-12)}
+@media (max-width:640px){.event-results{padding:var(--ib-5) var(--ib-4) var(--ib-10)}}
 .event-results__banners{gap:var(--ib-2)}
 .event-results__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
 /* ds-v2 ranking-table: the frozen board note under the table */

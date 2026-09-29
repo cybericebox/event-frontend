@@ -289,7 +289,7 @@ textarea.event-manage-input{padding:var(--ib-3);resize:vertical}
 .event-attempts-manager__review{display:grid;gap:var(--ib-4);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
 .event-attempts-manager__review textarea{min-height:88px}
 .event-attempts-manager__head-actions{display:flex;align-items:center;flex-wrap:wrap;gap:var(--ib-3)}
-.event-attempts-manager__filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--ib-3);align-items:end}
+.event-attempts-manager__filters{margin-bottom:var(--ib-4);display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--ib-3);align-items:end}
 .event-attempts-manager__filter-row{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--ib-2)}
 .event-attempts-manager__annul{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
 .event-attempts-manager__annul p{margin:var(--ib-1) 0 0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
