@@ -76,18 +76,18 @@ export async function getLiveLayoutVersion(eventID: string): Promise<number> {
     return liveRequest(eventID, "/version", z.object({Version: z.number().int()})).then(value => value.Version);
 }
 
-// Screen links («Посилання для екрана»): a token opens this event's live
-// screen on a projector PC that is not signed in. The token comes back only
-// when a link is issued or regenerated.
-export const liveScreenExpiries = ["day", "week", "event_end"] as const;
+// The screen link («Посилання для перегляду Live»): one per event; a token
+// opens this event's live screen on a projector PC that is not signed in.
+// The token comes back only when the link is created or regenerated.
+export const liveScreenExpiries = ["none", "day", "week", "event_end"] as const;
 export type LiveScreenExpiry = typeof liveScreenExpiries[number];
-const screenLinkSchema = z.object({ID: z.string(), CreatedAt: z.string(), ExpiresAt: z.string(), Token: z.string().optional()});
+const screenLinkSchema = z.object({ID: z.string(), CreatedAt: z.string(), ExpiresAt: z.string().nullable(), Token: z.string().optional()});
 export type LiveScreenLink = z.infer<typeof screenLinkSchema>;
 
-export const listLiveScreenLinks = (eventID: string) => liveRequest(eventID, "/screen-links", z.array(screenLinkSchema));
-export const createLiveScreenLink = (eventID: string, expiry: LiveScreenExpiry) => liveRequest(eventID, "/screen-links", screenLinkSchema, "POST", {Expiry: expiry});
-export const regenerateLiveScreenLink = (eventID: string, linkID: string) => liveRequest(eventID, `/screen-links/${encodeURIComponent(linkID)}/regenerate`, screenLinkSchema, "POST");
-export const revokeLiveScreenLink = (eventID: string, linkID: string) => liveRequest(eventID, `/screen-links/${encodeURIComponent(linkID)}`, z.undefined(), "DELETE");
+export const getLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link", z.object({Link: screenLinkSchema.nullable()})).then(value => value.Link);
+export const issueLiveScreenLink = (eventID: string, expiry: LiveScreenExpiry) => liveRequest(eventID, "/screen-link", screenLinkSchema, "POST", {Expiry: expiry});
+export const regenerateLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link/regenerate", screenLinkSchema, "POST");
+export const revokeLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link", z.undefined(), "DELETE");
 
 // The URL a screen opens: the token rides in the fragment, so it never
 // reaches the event site's server logs.
