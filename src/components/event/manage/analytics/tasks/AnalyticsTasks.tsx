@@ -79,7 +79,7 @@ export function AnalyticsTasks() {
         </AnalyticsStatGrid>
 
         <ManageTable event={event} state={tableState} busy={tasks.isPlaceholderData}
-            loadingLabel={t("manage.analytics.tasks.loading")} emptyMessage={filtered ? t("manage.analytics.tasks.emptyFiltered") : t("manage.analytics.tasks.empty")} errorMessage={t("manage.analytics.tasks.loadFailed")} onRetry={retry}
+            loadingLabel={t("manage.analytics.tasks.loading")} emptyMessage={filtered ? t("manage.analytics.tasks.emptyFiltered") : t("manage.analytics.tasks.empty")} errorMessage={t("manage.analytics.tasks.loadFailed")} onRetry={retry} error={tasks.error}
             toolbar={toolbar}
             head={<tr>
                 <HelpHead label={t("manage.analytics.tasks.col.task")} hint={t("manage.analytics.tasks.col.taskHint")} />
@@ -119,7 +119,7 @@ export function AnalyticsTasks() {
 
         <SectionBlock title={t("manage.analytics.tasks.groups.title")} subtitle={t("manage.analytics.tasks.groups.subtitle")} hint={t("manage.analytics.tasks.groups.hint")}>
             <div className="event-analytics-tasks__table">
-                <ManageTable event={event} state={groupsState} loadingLabel={t("manage.analytics.tasks.loading")} emptyMessage={t("manage.analytics.tasks.groups.empty")} errorMessage={t("manage.analytics.tasks.loadFailed")} onRetry={retry}
+                <ManageTable event={event} state={groupsState} loadingLabel={t("manage.analytics.tasks.loading")} emptyMessage={t("manage.analytics.tasks.groups.empty")} errorMessage={t("manage.analytics.tasks.loadFailed")} onRetry={retry} error={tasks.error}
                     head={<tr>
                         <th scope="col">{t("manage.analytics.tasks.groups.col.group")}</th>
                         <th scope="col" className="ib-num">{t("manage.analytics.tasks.groups.col.tasks")}</th>

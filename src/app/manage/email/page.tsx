@@ -34,7 +34,7 @@ export default function ManageEmailPage() {
     const state = subscriptions.isPending || templates.isPending ? "loading" : subscriptions.isError || templates.isError ? "error" : "ready";
     return <div className="event-manage-settings event-journal">
         <header className="event-manage-heading"><div><h1>{t("manage.email.title")}</h1><p>{t("manage.email.intro")}</p></div></header>
-        <TemplateList event={event} state={state} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} loadingLabel={t("manage.email.loading")} errorMessage={t("manage.email.loadError")} emptyMessage={t("manage.email.none")}
+        <TemplateList event={event} state={state} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} error={subscriptions.error ?? templates.error} loadingLabel={t("manage.email.loading")} errorMessage={t("manage.email.loadError")} emptyMessage={t("manage.email.none")}
             signals={channelSignals(rows, "email")} rows={rows} templates={templates.data ?? []} basePath="/manage/email" canManage={canManage} busy={busy} onToggle={(signal, enabled) => void toggle(signal, enabled)} />
     </div>;
 }

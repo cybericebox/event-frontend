@@ -94,7 +94,8 @@ export function LiveScreen({event, token, initialLayout}: {event: PublicEventInf
 
     // A link revoked or expired while the screen is open.
     if (token && (layoutQuery.error ?? results.error) instanceof LiveScreenLinkError && ((layoutQuery.error ?? results.error) as LiveScreenLinkError).status === 403) return <LiveLinkClosed />;
-    if (layoutQuery.isError) return <main className="live-fullscreen"><EventLoadError message={t("live.loadFailed")} onRetry={() => void layoutQuery.refetch()} /></main>;
+    if (layoutQuery.isError) return <main className="live-fullscreen"><EventLoadError message={t("live.loadFailed")} error={layoutQuery.error} onRetry={() => void layoutQuery.refetch()} /></main>;
+    if (results.isError && !results.data) return <main className="live-fullscreen"><EventLoadError message={t("live.resultsUnavailable")} error={results.error} onRetry={() => void results.refetch()} /></main>;
     if (!layoutQuery.data) return <main className="live-fullscreen"><EventLoading event={event} label={t("live.loading")} /></main>;
     const base = layoutQuery.data;
     const [windowWidth, windowHeight] = windowSize.split("@")[0].split("×").map(Number);
@@ -105,7 +106,6 @@ export function LiveScreen({event, token, initialLayout}: {event: PublicEventInf
             <LiveCanvas layout={layout} event={event} results={results.data} />
             {testing && <LiveScreenTest layout={layout} />}
         </div>
-        {results.isError && <div className="live-fullscreen__notice" role="alert">{t("live.resultsUnavailable")}</div>}
         <div className="live-controls" aria-label={t("live.controls")}>
             {fullscreen.supported && <EventTooltip content={t("live.keyF")}>{id => <button type="button" onClick={fullscreen.toggle} aria-keyshortcuts="F" aria-describedby={id}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}</EventTooltip>}
             <EventTooltip content={t("live.keyT")}>{id => <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} aria-keyshortcuts="T" aria-describedby={id}><MonitorCheck size={16} />{t("live.test.title")}</button>}</EventTooltip>

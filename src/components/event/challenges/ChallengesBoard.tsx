@@ -103,7 +103,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     if (!access.data?.CanManage) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
     const banner = <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
     if (board.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (board.isError) return <Page banners={banner}><EventLoadError message={t("challenges.moderators.unavailableTitle")} onRetry={() => void board.refetch()} /></Page>;
+    if (board.isError) return <Page banners={banner}><EventLoadError message={t("challenges.moderators.unavailableTitle")} error={board.error} onRetry={() => void board.refetch()} /></Page>;
     return <EventVpnProvider eventID={event.EventID} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
         <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode finished={finished} showDifficulty showHints
             userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner} />
@@ -145,7 +145,7 @@ export function ChallengesBoard() {
     const countdown = <EventCountdown event={event} hint={t("countdown.start.challenges")} showFinished={false} />;
     if (!started) return <Page countdown={countdown}><EmptyState message={t("challenges.beforeStart")} /></Page>;
     if (challenges.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (challenges.isError) return <Page banners={finishedBanner || undefined} countdown={countdown}><EventLoadError message={t("challenges.loadFailed.title")} onRetry={() => void challenges.refetch()} /></Page>;
+    if (challenges.isError) return <Page banners={finishedBanner || undefined} countdown={countdown}><EventLoadError message={t("challenges.loadFailed.title")} error={challenges.error} onRetry={() => void challenges.refetch()} /></Page>;
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data} teamMode={teamMode} finished={finished}
         showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}

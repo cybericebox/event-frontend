@@ -131,7 +131,7 @@ export default function ManageSchedulePage() {
         } finally { setCountdownSaving(false); }
     }
 
-    if (lifecycle.isError || config.isError) return <EventLoadError message={t("manage.schedule.loadFailed")} onRetry={() => { void lifecycle.refetch(); void config.refetch(); }} />;
+    if (lifecycle.isError || config.isError) return <EventLoadError message={t("manage.schedule.loadFailed")} error={lifecycle.error ?? config.error} onRetry={() => { void lifecycle.refetch(); void config.refetch(); }} />;
     if (lifecycle.isPending || config.isPending || !draft) return <EventLoading event={event} />;
     if (!lifecycle.data) return null;
 

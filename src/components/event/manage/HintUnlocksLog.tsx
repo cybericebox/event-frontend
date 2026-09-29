@@ -69,7 +69,7 @@ export function HintUnlocksLog({live: {stream, aliveAt}, onStatus}: {live: Journ
         {filtered && <button className="ib-btn ib-btn--sm" type="button" onClick={() => changeFilters(emptyHintFilters)}>{t("manage.attempts.filter.reset")}</button>}
     </>;
 
-    return <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.hints.loading")} emptyMessage={filtered ? t("manage.hints.emptyFiltered") : t("manage.hints.empty")} errorMessage={t("manage.hints.loadFailed")} onRetry={() => void unlocks.refetch()}
+    return <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.hints.loading")} emptyMessage={filtered ? t("manage.hints.emptyFiltered") : t("manage.hints.empty")} errorMessage={t("manage.hints.loadFailed")} onRetry={() => void unlocks.refetch()} error={unlocks.error}
         toolbar={toolbar}
         head={<tr>
             <th scope="col">{t("manage.attempts.col.time", {offset})}</th>

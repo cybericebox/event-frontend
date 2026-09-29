@@ -167,7 +167,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         }
     }
 
-    if (page.isError || pages.isError || config.isError || content.isError || definitions.isError) return <EventLoadError message={t("manage.content.page.loadFailed")} onRetry={() => void Promise.all([page.refetch(), pages.refetch(), config.refetch(), content.refetch(), definitions.refetch()])} />;
+    if (page.isError || pages.isError || config.isError || content.isError || definitions.isError) return <EventLoadError message={t("manage.content.page.loadFailed")} error={page.error ?? pages.error ?? config.error ?? content.error ?? definitions.error} onRetry={() => void Promise.all([page.refetch(), pages.refetch(), config.refetch(), content.refetch(), definitions.refetch()])} />;
     if ((!isNew && page.isPending) || pages.isPending || config.isPending || content.isPending || definitions.isPending) return <EventLoading event={event} label={t("manage.content.page.loading")} />;
 
     const settings = <div className={`event-manage-page-details${detailsOpen ? "" : " is-collapsed"}`} aria-label={t("manage.content.page.settings")}>

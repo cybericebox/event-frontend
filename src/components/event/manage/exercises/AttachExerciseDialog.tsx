@@ -95,7 +95,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                 {t("manage.exercises.attachDialog.noInfrastructure")}{!published && <> {t("manage.exercises.attachDialog.noInfrastructureBefore")}</>}
             </p>}
             {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />
-                : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} onRetry={() => void catalog.refetch()} />
+                : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} error={catalog.error} onRetry={() => void catalog.refetch()} />
                 : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
                 : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}>
                     <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached || unavailable(choice)} onClick={() => select(choice)}>
@@ -110,7 +110,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                 </li>)}</ul>}
             {attachError && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{attachError}</p>}
             {selected && <div className="event-exercise-editor__preview" aria-live="polite">
-                {preview.isPending ? <EventLoading compact /> : preview.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.previewFailed")} onRetry={() => void preview.refetch()} /> : <>
+                {preview.isPending ? <EventLoading compact /> : preview.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.previewFailed")} error={preview.error} onRetry={() => void preview.refetch()} /> : <>
                     <div className="event-exercise-editor__preview-head"><h3>{preview.data.Name}</h3>
                         {variantCount > 1 && <EventSelect ariaLabel={t("manage.exercises.attachDialog.previewVariant")} value={String(variant)} options={Array.from({length: variantCount}, (_, index) => ({value: String(index), label: t("manage.exercises.attachDialog.variant", {number: index + 1})}))} onValueChange={value => setVariant(Number(value))} />}
                     </div>

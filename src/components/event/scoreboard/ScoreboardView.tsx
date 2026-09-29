@@ -99,7 +99,7 @@ export function ScoreboardView() {
     const rows = data ? searchScoreboard(data, search) : [];
     let state: ScoreTableState;
     if (denied) state = {kind: "empty", message: t(denied)};
-    else if (results.isError) state = {kind: "custom", content: <EventLoadError message={t("scoreboard.loadFailed")} onRetry={() => void results.refetch()} />};
+    else if (results.isError) state = {kind: "custom", content: <EventLoadError message={t("scoreboard.loadFailed")} error={results.error} onRetry={() => void results.refetch()} />};
     else if (!data) state = {kind: "loading"};
     else if (data.Scoreboard.length === 0) state = {kind: "empty", message: t(teamMode ? "scoreboard.noTeams" : "scoreboard.noParticipants")};
     else if (rows.length === 0) state = {kind: "empty", message: t("scoreboard.emptySearch")};

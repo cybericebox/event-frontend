@@ -85,7 +85,7 @@ export default function ManageLandingPage() {
         } catch (error) { failure(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
     }
 
-    if (content.isError || variables.isError) return <EventLoadError message={t("manage.content.landing.loadFailed")} onRetry={() => void Promise.all([content.refetch(), variables.refetch()])} />;
+    if (content.isError || variables.isError) return <EventLoadError message={t("manage.content.landing.loadFailed")} error={content.error ?? variables.error} onRetry={() => void Promise.all([content.refetch(), variables.refetch()])} />;
     if (content.isPending || variables.isPending || !draft) return <EventLoading event={event} label={t("manage.content.landing.loading")} />;
 
     return <div className="event-manage-content">

@@ -4,6 +4,7 @@ import {useEffect, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {ManagerShell} from "./ManagerShell";
+import {EventErrorScreen} from "../EventErrorScreen";
 import {EventLoading} from "../EventLoading";
 import {EventBrandProvider} from "../EventBrandLogo";
 import {OutageShell} from "../OutageShell";
@@ -36,6 +37,7 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         // An outage keeps the /manage frame; the outage modal covers it and the
         // query refetches once the API answers.
         if (isOutageError(event.error, status)) return <OutageShell manage />;
+        if (![401, 403, 404].includes(status)) return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => void event.refetch()} />;
         return <div className="event-shell-state" role="alert">
             <h1>{t("manage.shell.eventNotFoundTitle")}</h1>
             <p>{t("manage.shell.eventNotFoundBody")}</p>

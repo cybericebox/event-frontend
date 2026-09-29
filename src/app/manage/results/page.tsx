@@ -140,7 +140,7 @@ export default function ManageResultsPage() {
                 ? <EventButton className="ib-btn ib-btn--sm" type="button" disabled={busy === "open"} busy={busy === "open"} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</EventButton>
                 : <EventButton className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy === "open"} busy={busy === "open"} onClick={() => void toggleOpened(true)}>{t("manage.results.freeze.open")}</EventButton>)}
         </div>}
-        <ManageTable event={event} state={state} loadingLabel={t("manage.results.loading")} errorMessage={t("manage.results.loadFailed")} onRetry={() => void query.refetch()}
+        <ManageTable event={event} state={state} loadingLabel={t("manage.results.loading")} errorMessage={t("manage.results.loadFailed")} onRetry={() => void query.refetch()} error={query.error}
             emptyMessage={table.filtered ? t("manage.results.emptyFiltered") : t("manage.results.empty")}
             toolbar={<>
                 <ManageTableSearch value={table.search} onChange={table.setSearch} label={teamMode ? t("manage.results.searchTeams") : t("manage.results.searchParticipants")} />

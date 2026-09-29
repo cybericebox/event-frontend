@@ -62,7 +62,7 @@ export function MailJournal() {
     return <div className="event-manage-settings event-journal">
         <header className="event-manage-heading"><div><h1>{t("manage.mailJournal.title")}</h1><p>{t("manage.mailJournal.subtitle")}</p></div></header>
         <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.mail.journal.loading")} emptyMessage={t(filtered ? "manage.mail.journal.emptyFiltered" : "manage.mail.journal.empty")}
-            errorMessage={t("manage.mail.journal.loadError")} onRetry={() => void query.refetch()} toolbar={toolbar}
+            errorMessage={t("manage.mail.journal.loadError")} onRetry={() => void query.refetch()} error={query.error} toolbar={toolbar}
             head={<tr>
                 <th scope="col">{t("manage.mail.journal.col.time")}</th>
                 <th scope="col">{t("manage.mail.journal.col.recipient")}</th>

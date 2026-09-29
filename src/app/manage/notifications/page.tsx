@@ -34,7 +34,7 @@ export default function ManageNotificationsPage() {
     const state = subscriptions.isPending || templates.isPending ? "loading" : subscriptions.isError || templates.isError ? "error" : "ready";
     return <div className="event-manage-settings event-journal">
         <header className="event-manage-heading"><div><h1>{t("manage.notifications.title")}</h1><p>{t("manage.notifications.intro")}</p></div></header>
-        <TemplateList event={event} state={state} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} loadingLabel={t("manage.notifications.loading")} errorMessage={t("manage.notifications.loadError")} emptyMessage={t("manage.notifications.none")}
+        <TemplateList event={event} state={state} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} error={subscriptions.error ?? templates.error} loadingLabel={t("manage.notifications.loading")} errorMessage={t("manage.notifications.loadError")} emptyMessage={t("manage.notifications.none")}
             signals={channelSignals(rows, "in_app")} rows={rows} templates={templates.data ?? []} basePath="/manage/notifications" canManage={canManage} busy={busy} onToggle={(signal, enabled) => void toggle(signal, enabled)} />
     </div>;
 }

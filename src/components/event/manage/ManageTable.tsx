@@ -46,13 +46,14 @@ export type ManageTableState = "loading" | "error" | "empty" | "ready";
 
 // The table, its header row and the footer always render; loading, error and
 // empty states fill the body area under the header, centered.
-export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, busy = false, toolbar, footer, head, children}: {
+export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, error, busy = false, toolbar, footer, head, children}: {
     event: PublicEventInfo;
     state: ManageTableState;
     loadingLabel: string;
     emptyMessage: string;
     errorMessage: string;
     onRetry: () => void;
+    error?: unknown;
     busy?: boolean;
     toolbar?: ReactNode;
     footer?: ReactNode;
@@ -103,7 +104,7 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
                 <thead>{head}</thead>
                 {ready ? children : <tbody><tr><td className="event-manage-table__state" colSpan={1000}><div className="event-manage-table__state-view">
                     {state === "loading" ? <EventLoading event={event} label={loadingLabel} />
-                        : state === "error" ? <EventLoadError message={errorMessage} onRetry={onRetry} />
+                        : state === "error" ? <EventLoadError message={errorMessage} onRetry={onRetry} error={error} />
                             : <EmptyState message={emptyMessage} />}
                 </div></td></tr></tbody>}
             </table>

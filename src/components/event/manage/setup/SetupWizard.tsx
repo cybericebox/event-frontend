@@ -28,7 +28,7 @@ export function SetupWizard() {
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const lifecycle = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
 
-    if (config.isError || lifecycle.isError) return <div className="event-manage-setup"><EventLoadError message={t("manage.overview.loadError")} onRetry={() => { void config.refetch(); void lifecycle.refetch(); }} /></div>;
+    if (config.isError || lifecycle.isError) return <div className="event-manage-setup"><EventLoadError message={t("manage.overview.loadError")} error={config.error ?? lifecycle.error} onRetry={() => { void config.refetch(); void lifecycle.refetch(); }} /></div>;
     if (!setup) return <EventLoading event={event} label={t("manage.overview.loading")} />;
 
     const {steps, summary} = setup;

@@ -15,10 +15,11 @@ type ListedTemplate = {ID: string; NotificationType: string; Status: "draft" | "
 // The list of an event's templates of one channel, like admin's template list:
 // a row per signal with its status, the last change and the on/off switch of
 // sending it. A row opens the template page.
-export function TemplateList({event, state, onRetry, loadingLabel, errorMessage, emptyMessage, signals, rows, templates, basePath, canManage, busy, onToggle}: {
+export function TemplateList({event, state, onRetry, error, loadingLabel, errorMessage, emptyMessage, signals, rows, templates, basePath, canManage, busy, onToggle}: {
     event: PublicEventInfo;
     state: ManageTableState;
     onRetry: () => void;
+    error?: unknown;
     loadingLabel: string;
     errorMessage: string;
     emptyMessage: string;
@@ -34,7 +35,7 @@ export function TemplateList({event, state, onRetry, loadingLabel, errorMessage,
     const needle = search.trim().toLocaleLowerCase();
     const shown = signals.filter(signal => !needle || signalLabel(signal).title.toLocaleLowerCase().includes(needle) || signal.toLowerCase().includes(needle));
     const tableState: ManageTableState = state !== "ready" ? state : shown.length === 0 ? "empty" : "ready";
-    return <ManageTable event={event} state={tableState} loadingLabel={loadingLabel} errorMessage={errorMessage} onRetry={onRetry} emptyMessage={needle ? t("manage.notifications.list.emptySearch") : emptyMessage}
+    return <ManageTable event={event} state={tableState} loadingLabel={loadingLabel} errorMessage={errorMessage} onRetry={onRetry} error={error} emptyMessage={needle ? t("manage.notifications.list.emptySearch") : emptyMessage}
         toolbar={<ManageTableSearch value={search} onChange={setSearch} label={t("manage.notifications.list.search")} />}
         head={<tr>
             <th scope="col">{t("manage.notifications.list.colType")}</th>

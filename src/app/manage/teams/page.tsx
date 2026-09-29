@@ -225,7 +225,7 @@ export default function ManageTeamsPage() {
         }
     }
 
-    const tableState = teamsQuery.isPending || participantsQuery.isPending || fieldsQuery.isPending ? "loading"
+    const tableState = !teamMode ? "empty" : teamsQuery.isPending || participantsQuery.isPending || fieldsQuery.isPending ? "loading"
         : (teamsQuery.isError && !teamsQuery.data) || participantsQuery.isError || fieldsQuery.isError ? "error"
             : teams.length === 0 ? "empty" : "ready";
 
@@ -234,7 +234,7 @@ export default function ManageTeamsPage() {
         <CreateTeamDialog eventID={eventID} open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
         <TeamInvitationDialog key={inviteTeam?.ID ?? "closed"} eventID={eventID} team={inviteTeam} onClose={() => setInviteTeam(null)} onSent={refresh} />
         <ManageTable event={event} state={tableState} busy={teamsQuery.isFetching && !teamsQuery.isPending} loadingLabel={t("manage.teams.loading")} errorMessage={t("manage.teams.loadFailed")}
-            onRetry={() => {void teamsQuery.refetch(); void participantsQuery.refetch(); void fieldsQuery.refetch();}}
+            onRetry={() => {void teamsQuery.refetch(); void participantsQuery.refetch(); void fieldsQuery.refetch();}} error={teamsQuery.error ?? participantsQuery.error ?? fieldsQuery.error}
             emptyMessage={table.filtered ? t("manage.teams.emptySearch") : t("manage.teams.empty")}
             toolbar={<>
                 <ManageTableSearch value={table.search} onChange={table.setSearch} label={t("manage.teams.search")} />

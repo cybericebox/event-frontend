@@ -7,6 +7,7 @@ import {liveRefreshOptions, type LiveLayout} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import {getResultsSettings, putResultsSettings, resultsSettingsInput} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {t} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSlider} from "@/components/ui/EventSlider";
@@ -29,7 +30,8 @@ function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boo
         } catch {toast.error(t("manage.live.freeze.error"));}
         finally {setBusy(false);}
     }
-    const hint = settings.isError ? t("manage.live.freeze.readError") : settings.data && !settings.data.FreezeEnabled ? t("manage.live.freeze.disabled") : null;
+    const hint = settings.data && !settings.data.FreezeEnabled ? t("manage.live.freeze.disabled") : null;
+    if (settings.isError) return <div className="event-live-settings__freeze"><EventLoadError compact message={t("manage.live.freeze.readError")} error={settings.error} onRetry={() => void settings.refetch()} /></div>;
     return <div className="event-live-settings__freeze">
         <LiveSwitch label={t("manage.live.freeze.label")} help={t("manage.live.freeze.help")} checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || busy || !settings.data} onChange={value => void change(value)} />
         {hint && <small>{hint}</small>}

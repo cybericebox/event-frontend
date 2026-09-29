@@ -85,13 +85,13 @@ export function AnalyticsProgress() {
                 <button type="button" aria-label={t("manage.analytics.progress.scores.remove", {team: teamName(id)})} onClick={() => setChosen(list => list.filter(item => item !== id))}><X size={12} aria-hidden="true" /></button>
             </li>)}</ul>}
             <AnalyticsChart event={event} state={chartStateOf(scores.isPending, !scoreData, !!scoreData && scoresHaveData(scoreData))} option={scoreData ? scoreChartOption(scoreData) : undefined} height={360}
-                ariaLabel={t("manage.analytics.progress.scores.title")} loadingLabel={t("manage.analytics.progress.loading")} errorMessage={t("manage.analytics.progress.loadFailed")} emptyMessage={t("manage.analytics.progress.scores.empty")} onRetry={() => void scores.refetch()} />
+                ariaLabel={t("manage.analytics.progress.scores.title")} loadingLabel={t("manage.analytics.progress.loading")} errorMessage={t("manage.analytics.progress.loadFailed")} emptyMessage={t("manage.analytics.progress.scores.empty")} onRetry={() => void scores.refetch()} error={scores.error} />
         </SectionBlock>
 
         <SectionBlock title={t("manage.analytics.progress.matrix.title")} subtitle={t("manage.analytics.progress.matrix.subtitle")} hint={t("manage.analytics.progress.matrix.hint")}
             actions={<CsvButton eventID={eventID} path={analyticsExportPath("progress/matrix", filter.period)} name="analytics-progress-matrix" disabled={!matrixData} />}>
             <div className="event-analytics-tasks__table event-analytics-tasks__table--tall">
-                <ManageTable event={event} state={matrixState} busy={matrix.isPlaceholderData} loadingLabel={t("manage.analytics.progress.loading")} emptyMessage={search ? t("manage.analytics.progress.matrix.emptyFiltered") : t("manage.analytics.progress.matrix.empty")} errorMessage={t("manage.analytics.progress.loadFailed")} onRetry={() => void matrix.refetch()}
+                <ManageTable event={event} state={matrixState} busy={matrix.isPlaceholderData} loadingLabel={t("manage.analytics.progress.loading")} emptyMessage={search ? t("manage.analytics.progress.matrix.emptyFiltered") : t("manage.analytics.progress.matrix.empty")} errorMessage={t("manage.analytics.progress.loadFailed")} onRetry={() => void matrix.refetch()} error={matrix.error}
                     toolbar={<>
                         <ManageTableSearch value={search} onChange={value => {setSearch(value); setPage(1);}} label={t("manage.analytics.progress.matrix.search")} />
                         <div className="event-analytics-tasks__legend" aria-label={t("manage.analytics.progress.matrix.legend")}>
@@ -123,7 +123,7 @@ export function AnalyticsProgress() {
 
         <SectionBlock title={t("manage.analytics.progress.heatmap.title")} subtitle={t("manage.analytics.progress.heatmap.subtitle")} hint={t("manage.analytics.progress.heatmap.hint")}>
             <AnalyticsChart event={event} state={chartStateOf(heatmap.isPending, !heatmap.data, !!heatmap.data && heatmapHasData(heatmap.data))} option={heatmap.data ? heatmapOption(heatmap.data) : undefined} height={420}
-                ariaLabel={t("manage.analytics.progress.heatmap.title")} loadingLabel={t("manage.analytics.progress.loading")} errorMessage={t("manage.analytics.progress.loadFailed")} emptyMessage={t("manage.analytics.progress.heatmap.empty")} onRetry={() => void heatmap.refetch()} />
+                ariaLabel={t("manage.analytics.progress.heatmap.title")} loadingLabel={t("manage.analytics.progress.loading")} errorMessage={t("manage.analytics.progress.loadFailed")} emptyMessage={t("manage.analytics.progress.heatmap.empty")} onRetry={() => void heatmap.refetch()} error={heatmap.error} />
         </SectionBlock>
 
         <SectionBlock title={t("manage.analytics.progress.inactive.title")} subtitle={t("manage.analytics.progress.inactive.subtitle")} hint={t("manage.analytics.progress.inactive.hint")}
@@ -135,7 +135,7 @@ export function AnalyticsProgress() {
                 <CsvButton eventID={eventID} path={inactiveExportPath(minutes)} name="analytics-progress-inactive" disabled={!idle} />
             </>}>
             <div className="event-analytics-tasks__table">
-                <ManageTable event={event} state={idleState} busy={inactive.isPlaceholderData} loadingLabel={t("manage.analytics.progress.loading")} emptyMessage={idleEmpty} errorMessage={t("manage.analytics.progress.loadFailed")} onRetry={() => void inactive.refetch()}
+                <ManageTable event={event} state={idleState} busy={inactive.isPlaceholderData} loadingLabel={t("manage.analytics.progress.loading")} emptyMessage={idleEmpty} errorMessage={t("manage.analytics.progress.loadFailed")} onRetry={() => void inactive.refetch()} error={inactive.error}
                     head={<tr>
                         <th scope="col">{t("manage.analytics.progress.matrix.col.team")}</th>
                         <th scope="col" className="ib-num">{t("manage.analytics.progress.matrix.col.points")}</th>

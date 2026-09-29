@@ -8,6 +8,7 @@ import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {getManageAccess, ManageApiError} from "@/api/manage";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {GuestShell} from "./GuestShell";
+import {EventErrorScreen} from "./EventErrorScreen";
 import {EventLoading} from "./EventLoading";
 import {EventBrandProvider} from "./EventBrandLogo";
 import {OutageShell} from "./OutageShell";
@@ -53,6 +54,9 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // An outage keeps the guest frame under the outage modal; the queries
         // refetch once the API answers.
         if (isOutageError(identity.error ?? access.error, status)) return <OutageShell />;
+        // Only a missing event or a missing right sends to the sign-in; any other failure
+        // (server error, network) is a load failure with a retry.
+        if (![401, 403, 404].includes(status)) return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
         return <div className="event-shell-state" role="alert">
             <h1>{t("shell.preview.notFound")}</h1>
             <p>{t("shell.preview.managersOnly")}</p>

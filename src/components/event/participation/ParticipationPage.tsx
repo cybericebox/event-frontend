@@ -150,7 +150,7 @@ function SelfSection({event, info, finished}: {event: PublicEventInfo; info: Par
                 ? <FieldsEditor form={answers.data.Form} answers={answers.data.Answers} onCancel={() => setEditing(false)} onSave={save} />
                 : <FieldRows form={answers.data.Form} answers={answers.data.Answers} canEdit={answers.data.Editable && !finished} onEdit={() => setEditing(true)} />}
         </>}
-        {answers.isError && <EventLoadError compact message={t("participation.fields.loadFailed")} onRetry={() => void answers.refetch()} />}
+        {answers.isError && <EventLoadError compact message={t("participation.fields.loadFailed")} error={answers.error} onRetry={() => void answers.refetch()} />}
     </Section>;
 }
 
@@ -208,7 +208,7 @@ function NoTeam({event, started}: {event: PublicEventInfo; started: boolean}) {
             <form className="event-part__form" onSubmit={event => void create(event)}>
                 <label className="ib-field"><span className="ib-field__label">{t("participation.team.name")}</span><input className="ib-input" value={name} onChange={event => setName(event.target.value)} required minLength={3} maxLength={64} disabled={busy} autoFocus /></label>
                 {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fields} onChange={(key, value) => setFields(current => ({...current, [key]: value}))} disabled={busy} />}
-                {fieldsQuery.isError && <EventLoadError compact message={t("participation.noTeam.fieldsFailed")} onRetry={() => void fieldsQuery.refetch()} />}
+                {fieldsQuery.isError && <EventLoadError compact message={t("participation.noTeam.fieldsFailed")} error={fieldsQuery.error} onRetry={() => void fieldsQuery.refetch()} />}
                 {error && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
                 <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy || fieldsQuery.isPending} busy={busy}>{t("participation.noTeam.createAction")}</EventButton></div>
             </form>
@@ -277,7 +277,7 @@ function TeamSection({event, info, team, started, finished}: {event: PublicEvent
             </FieldRow>}
         </dl>
         <h3 className="event-part__subhead">{t("participation.team.members")}</h3>
-        {members.isPending ? <EventLoading compact label={t("participation.team.membersLoading")} /> : members.isError ? <EventLoadError compact message={t("participation.team.membersFailed")} onRetry={() => void members.refetch()} /> :
+        {members.isPending ? <EventLoading compact label={t("participation.team.membersLoading")} /> : members.isError ? <EventLoadError compact message={t("participation.team.membersFailed")} error={members.error} onRetry={() => void members.refetch()} /> :
             <table className="event-members"><thead><tr><th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th><th><span className="ib-sr">{t("participation.team.actions")}</span></th></tr></thead>
                 <tbody>{members.data.map(member => <tr key={member.UserID} className={member.Own ? "is-own" : undefined}>
                     <td>{member.DisplayName}{member.Own && <span className="event-part__muted"> · {t("participation.team.you")}</span>}</td>

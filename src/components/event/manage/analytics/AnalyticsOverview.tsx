@@ -59,14 +59,14 @@ function LiveStats({overview, teamMode}: {overview: Overview; teamMode: boolean}
     </AnalyticsStatGrid>;
 }
 
-function Feed({overview, state, onRetry}: {overview?: Overview; state: "loading" | "error" | "ready"; onRetry: () => void}) {
+function Feed({overview, state, onRetry, error}: {error?: unknown; overview?: Overview; state: "loading" | "error" | "ready"; onRetry: () => void}) {
     const {event} = useManager();
     const items = overview?.Feed ?? [];
     return <section className="event-analytics__block" aria-label={t("manage.analytics.feed.title")}>
         <div className="event-analytics__block-head"><h2>{t("manage.analytics.feed.title")}</h2><p>{t("manage.analytics.feed.subtitle")}</p></div>
         <div className="event-analytics-feed">
             {state === "loading" && <EventLoading event={event} label={t("manage.analytics.feed.loading")} />}
-            {state === "error" && <EventLoadError message={t("manage.analytics.feed.loadFailed")} onRetry={onRetry} />}
+            {state === "error" && <EventLoadError message={t("manage.analytics.feed.loadFailed")} onRetry={onRetry} error={error} />}
             {state === "ready" && items.length === 0 && <EmptyState message={t("manage.analytics.feed.empty")} />}
             {state === "ready" && items.length > 0 && <ol>{items.map(item => <li className="event-analytics-feed__item" key={`${item.Kind}-${item.At}-${item.TeamID ?? ""}-${item.ChallengeName}`}>
                 <time className="event-analytics-feed__time" dateTime={item.At}>{feedTime.format(new Date(item.At))}</time>
@@ -121,9 +121,9 @@ export function AnalyticsOverview() {
                 <div className="event-analytics__block-head"><h2>{t("manage.analytics.chart.title")}</h2><p>{t("manage.analytics.chart.subtitle")}</p></div>
                 <AnalyticsChart event={event} state={chartState} option={chartState === "ready" ? activityChartOption(data) : undefined}
                     ariaLabel={t("manage.analytics.chart.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage={t("manage.analytics.chart.loadFailed")}
-                    emptyMessage={t("manage.analytics.chart.empty")} onRetry={() => void overview.refetch()} />
+                    emptyMessage={t("manage.analytics.chart.empty")} onRetry={() => void overview.refetch()} error={overview.error} />
             </section>
-            <Feed overview={data} state={blockState} onRetry={() => void overview.refetch()} />
+            <Feed overview={data} state={blockState} onRetry={() => void overview.refetch()} error={overview.error} />
         </div>
     </AnalyticsPage>;
 }

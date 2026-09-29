@@ -59,7 +59,7 @@ function QuestionCard({question, event, respondents}: {question: AnalyticsQuesti
     </article>;
 }
 
-function DropOffTable({data, state, onRetry, period, eventID}: {data?: Participants["DropOff"]; state: "loading" | "error" | "ready"; onRetry: () => void; period: ReturnType<typeof useAnalyticsPeriod>["period"]; eventID: string}) {
+function DropOffTable({data, state, onRetry, error, period, eventID}: {error?: unknown; data?: Participants["DropOff"]; state: "loading" | "error" | "ready"; onRetry: () => void; period: ReturnType<typeof useAnalyticsPeriod>["period"]; eventID: string}) {
     const {event} = useManager();
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
@@ -74,7 +74,7 @@ function DropOffTable({data, state, onRetry, period, eventID}: {data?: Participa
     return <AnalyticsBlock title={t("manage.analytics.people.dropoff.title")} subtitle={t("manage.analytics.people.dropoff.subtitle")} hint={t("manage.analytics.people.dropoff.hint")}
         actions={<AnalyticsTableExport eventID={eventID} section="participants" table="dropoff" period={period} disabled={!data || data.Total === 0} />}>
         <div className="event-analytics-people__table">
-            <ManageTable event={event} state={tableState} loadingLabel={t("manage.analytics.people.dropoff.loading")} errorMessage={t("manage.analytics.people.dropoff.loadFailed")} onRetry={onRetry}
+            <ManageTable event={event} state={tableState} loadingLabel={t("manage.analytics.people.dropoff.loading")} errorMessage={t("manage.analytics.people.dropoff.loadFailed")} onRetry={onRetry} error={error}
                 emptyMessage={search ? t("manage.analytics.people.dropoff.emptyFiltered") : t("manage.analytics.people.dropoff.empty")}
                 toolbar={<>
                     <ManageTableSearch value={search} label={t("manage.analytics.people.dropoff.search")} onChange={value => {setSearch(value); setPage(1);}} />
@@ -100,12 +100,12 @@ function DropOffTable({data, state, onRetry, period, eventID}: {data?: Participa
     </AnalyticsBlock>;
 }
 
-function IncompleteTeamsTable({data, state, onRetry}: {data?: Participants["Teams"]; state: "loading" | "error" | "ready"; onRetry: () => void}) {
+function IncompleteTeamsTable({data, state, onRetry, error}: {error?: unknown; data?: Participants["Teams"]; state: "loading" | "error" | "ready"; onRetry: () => void}) {
     const {event} = useManager();
     const rows = data?.Incomplete ?? [];
     const tableState = state !== "ready" ? state : rows.length === 0 ? "empty" : "ready";
     return <div className="event-analytics-people__table event-analytics-people__table--short">
-        <ManageTable event={event} state={tableState} loadingLabel={t("manage.analytics.people.fill.loading")} errorMessage={t("manage.analytics.people.fill.loadFailed")} onRetry={onRetry}
+        <ManageTable event={event} state={tableState} loadingLabel={t("manage.analytics.people.fill.loading")} errorMessage={t("manage.analytics.people.fill.loadFailed")} onRetry={onRetry} error={error}
             emptyMessage={t("manage.analytics.people.fill.noIncomplete")}
             head={<tr>
                 <th scope="col">{t("manage.analytics.people.fill.col.team")}</th>
@@ -139,7 +139,7 @@ export function AnalyticsParticipants() {
     const retry = () => void query.refetch();
     const blockState = query.isPending ? "loading" : !data ? "error" : "ready";
     const teamMode = data?.TeamMode ?? event.Participation === 1;
-    const chartLabels = {loadingLabel: t("manage.analytics.chart.loading"), errorMessage: t("manage.analytics.chart.loadFailed"), onRetry: retry};
+    const chartLabels = {loadingLabel: t("manage.analytics.chart.loading"), errorMessage: t("manage.analytics.chart.loadFailed"), onRetry: retry, error: query.error};
 
     const registered = data?.Funnel.find(stage => stage.Stage === "registered")?.Count ?? 0;
     const approved = data?.Funnel.find(stage => stage.Stage === "approved")?.Count ?? 0;
@@ -171,7 +171,7 @@ export function AnalyticsParticipants() {
             <div className="event-analytics-fill">
                 <AnalyticsChart event={event} state={chartState(query.isPending, data, !!data && fillHasData(data.Teams))} option={data && fillHasData(data.Teams) ? fillChartOption(data.Teams) : undefined}
                     height={320} ariaLabel={t("manage.analytics.people.fill.title")} emptyMessage={t("manage.analytics.people.fill.empty")} {...chartLabels} />
-                <IncompleteTeamsTable data={data?.Teams} state={blockState} onRetry={retry} />
+                <IncompleteTeamsTable data={data?.Teams} state={blockState} onRetry={retry} error={query.error} />
             </div>
             {data && <p className="event-analytics-people__note event-analytics-people__body">{t("manage.analytics.people.fill.summary", {pending: data.Teams.PendingInvitees, withoutTeam: data.Teams.WithoutTeam})}</p>}
         </AnalyticsBlock>}
@@ -186,6 +186,6 @@ export function AnalyticsParticipants() {
             </div>}
         </AnalyticsBlock>
 
-        <DropOffTable data={data?.DropOff} state={blockState} onRetry={retry} period={filter.period} eventID={eventID} />
+        <DropOffTable data={data?.DropOff} state={blockState} onRetry={retry} error={query.error} period={filter.period} eventID={eventID} />
     </AnalyticsPage>;
 }

@@ -6,6 +6,7 @@ import {toast} from "react-hot-toast";
 import {sendInvitations, type InvitationResult} from "@/api/manageInvites";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {t, tPlural} from "@/i18n/t";
 import {CsvField} from "./invites/CsvField";
 import type {FilePickerHandle} from "@/components/ui/EventFilePicker";
@@ -131,7 +132,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} header={templateHeader(schema, "invite")} fieldLines={fieldHelp(schema)}
                 examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), ...exampleRow(schema.participant, true)]]}
                 templateName={t("manage.invites.template.inviteFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy || formQuery.isError} templateDisabled={formQuery.isPending} />
-            {formQuery.isError && <p className="ib-field__error" role="alert">{t("manage.invites.csv.formsFailed")}</p>}
+            {formQuery.isError && <EventLoadError compact message={t("manage.invites.csv.formsFailed")} error={formQuery.error} onRetry={() => void formQuery.refetch()} />}
             {fileName && csvChips.length > 0 && <p className="event-modal__summary" role="status">{tPlural("manage.invites.csv.summary", valid.length, {named})} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>}
             {fileName && csvIssues.length === 0 && <MissingFieldsSummary rows={valid.map(chip => ({name: chip.email, missing: chip.missing ?? []}))} />}
             {valid.length > invitationLimit && <p className="ib-field__error" role="alert">{t("manage.participants.invite.limit")}</p>}

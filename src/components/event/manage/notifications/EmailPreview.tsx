@@ -26,7 +26,7 @@ export function EmailPreview({event, input, valid = true}: {event: PublicEventIn
         <div className="event-email-preview__canvas">
             {!input || !valid ? <EmptyState message={t("manage.email.previewInvalid")} />
                 : preview.isPending ? <EventLoading event={event} label={t("manage.email.previewLoading")} />
-                    : preview.isError ? <EventLoadError message={t("manage.email.previewError")} onRetry={() => void preview.refetch()} />
+                    : preview.isError ? <EventLoadError message={t("manage.email.previewError")} error={preview.error} onRetry={() => void preview.refetch()} />
                         : <iframe title={t("manage.email.previewFrame")} sandbox="" srcDoc={emailPreviewDocument(preview.data.HTML)} />}
         </div>
     </div>;

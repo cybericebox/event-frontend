@@ -13,6 +13,7 @@ import type {ParticipantAnswers} from "@/api/participantForm";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {t} from "@/i18n/t";
 import {CsvField} from "./invites/CsvField";
 import type {FilePickerHandle} from "@/components/ui/EventFilePicker";
@@ -208,7 +209,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
                     [t("manage.invites.template.team"), ...exampleRow(schema.team, false), t("manage.invites.template.email2"), t("manage.invites.template.firstName2"), t("manage.invites.template.lastName2"), "", ...exampleRow(schema.participant, true)],
                 ]}
                 templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy || participantFormQuery.isError || fieldsQuery.isError} templateDisabled={participantFormQuery.isPending || fieldsQuery.isPending} />
-            {(participantFormQuery.isError || fieldsQuery.isError) && <p className="ib-field__error" role="alert">{t("manage.invites.csv.formsFailed")}</p>}
+            {(participantFormQuery.isError || fieldsQuery.isError) && <EventLoadError compact message={t("manage.invites.csv.formsFailed")} error={participantFormQuery.error ?? fieldsQuery.error} onRetry={() => {void participantFormQuery.refetch(); void fieldsQuery.refetch();}} />}
             <p className="ib-field__hint">{t("manage.teams.batch.captainMarks")}</p>
             {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}
             {preview && preview.Issues.length === 0 && <MissingFieldsSummary rows={[...csvTeams.map(team => ({name: team.name, missing: team.missing})), ...csvTeams.flatMap(team => team.members.map(member => ({name: member.email, missing: member.missing ?? []})))]} />}

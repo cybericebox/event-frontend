@@ -133,7 +133,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     }
 
     if (subscriptions.isPending || templates.isPending) return <EventLoading event={event} label={t("manage.email.loading")} />;
-    if (subscriptions.isError || templates.isError) return <EventLoadError message={t("manage.email.loadError")} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} />;
+    if (subscriptions.isError || templates.isError) return <EventLoadError message={t("manage.email.loadError")} error={subscriptions.error ?? templates.error} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} />;
     if (!channelSignals(rows, "email").includes(signal)) return <div className="event-manage-settings"><Link className="event-template-header__back" href={BASE}>{t("manage.email.title")}</Link><EmptyState message={t("manage.notifications.templateNotFound")} /></div>;
 
     const label = signalLabel(signal);

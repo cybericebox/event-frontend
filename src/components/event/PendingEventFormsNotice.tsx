@@ -4,6 +4,7 @@ import Link from "next/link";
 import {useQuery} from "@tanstack/react-query";
 import {ClipboardList} from "lucide-react";
 import {getPendingEventForms} from "@/api/participantEventForms";
+import {EventLoadError} from "./EventLoadError";
 import {t, tPlural} from "@/i18n/t";
 
 export function PendingEventFormsNotice({eventID}: {eventID: string}) {
@@ -12,6 +13,6 @@ export function PendingEventFormsNotice({eventID}: {eventID: string}) {
         retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true,
     });
     if (query.isPending || (query.isSuccess && query.data.length === 0)) return null;
-    if (query.isError) return <div className="event-forms-notice" role="alert"><span>{t("forms.notice.failed")}</span><button className="ib-btn ib-btn--sm" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
+    if (query.isError) return <EventLoadError compact message={t("forms.notice.failed")} error={query.error} onRetry={() => void query.refetch()} />;
     return <div className="event-forms-notice"><ClipboardList size={18} /><div><strong>{t("forms.notice.title")}</strong><p>{query.data.length === 1 ? query.data[0].Form.Title : tPlural("forms.notice.pending", query.data.length)}</p></div><Link className="ib-btn ib-btn--sm" href="/forms">{t("common.view")}</Link></div>;
 }

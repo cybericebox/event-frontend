@@ -107,7 +107,7 @@ function SurveysPage() {
     }
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.surveys.loading")} />;
-    if (query.isError) return <EventLoadError message={t("manage.surveys.loadFailed")} onRetry={() => void query.refetch()} />;
+    if (query.isError) return <EventLoadError message={t("manage.surveys.loadFailed")} error={query.error} onRetry={() => void query.refetch()} />;
 
     return <div className="event-manage-content event-manage-surveys">
         <header className="event-manage-heading"><div><h1>{t("manage.nav.surveys")}</h1><p>{t("manage.surveys.subtitle")}</p></div><span className="event-attempts-manager__total">{tPlural("manage.surveys.count", query.data.length)}</span></header>

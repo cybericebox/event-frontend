@@ -41,6 +41,13 @@ describe("manage table states", () => {
     });
 });
 
+describe("manage table error code", () => {
+    it("shows the error code of a failed load", () => {
+        render(<ManageTable event={event} state="error" loadingLabel="L" emptyMessage="E" errorMessage="Помилка" onRetry={vi.fn()} error={{status: 500}} head={<tr><th scope="col">Назва</th></tr>} />);
+        expect(screen.getByText("Код помилки: 500")).toBeTruthy();
+    });
+});
+
 describe("manage table pagination", () => {
     it("shows the total and page X of Y and walks pages", () => {
         const onNext = vi.fn();

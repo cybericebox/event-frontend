@@ -108,7 +108,7 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
     }
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.fields.loading")} />;
-    if (query.isError) return <EventLoadError message={t("manage.fields.loadFailed")} onRetry={() => void query.refetch()} />;
+    if (query.isError) return <EventLoadError message={t("manage.fields.loadFailed")} error={query.error} onRetry={() => void query.refetch()} />;
 
     return <div className="event-manage-content event-manage-form">
         <div className="event-manage-form__head"><p>{scope === "team" ? t("manage.fields.introTeam") : t("manage.fields.introParticipant")}</p><span className="event-attempts-manager__total">{query.data ? t("manage.fields.version", {version: query.data.Version}) : t("manage.fields.notSaved")}</span></div>

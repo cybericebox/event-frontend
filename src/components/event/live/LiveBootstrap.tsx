@@ -37,7 +37,7 @@ function LiveLinkBootstrap({token}: {token: string}) {
     const screen = useQuery({queryKey: ["event-live-link", token], queryFn: () => getLiveScreenByLink(token), retry: false, refetchOnWindowFocus: false});
     useEffect(() => {if (screen.data) applyEventTheme(screen.data.Event);}, [screen.data]);
     if (screen.error instanceof LiveScreenLinkError && screen.error.status === 403) return <LiveLinkClosed />;
-    if (screen.isError) return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} onRetry={() => void screen.refetch()} /></main>;
+    if (screen.isError) return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} error={screen.error} onRetry={() => void screen.refetch()} /></main>;
     if (!screen.data) return <main className="live-fullscreen"><EventLoading label={t("live.link.checking")} /></main>;
     return <LiveScreen event={screen.data.Event} token={token} initialLayout={screen.data.Layout} />;
 }
@@ -71,7 +71,7 @@ function LiveStaffBootstrap() {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
         if (status === 401 || (status === 404 && event.isError)) return <State title={t("live.signIn.title")} text={t("live.signIn.text")} action={<a className="ib-btn ib-btn--primary" href={signInHref()}>{t("account.signIn")}</a>} />;
         if (status === 403) return <State title={t("live.forbidden.title")} text={t("live.forbidden.text")} action={<Link className="ib-btn" href="/">{t("live.toSite")}</Link>} />;
-        return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} /></main>;
+        return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} error={event.error ?? access.error} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} /></main>;
     }
     if (!event.data || !access.data) return <main className="live-fullscreen"><EventLoading event={event.data} label={t("live.checkingAccess")} /></main>;
     return <LiveScreen event={event.data} />;

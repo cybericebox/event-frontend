@@ -29,6 +29,7 @@ export function useBoardSets(eventID: string) {
         attachments, groups, sets,
         pending: attachments.isPending || groups.isPending || sets.isPending,
         failed: attachments.isError || groups.isError || sets.isError,
+        error: attachments.error ?? groups.error ?? sets.error,
         retry: () => void Promise.all([attachments.refetch(), groups.refetch(), sets.refetch()]),
         refreshSets, refreshGroups, refreshAll,
     };

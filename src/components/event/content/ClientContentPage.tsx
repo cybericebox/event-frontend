@@ -45,7 +45,7 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
     if (!eventID || page.isPending) return <EventLoading event={privateEvent} label={t("content.page.loading")} />;
     if (page.isError) {
         const missing = page.error instanceof ManageApiError && [403, 404].includes(page.error.status);
-        if (!missing) return <EventLoadError message={t("content.page.failed")} onRetry={() => void page.refetch()} />;
+        if (!missing) return <EventLoadError message={t("content.page.failed")} error={page.error} onRetry={() => void page.refetch()} />;
         return <div className="event-shell-state" role="alert">
             <h1>{t("content.page.missing")}</h1>
         </div>;

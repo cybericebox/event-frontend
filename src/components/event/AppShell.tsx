@@ -84,11 +84,7 @@ function ShellContent({children, event, unavailable}: Props) {
         return <EventLoading event={event} full label={t("shell.loadingEventFull")} />;
     }
     if (currentUser.isError || joinStatus.isError || (approved && (participantInfo.isError || ownTeam.isError))) {
-        return <div className="event-shell-state" role="status">
-            <h1>{t("shell.accessFailed.title")}</h1>
-            <p>{t("shell.accessFailed.body")}</p>
-            <button className="ib-btn" onClick={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.isError ? participantInfo.refetch() : ownTeam.refetch())}>{t("common.retry")}</button>
-        </div>;
+        return <EventErrorScreen page title={t("shell.accessFailed.title")} body={t("shell.accessFailed.body")} onRetry={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.isError ? participantInfo.refetch() : ownTeam.refetch())} />;
     }
     const authenticated = !!currentUser.data;
     if (approved && participantInfo.data?.EventID !== event.EventID) {

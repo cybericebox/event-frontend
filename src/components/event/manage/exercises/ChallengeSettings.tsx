@@ -52,7 +52,7 @@ export function ChallengeSettings() {
     const [savingConfig, setSavingConfig] = useState(false);
 
     if (scoring.isPending || lifecycle.isPending || config.isPending) return <EventLoading event={event} />;
-    if (scoring.isError || lifecycle.isError || config.isError) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
+    if (scoring.isError || lifecycle.isError || config.isError) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} error={scoring.error ?? lifecycle.error ?? config.error} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
 
     const original = draftOf(scoring.data);
     const value = edit?.eventID === eventID ? edit.value : original;

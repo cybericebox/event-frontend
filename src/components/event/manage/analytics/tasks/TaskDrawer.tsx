@@ -92,7 +92,7 @@ function Body({detail, eventID, period}: {detail: AnalyticsTaskDetail; eventID: 
         {sensitive && <section className="event-analytics-drawer__section" aria-label={t("manage.analytics.tasks.detail.wrong")}>
             <h3>{t("manage.analytics.tasks.detail.wrong")}<HelpButton label={t("manage.analytics.tasks.detail.wrong")} hint={t("manage.analytics.tasks.detail.wrongHint")} /></h3>
             <div className="event-analytics-tasks__table event-analytics-tasks__table--drawer">
-                <ManageTable event={event} state={wrongState} loadingLabel={t("manage.analytics.tasks.detail.loading")} emptyMessage={t("manage.analytics.tasks.detail.wrongEmpty")} errorMessage={t("manage.analytics.tasks.detail.wrongFailed")} onRetry={() => void wrong.refetch()}
+                <ManageTable event={event} state={wrongState} loadingLabel={t("manage.analytics.tasks.detail.loading")} emptyMessage={t("manage.analytics.tasks.detail.wrongEmpty")} errorMessage={t("manage.analytics.tasks.detail.wrongFailed")} onRetry={() => void wrong.refetch()} error={wrong.error}
                     head={<tr>
                         <th scope="col">{t("manage.analytics.tasks.detail.col.answer")}</th>
                         <th scope="col" className="ib-num">{t("manage.analytics.tasks.col.attempts")}</th>

@@ -185,7 +185,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
     </>;
 
     return <>
-        <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.attempts.loading")} emptyMessage={filtered ? t("manage.attempts.emptyFiltered") : t("manage.attempts.empty")} errorMessage={t("manage.attempts.loadFailed")} onRetry={() => void pageQuery.refetch()}
+        <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.attempts.loading")} emptyMessage={filtered ? t("manage.attempts.emptyFiltered") : t("manage.attempts.empty")} errorMessage={t("manage.attempts.loadFailed")} onRetry={() => void pageQuery.refetch()} error={pageQuery.error}
             toolbar={toolbar}
             head={<tr>
                 <th scope="col">{t("manage.attempts.col.time", {offset})}</th>

@@ -65,7 +65,7 @@ export function RegistrationSettings() {
 
     const scheduleHint = t("manage.registration.scheduleHint").split("{link}");
     if (configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || lifecycleQuery.isError || !config || !lifecycle) return <EventLoadError message={t("manage.registration.loadFailed")} onRetry={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}} />;
+    if (configQuery.isError || lifecycleQuery.isError || !config || !lifecycle) return <EventLoadError message={t("manage.registration.loadFailed")} error={configQuery.error ?? lifecycleQuery.error} onRetry={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}} />;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <section className="event-manage-section">

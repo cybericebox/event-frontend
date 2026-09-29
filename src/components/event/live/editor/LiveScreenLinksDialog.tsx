@@ -57,7 +57,7 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
     return <DialogModal open={open} onClose={close} size="md" title={t("manage.live.links.title")} description={t("manage.live.links.description")}
         footer={<button className="ib-btn" type="button" onClick={close}>{t("common.close")}</button>}>
         <div className="event-live-links">
-            {link.isError ? <EventLoadError message={t("manage.live.links.loadError")} onRetry={() => void link.refetch()} />
+            {link.isError ? <EventLoadError message={t("manage.live.links.loadError")} error={link.error} onRetry={() => void link.refetch()} />
                 : link.isPending ? <EventLoading event={event} compact label={t("manage.live.links.loading")} />
                     : !current ? <div className="event-live-links__create">
                         <div className="event-live-field">

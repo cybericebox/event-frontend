@@ -57,7 +57,7 @@ export default function ResultsSettingsPage() {
     }
 
     if (settingsQuery.isPending) return <EventLoading event={event} />;
-    if (settingsQuery.isError || !value) return <EventLoadError message={t("manage.results.settings.loadFailed")} onRetry={() => {void settingsQuery.refetch();}} />;
+    if (settingsQuery.isError || !value) return <EventLoadError message={t("manage.results.settings.loadFailed")} error={settingsQuery.error} onRetry={() => {void settingsQuery.refetch();}} />;
 
     const freezeAt = freezeStartAt(event.FinishTime, value.FreezeMinutes);
     const teamMode = event.Participation === 1;

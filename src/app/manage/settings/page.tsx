@@ -55,7 +55,7 @@ export default function ManageGeneralPage() {
     }
 
     if (nameQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
-    if (nameQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.settings.loadError")} onRetry={() => {void nameQuery.refetch(); void configQuery.refetch();}} />;
+    if (nameQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.settings.loadError")} error={nameQuery.error ?? configQuery.error} onRetry={() => {void nameQuery.refetch(); void configQuery.refetch();}} />;
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <header className="event-manage-heading"><div><h1>{t("manage.settings.title")}</h1><p>{t("manage.settings.intro")}</p></div></header>
         {!canManage && <p className="event-manage-notice">{t("common.viewOnly")}</p>}

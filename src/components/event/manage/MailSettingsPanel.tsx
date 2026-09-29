@@ -39,7 +39,7 @@ export function MailSettingsPanel() {
     const [resetError, setResetError] = useState("");
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.mail.settings.loading")} />;
-    if (query.isError) return <EventLoadError message={t("manage.mail.settings.loadError")} onRetry={() => void query.refetch()} />;
+    if (query.isError) return <EventLoadError message={t("manage.mail.settings.loadError")} error={query.error} onRetry={() => void query.refetch()} />;
 
     const settings = query.data;
     const savedIdentity = identityForm(settings.Identity);

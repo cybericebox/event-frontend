@@ -50,7 +50,7 @@ export function ChallengeGroupsManager() {
     const [taskOrder, setTaskOrder] = useState<{groupID: string | null; ids: string[]} | null>(null);
 
     if (board.pending) return <EventLoading event={event} />;
-    if (board.failed) return <EventLoadError message={t("manage.exercises.groups.loadFailed")} onRetry={board.retry} />;
+    if (board.failed) return <EventLoadError message={t("manage.exercises.groups.loadFailed")} error={board.error} onRetry={board.retry} />;
 
     const sorted = orderedGroups(board.groups.data ?? []);
     const groups = groupOrder ? groupOrder.map(id => sorted.find(group => group.ID === id)).filter((group): group is EventChallengeGroup => !!group) : sorted;

@@ -91,7 +91,7 @@ function ModeratorChallengesDialog({eventID, open, onClose}: {eventID: string; o
     return <Dialog open={open} onOpenChange={next => {if (!next) onClose();}}><DialogContent className="max-h-[90dvh] max-w-[min(640px,calc(100vw-24px))] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("manage.labs.moderators.title")}</DialogTitle><DialogDescription>{t("manage.labs.moderators.description")}</DialogDescription></DialogHeader>
         {challenges.isPending ? <EventLoading compact />
-            : challenges.isError ? <EventLoadError compact message={standErrorMessage(challenges.error, t("manage.labs.moderators.loadFailed"))} onRetry={() => void challenges.refetch()} />
+            : challenges.isError ? <EventLoadError compact message={standErrorMessage(challenges.error, t("manage.labs.moderators.loadFailed"))} error={challenges.error} onRetry={() => void challenges.refetch()} />
             : challenges.data.length === 0 ? <EmptyState compact message={t("manage.labs.moderators.empty")} />
             : <ul className="event-stands__challenges">{challenges.data.map(challenge => {
                 const lab = runtime[challenge.ChallengeID];
@@ -141,7 +141,7 @@ export default function ManageLabsPage() {
     if (labsQuery.isPending) return <EventLoading event={event} label={t("manage.labs.loading")} />;
     if (labsQuery.isError) {
         if (isInfrastructureNotAllowed(labsQuery.error)) return <div className="event-manage-settings event-stands">{heading}<div className="event-manage-notice">{t("manage.labs.notAllowed")}</div></div>;
-        return <EventLoadError message={t("manage.labs.loadFailed")} onRetry={() => void labsQuery.refetch()} />;
+        return <EventLoadError message={t("manage.labs.loadFailed")} error={labsQuery.error} onRetry={() => void labsQuery.refetch()} />;
     }
     const labs = labsQuery.data;
     const items = orderStands(labs.Items);

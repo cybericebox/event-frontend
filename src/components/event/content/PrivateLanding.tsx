@@ -18,7 +18,7 @@ export function PrivateLanding() {
     });
 
     if (!event || content.isPending) return <EventLoading event={event} label={t("content.landing.loading")} />;
-    if (content.isError) return <EventLoadError message={t("content.landing.failed")} onRetry={() => void content.refetch()} />;
+    if (content.isError) return <EventLoadError message={t("content.landing.failed")} error={content.error} onRetry={() => void content.refetch()} />;
     return <div className="event-landing ib-blocks">
         <ContentBlocks document={content.data.Landing} variables={content.data.Variables} title={event.Name} coverImage={event.PreviewPicture} eventID={event.EventID} />
     </div>;

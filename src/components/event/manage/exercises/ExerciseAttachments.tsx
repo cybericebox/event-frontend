@@ -102,7 +102,7 @@ export function ExerciseAttachments() {
     }
 
     if (board.pending || scoringQuery.isPending || lifecycleQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
-    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.exercises.loadFailed")} onRetry={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}} />;
+    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.exercises.loadFailed")} error={board.error ?? scoringQuery.error ?? lifecycleQuery.error ?? configQuery.error} onRetry={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}} />;
 
     const copy = action && actionCopy(action);
     // Infrastructure can be enabled only before publication.

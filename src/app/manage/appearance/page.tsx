@@ -82,7 +82,7 @@ export default function ManageAppearancePage() {
     }
 
     if (configQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || !configQuery.data) return <EventLoadError message={t("manage.appearance.loadFailed")} onRetry={() => void configQuery.refetch()} />;
+    if (configQuery.isError || !configQuery.data) return <EventLoadError message={t("manage.appearance.loadFailed")} error={configQuery.error} onRetry={() => void configQuery.refetch()} />;
 
     return <form className="event-manage-settings event-manage-appearance" onSubmit={save}>
         <header className="event-manage-heading"><div><h1>{t("manage.appearance.title")}</h1><p>{t("manage.appearance.lead")}</p></div></header>
