@@ -55,6 +55,12 @@ const audienceSchema = z.object({kind: z.string()}).passthrough();
 const subscriptionSchema = z.object({
     SignalType: z.string(), Channel: z.enum(["in_app", "email"]), Enabled: z.boolean(),
     Audience: audienceSchema, Source: z.enum(["platform", "event"]), Required: z.boolean().default(false),
+    // Per-signal options, e.g. days_before_start of the start reminder.
+    Config: z.record(z.string(), z.unknown()).nullish().transform(config => config ?? {}),
+});
+const typeSchema = z.object({
+    Type: z.string(), Channels: z.array(z.string()),
+    Variables: z.array(z.object({Name: z.string(), Description: z.string(), Default: z.string()})),
 });
 const actionSchema = z.object({label: z.string(), href: z.string()});
 const inAppTemplateSchema = z.object({
@@ -66,6 +72,23 @@ const inAppTemplateSchema = z.object({
     Source: z.enum(["platform", "event"]),
 });
 export type ManageNotificationSubscription = z.infer<typeof subscriptionSchema>;
+export type ManageNotificationType = z.infer<typeof typeSchema>;
+export type ManageNotificationVariable = ManageNotificationType["Variables"][number];
+
+// The start reminder is sent this many days before the event starts.
+export const REMINDER_SIGNAL = "participant.event.start_reminder";
+export const REMINDER_DEFAULT_DAYS = 7;
+export const REMINDER_MIN_DAYS = 1;
+export const REMINDER_MAX_DAYS = 30;
+
+export function reminderDays(subscription: Pick<ManageNotificationSubscription, "Config"> | undefined): number {
+    const value = subscription?.Config.days_before_start;
+    return typeof value === "number" && Number.isInteger(value) ? value : REMINDER_DEFAULT_DAYS;
+}
+
+export function validReminderDays(days: number): boolean {
+    return Number.isInteger(days) && days >= REMINDER_MIN_DAYS && days <= REMINDER_MAX_DAYS;
+}
 export type ManageInAppTemplate = z.infer<typeof inAppTemplateSchema>;
 export type ManageInAppTemplateInput = Pick<ManageInAppTemplate, "NotificationType" | "Title" | "Body" | "Link" | "Icon" | "Tone" | "AccentColor" | "Surface" | "AutoDismissMs" | "Actions" | "Dismissible">;
 
@@ -84,9 +107,14 @@ export async function getManageNotificationSubscriptions(eventID: string): Promi
     return request(eventID, "notification-subscriptions", z.array(subscriptionSchema));
 }
 
-export async function putManageNotificationSubscription(eventID: string, input: Pick<ManageNotificationSubscription, "SignalType" | "Channel" | "Enabled" | "Audience">): Promise<ManageNotificationSubscription> {
-    const body = {SignalType: input.SignalType, Channel: input.Channel, Enabled: input.Enabled, Audience: input.Audience};
+// Config is sent only when given: the server keeps the stored options otherwise.
+export async function putManageNotificationSubscription(eventID: string, input: Pick<ManageNotificationSubscription, "SignalType" | "Channel" | "Enabled" | "Audience"> & {Config?: Record<string, unknown>}): Promise<ManageNotificationSubscription> {
+    const body = {SignalType: input.SignalType, Channel: input.Channel, Enabled: input.Enabled, Audience: input.Audience, ...(input.Config ? {Config: input.Config} : {})};
     return request(eventID, "notification-subscriptions", subscriptionSchema, "PUT", body);
+}
+
+export async function getManageNotificationTypes(eventID: string): Promise<ManageNotificationType[]> {
+    return request(eventID, "notification-types", z.array(typeSchema));
 }
 
 export async function resetManageNotificationSubscription(eventID: string, signalType: string, channel: "in_app" | "email"): Promise<void> {
