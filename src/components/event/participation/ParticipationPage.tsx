@@ -3,6 +3,7 @@
 import {useState, type FormEvent, type ReactNode} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
+import {EmptyState} from "@/components/ui/EmptyState";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {Copy} from "lucide-react";
@@ -316,7 +317,10 @@ function VpnSection() {
 export function ParticipationPage() {
     const access = useParticipantContext();
     const [now] = useState(() => Date.now());
-    if (!access) return <div className="event-participation"><div className="ib-board__empty"><b>{t("participation.title")}</b>{t("participation.unavailable")}<br /><Link className="ib-btn ib-btn--primary" href="/join">{t("participation.noTeam.join")}</Link></div></div>;
+    if (!access) return <div className="event-participation">
+        <header className="ib-page-header"><div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("participation.title")}</h1></div></div></header>
+        <EmptyState message={t("participation.unavailable")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("participation.noTeam.join")}</Link>} />
+    </div>;
     const {event, participantInfo: info, ownTeam} = access;
     if (!info) return <EventLoading label={t("participation.loading")} />;
     const started = Date.parse(event.StartTime) <= now;

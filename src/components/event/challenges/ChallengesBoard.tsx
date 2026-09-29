@@ -55,10 +55,6 @@ function Page({banners, sub, view, onView, children}: {banners?: ReactNode; sub?
     </div>;
 }
 
-function Empty({title, children}: {title: string; children?: ReactNode}) {
-    return <div className="ib-board__empty"><b>{title}</b>{children}</div>;
-}
-
 function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, banners}: {
     eventID: string; mode: BoardMode; challenges: OwnChallenge[]; teamMode: boolean; finished: boolean;
     showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; banners?: ReactNode;
@@ -103,7 +99,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
     const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: () => getModeratorsBoard(event.EventID), enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
     if (access.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (!access.data?.CanManage) return <Page><Empty title={t("challenges.participantsOnly")}><br /><Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link></Empty></Page>;
+    if (!access.data?.CanManage) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
     const banner = <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
     if (board.isPending) return <EventLoading label={t("challenges.loading")} />;
     if (board.isError) return <Page banners={banner}><EventLoadError message={t("challenges.moderators.unavailableTitle")} onRetry={() => void board.refetch()} /></Page>;
@@ -139,7 +135,7 @@ export function ChallengesBoard() {
     if (teamMode && !ownTeam) {
         return <Page banners={<EventBanner title={t("challenges.noTeam.title")} message={t("challenges.noTeam.message")} action={<Link className="ib-btn ib-btn--sm ib-btn--primary" href="/participation">{t("challenges.noTeam.action")}</Link>} />} />;
     }
-    if (!ownTeam) return <Page><Empty title={t("challenges.preparing.title")}>{t("challenges.preparing.body")}</Empty></Page>;
+    if (!ownTeam) return <Page><EmptyState message={t("challenges.preparing")} /></Page>;
     if (!admitted) {
         const missing = missingMembers(ownTeam.MemberCount, ownTeam.MinTeamSize ?? info?.MinTeamSize);
         const title = missing > 0 ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title");
