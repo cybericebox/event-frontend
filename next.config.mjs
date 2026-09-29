@@ -17,7 +17,7 @@ const nextConfig = () => {
             minimumCacheTTL: 24 * 60 * 60,// 24 hours
         },
         output: 'standalone',
-        allowedDevOrigins: DOMAIN ? [DOMAIN, `*.${DOMAIN}`] : [],
+        allowedDevOrigins: [...new Set([...(DOMAIN ? [DOMAIN] : []), "cybericebox.com", "cybericebox-dev.pp.ua", "cybericebox.pp.ua"])].flatMap((d) => [d, `*.${d}`]),
     };
 };
 
