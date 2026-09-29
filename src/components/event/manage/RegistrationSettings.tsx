@@ -9,6 +9,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {t} from "@/i18n/t";
 
 
 export function RegistrationSettings() {
@@ -52,29 +53,30 @@ export function RegistrationSettings() {
                 queryClient.setQueryData(["event-management-lifecycle", eventID], updated);
             }
             setEdit(null);
-            toast.success("Налаштування реєстрації збережено");
+            toast.success(t("manage.registration.saved"));
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
-            toast.error(status === 409 ? "Налаштування змінилися в іншому місці. Оновіть сторінку." : "Не вдалося зберегти налаштування реєстрації.");
+            toast.error(status === 409 ? t("manage.settingsConflict") : t("manage.registration.saveFailed"));
         } finally {setSaving(false);}
     }
 
+    const scheduleHint = t("manage.registration.scheduleHint").split("{link}");
     if (configQuery.isPending || lifecycleQuery.isPending) return <EventLoading event={event} />;
-    if (configQuery.isError || lifecycleQuery.isError || !config || !lifecycle) return <div className="event-manage-error" role="alert"><h2>Не вдалося завантажити налаштування реєстрації</h2><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>Повторити</button></div>;
+    if (configQuery.isError || lifecycleQuery.isError || !config || !lifecycle) return <div className="event-manage-error" role="alert"><h2>{t("manage.registration.loadFailed")}</h2><button className="ib-btn" onClick={() => {void configQuery.refetch(); void lifecycleQuery.refetch();}}>{t("common.retry")}</button></div>;
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <section className="event-manage-section">
-            <div className="event-manage-field"><ManageFieldLabel title="Тип реєстрації" help={"Визначає, як нові учасники приєднуються до події.\n\n• Закрита — нові заявки недоступні.\n• За схваленням — заявку перевіряє модератор.\n• Відкрита — учасники приєднуються самостійно.\n\nДо публікації реєстрація недоступна незалежно від цього вибору."} helpPlacement="bottom" required /><EventSelect ariaLabel="Тип реєстрації" value={String(registration)} options={[{value: "0", label: "Закрита"}, {value: "1", label: "За схваленням"}, {value: "2", label: "Відкрита"}]} onValueChange={value => update({registration: Number(value) as 0 | 1 | 2})} disabled={!canManage || saving} /></div>
-            <div className="event-manage-field"><ManageFieldLabel title="Період приєднання" help={"Визначає, до якого часу можна приєднатися до події.\n\n• До початку — приєднання закриється на старті.\n• Протягом події — приєднання доступне й після старту."} helpPlacement="bottom" required />
-                <div className="event-manage-choice-group" role="radiogroup" aria-label="Період приєднання">
-                    <label><input type="radio" name="join-policy" checked={joinPolicy === 0} onChange={() => update({joinPolicy: 0})} disabled={!canManage || saving || !lifecycle.Configured} /><span><strong>До початку</strong><small>Приєднання закриється на старті.</small></span></label>
-                    <label><input type="radio" name="join-policy" checked={joinPolicy === 1} onChange={() => update({joinPolicy: 1})} disabled={!canManage || saving || !lifecycle.Configured} /><span><strong>Протягом події</strong><small>Приєднатися можна й після старту.</small></span></label>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.type")} help={t("manage.registration.typeHelp")} helpPlacement="bottom" required /><EventSelect ariaLabel={t("manage.registration.type")} value={String(registration)} options={[{value: "0", label: t("manage.registration.closed")}, {value: "1", label: t("manage.registration.approval")}, {value: "2", label: t("manage.registration.open")}]} onValueChange={value => update({registration: Number(value) as 0 | 1 | 2})} disabled={!canManage || saving} /></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.joinPeriod")} help={t("manage.registration.joinPeriodHelp")} helpPlacement="bottom" required />
+                <div className="event-manage-choice-group" role="radiogroup" aria-label={t("manage.registration.joinPeriod")}>
+                    <label><input type="radio" name="join-policy" checked={joinPolicy === 0} onChange={() => update({joinPolicy: 0})} disabled={!canManage || saving || !lifecycle.Configured} /><span><strong>{t("manage.registration.beforeStart")}</strong><small>{t("manage.registration.beforeStartNote")}</small></span></label>
+                    <label><input type="radio" name="join-policy" checked={joinPolicy === 1} onChange={() => update({joinPolicy: 1})} disabled={!canManage || saving || !lifecycle.Configured} /><span><strong>{t("manage.registration.duringEvent")}</strong><small>{t("manage.registration.duringEventNote")}</small></span></label>
                 </div>
-                {!lifecycle.Configured && <small>Період можна змінити після збереження <Link href="/manage/schedule">публікації та часу</Link>.</small>}
+                {!lifecycle.Configured && <small>{scheduleHint[0]}<Link href="/manage/schedule">{t("manage.registration.scheduleLink")}</Link>{scheduleHint[1]}</small>}
             </div>
-            {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title="Кількість команд" help={"Найбільша кількість команд, які можуть приєднатися до події.\n\nЗалиште порожнім, якщо обмеження не потрібне."} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage || saving} placeholder="Без обмеження" /></div>}
-            <div className="event-manage-field"><ManageFieldLabel title="Псевдоніми" help={"Учасник може задати псевдонім до старту події.\n\nПсевдонім бачать інші учасники в рейтингу. Організатори бачать і справжнє ім’я, і псевдонім."} /><label className="event-manage-form__switch"><input type="checkbox" checked={!!allowPseudonyms} onChange={change => update({allowPseudonyms: change.target.checked})} disabled={!canManage || saving} />Дозволити псевдоніми</label></div>
+            {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title={t("manage.registration.maxTeams")} help={t("manage.registration.maxTeamsHelp")} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage || saving} placeholder={t("manage.registration.noLimit")} /></div>}
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.pseudonyms")} help={t("manage.registration.pseudonymsHelp")} /><label className="event-manage-form__switch"><input type="checkbox" checked={!!allowPseudonyms} onChange={change => update({allowPseudonyms: change.target.checked})} disabled={!canManage || saving} />{t("manage.registration.allowPseudonyms")}</label></div>
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))}>{saving ? "Зберігаємо…" : "Зберегти"}</button></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><button className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))}>{saving ? t("common.saving") : t("common.save")}</button></div>}
     </form>;
 }

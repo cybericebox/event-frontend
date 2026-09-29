@@ -1,10 +1,12 @@
+import {t} from "@/i18n/t";
+
 export type RegistrationTab = "registration" | "participant-fields" | "team-fields";
 
 export function registrationTabs(teamMode: boolean): {value: RegistrationTab; label: string}[] {
     return [
-        {value: "registration", label: "Реєстрація"},
-        {value: "participant-fields", label: "Поля учасника"},
-        ...(teamMode ? [{value: "team-fields" as const, label: "Поля команди"}] : []),
+        {value: "registration", label: t("manage.registration.tab.registration")},
+        {value: "participant-fields", label: t("manage.registration.tab.participantFields")},
+        ...(teamMode ? [{value: "team-fields" as const, label: t("manage.registration.tab.teamFields")}] : []),
     ];
 }
 

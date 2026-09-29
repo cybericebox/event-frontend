@@ -1,11 +1,12 @@
 import type {ManageParticipantCounts, ParticipantListKind} from "@/api/manageParticipants";
+import {t} from "@/i18n/t";
 
 export type ParticipantTab = ParticipantListKind;
 
 export const participantTabs: {value: ParticipantTab; label: string; count: keyof ManageParticipantCounts}[] = [
-    {value: "participants", label: "Учасники", count: "Participants"},
-    {value: "applications", label: "Заявки", count: "Applications"},
-    {value: "invitations", label: "Запрошення", count: "Invitations"},
+    {value: "participants", label: t("manage.participants.tab.participants"), count: "Participants"},
+    {value: "applications", label: t("manage.participants.tab.applications"), count: "Applications"},
+    {value: "invitations", label: t("manage.participants.tab.invitations"), count: "Invitations"},
 ];
 
 // `?tab=` selects the tab; the legacy `?status=pending` link opens applications.

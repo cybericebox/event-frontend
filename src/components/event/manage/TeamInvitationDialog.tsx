@@ -5,6 +5,7 @@ import {toast} from "react-hot-toast";
 import {inviteManageParticipants, type ParticipantInvitationResult} from "@/api/manageParticipants";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {invitationEmails, parseInvitationCsv} from "./participantInvitations";
+import {t} from "@/i18n/t";
 
 export function TeamInvitationDialog({eventID, team, onClose, onSent}: {
     eventID: string;
@@ -26,23 +27,23 @@ export function TeamInvitationDialog({eventID, team, onClose, onSent}: {
             setResults(next);
             const sent = next.filter(result => !result.Error).length;
             if (sent) {
-                toast.success(`Надіслано запрошень: ${sent}`);
-                try {await onSent();} catch {toast.error("Не вдалося оновити список учасників.");}
+                toast.success(t("manage.participants.invite.sent", {count: sent}));
+                try {await onSent();} catch {toast.error(t("manage.participants.refreshFailed"));}
             }
             if (sent === next.length) {setManual(""); setCsvEmails([]);}
-        } catch {toast.error("Не вдалося надіслати запрошення. Спробуйте ще раз.");}
+        } catch {toast.error(t("manage.participants.invite.sendFailed"));}
         finally {setBusy(false);}
     }
 
     return <Dialog open={!!team} onOpenChange={open => {if (!open && !busy) onClose();}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto">
-        <DialogHeader><DialogTitle>Запросити до команди «{team?.Name}»</DialogTitle><DialogDescription>Вкажіть адреси вручну або додайте CSV. Учасники потраплять до команди після власного підтвердження. Місце перевіряється під час прийняття запрошення.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{t("manage.teams.invite.title", {name: team?.Name ?? ""})}</DialogTitle><DialogDescription>{t("manage.teams.invite.description")}</DialogDescription></DialogHeader>
         <div className="grid gap-4">
-            <label className="event-manage-field"><span>Адреси електронної пошти</span><textarea className="event-manage-input" rows={5} value={manual} onChange={event => setManual(event.target.value)} placeholder="Одна адреса на рядок" disabled={busy} /></label>
-            <label className="event-manage-field"><span>CSV-файл</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={busy} onChange={async event => {const file = event.target.files?.[0]; if (file) {try {setCsvEmails(parseInvitationCsv(await file.text())); setResults([]);} catch {toast.error("Не вдалося прочитати CSV-файл.");}}}} /><small>Колонка email або перша колонка файлу. До 200 адрес за раз.</small></label>
-            <p>Адрес для запрошення: {emails.length}</p>
-            {emails.length > 200 && <p className="event-manage-validation" role="alert">За один раз можна запросити не більше 200 учасників.</p>}
-            {results.length > 0 && <div role="status" className="grid gap-1">{results.map(result => <p key={result.Email}>{result.Email}: {result.Error || "запрошення надіслано"}</p>)}</div>}
-            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={onClose}>Закрити</button><button className="ib-btn ib-btn--primary" type="button" disabled={busy || emails.length === 0 || emails.length > 200} onClick={() => void send()}>{busy ? "Надсилаємо…" : "Надіслати запрошення"}</button></div>
+            <label className="event-manage-field"><span>{t("manage.participants.invite.emails")}</span><textarea className="event-manage-input" rows={5} value={manual} onChange={event => setManual(event.target.value)} placeholder={t("manage.participants.invite.emailsPlaceholder")} disabled={busy} /></label>
+            <label className="event-manage-field"><span>{t("manage.participants.invite.csv")}</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={busy} onChange={async event => {const file = event.target.files?.[0]; if (file) {try {setCsvEmails(parseInvitationCsv(await file.text())); setResults([]);} catch {toast.error(t("manage.participants.invite.csvFailed"));}}}} /><small>{t("manage.participants.invite.csvHint")}</small></label>
+            <p>{t("manage.participants.invite.count", {count: emails.length})}</p>
+            {emails.length > 200 && <p className="event-manage-validation" role="alert">{t("manage.participants.invite.limit")}</p>}
+            {results.length > 0 && <div role="status" className="grid gap-1">{results.map(result => <p key={result.Email}>{result.Email}: {result.Error || t("manage.participants.invite.resultSent")}</p>)}</div>}
+            <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={onClose}>{t("common.close")}</button><button className="ib-btn ib-btn--primary" type="button" disabled={busy || emails.length === 0 || emails.length > 200} onClick={() => void send()}>{busy ? t("manage.participants.invite.sending") : t("manage.participants.invite.send")}</button></div>
         </div>
     </DialogContent></Dialog>;
 }

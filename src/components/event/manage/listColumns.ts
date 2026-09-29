@@ -1,6 +1,7 @@
 import type {ListColumn} from "@/api/manageListColumns";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {isFormField} from "./participantFormEditor";
+import {t} from "@/i18n/t";
 
 export type FieldColumn = {key: string; label: string; visible: boolean};
 
@@ -38,8 +39,8 @@ export function toSavedColumns(columns: FieldColumn[]): ListColumn[] {
 
 export function formatAnswer(value: unknown): string {
     if (value === undefined || value === null || value === "") return "—";
-    if (value === true) return "Так";
-    if (value === false) return "Ні";
+    if (value === true) return t("common.yes");
+    if (value === false) return t("common.no");
     if (Array.isArray(value)) return value.map(formatAnswer).join(" · ") || "—";
     if (typeof value === "object") return JSON.stringify(value);
     return String(value);

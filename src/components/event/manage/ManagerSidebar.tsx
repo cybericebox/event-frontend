@@ -33,42 +33,43 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {EventBrandLogo} from "../EventBrandLogo";
 import {comparePageOrder} from "../content/pageNavigationOrder";
 import "./managerSidebar.css";
+import {t} from "@/i18n/t";
 
 type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean};
 type Group = {id: string; label: string; items: Item[]};
 
 // Пауза: повернути до навігації, коли з'явиться механізм призупинення події.
 const groups: Group[] = [
-    {id: "event", label: "Подія", items: [
-        {href: "/manage/settings", label: "Загальне", icon: Settings2},
-        {href: "/manage/appearance", label: "Вигляд", icon: Palette},
-        {href: "/manage/participation-settings", label: "Формат участі", icon: UsersRound},
-        {href: "/manage/schedule", label: "Публікація і час", icon: CalendarDays},
+    {id: "event", label: t("manage.nav.group.event"), items: [
+        {href: "/manage/settings", label: t("manage.nav.settings"), icon: Settings2},
+        {href: "/manage/appearance", label: t("manage.nav.appearance"), icon: Palette},
+        {href: "/manage/participation-settings", label: t("manage.nav.participationSettings"), icon: UsersRound},
+        {href: "/manage/schedule", label: t("manage.nav.schedule"), icon: CalendarDays},
     ]},
-    {id: "participation", label: "Участь", items: [
-        {href: "/manage/registration", label: "Реєстрація", icon: FilePenLine},
-        {href: "/manage/participants", label: "Учасники", icon: UserRound},
-        {href: "/manage/teams", label: "Команди", icon: Users, teamsOnly: true},
+    {id: "participation", label: t("manage.nav.group.participation"), items: [
+        {href: "/manage/registration", label: t("manage.nav.registration"), icon: FilePenLine},
+        {href: "/manage/participants", label: t("manage.nav.participants"), icon: UserRound},
+        {href: "/manage/teams", label: t("manage.nav.teams"), icon: Users, teamsOnly: true},
     ]},
-    {id: "challenges", label: "Завдання", items: [
-        {href: "/manage/exercise-groups", label: "Групи й порядок", icon: Layers3},
-        {href: "/manage/exercises", label: "Завдання", icon: Puzzle},
-        {href: "/manage/labs", label: "Стенди", icon: Server, infrastructureOnly: true},
-        {href: "/manage/scoring", label: "Профіль балів", icon: SlidersHorizontal},
-        {href: "/manage/submissions", label: "Спроби розв’язання", icon: Send},
+    {id: "challenges", label: t("manage.nav.group.challenges"), items: [
+        {href: "/manage/exercise-groups", label: t("manage.nav.exerciseGroups"), icon: Layers3},
+        {href: "/manage/exercises", label: t("manage.nav.exercises"), icon: Puzzle},
+        {href: "/manage/labs", label: t("manage.nav.labs"), icon: Server, infrastructureOnly: true},
+        {href: "/manage/scoring", label: t("manage.nav.scoring"), icon: SlidersHorizontal},
+        {href: "/manage/submissions", label: t("manage.nav.submissions"), icon: Send},
     ]},
-    {id: "pages", label: "Сторінки", items: [
-        {href: "/manage/content/landing", label: "Головна сторінка", icon: FileText},
+    {id: "pages", label: t("manage.nav.pages"), items: [
+        {href: "/manage/content/landing", label: t("manage.nav.landing"), icon: FileText},
     ]},
-    {id: "results", label: "Результати", items: [
-        {href: "/manage/results-settings", label: "Налаштування результатів", icon: SlidersHorizontal},
-        {href: "/manage/results", label: "Таблиця результатів", icon: Trophy},
-        {href: "/manage/live", label: "Live", icon: MonitorPlay},
+    {id: "results", label: t("manage.nav.group.results"), items: [
+        {href: "/manage/results-settings", label: t("manage.nav.resultsSettings"), icon: SlidersHorizontal},
+        {href: "/manage/results", label: t("manage.nav.results"), icon: Trophy},
+        {href: "/manage/live", label: t("manage.nav.live"), icon: MonitorPlay},
     ]},
-    {id: "notifications", label: "Сповіщення", items: [
-        {href: "/manage/notifications", label: "На сайті", icon: Bell},
-        {href: "/manage/email", label: "Електронні листи", icon: Mail},
-        {href: "/manage/mail", label: "Пошта", icon: AtSign},
+    {id: "notifications", label: t("manage.nav.group.notifications"), items: [
+        {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: Bell},
+        {href: "/manage/email", label: t("manage.nav.email"), icon: Mail},
+        {href: "/manage/mail", label: t("manage.nav.mail"), icon: AtSign},
     ]},
 ];
 
@@ -87,13 +88,13 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
     const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructureAllowed);
     const openGroup = (groupID: string) => setOpenGroupID(groupID);
 
-    return <aside className="ib-admin-side ib-mass" aria-label="Керування подією">
+    return <aside className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")}>
         <div className="ib-admin-side__head">
-            <Link href="/" className="event-manage-brand" aria-label="На сайт події"><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>Керування подією</small></div></Link>
-            <button className="ib-admin-side__close" type="button" aria-label="Закрити меню" onClick={onNavigate}><X size={18} /></button>
+            <Link href="/" className="event-manage-brand" aria-label={t("manage.shell.toEventSite")}><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>{t("manage.nav.eventManagement")}</small></div></Link>
+            <button className="ib-admin-side__close" type="button" aria-label={t("manage.shell.closeMenu")} onClick={onNavigate}><X size={18} /></button>
         </div>
-        <nav className="ib-admin-side__nav" aria-label="Розділи керування">
-            <Link className="ib-admin-side__item event-manage-sidebar__overview" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">Огляд і підготовка</span></Link>
+        <nav className="ib-admin-side__nav" aria-label={t("manage.nav.sections")}>
+            <Link className="ib-admin-side__item event-manage-sidebar__overview" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.overview")}</span></Link>
             {groups.map(group => {
                 const isOpen = openGroupID === group.id;
                 const items = group.items.filter(showItem);
@@ -107,16 +108,16 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
                             {[...(pages ?? [])].sort(comparePageOrder).map(page => {
                                 const editorSlug = page.Draft?.Slug ?? page.Slug;
                                 const title = page.Draft?.Title ?? page.Title;
-                                const state = !page.PublishedAt ? "не опубліковано" : page.Draft ? "є неопубліковані зміни" : "";
-                                return <Link className="ib-admin-side__item event-manage-sidebar__page" key={page.ID} href={`/manage/content/pages/${editorSlug}`} aria-current={pathname === `/manage/content/pages/${editorSlug}` ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}} title={state ? `${title} · ${state}` : title}><FileText size={16} aria-hidden="true" /><span className="ib-admin-side__label">{title}</span>{state && <span className="event-manage-sidebar__draft">{page.PublishedAt ? "чернетка" : "не опубл."}</span>}</Link>;
+                                const state = !page.PublishedAt ? t("manage.nav.page.unpublished") : page.Draft ? t("manage.nav.page.unpublishedChanges") : "";
+                                return <Link className="ib-admin-side__item event-manage-sidebar__page" key={page.ID} href={`/manage/content/pages/${editorSlug}`} aria-current={pathname === `/manage/content/pages/${editorSlug}` ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}} title={state ? t("manage.nav.page.titleWithState", {title, state}) : title}><FileText size={16} aria-hidden="true" /><span className="ib-admin-side__label">{title}</span>{state && <span className="event-manage-sidebar__draft">{page.PublishedAt ? t("manage.nav.page.draftBadge") : t("manage.nav.page.unpublishedBadge")}</span>}</Link>;
                             })}
-                            {pagesError && <div className="event-manage-sidebar__error" role="alert">Сторінки недоступні. <button type="button" onClick={onRetryPages}>Повторити</button></div>}
-                            {canManage && <Link className="ib-admin-side__item event-manage-sidebar__add" href="/manage/content/pages/new" aria-current={pathname === "/manage/content/pages/new" ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}}><Plus size={16} aria-hidden="true" /><span className="ib-admin-side__label">Додати сторінку</span></Link>}
+                            {pagesError && <div className="event-manage-sidebar__error" role="alert">{t("manage.nav.pagesUnavailable")} <button type="button" onClick={onRetryPages}>{t("common.retry")}</button></div>}
+                            {canManage && <Link className="ib-admin-side__item event-manage-sidebar__add" href="/manage/content/pages/new" aria-current={pathname === "/manage/content/pages/new" ? "page" : undefined} onClick={() => {openGroup("pages"); onNavigate();}}><Plus size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.addPage")}</span></Link>}
                         </>}
                     </div>
                 </section>;
             })}
         </nav>
-        <div className="ib-admin-side__foot"><Link className="ib-admin-side__item" href="/" onClick={onNavigate}><ArrowLeft size={16} aria-hidden="true" /><span className="ib-admin-side__label">На сайт події</span></Link></div>
+        <div className="ib-admin-side__foot"><Link className="ib-admin-side__item" href="/" onClick={onNavigate}><ArrowLeft size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.shell.toEventSite")}</span></Link></div>
     </aside>;
 }

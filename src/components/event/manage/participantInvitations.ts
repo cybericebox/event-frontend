@@ -20,6 +20,7 @@ export function parseInvitationCsv(source: string): string[] {
     row.push(cell.trim());
     if (row.some(Boolean)) rows.push(row);
     const header = rows[0]?.map(value => value.replace(/^\uFEFF/, "").toLowerCase()) ?? [];
+    // eslint-disable-next-line no-restricted-syntax -- CSV header aliases matched against uploaded files, not UI text
     const emailColumn = header.findIndex(value => ["email", "e-mail", "пошта", "електронна пошта"].includes(value));
     return rows.slice(emailColumn >= 0 ? 1 : 0).map(values => values[emailColumn >= 0 ? emailColumn : 0]?.trim() ?? "").filter(Boolean);
 }

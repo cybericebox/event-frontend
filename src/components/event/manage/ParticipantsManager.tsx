@@ -15,13 +15,14 @@ import {formFields, formatAnswer} from "./listColumns";
 import {invitationEmails, parseInvitationCsv} from "./participantInvitations";
 import {participantTabHref, participantTabs, type ParticipantTab} from "./participantTabs";
 import {useManager} from "./ManagerShell";
+import {t} from "@/i18n/t";
 
 const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
-const statusNames: Record<ParticipantStatus, string> = {1: "Очікує рішення", 2: "Підтверджено", 3: "Відхилено"};
-const emptyTexts: Record<ParticipantTab, string> = {participants: "Підтверджених учасників поки немає.", applications: "Заявок поки немає.", invitations: "Активних запрошень немає."};
+const statusNames: Record<ParticipantStatus, string> = {1: t("manage.participants.status.pending"), 2: t("manage.participants.status.approved"), 3: t("manage.participants.status.rejected")};
+const emptyTexts: Record<ParticipantTab, string> = {participants: t("manage.participants.empty.participants"), applications: t("manage.participants.empty.applications"), invitations: t("manage.participants.empty.invitations")};
 
 function personName(participant: Pick<ManageParticipant, "Name" | "DisplayName" | "Email" | "UserID">): string {
-    return participant.Name || participant.DisplayName || participant.Email || `Учасник ${participant.UserID.slice(0, 8)}`;
+    return participant.Name || participant.DisplayName || participant.Email || t("manage.participants.fallbackName", {id: participant.UserID.slice(0, 8)});
 }
 
 function errorText(error: unknown, fallback: string): string {
@@ -79,22 +80,22 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     }
 
     function decide(participant: ManageParticipant, action: "approve" | "reject") {
-        if (action === "reject" && !window.confirm(`Відхилити заявку ${personName(participant)}?`)) return;
-        void run(participant, () => decideManageParticipant(eventID, participant.UserID, action), action === "approve" ? "Участь підтверджено" : "Заявку відхилено", "Не вдалося змінити статус заявки.");
+        if (action === "reject" && !window.confirm(t("manage.participants.confirmReject", {name: personName(participant)}))) return;
+        void run(participant, () => decideManageParticipant(eventID, participant.UserID, action), action === "approve" ? t("manage.participants.approved") : t("manage.participants.rejected"), t("manage.participants.decideFailed"));
     }
 
     function revoke(participant: ManageParticipant) {
-        if (!window.confirm(`Відкликати запрошення для ${participant.Email || personName(participant)}?`)) return;
-        void run(participant, () => revokeManageInvitation(eventID, participant.UserID), "Запрошення відкликано", "Не вдалося відкликати запрошення.");
+        if (!window.confirm(t("manage.participants.confirmRevoke", {name: participant.Email || personName(participant)}))) return;
+        void run(participant, () => revokeManageInvitation(eventID, participant.UserID), t("manage.participants.revoked"), t("manage.participants.revokeFailed"));
     }
 
     function resend(participant: ManageParticipant) {
-        void run(participant, () => resendManageInvitation(eventID, participant.UserID), "Лист надіслано повторно", "Не вдалося надіслати лист.");
+        void run(participant, () => resendManageInvitation(eventID, participant.UserID), t("manage.participants.resent"), t("manage.participants.resendFailed"));
     }
 
     function setHidden(participant: ManageParticipant) {
         if (teamMode || participant.Status !== 2 || !participant.TeamID) return;
-        void run(participant, () => setIndividualParticipantHidden(eventID, participant.UserID, !participant.Hidden), participant.Hidden ? "Учасника повернуто до рейтингу" : "Учасника приховано з рейтингу та підрахунків", "Не вдалося змінити видимість учасника.");
+        void run(participant, () => setIndividualParticipantHidden(eventID, participant.UserID, !participant.Hidden), participant.Hidden ? t("manage.participants.shown") : t("manage.participants.hidden"), t("manage.participants.visibilityFailed"));
     }
 
     function nextPage() {
@@ -113,10 +114,10 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             const sent = results.filter(result => !result.Error).length;
             if (sent) {
                 await refresh();
-                toast.success(`Надіслано запрошень: ${sent}`);
+                toast.success(t("manage.participants.invite.sent", {count: sent}));
             }
             if (sent === results.length) {setInviteText(""); setCsvEmails([]);}
-        } catch {toast.error("Не вдалося надіслати запрошення. Спробуйте ще раз.");}
+        } catch {toast.error(t("manage.participants.invite.sendFailed"));}
         finally {setInviting(false);}
     }
 
@@ -124,45 +125,45 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const stop = (event: MouseEvent) => event.stopPropagation();
     const onRowKey = (event: KeyboardEvent, participant: ManageParticipant) => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); open(participant);}};
 
-    if (query.isPending) return <EventLoading event={event} label="Завантажуємо учасників…" />;
-    if (query.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити учасників</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>Повторити</button></div>;
+    if (query.isPending) return <EventLoading event={event} label={t("manage.participants.loading")} />;
+    if (query.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.participants.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => void query.refetch()}>{t("common.retry")}</button></div>;
 
     const items = query.data.Items;
     return <div className="event-manage-settings event-manage-participants">
-        <header className="event-manage-heading"><div><h1>Учасники</h1><p>{teamMode ? "Люди, заявки та запрошення. Склад команд — на сторінці «Команди»." : "Учасники, заявки та запрошення."}</p></div><div className="event-manage-section__actions">{showAnswers && <FieldColumnsButton eventID={eventID} list="participants" columns={columns} canManage={canManage} />}{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => {setInviteResults([]); setInviteOpen(true);}}>Запросити учасників</button>}</div></header>
-        <Dialog open={inviteOpen} onOpenChange={open => {if (!inviting) setInviteOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>Запросити учасників</DialogTitle><DialogDescription>Вкажіть адреси вручну або додайте CSV. Запрошені стануть учасниками після власного підтвердження.</DialogDescription></DialogHeader><div className="grid gap-4"><label className="event-manage-field"><span>Адреси електронної пошти</span><textarea className="event-manage-input" rows={5} value={inviteText} onChange={e => setInviteText(e.target.value)} placeholder="Одна адреса на рядок" disabled={inviting} /></label><label className="event-manage-field"><span>CSV-файл</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={inviting} onChange={async e => {const file = e.target.files?.[0]; if (file) {try {setCsvEmails(parseInvitationCsv(await file.text())); setInviteResults([]);} catch {toast.error("Не вдалося прочитати CSV-файл.");}}}} /><small>Колонка email або перша колонка файлу. До 200 адрес за раз.</small></label><p>Адрес для запрошення: {emails.length}</p>{emails.length > 200 && <p className="event-manage-validation" role="alert">За один раз можна запросити не більше 200 учасників.</p>}{inviteResults.length > 0 && <div role="status" className="grid gap-1">{inviteResults.map(result => <p key={result.Email}>{result.Email}: {result.Error || "запрошення надіслано"}</p>)}</div>}<div className="event-manage-section__actions"><button className="ib-btn" type="button" onClick={() => setInviteOpen(false)} disabled={inviting}>Закрити</button><button className="ib-btn ib-btn--primary" type="button" onClick={() => void invite()} disabled={inviting || emails.length === 0 || emails.length > 200}>{inviting ? "Надсилаємо…" : "Надіслати запрошення"}</button></div></div></DialogContent></Dialog>
-        <div className="event-manage-participants__filters" role="tablist" aria-label="Розділи учасників">{participantTabs.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => changeTab(option.value)}>{option.label}{counts && <span className="event-manage-participants__count">{counts[option.count]}</span>}</button>)}</div>
+        <header className="event-manage-heading"><div><h1>{t("manage.nav.participants")}</h1><p>{teamMode ? t("manage.participants.subtitleTeams") : t("manage.participants.subtitle")}</p></div><div className="event-manage-section__actions">{showAnswers && <FieldColumnsButton eventID={eventID} list="participants" columns={columns} canManage={canManage} />}{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => {setInviteResults([]); setInviteOpen(true);}}>{t("manage.participants.invite.title")}</button>}</div></header>
+        <Dialog open={inviteOpen} onOpenChange={open => {if (!inviting) setInviteOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{t("manage.participants.invite.title")}</DialogTitle><DialogDescription>{t("manage.participants.invite.description")}</DialogDescription></DialogHeader><div className="grid gap-4"><label className="event-manage-field"><span>{t("manage.participants.invite.emails")}</span><textarea className="event-manage-input" rows={5} value={inviteText} onChange={e => setInviteText(e.target.value)} placeholder={t("manage.participants.invite.emailsPlaceholder")} disabled={inviting} /></label><label className="event-manage-field"><span>{t("manage.participants.invite.csv")}</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={inviting} onChange={async e => {const file = e.target.files?.[0]; if (file) {try {setCsvEmails(parseInvitationCsv(await file.text())); setInviteResults([]);} catch {toast.error(t("manage.participants.invite.csvFailed"));}}}} /><small>{t("manage.participants.invite.csvHint")}</small></label><p>{t("manage.participants.invite.count", {count: emails.length})}</p>{emails.length > 200 && <p className="event-manage-validation" role="alert">{t("manage.participants.invite.limit")}</p>}{inviteResults.length > 0 && <div role="status" className="grid gap-1">{inviteResults.map(result => <p key={result.Email}>{result.Email}: {result.Error || t("manage.participants.invite.resultSent")}</p>)}</div>}<div className="event-manage-section__actions"><button className="ib-btn" type="button" onClick={() => setInviteOpen(false)} disabled={inviting}>{t("common.close")}</button><button className="ib-btn ib-btn--primary" type="button" onClick={() => void invite()} disabled={inviting || emails.length === 0 || emails.length > 200}>{inviting ? t("manage.participants.invite.sending") : t("manage.participants.invite.send")}</button></div></div></DialogContent></Dialog>
+        <div className="event-manage-participants__filters" role="tablist" aria-label={t("manage.participants.sections")}>{participantTabs.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => changeTab(option.value)}>{option.label}{counts && <span className="event-manage-participants__count">{counts[option.count]}</span>}</button>)}</div>
         <section className="event-manage-section event-manage-participants__list" role="tabpanel">
             {items.length === 0 ? <p className="event-challenge-manager__empty">{emptyTexts[tab]}</p> : <div className="event-participants-table"><table>
                 <thead><tr>
-                    <th scope="col">{tab === "invitations" ? "Адреса" : "Учасник"}</th>
-                    {teamMode && tab !== "applications" && <th scope="col">Команда</th>}
-                    {tab === "applications" && <th scope="col">Заявка</th>}
-                    {tab === "invitations" && <th scope="col">Лист</th>}
+                    <th scope="col">{tab === "invitations" ? t("manage.participants.col.address") : t("manage.participants.col.participant")}</th>
+                    {teamMode && tab !== "applications" && <th scope="col">{t("manage.participants.col.team")}</th>}
+                    {tab === "applications" && <th scope="col">{t("manage.participants.col.application")}</th>}
+                    {tab === "invitations" && <th scope="col">{t("manage.participants.col.email")}</th>}
                     {showAnswers && fieldColumns.map(column => <th scope="col" key={column.key}>{column.label}</th>)}
-                    {canManage && <th scope="col"><span className="sr-only">Дії</span></th>}
+                    {canManage && <th scope="col"><span className="sr-only">{t("manage.participants.col.actions")}</span></th>}
                 </tr></thead>
-                <tbody>{items.map(participant => <tr key={participant.UserID} className={showAnswers ? "is-clickable" : undefined} tabIndex={showAnswers ? 0 : undefined} aria-label={showAnswers ? `Відповіді: ${personName(participant)}` : undefined} onClick={() => open(participant)} onKeyDown={event => onRowKey(event, participant)}>
+                <tbody>{items.map(participant => <tr key={participant.UserID} className={showAnswers ? "is-clickable" : undefined} tabIndex={showAnswers ? 0 : undefined} aria-label={showAnswers ? t("manage.participants.answersFor", {name: personName(participant)}) : undefined} onClick={() => open(participant)} onKeyDown={event => onRowKey(event, participant)}>
                     <td><div className="event-participants-table__person">
                         {tab === "invitations" ? <><strong>{participant.Email || personName(participant)}</strong>{participant.Name && <small>{participant.Name}</small>}</>
-                            : <><strong>{personName(participant)}</strong>{participant.Pseudonym && <small>Псевдонім: {participant.Pseudonym}</small>}{participant.Email && participant.Email !== personName(participant) && <small>{participant.Email}</small>}</>}
+                            : <><strong>{personName(participant)}</strong>{participant.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: participant.Pseudonym})}</small>}{participant.Email && participant.Email !== personName(participant) && <small>{participant.Email}</small>}</>}
                     </div></td>
-                    {teamMode && tab === "participants" && <td>{participant.TeamID ? <Link href="/manage/teams" onClick={stop}>{participant.TeamName || "У команді"}</Link> : <span className="event-participants-table__dim">Без команди</span>}</td>}
-                    {teamMode && tab === "invitations" && <td>{participant.InvitedToTeam ? participant.InvitedTeamName || "Команда" : <span className="event-participants-table__dim">—</span>}</td>}
-                    {tab === "applications" && <td><div className="event-participants-table__person"><span className={`event-manage-participants__status is-${participant.Status}`}>{statusNames[participant.Status]}</span><small>{date.format(new Date(participant.CreatedAt))} UTC</small></div></td>}
-                    {tab === "invitations" && <td><div className="event-participants-table__person">{participant.InvitationExpired ? <span className="event-manage-participants__status is-3">Прострочено</span> : participant.InvitationSentAt ? <small>Надіслано {date.format(new Date(participant.InvitationSentAt))} UTC</small> : <span className="event-manage-participants__status is-1">Лист не надіслано</span>}</div></td>}
+                    {teamMode && tab === "participants" && <td>{participant.TeamID ? <Link href="/manage/teams" onClick={stop}>{participant.TeamName || t("manage.participants.inTeam")}</Link> : <span className="event-participants-table__dim">{t("manage.participants.noTeam")}</span>}</td>}
+                    {teamMode && tab === "invitations" && <td>{participant.InvitedToTeam ? participant.InvitedTeamName || t("manage.participants.col.team") : <span className="event-participants-table__dim">—</span>}</td>}
+                    {tab === "applications" && <td><div className="event-participants-table__person"><span className={`event-manage-participants__status is-${participant.Status}`}>{statusNames[participant.Status]}</span><small>{t("manage.participants.dateUtc", {date: date.format(new Date(participant.CreatedAt))})}</small></div></td>}
+                    {tab === "invitations" && <td><div className="event-participants-table__person">{participant.InvitationExpired ? <span className="event-manage-participants__status is-3">{t("manage.participants.expired")}</span> : participant.InvitationSentAt ? <small>{t("manage.participants.sentAt", {date: date.format(new Date(participant.InvitationSentAt))})}</small> : <span className="event-manage-participants__status is-1">{t("manage.participants.notSent")}</span>}</div></td>}
                     {showAnswers && fieldColumns.map(column => <td key={column.key} className="event-participants-table__answer">{formatAnswer(participant.Answers[column.key])}</td>)}
                     {canManage && <td onClick={stop}><div className="event-manage-participants__actions">
-                        {tab === "participants" && !teamMode && participant.TeamID && <button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => setHidden(participant)}>{participant.Hidden ? "Показати в рейтингу" : "Приховати з рейтингу"}</button>}
-                        {tab === "applications" && participant.Status === 1 && <><button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={!!busyID} onClick={() => decide(participant, "approve")}>Підтвердити</button><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => decide(participant, "reject")}>Відхилити</button></>}
-                        {tab === "invitations" && <><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID || participant.InvitationExpired} onClick={() => resend(participant)}>Надіслати ще раз</button><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => revoke(participant)}>Відкликати</button></>}
+                        {tab === "participants" && !teamMode && participant.TeamID && <button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => setHidden(participant)}>{participant.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</button>}
+                        {tab === "applications" && participant.Status === 1 && <><button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={!!busyID} onClick={() => decide(participant, "approve")}>{t("manage.participants.approve")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => decide(participant, "reject")}>{t("manage.participants.reject")}</button></>}
+                        {tab === "invitations" && <><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID || participant.InvitationExpired} onClick={() => resend(participant)}>{t("manage.participants.resend")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => revoke(participant)}>{t("manage.participants.revoke")}</button></>}
                     </div></td>}
                 </tr>)}</tbody>
             </table></div>}
-            {(pageIndex > 0 || !!query.data.NextCursor) && <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={pageIndex === 0} onClick={() => setPageIndex(index => index - 1)}>Назад</button><span>Сторінка {pageIndex + 1}</span><button className="ib-btn ib-btn--sm" type="button" disabled={!query.data.NextCursor} onClick={nextPage}>Далі</button></div>}
+            {(pageIndex > 0 || !!query.data.NextCursor) && <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={pageIndex === 0} onClick={() => setPageIndex(index => index - 1)}>{t("common.back")}</button><span>{t("common.page", {number: pageIndex + 1})}</span><button className="ib-btn ib-btn--sm" type="button" disabled={!query.data.NextCursor} onClick={nextPage}>{t("common.next")}</button></div>}
         </section>
         <Dialog open={opened !== null} onOpenChange={value => {if (!value) setOpened(null);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto">
-            <DialogHeader><DialogTitle>{opened ? personName(opened) : ""}</DialogTitle><DialogDescription>{[opened?.Pseudonym && `Псевдонім: ${opened.Pseudonym}`, opened?.Email, opened && !opened.Invited && `Подано ${date.format(new Date(opened.CreatedAt))} UTC`].filter(Boolean).join(" · ")}</DialogDescription></DialogHeader>
+            <DialogHeader><DialogTitle>{opened ? personName(opened) : ""}</DialogTitle><DialogDescription>{[opened?.Pseudonym && t("manage.participants.pseudonym", {pseudonym: opened.Pseudonym}), opened?.Email, opened && !opened.Invited && t("manage.participants.submittedAt", {date: date.format(new Date(opened.CreatedAt))})].filter(Boolean).join(" · ")}</DialogDescription></DialogHeader>
             {opened && <AnswersList fields={fields} answers={opened.Answers} />}
         </DialogContent></Dialog>
     </div>;

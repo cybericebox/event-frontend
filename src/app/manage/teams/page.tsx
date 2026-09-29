@@ -19,6 +19,7 @@ import {formFields, formatAnswer} from "@/components/event/manage/listColumns";
 import {invitationEmails, parseInvitationCsv} from "@/components/event/manage/participantInvitations";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {t} from "@/i18n/t";
 
 const sentAt = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
 
@@ -27,9 +28,9 @@ function memberName(member: Pick<ManageTeamMember, "Name" | "Email" | "UserID">)
 }
 
 function admissionText(team: ManageTeam): string {
-    if (team.AdmittedManually) return "Допущена вручну";
-    if (team.Admitted) return "Допущена";
-    return `Не допущена: менше ${team.MinTeamSize ?? 2} учасників`;
+    if (team.AdmittedManually) return t("manage.teams.admission.manual");
+    if (team.Admitted) return t("manage.teams.admission.admitted");
+    return t("manage.teams.admission.notAdmitted", {min: team.MinTeamSize ?? 2});
 }
 
 function failure(error: unknown, fallback: string): string {
@@ -92,16 +93,16 @@ export default function ManageTeamsPage() {
         try {
             team = await createManageTeam(eventID, name.trim(), captainID, fieldAnswers);
         } catch {
-            toast.error("Не вдалося створити команду. Перевірте капітана й обмеження події.");
+            toast.error(t("manage.teams.createFailed"));
             setBusy(false);
             return;
         }
         setName(""); setCaptainID(""); setFieldAnswers({});
         setCreateInviteManual(""); setCreateInviteCsv([]);
         setCreateOpen(false);
-        try {await refresh();} catch {toast.error("Команду створено, але список не оновився.");}
+        try {await refresh();} catch {toast.error(t("manage.teams.createdNoRefresh"));}
         if (emails.length === 0) {
-            toast.success("Команду створено");
+            toast.success(t("manage.teams.created"));
             setBusy(false);
             return;
         }
@@ -111,12 +112,12 @@ export default function ManageTeamsPage() {
             const sent = results.length - failed.length;
             if (failed.length) {
                 setInviteTeam({ID: team.ID, Name: team.Name, InitialEmails: failed});
-                toast.error(`Команду створено. Надіслано: ${sent}. Не вдалося: ${failed.length}.`);
-            } else toast.success(`Команду створено. Надіслано запрошень: ${sent}`);
-            try {await refresh();} catch {toast.error("Не вдалося оновити список учасників.");}
+                toast.error(t("manage.teams.createdPartial", {sent, failed: failed.length}));
+            } else toast.success(t("manage.teams.createdInvited", {count: sent}));
+            try {await refresh();} catch {toast.error(t("manage.participants.refreshFailed"));}
         } catch {
             setInviteTeam({ID: team.ID, Name: team.Name, InitialEmails: emails});
-            toast.error("Команду створено, але запрошення не надіслані. Спробуйте ще раз у відкритому вікні.");
+            toast.error(t("manage.teams.createdInviteFailed"));
         } finally {setBusy(false);}
     }
 
@@ -127,43 +128,43 @@ export default function ManageTeamsPage() {
             await updateManageTeam(eventID, team.ID, {Name: editing.name.trim(), Hidden: editing.hidden, ...(fields.length > 0 ? {Fields: editing.fields} : {})});
             setEditing(null);
             await refresh();
-            toast.success("Команду оновлено");
-        } catch (error) {toast.error(failure(error, "Не вдалося зберегти команду."));}
+            toast.success(t("manage.teams.updated"));
+        } catch (error) {toast.error(failure(error, t("manage.teams.saveFailed")));}
         finally {setBusy(false);}
     }
 
     async function removeTeam(team: ManageTeam) {
-        if (!canManage || busy || !window.confirm(`Видалити команду «${team.Name}»?\n\nУсі результати й розв’язання цієї команди буде втрачено без можливості відновлення. Учасники залишаться в події без команди.`)) return;
+        if (!canManage || busy || !window.confirm(t("manage.teams.confirmDelete", {name: team.Name}))) return;
         setBusy(true);
         try {
             await deleteManageTeam(eventID, team.ID);
             await refresh();
-            toast.success("Команду видалено");
-        } catch {toast.error("Не вдалося видалити команду.");}
+            toast.success(t("manage.teams.deleted"));
+        } catch {toast.error(t("manage.teams.deleteFailed"));}
         finally {setBusy(false);}
     }
 
     async function changeMember(team: ManageTeam, userID: string, action: "add" | "remove") {
         if (!canManage || busy || !userID) return;
-        if (action === "remove" && !window.confirm("Прибрати учасника з команди? Його результати можуть змінитися.")) return;
+        if (action === "remove" && !window.confirm(t("manage.teams.confirmRemoveMember"))) return;
         setBusy(true);
         try {
             await changeManageTeamMember(eventID, team.ID, userID, action);
             setMemberChoices(current => ({...current, [team.ID]: ""}));
             await refresh();
-            toast.success(action === "add" ? "Учасника додано" : "Учасника прибрано");
-        } catch (error) {toast.error(failure(error, "Не вдалося змінити склад команди."));}
+            toast.success(action === "add" ? t("manage.teams.memberAdded") : t("manage.teams.memberRemoved"));
+        } catch (error) {toast.error(failure(error, t("manage.teams.memberFailed")));}
         finally {setBusy(false);}
     }
 
     async function transferCaptain(team: ManageTeam, userID: string) {
-        if (!canManage || busy || !window.confirm("Передати права капітана цьому учаснику?")) return;
+        if (!canManage || busy || !window.confirm(t("manage.teams.confirmCaptain"))) return;
         setBusy(true);
         try {
             await transferManageTeamCaptain(eventID, team.ID, userID);
             await refresh();
-            toast.success("Капітана змінено");
-        } catch (error) {toast.error(failure(error, "Не вдалося змінити капітана."));}
+            toast.success(t("manage.teams.captainChanged"));
+        } catch (error) {toast.error(failure(error, t("manage.teams.captainFailed")));}
         finally {setBusy(false);}
     }
 
@@ -173,34 +174,34 @@ export default function ManageTeamsPage() {
         try {
             await setManageTeamAdmission(eventID, team.ID, admitted);
             await refresh();
-            toast.success(admitted ? "Команду допущено вручну" : "Ручний допуск скасовано");
-        } catch (error) {toast.error(failure(error, "Не вдалося змінити допуск команди."));}
+            toast.success(admitted ? t("manage.teams.admittedManually") : t("manage.teams.admissionCancelled"));
+        } catch (error) {toast.error(failure(error, t("manage.teams.admissionFailed")));}
         finally {setBusy(false);}
     }
 
-    if (!teamMode) return <div className="event-manage-settings event-manage-teams"><header className="event-manage-heading"><div><h1>Команди</h1></div></header><div className="event-manage-notice">Команди доступні лише для командного формату події.</div></div>;
-    if (teamsQuery.isPending || participantsQuery.isPending || fieldsQuery.isPending) return <EventLoading event={event} label="Завантажуємо команди…" />;
-    if (teamsQuery.isError || participantsQuery.isError || fieldsQuery.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити команди</h1><button className="ib-btn" type="button" onClick={() => {void teamsQuery.refetch(); void participantsQuery.refetch(); void fieldsQuery.refetch();}}>Повторити</button></div>;
+    if (!teamMode) return <div className="event-manage-settings event-manage-teams"><header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1></div></header><div className="event-manage-notice">{t("manage.teams.teamModeOnly")}</div></div>;
+    if (teamsQuery.isPending || participantsQuery.isPending || fieldsQuery.isPending) return <EventLoading event={event} label={t("manage.teams.loading")} />;
+    if (teamsQuery.isError || participantsQuery.isError || fieldsQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.teams.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {void teamsQuery.refetch(); void participantsQuery.refetch(); void fieldsQuery.refetch();}}>{t("common.retry")}</button></div>;
 
     return <div className="event-manage-settings event-manage-teams">
-        <header className="event-manage-heading"><div><h1>Команди</h1><p>Склад, допуск і відомості команд. Результати — на сторінці результатів.</p></div><div className="event-manage-section__actions"><span className="event-attempts-manager__total">Усього: {teamsQuery.data.Total}</span><FieldColumnsButton eventID={eventID} list="teams" columns={columns} canManage={canManage} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>Створити команду</button>}</div></header>
-        <Dialog open={createOpen} onOpenChange={open => {if (!busy) setCreateOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(480px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>Нова команда</DialogTitle><DialogDescription>Капітан має бути підтвердженим учасником без команди. Іншим учасникам можна одразу надіслати запрошення.</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={create}><label className="event-manage-field">Назва<input className="event-manage-input" value={name} onChange={e => setName(e.target.value)} minLength={3} maxLength={64} required disabled={busy} placeholder="Назва команди" /></label><div className="event-manage-field"><span>Капітан</span><EventSelect ariaLabel="Капітан нової команди" value={captainID} placeholder="Оберіть учасника" options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={setCaptainID} disabled={busy || available.length === 0} /></div>{fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}<label className="event-manage-field"><span>Запросити учасників</span><textarea className="event-manage-input" rows={3} value={createInviteManual} onChange={e => setCreateInviteManual(e.target.value)} placeholder="Одна адреса на рядок (необов’язково)" disabled={busy} /></label><label className="event-manage-field"><span>Або додати CSV-файл</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={busy} onChange={async e => {const file = e.target.files?.[0]; if (file) {try {setCreateInviteCsv(parseInvitationCsv(await file.text()));} catch {toast.error("Не вдалося прочитати CSV-файл.");}}}} /><small>Колонка email або перша колонка. До 200 адрес за раз. Капітана повторно не запрошуємо.</small></label>{invitationEmails(createInviteManual, createInviteCsv).length > 200 && <p className="event-manage-validation" role="alert">За один раз можна запросити не більше 200 учасників.</p>}<div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setCreateOpen(false)}>Скасувати</button><button className="ib-btn ib-btn--primary" type="submit" disabled={busy || !name.trim() || !captainID || invitationEmails(createInviteManual, createInviteCsv).length > 200}>Створити команду</button></div></form></DialogContent></Dialog>
+        <header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1><p>{t("manage.teams.subtitle")}</p></div><div className="event-manage-section__actions"><span className="event-attempts-manager__total">{t("manage.teams.total", {count: teamsQuery.data.Total})}</span><FieldColumnsButton eventID={eventID} list="teams" columns={columns} canManage={canManage} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>{t("manage.teams.create")}</button>}</div></header>
+        <Dialog open={createOpen} onOpenChange={open => {if (!busy) setCreateOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(480px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{t("manage.teams.newTitle")}</DialogTitle><DialogDescription>{t("manage.teams.newDescription")}</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={create}><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={name} onChange={e => setName(e.target.value)} minLength={3} maxLength={64} required disabled={busy} placeholder={t("manage.teams.namePlaceholder")} /></label><div className="event-manage-field"><span>{t("manage.teams.captain")}</span><EventSelect ariaLabel={t("manage.teams.newCaptain")} value={captainID} placeholder={t("manage.teams.chooseParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={setCaptainID} disabled={busy || available.length === 0} /></div>{fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}<label className="event-manage-field"><span>{t("manage.participants.invite.title")}</span><textarea className="event-manage-input" rows={3} value={createInviteManual} onChange={e => setCreateInviteManual(e.target.value)} placeholder={t("manage.teams.invitePlaceholder")} disabled={busy} /></label><label className="event-manage-field"><span>{t("manage.teams.inviteCsv")}</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={busy} onChange={async e => {const file = e.target.files?.[0]; if (file) {try {setCreateInviteCsv(parseInvitationCsv(await file.text()));} catch {toast.error(t("manage.participants.invite.csvFailed"));}}}} /><small>{t("manage.teams.inviteCsvHint")}</small></label>{invitationEmails(createInviteManual, createInviteCsv).length > 200 && <p className="event-manage-validation" role="alert">{t("manage.participants.invite.limit")}</p>}<div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setCreateOpen(false)}>{t("common.cancel")}</button><button className="ib-btn ib-btn--primary" type="submit" disabled={busy || !name.trim() || !captainID || invitationEmails(createInviteManual, createInviteCsv).length > 200}>{t("manage.teams.create")}</button></div></form></DialogContent></Dialog>
         <TeamInvitationDialog key={inviteTeam?.ID ?? "closed"} eventID={eventID} team={inviteTeam} onClose={() => setInviteTeam(null)} onSent={refresh} />
-        {teams.length === 0 ? <section className="event-manage-section"><p className="event-challenge-manager__empty">Команд поки немає.</p></section> : <div className="event-manage-teams__list">{teams.map(team => {
+        {teams.length === 0 ? <section className="event-manage-section"><p className="event-challenge-manager__empty">{t("manage.teams.empty")}</p></section> : <div className="event-manage-teams__list">{teams.map(team => {
             const captain = team.Members.find(member => member.UserID === team.CaptainID);
             const choice = memberChoices[team.ID] ?? "";
             return <section className="event-manage-section event-manage-teams__card" key={team.ID}>
-                <div className="event-manage-teams__head"><div><h2>{team.Name}</h2><p>{team.MemberCount} у команді · Капітан: {captain ? memberName(captain) : team.CaptainID.slice(0, 8)}{team.Hidden ? " · Прихована" : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>Запросити</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? "Скасувати" : "Змінити"}</button><button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={`Видалити команду ${team.Name}`} disabled={busy} onClick={() => void removeTeam(team)}><Trash2 size={16} /></button></div>}</div>
-                {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={busy} onChange={event => void setAdmission(team, event.target.checked)} />Допустити вручну</label>}
-                {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">Назва<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={busy} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={busy} /> Не враховувати в рейтингу та підрахунках</label><button className="ib-btn ib-btn--primary" type="button" disabled={busy || !editing.name.trim()} onClick={() => void saveTeam(team)}>Зберегти</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={fieldsQuery.data} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={busy} /></div>}</div>}
-                {fieldColumns.length > 0 && <div className="event-manage-teams__members"><div className="event-manage-teams__members-head"><h3>Додаткові поля</h3><button className="ib-btn ib-btn--sm" type="button" onClick={() => setAnswersTeam(team)}>Усі відповіді</button></div><dl className="event-manage-teams__fields">{fieldColumns.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{formatAnswer(team.ExtraFields[column.key])}</dd></div>)}</dl></div>}
-                <div className="event-manage-teams__members"><h3>Склад</h3>{team.Members.length === 0 ? <p>У команді немає учасників.</p> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>Псевдонім: {person.Pseudonym}</small>}{person.UserID === team.CaptainID && <small>Капітан</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void transferCaptain(team, person.UserID)}>Зробити капітаном</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void changeMember(team, person.UserID, "remove")}>Прибрати</button></div>}</div>)}</div>
-                {team.PendingInvitations.length > 0 && <div className="event-manage-teams__members"><h3>Запрошені</h3>{team.PendingInvitations.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{person.Email || person.Name || person.UserID.slice(0, 8)}</strong><small>{person.InvitationSentAt ? `Надіслано ${sentAt.format(new Date(person.InvitationSentAt))} UTC` : "Лист не надіслано"}</small></span></div>)}</div>}
-                {canManage && <div className="event-manage-teams__assign"><div className="event-manage-field"><span>Додати учасника</span><EventSelect ariaLabel={`Додати учасника до ${team.Name}`} value={choice} placeholder="Оберіть учасника" options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={value => setMemberChoices(current => ({...current, [team.ID]: value}))} disabled={busy || available.length === 0} /></div><button className="ib-btn" type="button" disabled={busy || !choice} onClick={() => void changeMember(team, choice, "add")}>Додати</button></div>}
+                <div className="event-manage-teams__head"><div><h2>{team.Name}</h2><p>{t("manage.teams.summary", {count: team.MemberCount, captain: captain ? memberName(captain) : team.CaptainID.slice(0, 8)})}{team.Hidden ? t("manage.teams.hiddenSuffix") : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? t("common.cancel") : t("manage.teams.edit")}</button><button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={busy} onClick={() => void removeTeam(team)}><Trash2 size={16} /></button></div>}</div>
+                {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={busy} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
+                {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={busy} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={busy} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={busy || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={fieldsQuery.data} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={busy} /></div>}</div>}
+                {fieldColumns.length > 0 && <div className="event-manage-teams__members"><div className="event-manage-teams__members-head"><h3>{t("manage.fields.title")}</h3><button className="ib-btn ib-btn--sm" type="button" onClick={() => setAnswersTeam(team)}>{t("manage.teams.allAnswers")}</button></div><dl className="event-manage-teams__fields">{fieldColumns.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{formatAnswer(team.ExtraFields[column.key])}</dd></div>)}</dl></div>}
+                <div className="event-manage-teams__members"><h3>{t("manage.teams.roster")}</h3>{team.Members.length === 0 ? <p>{t("manage.teams.noMembers")}</p> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: person.Pseudonym})}</small>}{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void transferCaptain(team, person.UserID)}>{t("manage.teams.makeCaptain")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void changeMember(team, person.UserID, "remove")}>{t("manage.teams.removeMember")}</button></div>}</div>)}</div>
+                {team.PendingInvitations.length > 0 && <div className="event-manage-teams__members"><h3>{t("manage.teams.invited")}</h3>{team.PendingInvitations.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{person.Email || person.Name || person.UserID.slice(0, 8)}</strong><small>{person.InvitationSentAt ? t("manage.participants.sentAt", {date: sentAt.format(new Date(person.InvitationSentAt))}) : t("manage.participants.notSent")}</small></span></div>)}</div>}
+                {canManage && <div className="event-manage-teams__assign"><div className="event-manage-field"><span>{t("manage.teams.addMember")}</span><EventSelect ariaLabel={t("manage.teams.addMemberTo", {name: team.Name})} value={choice} placeholder={t("manage.teams.chooseParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={value => setMemberChoices(current => ({...current, [team.ID]: value}))} disabled={busy || available.length === 0} /></div><button className="ib-btn" type="button" disabled={busy || !choice} onClick={() => void changeMember(team, choice, "add")}>{t("common.add")}</button></div>}
             </section>;
         })}</div>}
-        {(pageIndex > 0 || !!teamsQuery.data.NextCursor) && <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={pageIndex === 0} onClick={() => setPageIndex(index => index - 1)}>Назад</button><span>Сторінка {pageIndex + 1}</span><button className="ib-btn ib-btn--sm" type="button" disabled={!teamsQuery.data.NextCursor} onClick={() => {const next = teamsQuery.data.NextCursor; if (!next) return; setCursors(current => [...current.slice(0, pageIndex + 1), next]); setPageIndex(index => index + 1);}}>Далі</button></div>}
-        {participantsQuery.hasNextPage && <button className="ib-btn event-manage-teams__load-more" type="button" disabled={participantsQuery.isFetchingNextPage} onClick={() => void participantsQuery.fetchNextPage()}>{participantsQuery.isFetchingNextPage ? "Завантажуємо…" : "Завантажити ще учасників без команди"}</button>}
-        <Dialog open={answersTeam !== null} onOpenChange={open => {if (!open) setAnswersTeam(null);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{answersTeam?.Name}</DialogTitle><DialogDescription>Відповіді на додаткові поля команди.</DialogDescription></DialogHeader>{answersTeam && <AnswersList fields={fields} answers={answersTeam.ExtraFields} />}</DialogContent></Dialog>
+        {(pageIndex > 0 || !!teamsQuery.data.NextCursor) && <div className="event-attempts-manager__pagination"><button className="ib-btn ib-btn--sm" type="button" disabled={pageIndex === 0} onClick={() => setPageIndex(index => index - 1)}>{t("common.back")}</button><span>{t("common.page", {number: pageIndex + 1})}</span><button className="ib-btn ib-btn--sm" type="button" disabled={!teamsQuery.data.NextCursor} onClick={() => {const next = teamsQuery.data.NextCursor; if (!next) return; setCursors(current => [...current.slice(0, pageIndex + 1), next]); setPageIndex(index => index + 1);}}>{t("common.next")}</button></div>}
+        {participantsQuery.hasNextPage && <button className="ib-btn event-manage-teams__load-more" type="button" disabled={participantsQuery.isFetchingNextPage} onClick={() => void participantsQuery.fetchNextPage()}>{participantsQuery.isFetchingNextPage ? t("manage.teams.loadingMore") : t("manage.teams.loadMore")}</button>}
+        <Dialog open={answersTeam !== null} onOpenChange={open => {if (!open) setAnswersTeam(null);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{answersTeam?.Name}</DialogTitle><DialogDescription>{t("manage.teams.answersDescription")}</DialogDescription></DialogHeader>{answersTeam && <AnswersList fields={fields} answers={answersTeam.ExtraFields} />}</DialogContent></Dialog>
     </div>;
 }

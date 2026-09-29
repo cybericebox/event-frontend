@@ -1,13 +1,14 @@
 import type {LabStatus, ManageStand, StandStatus} from "@/api/manageLabs";
+import {t} from "@/i18n/t";
 
 export type StatusTone = "neutral" | "progress" | "ok" | "danger";
 
 export const standStatusLabel: Record<StandStatus, string> = {
-    not_deployed: "Не розгорнуто",
-    creating: "Створюється",
-    ready: "Готово",
-    failed: "Помилка",
-    removed: "Видалено",
+    not_deployed: t("manage.stand.status.notDeployed"),
+    creating: t("manage.stand.status.creating"),
+    ready: t("manage.stand.status.ready"),
+    failed: t("manage.stand.status.failed"),
+    removed: t("manage.stand.status.removed"),
 };
 
 export const standStatusTone: Record<StandStatus, StatusTone> = {
@@ -19,10 +20,10 @@ export const standStatusTone: Record<StandStatus, StatusTone> = {
 };
 
 export const labStatusLabel: Record<LabStatus, string> = {
-    pending: "Створюється",
-    ready: "Готово",
-    failed: "Помилка",
-    removed: "Видалено",
+    pending: t("manage.stand.status.creating"),
+    ready: t("manage.stand.status.ready"),
+    failed: t("manage.stand.status.failed"),
+    removed: t("manage.stand.status.removed"),
 };
 
 export const labStatusTone: Record<LabStatus, StatusTone> = {
@@ -32,10 +33,10 @@ export const labStatusTone: Record<LabStatus, StatusTone> = {
     removed: "neutral",
 };
 
-export const readinessLabel = {preparing: "Готується", ready: "Готове, ще не відкрите", available: "Відкрите"} as const;
+export const readinessLabel = {preparing: t("manage.stand.readiness.preparing"), ready: t("manage.stand.readiness.ready"), available: t("manage.stand.readiness.available")} as const;
 
 export function standTeamName(stand: Pick<ManageStand, "Moderators" | "TeamName" | "TeamID">): string {
-    if (stand.Moderators) return "Команда модераторів";
+    if (stand.Moderators) return t("manage.stand.moderatorsTeam");
     return stand.TeamName || stand.TeamID.slice(0, 8);
 }
 
