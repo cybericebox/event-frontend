@@ -14,8 +14,9 @@ export const formFieldSchema = z.object({
     // A «Файл» question: allowed formats and the size limit in MB.
     fileTypes: z.array(fileKindSchema).optional(),
     maxSizeMB: z.number().int().optional(),
-    // A «Дата» question: a day ("YYYY-MM-DD") or a UTC ISO datetime, with optional limits.
-    dateMode: z.enum(["date", "datetime"]).optional(),
+    // A «Дата / час» question: a day ("YYYY-MM-DD"), a time of day ("HH:MM") or a
+    // UTC ISO datetime, with optional limits. "none" is a draft with neither ticked.
+    dateMode: z.enum(["date", "time", "datetime", "none"]).optional(),
     minDate: z.string().optional(),
     maxDate: z.string().optional(),
     // The captain (team fields) or the participant (own fields) may change this answer later.

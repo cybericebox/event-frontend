@@ -3,15 +3,15 @@ import {afterEach, describe, expect, it} from "vitest";
 import {useState} from "react";
 import {cleanup, fireEvent, render, screen} from "@testing-library/react";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {FormConditionEditor, FormFileSettings, FormOptionsEditor} from "./FormFieldControls";
+import {FormConditionEditor, FormDateSettings, FormFileSettings, FormOptionsEditor} from "./FormFieldControls";
 
 afterEach(cleanup);
 
 let latest: FormBlock[] = [];
 
-function Harness({initial, index, editor}: {initial: FormBlock[]; index: number; editor: "options" | "condition" | "file"}) {
+function Harness({initial, index, editor}: {initial: FormBlock[]; index: number; editor: "options" | "condition" | "file" | "date"}) {
     const [blocks, setBlocks] = useState(initial);
-    const Editor = editor === "options" ? FormOptionsEditor : editor === "file" ? FormFileSettings : FormConditionEditor;
+    const Editor = editor === "options" ? FormOptionsEditor : editor === "file" ? FormFileSettings : editor === "date" ? FormDateSettings : FormConditionEditor;
     return <Editor blocks={blocks} index={index} disabled={false} onChange={next => {latest = next; setBlocks(next);}} />;
 }
 
@@ -86,5 +86,19 @@ describe("date conditions in the editor", () => {
         render(<Harness initial={[field("born", "date", {dateMode: "date"}), field("b", "text", {condition: {fieldKey: "born", operator: "before", value: "2008-01-01"}})]} index={1} editor="condition" />);
         expect(screen.getByRole("button", {name: /Якщо «born» раніше за 1 січня 2008/})).toBeTruthy();
         expect(screen.getByRole("button", {name: "Порівняння для умови 2"}).textContent).toContain("Раніше за");
+    });
+});
+
+describe("date / time settings", () => {
+    it("tick the date, the time or both, but not neither", () => {
+        render(<Harness initial={[field("when", "date", {dateMode: "date", minDate: "2026-01-01"})]} index={0} editor="date" />);
+        fireEvent.click(screen.getByRole("checkbox", {name: "Час"}));
+        expect((latest[0] as FormField)).toMatchObject({dateMode: "datetime", minDate: undefined});
+        fireEvent.click(screen.getByRole("checkbox", {name: "Дата"}));
+        expect((latest[0] as FormField).dateMode).toBe("time");
+        expect(screen.getByRole("group", {name: "Найраніша дата питання 1"})).toBeTruthy();
+        fireEvent.click(screen.getByRole("checkbox", {name: "Час"}));
+        expect((latest[0] as FormField).dateMode).toBe("none");
+        expect(screen.getByText("Оберіть дату, час або обидва.")).toBeTruthy();
     });
 });

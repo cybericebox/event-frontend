@@ -24,14 +24,23 @@ function inputSettings(input: FormField["input"], field?: FormField): InputSetti
     return noSettings;
 }
 
-// «Дата» answers: a day ("YYYY-MM-DD") or a UTC ISO datetime, as the backend
-// (eventFormModel.ParseDateAnswer) reads them.
-export function dateModeOf(field: FormField): "date" | "datetime" {
-    return field.dateMode === "datetime" ? "datetime" : "date";
+// «Дата / час» answers: a day ("YYYY-MM-DD"), a time of day ("HH:MM") or a
+// UTC ISO datetime, as the backend (eventFormModel.ParseDateAnswer) reads them.
+export function dateModeOf(field: FormField): "date" | "time" | "datetime" {
+    return field.dateMode === "datetime" || field.dateMode === "time" ? field.dateMode : "date";
 }
 
-export function parseDateAnswer(mode: "date" | "datetime", value: unknown): number | null {
+// The mode for the ticked parts; neither ticked is "none", which cannot be saved.
+export function dateModeFor(parts: {date: boolean; time: boolean}): NonNullable<FormField["dateMode"]> {
+    return parts.date && parts.time ? "datetime" : parts.date ? "date" : parts.time ? "time" : "none";
+}
+
+export function parseDateAnswer(mode: "date" | "time" | "datetime", value: unknown): number | null {
     if (typeof value !== "string") return null;
+    if (mode === "time") {
+        const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value);
+        return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+    }
     if (mode === "date") {
         const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
         if (!match) return null;
@@ -203,6 +212,7 @@ export function participantFormProblem(document: FormDocument): {message: string
             if (!Number.isInteger(size) || size < 1 || size > maxFileMB) return {index, message: t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB})};
         }
         if (block.input === "date") {
+            if (block.dateMode === "none") return {index, message: t("manage.fields.validation.dateParts", {n: index + 1})};
             const mode = dateModeOf(block);
             const min = block.minDate ? parseDateAnswer(mode, block.minDate) : undefined;
             const max = block.maxDate ? parseDateAnswer(mode, block.maxDate) : undefined;

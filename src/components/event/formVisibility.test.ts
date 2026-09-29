@@ -54,3 +54,14 @@ describe("date conditions", () => {
         expect(visibleFieldKeys(blocks, {start: "2026-10-01T08:59:00Z"}).has("late")).toBe(false);
     });
 });
+
+describe("time conditions", () => {
+    it("compare times of day", () => {
+        const blocks: FormBlock[] = [
+            {id: "1", type: "field", key: "arrive", input: "date", label: "Прибуття", dateMode: "time"},
+            {id: "2", type: "field", key: "late", input: "text", label: "Чому пізно?", condition: {fieldKey: "arrive", operator: "after", value: "09:00"}},
+        ];
+        expect(visibleFieldKeys(blocks, {arrive: "09:30"}).has("late")).toBe(true);
+        expect(visibleFieldKeys(blocks, {arrive: "08:45"}).has("late")).toBe(false);
+    });
+});

@@ -4,7 +4,7 @@ import {useState} from "react";
 import {ArrowDown, ArrowUp, Plus, Trash2, X} from "lucide-react";
 import type {ConditionOperator, FileKind, FormBlock, FormField} from "@/api/manageParticipantForm";
 import {DateAnswerInput, formatDateAnswer} from "@/components/event/DateAnswerInput";
-import {addOption, conditionOperators, conditionSources, dateModeOf, defaultFileMB, fileKinds, maxFileMB, officeFileKinds, defaultCondition, initialConditionValue, invalidOptions, isFormField, moveOption, removeOption, renameOption} from "@/components/event/manage/participantFormEditor";
+import {addOption, conditionOperators, conditionSources, dateModeFor, dateModeOf, defaultFileMB, fileKinds, maxFileMB, officeFileKinds, defaultCondition, initialConditionValue, invalidOptions, isFormField, moveOption, removeOption, renameOption} from "@/components/event/manage/participantFormEditor";
 import {FieldLabel} from "@/components/event/manage/FieldLabel";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -75,21 +75,24 @@ export function FormFileSettings({blocks, index, disabled, onChange}: Props) {
     </div>;
 }
 
-// «Дата» settings: a day or a date with time, and optional earliest and latest answers.
+// «Дата / час» settings: the date, the time or both (at least one), and
+// optional earliest and latest answers.
 export function FormDateSettings({blocks, index, disabled, onChange}: Props) {
     const field = fieldAt(blocks, index);
     if (!field) return null;
     const mode = dateModeOf(field);
+    const parts = {date: field.dateMode !== "time" && field.dateMode !== "none", time: field.dateMode === "time" || field.dateMode === "datetime"};
     const update = (patch: Partial<FormField>) => onChange(blocks.map((block, position) => position === index ? {...field, ...patch} : block));
     const n = index + 1;
     return <div className="event-form-date-settings">
-        <div className="event-manage-field"><span>{t("manage.fields.editor.dateMode")}</span>
-            <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.fields.editor.dateModeFor", {n})}>
-                {(["date", "datetime"] as const).map(option => <button key={option} type="button" aria-pressed={mode === option} disabled={disabled} onClick={() => {if (option !== mode) update({dateMode: option, minDate: undefined, maxDate: undefined});}}>{t(`manage.fields.editor.dateMode.${option}`)}</button>)}
-            </div>
+        <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.datePartsFor", {n})}><span>{t("manage.fields.editor.dateParts")}<span className="event-field-required">*</span></span>
+            <div className="event-form-date-settings__parts">{(["date", "time"] as const).map(part => <EventCheckbox key={part} checked={parts[part]} disabled={disabled} label={t(`manage.fields.editor.dateParts.${part}`)} onCheckedChange={checked => update({dateMode: dateModeFor({...parts, [part]: checked}), minDate: undefined, maxDate: undefined})} />)}</div>
+            {field.dateMode === "none" && <p className="event-content-editor__field-error">{t("manage.fields.editor.datePartsEmpty")}</p>}
         </div>
-        <div className="event-manage-field"><span>{t("manage.fields.editor.minDate")}</span><DateAnswerInput mode={mode} value={field.minDate ?? ""} onChange={value => update({minDate: value || undefined})} ariaLabel={t("manage.fields.editor.minDateFor", {n})} disabled={disabled} /></div>
-        <div className="event-manage-field"><span>{t("manage.fields.editor.maxDate")}</span><DateAnswerInput mode={mode} value={field.maxDate ?? ""} onChange={value => update({maxDate: value || undefined})} ariaLabel={t("manage.fields.editor.maxDateFor", {n})} disabled={disabled} /></div>
+        {field.dateMode !== "none" && <>
+            <div className="event-manage-field"><span>{t("manage.fields.editor.minDate")}</span><DateAnswerInput mode={mode} value={field.minDate ?? ""} onChange={value => update({minDate: value || undefined})} ariaLabel={t("manage.fields.editor.minDateFor", {n})} disabled={disabled} /></div>
+            <div className="event-manage-field"><span>{t("manage.fields.editor.maxDate")}</span><DateAnswerInput mode={mode} value={field.maxDate ?? ""} onChange={value => update({maxDate: value || undefined})} ariaLabel={t("manage.fields.editor.maxDateFor", {n})} disabled={disabled} /></div>
+        </>}
     </div>;
 }
 

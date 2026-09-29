@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {addOption, changeInput, conditionOperators, conditionSources, createFormField, parseDateAnswer, duplicateBlock, participantFormProblem, reorderBlocks, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
+import {addOption, changeInput, conditionOperators, conditionSources, createFormField, dateModeFor, parseDateAnswer, duplicateBlock, participantFormProblem, reorderBlocks, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
 import {emptyRichText} from "../content/richTextState";
 
 describe("formatted text in forms and surveys", () => {
@@ -148,5 +148,23 @@ describe("date questions", () => {
         expect(validateParticipantForm({blocks: [field("a", "date", {minDate: "2000-01-01", maxDate: "2010-01-01"})]})).toBeNull();
         expect(validateParticipantForm({blocks: [field("a", "date", {minDate: "2010-01-01", maxDate: "2000-01-01"})]})).toBe("Питання 1: найраніша дата пізніша за найпізнішу.");
         expect(validateParticipantForm({blocks: [field("a", "date", {dateMode: "datetime", minDate: "2010-01-01"})]})).toBe("Питання 1: некоректна межа дати.");
+    });
+});
+
+describe("date / time parts", () => {
+    it("map the ticked parts to the answer format", () => {
+        expect(dateModeFor({date: true, time: false})).toBe("date");
+        expect(dateModeFor({date: false, time: true})).toBe("time");
+        expect(dateModeFor({date: true, time: true})).toBe("datetime");
+        expect(dateModeFor({date: false, time: false})).toBe("none");
+    });
+
+    it("need at least one part and read times of day", () => {
+        expect(validateParticipantForm({blocks: [field("a", "date", {dateMode: "none"})]})).toBe("Питання 1: оберіть дату, час або обидва.");
+        expect(validateParticipantForm({blocks: [field("a", "date", {dateMode: "time", minDate: "09:00", maxDate: "18:00"})]})).toBeNull();
+        expect(validateParticipantForm({blocks: [field("a", "date", {dateMode: "time", minDate: "18:00", maxDate: "09:00"})]})).toBe("Питання 1: найраніша дата пізніша за найпізнішу.");
+        expect(parseDateAnswer("time", "09:30")).toBe(570);
+        expect(parseDateAnswer("time", "24:00")).toBeNull();
+        expect(parseDateAnswer("time", "9:30")).toBeNull();
     });
 });

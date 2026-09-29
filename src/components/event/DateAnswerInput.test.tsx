@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {cleanup, fireEvent, render, screen, within} from "@testing-library/react";
 import {DateAnswerInput, formatDateAnswer} from "./DateAnswerInput";
 
 afterEach(cleanup);
@@ -25,7 +25,25 @@ describe("date answer", () => {
         expect(stored).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/);
     });
 
+    it("picks a time of day as HH:MM", () => {
+        const onChange = vi.fn();
+        render(<DateAnswerInput mode="time" value="" onChange={onChange} ariaLabel="Прибуття" />);
+        const group = screen.getByRole("group", {name: "Прибуття"});
+        fireEvent.change(within(group).getByRole("textbox", {name: "Година"}), {target: {value: "09"}});
+        expect(onChange).toHaveBeenLastCalledWith("09:00");
+    });
+
+    it("steps and clears a time", () => {
+        const onChange = vi.fn();
+        render(<DateAnswerInput mode="time" value="09:59" onChange={onChange} ariaLabel="Прибуття" />);
+        fireEvent.keyDown(screen.getByRole("textbox", {name: "Хвилина"}), {key: "ArrowUp"});
+        expect(onChange).toHaveBeenLastCalledWith("09:00");
+        fireEvent.click(screen.getByRole("button", {name: "Очистити час"}));
+        expect(onChange).toHaveBeenLastCalledWith("");
+    });
+
     it("reads back for people", () => {
+        expect(formatDateAnswer("time", "09:05")).toBe("09:05");
         expect(formatDateAnswer("date", "2026-09-15")).toBe("15 вересня 2026");
         expect(formatDateAnswer("datetime", new Date(2026, 8, 15, 9, 5).toISOString())).toMatch(/15 вересня 2026.*09:05/);
     });
