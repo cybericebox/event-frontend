@@ -93,6 +93,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
     const [confirm, setConfirm] = useState<{hint: ChallengeHint; index: number} | null>(null);
     const [busyID, setBusyID] = useState<string | null>(null);
     const [error, setError] = useState("");
+    const [confirmError, setConfirmError] = useState("");
     const paid = challenge.Hints.some(hint => hint.Cost > 0);
 
     async function unlock(hint: ChallengeHint) {
@@ -104,8 +105,9 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
             setConfirm(null);
             onUnlocked();
         } catch (failure) {
-            setConfirm(null);
-            setError(hintUnlockError(failure));
+            // A failed confirmed unlock keeps the dialog open with the reason inside.
+            if (confirm) setConfirmError(hintUnlockError(failure));
+            else setError(hintUnlockError(failure));
         } finally {
             setBusyID(null);
         }
@@ -120,13 +122,13 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
             <div className="event-cmodal__hint-head">
                 <span className="event-cmodal__hint-title">{moderators ? t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)}) : t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
                 {!moderators && !hint.Unlocked && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
-                    onClick={() => hintNeedsConfirm(hint) ? setConfirm({hint, index}) : void unlock(hint)}>{t("challenges.hints.unlock")}</EventButton>}
+                    onClick={() => {if (hintNeedsConfirm(hint)) {setConfirmError(""); setConfirm({hint, index});} else void unlock(hint);}}>{t("challenges.hints.unlock")}</EventButton>}
             </div>
             {hint.Content && <HintText text={hint.Content} />}
             {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">{t("challenges.hints.unlockedBy", {name: hint.UnlockedByName})}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
         </li>)}</ul>
         {error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
-        <ConfirmDialog open={!!confirm} onCancel={() => setConfirm(null)} busy={!!busyID}
+        <ConfirmDialog open={!!confirm} onCancel={() => setConfirm(null)} busy={!!busyID} error={confirmError}
             title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
             description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
             confirmLabel={t("challenges.hints.confirm")} onConfirm={() => confirm && void unlock(confirm.hint)}>

@@ -35,6 +35,7 @@ export function ChallengeGroupsManager() {
     // «Додати групу» / «Перейменувати групу» dialog.
     const [naming, setNaming] = useState<{group: EventChallengeGroup | null; key: number} | null>(null);
     const [removing, setRemoving] = useState<EventChallengeGroup | null>(null);
+    const [removeError, setRemoveError] = useState("");
     const [moving, setMoving] = useState<{task: GroupTask; target: string} | null>(null);
     const [busy, setBusy] = useState(false);
     // Optimistic orders while the server saves them.
@@ -92,11 +93,15 @@ export function ChallengeGroupsManager() {
     async function remove() {
         if (!removing || !canManage || busy) return;
         const group = removing;
-        const ok = await run(async () => {
+        setBusy(true);
+        setRemoveError("");
+        try {
             await deleteEventChallengeGroup(eventID, group.ID);
             await Promise.all([board.refreshGroups(), board.refreshSets()]);
-        }, t("manage.exercises.groups.deleted"), t("manage.exercises.groups.deleteFailed"));
-        if (ok) setRemoving(null);
+            setRemoving(null);
+            toast.success(t("manage.exercises.groups.deleted"));
+        } catch {setRemoveError(t("manage.exercises.groups.deleteFailed"));}
+        finally {setBusy(false);}
     }
 
     async function reorderGroups(ids: string[]) {
@@ -146,7 +151,7 @@ export function ChallengeGroupsManager() {
                         content: <span className="event-group-order__label"><strong>{group.Name}</strong><small>{count(group.ID)}</small></span>,
                         actions: canManage && <>
                             <button className="ib-icon-btn ib-icon-btn--sm" type="button" title={t("manage.exercises.groups.rename")} aria-label={t("manage.challenges.groups.renameNamed", {name: group.Name})} disabled={busy} onClick={() => setNaming({group, key: Date.now()})}><Pencil size={16} aria-hidden="true" /></button>
-                            <button className="ib-icon-btn ib-icon-btn--sm" type="button" title={t("manage.exercises.groups.deleteGroup")} aria-label={t("manage.exercises.groups.deleteGroupNamed", {name: group.Name})} disabled={busy} onClick={() => setRemoving(group)}><Trash2 size={16} aria-hidden="true" /></button>
+                            <button className="ib-icon-btn ib-icon-btn--sm" type="button" title={t("manage.exercises.groups.deleteGroup")} aria-label={t("manage.exercises.groups.deleteGroupNamed", {name: group.Name})} disabled={busy} onClick={() => {setRemoveError(""); setRemoving(group);}}><Trash2 size={16} aria-hidden="true" /></button>
                         </>,
                     })} />}
                 <button type="button" className={`event-group-order__none${selected === null ? " is-selected" : ""}`} aria-pressed={selected === null} onClick={() => setSelectedID(noGroup)}>
@@ -173,7 +178,7 @@ export function ChallengeGroupsManager() {
         {naming && <GroupNameDialog key={naming.key} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
             otherNames={sorted.filter(group => group.ID !== naming.group?.ID).map(group => group.Name)}
             onClose={() => setNaming(null)} onSubmit={name => void (naming.group ? rename(naming.group, name) : create(name))} />}
-        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} title={t("manage.challenges.groups.deleteTitle")}
+        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} error={removeError} title={t("manage.challenges.groups.deleteTitle")}
             description={removing ? bucketOf(removing.ID).tasks.length > 0 ? tPlural("manage.exercises.groups.deleteConfirmWithTasks", bucketOf(removing.ID).tasks.length, {name: removing.Name}) : t("manage.exercises.groups.deleteConfirm", {name: removing.Name}) : undefined}
             subject={removing?.Name} confirmLabel={t("manage.exercises.groups.deleteGroup")} onConfirm={() => void remove()} />
         <DialogModal open={!!moving} onClose={() => { if (!busy) setMoving(null); }} title={t("manage.challenges.groups.moveTitle")}
