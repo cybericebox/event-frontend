@@ -10,6 +10,7 @@ import uk from "../../messages/uk.json"
 
 // `en` defines the canonical key set; `uk` is what users see.
 const active = uk as Record<string, string>
+const activeLocale = "uk"
 const fallback = en as Record<string, string>
 
 type MessageKey = keyof typeof en
@@ -26,4 +27,17 @@ export function t(key: MessageKey | (string & {}), vars?: MessageVars): string {
   if (!vars) return message
   return message.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in vars ? String(vars[name]) : match)
+}
+
+const pluralRules = new Intl.PluralRules(activeLocale)
+
+/**
+ * Translate a counted message. Plural keys come in three forms — `key.one`,
+ * `key.few`, `key.many` — in both catalogs (en repeats its plural in few/many).
+ * `{count}` is always available to the message.
+ */
+export function tPlural(key: string, count: number, vars?: MessageVars): string {
+  const category = pluralRules.select(count)
+  const form = category === "one" || category === "few" ? category : "many"
+  return t(`${key}.${form}`, {count, ...vars})
 }

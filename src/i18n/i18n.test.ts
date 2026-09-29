@@ -10,7 +10,7 @@ import en from "../../messages/en.json"
 import uk from "../../messages/uk.json"
 import errorsEn from "../../messages/errors.en.json"
 import errorsUk from "../../messages/errors.uk.json"
-import {t} from "./t"
+import {t, tPlural} from "./t"
 import {apiErrorMessage} from "./apiError"
 
 const placeholders = (value: string) => [...value.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort()
@@ -49,6 +49,13 @@ describe("t", () => {
 
   it("falls back to the key", () => {
     expect(t("missing.key")).toBe("missing.key")
+  })
+
+  it("picks the Ukrainian plural form", () => {
+    expect(tPlural("missing", 1)).toBe("missing.one")
+    expect(tPlural("missing", 3)).toBe("missing.few")
+    expect(tPlural("missing", 5)).toBe("missing.many")
+    expect(tPlural("missing", 11)).toBe("missing.many")
   })
 })
 
