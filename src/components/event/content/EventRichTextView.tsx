@@ -22,6 +22,9 @@ function formattedText(text: string, format: unknown): ReactNode {
     const flags = typeof format === "number" ? format : 0;
     let result: ReactNode = text;
     if (flags & 16) result = <code className="event-lexical__inline-code">{result}</code>;
+    if (flags & 32) result = <sub>{result}</sub>;
+    if (flags & 64) result = <sup>{result}</sup>;
+    if (flags & 128) result = <mark>{result}</mark>;
     if (flags & 8) result = <u>{result}</u>;
     if (flags & 4) result = <s>{result}</s>;
     if (flags & 2) result = <em>{result}</em>;
@@ -37,10 +40,10 @@ export function EventRichTextView({value, variables = {}, dateDisplays, emptyFal
 }) {
     const root = asNode(asNode(value)?.root);
     if (root?.type !== "root" || !Array.isArray(root.children) || !root.children.length) return <>{emptyFallback ?? null}</>;
-    function render(value: unknown, key: number): ReactNode {
+    function render(value: unknown, key: number, inCode = false): ReactNode {
         const node = asNode(value);
         if (!node) return null;
-        const children = Array.isArray(node.children) ? node.children.map(render) : null;
+        const children = Array.isArray(node.children) ? node.children.map((child, index) => render(child, index, inCode || node.type === "code")) : null;
         switch (node.type) {
             case "text": return <span key={key}>{formattedText(typeof node.text === "string" ? node.text : "", node.format)}</span>;
             case "variable": {
@@ -56,8 +59,12 @@ export function EventRichTextView({value, variables = {}, dateDisplays, emptyFal
                         textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined,
                         fontFamily: formats.includes("code") ? "monospace" : undefined}}>{text}</span>;
             }
-            case "linebreak": return <br key={key} />;
-            case "paragraph": return <p key={key} className="event-lexical__paragraph" style={alignment(node)}>{children}</p>;
+            // Code blocks keep tabs and highlight runs as plain text.
+            case "tab": return <span key={key}>{"\t"}</span>;
+            case "code-highlight": return <span key={key}>{typeof node.text === "string" ? node.text : ""}</span>;
+            case "linebreak": return inCode ? "\n" : <br key={key} />;
+            // An empty paragraph is a deliberate blank line, as in the editor.
+            case "paragraph": return <p key={key} className="event-lexical__paragraph" style={alignment(node)}>{children?.length ? children : <br />}</p>;
             case "heading": {
                 if (node.tag === "h1") return <h1 key={key} className="event-lexical__h1" style={alignment(node)}>{children}</h1>;
                 if (node.tag === "h2") return <h2 key={key} className="event-lexical__h2" style={alignment(node)}>{children}</h2>;
@@ -81,5 +88,5 @@ export function EventRichTextView({value, variables = {}, dateDisplays, emptyFal
             default: return null;
         }
     }
-    return <div className="event-rich-text-view">{root.children.map(render)}</div>;
+    return <div className="event-rich-text-view">{root.children.map((child, index) => render(child, index))}</div>;
 }

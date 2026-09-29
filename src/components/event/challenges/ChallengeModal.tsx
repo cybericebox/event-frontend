@@ -261,6 +261,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
 
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
+    const category = challenge?.GroupName || t("challenges.otherCategory");
     const count = solves.data?.length ?? challenge?.SolveCount ?? 0;
     const hints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
     const fileUrl = (fileID: string) => moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
@@ -280,7 +281,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         {challenge && <>
             <header className="ib-cmodal__head">
                 <p className="ib-cmodal__meta">
-                    <span>{challenge.GroupName || t("challenges.otherCategory")}</span><span aria-hidden="true">·</span>
+                    <EventTooltip truncated placement="bottom" className="ib-cmodal__cat" content={category}>{() => <span>{category}</span>}</EventTooltip><span aria-hidden="true">·</span>
                     <span className="ib-num">{pointsLabel(challenge.Points)}</span>
                     {showDifficulty && <span className="ib-tag">{difficultyLabel(challenge.Snapshot.difficulty)}</span>}
                     {solved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.modal.solved")}</span>}

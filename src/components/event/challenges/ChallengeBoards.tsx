@@ -7,6 +7,7 @@ import {ChallengeTile} from "./ChallengeTile";
 import {t, tPlural} from "@/i18n/t";
 import {formatPoints, matchesBoard, restPoints, solvedCount, type BoardCategory, type BoardFilter} from "./challengeBoardModel";
 import {richMessage} from "./richMessage";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type OpenHandler = (challenge: OwnChallenge, tile: HTMLButtonElement) => void;
 type BoardProps = {categories: BoardCategory[]; acceptedID: string | null; onOpen: OpenHandler};
@@ -75,14 +76,14 @@ export function TilesBoard({categories, acceptedID, onOpen}: BoardProps) {
             <FilterSeg filter={filter} onChange={setFilter} />
             <div className="ib-board__chips" role="group" aria-label={t("challenges.board.category")}>
                 <button type="button" className="ib-board__chip" aria-pressed={category === ""} onClick={() => setCategory("")}>{t("challenges.board.allCategories")}<span className="ib-num">{solvedCount(all)}</span></button>
-                {categories.map(item => <button key={item.key} type="button" className="ib-board__chip" aria-pressed={category === item.key} onClick={() => setCategory(item.key)}>{item.name}<span className="ib-num">{solvedCount(item.challenges)}</span></button>)}
+                {categories.map(item => <button key={item.key} type="button" className="ib-board__chip" aria-pressed={category === item.key} onClick={() => setCategory(item.key)}><EventTooltip truncated placement="bottom" content={item.name}>{() => <span className="ib-board__chip-name">{item.name}</span>}</EventTooltip><span className="ib-num">{solvedCount(item.challenges)}</span></button>)}
             </div>
             <Search value={query} onChange={setQuery} inputRef={search} className="ib-board__search" />
         </div>
         <div className="ib-board__body">
             {shown.map(item => <section key={item.key} className="ib-board__sec" aria-label={item.name}>
                 <header className="ib-board__cat">
-                    <h3>{item.name}</h3>
+                    <EventTooltip truncated placement="bottom" content={item.name}>{() => <h3>{item.name}</h3>}</EventTooltip>
                     <span className="ib-board__count">{solvedCount(item.challenges)}</span>
                     <span className="ib-board__rest">{richMessage(tPlural("challenges.board.restPoints", restPoints(item.challenges)), {points: <span className="ib-num">{formatPoints(restPoints(item.challenges))}</span>})}</span>
                 </header>
@@ -135,7 +136,7 @@ export function RailBoard({categories, acceptedID, onOpen}: BoardProps) {
             </nav>
             <div className="ib-rail__main">
                 <header className="ib-rail__head">
-                    <h2>{current.name}</h2>
+                    <EventTooltip truncated placement="bottom" content={current.name}>{() => <h2>{current.name}</h2>}</EventTooltip>
                     <span className="ib-num">{solvedCount(current.challenges)}</span>
                     <span className="ib-rail__rest">{richMessage(tPlural("challenges.rail.rest", open.length), {points: <span className="ib-num">{formatPoints(restPoints(current.challenges))}</span>})}</span>
                 </header>

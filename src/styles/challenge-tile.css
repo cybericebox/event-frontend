@@ -46,8 +46,8 @@
 .ib-tile--lg .ib-tile__pts{font-size:var(--ib-fs-16)}
 
 /* grids */
-.ib-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:6px}
-.ib-tiles--lg{grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:var(--ib-2)}
+.ib-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(152px,100%),1fr));gap:6px}
+.ib-tiles--lg{grid-template-columns:repeat(auto-fill,minmax(min(196px,100%),1fr));gap:var(--ib-2)}
 
 /* Local: a locked tile inside its tooltip wrapper still fills the grid cell. */
 .ib-tile-tip{display:flex;min-width:0}

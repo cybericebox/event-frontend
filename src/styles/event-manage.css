@@ -840,7 +840,7 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-lexical__h6{margin:.65em 0 .3em;font-size:.92em;font-weight:650}
 .event-lexical__bold{font-weight:700}.event-lexical__italic{font-style:italic}.event-lexical__underline{text-decoration:underline}.event-lexical__strike{text-decoration:line-through}
 .event-lexical__inline-code{padding:1px 4px;border-radius:3px;background:var(--ib-soft);font-family:monospace}
-.event-lexical__quote{margin:.7em 0;padding:.3em 0 .3em 14px;border-left:2px solid var(--ib-line);color:var(--ib-dim)}
+.event-lexical__quote{margin:.7em 0;padding:.5em 14px;border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-body)}
 .event-lexical__code{display:block;margin:.7em 0;padding:12px;border-radius:var(--ib-r-sm);background:var(--ib-soft);font-family:monospace;white-space:pre-wrap}
 .event-lexical__ul{margin:.4em 0;padding-left:1.5em;list-style:disc}.event-lexical__ol{margin:.4em 0;padding-left:1.5em;list-style:decimal}.event-lexical__li{margin:.2em 0}
 .event-lexical__link{color:var(--ib-action);text-decoration:underline}

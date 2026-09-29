@@ -40,8 +40,9 @@
 .event-cmodal__hosts{display:grid;gap:6px}
 .event-cmodal__hints{margin:0;padding:0;list-style:none;border-top:1px solid var(--ib-line)}
 .event-cmodal__hints li{padding:var(--ib-2) 2px;border-bottom:1px solid var(--ib-line)}
-.event-cmodal__hints p{margin-top:var(--ib-1);color:var(--ib-body)}
-.event-cmodal__hint-title{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.event-cmodal__hints p{margin-top:var(--ib-1);color:var(--ib-body);overflow-wrap:anywhere;white-space:pre-line}
+.event-cmodal__hints .event-rich-text-view p{white-space:normal}
+.event-cmodal__hint-title{min-width:0;overflow-wrap:anywhere;font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
 .event-cmodal__hint-title .ib-num{font-weight:var(--ib-w-regular);color:var(--ib-dim)}
 .event-cmodal__hint-head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);min-height:28px}
 .event-cmodal__hint-head .ib-btn{flex:none}

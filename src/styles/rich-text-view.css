@@ -1,0 +1,32 @@
+/* Rich text view — task descriptions, hints and page text rendered from a Lexical document
+   (EventRichTextView). Long words wrap, code scrolls sideways, quotes use a tinted box
+   (no accent border), headings are compact so they fit a 640px dialog. */
+
+.event-rich-text-view{min-width:0;overflow-wrap:anywhere;line-height:inherit}
+.event-rich-text-view>:first-child{margin-top:0}
+.event-rich-text-view>:last-child{margin-bottom:0}
+.event-rich-text-view .event-lexical__paragraph{margin:0 0 .7em}
+.event-rich-text-view :is(.event-lexical__h1,.event-lexical__h2,.event-lexical__h3,.event-lexical__h4,.event-lexical__h5,.event-lexical__h6){margin:1em 0 .4em;color:var(--ib-ink);line-height:1.3;letter-spacing:0;text-wrap:pretty}
+.ib-cmodal .event-rich-text-view .event-lexical__h1{font-size:1.3em;font-weight:var(--ib-w-semibold)}
+.ib-cmodal .event-rich-text-view .event-lexical__h2{font-size:1.18em;font-weight:var(--ib-w-semibold)}
+.ib-cmodal .event-rich-text-view .event-lexical__h3{font-size:1.08em;font-weight:var(--ib-w-semibold)}
+.ib-cmodal .event-rich-text-view :is(.event-lexical__h4,.event-lexical__h5,.event-lexical__h6){font-size:1em;font-weight:var(--ib-w-semibold)}
+.event-rich-text-view .event-lexical__h6{color:var(--ib-body)}
+
+.event-rich-text-view .event-lexical__ul,.event-rich-text-view .event-lexical__ol{margin:0 0 .7em;padding-left:1.6em}
+.event-rich-text-view :is(.event-lexical__ul,.event-lexical__ol) :is(.event-lexical__ul,.event-lexical__ol){margin:.2em 0 0}
+.event-rich-text-view .event-lexical__li{margin:.2em 0;padding-left:.1em}
+/* Lexical wraps a nested list in its own item: no marker for the wrapper. */
+.event-rich-text-view .event-lexical__li:has(>.event-lexical__ul,>.event-lexical__ol){list-style:none;margin:0;padding:0}
+.event-rich-text-view .event-lexical__ul .event-lexical__ul{list-style:circle}
+.event-rich-text-view .event-lexical__ol .event-lexical__ol{list-style:lower-alpha}
+
+.event-rich-text-view .event-lexical__quote{margin:0 0 .7em;padding:.6em 14px;border:0;border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-body)}
+.event-rich-text-view .event-lexical__quote>.event-lexical__paragraph:last-child{margin-bottom:0}
+
+.event-rich-text-view .event-lexical__inline-code{padding:1px 5px;border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-ink);font-family:var(--ib-mono);font-size:.9em;overflow-wrap:anywhere}
+.event-rich-text-view .event-lexical__code{display:block;max-width:100%;margin:0 0 .7em;padding:10px 12px;overflow-x:auto;overflow-wrap:normal;
+  white-space:pre;tab-size:4;border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-ink);font-family:var(--ib-mono);font-size:var(--ib-fs-13);line-height:1.5}
+.event-rich-text-view .event-lexical__code code{padding:0;background:none;font:inherit;overflow-wrap:normal}
+.event-rich-text-view .event-lexical__link{overflow-wrap:anywhere}
+.event-rich-text-view mark{padding:0 2px;border-radius:2px;background:var(--ib-warn-bg);color:var(--ib-ink)}
