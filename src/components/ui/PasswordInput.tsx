@@ -1,16 +1,20 @@
 "use client";
 
 import {useState, type InputHTMLAttributes} from "react";
-import {Eye, EyeOff} from "lucide-react";
-import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 
-// Password field with an eye button on the right that reveals / hides the value.
-export function PasswordInput({className = "event-manage-input", ...props}: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
-    const [shown, setShown] = useState(false);
-    const label = shown ? t("common.hidePassword") : t("common.showPassword");
-    return <div className="event-password">
+type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+    // Controlled reveal state, so a password + confirmation pair shows / hides together.
+    shown?: boolean;
+    onShownChange?: (shown: boolean) => void;
+};
+
+// ds-v2 .ib-input-wrap--password: input + «Показати» / «Сховати» text button (as in id-frontend).
+export function PasswordInput({className = "event-manage-input", shown: shownProp, onShownChange, ...props}: PasswordInputProps) {
+    const [shownState, setShownState] = useState(false);
+    const shown = shownProp ?? shownState;
+    return <div className="ib-input-wrap ib-input-wrap--password">
         <input {...props} className={className} type={shown ? "text" : "password"} />
-        {!props.disabled && <EventTooltip content={label}>{id => <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={label} aria-pressed={shown} aria-describedby={id} onClick={() => setShown(value => !value)}>{shown ? <EyeOff aria-hidden /> : <Eye aria-hidden />}</button>}</EventTooltip>}
+        {!props.disabled && <button className="ib-input__reveal" type="button" aria-pressed={shown} onClick={() => {setShownState(!shown); onShownChange?.(!shown);}}>{shown ? t("common.hide") : t("common.show")}</button>}
     </div>;
 }

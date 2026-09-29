@@ -51,7 +51,5 @@
 .ib-input__reveal:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
 .ib-input:disabled~.ib-input__reveal{display:none}
 
-/* PasswordInput — input + eye .ib-icon-btn--sm (inside an .ib-tip) on the right; hidden while disabled */
-.event-password{position:relative;width:100%;min-width:0}
-.event-password>input:not(:disabled){padding-right:44px}
-.event-password>.ib-tip{position:absolute;right:4px;top:50%;transform:translateY(-50%)}
+/* PasswordInput on manage forms: the manage input inside .ib-input-wrap--password */
+.ib-input-wrap--password>.event-manage-input{padding-right:96px}
