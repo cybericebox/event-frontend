@@ -24,6 +24,8 @@ export const ManageConfigSchema = z.object({
     // Admin-owned at event creation; read-only for moderators.
     InfrastructureAllowed: z.boolean().default(false),
     AllowPseudonyms: z.boolean().default(false),
+    ShowDifficulty: z.boolean().default(true),
+    ShowHints: z.boolean().default(true),
     Theme: themeSchema,
     UpdatedAt: z.string(),
 });
@@ -39,6 +41,7 @@ export function manageConfigInput(config: ManageConfig): ManageConfigInput {
         PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture,
         MaxTeamSize: config.MaxTeamSize, MinTeamSize: config.MinTeamSize, MaxTeams: config.MaxTeams,
         AllowPseudonyms: config.AllowPseudonyms,
+        ShowDifficulty: config.ShowDifficulty, ShowHints: config.ShowHints,
     };
 }
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;
@@ -110,6 +113,8 @@ let mockConfig: ManageConfig = {
     MaxTeams: null,
     InfrastructureAllowed: false,
     AllowPseudonyms: false,
+    ShowDifficulty: true,
+    ShowHints: true,
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
     UpdatedAt: "2026-09-26T00:00:00Z",
 };

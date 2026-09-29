@@ -23,5 +23,11 @@ async function readVPN<T>(eventID: string, path: string, schema: z.ZodType<T>): 
     return z.object({Data: schema}).parse(body).Data;
 }
 
-export const getVPNStatus = (eventID: string) => readVPN(eventID, "/status", statusSchema);
-export const issueVPNConfig = async (eventID: string) => (await readVPN(eventID, "", configSchema)).Config;
+export async function getVPNStatus(eventID: string): Promise<VPNStatus> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {GatewayIP: "10.10.0.1", ProbeURL: "http://probe.lab/"};
+    return readVPN(eventID, "/status", statusSchema);
+}
+export async function issueVPNConfig(eventID: string): Promise<string> {
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return "[Interface]\nAddress = 10.10.0.14/32\n";
+    return (await readVPN(eventID, "", configSchema)).Config;
+}

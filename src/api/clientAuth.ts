@@ -92,7 +92,7 @@ export async function getRegistrationWindow(eventID: string): Promise<Registrati
 
 export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {
     if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1"
-        ? ownTeamSchema.parse({ID: "01900000-0000-7000-8000-000000000022", Name: "Blue Team", JoinCode: "MOCK-TEAM", MemberCount: 3})
+        ? ownTeamSchema.parse({ID: "01900000-0000-7000-8000-000000000022", Name: "Blue Team", JoinCode: "MOCK-TEAM", MemberCount: 3, Admitted: true, MinTeamSize: 2, MaxTeamSize: 5})
         : null;
     const response = await fetch(apiUrl(`/events/${encodeURIComponent(eventID)}/teams/mine`), {credentials: "include", cache: "no-store"});
     if (response.status === 404) return null;

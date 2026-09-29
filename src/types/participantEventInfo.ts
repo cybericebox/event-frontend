@@ -18,6 +18,10 @@ export const ParticipantEventInfoSchema = z.object({
     TeamAdmitted: z.boolean().nullish(),
     MinTeamSize: z.number().int().nullish(),
     MaxTeamSize: z.number().int().nullish(),
+    // Board presentation (event settings) and whether any task needs the team VPN.
+    ShowDifficulty: z.boolean().default(true),
+    ShowHints: z.boolean().default(true),
+    HasInfrastructureChallenges: z.boolean().default(false),
 });
 
 export type ParticipantEventInfo = z.infer<typeof ParticipantEventInfoSchema>;
