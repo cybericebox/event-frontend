@@ -74,4 +74,17 @@ describe("ConsentBanner", () => {
         render(<ConsentBanner gaId="" policyHref="/cookies" />);
         expect(screen.queryByRole("region")).toBeNull();
     });
+
+    it("the policy link opens a new tab and keeps the panel and its unsaved toggles", () => {
+        render(<ConsentBanner gaId="G-TEST" policyHref="/cookies"/>);
+        click("Налаштувати");
+        fireEvent.click(screen.getAllByRole("switch")[1]);
+        const link = screen.getByRole("link", {name: "Політика файлів cookie (відкриється в новій вкладці)"});
+        expect(link.getAttribute("target")).toBe("_blank");
+        expect(link.getAttribute("rel")).toContain("noopener");
+        fireEvent.click(link);
+        expect(screen.getByRole("dialog")).toBeTruthy();
+        expect((screen.getAllByRole("switch")[1] as HTMLInputElement).checked).toBe(true);
+        expect(document.cookie).not.toContain("cib_consent");
+    });
 });

@@ -6,6 +6,7 @@ import {
     ACCEPT_ALL,
     CONSENT_CHANGE_EVENT,
     CONSENT_OPEN_EVENT,
+    POLICY_LINK_ATTRS,
     REJECT_ALL,
     readConsent,
     saveConsent,
@@ -25,9 +26,10 @@ const snapshot = () => {
 const serverSnapshot = () => "ssr";
 
 // A message with one {link} placeholder, the link inserted in its place.
+// The policy link opens in a new tab and stops the click, so the banner/panel and its toggles stay.
 function withLink(key: string, href: string) {
     const [before, after = ""] = t(key).split("{link}");
-    return <>{before}<a href={href}>{t("consent.policyLink")}</a>{after}</>;
+    return <>{before}<a href={href} {...POLICY_LINK_ATTRS} aria-label={t("consent.policyLinkNewTab")} onClick={(e) => e.stopPropagation()}>{t("consent.policyLink")}</a>{after}</>;
 }
 
 // Cookie consent in two layers, fixed to the bottom, non-blocking.
