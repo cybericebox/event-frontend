@@ -37,7 +37,7 @@ export function CsvField({label, columns, required, examples, templateName, file
     pickerRef?: Ref<FilePickerHandle>;
 }) {
     const id = useId();
-    const help = [t("manage.invites.csv.columnsIntro"), ...columns.map(column => `• ${required.includes(column) ? t("manage.invites.csv.columnRequired", {column}) : column}`), t("manage.invites.csv.columnsNote")].join("\n");
+    const help = [t("manage.invites.csv.columnsIntro"), ...columns.map(column => `• ${required.includes(column) ? t("manage.invites.csv.columnRequired", {column}) : column}`), t("manage.invites.csv.columnsNote"), t("manage.invites.csv.dropAnywhere")].join("\n");
     return <div className="ib-field">
         <span className="event-field-help"><label className="ib-field__label" htmlFor={id}>{label}</label><HelpTooltip label={t("manage.invites.csv.columnsLabel")} text={help} /></span>
         <div className="event-csv-row">

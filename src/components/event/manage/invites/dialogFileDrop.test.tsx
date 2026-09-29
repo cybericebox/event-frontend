@@ -5,11 +5,12 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ManageDialog} from "./ManageDialog";
 import {EventFilePicker} from "@/components/ui/EventFilePicker";
 import {CreateTeamDialog} from "../CreateTeamDialog";
+import {InviteParticipantsDialog} from "../InviteParticipantsDialog";
 
 vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => null}));
 vi.mock("@/api/manageTeamFields", () => ({getManageTeamFields: async () => null}));
 vi.mock("@/api/manageParticipants", () => ({getManageParticipants: async () => ({Items: [], NextCursor: null})}));
-vi.mock("@/api/manageInvites", () => ({createManageTeams: vi.fn(async () => ({Teams: [], Issues: [], Assigned: 0, Invited: 2}))}));
+vi.mock("@/api/manageInvites", () => ({sendInvitations: vi.fn(async () => []), createManageTeams: vi.fn(async () => ({Teams: [], Issues: [], Assigned: 0, Invited: 2}))}));
 
 afterEach(cleanup);
 
@@ -74,5 +75,19 @@ describe("create-team dialog", () => {
         render(<QueryClientProvider client={new QueryClient()}><CreateTeamDialog eventID="e1" open onOpenChange={vi.fn()} onCreated={vi.fn(async () => undefined)} /></QueryClientProvider>);
         fireEvent.drop(screen.getByRole("dialog"), files([new File(["x"], "notes.txt", {type: "text/plain"})]));
         await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Цей формат файлу не підтримується."));
+    });
+});
+
+describe("invite dialog", () => {
+    it("asks for addresses or a CSV, not for typing, and says the file can be dragged in", async () => {
+        render(<InviteParticipantsDialog eventID="e1" open onOpenChange={vi.fn()} onSent={vi.fn(async () => undefined)} />);
+        const label = screen.getByText("Адреси електронної пошти", {exact: false});
+        expect(label.textContent).not.toContain("*");
+        expect(screen.getByText(/Вкажіть адреси або завантажте CSV — потрібна хоча б одна адреса\./)).toBeTruthy();
+        expect((screen.getByRole("button", {name: "Надіслати запрошення"}) as HTMLButtonElement).disabled).toBe(true);
+        fireEvent.focus(screen.getByRole("button", {name: "Колонки CSV"}));
+        await waitFor(() => expect(document.body.textContent).toContain("Файл можна обрати кнопкою або перетягнути будь-куди у вікно."));
+        fireEvent.drop(screen.getByRole("dialog"), files([new File(["email\na@x.test\n"], "people.csv", {type: "text/csv"})]));
+        await waitFor(() => expect((screen.getByRole("button", {name: "Надіслати запрошення"}) as HTMLButtonElement).disabled).toBe(false));
     });
 });

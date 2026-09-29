@@ -84,9 +84,10 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => {reset(); onOpenChange(false);}}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canSend} busy={busy}>{t("manage.participants.invite.send")}</EventButton></>}>
         <div className="ib-field">
-            <label className="ib-field__label" htmlFor={`${id}-emails`}>{t("manage.participants.invite.emails")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></label>
-            <EmailChipsInput id={`${id}-emails`} chips={chips} onChange={next => {setChips(next); setFailures([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-hint ${id}-error`} />
-            <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.chips.hint")} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>
+            {/* Addresses may come from the chips or a CSV: at least one is needed, typing is not. */}
+            <label className="ib-field__label" htmlFor={`${id}-emails`}>{t("manage.participants.invite.emails")}</label>
+            <EmailChipsInput id={`${id}-emails`} chips={chips} onChange={next => {setChips(next); setFailures([]);}} disabled={busy} placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-hint ${id}-error`} />
+            <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.emailsOrCsv")} {t("manage.invites.chips.hint")} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>
             <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
         </div>
         <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName")]]}

@@ -23,7 +23,7 @@ describe("file answer", () => {
         const upload = vi.fn(async () => stored);
         const onChange = vi.fn();
         render(<AnswerFileInput id="answer-cv" field={field} value={undefined} upload={upload} onChange={onChange} />);
-        expect(screen.getByText("PDF, Word (DOC, DOCX, ODT) · до 1 МБ")).toBeTruthy();
+        expect(screen.getByText("PDF, Word (DOC, DOCX, ODT) · до 1 МБ. Файл можна обрати кнопкою або перетягнути в це поле.")).toBeTruthy();
         expect((document.getElementById("answer-cv") as HTMLInputElement).accept).toContain(".docx");
         choose(new File(["%PDF"], "cv.pdf", {type: "application/pdf"}));
         await waitFor(() => expect(onChange).toHaveBeenCalledWith(stored));

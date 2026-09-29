@@ -52,6 +52,6 @@ export function AnswerFileInput({id, field, value, onChange, upload, disabled = 
 
     // The picker checks the format and the size of a picked or dropped file.
     return <EventFilePicker id={id} fileName={pending?.name ?? value?.name ?? null} fileSize={pending?.size ?? value?.size} busy={!!pending} error={error}
-        accept={(field.fileTypes ?? []).map(kind => accepted[kind]).join(",")} maxBytes={fileLimitMB(field) * 1024 * 1024} hint={fileRulesText(field)}
+        accept={(field.fileTypes ?? []).map(kind => accepted[kind]).join(",")} maxBytes={fileLimitMB(field) * 1024 * 1024} hint={`${fileRulesText(field)}. ${t("forms.file.dropHint")}`}
         disabled={disabled} onFile={file => void choose(file)} />;
 }
