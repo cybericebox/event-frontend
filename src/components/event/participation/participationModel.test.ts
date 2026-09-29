@@ -37,13 +37,14 @@ describe("participation model", () => {
 
 describe("join link", () => {
     it("builds the link from the event origin and the code", () => {
-        expect(joinLink("https://olymp.example.com", "a b/c")).toBe("https://olymp.example.com/team?join=a%20b%2Fc");
+        expect(joinLink("https://olymp.example.com", "a b/c")).toBe("https://olymp.example.com/participation?tab=team&join=a%20b%2Fc");
     });
 
     it("reads the code from a pasted link or a bare code", () => {
         expect(parseJoinCode("https://olymp.example.com/team?join=abc-123")).toBe("abc-123");
         expect(parseJoinCode("  abc-123  ")).toBe("abc-123");
         expect(parseJoinCode("olymp.example.com/team?join=abc-123&x=1")).toBe("abc-123");
+        expect(parseJoinCode("https://olymp.example.com/participation?tab=team&join=abc-123")).toBe("abc-123");
         expect(parseJoinCode("")).toBe("");
         expect(joinCodeFromSearch("?join=abc-123")).toBe("abc-123");
         expect(joinCodeFromSearch("")).toBe("");

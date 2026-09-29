@@ -58,7 +58,7 @@ it("gives the captain the join link with copy and reissue", async () => {
     state.members = [member("1", "Олена", TeamRole.Captain, true), member("2", "Іван", TeamRole.Member, false), member("3", "Марія", TeamRole.Member, false, true)];
     view();
     const link = await screen.findByLabelText<HTMLInputElement>("Посилання для запрошення");
-    expect(link.value).toBe(`${window.location.origin}/team?join=secret-code`);
+    expect(link.value).toBe(`${window.location.origin}/participation?tab=team&join=secret-code`);
     expect(screen.getByRole("button", {name: "Копіювати"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Перевипустити"})).toBeTruthy();
     expect(await screen.findByText("Очікує підтвердження")).toBeTruthy();

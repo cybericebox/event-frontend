@@ -44,7 +44,8 @@ const JOIN_CODE_KEY = "event-team-join-code";
 
 // The invitation is a link to the event's team page with the code in the query.
 export function joinLink(origin: string, code: string): string {
-    return `${origin}/team?${JOIN_PARAM}=${encodeURIComponent(code)}`;
+    // Straight to the team tab; /team?join= (links shared before) still redirects there.
+    return `${origin}/participation?tab=team&${JOIN_PARAM}=${encodeURIComponent(code)}`;
 }
 
 // The code from a pasted join link or a bare code; empty when there is none.
