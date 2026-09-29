@@ -79,15 +79,37 @@ describe("create-team dialog", () => {
 });
 
 describe("invite dialog", () => {
-    it("asks for addresses or a CSV, not for typing, and says the file can be dragged in", async () => {
-        render(<InviteParticipantsDialog eventID="e1" open onOpenChange={vi.fn()} onSent={vi.fn(async () => undefined)} />);
-        const label = screen.getByText("Адреси електронної пошти", {exact: false});
-        expect(label.textContent).not.toContain("*");
-        expect(screen.getByText(/Вкажіть адреси або завантажте CSV — потрібна хоча б одна адреса\./)).toBeTruthy();
-        expect((screen.getByRole("button", {name: "Надіслати запрошення"}) as HTMLButtonElement).disabled).toBe(true);
+    const renderInvite = () => render(<InviteParticipantsDialog eventID="e1" open onOpenChange={vi.fn()} onSent={vi.fn(async () => undefined)} />);
+    const send = () => screen.getByRole("button", {name: "Надіслати запрошення"}) as HTMLButtonElement;
+    const people = new File(["email,first_name\na@x.test,Ann\nb@x.test,\n"], "people.csv", {type: "text/csv"});
+
+    it("types addresses in «Вручну»: the field is required and there is no file zone", () => {
+        renderInvite();
+        expect(screen.getByRole("button", {name: "Вручну"}).getAttribute("aria-pressed")).toBe("true");
+        expect(screen.getByText("Адреси електронної пошти", {exact: false}).textContent).toContain("*");
+        expect(screen.queryByText(/Вкажіть адреси або завантажте CSV/)).toBeNull();
+        expect(screen.queryByRole("button", {name: "Обрати файл"})).toBeNull();
+        expect(send().disabled).toBe(true);
+    });
+
+    it("takes a file in «З CSV-файлу» with a summary, and says it can be dragged in", async () => {
+        renderInvite();
+        fireEvent.click(screen.getByRole("button", {name: "З CSV-файлу"}));
+        expect(screen.queryByRole("textbox", {name: /Адреси/})).toBeNull();
         fireEvent.focus(screen.getByRole("button", {name: "Колонки CSV"}));
         await waitFor(() => expect(document.body.textContent).toContain("Файл можна обрати кнопкою або перетягнути будь-куди у вікно."));
-        fireEvent.drop(screen.getByRole("dialog"), files([new File(["email\na@x.test\n"], "people.csv", {type: "text/csv"})]));
-        await waitFor(() => expect((screen.getByRole("button", {name: "Надіслати запрошення"}) as HTMLButtonElement).disabled).toBe(false));
+        fireEvent.drop(screen.getByRole("button", {name: "Обрати файл"}), files([people]));
+        await waitFor(() => expect(screen.getByRole("status").textContent).toContain("2 адреси, з іменами: 1."));
+        expect(send().disabled).toBe(false);
+        fireEvent.click(screen.getByRole("button", {name: "Вручну"}));
+        expect(send().disabled).toBe(true);
+    });
+
+    it("switches to CSV when a file is dropped anywhere in manual mode", async () => {
+        renderInvite();
+        fireEvent.drop(screen.getByRole("dialog"), files([people]));
+        await waitFor(() => expect(screen.getByText("people.csv")).toBeTruthy());
+        expect(screen.getByRole("button", {name: "З CSV-файлу"}).getAttribute("aria-pressed")).toBe("true");
+        expect(send().disabled).toBe(false);
     });
 });

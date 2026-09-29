@@ -1,10 +1,10 @@
 "use client";
 
-import {useId, useRef, useState, type FormEvent} from "react";
+import {useCallback, useId, useRef, useState, type FormEvent} from "react";
 import {toast} from "react-hot-toast";
 import {sendInvitations, type InvitationResult} from "@/api/manageInvites";
 import {EventButton} from "@/components/ui/EventButton";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 import {CsvField} from "./invites/CsvField";
 import type {FilePickerHandle} from "@/components/ui/EventFilePicker";
 import {EmailChipsInput} from "./invites/EmailChipsInput";
@@ -18,8 +18,10 @@ export function invitationFailureText(result: InvitationResult): string {
     return t("manage.invites.result.line", {email: result.Email, reason: t(`manage.invites.result.${result.Code ?? "failed"}`)});
 }
 
-// «Запросити учасників» (or to one team): addresses as chips and/or a CSV with
-// email, first_name, last_name; names prefill the pending accounts.
+// «Запросити учасників» (or to one team), like «Створити команду»: «Вручну»
+// takes addresses as chips, «З CSV-файлу» a file with email, first_name,
+// last_name (names prefill the pending accounts). A file dropped on the dialog
+// switches to the CSV mode.
 export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, team, initialEmails = []}: {
     eventID: string;
     open: boolean;
@@ -29,30 +31,51 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     initialEmails?: string[];
 }) {
     const id = useId();
+    const [mode, setMode] = useState<"manual" | "csv">("manual");
     const [chips, setChips] = useState<EmailChip[]>(() => addChips([], initialEmails.map(email => ({email}))));
+    const [csvChips, setCsvChips] = useState<EmailChip[]>([]);
     const [fileName, setFileName] = useState<string | null>(null);
     const [csvIssues, setCsvIssues] = useState<CsvIssue[]>([]);
     const [failures, setFailures] = useState<InvitationResult[]>([]);
     const [busy, setBusy] = useState(false);
-    const csvPicker = useRef<FilePickerHandle>(null);
-    const valid = validChips(chips);
-    const invalidCount = chips.length - valid.length;
+    const csvPicker = useRef<FilePickerHandle | null>(null);
+    // A CSV dropped in manual mode waits here until the CSV field mounts.
+    const droppedCsv = useRef<File[] | null>(null);
+    const attachCsvPicker = useCallback((handle: FilePickerHandle | null) => {
+        csvPicker.current = handle;
+        if (handle && droppedCsv.current) {handle.take(droppedCsv.current); droppedCsv.current = null;}
+    }, []);
+    // Each mode sends its own addresses: typed chips or the parsed file.
+    const active = mode === "manual" ? chips : csvChips;
+    const valid = validChips(active);
+    const invalidCount = active.length - valid.length;
     const canSend = !busy && valid.length > 0 && valid.length <= invitationLimit && invalidCount === 0;
+    const named = valid.filter(chip => chip.firstName || chip.lastName).length;
 
     function reset() {
-        setChips([]); setFileName(null); setCsvIssues([]); setFailures([]);
+        setMode("manual"); setChips([]); setCsvChips([]); setFileName(null); setCsvIssues([]); setFailures([]);
+    }
+
+    function switchMode(next: "manual" | "csv") { setMode(next); setFailures([]); }
+
+    // A file dropped anywhere on the dialog goes to the CSV field, switching to it.
+    function dropCsv(files: File[]) {
+        if (mode === "csv") {csvPicker.current?.take(files); return;}
+        droppedCsv.current = files;
+        switchMode("csv");
     }
 
     async function readFile(file: File | null) {
         setFailures([]);
-        if (!file) {setFileName(null); setCsvIssues([]); return;}
+        if (!file) {setFileName(null); setCsvIssues([]); setCsvChips([]); return;}
         setFileName(file.name);
         try {
             const {entries, issues} = parseInviteCsv(await file.text());
             setCsvIssues(issues);
-            setChips(current => addChips(current, entries));
+            setCsvChips(addChips([], entries));
         } catch {
             setCsvIssues([]);
+            setCsvChips([]);
             toast.error(t("manage.participants.invite.csvFailed"));
         }
     }
@@ -67,7 +90,8 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             const failedEmails = new Set(failed.map(result => result.Email.toLowerCase()));
             const sent = results.length - failed.length;
             setFailures(failed);
-            setChips(current => current.filter(chip => failedEmails.has(chip.email)));
+            const keepFailed = (current: EmailChip[]) => current.filter(chip => failedEmails.has(chip.email));
+            if (mode === "manual") setChips(keepFailed); else setCsvChips(keepFailed);
             if (sent) {
                 toast.success(t("manage.participants.invite.sent", {count: sent}));
                 try {await onSent();} catch {toast.error(t("manage.participants.refreshFailed"));}
@@ -80,18 +104,24 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     const title = team ? t("manage.teams.invite.title", {name: team.Name}) : t("manage.participants.invite.title");
     return <ManageDialog open={open} onOpenChange={next => {if (!busy) {if (!next) reset(); onOpenChange(next);}}} title={title}
         description={team ? t("manage.invites.teamDescription") : t("manage.invites.description")} onSubmit={submit}
-        fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: files => csvPicker.current?.take(files), disabled: busy}}
+        fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: dropCsv, disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => {reset(); onOpenChange(false);}}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canSend} busy={busy}>{t("manage.participants.invite.send")}</EventButton></>}>
-        <div className="ib-field">
-            {/* Addresses may come from the chips or a CSV: at least one is needed, typing is not. */}
-            <label className="ib-field__label" htmlFor={`${id}-emails`}>{t("manage.participants.invite.emails")}</label>
-            <EmailChipsInput id={`${id}-emails`} chips={chips} onChange={next => {setChips(next); setFailures([]);}} disabled={busy} placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-hint ${id}-error`} />
-            <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.emailsOrCsv")} {t("manage.invites.chips.hint")} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>
-            <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
+        <div className="ib-seg event-modal__modes" role="group" aria-label={t("manage.invites.mode")}>
+            <button type="button" aria-pressed={mode === "manual"} disabled={busy} onClick={() => switchMode("manual")}>{t("manage.invites.modeManual")}</button>
+            <button type="button" aria-pressed={mode === "csv"} disabled={busy} onClick={() => switchMode("csv")}>{t("manage.invites.modeCsv")}</button>
         </div>
-        <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName")]]}
-            templateName={t("manage.invites.template.inviteFile")} pickerRef={csvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
+        {mode === "manual" ? <div className="ib-field">
+            <label className="ib-field__label" htmlFor={`${id}-emails`}>{t("manage.participants.invite.emails")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></label>
+            <EmailChipsInput id={`${id}-emails`} chips={chips} onChange={next => {setChips(next); setFailures([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-hint ${id}-error`} />
+            <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.chips.hint")} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>
+            <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
+        </div> : <>
+            <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName")]]}
+                templateName={t("manage.invites.template.inviteFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
+            {fileName && csvChips.length > 0 && <p className="event-modal__summary" role="status">{tPlural("manage.invites.csv.summary", valid.length, {named})} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>}
+            {valid.length > invitationLimit && <p className="ib-field__error" role="alert">{t("manage.participants.invite.limit")}</p>}
+        </>}
         {failures.length > 0 && <ul className="event-modal__issues" role="status">{failures.map(result => <li key={result.Email}>{invitationFailureText(result)}</li>)}</ul>}
     </ManageDialog>;
 }
