@@ -12,15 +12,15 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {getManageConfig, getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
 import {getManageLabs} from "@/api/manageLabs";
 import {EventLoading} from "@/components/event/EventLoading";
-import {EventLoadError} from "@/components/event/EventLoadError";
 import {DialogModal} from "@/components/event/DialogModal";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {
     attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentVersionLabel, detachWithConfirm, exercisesAppURL, isDetached,
 } from "./attachmentModel";
 import {InfrastructureIcon} from "./InfrastructureIcon";
-import {TaskRow} from "./TaskRow";
-import {standReadiness} from "./taskRowModel";
+import {HintMark, TaskRow} from "./TaskRow";
+import {setOpenByDefault, setSummary, standReadiness} from "./taskRowModel";
+import {useSetOpenState} from "./useSetOpenState";
 import {useBoardSets} from "./useBoardSets";
 import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
@@ -56,7 +56,7 @@ export function ExerciseAttachments() {
     const board = useBoardSets(eventID);
     const [busy, setBusy] = useState(false);
     const [action, setAction] = useState<Action | null>(null);
-    const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+    const openState = useSetOpenState(eventID);
     const scoringQuery = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const lifecycleQuery = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
@@ -89,17 +89,8 @@ export function ExerciseAttachments() {
         } finally {setBusy(false);}
     }
 
-    function toggleSet(id: string) {
-        setCollapsed(current => {
-            const next = new Set(current);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    }
-
     if (board.pending || scoringQuery.isPending || lifecycleQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
-    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.exercises.loadFailed")} onRetry={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}} />;
+    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.exercises.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}}>{t("common.retry")}</button></div>;
 
     const copy = action && actionCopy(action);
     return <>
@@ -109,24 +100,38 @@ export function ExerciseAttachments() {
             {sets.map(({attachment, challenges}) => {
                 const kind = attachmentKind(attachment);
                 const editURL = kind === "catalog" ? null : exercisesAppURL(exercisesOrigin, "detail", {exerciseID: attachment.ExerciseID, eventID, returnURL});
-                const open = !collapsed.has(attachment.ID);
+                const fallback = setOpenByDefault(sets.length);
+                const open = openState.isOpen(attachment.ID, fallback);
+                const toggle = () => openState.toggle(attachment.ID, fallback);
+                const name = attachment.ExerciseName || t("manage.exercises.set");
+                const stands = challenges.map(challenge => attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null);
+                const summary = setSummary(challenges, configQuery.data.HintsDisabled, stands);
                 return <article className={`event-exercise-set${open ? " is-open" : ""}`} key={attachment.ID} aria-labelledby={`set-${attachment.ID}`}>
-                    <header className="event-exercise-set__head">
-                        <button type="button" className="event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`} onClick={() => toggleSet(attachment.ID)}>
-                            <ChevronRight className="event-exercise-set__chevron" size={18} aria-hidden="true" />
-                            <span className="event-exercise-set__title">
-                                <h3 id={`set-${attachment.ID}`}>{attachment.ExerciseName || t("manage.exercises.set")}</h3>
-                                <span className="ib-tag ib-tag--sm">{attachmentVersionLabel(attachment)}</span>
-                                <span className="ib-tag ib-tag--sm">{attachmentScopeLabel(kind)}</span>
-                                {attachment.Infrastructure && <InfrastructureIcon interactive={false} />}
+                    {/* The header row toggles the set; its buttons and links keep their own action. */}
+                    <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a")) toggle(); }}>
+                        <div className="event-exercise-set__title">
+                            <h3 id={`set-${attachment.ID}`}>{name}</h3>
+                            <span className="ib-tag ib-tag--sm">{attachmentVersionLabel(attachment)}</span>
+                            <span className="ib-tag ib-tag--sm">{attachmentScopeLabel(kind)}</span>
+                            {attachment.Infrastructure && <InfrastructureIcon interactive={false} />}
+                        </div>
+                        <div className="event-exercise-set__side">
+                            <span className="event-task__badges">
+                                {summary.hints && <HintMark hints={summary.hints} />}
+                                {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
+                                {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
                             </span>
-                        </button>
-                        {canManage && <div className="event-exercise-set__actions">
-                            {kind === "catalog" && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "fork", attachment})}>{t("manage.exercises.fork")}</button>}
-                            {editURL && <a className="ib-btn ib-btn--sm" href={editURL}><Pencil aria-hidden="true" />{t("common.edit")}</a>}
-                            {kind === "fork" && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "revert", attachment})}>{t("manage.exercises.revert")}</button>}
-                            <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "detach", attachment, attempts: attachment.HasAttempts})}>{t("manage.exercises.action.detach.confirm")}</button>
-                        </div>}
+                            {canManage && <div className="event-exercise-set__actions">
+                                {kind === "catalog" && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "fork", attachment})}>{t("manage.exercises.fork")}</button>}
+                                {editURL && <a className="ib-btn ib-btn--sm" href={editURL}><Pencil aria-hidden="true" />{t("common.edit")}</a>}
+                                {kind === "fork" && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "revert", attachment})}>{t("manage.exercises.revert")}</button>}
+                                <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => setAction({kind: "detach", attachment, attempts: attachment.HasAttempts})}>{t("manage.exercises.action.detach.confirm")}</button>
+                            </div>}
+                            <button type="button" className="ib-icon-btn ib-icon-btn--sm event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`}
+                                aria-label={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} onClick={toggle}>
+                                <ChevronRight className="event-exercise-set__chevron" size={18} aria-hidden="true" />
+                            </button>
+                        </div>
                         <p className="event-exercise-set__meta">
                             {[
                                 tPlural("manage.exercises.meta.challenges", attachment.ChallengeCount),

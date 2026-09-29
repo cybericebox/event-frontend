@@ -15,22 +15,20 @@ button.event-sortable__main{cursor:pointer}
 /* «Групи й порядок»: groups | tasks of the selected group. */
 .event-group-order{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:var(--ib-5);align-items:start}
 .event-group-order__groups,.event-group-order__tasks{display:grid;gap:var(--ib-3);min-width:0}
+.event-group-order__head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3)}
 .event-group-order__label{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3);width:100%;min-width:0}
 .event-group-order__label strong,.event-group-order__task strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
 .event-group-order__label small,.event-group-order__task small{flex:none;color:var(--ib-dim);font-size:var(--ib-fs-12);white-space:nowrap}
 .event-group-order__none{display:flex;align-items:center;min-height:44px;padding:0 var(--ib-3) 0 34px;border:1px dashed var(--ib-line);border-radius:var(--ib-r);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .event-group-order__none.is-selected{border-style:solid;border-color:var(--ib-action);background:var(--ib-soft)}
-.event-group-order__create{display:flex;gap:var(--ib-2);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
-.event-group-order__create .event-manage-input{flex:1;min-width:0}
-.event-group-order__create .ib-btn{flex:none}
-.event-group-order__rename{display:flex;align-items:center;gap:var(--ib-2);width:100%;min-width:0;padding:var(--ib-1) 0}
-.event-group-order__rename .event-manage-input{flex:1;min-width:0}
 .event-group-order__task{display:flex;align-items:center;gap:var(--ib-3);min-width:0}
 .event-group-order__task small{overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
 .event-group-order__position{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:var(--ib-r);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12)}
 
 /* «Завдання»: collapsible sets with thin task rows. */
-.event-exercise-set__toggle{display:flex;align-items:center;gap:var(--ib-2);min-width:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-exercise-set__head{cursor:pointer}
+.event-exercise-set__side{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-2)}
+.event-exercise-set__title h3{cursor:pointer}
 .event-exercise-set__chevron,.event-task__chevron{flex:none;color:var(--ib-dim);transition:transform .15s ease}
 .event-exercise-set.is-open .event-exercise-set__chevron,.event-task.is-open .event-task__chevron{transform:rotate(90deg)}
 .event-exercise-set__body{display:grid;gap:var(--ib-3)}

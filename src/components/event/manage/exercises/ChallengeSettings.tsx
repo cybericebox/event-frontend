@@ -8,7 +8,6 @@ import {
     type ManageConfig, type ManageScoring, type ManageScoringInput,
 } from "@/api/manage";
 import {EventLoading} from "@/components/event/EventLoading";
-import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
@@ -49,14 +48,14 @@ export function ChallengeSettings() {
     const [savingConfig, setSavingConfig] = useState(false);
 
     if (scoring.isPending || lifecycle.isPending || config.isPending) return <EventLoading event={event} />;
-    if (scoring.isError || lifecycle.isError || config.isError) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
+    if (scoring.isError || lifecycle.isError || config.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.challenges.settings.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}}>{t("common.retry")}</button></div>;
 
     const original = draftOf(scoring.data);
     const value = edit?.eventID === eventID ? edit.value : original;
     const dirty = JSON.stringify(inputOf(value)) !== JSON.stringify(inputOf(original));
     const dynamic = value.Mode !== 0;
     const problem = dynamic ? decayProblem(value.Mode, lifecycle.data) : "";
-    const valid = dynamic ? dynamicValid(value) : staticPointsValid(value.StaticPoints, false);
+    const valid = dynamic ? dynamicValid(value) : staticPointsValid(value.StaticPoints, true);
     const disabled = !canManage || saving;
     const update = (patch: Partial<ScoringDraft>) => setEdit({eventID, value: {...value, ...patch}});
 
@@ -93,8 +92,8 @@ export function ChallengeSettings() {
                 </div>
             </fieldset>
             {!dynamic && <div className="event-challenge-settings__fields">
-                <div className="event-manage-field"><ManageFieldLabel htmlFor="static-points" title={t("manage.challenges.scoring.staticPoints")} help={t("manage.challenges.scoring.staticPointsHelp")} />
-                    <input id="static-points" className="event-manage-input" type="number" inputMode="numeric" min={1} step={1} value={value.StaticPoints} placeholder={t("manage.challenges.scoring.staticPointsPlaceholder")} aria-invalid={!valid} onChange={changeEvent => update({StaticPoints: changeEvent.target.value})} disabled={disabled} /></div>
+                <div className="event-manage-field"><ManageFieldLabel htmlFor="static-points" title={t("manage.challenges.scoring.staticPoints")} help={t("manage.challenges.scoring.staticPointsHelp")} required />
+                    <input id="static-points" className="event-manage-input" type="number" inputMode="numeric" min={1} step={1} required value={value.StaticPoints} aria-invalid={!valid} aria-describedby={!valid ? "static-points-error" : undefined} onChange={changeEvent => update({StaticPoints: changeEvent.target.value})} disabled={disabled} /></div>
             </div>}
             {dynamic && <div className="event-challenge-settings__fields">
                 <div className="event-manage-field"><ManageFieldLabel title={t("manage.challenges.scoring.decay")} help={t("manage.scoring.modeHelp")} />
@@ -106,7 +105,7 @@ export function ChallengeSettings() {
                 </div>
             </div>}
             {problem && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{problem}</p>}
-            {!valid && !problem && <p className="event-manage-validation" role="alert">{dynamic ? t(value.Mode === 3 ? "manage.scoring.invalidTime" : "manage.scoring.invalid") : t("manage.challenges.scoring.staticInvalid")}</p>}
+            {!valid && !problem && <p className="event-manage-validation" id={dynamic ? undefined : "static-points-error"} role="alert">{dynamic ? t(value.Mode === 3 ? "manage.scoring.invalidTime" : "manage.scoring.invalid") : t("manage.challenges.scoring.staticInvalid")}</p>}
             <div className="event-challenge-settings__force">
                 <EventSwitch className="event-manage-form__switch" checked={value.ForceEventScoring} onCheckedChange={checked => update({ForceEventScoring: checked})} disabled={disabled} label={t("manage.challenges.scoring.force")} />
                 <p>{t("manage.challenges.scoring.forceNote")}</p>

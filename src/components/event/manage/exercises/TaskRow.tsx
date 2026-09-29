@@ -17,7 +17,7 @@ import {t} from "@/i18n/t";
 import {attachmentActionError, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
 import {descriptionFirstLine} from "./challengeOrder";
 import {decayOptions, decayProblem, dynamicValid, scoringSummary, staticPointsValid, type DynamicProfile, type ScoringMode} from "./scoringModel";
-import {hintIndicator, taskBadges, type StandReadiness} from "./taskRowModel";
+import {hintIndicator, taskBadges, type HintIndicator, type StandReadiness} from "./taskRowModel";
 
 type ScoringKind = "event" | "static" | "dynamic";
 type ScoringDraft = {kind: ScoringKind; points: string; profile: DynamicProfile};
@@ -174,6 +174,15 @@ function TaskBoard({eventID, attachmentID, challenge, disabled, onSaved}: {
     </section>;
 }
 
+// Lightbulb + count with an explaining tooltip; muted and struck when
+// participants do not see the hints.
+export function HintMark({hints}: {hints: HintIndicator}) {
+    return <EventTooltip content={hints.tooltip}>{id => <span className={`event-task__hints${hints.shown ? "" : " is-hidden"}`} aria-describedby={id}>
+        {hints.shown ? <Lightbulb size={14} aria-hidden="true" /> : <LightbulbOff size={14} aria-hidden="true" />}{hints.count}
+        <span className="event-manage-visually-hidden">{hints.tooltip}</span>
+    </span>}</EventTooltip>;
+}
+
 // One task of a set: a thin row (name, first description line, badges) that
 // expands into «Оцінювання», «Підказки» and «Показ».
 export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, editURL, onSaved, onRemove}: {
@@ -189,10 +198,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
             <ChevronRight className="event-task__chevron" size={16} aria-hidden="true" />
             <span className="event-task__text"><strong>{challenge.Snapshot.name}</strong>{line && <span>{line}</span>}</span>
             <span className="event-task__badges">
-                {hints && <EventTooltip content={hints.tooltip}>{id => <span className={`event-task__hints${hints.shown ? "" : " is-hidden"}`} aria-describedby={id}>
-                    {hints.shown ? <Lightbulb size={14} aria-hidden="true" /> : <LightbulbOff size={14} aria-hidden="true" />}{hints.count}
-                    <span className="event-manage-visually-hidden">{hints.tooltip}</span>
-                </span>}</EventTooltip>}
+                {hints && <HintMark hints={hints} />}
                 {taskBadges(challenge, stand).map(badge => <span key={badge.key} className={`ib-tag ib-tag--sm${badge.tone ? ` ib-tag--${badge.tone}` : ""}`}>{badge.label}</span>)}
             </span>
         </button>

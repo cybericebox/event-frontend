@@ -34,3 +34,29 @@ export function hintIndicator(challenge: Pick<EventBoardChallenge, "HintsEnabled
     if (!challenge.HintsEnabled) return {count, shown: false, tooltip: t("manage.challenges.task.hintsOffTask", {count})};
     return {count, shown: true, tooltip: t("manage.challenges.task.hintsShown", {count})};
 }
+
+export type SetSummary = {hints: HintIndicator | null; ownScoring: boolean; stand: StandReadiness | null};
+
+// A collapsed set's header: tasks with hints (muted when participants see
+// hints in none of them), whether any task has its own scoring, and stand
+// readiness over the tasks that have labs.
+export function setSummary(challenges: Array<Pick<EventBoardChallenge, "HintsEnabled" | "Hints" | "ScoringOverride">>, hintsDisabled: boolean, stands: Array<StandReadiness | null>): SetSummary {
+    const withHints = challenges.filter(challenge => challenge.Hints.length > 0);
+    const shown = hintsDisabled ? 0 : withHints.filter(challenge => challenge.HintsEnabled).length;
+    const count = withHints.length;
+    const hints = count === 0 ? null : {
+        count, shown: shown > 0,
+        tooltip: hintsDisabled ? t("manage.challenges.set.hintsOffEvent", {count})
+            : shown === 0 ? t("manage.challenges.set.hintsOffTasks", {count})
+            : t("manage.challenges.set.hintsShown", {count, shown}),
+    };
+    const planned = stands.filter((stand): stand is StandReadiness => stand !== null);
+    const stand = planned.length === 0 ? null : planned.every(item => item === "ready") ? "ready" : "notReady";
+    return {hints, ownScoring: challenges.some(challenge => challenge.ScoringOverride !== null), stand};
+}
+
+// Sets start collapsed when there are more than three; the session keeps
+// each set's open/closed choice.
+export function setOpenByDefault(setCount: number): boolean {
+    return setCount <= 3;
+}

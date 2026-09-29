@@ -7,7 +7,7 @@
   "1130": "The file exceeds the size limit.",
   "1131": "File not found.",
   "1132": "The file in the answer is unavailable. Upload it again.",
-  "1133": "Points per task are a whole number above zero.",
+  "1133": "Static scoring needs points per task: a whole number above zero.",
   "1301": "Registration for this event is closed.",
   "1303": "You are already taking part in this event.",
   "1309": "Fill in the required additional fields.",
