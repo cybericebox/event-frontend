@@ -9,36 +9,69 @@ afterEach(() => {
     document.cookie = "cib_consent=; path=/; max-age=0";
 });
 
+const click = (name: string) => fireEvent.click(screen.getByRole("button", {name}));
+
 describe("ConsentBanner", () => {
-    it("asks when no choice exists and hides after a choice", () => {
+    it("banner: «Прийняти всі» grants analytics and hides", () => {
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         expect(screen.getByRole("region")).toBeTruthy();
-        fireEvent.click(screen.getByRole("button", {name: "Відхилити"}));
+        click("Прийняти всі");
         expect(screen.queryByRole("region")).toBeNull();
-        expect(document.cookie).toContain("cib_consent=denied");
+        expect(document.cookie).toContain("cib_consent=analytics:granted");
     });
 
-    it("stays hidden once a choice exists, until reopened; Esc closes without changing it", () => {
-        document.cookie = "cib_consent=granted; path=/";
+    it("customize → accept selected with analytics off (the default)", () => {
+        render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
+        click("Налаштувати");
+        const dialog = screen.getByRole("dialog");
+        expect(document.activeElement).toBe(dialog);
+        const [necessary, analytics] = screen.getAllByRole("switch") as HTMLInputElement[];
+        expect(necessary.checked && necessary.disabled).toBe(true);
+        expect(analytics.checked).toBe(false);
+        click("Прийняти вибрані");
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(document.cookie).toContain("cib_consent=analytics:denied");
+    });
+
+    it("customize → accept selected with analytics on", () => {
+        render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
+        click("Налаштувати");
+        fireEvent.click(screen.getAllByRole("switch")[1]);
+        click("Прийняти вибрані");
+        expect(document.cookie).toContain("cib_consent=analytics:granted");
+    });
+
+    it("customize → reject all", () => {
+        render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
+        click("Налаштувати");
+        click("Відхилити всі");
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(document.cookie).toContain("cib_consent=analytics:denied");
+    });
+
+    it("Esc never consents: on the panel it steps back to the banner", () => {
+        render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
+        click("Налаштувати");
+        fireEvent.keyDown(screen.getByRole("dialog"), {key: "Escape"});
+        expect(screen.getByRole("region")).toBeTruthy();
+        expect(document.cookie).not.toContain("cib_consent");
+    });
+
+    it("stays hidden once a choice exists; settings open the panel, Esc closes it unchanged", () => {
+        document.cookie = "cib_consent=analytics:granted; path=/";
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         expect(screen.queryByRole("region")).toBeNull();
         act(() => openConsentSettings());
-        const region = screen.getByRole("region");
-        expect(document.activeElement).toBe(region);
-        fireEvent.keyDown(region, {key: "Escape"});
-        expect(screen.queryByRole("region")).toBeNull();
-        expect(document.cookie).toContain("cib_consent=granted");
+        const dialog = screen.getByRole("dialog");
+        expect(document.activeElement).toBe(dialog);
+        expect((screen.getAllByRole("switch")[1] as HTMLInputElement).checked).toBe(true);
+        fireEvent.keyDown(dialog, {key: "Escape"});
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(document.cookie).toContain("cib_consent=analytics:granted");
     });
 
     it("never shows when GA is not configured", () => {
         render(<ConsentBanner gaId="" policyHref="/cookies" />);
         expect(screen.queryByRole("region")).toBeNull();
-    });
-
-    it("Esc without a stored choice does not dismiss or consent", () => {
-        render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
-        fireEvent.keyDown(screen.getByRole("region"), {key: "Escape"});
-        expect(screen.getByRole("region")).toBeTruthy();
-        expect(document.cookie).not.toContain("cib_consent");
     });
 });
