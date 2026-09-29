@@ -71,6 +71,18 @@ export const publishManageLive = (eventID: string) => liveRequest(eventID, "/pub
 // through the management API, so unpublished events work too.
 export const getPublishedLiveLayout = async (eventID: string) => (await getManageLive(eventID)).Published;
 
+// A logo for the Live logos widgets: SVG (sanitized by the server), PNG or
+// WebP up to 1 MB; the server sniffs the content.
+export const liveLogoAccept = ".svg,.png,.webp,image/svg+xml,image/png,image/webp";
+export const liveLogoMaxBytes = 1 << 20;
+export async function uploadLiveLogo(eventID: string, file: File): Promise<string> {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch(`${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/content/live/logos`, {method: "POST", credentials: "include", cache: "no-store", body});
+    if (!response.ok) throw new ManageApiError(response.status);
+    return z.object({Data: z.object({ImageURL: z.string()})}).parse(await response.json()).Data.ImageURL;
+}
+
 // Open live screens poll this light version and reload the layout on a change.
 export async function getLiveLayoutVersion(eventID: string): Promise<number> {
     return liveRequest(eventID, "/version", z.object({Version: z.number().int()})).then(value => value.Version);

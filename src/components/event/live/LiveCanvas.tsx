@@ -74,17 +74,36 @@ function LiveChart({widget, event, results, now, theme, sample}: {widget: LiveWi
     </div>;
 }
 
-function LiveLogos({widget, fallback, edit, sample}: {widget: LiveWidget; fallback: string | null; edit: boolean; sample: boolean}) {
-    const urls = Array.isArray(widget.props.logos) ? widget.props.logos.filter((value): value is string => typeof value === "string").map(liveLogoURL).filter((value): value is string => !!value) : [];
-    const carousel = widget.props.mode === "carousel" && urls.length > 1;
-    const duration = widget.props.speed === "slow" ? "80s" : widget.props.speed === "fast" ? "30s" : "50s";
+export type LiveLogoItem = {src: string; dark?: string};
+
+// Logos of a widget: `items` ({src, dark?}); older layouts keep `logos`.
+export function liveLogoItems(props: LiveWidget["props"]): LiveLogoItem[] {
+    if (Array.isArray(props.items)) {
+        return props.items.flatMap(item => item && typeof item === "object" && typeof (item as LiveLogoItem).src === "string"
+            ? [{src: (item as LiveLogoItem).src, ...(typeof (item as LiveLogoItem).dark === "string" ? {dark: (item as LiveLogoItem).dark} : {})}] : []);
+    }
+    return Array.isArray(props.logos) ? props.logos.filter((value): value is string => typeof value === "string").map(src => ({src})) : [];
+}
+
+// Every logo sits in an equal-height box (contain-fit, at most 4:1). In
+// «Одноколірні» the logo is a CSS mask filled with the theme ink; the dark
+// theme uses a logo's own dark file when it has one.
+function LiveLogos({widget, fallback, edit, sample, theme}: {widget: LiveWidget; fallback: string | null; edit: boolean; sample: boolean; theme: LiveLayout["theme"]}) {
+    const items = liveLogoItems(widget.props);
+    const urls = items.map(item => liveLogoURL(theme === "dark" && item.dark ? item.dark : item.src)).filter((value): value is string => !!value);
     // With sample data and no logo at all, the platform crest stands in.
     const images = urls.length ? urls : fallback ? [fallback] : sample ? [crest.src, crest.src, crest.src] : [];
-    return <div className={`live-logos${carousel ? " live-logos--carousel" : ""}`}>
-        <small>{typeof widget.props.title === "string" && widget.props.title ? widget.props.title : t("live.logos.title")}</small>
+    const carousel = widget.props.mode === "carousel" && images.length > 1;
+    const mono = widget.props.color !== "original";
+    const duration = widget.props.speed === "slow" ? "80s" : widget.props.speed === "fast" ? "30s" : "50s";
+    const title = typeof widget.props.title === "string" && widget.props.title ? widget.props.title : t("live.logos.title");
+    return <div className={`live-logos${carousel ? " live-logos--carousel" : ""}${mono ? " live-logos--mono" : ""}`} style={{"--live-logo-count": images.length} as CSSProperties}>
+        <h2>{title}</h2>
         <div className="live-logos__track">
             <div style={carousel ? {animationDuration: duration, animationPlayState: widget.props.paused === true || edit ? "paused" : "running"} : undefined}>
-                {(carousel ? [...images, ...images] : images).map((url, index) => <img key={`${url}-${index}`} src={url} alt={index < images.length ? t("live.logos.alt") : ""} aria-hidden={index >= images.length || undefined} />)}
+                {(carousel ? [...images, ...images] : images).map((url, index) => <span key={`${url}-${index}`} className="live-logo" style={mono ? {maskImage: `url("${url}")`, WebkitMaskImage: `url("${url}")`} as CSSProperties : undefined}>
+                    <img src={url} alt={index < images.length ? t("live.logos.alt") : ""} aria-hidden={index >= images.length || undefined} />
+                </span>)}
             </div>
         </div>
     </div>;
@@ -184,8 +203,9 @@ function WidgetContent({widget, event, results, now, theme, edit, sample, metric
     if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} />;
     if (widget.type === "solves") return <LiveSolves widget={widget} results={results} metrics={metrics} />;
     if (widget.type === "announcement") return <div className="live-announcement">{typeof widget.props.text === "string" && widget.props.text.trim() || t("live.announcement.placeholder")}</div>;
-    if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} sample={sample} />;
-    if (widget.type === "qr") return <LiveQR url={typeof widget.props.url === "string" ? widget.props.url : ""} />;
+    if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} sample={sample} theme={theme} />;
+    if (widget.type === "qr") return <LiveQR value={typeof widget.props.value === "string" ? widget.props.value : typeof widget.props.url === "string" ? widget.props.url : ""}
+        caption={typeof widget.props.caption === "string" ? widget.props.caption : ""} />;
     return null;
 }
 

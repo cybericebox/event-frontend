@@ -113,7 +113,7 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
         const lines = Math.min(10, numberProp(item, "lines", 5));
         return boxH - heading - caption * 1.6 < lines * caption * 1.25 ? t("live.text.chartFit", {lines}) : null;
     }
-    if (item.type === "logos") return boxH < caption * 1.3 + 24 ? t("live.text.logosFit") : null;
+    if (item.type === "logos") return boxH < caption * 1.8 + 24 ? t("live.text.logosFit") : null;
     if (item.type === "qr") return Math.min(boxW, boxH - caption * 1.3) < 80 ? t("live.text.qrFit") : null;
     return null;
 }

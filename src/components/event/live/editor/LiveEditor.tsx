@@ -9,13 +9,16 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
 import {canPlace, distributeWidgets, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteItems, livePresets, liveWidgetMinimums, liveWidgetName, presetLayout, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem, type LivePresetKey} from "@/components/event/live/liveLayout";
 import {liveSampleResults} from "@/components/event/live/liveSample";
+import type {LiveLogoItem} from "@/components/event/live/LiveCanvas";
 import {liveTextWarnings} from "@/components/event/live/liveText";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {LiveMiniature, usePaletteLayouts} from "./LiveMiniature";
 import {LiveTemplateDialog} from "./LiveTemplateDialog";
+import {LiveField, LiveNumberInput} from "./LiveFields";
+import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {LiveScreenLinksDialog} from "./LiveScreenLinksDialog";
 import {LiveScreenSettings} from "./LiveScreenSettings";
-import {LiveWidgetSettings} from "./LiveWidgetSettings";
+import {LiveWidgetSettings, qrProblem} from "./LiveWidgetSettings";
 import {useLiveAutosave, type LiveSaveState} from "./useLiveAutosave";
 import "./liveEditor.css";
 import {t} from "@/i18n/t";
@@ -47,7 +50,8 @@ function validationMessage(layout: LiveLayout, conflicts: Set<string>): string {
     if (layout.screen.width < 320 || layout.screen.width > 7680 || layout.screen.height < 240 || layout.screen.height > 4320 || layout.screen.width <= layout.screen.height) return t("manage.live.validation.screen");
     if (conflicts.size) return t("manage.live.validation.conflicts", {widgets: layout.widgets.filter(item => conflicts.has(item.id)).map(item => t("manage.live.validation.widgetName", {name: liveWidgetName(item)})).join(", ")});
     if (layout.widgets.some(widget => widget.type === "logos" && Array.isArray(widget.props.logos) && widget.props.logos.some(value => typeof value !== "string" || !liveLogoURL(value)))) return t("manage.live.validation.logo");
-    if (layout.widgets.some(widget => widget.type === "qr" && (typeof widget.props.url !== "string" || !/^https?:\/\/[^\s]+$/.test(widget.props.url) && !/^\/(?!\/)/.test(widget.props.url)))) return t("manage.live.validation.qr");
+    if (layout.widgets.some(widget => widget.type === "qr" && qrProblem(typeof widget.props.value === "string" ? widget.props.value : typeof widget.props.url === "string" ? widget.props.url : ""))) return t("manage.live.validation.qr");
+    if (layout.widgets.some(widget => widget.type === "timer" && widget.props.source === "custom" && typeof widget.props.target !== "string")) return t("manage.live.validation.timerTarget");
     return "";
 }
 
@@ -142,11 +146,11 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         if (!canPlace(layout, next, next.id)) {setError(t("manage.live.error.overlap")); return;}
         mutate({...layout, widgets: layout.widgets.map(item => item.id === next.id ? next : item)});
     }
-    function updateProp(key: string, value: string | number | boolean | string[]) {
+    function updateProp(key: string, value: string | number | boolean | string[] | LiveLogoItem[]) {
         if (selected) mutate({...layout, widgets: layout.widgets.map(item => item.id === selected.id ? {...item, props: {...item.props, [key]: value}} : item)});
     }
     function insert(working: LiveLayout, next: LiveWidget, item: LivePaletteItem) {
-        next.props = item.type === "qr" ? {url: window.location.origin} : {...item.props};
+        next.props = item.type === "qr" ? {value: `${window.location.origin}/`, caption: t("live.qr.defaultCaption")} : {...item.props};
         mutate({...working, widgets: [...working.widgets, next]});
         setSelectedID(next.id);
     }
@@ -311,12 +315,12 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         </header>
         <div className="event-live-editor__toolbar">
             <div className="event-live-editor__tool">
-                <span className="event-live-field__label">{t("manage.live.templates.label")}</span>
+                <ManageFieldLabel title={t("manage.live.templates.label")} help={t("manage.live.templates.help")} />
                 <button className="ib-btn event-live-editor__template" type="button" disabled={locked} onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={16} /> {t("manage.live.templates.open")}</button>
                 {applied && <small className="event-live-editor__applied">{t(layoutKey(layout) === applied.layout ? "manage.live.templates.applied" : "manage.live.templates.appliedChanged", {name: livePresets[applied.key].label})}</small>}
             </div>
             <div className="event-live-editor__tool">
-                <span className="event-live-field__label">{t("manage.live.grid")}</span>
+                <ManageFieldLabel title={t("manage.live.grid")} help={t("manage.live.gridHelp")} required />
                 <EventSelect ariaLabel={t("manage.live.grid")} value={gridValue} disabled={locked}
                     options={[...liveGridPresets.map(item => ({value: `${item.cols}x${item.rows}`, label: t("manage.live.gridSize", item)})), {value: "custom", label: gridPreset ? t("manage.live.gridCustom") : t("manage.live.gridCustomValue", layout.grid)}]}
                     onValueChange={value => {
@@ -331,7 +335,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 <EventTooltip content={t("manage.live.redo")}>{id => <button className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.redo")} aria-describedby={id} disabled={!history.future.length} onClick={redo}><Redo2 size={16} /></button>}</EventTooltip>
             </div>}
             {customGrid && <div className="event-live-editor__tool event-live-editor__custom-grid">
-                <span className="event-live-field__label">{t("manage.live.gridCells")}</span>
+                <ManageFieldLabel title={t("manage.live.gridCells")} help={t("manage.live.gridCellsHelp", liveGridLimits)} required />
                 <div>
                     <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.cols")} min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={customGrid.cols || ""} disabled={locked}
                         onChange={changeEvent => setCustomGrid({...customGrid, cols: changeEvent.target.valueAsNumber || 0})} onBlur={applyCustomGrid} onKeyDown={keyEvent => {if (keyEvent.key === "Enter") applyCustomGrid();}} />
@@ -367,12 +371,12 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                     <span className="event-live-editor__stage-note">{t(sample ? "manage.live.sampleNote" : "manage.live.adaptNote", {width: layout.screen.width, height: layout.screen.height})}</span>
                 </div>
                 {layout.aspect === "custom" && <div className="event-live-editor__custom-size">
-                    <label><span className="event-live-field__label">{t("manage.live.screenWidth")}</span><input className="event-manage-input" type="number" inputMode="numeric" min="320" max="7680" value={layout.screen.width || ""} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, width: changeEvent.target.valueAsNumber || 0}})} /></label>
-                    <label><span className="event-live-field__label">{t("manage.live.screenHeight")}</span><input className="event-manage-input" type="number" inputMode="numeric" min="240" max="4320" value={layout.screen.height || ""} disabled={locked} onChange={changeEvent => mutate({...layout, screen: {...layout.screen, height: changeEvent.target.valueAsNumber || 0}})} /></label>
-                    <div className="event-live-editor__tool"><span className="event-live-field__label">{t("manage.live.anchor")}</span>
-                        <EventSelect ariaLabel={t("manage.live.anchor")} value={layout.screen.anchor} disabled={locked} onValueChange={value => mutate({...layout, screen: {...layout.screen, anchor: value as LiveLayout["screen"]["anchor"]}})}
-                            options={[{value: "full", label: t("manage.live.anchorFull")}, {value: "top-left", label: t("manage.live.anchorTopLeft")}]} />
-                    </div>
+                    <LiveField label={t("manage.live.screenWidth")} help={t("manage.live.screenWidthHelp")} required>
+                        {id => <LiveNumberInput id={id} value={layout.screen.width} min={320} max={7680} disabled={locked} onChange={width => mutate({...layout, screen: {...layout.screen, width}})} />}
+                    </LiveField>
+                    <LiveField label={t("manage.live.screenHeight")} help={t("manage.live.screenHeightHelp")} required>
+                        {id => <LiveNumberInput id={id} value={layout.screen.height} min={240} max={4320} disabled={locked} onChange={height => mutate({...layout, screen: {...layout.screen, height}})} />}
+                    </LiveField>
                 </div>}
                 <div className="event-live-editor__screen" style={screenStyle} ref={setScreen}>
                     <div className="event-live-editor__native" style={nativeStyle}>
@@ -385,7 +389,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             <aside className="event-live-editor__properties">
                 {selected ? <>
                     <button className="event-live-editor__back" type="button" onClick={() => setSelectedID(null)}>{t("manage.live.backToScreen")}</button>
-                    <LiveWidgetSettings eventID={eventID} widget={selected} disabled={locked} onPlace={updateWidget} onProp={updateProp} onDistribute={distribute} onRemove={() => setConfirmRemove(true)} />
+                    <LiveWidgetSettings event={event} layout={layout} widget={selected} disabled={locked} onPlace={updateWidget} onProp={updateProp} onDistribute={distribute} onRemove={() => setConfirmRemove(true)} />
                 </> : <LiveScreenSettings eventID={eventID} event={event} layout={layout} results={shownResults} sample={sample} canManage={canManage} disabled={locked} onChange={mutate} />}
             </aside>
         </div>
