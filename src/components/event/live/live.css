@@ -23,7 +23,7 @@
 /* Table and recent solves: the caption, then N rows that split the rest
    exactly (liveListGeometry). Row heights and text are set inline. */
 .live-table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
-.live-table th,.live-table td{height:auto;padding:0 .45em;border-bottom:1px solid var(--live-line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.live-table th,.live-table td{padding:0 .45em;border-bottom:1px solid var(--live-line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .live-table th{color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;text-align:left}
 .live-table td{font-weight:500;line-height:1.2}
 /* Rank and points columns follow the row text (--live-row-font). */
