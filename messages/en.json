@@ -1997,7 +1997,6 @@
   "manage.results.settings.loadFailed": "Could not load results settings",
   "manage.results.settings.rows": "Table rows",
   "manage.results.settings.rowsAll": "All",
-  "manage.results.settings.rowsAllHelp": "The full scoreboard.",
   "manage.results.settings.rowsHelp": "The participant's own team is shown even if it ranks lower.",
   "manage.results.settings.rowsLimit": "Number of rows",
   "manage.results.settings.rowsRange": "From 1 to 1000.",
@@ -2732,5 +2731,16 @@
   "manage.results.detail.firstBlood": "First blood",
   "manage.results.detail.toggleColumn": "Solves",
   "manage.results.detail.show": "Show solves: {name}",
-  "manage.results.detail.hide": "Hide solves: {name}"
+  "manage.results.detail.hide": "Hide solves: {name}",
+  "manage.results.settings.readOnly": "View only: organizers can change these settings.",
+  "manage.results.settings.access": "Access",
+  "manage.results.settings.accessHelp": "Who sees the «Results» page on the event site.",
+  "manage.results.settings.staffAlways": "Moderators and organizers always see the results.",
+  "manage.results.settings.freezeSectionHelp": "In the last minutes before the final the table stays still for participants.",
+  "manage.results.settings.freezeTitle": "Ranking freeze",
+  "manage.results.settings.freezeMinutesHelp": "From 1 to 1440 minutes before the event finish.",
+  "manage.results.settings.chartSectionHelp": "The score chart above the table on the results page.",
+  "manage.results.settings.chartTitle": "Score chart",
+  "manage.results.settings.rowsSectionHelp": "How many places the table on the results page shows.",
+  "manage.results.settings.rowsMode": "Show"
 }

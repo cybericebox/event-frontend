@@ -1997,7 +1997,6 @@
   "manage.results.settings.loadFailed": "Не вдалося завантажити налаштування результатів",
   "manage.results.settings.rows": "Рядки таблиці",
   "manage.results.settings.rowsAll": "Усі",
-  "manage.results.settings.rowsAllHelp": "Повний рейтинг.",
   "manage.results.settings.rowsHelp": "Своя команда учасника показується, навіть якщо вона нижче.",
   "manage.results.settings.rowsLimit": "Скільки рядків",
   "manage.results.settings.rowsRange": "Від 1 до 1000.",
@@ -2732,5 +2731,16 @@
   "manage.results.detail.firstBlood": "Перша кров",
   "manage.results.detail.toggleColumn": "Розвʼязання",
   "manage.results.detail.show": "Показати розвʼязання: {name}",
-  "manage.results.detail.hide": "Сховати розвʼязання: {name}"
+  "manage.results.detail.hide": "Сховати розвʼязання: {name}",
+  "manage.results.settings.readOnly": "Перегляд без редагування: змінювати налаштування можуть організатори.",
+  "manage.results.settings.access": "Доступ",
+  "manage.results.settings.accessHelp": "Хто бачить сторінку «Результати» на сайті заходу.",
+  "manage.results.settings.staffAlways": "Модератори й організатори бачать результати завжди.",
+  "manage.results.settings.freezeSectionHelp": "Останні хвилини перед фіналом таблиця для учасників не змінюється.",
+  "manage.results.settings.freezeTitle": "Заморожування рейтингу",
+  "manage.results.settings.freezeMinutesHelp": "Від 1 до 1440 хвилин до фінішу заходу.",
+  "manage.results.settings.chartSectionHelp": "Графік балів над таблицею на сторінці результатів.",
+  "manage.results.settings.chartTitle": "Графік балів",
+  "manage.results.settings.rowsSectionHelp": "Скільки місць показує таблиця на сторінці результатів.",
+  "manage.results.settings.rowsMode": "Показувати"
 }
