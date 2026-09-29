@@ -182,7 +182,7 @@ export function EventRichTextEditor({value, onChange, variables, values, onInser
     const labels = Object.fromEntries(variables.map(variable => [variable.name, variable.label]));
     return <EventVariableProvider values={values} labels={labels} dateDisplays={dateDisplays}><LexicalComposer initialConfig={{namespace: "EventRichTextEditor", theme, nodes: eventRichTextNodes, editable: !disabled, onError: error => {throw error;}}}>
         <div className="event-lexical">{!disabled && <Toolbar variables={variables} onInsertVariable={onInsertVariable} onEditLink={onEditLink} />}
-            <div className="event-lexical__body"><RichTextPlugin contentEditable={<ContentEditable className="event-lexical__editor" role="textbox" aria-label={ariaLabel} aria-placeholder={placeholder} placeholder={<span className="event-lexical__placeholder">{placeholder}</span>} />} ErrorBoundary={LexicalErrorBoundary} /></div>
+            <div className="event-lexical__body"><RichTextPlugin contentEditable={<div className="event-lexical__content"><ContentEditable className="event-lexical__editor" role="textbox" aria-label={ariaLabel} aria-placeholder={placeholder} placeholder={<span className="event-lexical__placeholder">{placeholder}</span>} /></div>} ErrorBoundary={LexicalErrorBoundary} /></div>
             <OnChangePlugin onChange={handleChange} ignoreSelectionChange /><HistoryPlugin /><ListPlugin /><LinkPlugin /><MarkdownPaste /><Editable disabled={disabled} /><Sync value={value} emittedRef={emittedRef} />
         </div>
     </LexicalComposer></EventVariableProvider>;
