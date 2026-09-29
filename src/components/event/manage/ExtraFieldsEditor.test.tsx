@@ -59,6 +59,15 @@ describe.each(["participant", "team"] as const)("field cards (%s)", scope => {
         expect(chevron(card("Питання 2")).getAttribute("aria-expanded")).toBe("false");
     });
 
+    it("lead the header with the drag handle, which never toggles the card", async () => {
+        await renderEditor(scope);
+        const first = card("Питання 1");
+        const handle = within(first).getByRole("button", {name: "Перетягнути блок 1"});
+        expect(first.querySelector(".event-content-editor__block-head")!.firstElementChild?.contains(handle)).toBe(true);
+        fireEvent.click(handle);
+        expect(chevron(first).getAttribute("aria-expanded")).toBe("false");
+    });
+
     it("open a new or duplicated card", async () => {
         await renderEditor(scope);
         expect(screen.queryByRole("button", {name: /Згорнути все|Розгорнути все/})).toBeNull();

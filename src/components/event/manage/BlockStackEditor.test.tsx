@@ -75,6 +75,17 @@ describe("collapsible blocks", () => {
         expect(isOpen(1)).toBe(false);
     });
 
+    it("leads the header with the drag handle and keeps the actions, delete in red, on the right", () => {
+        render(<Harness />);
+        const head = block(1).querySelector(".event-content-editor__block-head")!;
+        const handle = screen.getByRole("button", {name: t("manage.blocks.drag.aria", {n: 1})});
+        expect(head.firstElementChild?.contains(handle)).toBe(true);
+        expect(head.lastElementChild?.querySelector(".event-content-editor__block-toggle")).not.toBeNull();
+        expect(screen.getByRole("button", {name: t("manage.blocks.delete.aria", {n: 1})}).className).toContain("event-content-editor__danger");
+        fireEvent.click(handle);
+        expect(isOpen(1)).toBe(false);
+    });
+
     it("keeps the open state when a block moves", () => {
         render(<Harness />);
         fireEvent.click(titleToggle(1));
