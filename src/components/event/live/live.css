@@ -21,7 +21,7 @@
 .live-timer strong{color:var(--live-accent);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-size:var(--live-fs-timer);font-weight:600;line-height:1.05;white-space:nowrap}
 .live-chart,.live-table,.live-solves,.live-logos{display:flex;flex-direction:column;height:100%;min-height:0}
 .live-chart__plot{position:relative;flex:1;min-height:0;font-size:var(--live-fs-caption)}
-.live-chart__plot svg{position:absolute;inset:0;overflow:visible}
+.live-chart__plot>svg{position:absolute;inset:0;overflow:visible}
 .live-chart__probe{position:absolute;visibility:hidden;line-height:1.2}
 .live-chart__grid{stroke:var(--live-line);stroke-width:1}
 .live-chart__axis,.live-chart__time{position:absolute;color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap}
@@ -67,6 +67,8 @@
 /* The live page: the whole window, or a fixed W×H area at the top left that
    the LED processor crops (anchor mode). */
 .live-fullscreen{position:fixed;inset:0;z-index:200;overflow:hidden;background:#090911}
+/* Loading and error states fill the whole screen, centered. */
+.live-fullscreen>.event-block-state{height:100%}
 .live-fullscreen.is-idle,.live-fullscreen.is-idle *{cursor:none!important}
 .live-area{position:absolute;inset:0}
 .live-fullscreen--anchor .live-area{inset:auto;top:0;left:0;width:var(--live-screen-width);height:var(--live-screen-height)}

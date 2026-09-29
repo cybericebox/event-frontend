@@ -100,7 +100,12 @@ function LiveEditor({event, canManage, data}: {event: PublicEventInfo; canManage
     const locked = !canManage;
     const selected = layout.widgets.find(item => item.id === selectedID) ?? null;
 
-    function mutate(next: LiveLayout) {setLayout(next); setError("");}
+    function mutate(next: LiveLayout) {
+        setLayout(next);
+        setError("");
+        // The open «Власна…» inputs follow a grid that grew or changed elsewhere.
+        if (customGrid && (next.grid.cols !== layout.grid.cols || next.grid.rows !== layout.grid.rows)) setCustomGrid({...next.grid});
+    }
     function updateWidget(next: LiveWidget) {
         if (!canPlace(layout, next, next.id)) {setError(t("manage.live.error.overlap")); return;}
         mutate({...layout, widgets: layout.widgets.map(item => item.id === next.id ? next : item)});

@@ -14,14 +14,14 @@ export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
 // mode; layouts that already hold one still load and render nothing.
 export type LivePaletteItem = {key: string; type: LiveWidget["type"]; label: string; props: LiveWidget["props"]; preview: {w: number; h: number}};
 export const livePaletteItems: LivePaletteItem[] = [
-    {key: "title", type: "title", label: liveWidgetLabels.title, props: {}, preview: {w: 6, h: 1}},
+    {key: "title", type: "title", label: liveWidgetLabels.title, props: {}, preview: {w: 4, h: 1}},
     {key: "timer", type: "timer", label: liveWidgetLabels.timer, props: {}, preview: {w: 3, h: 1}},
     {key: "chart", type: "chart", label: liveWidgetLabels.chart, props: {}, preview: {w: 6, h: 4}},
     {key: "table", type: "table", label: liveWidgetLabels.table, props: {}, preview: {w: 4, h: 4}},
-    {key: "organizers", type: "logos", label: t("live.preset.organizers"), props: {mode: "fixed", title: t("live.preset.organizers")}, preview: {w: 6, h: 1}},
-    {key: "partners", type: "logos", label: t("live.preset.partners"), props: {mode: "carousel", title: t("live.preset.partners")}, preview: {w: 6, h: 1}},
+    {key: "organizers", type: "logos", label: t("live.preset.organizers"), props: {mode: "fixed", title: t("live.preset.organizers")}, preview: {w: 4, h: 1}},
+    {key: "partners", type: "logos", label: t("live.preset.partners"), props: {mode: "carousel", title: t("live.preset.partners")}, preview: {w: 4, h: 1}},
     {key: "solves", type: "solves", label: liveWidgetLabels.solves, props: {}, preview: {w: 4, h: 3}},
-    {key: "announcement", type: "announcement", label: liveWidgetLabels.announcement, props: {}, preview: {w: 6, h: 1}},
+    {key: "announcement", type: "announcement", label: liveWidgetLabels.announcement, props: {}, preview: {w: 4, h: 1}},
     {key: "qr", type: "qr", label: liveWidgetLabels.qr, props: {}, preview: {w: 2, h: 2}},
 ];
 

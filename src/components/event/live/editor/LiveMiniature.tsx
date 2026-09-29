@@ -18,7 +18,7 @@ export function LiveMiniature({layout, event, results, sample, box, crop}: {
     const viewW = crop ? width * crop.w / layout.grid.cols : width;
     const viewH = crop ? height * crop.h / layout.grid.rows : height;
     const scale = Math.min(box.width / viewW, box.height / viewH);
-    return <span className="live-mini" style={{width: box.width, height: box.height} as CSSProperties} aria-hidden="true">
+    return <span className={`live-mini live-mini--${layout.theme}`} style={{width: box.width, height: box.height} as CSSProperties} aria-hidden="true">
         <span className={`live-mini__view live-mini__view--${layout.theme}`} style={{width: viewW * scale, height: viewH * scale}}>
             <span className="live-mini__native" style={{width, height, transform: `scale(${scale})`}} inert>
                 <LiveCanvas layout={layout} event={event} results={results} sample={sample} />

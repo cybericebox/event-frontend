@@ -31,6 +31,7 @@
 
 /* Scaled miniature of a live canvas (palette and theme previews). */
 .live-mini{display:grid;place-items:center;overflow:hidden;border-radius:4px;background:var(--ev-brand,#211a52);pointer-events:none}
+.live-mini--light{background:#F7F7F9;outline:1px solid var(--ib-line);outline-offset:-1px}
 .live-mini__view{position:relative;display:block;overflow:hidden}
 .live-mini__view--light{background:#F7F7F9}
 .live-mini__native{position:absolute;top:0;left:0;display:block;transform-origin:0 0}
