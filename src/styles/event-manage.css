@@ -124,7 +124,7 @@
 .event-manage-entry{gap:var(--ib-2);white-space:nowrap}
 @media(max-width:767px){.ib-navbar__actions>.event-manage-entry{display:none}}
 /* Page frame, one rule for every /manage page and sub-tab: the page's left edge sits on the title and tab bar
-   (no per-page widths, no centring; the shared frame width is set below). Title -> tabs -> first block keep one gap (--ib-6);
+   (no per-page widths or centring; the shared, centred 1440px frame is set below). Title -> tabs -> first block keep one gap (--ib-6);
    grid pages declare their row gap in --event-manage-flow so the heading and tabs subtract it. */
 .event-manage-settings,.event-manage-setup,.event-manage-content,.event-manage-registration,.event-live-editor{--event-manage-flow:0px;width:100%;max-width:none;margin:0;padding-bottom:var(--ib-12)}
 .event-manage-general,.event-manage-appearance,.event-manage-registration,.event-manage-mail,.event-manage-participants,.event-manage-teams,.event-manage-results,.event-stands,.event-live-editor{--event-manage-flow:var(--ib-4)}
