@@ -60,21 +60,59 @@ function requestURL(input: RequestInfo | URL): string {
     return input.url;
 }
 
-// Wraps fetch so every call to the API feeds the status store. Only API calls
-// count; aborted requests are not outages.
+// The API's Server-Sent Events endpoints. A stream ends and reconnects by design
+// (server lifetime, proxy idle timeout), so its failures never mean an outage.
+const STREAM_PATH = /\/(?:results|solution-attempts)\/live(?:[?#]|$)/;
+
+export function isStreamRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
+    if (STREAM_PATH.test(requestURL(input))) return true;
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+    return headers.get("Accept")?.includes("text/event-stream") ?? false;
+}
+
+// Requests cut by leaving the page fail like a network error; they are not outages.
+let leaving = false;
+
+// A failed request that may mean the API is unreachable: not one the caller
+// aborted or timed out, and not one cut by the page unloading.
+export function isNetworkOutage(error: unknown, signal?: AbortSignal | null): boolean {
+    if (leaving || signal?.aborted) return false;
+    return !(error instanceof DOMException && (error.name === "AbortError" || error.name === "TimeoutError"));
+}
+
+// Wraps fetch so every call to the API feeds the status store. Only normal API
+// calls count: streams, aborted requests and 4xx answers are not outages.
 export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): typeof fetch {
     return async (input, init) => {
-        if (!origin || !requestURL(input).startsWith(origin)) return fetchImpl(input, init);
+        if (!origin || !requestURL(input).startsWith(origin) || isStreamRequest(input, init)) return fetchImpl(input, init);
         try {
             const response = await fetchImpl(input, init);
-            if (isUnavailableStatus(response.status)) reportServiceUnavailable();
+            const stream = response.headers.get("Content-Type")?.includes("text/event-stream") ?? false;
+            if (!stream && isUnavailableStatus(response.status)) reportServiceUnavailable();
             return response;
         } catch (error) {
-            const aborted = init?.signal?.aborted || (error instanceof DOMException && error.name === "AbortError");
-            if (!aborted) reportServiceUnavailable();
+            if (isNetworkOutage(error, init?.signal ?? (input instanceof Request ? input.signal : null))) reportServiceUnavailable();
             throw error;
         }
     };
+}
+
+// Long enough for a slow answer over a busy connection; a hung API still fails.
+const PROBE_TIMEOUT_MS = 10_000;
+
+// The recovery probe: session validation answers below 500 for everyone (200
+// signed in, 401 anonymous) once the API and its storage respond. It goes to the
+// API origin like every other call.
+export async function probeService(origin = apiOrigin): Promise<boolean> {
+    if (!origin) return false;
+    try {
+        const response = await fetch(`${origin}/api/auth/me`, {
+            credentials: "include", cache: "no-store", headers: {Accept: "application/json"}, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+        });
+        return !isUnavailableStatus(response.status);
+    } catch {
+        return false;
+    }
 }
 
 let tracking = false;
@@ -84,11 +122,14 @@ let tracking = false;
 export function installServiceStatusTracking(): void {
     if (tracking || typeof window === "undefined") return;
     tracking = true;
+    window.addEventListener("pagehide", () => { leaving = true; });
+    window.addEventListener("pageshow", () => { leaving = false; });
     window.fetch = trackApiFetch(window.fetch.bind(window));
 }
 
 // A failed request that means the API is unreachable: fetch rejects with a
-// TypeError on network failure; a 5xx carries its status.
+// TypeError on network failure; a 5xx carries its status. Only while the store
+// holds the failure, so a TypeError from a bug is not taken for an outage.
 export function isOutageError(error: unknown, code: number): boolean {
-    return error instanceof TypeError || isUnavailableStatus(code);
+    return isServiceDown() && (error instanceof TypeError || isUnavailableStatus(code));
 }

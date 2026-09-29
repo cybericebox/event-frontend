@@ -5,12 +5,12 @@ import {useRouter} from "next/navigation";
 import {useQueryClient} from "@tanstack/react-query";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {EventButton} from "@/components/ui/EventButton";
-import {apiOrigin} from "@/utils/origins";
 import {
     confirmServiceUnavailable,
     getServiceStatus,
     installServiceStatusTracking,
     onServiceRestored,
+    probeService,
     reportServiceAvailable,
     subscribeServiceStatus,
 } from "@/utils/serviceStatus";
@@ -20,27 +20,14 @@ import "@/styles/service-gate.css";
 installServiceStatusTracking();
 
 // A failed call is confirmed by one probe before the modal shows, so a single
-// flaky request does not cover the page.
+// flaky request does not cover the page; the modal shows only when the probe
+// itself fails.
 const CONFIRM_MS = 3000;
 // Seconds between automatic tries while the outage lasts.
 const BACKOFF_S = [3, 5, 10, 20, 30];
 
 function backoff(attempt: number): number {
     return BACKOFF_S[Math.min(attempt, BACKOFF_S.length - 1)] * 1000;
-}
-
-// The same public endpoint the event bootstrap reads: any answer below 500 means
-// the API and its storage respond again.
-async function probe(): Promise<boolean> {
-    if (!apiOrigin) return false;
-    try {
-        const response = await fetch(`${apiOrigin}/api/events/self/public-info`, {
-            credentials: "include", cache: "no-store", headers: {Accept: "application/json"}, signal: AbortSignal.timeout(5000),
-        });
-        return response.status < 500;
-    } catch {
-        return false;
-    }
 }
 
 function OutageDialog({onCheck}: {onCheck: () => Promise<void>}) {
@@ -115,14 +102,14 @@ export function EventServiceStatusGate({serverUnavailable = false}: {serverUnava
     useEffect(() => {
         if (status !== "suspect") return;
         const id = window.setTimeout(async () => {
-            if (await probe()) reportServiceAvailable();
+            if (await probeService()) reportServiceAvailable();
             else confirmServiceUnavailable();
         }, CONFIRM_MS);
         return () => window.clearTimeout(id);
     }, [status]);
 
     const onCheck = useCallback(async () => {
-        if (!await probe()) return;
+        if (!await probeService()) return;
         reportServiceAvailable();
         // The layout read the event on the server; render it again with the event data.
         if (serverUnavailable) router.refresh();

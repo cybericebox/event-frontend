@@ -39,6 +39,28 @@ describe("trackApiFetch", () => {
         expect(getServiceStatus()).toBe("suspect");
     });
 
+    it("never counts a stream request, whatever happens to it", async () => {
+        const failing = trackApiFetch(() => Promise.reject(new TypeError("network error")), "https://api.test");
+        await expect(failing("https://api.test/api/events/e1/results/live?lastEventId=3")).rejects.toThrow();
+        await expect(failing("https://api.test/api/events/e1/manage/solution-attempts/live")).rejects.toThrow();
+        await expect(failing("https://api.test/api/x", {headers: {Accept: "text/event-stream"}})).rejects.toThrow();
+        await trackApiFetch(() => Promise.resolve(new Response("", {status: 503})), "https://api.test")("https://api.test/api/events/e1/results/live");
+        expect(getServiceStatus()).toBe("up");
+    });
+
+    it("does not count 4xx answers", async () => {
+        for (const status of [400, 401, 403, 404, 409, 429]) {
+            await trackApiFetch(() => Promise.resolve(new Response("", {status})), "https://api.test")("https://api.test/api/events/self/info");
+        }
+        expect(getServiceStatus()).toBe("up");
+    });
+
+    it("does not count a timed-out request", async () => {
+        const timedOut = trackApiFetch(() => Promise.reject(new DOMException("timeout", "TimeoutError")), "https://api.test");
+        await expect(timedOut("https://api.test/api/x")).rejects.toThrow();
+        expect(getServiceStatus()).toBe("up");
+    });
+
     it("does not treat an aborted request as an outage", async () => {
         const controller = new AbortController();
         controller.abort();
@@ -70,6 +92,34 @@ describe("EventServiceStatusGate", () => {
         expect(screen.queryByRole("alertdialog")).toBeNull();
         expect(getServiceStatus()).toBe("up");
         expect(invalidate).toHaveBeenCalled();
+    });
+
+    it("stays hidden when the probe gets a 4xx: the API answers", async () => {
+        vi.useFakeTimers();
+        const fetch = vi.fn().mockResolvedValue(new Response("{}", {status: 403}));
+        vi.stubGlobal("fetch", fetch);
+        render(withQuery(<EventServiceStatusGate />));
+        act(() => { reportServiceUnavailable(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+        expect(fetch).toHaveBeenCalledWith("https://api.test/api/auth/me", expect.objectContaining({credentials: "include"}));
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+        expect(getServiceStatus()).toBe("up");
+    });
+
+    it("shows the modal after a stream failure only when a normal call fails too", async () => {
+        vi.useFakeTimers();
+        const fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+        vi.stubGlobal("fetch", fetch);
+        render(withQuery(<EventServiceStatusGate />));
+        const tracked = trackApiFetch(fetch, "https://api.test");
+        await act(async () => { await expect(tracked("https://api.test/api/events/e1/results/live")).rejects.toThrow(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+
+        await act(async () => { await expect(tracked("https://api.test/api/events/self/info")).rejects.toThrow(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+        expect(screen.getByRole("alertdialog")).toBeTruthy();
+        expect(screen.getByText(uk["shell.unavailable.nextTry"].replace("{seconds}", "3"))).toBeTruthy();
     });
 
     it("retries at once on «Спробувати зараз» and keeps the modal while the API is down", async () => {
