@@ -6,9 +6,6 @@ import type {TableColumn} from "./listColumns";
 
 afterEach(cleanup);
 
-// The grip tooltip reads hover capability; jsdom has no matchMedia.
-window.matchMedia ??= ((query: string) => ({matches: false, media: query, onchange: null, addListener: () => {}, removeListener: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false})) as typeof window.matchMedia;
-
 const columns: TableColumn[] = [
     {key: "@name", label: "Ім’я", visible: true, locked: true},
     {key: "@email", label: "Пошта", visible: true},
