@@ -12,8 +12,6 @@ export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
 export const livePaletteTypes = (Object.keys(liveWidgetLabels) as LiveWidget["type"][]).filter(type => type !== "ad_table");
 
 export function liveLogoURL(value: string): string | null {
-    // Mock uploads are object URLs.
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1" && value.startsWith("blob:")) return value;
     if (value.startsWith("/") && !value.startsWith("//")) {
         return value.startsWith("/api/events/") && apiOrigin ? `${apiOrigin}${value}` : value;
     }

@@ -10,7 +10,6 @@ import {EventLoading} from "../EventLoading";
 import {requireApiOrigin} from "@/utils/origins";
 
 async function getVisiblePage(eventID: string, slug: string): Promise<EventPageContent | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return null;
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/content/pages/${encodeURIComponent(slug)}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},

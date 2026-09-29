@@ -3,7 +3,12 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {ParticipantChallengeError} from "@/api/participantChallenges";
 import {hintConfirmText, hintCostLabel, hintModeNote, hintNeedsConfirm, hintUnlockError} from "./hintModel";
 
-afterEach(() => vi.unstubAllEnvs());
+vi.mock("@/utils/origins", async (importOriginal) => ({
+    ...await importOriginal<typeof import("@/utils/origins")>(),
+    requireApiOrigin: () => "https://api.example.org",
+}));
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("hint copy", () => {
     it("labels the cost or a free hint", () => {
@@ -34,22 +39,24 @@ describe("hint copy", () => {
     });
 });
 
-describe("hint unlock (mock API)", () => {
-    it("reveals the text, charges once and stays idempotent", async () => {
-        vi.stubEnv("NEXT_PUBLIC_USE_MOCKS", "1");
-        vi.resetModules();
+describe("hint unlock API", () => {
+    it("posts the unlock and returns the revealed hint", async () => {
+        const fetchStub = vi.fn().mockResolvedValue(new Response(JSON.stringify({Data: {
+            ID: "h1", Cost: 50, Unlocked: true, Content: "Подивіться на robots.txt.", UnlockedAt: "2026-09-29T10:00:00Z", UnlockedByName: "Олена Коваль",
+        }}), {status: 200}));
+        vi.stubGlobal("fetch", fetchStub);
         const api = await import("@/api/participantChallenges");
-        const eventID = "01900000-0000-7000-8000-000000000001";
-        const challenge = (await api.getOwnChallenges(eventID)).find(item => item.Hints.some(hint => !hint.Unlocked && hint.Cost > 0))!;
-        const hint = challenge.Hints.find(item => !item.Unlocked && item.Cost > 0)!;
-        expect(hint.Content).toBeNull();
-        const unlocked = await api.unlockChallengeHint(eventID, challenge.EventChallengeID, hint.ID);
-        expect(unlocked).toMatchObject({Unlocked: true, Cost: hint.Cost});
-        expect(unlocked.Content).toBeTruthy();
-        expect(unlocked.UnlockedByName).toBeTruthy();
-        await api.unlockChallengeHint(eventID, challenge.EventChallengeID, hint.ID);
-        const after = (await api.getOwnChallenges(eventID)).find(item => item.EventChallengeID === challenge.EventChallengeID)!;
-        expect(after.HintCostTotal).toBe(challenge.HintCostTotal + hint.Cost);
+        const unlocked = await api.unlockChallengeHint("01900000-0000-7000-8000-000000000001", "c1", "h1");
+        const [url, init] = fetchStub.mock.calls[0];
+        expect(url).toBe("https://api.example.org/api/events/01900000-0000-7000-8000-000000000001/teams/challenges/c1/hints/h1/unlock");
+        expect(init).toMatchObject({method: "POST", credentials: "include"});
+        expect(unlocked).toEqual({ID: "h1", Cost: 50, Unlocked: true, Content: "Подивіться на robots.txt.", UnlockedAt: "2026-09-29T10:00:00Z", UnlockedByName: "Олена Коваль"});
+    });
+
+    it("maps a refused unlock to a participant error", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({Status: {Code: ApiErrorCode.HintsDisabled}}), {status: 409})));
+        const api = await import("@/api/participantChallenges");
+        await expect(api.unlockChallengeHint("01900000-0000-7000-8000-000000000001", "c1", "h1")).rejects.toMatchObject({status: 409});
     });
 
     it("parses a board hint with nulls from the API", () => {

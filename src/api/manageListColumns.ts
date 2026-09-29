@@ -8,8 +8,6 @@ const listColumnsSchema = z.object({List: z.enum(["participants", "teams"]), Col
 export type ListColumn = z.infer<typeof columnSchema>;
 export type ListColumns = z.infer<typeof listColumnsSchema>;
 
-const mockColumns = new Map<ManagedList, ListColumn[]>();
-
 async function request(eventID: string, list: ManagedList, method: "GET" | "PUT", columns?: ListColumn[]): Promise<ListColumns> {
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/list-columns/${list}`, {
@@ -22,14 +20,9 @@ async function request(eventID: string, list: ManagedList, method: "GET" | "PUT"
 }
 
 export async function getManageListColumns(eventID: string, list: ManagedList): Promise<ListColumns> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {List: list, Columns: mockColumns.get(list) ?? []};
     return request(eventID, list, "GET");
 }
 
 export async function putManageListColumns(eventID: string, list: ManagedList, columns: ListColumn[]): Promise<ListColumns> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        mockColumns.set(list, columns);
-        return {List: list, Columns: columns};
-    }
     return request(eventID, list, "PUT", columns);
 }

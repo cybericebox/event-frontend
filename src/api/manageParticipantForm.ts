@@ -21,13 +21,7 @@ export type FormDocument = z.infer<typeof formDocumentSchema>;
 export type ParticipantForm = z.infer<typeof participantFormSchema>;
 export type ParticipantFormInput = Pick<ParticipantForm, "Enabled" | "Required" | "Document">;
 
-let mockForm: ParticipantForm | null = {Version: 1, Enabled: true, Required: false, Document: {blocks: [
-    {id: "city", type: "field", key: "city", input: "text", label: "Місто", editable: true},
-    {id: "experience", type: "field", key: "experience", input: "select", label: "Досвід у CTF", options: ["Початковий", "Середній", "Високий"]},
-]}};
-
 export async function getManageParticipantForm(eventID: string): Promise<ParticipantForm | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockForm;
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participant-form`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
@@ -38,10 +32,6 @@ export async function getManageParticipantForm(eventID: string): Promise<Partici
 }
 
 export async function putManageParticipantForm(eventID: string, input: ParticipantFormInput): Promise<ParticipantForm> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        mockForm = participantFormSchema.parse({...input, Version: (mockForm?.Version ?? 0) + 1});
-        return mockForm;
-    }
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participant-form`, {
         method: "PUT", credentials: "include", cache: "no-store",

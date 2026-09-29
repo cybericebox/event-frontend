@@ -111,7 +111,7 @@ function PseudonymRow({info, eventID}: {info: ParticipantEventInfo; eventID: str
 function SelfSection({event, info, finished}: {event: PublicEventInfo; info: ParticipantEventInfo; finished: boolean}) {
     const queryClient = useQueryClient();
     const [editing, setEditing] = useState(false);
-    const answers = useQuery({queryKey: ["event-own-answers", event.EventID], queryFn: () => getOwnParticipantAnswers(event.EventID), retry: false, refetchOnWindowFocus: false});
+    const answers = useQuery({queryKey: ["event-own-answers", event.EventID], queryFn: () => getOwnParticipantAnswers(), retry: false, refetchOnWindowFocus: false});
     const save = async (draft: ParticipantAnswers) => {
         if (!answers.data) return;
         try {
@@ -148,7 +148,7 @@ function NoTeam({event, started}: {event: PublicEventInfo; started: boolean}) {
     const [createOpen, setCreateOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
-    const fieldsQuery = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(event.EventID), enabled: createOpen, refetchOnWindowFocus: false});
+    const fieldsQuery = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(), enabled: createOpen, refetchOnWindowFocus: false});
     const refresh = () => Promise.all([
         queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]}),
         queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]}),
@@ -205,7 +205,7 @@ function NoTeam({event, started}: {event: PublicEventInfo; started: boolean}) {
 function TeamSection({event, info, team, started, finished}: {event: PublicEventInfo; info: ParticipantEventInfo; team: OwnTeam; started: boolean; finished: boolean}) {
     const queryClient = useQueryClient();
     const members = useQuery({queryKey: ["event-team-members", event.EventID, team.ID], queryFn: () => getOwnTeamMembers(event.EventID), retry: false, refetchOnWindowFocus: false});
-    const fieldsForm = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(event.EventID), refetchOnWindowFocus: false});
+    const fieldsForm = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(), refetchOnWindowFocus: false});
     const [confirm, setConfirm] = useState<Confirm>(null);
     const [renaming, setRenaming] = useState(false);
     const [name, setName] = useState(team.Name);

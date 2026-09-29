@@ -41,23 +41,19 @@ export function inboxQuery(eventID: string | undefined, params: Record<string, s
 }
 
 export async function getInbox(eventID?: string, before?: InboxCursor): Promise<InboxPage> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {Items: [], NextCursor: null};
     const query = inboxQuery(eventID, before ? {before_id: before.ID, before_at: before.CreatedAt} : {});
     return listSchema.parse(await inboxRequest(query)).Data;
 }
 
 export async function pollInbox(eventID?: string, since?: InboxCursor): Promise<InboxPoll> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {Cursor: null, NewInbox: [], UnreadCount: 0};
     const query = inboxQuery(eventID, since ? {since_id: since.ID, since_at: since.CreatedAt} : {});
     return pollSchema.parse(await inboxRequest(`/poll${query}`)).Data;
 }
 
 export async function markInboxRead(id: string): Promise<void> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return;
     await inboxRequest(`/${encodeURIComponent(id)}/read`, "PATCH");
 }
 
 export async function markInboxAllRead(eventID?: string): Promise<void> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return;
     await inboxRequest(`/read-all${inboxQuery(eventID)}`, "PATCH");
 }

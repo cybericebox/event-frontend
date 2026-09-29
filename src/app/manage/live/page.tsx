@@ -68,7 +68,7 @@ function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos
         <span className="event-live-editor__label">Логотипи</span>
         {logos.length ? <ul>{logos.map((logo, index) => <li key={`${logo}-${index}`}>
             {liveLogoURL(logo) ? <img src={liveLogoURL(logo)!} alt="" /> : <span className="event-live-editor__logo-broken">?</span>}
-            <span title={logo}>{logo.includes("/content-images/") || logo.startsWith("blob:") ? `Файл ${index + 1}` : logo}</span>
+            <span title={logo}>{logo.includes("/content-images/") ? `Файл ${index + 1}` : logo}</span>
             <button type="button" aria-label="Вище" disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>
             <button type="button" aria-label="Нижче" disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>
             <button type="button" aria-label="Прибрати логотип" disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>

@@ -37,29 +37,7 @@ export class LiveDraftInvalidError extends ManageApiError {
     }
 }
 
-// Mock screens: ?mockTheme=light and ?mockScreen=1040x624 (fixed top-left area).
-function mockPublished(): LiveLayout {
-    if (typeof window === "undefined") return defaultLiveLayout;
-    const params = new URLSearchParams(window.location.search);
-    const [width, height] = (params.get("mockScreen") ?? "").split("x").map(Number);
-    const theme = params.get("mockTheme") === "light" ? "light" : "dark";
-    return width > 0 && height > 0
-        ? {...defaultLiveLayout, theme, aspect: "custom", screen: {width, height, anchor: "top-left", textScale: 1}}
-        : {...defaultLiveLayout, theme};
-}
-
-let mockEditor: LiveEditor = {Published: mockPublished(), Draft: null};
-
 async function liveRequest<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        if (method === "PUT") {mockEditor = {...mockEditor, Draft: liveLayoutSchema.parse((payload as {Layout: LiveLayout}).Layout)}; return schema.parse(undefined);}
-        if (method === "POST") {
-            if (!mockEditor.Draft) throw new ManageApiError(404);
-            mockEditor = {Published: {...mockEditor.Draft, version: mockEditor.Published.version + 1}, Draft: null};
-            return schema.parse(mockEditor.Published);
-        }
-        return schema.parse(mockEditor);
-    }
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/content/live${path}`, {
         method, credentials: "include", cache: "no-store",
@@ -85,6 +63,5 @@ export const getPublishedLiveLayout = async (eventID: string) => (await getManag
 
 // Open live screens poll this light version and reload the layout on a change.
 export async function getLiveLayoutVersion(eventID: string): Promise<number> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return mockEditor.Published.version;
     return liveRequest(eventID, "/version", z.object({Version: z.number().int()})).then(value => value.Version);
 }

@@ -4,7 +4,7 @@ vi.mock("@/utils/origins", async (importOriginal) => ({
     ...await importOriginal<typeof import("@/utils/origins")>(),
     requireApiOrigin: () => "https://api.example.org",
 }));
-import {ManageLabsSchema, ModeratorChallengeSchema, getManageLabs, isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage} from "./manageLabs";
+import {ManageLabsSchema, ModeratorChallengeSchema, isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage} from "./manageLabs";
 
 afterEach(() => {vi.unstubAllEnvs(); vi.unstubAllGlobals();});
 
@@ -35,11 +35,18 @@ describe("labs schemas", () => {
 });
 
 describe("labs client", () => {
-    it("recreates a failed stand and rejects invalid settings in mocks", async () => {
-        vi.stubEnv("NEXT_PUBLIC_USE_MOCKS", "1");
-        const failed = (await getManageLabs(eventID)).Items.find(item => item.Status === "failed")!;
-        const recreated = await recreateStand(eventID, failed.TeamID);
-        expect(recreated).toMatchObject({Status: "creating", Generation: failed.Generation + 1});
+    it("recreates a stand and rejects invalid settings", async () => {
+        const teamID = "01900000-0000-7000-8000-000000000022";
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({Data: {
+                TeamID: teamID, TeamName: "Blue Team", Moderators: false, Status: "creating", Reason: "", UpdatedAt: null, Generation: 2, Labs: [],
+            }}), {status: 200}))
+            .mockResolvedValueOnce(new Response(JSON.stringify({Status: {Code: 0, Message: "invalid"}}), {status: 400}));
+        vi.stubGlobal("fetch", fetchMock);
+        expect(await recreateStand(eventID, teamID)).toMatchObject({Status: "creating", Generation: 2});
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toBe(`https://api.example.org/api/events/${eventID}/manage/labs/${teamID}/recreate`);
+        expect(init).toMatchObject({method: "POST"});
         await expect(putManageLabsSettings(eventID, {DeployLeadMinutes: 1, TeardownDelayMinutes: 0})).rejects.toBeInstanceOf(ManageApiError);
     });
 

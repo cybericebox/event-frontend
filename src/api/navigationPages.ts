@@ -6,7 +6,6 @@ const pagesSchema = z.array(pageSchema);
 export type NavigationPage = z.infer<typeof pageSchema>;
 
 export async function getNavigationPages(eventID: string): Promise<NavigationPage[]> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return [{Slug: "faq", Title: "Питання та відповіді", NavigationOrder: 0}];
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/content/pages`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},

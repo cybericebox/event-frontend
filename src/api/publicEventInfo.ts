@@ -11,25 +11,6 @@ export type {PublicEventInfo} from "@/types/publicEventInfo";
 // the host-only API session cookie is never sent to the event frontend server.
 // React cache deduplicates the metadata and layout reads within one render.
 export const getPublicEventInfo = cache(async (): Promise<PublicEventInfo | null> => {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        return {
-            EventID: "01900000-0000-7000-8000-000000000001",
-            Tag: "winter-arena-2026",
-            Name: "Winter Arena CTF",
-            StartTime: new Date(Date.now() - 3_600_000).toISOString(),
-            FinishTime: new Date(Date.now() + 6 * 3_600_000).toISOString(),
-            Status: 2,
-            Participation: 1,
-            Registration: 2,
-            CanViewResults: true,
-            CanViewParticipants: true,
-            PreviewDescription: "",
-            PreviewPicture: "/assets/background.png",
-            LogoURL: "",
-            FaviconURL: "",
-            Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
-        };
-    }
     const host = (await headers()).get("host");
     if (!host) return null;
     const internalOrigin = process.env.INTERNAL_API_ORIGIN;

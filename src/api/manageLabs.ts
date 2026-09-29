@@ -83,18 +83,6 @@ export function isInfrastructureNotAllowed(error: unknown): boolean {
     return error instanceof ManageApiError && error.code === StandErrorCode.InfrastructureNotAllowed;
 }
 
-const mockModeratorsID = "01900000-0000-7000-8000-0000000000f0";
-let mockLabs: ManageLabs = {
-    InfrastructureAllowed: true, LaboratoriesAvailable: true, DeployLeadMinutes: 30, TeardownDelayMinutes: 60,
-    DeployAt: new Date(Date.now() - 30 * 60_000).toISOString(), TeardownAt: null, ChallengesOpened: false,
-    Summary: {Total: 3, NotDeployed: 0, Creating: 1, Ready: 1, Failed: 1, Removed: 0},
-    Items: [
-        {TeamID: mockModeratorsID, TeamName: "", Moderators: true, Status: "ready", Reason: "", UpdatedAt: new Date().toISOString(), Generation: 0, Labs: [{ChallengeID: "01900000-0000-7000-8000-0000000000c1", ChallengeName: "SQL-ін’єкція", Status: "ready", Reason: ""}]},
-        {TeamID: "01900000-0000-7000-8000-000000000022", TeamName: "Blue Team", Moderators: false, Status: "failed", Reason: "ImagePullBackOff: web", UpdatedAt: new Date().toISOString(), Generation: 1, Labs: [{ChallengeID: "01900000-0000-7000-8000-0000000000c1", ChallengeName: "SQL-ін’єкція", Status: "failed", Reason: "ImagePullBackOff: web"}]},
-        {TeamID: "01900000-0000-7000-8000-000000000023", TeamName: "Red Team", Moderators: false, Status: "creating", Reason: "", UpdatedAt: null, Generation: 0, Labs: [{ChallengeID: "01900000-0000-7000-8000-0000000000c1", ChallengeName: "SQL-ін’єкція", Status: "pending", Reason: ""}]},
-    ],
-};
-
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown, prefix = "manage/labs"): Promise<T> {
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/${prefix}${path}`, {
@@ -107,57 +95,30 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
 }
 
 export async function getManageLabs(eventID: string): Promise<ManageLabs> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return ManageLabsSchema.parse(mockLabs);
     return request(eventID, "", ManageLabsSchema);
 }
 
 export async function putManageLabsSettings(eventID: string, settings: ManageLabsSettings): Promise<ManageLabs> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        const valid = settings.DeployLeadMinutes >= DEPLOY_LEAD_RANGE.min && settings.DeployLeadMinutes <= DEPLOY_LEAD_RANGE.max
-            && settings.TeardownDelayMinutes >= TEARDOWN_DELAY_RANGE.min && settings.TeardownDelayMinutes <= TEARDOWN_DELAY_RANGE.max;
-        if (!valid) throw new ManageApiError(400, StandErrorCode.SettingsInvalid);
-        mockLabs = {...mockLabs, ...settings};
-        return ManageLabsSchema.parse(mockLabs);
-    }
     return request(eventID, "/settings", ManageLabsSchema, "PUT", settings);
 }
 
 export async function recreateStand(eventID: string, teamID: string): Promise<ManageStand> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        const stand = mockLabs.Items.find(item => item.TeamID === teamID);
-        if (!stand) throw new ManageApiError(404, StandErrorCode.TeamNotFound);
-        if (stand.Status === "not_deployed" || stand.Status === "removed") throw new ManageApiError(409, StandErrorCode.NotDeployed);
-        const next: ManageStand = {...stand, Status: "creating", Reason: "", Generation: stand.Generation + 1, UpdatedAt: new Date().toISOString(), Labs: stand.Labs.map(lab => ({...lab, Status: "pending", Reason: ""}))};
-        mockLabs = {...mockLabs, Items: mockLabs.Items.map(item => item.TeamID === teamID ? next : item)};
-        return standSchema.parse(next);
-    }
     return request(eventID, `/${encodeURIComponent(teamID)}/recreate`, standSchema, "POST");
 }
 
 export async function getModeratorChallenges(eventID: string): Promise<ModeratorChallenge[]> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        return z.array(ModeratorChallengeSchema).parse([
-            {ChallengeID: "01900000-0000-7000-8000-0000000000c1", Name: "SQL-ін’єкція", Readiness: "ready", Lab: {Status: "ready"}},
-            {ChallengeID: "01900000-0000-7000-8000-0000000000c2", Name: "Перший крок", Readiness: "available", Lab: null},
-        ]);
-    }
     return request(eventID, "/moderators/challenges", z.array(ModeratorChallengeSchema).nullish().transform(value => value ?? []));
 }
 
 export async function getModeratorChallengeLab(eventID: string, challengeID: string): Promise<LabRuntime> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        return LabRuntimeSchema.parse({Phase: "Ready", Ready: true, VPNCIDR: "10.20.0.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "http://10.20.0.10/"}]});
-    }
     return request(eventID, `/moderators/challenges/${encodeURIComponent(challengeID)}/lab`, LabRuntimeSchema);
 }
 
 export async function getModeratorVPNConfig(eventID: string): Promise<string> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return "[Interface]\nAddress = 10.20.0.2/32\n";
     return (await request(eventID, "/moderators/vpn", vpnSchema)).Config;
 }
 
 // Participant view of the own team's stand (no failure reason) for the VPN modal.
 export async function getOwnStandStatus(eventID: string): Promise<StandStatus> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return "ready";
     return (await request(eventID, "/stand", ownStandSchema, "GET", undefined, "teams/labs")).Status;
 }

@@ -45,9 +45,6 @@ async function readData<T>(response: Response, schema: z.ZodType<T>): Promise<T>
 
 // Browser requests are the only place the host-only api.<domain> cookie exists.
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1"
-        ? meSchema.parse({ID: "01900000-0000-7000-8000-000000000031", FirstName: "Олена", LastName: "Коваль", Email: "participant@example.test"})
-        : null;
     const response = await fetch(apiUrl("/auth/me"), {credentials: "include", cache: "no-store"});
     if (response.status === 401) return null;
     return readData(response, meSchema);
@@ -73,15 +70,11 @@ export function profilePictureUrl(picture: string): string | undefined {
 }
 
 export async function getJoinStatus(): Promise<number> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1" ? 2 : process.env.NEXT_PUBLIC_MOCK_INVITED === "1" ? 1 : 0;
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
     return (await readData(response, joinSchema)).Status;
 }
 
 export async function getInvitationInfo(): Promise<JoinInfo> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_INVITED === "1"
-        ? joinSchema.parse({Status: 1, Invited: true, InvitedTeamName: "Blue Team", InvitedTeamID: "01900000-0000-7000-8000-000000000022"})
-        : joinSchema.parse({Status: process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1" ? 2 : 0, Invited: false});
     const response = await fetch(apiUrl("/events/self/join/info"), {credentials: "include", cache: "no-store"});
     return readData(response, joinSchema);
 }
@@ -90,7 +83,6 @@ export type RegistrationWindow = {registrationOpen: boolean; joinPolicy: string;
 
 // The same public content values the join CTA reads, so /join agrees with it.
 export async function getRegistrationWindow(eventID: string): Promise<RegistrationWindow> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return {registrationOpen: true, joinPolicy: "rolling", startAt: "", finishAt: ""};
     const response = await fetch(`/api/content/values?${new URLSearchParams({eventId: eventID})}`, {cache: "no-store"});
     if (!response.ok) throw new ClientAuthError(response.status);
     const variables = z.object({Variables: z.record(z.string(), z.unknown())}).parse(await response.json()).Variables;
@@ -103,9 +95,6 @@ export async function getRegistrationWindow(eventID: string): Promise<Registrati
 }
 
 export async function getOwnTeam(eventID: string): Promise<OwnTeam | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1"
-        ? ownTeamSchema.parse({ID: "01900000-0000-7000-8000-000000000022", Name: "Blue Team", JoinCode: "MOCK-TEAM", MemberCount: 3, Admitted: true, MinTeamSize: 2, MaxTeamSize: 5})
-        : null;
     const response = await fetch(apiUrl(`/events/${encodeURIComponent(eventID)}/teams/mine`), {credentials: "include", cache: "no-store"});
     if (response.status === 404) return null;
     return readData(response, ownTeamSchema);

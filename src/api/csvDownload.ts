@@ -19,12 +19,7 @@ function saveBlob(blob: Blob, fileName: string) {
 
 // Downloads a manage CSV export with the session cookie (a plain link would
 // not carry credentials to the API origin).
-export async function downloadManageCSV(eventID: string, path: string, fileName: string, mockRows: string[][]): Promise<void> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        const text = mockRows.map(row => row.map(cell => /[",\n]/.test(cell) ? `"${cell.replaceAll("\"", "\"\"")}"` : cell).join(",")).join("\n");
-        saveBlob(new Blob(["﻿" + text], {type: "text/csv;charset=utf-8"}), fileName);
-        return;
-    }
+export async function downloadManageCSV(eventID: string, path: string, fileName: string): Promise<void> {
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {credentials: "include", cache: "no-store", headers: {Accept: "text/csv"}});
     if (!response.ok) throw await manageApiError(response);

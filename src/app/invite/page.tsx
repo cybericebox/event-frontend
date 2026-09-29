@@ -28,7 +28,7 @@ export default function InvitePage() {
     const info = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event, retry: false});
     const invitation = info.data;
     const actionable = !!invitation && invitation.Invited && invitation.Status === ParticipationStatusEnum.PendingParticipationStatus && !invitation.InvitationExpired && !invitation.TeamUnavailable;
-    const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(event!.EventID), enabled: !!event && actionable, retry: false});
+    const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!event && actionable, retry: false});
     const [answers, setAnswers] = useState<ParticipantAnswers>({});
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");

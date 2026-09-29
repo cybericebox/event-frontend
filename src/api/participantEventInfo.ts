@@ -9,17 +9,6 @@ export class ParticipantEventInfoError extends Error {
 }
 
 export async function getParticipantEventInfo(): Promise<ParticipantEventInfo> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        return ParticipantEventInfoSchema.parse({
-            EventID: "01900000-0000-7000-8000-000000000001",
-            UseVPN: true,
-            CanViewResults: process.env.NEXT_PUBLIC_MOCK_PARTICIPANT === "1",
-            CanViewParticipants: false,
-            Participation: 1, RealName: "Олена Коваль", Pseudonym: null, DisplayName: "Олена Коваль",
-            AllowPseudonyms: true, PseudonymEditable: false, TeamAdmitted: true, MinTeamSize: 2, MaxTeamSize: 5,
-            ShowDifficulty: true, ShowHints: true, HasInfrastructureChallenges: true, HintChargeMode: "reward",
-        });
-    }
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/self/participant-info`, {
         credentials: "include",

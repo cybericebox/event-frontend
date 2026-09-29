@@ -53,7 +53,7 @@ export function useEventStream({url, events, resetEvents = [], onChange, enabled
     const eventsKey = events.join(",");
     const resetKey = resetEvents.join(",");
     useEffect(() => {
-        if (!enabled || process.env.NEXT_PUBLIC_USE_MOCKS === "1" || typeof EventSource === "undefined") return;
+        if (!enabled || typeof EventSource === "undefined") return;
         let source: EventSource | null = null;
         let timer: ReturnType<typeof setTimeout> | null = null;
         let failures = 0;
@@ -84,6 +84,5 @@ export function useEventStream({url, events, resetEvents = [], onChange, enabled
         connect();
         return () => { stopped = true; reload.cancel(); if (timer) clearTimeout(timer); close(); setState({failures: 0, open: false}); };
     }, [enabled, eventsKey, resetKey, debounceMs]);
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") return "fallback";
     return streamMode(state.failures, state.open);
 }

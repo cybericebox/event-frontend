@@ -1,61 +1,81 @@
-import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {afterEach, describe, expect, it, vi} from "vitest";
 import {ApiErrorCode} from "./apiErrors";
+import {ManageApiError} from "./manage";
+vi.mock("@/utils/origins", async (importOriginal) => ({
+    ...await importOriginal<typeof import("@/utils/origins")>(),
+    requireApiOrigin: () => "https://api.example.org",
+}));
+import * as api from "./manageChallenges";
 
-type Api = typeof import("./manageChallenges");
+afterEach(() => vi.unstubAllGlobals());
+
 const eventID = "01900000-0000-7000-8000-000000000001";
-let api: Api;
+const uid = (n: number) => `01900000-0000-7000-8000-${String(n).padStart(12, "0")}`;
+const base = `https://api.example.org/api/events/${eventID}/manage`;
 
-// Every test gets a fresh mock state.
-beforeEach(async () => {
-    vi.stubEnv("NEXT_PUBLIC_USE_MOCKS", "1");
-    vi.resetModules();
-    api = await import("./manageChallenges");
+function stubFetch(body: unknown, status = 200) {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify(body), {status}));
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+}
+
+const attachment = (n: number, extra: Record<string, unknown> = {}) => ({
+    ID: uid(n), ExerciseID: uid(n + 1), ExerciseName: "Основи кібербезпеки", ExerciseVersionID: uid(n + 2), VariantMode: 0, FixedVariantIndex: null,
+    Revision: 2, Status: 0, ReplacesID: null, SupersededAt: null, CreatedAt: "2026-09-26T00:00:00Z", ...extra,
 });
-afterEach(() => vi.unstubAllEnvs());
+const challenge = {
+    ID: uid(11), TaskID: uid(12), GroupID: null, PrerequisiteIDs: null, Order: 0, Points: 100, ScoringOverride: null, HintsEnabled: true, Published: true,
+    Snapshot: {name: "Перший крок"},
+    Hints: [{ID: uid(111), Text: "Заголовки", DefaultCost: 0, Cost: 15, Overridden: true}, {ID: uid(112), Text: "Cookie", DefaultCost: 50, Cost: 50, Overridden: false}],
+};
 
 describe("event challenge scoring", () => {
-    it("saves a local algorithm and can return to the event profile", async () => {
-        const [attachment] = await api.getEventExerciseAttachments(eventID);
-        const [challenge] = await api.getEventBoardChallenges(eventID, attachment.ID);
+    it("sends a local algorithm and null to return to the event profile", async () => {
+        const fetchMock = stubFetch({Data: {updated: 1}});
         const override = {Mode: 1 as const, MinPoints: 100, MaxPoints: 500, FloorAtPercent: 50};
-
-        await api.updateEventChallengeScoring(eventID, attachment.ID, challenge.ID, override);
-        expect((await api.getEventBoardChallenges(eventID, attachment.ID))[0].ScoringOverride).toEqual(override);
-
-        await api.updateEventChallengeScoring(eventID, attachment.ID, challenge.ID, null);
-        expect((await api.getEventBoardChallenges(eventID, attachment.ID))[0].ScoringOverride).toBeNull();
+        await api.updateEventChallengeScoring(eventID, uid(10), uid(11), override);
+        await api.updateEventChallengeScoring(eventID, uid(10), uid(11), null);
+        const [[url, init], [, reset]] = fetchMock.mock.calls;
+        expect(url).toBe(`${base}/exercises/${uid(10)}/challenges/scoring`);
+        expect(init).toMatchObject({method: "PUT", body: JSON.stringify({ChallengeIDs: [uid(11)], Override: override})});
+        expect(reset.body).toBe(JSON.stringify({ChallengeIDs: [uid(11)], Override: null}));
     });
 });
 
 describe("catalog preview", () => {
-    it("lists tasks of the requested variant without exposing answer data", async () => {
-        const [choice] = await api.getEventExerciseAttachments(eventID);
-        const preview = await api.getPublishedExercisePreview(eventID, choice.ExerciseVersionID);
-        expect(preview.Tasks.map(task => task.Name)).toEqual(["Перший крок", "Фінальне завдання"]);
-        expect(preview.Tasks.map(task => task.HintCount)).toEqual([2, 1]);
-        expect(JSON.stringify(preview)).not.toContain("Flag");
-        expect((await api.getPublishedExercisePreview(eventID, choice.ExerciseVersionID, 1)).Variant).toBe(1);
+    it("requests the variant and parses the tasks", async () => {
+        const fetchMock = stubFetch({Data: {ID: uid(13), Name: "Набір", Description: "", VersionID: uid(14), VariantCount: 2, Variant: 1,
+            Tasks: [{Name: "Перший крок", Difficulty: "easy", HintCount: 2}, {Name: "Фінальне завдання", Difficulty: "medium"}]}});
+        const preview = await api.getPublishedExercisePreview(eventID, uid(14), 1);
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercise-catalog/${uid(14)}?variant=1`);
+        expect(preview.Variant).toBe(1);
+        expect(preview.Tasks.map(task => task.HintCount)).toEqual([2, 0]);
     });
 
-    it("filters by infrastructure, lists own exercises first and marks attached ones", async () => {
-        const all = await api.getPublishedExerciseChoices(eventID, "");
-        expect(all[0].Scope).toBe("event");
-        expect(all.find(item => item.Name === "Основи кібербезпеки")?.Attached).toBe(true);
-        // Attached through the event's copy.
-        expect(all.find(item => item.Name === "Мережевий аналіз" && item.Scope === "catalog")?.Attached).toBe(true);
-        expect((await api.getPublishedExerciseChoices(eventID, "", "yes")).every(item => item.Infrastructure)).toBe(true);
-        expect((await api.getPublishedExerciseChoices(eventID, "", "no")).every(item => !item.Infrastructure)).toBe(true);
+    it("sends the search and infrastructure filters", async () => {
+        const fetchMock = stubFetch({Data: [{ID: uid(30), Name: "Мережевий аналіз", Description: "", PublishedVersionID: uid(31), Tags: null, Scope: "event", Infrastructure: true, Attached: true}]});
+        const [choice] = await api.getPublishedExerciseChoices(eventID, "мережа", "yes");
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercise-catalog?search=${encodeURIComponent("мережа")}&infrastructure=yes`);
+        expect(choice).toMatchObject({Scope: "event", Infrastructure: true, Attached: true, Tags: []});
+        await api.getPublishedExerciseChoices(eventID, "");
+        expect(fetchMock.mock.calls[1][0]).toBe(`${base}/exercise-catalog?search=`);
     });
 });
 
 describe("attachments", () => {
     it("parses catalog versions, forks and detached sets", async () => {
-        const attachments = await api.getEventExerciseAttachments(eventID);
-        const [catalog, fork, own, detached] = attachments;
+        stubFetch({Data: [
+            attachment(10, {Scope: "catalog", VersionNumber: 2, LatestVersionID: uid(21), LatestVersionNumber: 3, UpdateAvailable: true}),
+            attachment(20, {Scope: "event", Fork: {SourceExerciseID: uid(15), SourceExerciseName: "Мережевий аналіз", SourceVersionID: uid(16), SourceVersionNumber: 1,
+                SourceLatestVersionID: uid(22), SourceLatestVersionNumber: 2, SourceUpdateAvailable: true}}),
+            attachment(40, {Scope: "event"}),
+            attachment(50, {Status: 2, DetachedAt: "2026-09-28T10:00:00Z"}),
+        ]});
+        const [catalog, fork, own, detached] = await api.getEventExerciseAttachments(eventID);
         expect(catalog).toMatchObject({Scope: "catalog", VersionNumber: 2, LatestVersionNumber: 3, UpdateAvailable: true, Fork: null});
         expect(fork.Fork).toMatchObject({SourceVersionNumber: 1, SourceLatestVersionNumber: 2, SourceUpdateAvailable: true});
         expect(own).toMatchObject({Scope: "event", Fork: null});
-        expect(detached.Status).toBe(2);
+        expect(detached).toMatchObject({Status: 2, DetachedAt: "2026-09-28T10:00:00Z"});
     });
 
     it("accepts a legacy attachment without the W4 fields", () => {
@@ -66,53 +86,54 @@ describe("attachments", () => {
         expect(legacy).toMatchObject({Scope: "catalog", VersionNumber: 0, UpdateAvailable: false, Fork: null, DetachedAt: null});
     });
 
-    it("updates to the latest version and keeps event settings", async () => {
-        const [attachment] = await api.getEventExerciseAttachments(eventID);
-        const before = await api.getEventBoardChallenges(eventID, attachment.ID);
-        const updated = await api.updateEventExercise(eventID, attachment.ID);
-        expect(updated).toMatchObject({VersionNumber: 3, UpdateAvailable: false});
-        expect(await api.getEventBoardChallenges(eventID, attachment.ID)).toEqual(before);
+    it("posts update, fork and revert to their routes", async () => {
+        const fetchMock = stubFetch({Data: attachment(10)});
+        await api.updateEventExercise(eventID, uid(10));
+        await api.updateEventExercise(eventID, uid(10), uid(21));
+        await api.forkEventExercise(eventID, uid(10));
+        await api.revertEventExercise(eventID, uid(10));
+        expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method, init.body])).toEqual([
+            [`${base}/exercises/${uid(10)}/update`, "POST", "{}"],
+            [`${base}/exercises/${uid(10)}/update`, "POST", JSON.stringify({ExerciseVersionID: uid(21)})],
+            [`${base}/exercises/${uid(10)}/fork`, "POST", undefined],
+            [`${base}/exercises/${uid(10)}/revert`, "POST", undefined],
+        ]);
     });
 
-    it("forks a catalog set and reverts it back", async () => {
-        const [attachment] = await api.getEventExerciseAttachments(eventID);
-        const fork = await api.forkEventExercise(eventID, attachment.ID);
-        expect(fork.Scope).toBe("event");
-        expect(fork.Fork?.SourceExerciseID).toBe(attachment.ExerciseID);
-        expect(fork.ExerciseID).not.toBe(attachment.ExerciseID);
-        const reverted = await api.revertEventExercise(eventID, attachment.ID);
-        expect(reverted).toMatchObject({Scope: "catalog", ExerciseID: attachment.ExerciseID, Fork: null});
-    });
-
-    it("asks to confirm detaching a set with attempts, then keeps it as detached", async () => {
-        const [attachment] = await api.getEventExerciseAttachments(eventID);
-        await expect(api.detachEventExercise(eventID, attachment.ID)).rejects.toMatchObject({status: 409, code: ApiErrorCode.ExerciseDetachNeedsConfirm});
-        await api.detachEventExercise(eventID, attachment.ID, true);
-        expect((await api.getEventExerciseAttachments(eventID)).find(item => item.ID === attachment.ID)?.Status).toBe(2);
-    });
-
-    it("detaches a set without attempts at once", async () => {
-        const own = (await api.getEventExerciseAttachments(eventID))[2];
-        await api.detachEventExercise(eventID, own.ID);
-        expect((await api.getEventExerciseAttachments(eventID)).some(item => item.ID === own.ID)).toBe(false);
+    it("maps the detach confirmation conflict and confirms with a query flag", async () => {
+        stubFetch({Status: {Code: 40000 + ApiErrorCode.ExerciseDetachNeedsConfirm}}, 409);
+        const error = await api.detachEventExercise(eventID, uid(10)).catch((value: unknown) => value);
+        expect(error).toBeInstanceOf(ManageApiError);
+        expect(error).toMatchObject({status: 409, code: ApiErrorCode.ExerciseDetachNeedsConfirm});
+        const fetchMock = stubFetch({Data: null});
+        await expect(api.detachEventExercise(eventID, uid(10), true)).resolves.toBeUndefined();
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercises/${uid(10)}?confirm=true`);
+        expect(fetchMock.mock.calls[0][1].method).toBe("DELETE");
     });
 });
 
 describe("hints", () => {
-    it("overrides a hint cost and resets it with null", async () => {
-        const [attachment] = await api.getEventExerciseAttachments(eventID);
-        const [challenge] = await api.getEventBoardChallenges(eventID, attachment.ID);
-        const [free, paid] = challenge.Hints;
-        const changed = await api.updateEventChallengeHintCosts(eventID, attachment.ID, challenge.ID, [{HintID: free.ID, Cost: 15}, {HintID: paid.ID, Cost: null}]);
+    it("sends hint costs and parses the updated challenge", async () => {
+        const fetchMock = stubFetch({Data: challenge});
+        const changed = await api.updateEventChallengeHintCosts(eventID, uid(10), uid(11), [{HintID: uid(111), Cost: 15}, {HintID: uid(112), Cost: null}]);
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercises/${uid(10)}/challenges/${uid(11)}/hints`);
+        expect(fetchMock.mock.calls[0][1]).toMatchObject({method: "PUT", body: JSON.stringify({Costs: [{HintID: uid(111), Cost: 15}, {HintID: uid(112), Cost: null}]})});
+        expect(changed.PrerequisiteIDs).toEqual([]);
         expect(changed.Hints[0]).toMatchObject({Cost: 15, DefaultCost: 0, Overridden: true});
-        expect(changed.Hints[1]).toMatchObject({Cost: paid.DefaultCost, Overridden: false});
-        await expect(api.updateEventChallengeHintCosts(eventID, attachment.ID, challenge.ID, [{HintID: free.ID, Cost: -1}])).rejects.toMatchObject({status: 400, code: ApiErrorCode.HintCostsInvalid});
     });
 
-    it("lists hint unlocks newest first", async () => {
-        const unlocks = await api.getHintUnlocks(eventID);
-        expect(unlocks.length).toBeGreaterThan(0);
-        expect(unlocks.map(item => Date.parse(item.UnlockedAt))).toEqual([...unlocks.map(item => Date.parse(item.UnlockedAt))].sort((a, b) => b - a));
-        expect(api.HintUnlockSchema.parse(unlocks[0]).HintIndex).toBeTypeOf("number");
+    it("maps invalid hint costs", async () => {
+        stubFetch({Status: {Code: 40000 + ApiErrorCode.HintCostsInvalid}}, 400);
+        await expect(api.updateEventChallengeHintCosts(eventID, uid(10), uid(11), [{HintID: uid(111), Cost: -1}]))
+            .rejects.toMatchObject({status: 400, code: ApiErrorCode.HintCostsInvalid});
+    });
+
+    it("parses hint unlocks and treats null as empty", async () => {
+        stubFetch({Data: [{TeamID: uid(801), TeamName: "Frost Wolves", EventChallengeID: uid(11), ChallengeName: "Перший крок", HintID: uid(112), HintIndex: 1,
+            UnlockedBy: null, UnlockedByName: "", UnlockedAt: "2026-09-29T10:42:00Z", Cost: 30}]});
+        const [unlock] = await api.getHintUnlocks(eventID);
+        expect(unlock).toMatchObject({HintIndex: 1, Cost: 30, UnlockedBy: null});
+        stubFetch({Data: null});
+        expect(await api.getHintUnlocks(eventID)).toEqual([]);
     });
 });

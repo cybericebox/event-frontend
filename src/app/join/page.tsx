@@ -28,7 +28,7 @@ export default function JoinPage() {
     const windowOpen = (now: number) => !!registration.data && registrationWindowOpen(registration.data.registrationOpen, registration.data.joinPolicy, registration.data.startAt, registration.data.finishAt, now);
     const [openedAt] = useState(() => Date.now());
     const canJoin = join.data === 0 && windowOpen(openedAt);
-    const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(event!.EventID), enabled: !!identity.data && !!event && canJoin, retry: false});
+    const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!identity.data && !!event && canJoin, retry: false});
     const [answers, setAnswers] = useState<ParticipantAnswers>({});
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");

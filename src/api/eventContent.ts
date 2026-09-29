@@ -1,9 +1,7 @@
-import {plainTextRichText} from "@/components/event/content/richTextState";
 import {headers} from "next/headers";
 import {z} from "zod";
 import {getPublicEventInfo} from "./publicEventInfo";
 import {EventContentSchema, EventPageContentSchema, type EventContent, type EventPageContent} from "@/types/eventContent";
-import {defaultMockLanding} from "./mockLanding";
 import {apiHost} from "@/utils/origins";
 
 export type {EventContent, EventPageContent} from "@/types/eventContent";
@@ -47,9 +45,6 @@ async function fetchContent(path: string, revalidate?: number): Promise<unknown 
 }
 
 export async function getLandingContent(): Promise<EventContent | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        return {Landing: defaultMockLanding, Variables: {"event.name": "Winter Arena CTF", "event.finishAt": new Date(Date.now() + 18 * 3_600_000).toISOString()}};
-    }
     const [document, values] = await Promise.all([
         fetchContent("/document", 300),
         fetchContent("/values", 60),
@@ -59,11 +54,6 @@ export async function getLandingContent(): Promise<EventContent | null> {
 }
 
 export async function getEventPageContent(slug: string): Promise<EventPageContent | null> {
-    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1") {
-        return {Page: {Slug: slug, Title: slug === "faq" ? "Питання та відповіді" : "Інформація", Document: {blocks: [
-            {id: "sample", type: "text", richText: plainTextRichText("Вміст цієї сторінки налаштовується організаторами події.")},
-        ]}}, Variables: {}};
-    }
     if (!await publicPageAvailable(slug)) return null;
     const path = `/pages/${encodeURIComponent(slug)}`;
     const [document, values] = await Promise.all([

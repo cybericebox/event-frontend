@@ -75,6 +75,8 @@ Map to existing `types/*.ts` first; extend with new schemas where missing (score
 
 ## 4. Mock layer
 
+> Removed. The app has no mock mode and does not work without the API; tests use their own fetch stubs and fixtures.
+
 - Add `src/api/mock/` with one fixtures file per domain (challenges, scoreboard, teams, cabinet, notifications, pages, event) shaped as the real `IResponse<T>` (`{ Data, … }`) and **validated against the same zod schemas** in a dev assert.
 - Install a mock **axios adapter** on `baseAPI` (or a thin `withMock(fn, fixture)` wrapper) gated by `NEXT_PUBLIC_USE_MOCKS=1`. When on, `*Fn` resolve fixtures (with small latency) instead of hitting `/api`. Hooks/zod untouched.
 - Each fixture mirrors the prototype data so screens look identical to `.event-app.html`.
