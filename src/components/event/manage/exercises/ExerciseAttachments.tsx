@@ -132,6 +132,8 @@ export function ExerciseAttachments() {
                                 {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
                                 {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
                             </span>
+                            {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy} broken={mismatch}
+                                onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}
                         </div>
                         <p className="event-exercise-set__meta">
                             {[
@@ -147,8 +149,6 @@ export function ExerciseAttachments() {
                         </div>}
                     </header>
                     {open && <div className="event-exercise-set__body" id={`set-tasks-${attachment.ID}`}>
-                        {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy} broken={mismatch}
-                            onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}
                         {attachment.UpdateAvailable && <div className="event-exercise-set__notice">
                             <span><strong>{t("manage.exercises.updateAvailable", {number: attachment.LatestVersionNumber})}</strong> {t("manage.exercises.settingsKept")}</span>
                             {canManage && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy} onClick={() => setAction({kind: "update", attachment})}>{t("manage.exercises.action.update.confirm")}</button>}

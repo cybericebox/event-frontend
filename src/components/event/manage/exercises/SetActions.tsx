@@ -7,20 +7,20 @@ import {t} from "@/i18n/t";
 import type {AttachmentKind} from "./attachmentModel";
 
 export type SetActionKind = "fork" | "update" | "revert" | "detach";
-export type ToolbarAction = {
+export type RowAction = {
     key: string; label: string; icon: LucideIcon; onSelect?: () => void; href?: string;
-    // Shown as the tooltip of a disabled action.
+    // A disabled action explains itself in its tooltip.
     disabledReason?: string;
-    // Removing: danger style, pushed to the right end.
+    // Removing: danger colour, always last.
     danger?: boolean;
 };
 
-// The actions a set offers, in toolbar order.
-export function setToolbarActions({attachment, kind, editURL, broken, onAction}: {
+// The actions a set offers, in header order.
+export function setRowActions({attachment, kind, editURL, broken, onAction}: {
     attachment: Pick<EventExerciseAttachment, "UpdateAvailable">; kind: AttachmentKind; editURL: string | null; broken: boolean;
     onAction: (action: SetActionKind) => void;
-}): ToolbarAction[] {
-    const actions: ToolbarAction[] = [];
+}): RowAction[] {
+    const actions: RowAction[] = [];
     if (kind === "catalog") actions.push({key: "fork", label: t("manage.exercises.fork"), icon: GitFork, onSelect: () => onAction("fork"),
         disabledReason: broken ? t("manage.challenges.set.forkBroken") : undefined});
     if (editURL) actions.push({key: "edit", label: t("manage.challenges.set.editTip"), icon: Pencil, href: editURL});
@@ -30,17 +30,19 @@ export function setToolbarActions({attachment, kind, editURL, broken, onAction}:
     return actions;
 }
 
-// Compact text buttons with icons; a disabled one keeps its reason reachable
-// (aria-disabled + tooltip), the danger one sits at the right end.
-export function ActionToolbar({label, actions, busy}: {label: string; actions: ToolbarAction[]; busy: boolean}) {
-    return <div className="event-action-toolbar" role="toolbar" aria-label={label}>
+// Icon-only row actions like the constructor's block actions: each has our
+// tooltip with its full name (and why, when disabled) and an aria-label.
+export function RowActions({label, actions, busy = false}: {label: string; actions: RowAction[]; busy?: boolean}) {
+    return <div className="event-row-actions" role="group" aria-label={label}>
         {actions.map(action => {
-            const className = `ib-btn ib-btn--sm${action.danger ? " ib-btn--danger event-action-toolbar__end" : ""}`;
-            const content = <><action.icon aria-hidden="true" />{action.label}</>;
-            if (action.disabledReason) return <EventTooltip key={action.key} content={action.disabledReason}>{id =>
-                <button className={className} type="button" aria-disabled="true" aria-describedby={id}>{content}</button>}</EventTooltip>;
-            if (action.href) return <a key={action.key} className={className} href={action.href}>{content}</a>;
-            return <button key={action.key} className={className} type="button" disabled={busy} onClick={action.onSelect}>{content}</button>;
+            const className = `event-row-actions__button${action.danger ? " is-danger" : ""}`;
+            const icon = <action.icon size={16} aria-hidden="true" />;
+            const tip = action.disabledReason ? `${action.label}. ${action.disabledReason}` : action.label;
+            return <EventTooltip key={action.key} content={tip}>{id => action.disabledReason
+                ? <button className={className} type="button" aria-label={action.label} aria-describedby={id} aria-disabled="true">{icon}</button>
+                : action.href
+                    ? <a className={className} href={action.href} aria-label={action.label} aria-describedby={id}>{icon}</a>
+                    : <button className={className} type="button" aria-label={action.label} aria-describedby={id} disabled={busy} onClick={action.onSelect}>{icon}</button>}</EventTooltip>;
         })}
     </div>;
 }
@@ -49,5 +51,5 @@ export function SetActions({attachment, kind, name, editURL, busy, broken = fals
     attachment: EventExerciseAttachment; kind: AttachmentKind; name: string; editURL: string | null; busy: boolean; broken?: boolean;
     onAction: (action: SetActionKind) => void;
 }) {
-    return <ActionToolbar label={t("manage.challenges.set.more", {name})} busy={busy} actions={setToolbarActions({attachment, kind, editURL, broken, onAction})} />;
+    return <RowActions label={t("manage.challenges.set.more", {name})} busy={busy} actions={setRowActions({attachment, kind, editURL, broken, onAction})} />;
 }

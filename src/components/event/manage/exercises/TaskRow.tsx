@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {ChevronRight, Lightbulb, LightbulbOff, Pencil, Unlink} from "lucide-react";
-import {ActionToolbar} from "./SetActions";
+import {RowActions} from "./SetActions";
 import {toast} from "react-hot-toast";
 import {
     updateEventBoardChallenge, updateEventChallengeHintCosts, updateEventChallengeScoring,
@@ -209,30 +209,33 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
     hintsDisabled: boolean; infrastructureMissing?: boolean; stand: StandReadiness | null; canManage: boolean; editURL: string | null; onSaved: () => Promise<unknown>; onRemove: () => void;
 }) {
     const [open, setOpen] = useState(false);
+    const toggle = () => setOpen(current => !current);
     const hints = hintIndicator(challenge, hintsDisabled);
     const line = descriptionFirstLine(challenge.Snapshot.description);
     const panelID = `task-panel-${challenge.ID}`;
     return <li className={`event-task${open ? " is-open" : ""}`}>
-        <button type="button" className="event-task__row" aria-expanded={open} aria-controls={panelID} onClick={() => setOpen(current => !current)}>
-            <ChevronRight className="event-task__chevron" size={16} aria-hidden="true" />
+        {/* The row toggles the task; its buttons and links keep their own action. */}
+        <div className="event-task__row" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a")) toggle(); }}>
+            <button type="button" className="event-task__toggle" aria-expanded={open} aria-controls={panelID}
+                aria-label={t(open ? "manage.challenges.task.collapse" : "manage.challenges.task.expand", {name: challenge.Snapshot.name})} onClick={toggle}>
+                <ChevronRight className="event-task__chevron" size={16} aria-hidden="true" />
+            </button>
             <span className="event-task__text"><strong>{challenge.Snapshot.name}</strong>{line && <span>{line}</span>}</span>
             <span className="event-task__badges">
                 {infrastructureMissing && <span className="ib-tag ib-tag--sm ib-tag--danger">{t("manage.challenges.task.infraMissing")}</span>}
                 {hints && <HintMark hints={hints} />}
                 {taskBadges(challenge, stand).map(badge => <span key={badge.key} className={`ib-tag ib-tag--sm${badge.tone ? ` ib-tag--${badge.tone}` : ""}`}>{badge.label}</span>)}
             </span>
-        </button>
+            {canManage && <RowActions label={t("manage.challenges.task.menu", {name: challenge.Snapshot.name})} actions={[
+                editURL ? {key: "edit", label: t("common.edit"), icon: Pencil, href: editURL}
+                    : {key: "edit", label: t("common.edit"), icon: Pencil, disabledReason: t("manage.challenges.task.editNeedsFork")},
+                {key: "remove", label: t("manage.challenges.task.remove"), icon: Unlink, danger: true, onSelect: onRemove},
+            ]} />}
+        </div>
         {open && <div className="event-task__panel" id={panelID}>
             <TaskScoring key={`${challenge.Points}:${JSON.stringify(challenge.ScoringOverride)}`} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} scoring={scoring} lifecycle={lifecycle} disabled={!canManage} onSaved={onSaved} />
             <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} />
             <TaskBoard eventID={eventID} attachmentID={attachment.ID} challenge={challenge} disabled={!canManage} onSaved={onSaved} />
-            {canManage && <div className="event-task__actions">
-                <ActionToolbar label={t("manage.challenges.task.menu", {name: challenge.Snapshot.name})} busy={false} actions={[
-                    editURL ? {key: "edit", label: t("common.edit"), icon: Pencil, href: editURL}
-                        : {key: "edit", label: t("common.edit"), icon: Pencil, disabledReason: t("manage.challenges.task.editNeedsFork")},
-                    {key: "remove", label: t("manage.challenges.task.remove"), icon: Unlink, danger: true, onSelect: onRemove},
-                ]} />
-            </div>}
         </div>}
     </li>;
 }

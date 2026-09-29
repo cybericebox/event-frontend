@@ -18,7 +18,7 @@ import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t, tPlural} from "@/i18n/t";
 import {groupBuckets, orderedGroups, type GroupTask} from "./challengeOrder";
-import {ActionMenu} from "./ActionMenu";
+import {RowActions} from "./SetActions";
 import {GroupNameDialog} from "./GroupNameDialog";
 import {SortableList} from "./SortableList";
 import {useBoardSets} from "./useBoardSets";
@@ -150,7 +150,7 @@ export function ChallengeGroupsManager() {
                         selected: selected === group.ID,
                         onSelect: () => setSelectedID(group.ID),
                         content: <span className="event-group-order__label"><strong>{group.Name}</strong><small>{count(group.ID)}</small></span>,
-                        actions: canManage && <ActionMenu label={t("manage.challenges.groups.groupMenu", {name: group.Name})} disabled={busy} items={[
+                        actions: canManage && <RowActions label={t("manage.challenges.groups.groupMenu", {name: group.Name})} busy={busy} actions={[
                             {key: "rename", label: t("manage.exercises.groups.rename"), icon: Pencil, onSelect: () => setNaming({group, key: Date.now()})},
                             {key: "delete", label: t("manage.exercises.groups.deleteGroup"), icon: Trash2, danger: true, onSelect: () => {setRemoveError(""); setRemoving(group);}},
                         ]} />,
@@ -167,7 +167,7 @@ export function ChallengeGroupsManager() {
                         itemID={task => task.challenge.ID} itemName={task => task.challenge.Snapshot.name} disabled={!canManage || busy} onReorder={ids => void reorderTasks(ids)}
                         renderItem={(task, index) => ({
                             content: <span className="event-group-order__task"><span className="event-group-order__position">{index + 1}</span><strong>{task.challenge.Snapshot.name}</strong><small>{task.attachment.ExerciseName}</small></span>,
-                            actions: canManage && <ActionMenu label={t("manage.challenges.groups.taskMenu", {name: task.challenge.Snapshot.name})} disabled={busy} items={[
+                            actions: canManage && <RowActions label={t("manage.challenges.groups.taskMenu", {name: task.challenge.Snapshot.name})} busy={busy} actions={[
                                 {key: "move", label: t("manage.challenges.groups.moveTo"), icon: FolderInput, onSelect: () => setMoving({task, target: ""})},
                             ]} />,
                         })} />}

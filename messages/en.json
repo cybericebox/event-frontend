@@ -2698,5 +2698,7 @@
   "ui.sortable.instructions": "To pick up an item, press Space or Enter. Use the up and down arrows to move it, Space or Enter to drop it, Escape to cancel.",
   "ui.sortable.roleDescription": "sortable item",
   "manage.challenges.order.dragNamed": "Drag «{name}»",
-  "manage.table.columns.dragNamed": "Drag column «{label}»"
+  "manage.table.columns.dragNamed": "Drag column «{label}»",
+  "manage.challenges.task.expand": "Expand the task {name}",
+  "manage.challenges.task.collapse": "Collapse the task {name}"
 }

@@ -23,16 +23,17 @@ function renderRow(patch: Partial<ManageScoring> = {}, hintsDisabled = false) {
 }
 
 describe("TaskRow", () => {
-    it("shows name, first description line and badges without buttons while collapsed", () => {
+    it("shows name, first description line, badges and icon actions in the row header", () => {
         renderRow();
-        const row = screen.getByRole("button", {expanded: false});
+        const row = screen.getByRole("button", {expanded: false}).closest(".event-task__row")!;
         expect(row.textContent).toContain("SQL injection");
         expect(row.textContent).toContain("Знайдіть прапор у формі входу");
         expect(row.textContent).toContain("Показано");
         expect(row.textContent).toContain("Підказок: 1. Учасники їх бачать.");
         expect(row.querySelector(".event-task__hints.is-hidden")).toBeNull();
         expect(row.textContent).toContain("Стенд не готовий");
-        expect(screen.queryByRole("button", {name: "Прибрати із заходу"})).toBeNull();
+        // Icon actions sit on the right of the row header.
+        expect(within(row as HTMLElement).getByRole("button", {name: "Прибрати із заходу"}).textContent).toBe("");
     });
 
     it("expands into scoring, hints and board sections with the row actions", () => {
@@ -43,11 +44,11 @@ describe("TaskRow", () => {
         expect(screen.getByText("Підказка 1")).toBeTruthy();
         expect((screen.getByLabelText(/Вартість підказки 1/) as HTMLInputElement).value).toBe("20");
         expect(screen.getByRole("switch", {name: "Показувати учасникам"})).toBeTruthy();
-        const actions = screen.getByRole("toolbar", {name: "Дії із завданням SQL injection"});
+        const actions = screen.getByRole("group", {name: "Дії із завданням SQL injection"});
         const edit = within(actions).getByRole("button", {name: "Редагувати"});
         expect(edit.getAttribute("aria-disabled")).toBe("true");
-        expect(document.getElementById(edit.getAttribute("aria-describedby")!)?.textContent).toBe("Щоб редагувати, спершу створіть копію набору для заходу.");
-        expect(within(actions).getByRole("button", {name: "Прибрати із заходу"}).className).toContain("ib-btn--danger");
+        expect(document.getElementById(edit.getAttribute("aria-describedby")!)?.textContent).toBe("Редагувати. Щоб редагувати, спершу створіть копію набору для заходу.");
+        expect(within(actions).getByRole("button", {name: "Прибрати із заходу"}).className).toContain("is-danger");
     });
 
     it("locks task scoring when the event scoring applies to all tasks", () => {
@@ -59,10 +60,10 @@ describe("TaskRow", () => {
 
     it("mutes the hint indicator when the event disables hints for all tasks", () => {
         renderRow({}, true);
-        const row = screen.getByRole("button", {expanded: false});
+        const row = screen.getByRole("button", {expanded: false}).closest(".event-task__row")!;
         expect(row.querySelector(".event-task__hints.is-hidden")).toBeTruthy();
         expect(row.textContent).toContain("Вимкнути підказки для всіх завдань");
-        fireEvent.click(row);
+        fireEvent.click(screen.getByRole("button", {expanded: false}));
         expect(screen.getByText("Зараз підказки вимкнено для всіх завдань у налаштуваннях.")).toBeTruthy();
     });
 

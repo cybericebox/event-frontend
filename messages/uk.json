@@ -2698,5 +2698,7 @@
   "ui.sortable.instructions": "Щоб узяти елемент, натисніть пробіл або Enter. Стрілками вгору й униз змініть позицію, пробілом або Enter поставте, Escape скасує.",
   "ui.sortable.roleDescription": "елемент, що перетягується",
   "manage.challenges.order.dragNamed": "Перетягнути «{name}»",
-  "manage.table.columns.dragNamed": "Перетягнути стовпець «{label}»"
+  "manage.table.columns.dragNamed": "Перетягнути стовпець «{label}»",
+  "manage.challenges.task.expand": "Розгорнути завдання {name}",
+  "manage.challenges.task.collapse": "Згорнути завдання {name}"
 }

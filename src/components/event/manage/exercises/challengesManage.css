@@ -28,11 +28,14 @@ button.event-sortable__main{cursor:pointer}
 .event-exercise-set__side{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-2)}
 .event-exercise-set__title h3{cursor:pointer}
 .event-exercise-set__toggle{margin-left:-6px}
-/* Actions of an expanded set / task: compact text buttons with icons,
-   removing at the right end. */
-.event-action-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
-.event-action-toolbar .ib-btn svg{width:14px;height:14px}
-.event-action-toolbar__end{margin-left:auto}
+/* Icon-only row actions (set, task, group), like the constructor block
+   actions; removing last in danger colour. */
+.event-row-actions{display:flex;align-items:center;gap:var(--ib-1);flex:none}
+.event-row-actions__button{display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-row-actions__button:hover:not(:disabled,[aria-disabled="true"]){background:var(--ib-soft);color:var(--ib-ink)}
+.event-row-actions__button.is-danger{color:var(--ib-danger)}
+.event-row-actions__button.is-danger:hover:not(:disabled,[aria-disabled="true"]){background:var(--ib-danger-bg);color:var(--ib-danger)}
+.event-row-actions__button:disabled,.event-row-actions__button[aria-disabled="true"]{opacity:.35;cursor:not-allowed}
 .event-exercise-set__chevron,.event-task__chevron{flex:none;color:var(--ib-dim);transition:transform .15s ease}
 .event-exercise-set.is-open .event-exercise-set__chevron,.event-task.is-open .event-task__chevron{transform:rotate(90deg)}
 .event-exercise-set__body{display:grid;gap:var(--ib-3)}
@@ -51,7 +54,9 @@ button.event-sortable__main{cursor:pointer}
 .event-task-list{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
 .event-task{border:1px solid var(--ib-line);border-radius:var(--ib-r)}
 .event-task.is-open{border-color:var(--ib-control)}
-.event-task__row{display:flex;align-items:center;gap:var(--ib-3);width:100%;min-height:44px;padding:var(--ib-2) var(--ib-3);border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-task__row{display:flex;align-items:center;gap:var(--ib-2);width:100%;min-height:44px;padding:var(--ib-1) var(--ib-2);cursor:pointer}
+.event-task__toggle{display:grid;place-items:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:inherit;cursor:pointer}
+.event-task__toggle:hover{background:var(--ib-soft)}
 .event-task__text{display:flex;align-items:baseline;gap:var(--ib-3);flex:1;min-width:0}
 .event-task__text strong{flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
 .event-task__text span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim);font-size:var(--ib-fs-13)}
@@ -68,8 +73,6 @@ button.event-sortable__main{cursor:pointer}
 .event-task__summary{margin:0;align-self:flex-end;padding-bottom:10px;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-task__note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-task__save{justify-self:start}
-.event-task__actions{padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
-.event-task__actions svg{width:14px;height:14px}
 
 /* «Налаштування». */
 .event-challenge-settings__kind{margin:0;padding:0;border:0}
@@ -88,14 +91,3 @@ button.event-sortable__main{cursor:pointer}
   .event-task__panel{padding:var(--ib-4)}
   .event-task__kind,.event-task__number{width:100%}
 }
-
-/* Action menus («⋯»): as wide as their labels (not the icon trigger), DS
-   listbox look (1px border, no shadow), icon + label items; removing last
-   in danger colour after a separator; a disabled item says why. */
-.event-action-menu{z-index:80;width:max-content;min-width:220px;max-width:min(360px,calc(100vw - 24px));outline:0}
-.event-action-menu__item{height:auto;min-height:var(--ib-control-h);padding-top:6px;padding-bottom:6px;color:var(--ib-ink);text-decoration:none}
-.event-action-menu__item>svg{visibility:visible;margin-left:0;align-self:flex-start;margin-top:2px;color:var(--ib-dim)}
-.event-action-menu__text{display:grid;gap:2px;min-width:0;white-space:normal}
-.event-action-menu__text small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
-.event-action-menu__item.is-danger,.event-action-menu__item.is-danger>svg{color:var(--ib-danger)}
-.event-action-menu__separator{height:1px;margin:var(--ib-1) 0;background:var(--ib-line)}
