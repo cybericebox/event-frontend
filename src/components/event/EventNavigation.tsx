@@ -4,7 +4,7 @@ import {Fragment, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, Flag, House, LogOut, Menu, Settings, UserRound, Users, X, type LucideIcon} from "lucide-react";
+import {ChevronDown, House, LogOut, Menu, Settings, UserRound, Users, X, type LucideIcon, Puzzle} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
@@ -41,7 +41,7 @@ function identityHref(path: string, event: PublicEventInfo) {
 const ACCOUNT_ITEMS: Record<AccountLinkKey, {label: string; icon: LucideIcon}> = {
     profile: {label: "Профіль", icon: UserRound},
     admin: {label: "Адміністрування", icon: Settings},
-    exercises: {label: "Каталог завдань", icon: Flag},
+    exercises: {label: "Каталог завдань", icon: Puzzle},
     main: {label: "Головна", icon: House},
 };
 
