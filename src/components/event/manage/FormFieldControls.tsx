@@ -46,7 +46,7 @@ function conditionSummary(condition: NonNullable<FormField["condition"]>, source
     return condition.operator === "equals" ? t("manage.fields.editor.visibilitySummaryEquals", {question, value}) : t("manage.fields.editor.visibilitySummaryNotEquals", {question, value});
 }
 
-// «Показ питання»: the page constructor's compact «Показ блока» row. Collapsed
+// «Показати питання»: the page constructor's compact «Показати блок» row. Collapsed
 // it names the rule; open it edits the one condition on an earlier question.
 export function FormConditionEditor({blocks, index, disabled, onChange}: Props) {
     const field = fieldAt(blocks, index);
