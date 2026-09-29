@@ -9,10 +9,9 @@ import {EventBrandLogo} from "./EventBrandLogo";
 import {EventLoading} from "./EventLoading";
 import "@/styles/error-screen.css";
 
-// The event of this address is not public: it does not exist, is not published yet,
-// or this account has no access. A visitor is offered the sign-in (organizers and
-// invited participants see unpublished events); a signed-in account learns it has
-// no access. Both lead back to the platform. Same frame as EventErrorScreen.
+// The event of this address is not available: missing, unpublished or closed to this
+// account. The text never says which. A visitor is offered the sign-in; both lead back
+// to the platform. Same frame as EventErrorScreen.
 export function EventNotFoundScreen() {
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
     if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;

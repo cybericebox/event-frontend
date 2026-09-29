@@ -27,7 +27,7 @@ describe("EventNotFoundScreen", () => {
     it("tells a signed-in account it has no access", async () => {
         getCurrentUser.mockResolvedValue({ID: "u1"});
         renderScreen();
-        expect(await screen.findByRole("heading", {name: "Немає доступу до заходу"})).toBeTruthy();
+        expect(await screen.findByRole("heading", {name: "Захід недоступний"})).toBeTruthy();
         expect(screen.queryByRole("link", {name: "Увійти"})).toBeNull();
     });
 });
