@@ -21,7 +21,55 @@ export function registrationWindowOpen(registrationOpen: boolean, joinPolicy: st
     return true;
 }
 
-export function ActionBlock({id, title, text, variant, alignment, selected, primaryHeading, preview, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID, eventTag}: {
+export type PreviewViewer = "guest" | "participant" | "moderator";
+
+// What the join action shows for this visitor. «loading» keeps the button's
+// space so the page does not jump when the status arrives (B5).
+export type JoinState =
+    | {kind: "loading"}
+    | {kind: "hidden"}
+    | {kind: "join"; href: string}
+    | {kind: "invite"}
+    | {kind: "pending"}
+    | {kind: "approved"}
+    | {kind: "rejected"};
+
+export function joinState({preview, windowOpen, timeWindowOpen, identity, status, invitation, signInHref}: {
+    preview?: PreviewViewer;
+    windowOpen: boolean;
+    timeWindowOpen: boolean;
+    identity: "loading" | "guest" | "user";
+    status?: number | "loading" | "error";
+    invitation?: {Invited?: boolean; InvitationExpired?: boolean} | "loading";
+    signInHref: string;
+}): JoinState {
+    if (preview === "participant") return {kind: "approved"};
+    if (preview) return windowOpen ? {kind: "join", href: "/join"} : {kind: "hidden"};
+    if (identity === "loading") return {kind: "loading"};
+    if (identity === "guest") return windowOpen ? {kind: "join", href: signInHref} : {kind: "hidden"};
+    if (status === "loading" || status === undefined) return {kind: "loading"};
+    if (status === "error") return {kind: "hidden"};
+    switch (status) {
+        case 0: return windowOpen ? {kind: "join", href: "/join"} : {kind: "hidden"};
+        case 1:
+            if (invitation === "loading" || invitation === undefined) return {kind: "loading"};
+            // Invitations ignore the registration type but not the registration window.
+            if (invitation.Invited) return timeWindowOpen && !invitation.InvitationExpired ? {kind: "invite"} : {kind: "hidden"};
+            return {kind: "pending"};
+        case 2: return {kind: "approved"};
+        case 3: return {kind: "rejected"};
+        default: return {kind: "hidden"};
+    }
+}
+
+const joinLabels: Record<"invite" | "pending" | "approved" | "rejected", string> = {
+    invite: "Прийняти запрошення",
+    pending: "Заявка на розгляді",
+    approved: "До завдань",
+    rejected: "Заявку відхилено",
+};
+
+export function ActionBlock({id, title, text, variant, alignment, selected, primaryHeading, preview, previewViewer, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID, eventTag}: {
     id: string;
     title: string;
     text: string;
@@ -30,6 +78,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     selected?: boolean;
     primaryHeading?: boolean;
     preview?: boolean;
+    previewViewer?: PreviewViewer;
     actions: Action[];
     registrationOpen: boolean;
     joinPolicy: string;
@@ -39,34 +88,52 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     eventTag: string;
 }) {
     const hasJoin = actions.some(action => action.kind === "join_event");
+    const viewer = preview ? previewViewer ?? "guest" : undefined;
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
         if (!hasJoin || !registrationOpen) return;
         const timer = window.setInterval(() => setNow(Date.now()), 1000);
         return () => window.clearInterval(timer);
     }, [hasJoin, registrationOpen]);
-    // Invitations ignore the registration type but not the registration window.
     const timeWindowOpen = registrationWindowOpen(true, joinPolicy, startAt, finishAt, now);
     const windowOpen = registrationOpen && timeWindowOpen;
-    const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !preview && timeWindowOpen, retry: false, refetchInterval: false});
-    const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !preview && timeWindowOpen && !!eventID && !!identity.data, retry: false, refetchInterval: false});
-    const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !preview && timeWindowOpen && join.data === 1, retry: false, refetchInterval: false});
-    const invited = !preview && join.data === 1 && invitation.data?.Invited === true && !invitation.data.InvitationExpired;
-    const canJoin = preview ? windowOpen : windowOpen && !identity.isPending && !identity.isError && (!identity.data || !join.isPending && !join.isError && join.data === 0);
+    const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !viewer, retry: false, refetchInterval: false});
+    const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !!eventID && !!identity.data, retry: false, refetchInterval: false});
+    const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !viewer && join.data === 1, retry: false, refetchInterval: false});
     const domain = process.env.NEXT_PUBLIC_DOMAIN;
-    const joinHref = preview || identity.data ? "/join" : domain && eventTag
+    const signInHref = domain && eventTag
         ? `https://id.${domain}/sign-in?return_to=${encodeURIComponent(`https://${eventTag}.${domain}/join`)}`
         : "/join";
-    const visible = actions.flatMap((action, index) => {
-        if (action.kind === "join_event" && invited) return [{href: "/invite", label: "Прийняти запрошення", index}];
-        const href = action.kind === "join_event" ? canJoin ? joinHref : undefined : safeHref(action.href);
-        return href && action.label ? [{href, label: action.label, index}] : [];
+    const state = hasJoin ? joinState({
+        preview: viewer, windowOpen, timeWindowOpen, signInHref,
+        identity: identity.isPending ? "loading" : identity.data ? "user" : "guest",
+        status: join.isPending ? "loading" : join.isError ? "error" : join.data,
+        invitation: invitation.isPending ? "loading" : invitation.data,
+    }) : {kind: "hidden" as const};
+    const visible = actions.flatMap((action, index): {index: number; label: string; href?: string; status?: "loading" | "static"}[] => {
+        if (action.kind !== "join_event") {
+            const href = safeHref(action.href);
+            return href && action.label ? [{href, label: action.label, index}] : [];
+        }
+        switch (state.kind) {
+            case "hidden": return [];
+            case "loading": return action.label ? [{label: action.label, index, status: "loading"}] : [];
+            case "join": return action.label ? [{href: state.href, label: action.label, index}] : [];
+            case "invite": return [{href: "/invite", label: joinLabels.invite, index}];
+            case "approved": return [{href: "/challenges", label: joinLabels.approved, index}];
+            case "pending": case "rejected": return [{label: joinLabels[state.kind], index, status: "static"}];
+        }
     });
     if (!visible.length && !title && !text) return null;
     const branded = variant === "mass";
     return <section className={`ib-block ib-block-cta${branded ? " ib-mass ib-mass-waves" : ""}${!title && !text ? " ib-block-cta--buttons-only" : ""} ib-block-cta--actions-${alignment ?? "end"}`} id={id} data-preview-selected={selected || undefined}>
         <div className="ib-block__in"><div>{title && (primaryHeading ? <h1 className="ib-block-cta__title">{title}</h1> : <h2 className="ib-block-cta__title">{title}</h2>)}{text && <p className="ib-block-cta__text">{text}</p>}</div>
-            {visible.length > 0 && <div className="ib-block-cta__acts">{visible.map((action, position) => <a key={action.index} className={`ib-btn${position === 0 ? branded ? " ib-btn--mass" : " ib-btn--primary" : branded ? " ib-btn--mass-outline" : ""}`} href={action.href}>{action.label}</a>)}</div>}
+            {visible.length > 0 && <div className="ib-block-cta__acts">{visible.map((action, position) => {
+                const className = `ib-btn${position === 0 ? branded ? " ib-btn--mass" : " ib-btn--primary" : branded ? " ib-btn--mass-outline" : ""}`;
+                if (action.status === "loading") return <span key={action.index} className={`${className} ib-block-cta__reserved`} aria-hidden="true">{action.label}</span>;
+                if (action.status === "static") return <span key={action.index} className={`${className} ib-block-cta__status`} role="status">{action.label}</span>;
+                return <a key={action.index} className={className} href={action.href}>{action.label}</a>;
+            })}</div>}
         </div>
     </section>;
 }

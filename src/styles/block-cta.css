@@ -15,3 +15,7 @@
 .ib-mass .ib-block-cta__title{color:var(--ib-on-brand)}
 .ib-mass .ib-block-cta__text{color:var(--ib-on-brand-2)}
 @container ib-blocks (max-width:520px){.ib-block-cta__acts{width:100%}.ib-block-cta__acts .ib-btn{flex:1}}
+/* Join action states: the status replaces the button without an action; while the
+   visitor's status loads, an invisible copy keeps the button's space (B5). */
+.ib-block-cta__status{cursor:default;pointer-events:none;opacity:.7}
+.ib-block-cta__reserved{visibility:hidden;pointer-events:none}
