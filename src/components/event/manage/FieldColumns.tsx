@@ -1,3 +1,4 @@
+import {isFileAnswer, manageAnswerFileUrl} from "@/api/answerFiles";
 import type {FormField} from "@/api/manageParticipantForm";
 import {formatAnswer} from "./listColumns";
 import {t} from "@/i18n/t";
@@ -13,4 +14,10 @@ export function AnswersList({fields, answers}: {fields: FormField[]; answers: Re
         {fields.map(field => <div key={field.key}><dt>{field.label || field.key}</dt><dd>{formatAnswer(answers[field.key])}</dd></div>)}
         {extra.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{formatAnswer(value)}</dd></div>)}
     </dl>;
+}
+
+// One answer in a table cell: a «Файл» answer is a staff download link.
+export function AnswerValue({eventID, value}: {eventID: string; value: unknown}) {
+    if (isFileAnswer(value)) return <a className="ib-link" href={manageAnswerFileUrl(eventID, value.id)} download onClick={event => event.stopPropagation()}>{value.name}</a>;
+    return <>{formatAnswer(value)}</>;
 }

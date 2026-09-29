@@ -1,0 +1,20 @@
+/* Table filters popover, active filter chips and sortable headers. */
+.event-table-filters{width:min(440px,calc(100vw - 24px))}
+.event-table-filters__list{display:grid;gap:var(--ib-3)}
+.event-table-filters__item{display:grid;gap:var(--ib-2);min-width:0;margin:0;padding:0;border:0}
+.event-table-filters__item legend{margin-bottom:var(--ib-2);padding:0;color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
+.event-table-filters__item .event-select{width:100%}
+.event-table-filters__options{display:grid;gap:var(--ib-2)}
+.event-table-filters__range{display:grid;grid-template-columns:1fr 1fr;gap:var(--ib-2)}
+.event-table-filters__range--dates{grid-template-columns:1fr}
+.event-table-filters__chips{display:flex;flex-basis:100%;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
+.event-table-filters__chip{display:inline-flex;align-items:center;gap:var(--ib-1);max-width:100%;min-height:28px;padding:0 var(--ib-1) 0 var(--ib-2);border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-ink);font-size:var(--ib-fs-12)}
+.event-table-filters__chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-table-filters__chip-remove{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-table-filters__chip-remove:hover{color:var(--ib-ink);background:var(--ib-surface)}
+.event-table-filters__chip-remove:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
+.event-table-filters__sort{display:inline-flex;align-items:center;gap:var(--ib-1);padding:0;border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.event-table-filters__sort svg{color:var(--ib-faint)}
+.event-table-filters__sort.is-active,.event-table-filters__sort:hover{color:var(--ib-ink)}
+.event-table-filters__sort.is-active svg{color:var(--ib-ink)}
+.event-table-filters__sort:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}

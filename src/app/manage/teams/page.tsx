@@ -1,6 +1,6 @@
 "use client";
 
-import {Fragment, useEffect, useState} from "react";
+import {Fragment, useState} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
@@ -9,15 +9,18 @@ import {ManageApiError} from "@/api/manage";
 import {getManageParticipants} from "@/api/manageParticipants";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import {changeManageTeamMember, deleteManageTeam, getManageTeams, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember, type TeamAdmissionFilter} from "@/api/manageTeams";
+import {changeManageTeamMember, deleteManageTeam, getManageTeamsTable, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {CreateTeamDialog} from "@/components/event/manage/CreateTeamDialog";
 import {TeamInvitationDialog} from "@/components/event/manage/TeamInvitationDialog";
-import {ManageTable, ManageTablePagination, ManageTableSearch, useCursorPages} from "@/components/event/manage/ManageTable";
-import {AnswersList} from "@/components/event/manage/FieldColumns";
-import {TableColumnsPopover, TableFiltersPopover, useTableColumns} from "@/components/event/manage/TableControls";
-import {fieldColumnDefinitions, formFields, formatAnswer, toAnswerFilters, type AnswerFilterDraft, type TableColumn} from "@/components/event/manage/listColumns";
+import {ManageTable, ManageTablePagination, ManageTableSearch} from "@/components/event/manage/ManageTable";
+import {AnswersList, AnswerValue} from "@/components/event/manage/FieldColumns";
+import {TableColumnsPopover, useTableColumns} from "@/components/event/manage/TableControls";
+import {SortHeader, TableFilterChips, TableFiltersButton} from "@/components/event/manage/TableFilters";
+import {fieldFilterSpecs, type FilterSpec} from "@/components/event/manage/tableFilterModel";
+import {useTableState} from "@/components/event/manage/useTableState";
+import {fieldColumnDefinitions, formFields, formatAnswer, type TableColumn} from "@/components/event/manage/listColumns";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {t} from "@/i18n/t";
@@ -56,13 +59,6 @@ export default function ManageTeamsPage() {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const teamMode = event.Participation === 1;
-    const pages = useCursorPages();
-    const {cursor, pageSize, reset: resetPages} = pages;
-    const [search, setSearch] = useState("");
-    const [debounced, setDebounced] = useState("");
-    const [admission, setAdmissionFilter] = useState<TeamAdmissionFilter | null>(null);
-    const [drafts, setDrafts] = useState<Record<string, AnswerFilterDraft>>({});
-    const [appliedFilters, setAppliedFilters] = useState("[]");
     const [managedID, setManagedID] = useState<string | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
     const [inviteTeam, setInviteTeam] = useState<{ID: string; Name: string; InitialEmails?: string[]} | null>(null);
@@ -70,12 +66,28 @@ export default function ManageTeamsPage() {
     const [answersTeam, setAnswersTeam] = useState<ManageTeam | null>(null);
     const [memberChoices, setMemberChoices] = useState<Record<string, string>>({});
     const [busy, setBusy] = useState(false);
+    const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
+    const fields = formFields(fieldsQuery.data?.Document.blocks);
+    const specs: FilterSpec[] = [
+        {key: "@name", label: t("manage.teams.col.name"), kind: "contains"},
+        {key: "@captain", label: t("manage.teams.col.captain"), kind: "contains"},
+        {key: "@captainPending", label: t("manage.teams.filter.captainPending"), kind: "bool"},
+        {key: "@members", label: t("manage.teams.col.members"), kind: "number"},
+        {key: "@status", label: t("manage.teams.col.status"), kind: "any", options: [
+            {value: "admitted", label: t("manage.teams.admission.admitted")},
+            {value: "manual", label: t("manage.teams.admission.manual")},
+            {value: "notAdmitted", label: t("manage.teams.filter.notAdmitted")},
+        ]},
+        {key: "@pending", label: t("manage.teams.filter.pendingInvitees"), kind: "bool"},
+        {key: "@created", label: t("manage.teams.col.created"), kind: "date"},
+        ...fieldFilterSpecs(fields),
+    ];
+    const table = useTableState(specs, {key: "@created", desc: true});
     const teamsQuery = useQuery({
-        queryKey: ["event-management-teams", eventID, debounced, admission, appliedFilters, pageSize, cursor],
-        queryFn: () => getManageTeams(eventID, cursor, {search: debounced, admission, fields: JSON.parse(appliedFilters)}, pageSize),
+        queryKey: ["event-management-teams", eventID, table.debounced, table.appliedKey, table.sort, table.page, table.pageSize],
+        queryFn: () => getManageTeamsTable(eventID, {search: table.debounced, filters: table.appliedFilters, sort: table.sort}, table.page, table.pageSize),
         enabled: teamMode, refetchOnWindowFocus: false, placeholderData: previous => previous,
     });
-    const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
     const participantsQuery = useInfiniteQuery({
         queryKey: ["event-management-team-participants", eventID],
         queryFn: ({pageParam}) => getManageParticipants(eventID, {kind: "participants"}, pageParam, 100),
@@ -88,7 +100,6 @@ export default function ManageTeamsPage() {
     const participants = participantsQuery.data?.pages.flatMap(page => page.Items) ?? [];
     const available = participants.filter(participant => !participant.TeamID);
     const teams = teamsQuery.data?.Items ?? [];
-    const fields = formFields(fieldsQuery.data?.Document.blocks);
     const tableColumns = useTableColumns(eventID, "teams", [
         {key: "@name", label: t("manage.teams.col.name"), locked: true},
         {key: "@captain", label: t("manage.teams.col.captain")},
@@ -98,30 +109,7 @@ export default function ManageTeamsPage() {
         ...fieldColumnDefinitions(fields),
     ], canManage);
     const fieldColumns = tableColumns.visible.filter(column => !column.key.startsWith("@"));
-    const answerFilters = toAnswerFilters(fields, drafts);
-    const answerFiltersKey = JSON.stringify(answerFilters);
-    const anyFilter = !!search.trim() || admission !== null || answerFilters.length > 0;
     const managed = teams.find(team => team.ID === managedID) ?? null;
-
-    // Debounce the search box; an unchanged query keeps the current page.
-    useEffect(() => {
-        const next = search.trim();
-        if (next === debounced) return;
-        const id = setTimeout(() => {setDebounced(next); resetPages();}, 300);
-        return () => clearTimeout(id);
-    }, [search, debounced, resetPages]);
-
-    // Field filters apply after the same pause as the search box.
-    useEffect(() => {
-        if (answerFiltersKey === appliedFilters) return;
-        const id = setTimeout(() => {setAppliedFilters(answerFiltersKey); resetPages();}, 300);
-        return () => clearTimeout(id);
-    }, [answerFiltersKey, appliedFilters, resetPages]);
-
-    function resetFilters() {
-        setSearch(""); setDebounced(""); setAdmissionFilter(null); setDrafts({}); setAppliedFilters("[]");
-        resetPages();
-    }
 
     async function refresh() {
         await Promise.all([
@@ -200,7 +188,7 @@ export default function ManageTeamsPage() {
         case "@members": return <td><div className="event-manage-table__person"><div className="event-manage-table__tags"><span className="event-manage-table__count">{team.MemberCount}</span>{tags.slice(0, MEMBER_TAGS).map(tag => <span className={`ib-tag ib-tag--sm${tag.pending ? " ib-tag--warn" : ""}`} key={tag.id} title={tag.pending ? t("manage.teams.pendingConfirmation") : undefined}>{tag.name}</span>)}{tags.length > MEMBER_TAGS && <span className="ib-tag ib-tag--sm">{t("manage.teams.moreMembers", {count: tags.length - MEMBER_TAGS})}</span>}</div>{team.PendingInvitations.length > 0 && <small>{t("manage.teams.pendingCount", {count: team.PendingInvitations.length})}</small>}</div></td>;
         case "@status": return <td><span className={`ib-tag ${admissionTag(team)}`}>{admissionText(team)}</span></td>;
         case "@created": return <td className="event-manage-table__nowrap event-manage-table__dim">{t("manage.participants.dateUtc", {date: sentAt.format(new Date(team.CreatedAt))})}</td>;
-        default: return <td className="event-manage-table__answer">{formatAnswer(team.ExtraFields[column.key])}</td>;
+        default: return <td className="event-manage-table__answer"><AnswerValue eventID={eventID} value={team.ExtraFields[column.key]} /></td>;
         }
     }
 
@@ -214,19 +202,18 @@ export default function ManageTeamsPage() {
         <TeamInvitationDialog key={inviteTeam?.ID ?? "closed"} eventID={eventID} team={inviteTeam} onClose={() => setInviteTeam(null)} onSent={refresh} />
         <ManageTable event={event} state={tableState} busy={teamsQuery.isFetching && !teamsQuery.isPending} loadingLabel={t("manage.teams.loading")} errorMessage={t("manage.teams.loadFailed")}
             onRetry={() => {void teamsQuery.refetch(); void participantsQuery.refetch(); void fieldsQuery.refetch();}}
-            emptyMessage={debounced || admission || appliedFilters !== "[]" ? t("manage.teams.emptySearch") : t("manage.teams.empty")}
+            emptyMessage={table.filtered ? t("manage.teams.emptySearch") : t("manage.teams.empty")}
             toolbar={<>
-                <ManageTableSearch value={search} onChange={setSearch} label={t("manage.teams.search")} />
-                <EventSelect ariaLabel={t("manage.teams.filter.admission")} value={admission ?? "all"} onValueChange={value => {setAdmissionFilter(value === "all" ? null : value as TeamAdmissionFilter); resetPages();}}
-                    options={[{value: "all", label: t("manage.teams.filter.all")}, {value: "admitted", label: t("manage.teams.filter.admitted")}, {value: "notAdmitted", label: t("manage.teams.filter.notAdmitted")}]} />
-                <TableFiltersPopover fields={fields} drafts={drafts} onChange={setDrafts} active={answerFilters.length} />
+                <ManageTableSearch value={table.search} onChange={table.setSearch} label={t("manage.teams.search")} />
+                <TableFiltersButton specs={specs} drafts={table.drafts} onChange={table.setDrafts} active={table.active} />
                 <TableColumnsPopover columns={tableColumns.columns} canManage={canManage} onChange={tableColumns.save} onReset={tableColumns.reset} />
-                {anyFilter && <button className="ib-btn ib-btn--ghost event-manage-table__reset" type="button" onClick={resetFilters}>{t("manage.table.filters.reset")}</button>}
+                <TableFilterChips specs={specs} drafts={table.drafts} onChange={table.setDrafts} onReset={table.reset}
+                    extra={table.search.trim() ? [{key: "@search", text: t("manage.table.filters.searchChip", {text: table.search.trim()}), onRemove: () => table.setSearch("")}] : []} />
             </>}
-            footer={<ManageTablePagination event={event} page={pages.page} pageSize={pageSize} total={teamsQuery.data?.Total ?? 0} hasNext={!!teamsQuery.data?.NextCursor} busy={teamsQuery.isFetching}
-                onPrevious={pages.previous} onNext={() => pages.next(teamsQuery.data?.NextCursor)} onPageSize={pages.setPageSize} />}
+            footer={<ManageTablePagination event={event} page={table.page} pageSize={table.pageSize} total={teamsQuery.data?.Total ?? 0} hasNext={table.page * table.pageSize < (teamsQuery.data?.Total ?? 0)} busy={teamsQuery.isFetching}
+                onPrevious={() => table.setPage(table.page - 1)} onNext={() => table.setPage(table.page + 1)} onPageSize={table.setPageSize} />}
             head={<tr>
-                {tableColumns.visible.map(column => <th scope="col" key={column.key}>{column.label}</th>)}
+                {tableColumns.visible.map(column => <SortHeader key={column.key} columnKey={column.key} label={column.label} sort={table.sort} onSort={table.setSort} />)}
                 <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.teams.col.actions")}</span></th>
             </tr>}>
             <tbody>{teams.map(team => {

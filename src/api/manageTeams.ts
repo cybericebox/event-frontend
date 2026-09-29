@@ -2,6 +2,7 @@ import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import type {AnswerFilter} from "@/components/event/manage/listColumns";
+import type {TableFilter, TableSort} from "@/components/event/manage/tableFilterModel";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
@@ -67,4 +68,17 @@ export async function changeManageTeamMember(eventID: string, teamID: string, us
 
 export async function transferManageTeamCaptain(eventID: string, teamID: string, userID: string): Promise<void> {
     await request(eventID, `teams/${encodeURIComponent(teamID)}/captain/${encodeURIComponent(userID)}`, z.null(), "PUT");
+}
+
+const tablePageSchema = z.object({Items: z.array(teamSchema), Total: z.number().int(), Page: z.number().int(), PageSize: z.number().int()});
+export type ManageTeamsTablePage = z.infer<typeof tablePageSchema>;
+export type TeamsTableQuery = {search?: string; filters?: TableFilter[]; sort?: TableSort | null};
+
+// Offset mode of the list (the manage table): every column filters and sorts.
+export async function getManageTeamsTable(eventID: string, query: TeamsTableQuery, page: number, pageSize: number): Promise<ManageTeamsTablePage> {
+    const params = new URLSearchParams({page: String(page), pageSize: String(pageSize)});
+    if (query.search?.trim()) params.set("search", query.search.trim());
+    if (query.filters?.length) params.set("filters", JSON.stringify(query.filters));
+    if (query.sort) {params.set("sortBy", query.sort.key); params.set("sortDir", query.sort.desc ? "desc" : "asc");}
+    return request(eventID, `teams?${params}`, tablePageSchema);
 }

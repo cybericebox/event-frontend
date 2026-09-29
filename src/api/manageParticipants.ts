@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import type {AnswerFilter} from "@/components/event/manage/listColumns";
+import type {TableFilter, TableSort} from "@/components/event/manage/tableFilterModel";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
@@ -82,4 +83,22 @@ export async function revokeManageInvitation(eventID: string, userID: string): P
         method: "DELETE", credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (!response.ok) throw await manageApiError(response);
+}
+
+const tablePageSchema = z.object({Items: z.array(participantSchema), Total: z.number().int(), Page: z.number().int(), PageSize: z.number().int(), Counts: countsSchema.optional()});
+export type ManageParticipantsTablePage = z.infer<typeof tablePageSchema>;
+export type ParticipantsTableQuery = {kind: ParticipantListKind; search?: string; filters?: TableFilter[]; sort?: TableSort | null};
+
+// Offset mode of the list (the manage table): every column filters and sorts.
+export async function getManageParticipantsTable(eventID: string, query: ParticipantsTableQuery, page: number, pageSize: number): Promise<ManageParticipantsTablePage> {
+    const api = requireApiOrigin();
+    const params = new URLSearchParams({page: String(page), pageSize: String(pageSize), kind: query.kind});
+    if (query.search?.trim()) params.set("search", query.search.trim());
+    if (query.filters?.length) params.set("filters", JSON.stringify(query.filters));
+    if (query.sort) {params.set("sortBy", query.sort.key); params.set("sortDir", query.sort.desc ? "desc" : "asc");}
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants?${params}`, {
+        credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
+    });
+    if (!response.ok) throw await manageApiError(response);
+    return z.object({Data: tablePageSchema}).parse(await response.json()).Data;
 }

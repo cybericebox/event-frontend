@@ -1,20 +1,24 @@
 "use client";
 
-import {Fragment, useEffect, useState, type KeyboardEvent, type MouseEvent} from "react";
+import {Fragment, useState, type KeyboardEvent, type MouseEvent} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
+import {getManageConfig} from "@/api/manage";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
-import {decideManageParticipant, getManageParticipants, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
-import {EventSelect} from "@/components/ui/EventSelect";
+import {decideManageParticipant, getManageParticipantsTable, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
+import {getManageTeams} from "@/api/manageTeams";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {AnswersList} from "./FieldColumns";
-import {fieldColumnDefinitions, formFields, formatAnswer, toAnswerFilters, type AnswerFilterDraft, type TableColumn} from "./listColumns";
-import {TableColumnsPopover, TableFiltersPopover, useTableColumns} from "./TableControls";
+import {AnswersList, AnswerValue} from "./FieldColumns";
+import {fieldColumnDefinitions, formFields, type TableColumn} from "./listColumns";
+import {TableColumnsPopover, useTableColumns} from "./TableControls";
+import {SortHeader, TableFilterChips, TableFiltersButton} from "./TableFilters";
+import {fieldFilterSpecs, type FilterSpec} from "./tableFilterModel";
+import {useTableState} from "./useTableState";
 import {InviteParticipantsDialog} from "./InviteParticipantsDialog";
-import {ManageTable, ManageTablePagination, ManageTableSearch, useCursorPages} from "./ManageTable";
+import {ManageTable, ManageTablePagination, ManageTableSearch} from "./ManageTable";
 import {participantTabHref, participantTabs, type ParticipantTab} from "./participantTabs";
 import {useManager} from "./ManagerShell";
 import {t} from "@/i18n/t";
@@ -38,68 +42,48 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const teamMode = event.Participation === 1;
     const queryClient = useQueryClient();
     const [tab, setTab] = useState<ParticipantTab>(initialTab);
-    const pages = useCursorPages();
-    const [search, setSearch] = useState("");
-    const [debounced, setDebounced] = useState("");
-    const [statusFilter, setStatusFilter] = useState<ParticipantStatus | null>(null);
-    const [drafts, setDrafts] = useState<Record<string, AnswerFilterDraft>>({});
-    const [appliedFilters, setAppliedFilters] = useState("[]");
     const [busyID, setBusyID] = useState<string | null>(null);
     const [opened, setOpened] = useState<ManageParticipant | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
-    const {cursor, pageSize, reset: resetPages} = pages;
-    const status = tab === "applications" ? statusFilter : null;
     const showAnswers = tab !== "invitations";
     const formQuery = useQuery({queryKey: ["event-management-participant-form", eventID], queryFn: () => getManageParticipantForm(eventID), refetchOnWindowFocus: false});
+    const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
+    const teamsQuery = useQuery({queryKey: ["event-management-teams", eventID, "options"], queryFn: () => getManageTeams(eventID, null, {}, 200), enabled: teamMode, refetchOnWindowFocus: false});
     const fields = formFields(formQuery.data?.Document.blocks);
-    const answerFilters = showAnswers ? toAnswerFilters(fields, drafts) : [];
-    const fieldsFilter = showAnswers ? appliedFilters : "[]";
+    const pseudonyms = !!configQuery.data?.AllowPseudonyms;
+    const specs: FilterSpec[] = [
+        {key: "@name", label: tab === "invitations" ? t("manage.participants.col.address") : t("manage.participants.col.name"), kind: "contains"},
+        ...(tab !== "invitations" ? [{key: "@email", label: t("manage.participants.col.emailAddress"), kind: "contains" as const}] : []),
+        ...(pseudonyms && tab !== "invitations" ? [{key: "@pseudonym", label: t("manage.participants.col.pseudonym"), kind: "contains" as const}] : []),
+        ...(tab === "applications" ? [{key: "@status", label: t("manage.participants.col.status"), kind: "any" as const, options: [{value: "1", label: statusNames[1]}, {value: "3", label: statusNames[3]}]}] : []),
+        ...(tab === "invitations" ? [{key: "@invitation", label: t("manage.participants.col.status"), kind: "any" as const, options: [{value: "sent", label: t("manage.participants.invitationSent")}, {value: "notSent", label: t("manage.participants.notSent")}]}] : []),
+        ...(teamMode && tab !== "applications" ? [{key: "@team", label: t("manage.participants.col.team"), kind: "any" as const, options: [{value: "none", label: t("manage.participants.noTeam")}, ...(teamsQuery.data?.Items ?? []).map(team => ({value: team.ID, label: team.Name}))]}] : []),
+        {key: "@date", label: tab === "invitations" ? t("manage.participants.col.invited") : t("manage.participants.col.registered"), kind: "date"},
+        ...(showAnswers ? fieldFilterSpecs(fields) : []),
+    ];
+    const table = useTableState(specs, {key: "@date", desc: true});
     const query = useQuery({
-        queryKey: ["event-management-participants", eventID, tab, status, debounced, fieldsFilter, pageSize, cursor],
-        queryFn: () => getManageParticipants(eventID, {kind: tab, status, search: debounced, fields: JSON.parse(fieldsFilter)}, cursor, pageSize),
+        queryKey: ["event-management-participants", eventID, tab, table.debounced, table.appliedKey, table.sort, table.page, table.pageSize],
+        queryFn: () => getManageParticipantsTable(eventID, {kind: tab, search: table.debounced, filters: table.appliedFilters, sort: table.sort}, table.page, table.pageSize),
         refetchOnWindowFocus: false, placeholderData: previous => previous,
     });
-    const filtered = !!debounced || status !== null || fieldsFilter !== "[]";
-    const anyFilter = !!search.trim() || status !== null || answerFilters.length > 0;
-    const answerFiltersKey = JSON.stringify(answerFilters);
-
-    // Debounce the search box; an unchanged query keeps the current page.
-    useEffect(() => {
-        const next = search.trim();
-        if (next === debounced) return;
-        const id = setTimeout(() => {setDebounced(next); resetPages();}, 300);
-        return () => clearTimeout(id);
-    }, [search, debounced, resetPages]);
-
-    // Field filters apply after the same pause as the search box.
-    useEffect(() => {
-        if (answerFiltersKey === appliedFilters) return;
-        const id = setTimeout(() => {setAppliedFilters(answerFiltersKey); resetPages();}, 300);
-        return () => clearTimeout(id);
-    }, [answerFiltersKey, appliedFilters, resetPages]);
-
     const tableColumns = useTableColumns(eventID, "participants", [
         {key: "@name", label: t("manage.participants.col.name"), locked: true},
         {key: "@email", label: t("manage.participants.col.emailAddress")},
+        ...(pseudonyms ? [{key: "@pseudonym", label: t("manage.participants.col.pseudonym")}] : []),
         {key: "@status", label: t("manage.participants.col.status")},
         ...(teamMode ? [{key: "@team", label: t("manage.participants.col.team")}] : []),
         {key: "@date", label: t("manage.participants.col.registered")},
         ...fieldColumnDefinitions(fields),
     ], canManage);
-    // The invitations tab has no answers and no email column (the address is
-    // the first column); applications have no team yet.
-    const shown = tableColumns.visible.filter(column => tab === "invitations" ? column.key.startsWith("@") && column.key !== "@email" : tab === "applications" ? column.key !== "@team" : true);
+    // The invitations tab has no answers, no email and no pseudonym column
+    // (the address is the first column); applications have no team yet.
+    const shown = tableColumns.visible.filter(column => tab === "invitations" ? column.key.startsWith("@") && column.key !== "@email" && column.key !== "@pseudonym" : tab === "applications" ? column.key !== "@team" : true);
     const counts = query.data?.Counts;
-
-    function resetFilters() {
-        setSearch(""); setDebounced(""); setStatusFilter(null); setDrafts({}); setAppliedFilters("[]");
-        pages.reset();
-    }
 
     function changeTab(value: ParticipantTab) {
         setTab(value);
-        setStatusFilter(null);
-        pages.reset();
+        table.reset();
         window.history.replaceState(null, "", participantTabHref(value));
     }
 
@@ -155,9 +139,10 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         switch (column.key) {
         case "@name": return <td><div className="event-manage-table__person">
             {tab === "invitations" ? <><strong>{participant.Email || personName(participant)}</strong>{participant.Name && <small>{participant.Name}</small>}</>
-                : <><strong>{personName(participant)}</strong>{participant.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: participant.Pseudonym})}</small>}</>}
+                : <><strong>{personName(participant)}</strong>{participant.Pseudonym && !pseudonymShown && <small>{t("manage.participants.pseudonym", {pseudonym: participant.Pseudonym})}</small>}</>}
         </div></td>;
         case "@email": return <td className="event-manage-table__dim">{participant.Email || "—"}</td>;
+        case "@pseudonym": return <td>{participant.Pseudonym || <span className="event-manage-table__dim">—</span>}</td>;
         case "@status": return <td>{tab === "invitations"
             ? participant.InvitationExpired ? <span className="ib-tag ib-tag--danger">{t("manage.participants.expired")}</span>
                 : participant.InvitationSentAt ? <span className="ib-tag ib-tag--ok" title={t("manage.participants.sentAt", {date: date.format(new Date(participant.InvitationSentAt))})}>{t("manage.participants.invitationSent")}</span>
@@ -167,10 +152,11 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             ? participant.InvitedToTeam ? participant.InvitedTeamName || t("manage.participants.col.team") : <span className="event-manage-table__dim">—</span>
             : participant.TeamID ? <Link href="/manage/teams" onClick={stop}>{participant.TeamName || t("manage.participants.inTeam")}</Link> : <span className="event-manage-table__dim">{t("manage.participants.noTeam")}</span>}</td>;
         case "@date": return <td className="event-manage-table__nowrap event-manage-table__dim">{t("manage.participants.dateUtc", {date: date.format(new Date(participant.CreatedAt))})}</td>;
-        default: return <td className="event-manage-table__answer">{formatAnswer(participant.Answers[column.key])}</td>;
+        default: return <td className="event-manage-table__answer"><AnswerValue eventID={eventID} value={participant.Answers[column.key]} /></td>;
         }
     }
 
+    const pseudonymShown = shown.some(column => column.key === "@pseudonym");
     const items = query.data?.Items ?? [];
     const tableState = query.isPending ? "loading" : query.isError && !query.data ? "error" : items.length === 0 ? "empty" : "ready";
     return <div className="event-manage-settings event-manage-participants">
@@ -178,19 +164,18 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         <InviteParticipantsDialog eventID={eventID} open={inviteOpen} onOpenChange={setInviteOpen} onSent={refresh} />
         <div className="event-manage-participants__filters" role="tablist" aria-label={t("manage.participants.sections")}>{participantTabs.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => changeTab(option.value)}>{option.label}{counts && <span className="event-manage-participants__count">{counts[option.count]}</span>}</button>)}</div>
         <ManageTable event={event} state={tableState} busy={query.isFetching && !query.isPending} loadingLabel={t("manage.participants.loading")} errorMessage={t("manage.participants.loadFailed")} onRetry={() => void query.refetch()}
-            emptyMessage={filtered ? t("manage.participants.emptySearch") : emptyTexts[tab]}
+            emptyMessage={table.filtered ? t("manage.participants.emptySearch") : emptyTexts[tab]}
             toolbar={<>
-                <ManageTableSearch value={search} onChange={setSearch} label={t("manage.participants.search")} />
-                {tab === "applications" && <EventSelect ariaLabel={t("manage.participants.filter.status")} value={String(statusFilter ?? "all")} onValueChange={value => {setStatusFilter(value === "all" ? null : Number(value) as ParticipantStatus); pages.reset();}}
-                    options={[{value: "all", label: t("manage.participants.filter.statusAll")}, {value: "1", label: statusNames[1]}, {value: "3", label: statusNames[3]}]} />}
-                {showAnswers && <TableFiltersPopover fields={fields} drafts={drafts} onChange={setDrafts} active={answerFilters.length} />}
+                <ManageTableSearch value={table.search} onChange={table.setSearch} label={t("manage.participants.search")} />
+                <TableFiltersButton specs={specs} drafts={table.drafts} onChange={table.setDrafts} active={table.active} />
                 <TableColumnsPopover columns={tableColumns.columns} canManage={canManage} onChange={tableColumns.save} onReset={tableColumns.reset} />
-                {anyFilter && <button className="ib-btn ib-btn--ghost event-manage-table__reset" type="button" onClick={resetFilters}>{t("manage.table.filters.reset")}</button>}
+                <TableFilterChips specs={specs} drafts={table.drafts} onChange={table.setDrafts} onReset={table.reset}
+                    extra={table.search.trim() ? [{key: "@search", text: t("manage.table.filters.searchChip", {text: table.search.trim()}), onRemove: () => table.setSearch("")}] : []} />
             </>}
-            footer={<ManageTablePagination event={event} page={pages.page} pageSize={pageSize} total={query.data?.Total ?? 0} hasNext={!!query.data?.NextCursor} busy={query.isFetching}
-                onPrevious={pages.previous} onNext={() => pages.next(query.data?.NextCursor)} onPageSize={pages.setPageSize} />}
+            footer={<ManageTablePagination event={event} page={table.page} pageSize={table.pageSize} total={query.data?.Total ?? 0} hasNext={table.page * table.pageSize < (query.data?.Total ?? 0)} busy={query.isFetching}
+                onPrevious={() => table.setPage(table.page - 1)} onNext={() => table.setPage(table.page + 1)} onPageSize={table.setPageSize} />}
             head={<tr>
-                {shown.map(column => <th scope="col" key={column.key}>{headerLabel(column)}</th>)}
+                {shown.map(column => <SortHeader key={column.key} columnKey={column.key} label={headerLabel(column)} sort={table.sort} onSort={table.setSort} />)}
                 {canManage && <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.participants.col.actions")}</span></th>}
             </tr>}>
             <tbody>{items.map(participant => <tr key={participant.UserID} className={showAnswers ? "is-clickable" : undefined} tabIndex={showAnswers ? 0 : undefined} aria-label={showAnswers ? t("manage.participants.answersFor", {name: personName(participant)}) : undefined} onClick={() => open(participant)} onKeyDown={event => onRowKey(event, participant)}>
