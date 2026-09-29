@@ -20,6 +20,7 @@ import {
   Settings2,
   SlidersHorizontal,
   Trophy,
+  ScrollText,
   UserRound,
   Users,
   UsersRound,
@@ -87,6 +88,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
     infrastructureAllowed: boolean;
     onRetryPages: () => void;
     onNavigate: () => void;
+        {href: "/manage/mail-journal", label: t("manage.nav.mailJournal"), icon: ScrollText},
 }) {
     const [openGroupID, setOpenGroupID] = useState<string | null>(null);
     const teamMode = event.Participation === 1;

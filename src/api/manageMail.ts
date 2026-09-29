@@ -181,7 +181,7 @@ export async function testEventMailSMTP(eventID: string, input: SMTPInput | null
     return request(eventID, "mail/smtp/test", testResultSchema, "POST", input ?? {});
 }
 
-export async function getEventMailJournal(eventID: string, filters: MailJournalFilters, cursor: string | null): Promise<MailJournalPage> {
-    const query = mailJournalQueryParams(filters, cursor).toString();
+export async function getEventMailJournal(eventID: string, filters: MailJournalFilters, cursor: string | null, limit = mailJournalPageSize): Promise<MailJournalPage> {
+    const query = mailJournalQueryParams(filters, cursor, limit).toString();
     return request(eventID, `mail/journal?${query}`, journalPageSchema);
 }

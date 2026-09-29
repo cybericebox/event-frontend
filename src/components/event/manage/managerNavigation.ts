@@ -27,5 +27,6 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     // The editor address follows the draft slug while a draft exists.
     const page = pages.find(item => pathname === `/manage/content/pages/${item.Draft?.Slug ?? item.Slug}` || pathname === `/manage/content/pages/${item.Slug}`);
     if (page) return page.Draft?.Title ?? page.Title;
+    if (pathname === "/manage/mail-journal") return t("manage.nav.mailJournal");
     return t("manage.nav.pages");
 }

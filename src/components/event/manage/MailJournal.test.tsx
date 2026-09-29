@@ -1,0 +1,66 @@
+// @vitest-environment jsdom
+import {afterEach, describe, expect, it, vi} from "vitest";
+import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+
+vi.mock("./ManagerShell", () => ({useManager: () => ({event: {EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Name: "CTF 2027", Participation: 0, LogoURL: null}, canManage: true})}));
+vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
+
+import {MailJournal} from "./MailJournal";
+
+function item(n: number, patch: Record<string, unknown> = {}) {
+    return {
+        ID: `0190c6a4-0000-7000-8000-0000000000${String(n).padStart(2, "0")}`, NotificationType: "participant.event.finished", Status: "done",
+        CreatedAt: "2026-09-29T07:30:00Z", UpdatedAt: "2026-09-29T07:30:00Z", RecipientEmail: `user${n}@example.com`,
+        Targets: [{Channel: "email", Status: "done", Attempts: 1, Transport: "platform", Recipient: `user${n}@example.com`, UpdatedAt: "2026-09-29T07:30:00Z"}], ...patch,
+    };
+}
+
+function mockApi(pages: Array<{Items: unknown[]; Total: number; NextCursor?: string}>) {
+    const urls: string[] = [];
+    let index = 0;
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+        urls.push(String(input));
+        const page = pages[Math.min(index++, pages.length - 1)];
+        return new Response(JSON.stringify({Status: {Code: 0}, Data: page}), {status: 200});
+    }) as typeof fetch;
+    return urls;
+}
+
+function renderJournal() {
+    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><MailJournal /></QueryClientProvider>);
+}
+
+describe("Журнал надсилання", () => {
+    afterEach(cleanup);
+
+    it("is its own page with the manage table", async () => {
+        mockApi([{Items: [item(1), item(2, {Targets: [{Channel: "email", Status: "error", Error: "550 rejected", Attempts: 3, Transport: "event", Recipient: "user2@example.com", UpdatedAt: "2026-09-29T07:31:00Z"}]})], Total: 2}]);
+        renderJournal();
+        expect(screen.getByRole("heading", {name: "Журнал надсилання"})).toBeTruthy();
+        const table = screen.getByRole("table");
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (UTC)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби"]);
+        await waitFor(() => expect(within(table).getByText("user1@example.com")).toBeTruthy());
+        expect(within(table).getByText("550 rejected")).toBeTruthy();
+        expect(within(table).getByText("SMTP заходу")).toBeTruthy();
+    });
+
+    it("shows the empty state inside the table body", async () => {
+        mockApi([{Items: [], Total: 0}]);
+        renderJournal();
+        await waitFor(() => expect(within(screen.getByRole("table")).getByText("Листів учасникам ще не надсилали.")).toBeTruthy());
+    });
+
+    it("filters by result and walks the pages by cursor", async () => {
+        const urls = mockApi([{Items: [item(1)], Total: 30, NextCursor: "c2"}, {Items: [item(2)], Total: 30}, {Items: [item(3)], Total: 1}]);
+        renderJournal();
+        await screen.findByText("user1@example.com");
+        fireEvent.click(screen.getByRole("button", {name: "Далі"}));
+        await screen.findByText("user2@example.com");
+        expect(urls.at(-1)).toContain("cursor=c2");
+        fireEvent.pointerDown(screen.getByRole("button", {name: "Результат"}), {button: 0, ctrlKey: false});
+        fireEvent.click(await screen.findByRole("menuitemradio", {name: "Помилка"}));
+        await waitFor(() => expect(urls.at(-1)).toContain("result=error"));
+        expect(urls.at(-1)).not.toContain("cursor=");
+    });
+});

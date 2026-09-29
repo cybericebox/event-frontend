@@ -64,9 +64,10 @@ describe("participation navigation", () => {
         ]);
     });
 
-    it("lists the settings page under notifications", () => {
+    it("lists the settings page and the sending journal under notifications", () => {
         renderSidebar(0);
         fireEvent.click(screen.getByRole("button", {name: "Сповіщення"}));
         expect(screen.getByRole("link", {name: "Налаштування"}).getAttribute("href")).toBe("/manage/mail");
     });
+        expect(screen.getByRole("link", {name: "Журнал надсилання"}).getAttribute("href")).toBe("/manage/mail-journal");
 });
