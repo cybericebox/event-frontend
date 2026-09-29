@@ -33,11 +33,27 @@ describe("Сторінка листа", () => {
         expect(frame.getAttribute("srcdoc")).toContain("Привіт, учаснику");
         expect(screen.getByRole("heading", {level: 1, name: "Захід завершено"})).toBeTruthy();
         expect(screen.getByRole("textbox", {name: "Тема листа", hidden: true}).closest("[inert]")).not.toBeNull();
-        expect(screen.getByTestId("body-readonly")).toBeTruthy();
-        expect(screen.getByText(/стандартний шаблон платформи/)).toBeTruthy();
+        // Only the top orange notice: no second «Тільки перегляд» box in the body.
+        expect(screen.queryByTestId("body-readonly")).toBeNull();
+        expect(screen.getByTestId("template-notice").textContent).toContain("стандартний шаблон платформи");
+        expect(screen.queryByText(/Натисніть «Редагувати»/)).toBeNull();
         expect(screen.getByRole("button", {name: "Налаштувати для заходу"})).toBeTruthy();
         expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
         expect(screen.queryByRole("button", {name: /Повернути стандартний/})).toBeNull();
+    });
+
+    it("shows the read-only notice on a published event copy and none on a draft", async () => {
+        fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "published"})]);
+        renderPage();
+        const notice = await screen.findByTestId("template-notice");
+        expect(notice.textContent).toContain("Тільки перегляд. Натисніть «Редагувати»");
+        expect(notice.textContent).not.toContain("стандартний шаблон");
+        expect(screen.getAllByText(/Тільки перегляд/)).toHaveLength(1);
+        cleanup();
+        fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "draft"})]);
+        renderPage();
+        await screen.findByRole("textbox", {name: "Тема листа"});
+        expect(screen.queryByTestId("template-notice")).toBeNull();
     });
 
     it("copies the template for the event and moves to the copy", async () => {

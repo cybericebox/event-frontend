@@ -137,7 +137,8 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     if (!channelSignals(rows, "email").includes(signal)) return <div className="event-manage-settings"><Link className="event-template-header__back" href={BASE}>{t("manage.email.title")}</Link><EmptyState message={t("manage.notifications.templateNotFound")} /></div>;
 
     const label = signalLabel(signal);
-    const readOnlyHint = mode === "platform" ? t("manage.notifications.platformHint") : mode === "none" ? "" : t("manage.notifications.readonlyHint");
+    // One orange notice under the header: the untouched platform template, or a read-only copy (published/older version). A draft has none.
+    const readOnlyHint = mode === "platform" ? t("manage.notifications.platformHint") : mode === "view" || mode === "previous" ? t("manage.notifications.readonlyHint") : "";
     return <div className="event-manage-settings event-template-page">
         <TemplateHeader backHref={BASE} backLabel={t("manage.email.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
@@ -151,6 +152,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
                     onRestore={() => void mutate(() => rollbackManageEmailTemplate(eventID, template!), t("manage.email.draftFromVersion"))}
                     onReset={async () => { const done = await run(() => resetManageEmailTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.email.restoreError")); if (done) router.replace(href()); return done; }} />
             </>} />
+        {readOnlyHint && <p className="event-template-page__hint" role="note" data-testid="template-notice">{readOnlyHint}</p>}
         {ownVersions.length > 0 && template && <TemplateVersions versions={ownVersions.map(item => ({ID: item.ID, Status: item.Status, UpdatedAt: item.UpdatedAt, PublishedAt: item.PublishedAt, Heading: item.Subject}))} currentId={template.ID} hrefFor={href}
             canManage={canManage} dirty={dirty} busy={busy} onRestore={id => mutate(() => rollbackManageEmailTemplate(eventID, ownVersions.find(item => item.ID === id)!), t("manage.email.draftFromVersion"))} />}
         {label.description && <p className="event-template-page__intro">{label.description}</p>}
@@ -158,7 +160,6 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
             onCommit={days => void run(() => putManageNotificationSubscription(eventID, {SignalType: subscription.SignalType, Channel: subscription.Channel, Enabled: subscription.Enabled, Audience: subscription.Audience, Config: {days_before_start: days}}), t("manage.notifications.reminder.saved"), t("manage.notifications.reminder.error"))} />}
         {template && draft ? <div className="event-template-grid">
             <div className="event-template-grid__fields">
-                {readOnlyHint && <p className="event-template-page__hint">{readOnlyHint}</p>}
                 <div className={`event-manage-field${editable ? "" : " opacity-60"}`} {...(editable ? {} : {inert: true})}>
                     <ManageFieldLabel title={t("manage.email.subject")} help={t("manage.email.subjectHelp")} required />
                     <VariableRichText key={`subject-${template.ID}`} value={draft.Subject} onChange={Subject => change({...draft, Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted />
@@ -169,9 +170,8 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} />
-                    {editable ? <BlockEditor key={`body-${template.ID}`} value={bodyContent} onChange={blocks => change({...draft, Body: footer ? [...blocks, footer] : blocks})} variables={variables}
-                        presets={(presets.data ?? []) as BlockPreset[]} onUploadImage={uploadImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />
-                        : <div data-testid="body-readonly" className="rounded-lg border border-dashed border-(--ib-line) bg-(--ib-soft) p-4 text-sm text-(--ib-dim)">{t("manage.tpl.tpl.readonlyHint")}</div>}
+                    {editable && <BlockEditor key={`body-${template.ID}`} value={bodyContent} onChange={blocks => change({...draft, Body: footer ? [...blocks, footer] : blocks})} variables={variables}
+                        presets={(presets.data ?? []) as BlockPreset[]} onUploadImage={uploadImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />}
                 </div>
                 <EmailFooterEditor presetId={footer?.preset_id ?? ""} presets={(presets.data ?? []) as BlockPreset[]} readOnly={!editable}
                     onSelect={id => { const selected = presets.data?.find(preset => preset.ID === id); change({...draft, Body: selected ? [...bodyContent, {type: "preset", preset_id: selected.ID, name: selected.Name, placement: "footer"}] : bodyContent}); }} />

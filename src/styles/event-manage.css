@@ -940,7 +940,7 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-template-header__actions{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:var(--ib-2)}
 .event-template-page{display:grid;gap:var(--ib-4);align-content:start}
 .event-template-page__intro,.event-template-page__hint{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
-.event-template-page__hint{padding:var(--ib-3) var(--ib-4);border:1px dashed var(--ib-line);border-radius:var(--ib-r);background:var(--ib-soft)}
+.event-template-page__hint{padding:var(--ib-3) var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink)}
 .event-template-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,45%);gap:var(--ib-6);align-items:start}
 .event-template-grid__fields{display:grid;gap:var(--ib-5);min-width:0}
 .event-template-grid__preview{display:grid;gap:var(--ib-3);position:sticky;top:var(--ib-4);min-width:0}

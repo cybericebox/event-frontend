@@ -98,7 +98,8 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     if (!channelSignals(rows, "in_app").includes(signal)) return <div className="event-manage-settings"><Link className="event-template-header__back" href={BASE}>{t("manage.notifications.title")}</Link><EmptyState message={t("manage.notifications.templateNotFound")} /></div>;
 
     const label = signalLabel(signal);
-    const readOnlyHint = mode === "platform" ? t("manage.notifications.platformHint") : mode === "none" ? "" : t("manage.notifications.readonlyHint");
+    // One orange notice under the header: the untouched platform template, or a read-only copy (published/older version). A draft has none.
+    const readOnlyHint = mode === "platform" ? t("manage.notifications.platformHint") : mode === "view" || mode === "previous" ? t("manage.notifications.readonlyHint") : "";
     return <div className="event-manage-settings event-template-page">
         <TemplateHeader backHref={BASE} backLabel={t("manage.notifications.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
@@ -111,12 +112,12 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
                     onRestore={() => void mutate(() => rollbackManageInAppTemplate(eventID, template!), t("manage.notifications.draftFromPrevious"))}
                     onReset={async () => { const done = await run(() => resetManageInAppTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.notifications.restoreError")); if (done) router.replace(href()); return done; }} />
             </>} />
+        {readOnlyHint && <p className="event-template-page__hint" role="note" data-testid="template-notice">{readOnlyHint}</p>}
         {ownVersions.length > 0 && template && <TemplateVersions versions={ownVersions.map(item => ({ID: item.ID, Status: item.Status, UpdatedAt: item.UpdatedAt, PublishedAt: item.PublishedAt, Heading: item.Title}))} currentId={template.ID} hrefFor={href}
             canManage={canManage} dirty={dirty} busy={busy} onRestore={id => mutate(() => rollbackManageInAppTemplate(eventID, ownVersions.find(item => item.ID === id)!), t("manage.notifications.draftFromPrevious"))} />}
         {label.description && <p className="event-template-page__intro">{label.description}</p>}
         {template && draft ? <div className="event-template-grid">
             <div className="event-template-grid__fields">
-                {readOnlyHint && <p className="event-template-page__hint">{readOnlyHint}</p>}
                 <InAppEditor draft={draft} disabled={!editable} variables={toVariableDefs(type?.Variables ?? [])} onChange={next => setDrafts(current => ({...current, [template.ID]: next}))} />
                 {editable && validation && <p className="event-manage-validation" role="alert">{validation}</p>}
             </div>

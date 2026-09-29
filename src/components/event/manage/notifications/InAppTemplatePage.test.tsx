@@ -27,6 +27,18 @@ describe("Сторінка сповіщення на сайті", () => {
         expect(container.querySelector(".event-notification-popin strong")?.textContent).toBe("CTF 2027");
         expect(screen.getByRole("textbox", {name: "Заголовок", hidden: true}).closest("[inert]")).not.toBeNull();
         expect(screen.getByRole("button", {name: "Налаштувати для заходу"})).toBeTruthy();
+        expect(screen.getByTestId("template-notice").textContent).toContain("стандартний шаблон платформи");
+    });
+
+    it("shows the read-only notice on a published copy and none on a draft", async () => {
+        fakeServer("in_app", subs, [inAppTemplate(1), inAppTemplate(2, {Source: "event", Status: "published"})]);
+        renderPage();
+        expect((await screen.findByTestId("template-notice")).textContent).toContain("Тільки перегляд. Натисніть «Редагувати»");
+        cleanup();
+        fakeServer("in_app", subs, [inAppTemplate(1), inAppTemplate(2, {Source: "event", Status: "draft"})]);
+        renderPage();
+        await screen.findByText("Спливаюче повідомлення");
+        expect(screen.queryByTestId("template-notice")).toBeNull();
     });
 
     it("copies the template for the event and moves to the copy", async () => {
