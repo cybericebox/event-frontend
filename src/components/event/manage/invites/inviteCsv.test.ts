@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {csvTemplate, parseInviteCsv, parseTeamCsv, readCsvLines} from "./inviteCsv";
+import {csvTemplate, inviteColumns, parseInviteCsv, parseTeamCsv, readCsvLines, teamColumns} from "./inviteCsv";
 import {addChips, splitAddresses} from "./emailChips";
 
 describe("invitation CSV", () => {
@@ -54,8 +54,18 @@ describe("team CSV", () => {
         expect(parseTeamCsv("email,team\na@example.test,Blue\n").issues).toEqual([{row: 1, code: "missingColumn", column: "captain"}]);
     });
 
-    it("builds a template with a BOM and quoted example cells", () => {
-        expect(csvTemplate(["team", "email"], ["Blue, Red", "a@example.test"])).toBe('\uFEFFteam,email\r\n"Blue, Red",a@example.test\r\n');
+    it("builds a template with a BOM, the header and quoted example rows", () => {
+        expect(csvTemplate(["team", "email"], [["Blue, Red", "a@example.test"], ["Blue, Red", "b@example.test"]]))
+            .toBe('\uFEFFteam,email\r\n"Blue, Red",a@example.test\r\n"Blue, Red",b@example.test\r\n');
+    });
+
+    it("rejects the unchanged template rows instead of inviting example.com", () => {
+        const team = csvTemplate(teamColumns, [["Команда 1", "olena.koval@example.com", "Олена", "Коваль", "так"], ["Команда 1", "ivan.melnyk@example.com", "Іван", "Мельник", ""]]);
+        expect(parseTeamCsv(team)).toEqual({teams: [], issues: [{row: 2, code: "exampleRow"}, {row: 3, code: "exampleRow"}]});
+        const invite = csvTemplate(inviteColumns, [["olena.koval@example.com", "Олена", "Коваль"]]) + "real@school.test,Ann,Lee\r\n";
+        const parsed = parseInviteCsv(invite);
+        expect(parsed.issues).toEqual([{row: 2, code: "exampleRow"}]);
+        expect(parsed.entries.map(entry => entry.email)).toEqual(["real@school.test"]);
     });
 });
 

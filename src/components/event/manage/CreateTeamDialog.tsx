@@ -171,7 +171,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}
         </> : <>
             <CsvField label={t("manage.teams.batch.csv")} columns={teamColumns} required={["team", "email", "captain"]}
-                example={[t("manage.invites.template.team"), t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), t("manage.invites.template.captain")]}
+                examples={[[t("manage.invites.template.team"), t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), t("manage.invites.template.captain")], [t("manage.invites.template.team"), t("manage.invites.template.email2"), t("manage.invites.template.firstName2"), t("manage.invites.template.lastName2"), ""]]}
                 templateName={t("manage.invites.template.teamFile")} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
             <p className="ib-field__hint">{t("manage.teams.batch.captainMarks")}</p>
             {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}

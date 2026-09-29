@@ -86,7 +86,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.chips.hint")} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>
             <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
         </div>
-        <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} example={[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName")]}
+        <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName")]]}
             templateName={t("manage.invites.template.inviteFile")} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy} />
         {failures.length > 0 && <ul className="event-modal__issues" role="status">{failures.map(result => <li key={result.Email}>{invitationFailureText(result)}</li>)}</ul>}
     </ManageDialog>;

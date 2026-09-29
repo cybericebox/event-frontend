@@ -2,7 +2,7 @@
 // English header name (any case, any order); unknown columns are ignored.
 // Every issue carries the 1-based file row, so the dialog can say where to fix.
 
-export type CsvIssueCode = "empty" | "missingColumn" | "missingEmail" | "invalidEmail" | "duplicateEmail" | "missingTeam" | "captainMark" | "noCaptain" | "manyCaptains";
+export type CsvIssueCode = "empty" | "missingColumn" | "exampleRow" | "missingEmail" | "invalidEmail" | "duplicateEmail" | "missingTeam" | "captainMark" | "noCaptain" | "manyCaptains";
 export type CsvIssue = {row: number; code: CsvIssueCode; column?: string; value?: string};
 
 export type InviteEntry = {email: string; firstName: string; lastName: string; row?: number};
@@ -101,6 +101,7 @@ export function parseInviteCsv(source: string): {entries: InviteEntry[]; issues:
         const email = normalizeEmail(line.get("email"));
         if (!email) {issues.push({row: line.row, code: "missingEmail"}); continue;}
         if (!isValidEmail(email)) {issues.push({row: line.row, code: "invalidEmail", value: email}); continue;}
+        if (isExampleAddress(email)) {issues.push({row: line.row, code: "exampleRow"}); continue;}
         if (seen.has(email)) continue;
         seen.add(email);
         entries.push({email, firstName: line.get("first_name"), lastName: line.get("last_name"), row: line.row});
@@ -123,6 +124,7 @@ export function parseTeamCsv(source: string): {teams: TeamDraft[]; issues: CsvIs
         if (!name) {issues.push({row: line.row, code: "missingTeam"}); continue;}
         if (!email) {issues.push({row: line.row, code: "missingEmail"}); continue;}
         if (!isValidEmail(email)) {issues.push({row: line.row, code: "invalidEmail", value: email}); continue;}
+        if (isExampleAddress(email)) {issues.push({row: line.row, code: "exampleRow"}); continue;}
         if (seen.has(email)) {issues.push({row: line.row, code: "duplicateEmail", value: email}); continue;}
         seen.set(email, line.row);
         const captain = captainMarks.has(mark);
@@ -141,7 +143,15 @@ export function parseTeamCsv(source: string): {teams: TeamDraft[]; issues: CsvIs
     return {teams: [...teams.values()].map(team => ({name: team.name, row: team.row, captainEmail: team.captainEmail, members: team.members})), issues};
 }
 
-export function csvTemplate(columns: readonly string[], example: readonly string[]): string {
+// The template is UTF-8 with a BOM (Excel then opens Cyrillic correctly):
+// the header row, then the filled example rows.
+export function csvTemplate(columns: readonly string[], examples: ReadonlyArray<readonly string[]>): string {
     const quote = (value: string) => /[",;\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
-    return `\uFEFF${columns.join(",")}\r\n${example.map(quote).join(",")}\r\n`;
+    return `\uFEFF${[columns, ...examples].map(row => row.map(quote).join(",")).join("\r\n")}\r\n`;
+}
+
+// Template examples use example.com: such a row is an unchanged template
+// line, never a real invitation.
+export function isExampleAddress(email: string): boolean {
+    return email.endsWith("@example.com");
 }
