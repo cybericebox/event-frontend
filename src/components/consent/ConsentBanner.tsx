@@ -38,7 +38,7 @@ function withLink(key: string, href: string) {
 //    «Прийняти вибрані», «Прийняти всі» and a small «Відхилити всі».
 // Shown when GA is configured and no choice exists; «Налаштування файлів cookie» opens the panel.
 // Esc never counts as consent: it steps back from the panel, or closes a panel opened from settings.
-export function ConsentBanner({gaId, policyHref}: {gaId: string; policyHref: string}) {
+export function ConsentBanner({gaId, policyHref}: {gaId?: string; policyHref: string}) {
     const stored = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
     // null = follow the stored choice; "panel" = preferences open.
     const [layer, setLayer] = useState<"banner" | "panel" | null>(null);

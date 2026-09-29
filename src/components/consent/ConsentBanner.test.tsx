@@ -88,3 +88,12 @@ describe("ConsentBanner", () => {
         expect(document.cookie).not.toContain("cib_consent");
     });
 });
+
+describe("ConsentBanner without GA", () => {
+    it("never asks on its own but opens the panel on request", () => {
+        render(<ConsentBanner policyHref="/cookies" />);
+        expect(screen.queryByRole("region")).toBeNull();
+        act(() => openConsentSettings());
+        expect(screen.getByRole("dialog")).toBeTruthy();
+    });
+});
