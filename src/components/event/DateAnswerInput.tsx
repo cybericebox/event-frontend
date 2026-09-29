@@ -1,7 +1,6 @@
 "use client";
 
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
-import {EventTimePicker} from "@/components/ui/EventTimePicker";
 import {localFromISO, localToISO, parseLocalDate} from "@/components/ui/dateTimePicker";
 
 export type DateMode = "date" | "time" | "datetime";
@@ -18,7 +17,7 @@ export function DateAnswerInput({mode, value, onChange, ariaLabel, id, disabled 
     disabled?: boolean;
     allowClear?: boolean;
 }) {
-    if (mode === "time") return <EventTimePicker id={id} value={value} onChange={onChange} ariaLabel={ariaLabel} disabled={disabled} allowClear={allowClear} />;
+    if (mode === "time") return <EventDateTimePicker id={id} timeOnly value={value} onChange={onChange} ariaLabel={ariaLabel} disabled={disabled} allowClear={allowClear} />;
     if (mode === "date") return <EventDateTimePicker id={id} dateOnly value={value} onChange={onChange} ariaLabel={ariaLabel} disabled={disabled} allowClear={allowClear} />;
     return <EventDateTimePicker id={id} value={localFromISO(value)} onChange={local => onChange(local ? localToISO(local) ?? "" : "")} ariaLabel={ariaLabel} disabled={disabled} allowClear={allowClear} />;
 }

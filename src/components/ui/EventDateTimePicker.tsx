@@ -5,6 +5,7 @@ import * as Popover from "@radix-ui/react-popover";
 import {CalendarDays, ChevronLeft, ChevronRight} from "lucide-react";
 import {calendarDays, datePart, formatLocal, monthStart, moveDay, parseLocal, parseLocalDate, stepTime, timePart, zoneLabel} from "./dateTimePicker";
 import {t} from "@/i18n/t";
+import {EventTimePicker} from "./EventTimePicker";
 import "./eventDateTimePicker.css";
 
 const weekdays = () => t("ui.datePicker.weekdays").split(",");
@@ -21,8 +22,13 @@ const partMax: Record<Part, number> = {hour: 23, minute: 59, second: 59};
 // time row. Values are wall-clock strings in the viewer's own time zone
 // (shown next to the value); callers send them to the API as UTC ISO.
 // dateOnly picks a calendar day: the value is "YYYY-MM-DD", with no time row
-// and no time zone.
-export function EventDateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false, dateOnly = false, placeholder}: {
+// and no time zone. timeOnly is the time row alone: a local "HH:MM".
+export function EventDateTimePicker({timeOnly = false, ...props}: Parameters<typeof DateTimePicker>[0] & {timeOnly?: boolean}) {
+    if (timeOnly) return <EventTimePicker value={props.value} onChange={props.onChange} ariaLabel={props.ariaLabel} id={props.id} disabled={props.disabled} allowClear={props.allowClear} />;
+    return <DateTimePicker {...props} />;
+}
+
+function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false, dateOnly = false, placeholder}: {
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
