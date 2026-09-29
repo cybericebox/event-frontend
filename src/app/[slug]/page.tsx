@@ -9,7 +9,7 @@ export async function generateMetadata({params}: {params: Promise<{slug: string}
     const event = await getPublicEventInfo();
     if (!event) return {robots: {index: false, follow: false}};
     const content = await getEventPageContent(slug);
-    return content ? {title: `${content.Page.Title} · ${event.Name}`} : {robots: {index: false, follow: false}};
+    return content ? {title: event.Name, description: `${content.Page.Title} · ${event.Name} · Cyber ICE Box`} : {robots: {index: false, follow: false}};
 }
 
 export default async function ContentPage({params}: {params: Promise<{slug: string}>}) {

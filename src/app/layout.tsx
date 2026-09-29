@@ -64,13 +64,15 @@ export async function generateMetadata(): Promise<Metadata> {
             return {title: FALLBACK_TITLE, icons: {icon: "/platform-favicon.ico"}};
         }
         const eventUrl = `https://${(await headers()).get("host")}`
+        // Title is the event name only; the platform brand goes into the description.
+        const description = event.PreviewDescription?.trim() || `${name} · змагання з кібербезпеки на платформі Cyber ICE Box`
         return {
             title: name,
-            description: `${name} | Cyber ICE Box Platform`,
+            description,
             icons: {icon: event.FaviconURL && apiOrigin ? `${apiOrigin}${event.FaviconURL}` : "/platform-favicon.ico"},
             openGraph: {
                 title: name,
-                description: `${name} | Cyber ICE Box Platform`,
+                description,
                 type: "website",
                 url: eventUrl,
                 ...(event.PreviewPicture ? {images: [{url: event.PreviewPicture, width: 1200, height: 600, alt: name}]} : {}),
