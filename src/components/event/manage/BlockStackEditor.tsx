@@ -11,7 +11,7 @@ import {blockPalette, createPageBlock, duplicatePageBlock} from "./blockPalette"
 import {blockValidationIndex} from "./validatePageBlocks";
 import {EditedDocumentContext} from "./useEventLinkOptions";
 import {t, tPlural} from "@/i18n/t";
-import {currentPreviewPhase, previewPageAccess, previewPhases, previewValues, previewViewers, type PreviewPhase, type PreviewViewer} from "./previewScenario";
+import {currentPreviewPhase, defaultPreviewRegistration, previewPageAccess, previewPhases, previewRegistrations, previewValues, previewViewers, type PreviewPhase, type PreviewRegistration, type PreviewViewer} from "./previewScenario";
 import {EmptyState} from "@/components/ui/EmptyState";
 
 const undoMilliseconds = 6000;
@@ -40,12 +40,15 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
     const [selected, setSelected] = useState<{key: string; blockID: string} | null>(null);
     const [viewer, setViewer] = useState<PreviewViewer>("guest");
     const [phase, setPhase] = useState<PreviewPhase | null>(null);
+    // null follows the phase's registration window; reset on every phase change.
+    const [registration, setRegistration] = useState<PreviewRegistration | null>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const selectedBlockID = selected?.key === editorKey && document.blocks.some(block => block.id === selected.blockID) ? selected.blockID : null;
     const blockOrder = document.blocks.map(block => block.id).join("|");
     const invalidBlockIndex = blockValidationIndex(validation);
     const activePhase = phase ?? currentPreviewPhase(values);
-    const shownValues = useMemo(() => previewValues(values, activePhase, viewer), [values, activePhase, viewer]);
+    const activeRegistration = activePhase === "after" ? "closed" : registration ?? defaultPreviewRegistration(values, activePhase);
+    const shownValues = useMemo(() => previewValues(values, activePhase, viewer, activeRegistration), [values, activePhase, viewer, activeRegistration]);
     const selectedBlock = document.blocks.find(block => block.id === selectedBlockID);
     const selectedHidden = selectedBlock ? !contentBlockVisible(selectedBlock, shownValues) : false;
     const accessNotice = previewPageAccess(pageVisibility, viewer);
@@ -131,7 +134,8 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
             <div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>{t("manage.blocks.preview.title")}</h2><p>{selectedHidden ? t("manage.blocks.preview.selectedHidden") : t("manage.blocks.preview.hint")}</p></div></div>
             <div className="event-preview-switches">
                 <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.viewer")}>{previewViewers.map(item => <button key={item.value} type="button" aria-pressed={viewer === item.value} onClick={() => setViewer(item.value)}>{item.label}</button>)}</div>
-                <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.phase")}>{previewPhases.map(item => <button key={item.value} type="button" aria-pressed={activePhase === item.value} onClick={() => setPhase(item.value)}>{item.label}</button>)}</div>
+                <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.phase")}>{previewPhases.map(item => <button key={item.value} type="button" aria-pressed={activePhase === item.value} onClick={() => {setPhase(item.value); setRegistration(null);}}>{item.label}</button>)}</div>
+                <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.blocks.preview.registration")}>{previewRegistrations.map(item => <button key={item.value} type="button" aria-pressed={activeRegistration === item.value} disabled={activePhase === "after"} title={activePhase === "after" ? t("manage.blocks.preview.registrationAfter") : undefined} onClick={() => setRegistration(item.value)}>{item.label}</button>)}</div>
             </div>
             <div className="event-manage-content__preview-window" ref={previewRef}>
                 {accessNotice ? <EmptyState message={t("manage.blocks.preview.accessNotice", {notice: accessNotice})} />

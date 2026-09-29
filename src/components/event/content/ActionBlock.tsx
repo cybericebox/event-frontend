@@ -88,11 +88,13 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     const viewer = preview ? previewViewer ?? "guest" : undefined;
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
-        if (!hasJoin || !registrationOpen) return;
+        if (!hasJoin || !registrationOpen || viewer) return;
         const timer = window.setInterval(() => setNow(Date.now()), 1000);
         return () => window.clearInterval(timer);
-    }, [hasJoin, registrationOpen]);
-    const timeWindowOpen = registrationWindowOpen(true, joinPolicy, startAt, finishAt, now);
+    }, [hasJoin, registrationOpen, viewer]);
+    // The preview's registrationOpen is already emulated for its phase; the
+    // real clock and join policy must not close it again.
+    const timeWindowOpen = viewer ? true : registrationWindowOpen(true, joinPolicy, startAt, finishAt, now);
     const windowOpen = registrationOpen && timeWindowOpen;
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !viewer, retry: false, refetchInterval: false});
     const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !!eventID && !!identity.data, retry: false, refetchInterval: false});

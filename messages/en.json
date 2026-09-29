@@ -2424,5 +2424,16 @@
   "inbox.resolved.fixed": "Fixed by {name}, {time}",
   "inbox.resolved.fixed.system": "Fixed, {time}",
   "inbox.resolved.other": "Resolved by {name}, {time}",
-  "inbox.resolved.other.system": "Resolved, {time}"
+  "inbox.resolved.other.system": "Resolved, {time}",
+  "manage.editor.preview.registrationOpen": "Registration open",
+  "manage.editor.preview.registrationClosed": "Registration closed",
+  "manage.blocks.preview.registration": "Registration",
+  "manage.blocks.preview.registrationAfter": "Registration is always closed after the finish.",
+  "manage.blocks.action.warning.registrationClosed": "Registration is closed. The button will not show on the site until registration is opened.",
+  "manage.blocks.action.warning.finished": "The event has finished. The join button will not show on the site.",
+  "manage.blocks.action.warning.windowPassed": "Joining closed at the start. The button will not show on the site unless joining during the event is allowed.",
+  "manage.blocks.action.warning.scoreboardHidden": "The scoreboard is hidden. The link will open an unavailable page.",
+  "manage.blocks.action.warning.registrationLink": "Registration settings",
+  "manage.blocks.action.warning.scheduleLink": "Publishing and time",
+  "manage.blocks.action.warning.resultsLink": "Results settings"
 }

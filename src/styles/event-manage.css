@@ -223,6 +223,8 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-manage-validation{color:var(--ib-danger);font-size:var(--ib-fs-13)}
 .event-manage-warning{display:flex;align-items:center;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-danger);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
 .event-manage-warning svg{flex:none}
+.event-content-editor__action-warning{align-items:flex-start;padding:var(--ib-3);font-weight:var(--ib-w-medium)}
+.event-content-editor__action-warning a{color:inherit;font-weight:var(--ib-w-semibold);text-decoration:underline;text-underline-offset:2px}
 .event-challenge-manager{max-width:1080px}
 .event-challenge-manager__list{display:grid;gap:var(--ib-2);margin:0;padding:0;list-style:none}
 .event-challenge-manager__group,.event-challenge-manager__task{display:flex;align-items:center;gap:var(--ib-3);min-width:0;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r)}

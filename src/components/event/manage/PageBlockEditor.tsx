@@ -3,7 +3,8 @@
 import {useEffect, useId, useRef, useState, type ChangeEvent} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import Image from "next/image";
-import {ArrowDown, ArrowUp, Braces, Copy, GripVertical, ImagePlus, Plus, Trash2, Wand2, X} from "lucide-react";
+import Link from "next/link";
+import {AlertTriangle, ArrowDown, ArrowUp, Braces, Copy, GripVertical, ImagePlus, Plus, Trash2, Wand2, X} from "lucide-react";
 import type {ContentBlock, ContentValue} from "@/types/eventContent";
 import {emptyRichText, richTextPlainText, type ContentRichText} from "@/components/event/content/richTextState";
 import {initialVisibilityValue, insertableContentVariable, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
@@ -23,6 +24,7 @@ import {DateVariableFormatControls} from "./DateVariableFormatControls";
 import {updateBlockRichText} from "./richTextBlockUpdate";
 import {t} from "@/i18n/t";
 import {BusyMark} from "@/components/ui/EventButton";
+import {actionWarning} from "./previewScenario";
 
 export {FieldLabel} from "./FieldLabel";
 
@@ -406,6 +408,14 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
         return <div className="event-manage-field"><FieldLabel label={secondary ? t("manage.blocks.action.secondKind") : t("manage.blocks.action.kind")} required={!secondary || !!current?.label} help={t("manage.blocks.action.kindHelp")} /><EventSelect ariaLabel={secondary ? t("manage.blocks.action.secondKind") : t("manage.blocks.action.kind")} value={current?.kind ?? "link"} options={[{value: "link", label: t("manage.blocks.action.kindLink")}, {value: "join_event", label: t("manage.blocks.action.kindJoin")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, [key]: {...(current ?? {label: "", href: ""}), kind: value as "link" | "join_event", href: ""}})} /></div>;
     }
 
+    // Real-settings reasons why this button will not show on the site; the
+    // preview emulates them away, so they are stated here.
+    function actionWarningNote(secondary = false) {
+        const warning = actionWarning(secondary ? block.secondaryAction : block.action, values);
+        if (!warning) return null;
+        return <div className="event-manage-warning event-content-editor__action-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>{warning.message} <Link href={warning.href}>{warning.link}</Link></span></div>;
+    }
+
     function showFromControls() {
         const source = block.showFromSource ?? "none";
         return <>
@@ -546,9 +556,11 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
                 {actionKind()}
                 {inputField("action:label", t("manage.blocks.cta.buttonText"), t("manage.blocks.cta.buttonPlaceholder"), false, true)}
                 {block.action?.kind !== "join_event" && inputField("action:href", t("manage.blocks.cta.buttonLink"), t("manage.blocks.cta.linkPlaceholder"), false, true)}
+                {actionWarningNote()}
                 {actionKind(true)}
                 {inputField("secondaryAction:label", t("manage.blocks.cta.secondary"), t("manage.blocks.field.optional"), false, !!block.secondaryAction?.href || block.secondaryAction?.kind === "join_event")}
                 {block.secondaryAction?.kind !== "join_event" && inputField("secondaryAction:href", t("manage.blocks.cta.secondaryLink"), "/rules", false, !!block.secondaryAction?.label)}
+                {actionWarningNote(true)}
                 <div className="event-manage-field"><FieldLabel label={t("manage.blocks.style.label")} required help={t("manage.blocks.cta.styleHelp")} /><EventSelect value={block.variant ?? "plain"} ariaLabel={t("manage.blocks.cta.styleAria")} options={[{value: "plain", label: t("manage.blocks.style.plain")}, {value: "mass", label: t("manage.blocks.style.branded")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {block.action?.label && actionPosition()}
             </>}
