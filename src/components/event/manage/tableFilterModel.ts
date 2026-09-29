@@ -7,14 +7,18 @@ import {t} from "@/i18n/t";
 export type FilterKind = "contains" | "any" | "bool" | "present" | "number" | "date";
 export type FilterOption = {value: string; label: string};
 export type FilterSpec = {key: string; label: string; kind: FilterKind; options?: FilterOption[]; yes?: string; no?: string};
-export type FilterDraft = {text?: string; values?: string[]; flag?: boolean | null; from?: string; to?: string};
+// `op` picks the operator of a text ("contains" | "empty" | "notEmpty") or a
+// number ("eq" | "gt" | "lt" | "between") filter.
+export type FilterDraft = {op?: string; text?: string; values?: string[]; flag?: boolean | null; from?: string; to?: string};
+export const TEXT_OPS = ["contains", "empty", "notEmpty"] as const;
+export const NUMBER_OPS = ["eq", "gt", "lt", "between"] as const;
 export type FilterDrafts = Record<string, FilterDraft>;
 
 export type TableFilter =
     | {Key: string; Op: "contains"; Value: string}
     | {Key: string; Op: "any"; Values: string[]}
     | {Key: string; Op: "bool" | "present"; Value: boolean}
-    | {Key: string; Op: "range"; Type: "number" | "date"; From?: number | string; To?: number | string};
+    | {Key: string; Op: "range"; Type: "number" | "date"; From?: number | string; To?: number | string; FromExclusive?: boolean; ToExclusive?: boolean};
 
 export type TableSort = {key: string; desc: boolean};
 
@@ -28,6 +32,7 @@ export function fieldFilterSpecs(fields: FormField[]): FilterSpec[] {
         if (input === "checkbox") return {key: field.key, label, kind: "bool"};
         if (input === "file") return {key: field.key, label, kind: "present", yes: t("manage.table.filters.hasFile"), no: t("manage.table.filters.noFile")};
         if (input === "number") return {key: field.key, label, kind: "number"};
+        if (input === "date") return {key: field.key, label, kind: "date"};
         return {key: field.key, label, kind: "contains"};
     });
 }
@@ -49,6 +54,7 @@ function toFilter(spec: FilterSpec, draft: FilterDraft | undefined): TableFilter
     if (!draft) return null;
     switch (spec.kind) {
     case "contains": {
+        if (draft.op === "empty" || draft.op === "notEmpty") return {Key: spec.key, Op: "present", Value: draft.op === "notEmpty"};
         const text = draft.text?.trim();
         return text ? {Key: spec.key, Op: "contains", Value: text.slice(0, 100)} : null;
     }
@@ -58,7 +64,14 @@ function toFilter(spec: FilterSpec, draft: FilterDraft | undefined): TableFilter
     case "present":
         return typeof draft.flag === "boolean" ? {Key: spec.key, Op: spec.kind, Value: draft.flag} : null;
     case "number": {
+        const op = draft.op ?? "eq";
         const from = numberBound(draft.from), to = numberBound(draft.to);
+        if (op !== "between") {
+            if (from === undefined) return null;
+            if (op === "gt") return {Key: spec.key, Op: "range", Type: "number", From: from, FromExclusive: true};
+            if (op === "lt") return {Key: spec.key, Op: "range", Type: "number", To: from, ToExclusive: true};
+            return {Key: spec.key, Op: "range", Type: "number", From: from, To: from};
+        }
         return from === undefined && to === undefined ? null : {Key: spec.key, Op: "range", Type: "number", ...(from === undefined ? {} : {From: from}), ...(to === undefined ? {} : {To: to})};
     }
     case "date": {
@@ -84,7 +97,11 @@ export function filterChips(specs: FilterSpec[], drafts: FilterDrafts): {key: st
         const filter = toFilter(spec, drafts[spec.key]);
         if (!filter) continue;
         let value: string;
-        if ("Values" in filter) value = filter.Values.map(item => spec.options?.find(option => option.value === item)?.label ?? item).join(", ");
+        if (filter.Op === "present" && spec.kind === "contains") value = filter.Value ? t("manage.table.filters.notEmpty") : t("manage.table.filters.empty");
+        else if ("Type" in filter && filter.Type === "number" && filter.From !== undefined && filter.From === filter.To) value = t("manage.table.filters.eqValue", {value: String(filter.From)});
+        else if ("Type" in filter && filter.FromExclusive) value = t("manage.table.filters.gtValue", {value: String(filter.From)});
+        else if ("Type" in filter && filter.ToExclusive) value = t("manage.table.filters.ltValue", {value: String(filter.To)});
+        else if ("Values" in filter) value = filter.Values.map(item => spec.options?.find(option => option.value === item)?.label ?? item).join(", ");
         else if ("Type" in filter) value = filter.Type === "date"
             ? rangeText(filter.From ? dateLabel.format(new Date(filter.From)) : undefined, filter.To ? dateLabel.format(new Date(filter.To)) : undefined)
             : rangeText(filter.From === undefined ? undefined : String(filter.From), filter.To === undefined ? undefined : String(filter.To));

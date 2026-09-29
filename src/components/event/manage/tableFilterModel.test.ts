@@ -12,15 +12,38 @@ const specs: FilterSpec[] = [
     ...fieldFilterSpecs([field("cv", "file"), field("age", "number"), field("langs", "multi_select", ["Go"])]),
 ];
 
+describe("typed operators", () => {
+    const typed: FilterSpec[] = [{key: "@members", label: "Учасники", kind: "number"}, {key: "@email", label: "Пошта", kind: "contains"}];
+
+    it("maps number and text operators", () => {
+        expect(toTableFilters(typed, {"@members": {op: "gt", from: "3"}, "@email": {op: "empty"}})).toEqual([
+            {Key: "@members", Op: "range", Type: "number", From: 3, FromExclusive: true},
+            {Key: "@email", Op: "present", Value: false},
+        ]);
+        expect(toTableFilters(typed, {"@members": {from: "2"}, "@email": {op: "notEmpty"}})).toEqual([
+            {Key: "@members", Op: "range", Type: "number", From: 2, To: 2},
+            {Key: "@email", Op: "present", Value: true},
+        ]);
+        expect(toTableFilters(typed, {"@members": {op: "lt", from: "5"}})).toEqual([{Key: "@members", Op: "range", Type: "number", To: 5, ToExclusive: true}]);
+        expect(toTableFilters(typed, {"@members": {op: "between", to: "5"}})).toEqual([{Key: "@members", Op: "range", Type: "number", To: 5}]);
+        expect(toTableFilters(typed, {"@members": {op: "gt"}})).toEqual([]);
+    });
+
+    it("describes typed operators in chips", () => {
+        expect(filterChips(typed, {"@members": {op: "gt", from: "3"}, "@email": {op: "empty"}}).map(chip => chip.text)).toEqual(["Учасники: > 3", "Пошта: порожнє"]);
+        expect(filterChips(typed, {"@members": {from: "2"}}).map(chip => chip.text)).toEqual(["Учасники: = 2"]);
+    });
+});
+
 describe("table filter specs", () => {
     it("maps form inputs to filter kinds", () => {
-        expect(fieldFilterSpecs([field("a", "text"), field("b", "long_text"), field("c", "select", ["x"]), field("d", "checkbox"), field("e", "file"), field("f", "number")]).map(spec => spec.kind))
-            .toEqual(["contains", "contains", "any", "bool", "present", "number"]);
+        expect(fieldFilterSpecs([field("a", "text"), field("b", "long_text"), field("c", "select", ["x"]), field("d", "checkbox"), field("e", "file"), field("f", "number"), field("g", "date")]).map(spec => spec.kind))
+            .toEqual(["contains", "contains", "any", "bool", "present", "number", "date"]);
     });
 
     it("builds filters for every column type and drops empty drafts", () => {
         expect(toTableFilters(specs, {
-            "@name": {text: "  Олена "}, "@status": {values: ["3"]}, "@members": {from: "2", to: ""},
+            "@name": {text: "  Олена "}, "@status": {values: ["3"]}, "@members": {op: "between", from: "2", to: ""},
             "@date": {from: "", to: "2026-09-29T12:00"}, "@pending": {flag: null}, cv: {flag: true}, age: {from: "x"}, langs: {values: []},
         })).toEqual([
             {Key: "@name", Op: "contains", Value: "Олена"},
@@ -32,7 +55,7 @@ describe("table filter specs", () => {
     });
 
     it("describes active filters as chips and removes one", () => {
-        const drafts = {"@name": {text: "ol"}, "@status": {values: ["1", "3"]}, "@members": {from: "2", to: "5"}, "@pending": {flag: false}, cv: {flag: false}};
+        const drafts = {"@name": {text: "ol"}, "@status": {values: ["1", "3"]}, "@members": {op: "between", from: "2", to: "5"}, "@pending": {flag: false}, cv: {flag: false}};
         expect(filterChips(specs, drafts).map(chip => chip.text)).toEqual([
             "Ім’я: містить «ol»", "Статус: Очікує, Відхилено", "Учасники: 2 – 5", "Очікують: Ні", "cv: Немає файлу",
         ]);

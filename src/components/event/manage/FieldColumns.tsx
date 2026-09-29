@@ -16,8 +16,12 @@ export function AnswersList({fields, answers}: {fields: FormField[]; answers: Re
     </dl>;
 }
 
+const localDateTime = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
+
 // One answer in a table cell: a «Файл» answer is a staff download link.
 export function AnswerValue({eventID, value}: {eventID: string; value: unknown}) {
     if (isFileAnswer(value)) return <a className="ib-link" href={manageAnswerFileUrl(eventID, value.id)} download onClick={event => event.stopPropagation()}>{value.name}</a>;
+    // «Дата» with time is stored as UTC ISO; show it in the viewer's time.
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T.+Z$/.test(value) && !Number.isNaN(Date.parse(value))) return <>{localDateTime.format(new Date(value))}</>;
     return <>{formatAnswer(value)}</>;
 }

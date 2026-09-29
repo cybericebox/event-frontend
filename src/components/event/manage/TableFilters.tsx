@@ -7,15 +7,21 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {EventSelect} from "@/components/ui/EventSelect";
-import {filterChips, nextSort, withoutFilter, type FilterDraft, type FilterDrafts, type FilterSpec, type TableSort} from "./tableFilterModel";
+import {filterChips, nextSort, NUMBER_OPS, TEXT_OPS, withoutFilter, type FilterDraft, type FilterDrafts, type FilterSpec, type TableSort} from "./tableFilterModel";
 import {t} from "@/i18n/t";
 import "./tableFilters.css";
 
 function FilterControl({spec, draft, onChange}: {spec: FilterSpec; draft: FilterDraft; onChange: (draft: FilterDraft) => void}) {
     switch (spec.kind) {
-    case "contains":
-        return <input className="ib-input ib-input--sm" type="search" value={draft.text ?? ""} maxLength={100} placeholder={t("manage.table.filters.contains")}
-            aria-label={t("manage.table.filters.containsLabel", {label: spec.label})} onChange={event => onChange({text: event.target.value})} />;
+    case "contains": {
+        const op = draft.op ?? "contains";
+        return <div className="event-table-filters__row">
+            <EventSelect className="event-table-filters__op" ariaLabel={t("manage.table.filters.opLabel", {label: spec.label})} value={op} onValueChange={value => onChange({op: value, text: value === "contains" ? draft.text : undefined})}
+                options={TEXT_OPS.map(value => ({value, label: t(`manage.table.filters.op.${value}`)}))} />
+            {op === "contains" && <input className="ib-input ib-input--sm" type="search" value={draft.text ?? ""} maxLength={100} placeholder={t("manage.table.filters.contains")}
+                aria-label={t("manage.table.filters.containsLabel", {label: spec.label})} onChange={event => onChange({op, text: event.target.value})} />}
+        </div>;
+    }
     case "any":
         return <div className="event-table-filters__options">{(spec.options ?? []).map(option => <EventCheckbox key={option.value} label={option.label} checked={!!draft.values?.includes(option.value)}
             onCheckedChange={checked => onChange({values: checked ? [...(draft.values ?? []), option.value] : (draft.values ?? []).filter(value => value !== option.value)})} />)}</div>;
@@ -23,11 +29,17 @@ function FilterControl({spec, draft, onChange}: {spec: FilterSpec; draft: Filter
     case "present":
         return <EventSelect ariaLabel={spec.label} value={draft.flag === true ? "yes" : draft.flag === false ? "no" : "any"} onValueChange={value => onChange({flag: value === "any" ? null : value === "yes"})}
             options={[{value: "any", label: t("manage.table.filters.any")}, {value: "yes", label: spec.yes ?? t("common.yes")}, {value: "no", label: spec.no ?? t("common.no")}]} />;
-    case "number":
-        return <div className="event-table-filters__range">
-            <input className="ib-input ib-input--sm" type="number" inputMode="numeric" value={draft.from ?? ""} placeholder={t("manage.table.filters.from")} aria-label={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={event => onChange({...draft, from: event.target.value})} />
-            <input className="ib-input ib-input--sm" type="number" inputMode="numeric" value={draft.to ?? ""} placeholder={t("manage.table.filters.to")} aria-label={t("manage.table.filters.toLabel", {label: spec.label})} onChange={event => onChange({...draft, to: event.target.value})} />
+    case "number": {
+        const op = draft.op ?? "eq";
+        return <div className="event-table-filters__row">
+            <EventSelect className="event-table-filters__op" ariaLabel={t("manage.table.filters.opLabel", {label: spec.label})} value={op} onValueChange={value => onChange({...draft, op: value})}
+                options={NUMBER_OPS.map(value => ({value, label: t(`manage.table.filters.op.${value}`)}))} />
+            {op === "between" ? <div className="event-table-filters__range">
+                <input className="ib-input ib-input--sm" type="number" value={draft.from ?? ""} placeholder={t("manage.table.filters.min")} aria-label={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={event => onChange({...draft, from: event.target.value})} />
+                <input className="ib-input ib-input--sm" type="number" value={draft.to ?? ""} placeholder={t("manage.table.filters.max")} aria-label={t("manage.table.filters.toLabel", {label: spec.label})} onChange={event => onChange({...draft, to: event.target.value})} />
+            </div> : <input className="ib-input ib-input--sm" type="number" value={draft.from ?? ""} aria-label={t("manage.table.filters.valueLabel", {label: spec.label})} onChange={event => onChange({...draft, from: event.target.value})} />}
         </div>;
+    }
     case "date":
         return <div className="event-table-filters__range event-table-filters__range--dates">
             <EventDateTimePicker allowClear value={draft.from ?? ""} placeholder={t("manage.table.filters.from")} ariaLabel={t("manage.table.filters.fromLabel", {label: spec.label})} onChange={value => onChange({...draft, from: value})} />

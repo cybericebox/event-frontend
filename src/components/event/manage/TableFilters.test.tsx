@@ -19,8 +19,8 @@ describe("filters popover", () => {
         fireEvent.click(screen.getByRole("button", {name: "Фільтри"}));
         const popover = screen.getByRole("dialog");
         fireEvent.change(within(popover).getByRole("searchbox", {name: "«Ім’я» містить"}), {target: {value: "ol"}});
-        expect(onChange).toHaveBeenLastCalledWith({"@name": {text: "ol"}});
-        fireEvent.change(within(popover).getByRole("spinbutton", {name: "«Учасники» від"}), {target: {value: "2"}});
+        expect(onChange).toHaveBeenLastCalledWith({"@name": {op: "contains", text: "ol"}});
+        fireEvent.change(within(popover).getByRole("spinbutton", {name: "Значення для «Учасники»"}), {target: {value: "2"}});
         expect(onChange).toHaveBeenLastCalledWith({"@members": {from: "2"}});
         fireEvent.click(within(popover).getByRole("checkbox", {name: "Допущена"}));
         expect(onChange).toHaveBeenLastCalledWith({"@status": {values: ["admitted"]}});
@@ -32,12 +32,12 @@ describe("filter chips", () => {
         const onChange = vi.fn();
         const onReset = vi.fn();
         const onRemoveSearch = vi.fn();
-        render(<TableFilterChips specs={specs} drafts={{"@name": {text: "ol"}, "@members": {from: "2"}}} onChange={onChange} onReset={onReset}
+        render(<TableFilterChips specs={specs} drafts={{"@name": {text: "ol"}, "@members": {op: "between", from: "2"}}} onChange={onChange} onReset={onReset}
             extra={[{key: "@search", text: "Пошук: «x»", onRemove: onRemoveSearch}]} />);
         const chips = screen.getByRole("group", {name: "Активні фільтри"});
         expect(within(chips).getByText("Учасники: від 2")).toBeTruthy();
         fireEvent.click(within(chips).getByRole("button", {name: "Прибрати фільтр «Ім’я: містить «ol»»"}));
-        expect(onChange).toHaveBeenLastCalledWith({"@members": {from: "2"}});
+        expect(onChange).toHaveBeenLastCalledWith({"@members": {op: "between", from: "2"}});
         fireEvent.click(within(chips).getByRole("button", {name: "Прибрати фільтр «Пошук: «x»»"}));
         expect(onRemoveSearch).toHaveBeenCalledOnce();
         fireEvent.click(within(chips).getByRole("button", {name: "Скинути фільтри"}));

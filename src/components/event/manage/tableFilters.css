@@ -18,3 +18,6 @@
 .event-table-filters__sort.is-active,.event-table-filters__sort:hover{color:var(--ib-ink)}
 .event-table-filters__sort.is-active svg{color:var(--ib-ink)}
 .event-table-filters__sort:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.event-table-filters__row{display:grid;grid-template-columns:minmax(120px,auto) 1fr;gap:var(--ib-2);align-items:start}
+.event-table-filters__row .event-table-filters__op{width:100%}
+.event-table-filters__row>:only-child{grid-column:1/-1}
