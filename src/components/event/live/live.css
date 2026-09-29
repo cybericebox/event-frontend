@@ -40,6 +40,11 @@
 .live-solves li{display:flex;gap:.6em;align-items:baseline;padding:.42em 0;border-bottom:1px solid var(--live-line);font-size:var(--live-fs-body)}
 .live-solves li span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .live-solves li b{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
+/* Empty widget: the shared EmptyState fills the tile under its title, centered. */
+.live-chart .event-block-state,.live-table .event-block-state,.live-solves .event-block-state{--event-block-state-h:0px;padding:var(--ib-4)}
+.live-chart__plot>.event-block-state{position:absolute;inset:0}
+.live-chart .ib-empty__text,.live-table .ib-empty__text,.live-solves .ib-empty__text{max-width:28ch;font-size:var(--live-fs-body)}
+.live-chart .ib-empty svg,.live-table .ib-empty svg,.live-solves .ib-empty svg{width:1.6em;height:1.6em;font-size:var(--live-fs-body)}
 .live-solves li time{color:var(--live-faint);font-size:var(--live-fs-caption);font-family:var(--font-geist-mono,ui-monospace,monospace)}
 .live-announcement{display:grid;place-items:center;height:100%;font-size:var(--live-fs-display);font-weight:600;line-height:1.2;text-align:center}
 /* Logos: monochrome, quieter than the numbers (§3). */

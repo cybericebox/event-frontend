@@ -38,6 +38,7 @@
 .ib-rail__head .ib-num{color:var(--ib-dim)}
 .ib-rail__rest{margin-left:auto;font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .ib-rail__empty{padding:56px 0;text-align:center;color:var(--ib-dim)}
+.ib-rail__state{display:flex;flex:1 1 auto;flex-direction:column;align-items:center;justify-content:center}
 .ib-rail__empty b{display:block;color:var(--ib-ink);font-size:15px;font-weight:var(--ib-w-semibold);margin-bottom:var(--ib-1)}
 
 @media (max-width:720px){

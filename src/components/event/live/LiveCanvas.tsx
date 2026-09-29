@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
+import {EmptyState} from "@/components/ui/EmptyState";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -55,7 +56,7 @@ function LiveChart({widget, event, results, now, theme}: {widget: LiveWidget; ev
         <h2>{t("live.chart.title", {suffix: frozenSuffix(results)})}</h2>
         <div className="live-chart__plot" ref={ref}>
             <span className="live-chart__probe" ref={labelRef} aria-hidden="true">0</span>
-            {!hasData ? <p>{t("live.chart.empty")}</p> : size.width > 0 && <>
+            {!hasData ? <EmptyState compact message={t("live.chart.empty")} /> : size.width > 0 && <>
                 <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
                     {series.map((item, index) => <path key={item.teamID} d={item.path} fill="none" stroke={colors[index % colors.length]} strokeWidth={Math.max(3, line * 0.16)} strokeLinecap="round" strokeLinejoin="round" />)}
@@ -102,11 +103,11 @@ function WidgetContent({widget, event, results, now, theme, edit}: {widget: Live
         const pageSize = Math.max(1, Number(widget.props.rowsPerPage) || 10);
         const pageCount = Math.max(1, Math.ceil(teams.length / pageSize));
         const page = Math.floor(now / 1000 / Math.max(1, Number(widget.props.pageSeconds) || 10)) % pageCount;
-        return <div className="live-table"><h2>{t("live.table.title", {suffix: frozenSuffix(results)})}</h2>{teams.length ? <table><thead><tr><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead><tbody>{teams.slice(page * pageSize, (page + 1) * pageSize).map(team => <tr key={team.TeamID} className={team.Rank === 1 ? "is-lead" : undefined}><td>{team.Rank}</td><td>{team.TeamName}</td><td>{team.Points.toLocaleString("uk-UA")}</td></tr>)}</tbody></table> : <p>{t("live.table.empty")}</p>}</div>;
+        return <div className="live-table"><h2>{t("live.table.title", {suffix: frozenSuffix(results)})}</h2>{teams.length ? <table><thead><tr><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead><tbody>{teams.slice(page * pageSize, (page + 1) * pageSize).map(team => <tr key={team.TeamID} className={team.Rank === 1 ? "is-lead" : undefined}><td>{team.Rank}</td><td>{team.TeamName}</td><td>{team.Points.toLocaleString("uk-UA")}</td></tr>)}</tbody></table> : <EmptyState compact message={t("live.table.empty")} />}</div>;
     }
     if (widget.type === "solves") {
         const names = new Map(teams.map(team => [team.TeamID, team.TeamName]));
-        return <div className="live-solves"><h2>{t("live.solves.title")}</h2>{results?.Timeline.length ? <ol>{[...results.Timeline].sort((a, b) => b.SolvedAt.localeCompare(a.SolvedAt)).slice(0, Number(widget.props.rows) || 5).map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`}><span>{names.get(item.EventTeamID) ?? t("live.table.team")} → {item.ChallengeName}</span><b>+{item.Points}</b><time>{clockLabel(item.SolvedAt)}</time></li>)}</ol> : <p>{t("live.solves.empty")}</p>}</div>;
+        return <div className="live-solves"><h2>{t("live.solves.title")}</h2>{results?.Timeline.length ? <ol>{[...results.Timeline].sort((a, b) => b.SolvedAt.localeCompare(a.SolvedAt)).slice(0, Number(widget.props.rows) || 5).map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`}><span>{names.get(item.EventTeamID) ?? t("live.table.team")} → {item.ChallengeName}</span><b>+{item.Points}</b><time>{clockLabel(item.SolvedAt)}</time></li>)}</ol> : <EmptyState compact message={t("live.solves.empty")} />}</div>;
     }
     if (widget.type === "announcement") return <div className="live-announcement">{typeof widget.props.text === "string" && widget.props.text.trim() || t("live.announcement.placeholder")}</div>;
     if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} />;

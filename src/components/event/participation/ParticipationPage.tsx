@@ -262,7 +262,7 @@ function TeamSection({event, info, team, started, finished}: {event: PublicEvent
             </FieldRow>}
         </dl>
         <h3 className="event-part__subhead">{t("participation.team.members")}</h3>
-        {members.isPending ? <p className="event-part__note">{t("participation.team.membersLoading")}</p> : members.isError ? <p className="event-part__note">{t("participation.team.membersFailed")}</p> :
+        {members.isPending ? <EventLoading compact label={t("participation.team.membersLoading")} /> : members.isError ? <p className="event-part__note">{t("participation.team.membersFailed")}</p> :
             <table className="event-members"><thead><tr><th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th><th><span className="ib-sr">{t("participation.team.actions")}</span></th></tr></thead>
                 <tbody>{members.data.map(member => <tr key={member.UserID} className={member.Own ? "is-own" : undefined}>
                     <td>{member.DisplayName}{member.Own && <span className="event-part__muted"> · {t("participation.team.you")}</span>}</td>

@@ -13,16 +13,13 @@
 .event-notifications__head .event-notifications__icon-btn{display:grid;place-items:center;width:28px;height:28px;padding:0;color:var(--ib-dim)}
 .event-notifications__head .event-notifications__icon-btn:hover{background:var(--ib-soft);color:var(--ib-ink);text-decoration:none}
 .event-notifications__trigger:focus-visible,.event-notifications__head button:focus-visible,.event-notification-card__actions a:focus-visible,.event-notification-card__actions button:focus-visible,.event-notification-popin button:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
-.event-notifications__scroll{min-height:0;overflow-y:auto}
+.event-notifications__scroll{display:flex;min-height:160px;flex-direction:column;overflow-y:auto}
+/* Loading older messages: a short crest row under the list. */
+.event-notifications__older .event-block-state{--event-block-state-h:72px;flex:none;padding:var(--ib-3)}
 .event-notifications__list{margin:0;padding:0;list-style:none}
 .event-notifications__list li+li{border-top:1px solid var(--ib-line)}
 .event-notifications__list li{padding:var(--ib-3) var(--ib-4)}
 .event-notifications__list li:hover{background:var(--ib-soft)}
-.event-notifications__empty{display:flex;min-height:192px;flex-direction:column;align-items:center;justify-content:center;gap:var(--ib-3);padding:var(--ib-6) var(--ib-4);color:var(--ib-dim);text-align:center}
-.event-notifications__empty>span{display:grid;place-items:center;width:48px;height:48px}
-.event-notifications__empty svg{width:32px;height:32px}
-.event-notifications__empty p{margin:0;font-size:var(--ib-fs-14)}
-.event-notifications__state{display:grid;place-items:center;gap:var(--ib-2);min-height:125px;margin:0;padding:var(--ib-5);color:var(--ib-dim);font-size:var(--ib-fs-13);text-align:center}
 .event-notifications__error{margin:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-12)}
 .event-notification-card{display:flex;align-items:flex-start;gap:var(--ib-3);min-width:0;text-align:left}
 .event-notification-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;flex:none;border-radius:var(--ib-r)}

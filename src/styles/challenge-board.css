@@ -29,3 +29,5 @@
 .ib-board__empty{padding:56px 0;text-align:center;color:var(--ib-dim)}
 .ib-board__empty b{display:block;color:var(--ib-ink);font-size:15px;font-weight:var(--ib-w-semibold);margin-bottom:var(--ib-1)}
 .ib-board__empty .ib-btn{margin-top:14px}
+/* Empty search/filter result: EmptyState centered in the board, action below it. */
+.ib-board__state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:var(--ib-6)}

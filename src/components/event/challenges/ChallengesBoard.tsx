@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useState, type ReactNode} from "react";
+import {EmptyState} from "@/components/ui/EmptyState";
 import Link from "next/link";
 import {useQuery} from "@tanstack/react-query";
 import {getOwnChallenges, type OwnChallenge} from "@/api/participantChallenges";
@@ -85,7 +86,7 @@ function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, s
     };
     const open = (challenge: OwnChallenge) => setSelectedID(challenge.EventChallengeID);
     return <Page banners={banners} sub={challenges.length ? sub : undefined} view={challenges.length ? view : undefined} onView={changeView}>
-        {!categories.length ? <Empty title={t("challenges.empty.title")}>{t("challenges.empty.body")}</Empty>
+        {!categories.length ? <EmptyState message={t("challenges.emptyMessage")} />
             : view === "rail" ? <RailBoard categories={categories} acceptedID={acceptedID} onOpen={open} />
             : <TilesBoard categories={categories} acceptedID={acceptedID} onOpen={open} />}
         <ChallengeModal challenge={selected} eventID={eventID} mode={mode} teamMode={teamMode} finished={finished}

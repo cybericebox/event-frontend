@@ -63,6 +63,8 @@ dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal__solves tr.is-own td{background:var(--ib-soft);font-weight:var(--ib-w-semibold)}
 .ib-cmodal__solves tr.is-own .is-n,.ib-cmodal__solves tr.is-own .is-t{color:var(--ib-ink)}
 .ib-cmodal__empty{padding:26px 0;text-align:center;color:var(--ib-dim)}
+/* Solves tab: loader, empty and table share the compact state height. */
+.ib-cmodal__body--solves{display:flex;flex-direction:column;min-height:calc(160px + 44px)}
 .ib-cmodal__empty b{display:block;margin-bottom:var(--ib-1);color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
 
 @media (max-width:560px){

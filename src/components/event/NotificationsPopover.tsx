@@ -1,6 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
+import {EmptyState} from "@/components/ui/EmptyState";
 import {createPortal} from "react-dom";
 import DOMPurify from "isomorphic-dompurify";
 import {Bell, X} from "lucide-react";
@@ -216,10 +217,7 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
                 </div>
                 {error && <p className="event-notifications__error" role="alert">{error}</p>}
                 <div className="event-notifications__scroll" ref={scrollRef}>
-                    {loading ? <EventLoading label={t("notifications.loading")} /> : items.length === 0 ? <div className="event-notifications__empty" data-empty-state>
-                        <span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4.5 5.5h15L21.5 18a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2l2-12.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M3.5 14h4.7l1.5 2h4.6l1.5-2h4.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <p>{t("notifications.empty")}</p>
-                    </div> : <ul className="event-notifications__list">{items.map((item, index) => {
+                    {loading ? <EventLoading compact label={t("notifications.loading")} /> : items.length === 0 ? <EmptyState compact message={t("notifications.empty")} /> : <ul className="event-notifications__list">{items.map((item, index) => {
                         const href = safeHref(item.Link);
                         return <li key={item.ID} ref={index === items.length - 1 ? lastRef : undefined}>
                             <NotificationMessageCard icon={item.Icon} tone={item.Tone} accentColor={item.AccentColor} title={item.Title}
@@ -230,7 +228,7 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
                             />
                         </li>;
                     })}</ul>}
-                    {loadingOlder && <p className="event-notifications__state">{t("notifications.loadingOlder")}</p>}
+                    {loadingOlder && <div className="event-notifications__older"><EventLoading compact label={t("notifications.loadingOlder")} /></div>}
                 </div>
             </PopoverContent>
         </Popover>

@@ -1,6 +1,7 @@
 "use client";
 
 import {notFound} from "next/navigation";
+import {EmptyState} from "@/components/ui/EmptyState";
 import {EVENT_FORMS_ENABLED} from "@/utils/features";
 import {useState} from "react";
 import Link from "next/link";
@@ -60,7 +61,7 @@ function FormsPage() {
 
     if (!context) return <div className="event-forms-page"><h1>{t("forms.title")}</h1><p>{t("forms.participantsOnly")}</p><Link className="ib-btn" href="/join">{t("forms.toJoin")}</Link></div>;
     return <div className="event-forms-page"><header><Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link><h1>{t("forms.pageTitle")}</h1><p>{t("forms.pageHint")}</p></header>
-        {pending.isPending ? <EventLoading event={context.event} label={t("forms.loading")} /> : pending.isError ? <div className="event-forms-page__state" role="alert"><p>{t("forms.loadFailed")}</p><button className="ib-btn" type="button" onClick={() => void pending.refetch()}>{t("common.retry")}</button></div> : pending.data.length === 0 ? <div className="event-forms-page__state"><h2>{t("forms.empty.title")}</h2><p>{t("forms.empty.body")}</p></div> : <div className="event-forms-page__layout"><section className="event-forms-page__list" aria-label={t("forms.pageTitle")}>{pending.data.map(item => <button className={`event-forms-page__item${selectedID === item.Form.ID ? " is-selected" : ""}`} type="button" key={item.Form.ID} onClick={() => {setSelectedID(item.Form.ID); setError("");}}><strong>{item.Form.Title}</strong><span>{item.Form.Required ? t("forms.required") : t("forms.optional")}</span></button>)}</section>
+        {pending.isPending ? <EventLoading event={context.event} label={t("forms.loading")} /> : pending.isError ? <div className="event-forms-page__state" role="alert"><p>{t("forms.loadFailed")}</p><button className="ib-btn" type="button" onClick={() => void pending.refetch()}>{t("common.retry")}</button></div> : pending.data.length === 0 ? <EmptyState message={t("forms.emptyMessage")} /> : <div className="event-forms-page__layout"><section className="event-forms-page__list" aria-label={t("forms.pageTitle")}>{pending.data.map(item => <button className={`event-forms-page__item${selectedID === item.Form.ID ? " is-selected" : ""}`} type="button" key={item.Form.ID} onClick={() => {setSelectedID(item.Form.ID); setError("");}}><strong>{item.Form.Title}</strong><span>{item.Form.Required ? t("forms.required") : t("forms.optional")}</span></button>)}</section>
             <section className="event-forms-page__detail" aria-label={t("forms.answer")}>{!selected ? <div className="event-forms-page__state"><h2>{t("forms.choose.title")}</h2><p>{t("forms.choose.body")}</p></div> : form.isPending ? <EventLoading event={context.event} label={t("forms.questions.loading")} /> : form.isError ? <div role="alert"><p>{t("forms.questions.failed")}</p><button className="ib-btn" type="button" onClick={() => void form.refetch()}>{t("common.retry")}</button></div> : <><div className="event-forms-page__detail-head"><h2>{form.data.Title}</h2><span>{t("forms.version", {version: form.data.Version})}</span></div><div className="event-join-form">{form.data.Document.blocks.map(block => {
                 if (isFormField(block)) {
                     if (!visible(block.condition, answers)) return null;

@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useState, type RefObject} from "react";
+import {EmptyState} from "@/components/ui/EmptyState";
 import type {OwnChallenge} from "@/api/participantChallenges";
 import {ChallengeTile} from "./ChallengeTile";
 import {t, tPlural} from "@/i18n/t";
@@ -48,12 +49,12 @@ function Search({value, onChange, inputRef, className = ""}: {value: string; onC
 
 function Empty({query, className, category, onReset}: {query: string; className: string; category?: string; onReset?: () => void}) {
     const q = query.trim();
+    const message = q
+        ? category ? t("challenges.board.empty.queryInCategory", {category, query: q}) : t("challenges.board.empty.query", {query: q})
+        : category ? t("challenges.board.empty.categoryDone") : t("challenges.board.empty.selectionDone");
     return <div className={className}>
-        <b>{q ? t("challenges.board.empty.notFound") : t("challenges.board.empty.allSolved")}</b>
-        {q
-            ? category ? t("challenges.board.empty.queryInCategory", {category, query: q}) : t("challenges.board.empty.query", {query: q})
-            : category ? t("challenges.board.empty.categoryDone") : t("challenges.board.empty.selectionDone")}
-        {q && onReset && <><br /><button type="button" className="ib-btn ib-btn--sm" onClick={onReset}>{t("challenges.board.resetSearch")}</button></>}
+        <EmptyState message={message} />
+        {q && onReset && <button type="button" className="ib-btn ib-btn--sm" onClick={onReset}>{t("challenges.board.resetSearch")}</button>}
     </div>;
 }
 
@@ -87,7 +88,7 @@ export function TilesBoard({categories, acceptedID, onOpen}: BoardProps) {
                 </header>
                 <div className="ib-tiles">{item.visible.map(challenge => <ChallengeTile key={challenge.EventChallengeID} challenge={challenge} accepted={acceptedID === challenge.EventChallengeID} onOpen={onOpen} />)}</div>
             </section>)}
-            {!shown.length && <Empty className="ib-board__empty" query={query} onReset={() => { setQuery(""); search.current?.focus(); }} />}
+            {!shown.length && <Empty className="ib-board__state" query={query} onReset={() => { setQuery(""); search.current?.focus(); }} />}
         </div>
     </div>;
 }
@@ -140,7 +141,7 @@ export function RailBoard({categories, acceptedID, onOpen}: BoardProps) {
                 </header>
                 {items.length
                     ? <div className="ib-tiles ib-tiles--lg">{items.map(challenge => <ChallengeTile key={challenge.EventChallengeID} lg challenge={challenge} accepted={acceptedID === challenge.EventChallengeID} onOpen={onOpen} />)}</div>
-                    : <Empty className="ib-rail__empty" query={query} category={current.name} />}
+                    : <Empty className="ib-rail__state" query={query} category={current.name} />}
             </div>
         </div>
     </div>;

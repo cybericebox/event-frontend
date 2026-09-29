@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import {EmptyState} from "@/components/ui/EmptyState";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {getManageResults, resultsLiveURL, ResultsUnavailableError, type ManageResultsSnapshot} from "@/api/manageResults";
 import {resultsAvailability, type ResultsAvailability} from "@/types/resultsAvailability";
@@ -84,7 +85,7 @@ export function ScoreboardView() {
         <header className="ib-page-header">
             <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("scoreboard.title")}</h1><p className="ib-page-header__sub">{sub}</p></div></div>
         </header>
-        {data.Scoreboard.length === 0 ? <Centered><p className="rounded-lg border border-border bg-card p-8 text-center text-foreground">{t("scoreboard.empty")}</p></Centered> : <>
+        {data.Scoreboard.length === 0 ? <EmptyState message={t("scoreboard.empty")} /> : <>
             {data.Display.ChartEnabled && <div className="event-results__chart rounded-lg border border-border bg-card p-4">
                 <p className="mb-2 text-sm font-semibold text-foreground">{t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
                 <ScoreChart snapshot={data} teamIDs={chartTeamIDs(data, ownTeamID)} ownTeamID={ownTeamID} startTime={new Date(event.StartTime)} finishTime={new Date(chartEnd)} />
