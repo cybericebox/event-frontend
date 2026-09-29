@@ -100,7 +100,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
             <button className="ib-admin-side__close" type="button" aria-label={t("manage.shell.closeMenu")} onClick={onNavigate}><X size={18} /></button>
         </div>
         <nav className="ib-admin-side__nav" aria-label={t("manage.nav.sections")}>
-            <Link className="ib-admin-side__item event-manage-sidebar__overview" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.overview")}</span></Link>
+            <Link className="ib-admin-side__item" href="/manage" aria-current={pathname === "/manage" ? "page" : undefined} onClick={onNavigate}><LayoutDashboard size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.overview")}</span></Link>
             {groups.map(group => {
                 const isOpen = openGroupID === group.id;
                 const items = group.items.filter(showItem);
