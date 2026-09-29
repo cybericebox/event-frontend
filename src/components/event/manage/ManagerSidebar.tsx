@@ -3,11 +3,30 @@
 import {useState} from "react";
 import Link from "next/link";
 import {
-    ArrowLeft, AtSign, Bell, CalendarDays, ChevronDown,
-    FilePenLine, FileText, Flag, Layers3, LayoutDashboard,
-    Mail, MonitorPlay, Palette, Plus, Send, Server, Settings2,
-    SlidersHorizontal, Trophy, UserRound, Users, UsersRound, X,
-    type LucideIcon,
+  ArrowLeft,
+  AtSign,
+  Bell,
+  CalendarDays,
+  ChevronDown,
+  FilePenLine,
+  FileText,
+  Layers3,
+  LayoutDashboard,
+  Mail,
+  MonitorPlay,
+  Palette,
+  Plus,
+  Send,
+  Server,
+  Settings2,
+  SlidersHorizontal,
+  Trophy,
+  UserRound,
+  Users,
+  UsersRound,
+  X,
+  type LucideIcon,
+  Puzzle,
 } from "lucide-react";
 import type {ManagePage} from "@/api/manage";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -33,7 +52,7 @@ const groups: Group[] = [
     ]},
     {id: "challenges", label: "Завдання", items: [
         {href: "/manage/exercise-groups", label: "Групи й порядок", icon: Layers3},
-        {href: "/manage/exercises", label: "Завдання", icon: Flag},
+        {href: "/manage/exercises", label: "Завдання", icon: Puzzle},
         {href: "/manage/labs", label: "Стенди", icon: Server, infrastructureOnly: true},
         {href: "/manage/scoring", label: "Профіль балів", icon: SlidersHorizontal},
         {href: "/manage/submissions", label: "Спроби розв’язання", icon: Send},
