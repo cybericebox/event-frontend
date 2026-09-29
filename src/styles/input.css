@@ -53,3 +53,6 @@
 
 /* PasswordInput on manage forms: the manage input inside .ib-input-wrap--password */
 .ib-input-wrap--password>.event-manage-input{padding-right:96px}
+/* Number fields: no native stepper arrows; ArrowUp/ArrowDown still step the value. */
+input[type="number"]{-moz-appearance:textfield;appearance:textfield}
+input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}

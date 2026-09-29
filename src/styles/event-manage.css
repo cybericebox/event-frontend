@@ -194,7 +194,7 @@
 .event-brand-palette-dialog__actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:var(--ib-2)}
 .event-brand-preview-logo{display:flex;align-items:center;gap:var(--ib-2)}
 .event-brand-preview-logo img{width:24px;height:24px;object-fit:contain}
-.event-manage-savebar{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;justify-content:flex-end;gap:var(--ib-3);padding:var(--ib-3) 0;background:var(--ib-surface);border-top:1px solid var(--ib-line)}
+.event-manage-savebar{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;justify-content:flex-end;gap:var(--ib-3);padding:var(--ib-3) 0;background:var(--ib-surface)}
 .event-manage-sidebar__overview{margin-bottom:var(--ib-2)}
 .event-manage-sidebar__overview::after{content:"";position:absolute;left:var(--ib-3);right:var(--ib-3);bottom:calc(-1 * var(--ib-2));border-bottom:1px solid var(--ib-brand-line)}
 .event-manage-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ib-5)}
@@ -213,7 +213,7 @@
 .event-manage-section{display:grid;gap:var(--ib-5);padding:var(--ib-6);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
 .event-manage-section__head h2,.event-manage-preview__head h2{font-size:var(--ib-fs-16)}
 .event-manage-section__head p,.event-manage-preview__head p{margin-top:var(--ib-1);color:var(--ib-dim);font-size:var(--ib-fs-13)}
-.event-manage-section__actions{display:flex;justify-content:flex-end;border-top:1px solid var(--ib-line);padding-top:var(--ib-4)}
+.event-manage-section__actions{display:flex;justify-content:flex-end;padding-top:var(--ib-4)}
 .event-manage-fields-two,.event-manage-fields-three{display:grid;gap:var(--ib-4);grid-template-columns:repeat(2,minmax(0,1fr))}
 .event-manage-fields-three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .event-manage-field{display:grid;align-content:start;gap:var(--ib-2);min-width:0;color:var(--ib-ink);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium)}
@@ -617,7 +617,7 @@ button.event-content-editor__block-title{padding:0;border:0;background:none;colo
 .event-content-editor__range input{flex:1;min-width:0;accent-color:var(--ib-action)}
 .event-content-editor__range output{min-width:4ch;color:var(--ib-ink);font-variant-numeric:tabular-nums;text-align:right}
 .event-content-editor__hidden-note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
-.event-content-editor__footer{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-4);margin-top:var(--ib-6);padding-top:var(--ib-4);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-content-editor__footer{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-4);margin-top:var(--ib-6);padding-top:var(--ib-4);color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-content-editor__footer>div{display:flex;gap:var(--ib-2);flex-wrap:wrap}
 .event-manage-content__preview{position:sticky;top:0;min-width:0}
 .event-manage-content__preview-head{display:flex;align-items:flex-start;gap:var(--ib-3);margin-bottom:var(--ib-4)}
@@ -703,7 +703,7 @@ button.event-content-editor__block-title{padding:0;border:0;background:none;colo
 .event-manage-notifications__preview{display:grid;gap:var(--ib-3);min-width:0;padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-soft)}
 .event-manage-notifications__preview h3{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium)}
 .event-manage-notifications__preview .event-notification-card{background:var(--ib-surface)}
-.event-manage-notifications__footer{justify-content:flex-end;padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
+.event-manage-notifications__footer{justify-content:flex-end;padding-top:var(--ib-4)}
 .event-manage-notifications__footer>span{margin-right:auto;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-manage-notifications__empty{display:flex;flex-direction:column;align-items:center;gap:var(--ib-3);padding-bottom:var(--ib-6)}
 .event-manage-notifications__preview small{color:var(--ib-dim);font-size:var(--ib-fs-12)}

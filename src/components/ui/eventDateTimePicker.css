@@ -18,7 +18,7 @@
 .event-date-picker__day.is-other-month{color:var(--ib-dim)}
 .event-date-picker__day.is-today{font-weight:var(--ib-w-semibold);text-decoration:underline;text-underline-offset:3px}
 .event-date-picker__day.is-selected,.event-date-picker__day.is-selected:hover{background:var(--ib-action);color:var(--ib-on-action)}
-.event-date-picker__footer{display:grid;gap:var(--ib-3);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
+.event-date-picker__footer{display:grid;gap:var(--ib-3);padding-top:var(--ib-3)}
 .event-date-picker__time{display:flex;align-items:center;flex-wrap:wrap;gap:var(--ib-2);font-size:var(--ib-fs-13)}
 .event-date-picker__part{display:inline-flex;align-items:center;gap:var(--ib-1)}
 .event-date-picker__time input{width:40px;height:32px;padding:0 var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-ink);font:inherit;font-variant-numeric:tabular-nums;text-align:center}

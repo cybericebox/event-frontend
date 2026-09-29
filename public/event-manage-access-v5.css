@@ -30,7 +30,7 @@
 .event-date-picker__day{width:100%;max-width:34px;font-size:var(--ib-fs-12);font-variant-numeric:tabular-nums}
 .event-date-picker__day.is-other-month{color:var(--ib-dim)}
 .event-date-picker__day.is-selected,.event-date-picker__day.is-selected:hover{background:var(--ib-action);color:var(--ib-on-action)}
-.event-date-picker__footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--ib-3);margin-top:var(--ib-3);padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
+.event-date-picker__footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--ib-3);margin-top:var(--ib-3);padding-top:var(--ib-3)}
 .event-date-picker__time,.event-date-picker__actions{display:flex;align-items:center;gap:var(--ib-2)}
 .event-date-picker__time{font-size:var(--ib-fs-13)}
 .event-date-picker__time:has(.event-date-picker__time-hint),.event-date-picker__time:has(input:disabled){display:grid;justify-items:start;gap:4px}

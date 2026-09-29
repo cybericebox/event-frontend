@@ -11,3 +11,8 @@
   .event-manage-shell :is(.event-manage-general,.event-manage-appearance) .event-manage-section>:is(.event-manage-field,.event-brand-field):has(textarea,.event-manage-choice-group,.event-lexical,.event-rich-text-field),
   .event-manage-shell .event-manage-setup__form>:is(.event-manage-field,.event-brand-field):has(textarea,.event-manage-choice-group,.event-lexical,.event-rich-text-field){grid-column:1/-1}
 }
+/* No divider line above action buttons: save bars, form and dialog footers keep their spacing only. */
+.event-manage-savebar,.event-manage-section__actions,.event-content-editor__footer,.event-manage-notifications__footer,.ib-modal__foot,.event-date-picker__footer{border-top:0}
+/* Number fields: no native stepper arrows; ArrowUp/ArrowDown still step the value. */
+input[type="number"]{-moz-appearance:textfield;appearance:textfield}
+input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
