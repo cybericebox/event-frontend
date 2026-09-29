@@ -20,7 +20,8 @@ export NEXT_PUBLIC_API_DOMAIN NEXT_PUBLIC_ID_DOMAIN NEXT_PUBLIC_EXERCISES_DOMAIN
 printenv | grep '^NEXT_PUBLIC_' | while IFS='=' read -r key value; do
   # Escape sed-special chars in the replacement (| delimiter, & match-ref, \).
   esc=$(printf '%s' "$value" | sed -e 's/[\\&|]/\\&/g')
-  grep -rlF "$key" /app/.next /app/server.js 2>/dev/null | while read -r file; do
+  # Only .next is writable by the runtime user; server.js carries nothing but dev origins.
+  grep -rlF "$key" /app/.next 2>/dev/null | while read -r file; do
     sed -i "s|${key}|${esc}|g" "$file"
   done || true
 done
