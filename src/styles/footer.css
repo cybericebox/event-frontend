@@ -14,8 +14,9 @@
 .ib-footer__links a{color:var(--ib-dim);font-size:var(--ib-fs-14);font-weight:var(--ib-w-regular)}
 .ib-footer__links a:hover{color:var(--ib-ink)}
 .ib-footer__legal{color:var(--ib-dim)}
-.ib-footer__support a{color:var(--ib-dim);font-weight:var(--ib-w-regular);text-decoration:underline;text-underline-offset:3px}
-.ib-footer__support a:hover{color:var(--ib-ink)}
+:is(.ib-footer__legal,.ib-footer__support) a{color:var(--ib-ink);font-weight:var(--ib-w-medium);text-decoration:none;border-radius:2px}
+:is(.ib-footer__legal,.ib-footer__support) a:hover{color:var(--ib-accent)}
+:is(.ib-footer__legal,.ib-footer__support) a:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
 
 /* event footer: one row, organizer line left, links right */
 .ib-footer--event .ib-footer__inner{max-width:none;padding:0 var(--ib-12)}
