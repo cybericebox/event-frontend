@@ -235,66 +235,6 @@ main {
 }
 
 
-/* Solves table */
-.solve-table-container {
-    caret-color: transparent;
-}
-
-.solve-table th, td {
-    border-bottom: 1px solid #ddd;
-    bottom: 0;
-    height: 57.894px;
-}
-
-.rotated-header th {
-    height: 100px;
-    vertical-align: bottom;
-    line-height: 1;
-    border-bottom: 1px solid #ddd;
-}
-
-.rotated-header-container {
-    width: 15px;
-}
-
-.rotated-header-content {
-    transform-origin: bottom left;
-    transform: translateX(10px) rotate(-20deg);
-}
-
-.table-solve-icon-container {
-    padding: 0 0 0 0 !important;
-    border-right: 1px solid #ddd;
-    border-left: 1px solid #ddd;
-}
-
-.challenge-container {
-    max-width: 260px;
-}
-
-@media screen and (min-width: 992px) and (max-width: 1200px) {
-
-
-    .challenge-container {
-        max-width: 303px;
-    }
-}
-
-@media screen and (min-width: 768px) and (max-width: 991px) {
-
-
-    .challenge-container {
-        max-width: 330px;
-    }
-}
-
-@media screen and (min-width: 576px) and (max-width: 767px) {
-
-    .challenge-container {
-        max-width: 100%;
-    }
-}
-
 .ProseMirror {
     padding: 10px;
     background: transparent;
