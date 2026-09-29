@@ -27,3 +27,23 @@
 .event-chip__remove svg{width:14px;height:14px}
 
 .event-field-help{display:inline-flex;align-items:center;gap:var(--ib-1)}
+
+/* Dialog content never overflows sideways: flexible children may shrink. */
+.event-modal .ib-modal__body{min-width:0}
+.event-modal .ib-modal__body>*{min-width:0;max-width:100%}
+.event-chip{max-width:100%}
+.event-chip__text{min-width:0}
+
+/* CSV row: file picker, then the template link; wraps on narrow screens. */
+.event-csv-row{display:flex;flex-wrap:wrap;align-items:center;column-gap:var(--ib-3);row-gap:var(--ib-2);min-width:0}
+.event-csv-row>.event-file-picker{flex:1 1 220px}
+.event-csv-template{flex:none;white-space:nowrap;font-size:var(--ib-fs-13)}
+.event-csv-template:focus:not(:focus-visible){outline:none}
+
+/* Portalled help tooltip (HelpTooltip): fixed, above the modal, capped width. */
+.event-help-tip{position:fixed;z-index:1200;max-width:min(280px,calc(100vw - 16px));padding:var(--ib-2) var(--ib-3);
+  border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-raised);color:var(--ib-body);
+  font-size:var(--ib-fs-13);line-height:var(--ib-lh-ui);pointer-events:none;overflow-wrap:anywhere}
+.event-help-tip__copy{display:flex;flex-direction:column;gap:2px}
+.event-help-tip__point{padding-left:var(--ib-3);position:relative}
+.event-help-tip__point::before{content:"–";position:absolute;left:0;color:var(--ib-dim)}
