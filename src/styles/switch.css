@@ -1,0 +1,21 @@
+/* Switch — <label class="ib-switch"><input type="checkbox" role="switch"><span class="ib-switch__track"></span><span>Текст</span></label>
+   Immediate on/off setting (e.g. «Веб-проксі»). Track 32×18 (pill ≤20px high). Knob slides by position only.
+   States: hover, focus-visible, on (:checked), disabled. --end puts the control after the label (settings rows). */
+
+.ib-switch{position:relative;display:inline-flex;align-items:center;gap:var(--ib-2);cursor:pointer;color:var(--ib-body);font-size:var(--ib-fs-14);line-height:20px}
+.ib-switch>input{position:absolute;opacity:0;width:32px;height:18px;margin:0;cursor:inherit}
+.ib-switch__track{position:relative;flex:none;width:32px;height:18px;border-radius:var(--ib-r-pill);border:1px solid var(--ib-control);background:var(--ib-field-bg,var(--ib-surface));
+  transition:background-color var(--ib-dur) var(--ib-ease),border-color var(--ib-dur) var(--ib-ease)}
+.ib-switch__track::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--ib-control);
+  transition:left var(--ib-dur) var(--ib-ease),background-color var(--ib-dur) var(--ib-ease)}
+.ib-switch:hover .ib-switch__track,.ib-switch.is-hover .ib-switch__track{border-color:var(--ib-dim)}
+.ib-switch:hover .ib-switch__track::after,.ib-switch.is-hover .ib-switch__track::after{background:var(--ib-dim)}
+.ib-switch>input:focus-visible+.ib-switch__track,.ib-switch.is-focus .ib-switch__track{outline:2px solid var(--ib-action);outline-offset:2px}
+.ib-switch>input:checked+.ib-switch__track{background:var(--ib-action);border-color:var(--ib-action)}
+.ib-switch>input:checked+.ib-switch__track::after{left:16px;background:var(--ib-on-action)}
+.ib-switch:has(>input:disabled){cursor:not-allowed;color:var(--ib-faint)}
+.ib-switch>input:disabled+.ib-switch__track{opacity:.5}
+.ib-switch--end{display:flex;justify-content:space-between;width:100%}
+.ib-switch--end>.ib-switch__track{order:2}
+.ib-switch--end>input{right:0}
+.ib-switch small{display:block;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}

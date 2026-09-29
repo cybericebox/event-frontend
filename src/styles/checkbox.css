@@ -1,0 +1,23 @@
+/* Checkbox — <label class="ib-check"><input type="checkbox"><span class="ib-check__box"></span><span>Текст</span></label>
+   Native input is kept (visually hidden, still focusable); the box is drawn. Indeterminate via .is-mixed on the label
+   (set input.indeterminate = true in JS as well). States: hover, focus-visible, checked, mixed, disabled, error (.is-invalid). */
+
+.ib-check{position:relative;display:inline-flex;align-items:flex-start;gap:var(--ib-2);cursor:pointer;color:var(--ib-body);font-size:var(--ib-fs-14);line-height:20px}
+.ib-check>input{position:absolute;opacity:0;width:16px;height:16px;margin:2px 0 0;cursor:inherit}
+.ib-check__box{position:relative;flex:none;width:16px;height:16px;margin-top:2px;border:1px solid var(--ib-control);border-radius:var(--ib-r-sm);background:var(--ib-field-bg,var(--ib-surface));
+  transition:background-color var(--ib-dur-fast) var(--ib-ease),border-color var(--ib-dur-fast) var(--ib-ease)}
+.ib-check__box::after{content:"";position:absolute;left:4.5px;top:1.5px;width:5px;height:9px;border:solid var(--ib-on-action);border-width:0 2px 2px 0;transform:rotate(45deg);opacity:0}
+.ib-check:hover .ib-check__box,.ib-check.is-hover .ib-check__box{border-color:var(--ib-dim)}
+.ib-check>input:focus-visible+.ib-check__box,.ib-check.is-focus .ib-check__box{outline:2px solid var(--ib-action);outline-offset:2px}
+.ib-check>input:checked+.ib-check__box,.ib-check.is-mixed .ib-check__box{background:var(--ib-action);border-color:var(--ib-action)}
+.ib-check>input:checked+.ib-check__box::after{opacity:1}
+.ib-check.is-mixed .ib-check__box::after{opacity:1;left:3px;top:6px;width:8px;height:0;border-width:0 0 2px 0;transform:none}
+.ib-check.is-invalid .ib-check__box{border-color:var(--ib-danger)}
+.ib-check:has(>input:disabled){cursor:not-allowed;color:var(--ib-faint)}
+.ib-check>input:disabled+.ib-check__box{opacity:.5}
+.ib-check small{display:block;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+
+/* group */
+.ib-check-group{display:flex;flex-direction:column;gap:var(--ib-2);border:0;margin:0;padding:0;min-width:0}
+.ib-check-group>legend{padding:0;margin-bottom:var(--ib-2);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);color:var(--ib-ink)}
+

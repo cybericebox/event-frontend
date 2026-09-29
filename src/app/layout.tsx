@@ -27,6 +27,8 @@ import "@/styles/link.css";
 import "@/styles/tag.css";
 import "@/styles/tabs.css";
 import "@/styles/segmented.css";
+import "@/styles/checkbox.css";
+import "@/styles/switch.css";
 import "@/styles/copy-field.css";
 import "@/styles/icon-button.css";
 import "@/styles/modal.css";
