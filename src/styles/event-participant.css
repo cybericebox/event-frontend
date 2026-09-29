@@ -59,9 +59,8 @@ dialog.ib-modal::backdrop{background:var(--ib-backdrop)}
 dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 
 /* ── VPN ─────────────────────────────────────────────────────────────────── */
-.event-vpn-button svg{width:20px;height:20px}
-.event-vpn-button.is-ready{--_fg:var(--ib-ok);--_fg-h:var(--ib-ok)}
-.event-vpn-button.is-failed{--_fg:var(--ib-danger);--_fg-h:var(--ib-danger)}
+.event-vpn-button.is-ready{--_fg:var(--ib-ok)}
+.event-vpn-button.is-failed{--_fg:var(--ib-danger)}
 .event-vpn-stand{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);background:var(--ib-soft)}
 .event-vpn-stand>svg{width:20px;height:20px;flex:none;margin-top:1px;color:var(--ib-dim)}
 .event-vpn-stand.is-ready>svg{color:var(--ib-ok)}

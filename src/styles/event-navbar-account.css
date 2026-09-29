@@ -26,3 +26,15 @@
   .event-navbar__mobile-theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding-top:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}
 }
 @media(max-width:760px){.event-header-divider{display:none}}
+/* Pinned right items (VPN, team, profile): icon + short label, like CTFd. */
+.event-pin{--_fg:var(--ib-dim);flex:none}
+.event-pin:hover{--_fg:var(--ib-ink)}
+.event-pin[aria-current="page"]{--_fg:var(--ib-ink);background:var(--ib-soft)}
+.event-vpn-button.is-ready:hover{--_fg:var(--ib-ok)}
+.event-vpn-button.is-failed:hover{--_fg:var(--ib-danger)}
+.event-navbar .event-pin-tip{display:inline-flex}
+@container ib-navbar (min-width:1101px){.event-pin-tip .ib-tip__bubble{display:none}}
+@container ib-navbar (max-width:1100px){.event-pin--page{padding:0;width:var(--ib-control-h);justify-content:center}.event-pin--page .event-pin__label{display:none}}
+@container ib-navbar (max-width:760px){.event-pin-tip:has(.event-pin--page){display:none}.event-vpn-button{padding:0;width:var(--ib-control-h)}.event-vpn-button .event-pin__label{display:none}}
+.event-navbar__panel-pin{gap:var(--ib-3)}
+.event-navbar__panel-pin svg{width:18px;height:18px;flex:none;color:var(--ib-dim)}

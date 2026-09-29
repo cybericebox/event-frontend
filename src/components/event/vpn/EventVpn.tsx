@@ -87,12 +87,12 @@ export function EventVpnProvider({eventID, enabled, moderators = false, children
     </VpnContext.Provider>;
 }
 
-// Header entry: the icon itself carries the state (no dot indicators in the DS).
+// Header entry: the icon itself carries the state (no dot indicators in the DS); the short label sits beside it.
 export function VpnHeaderButton() {
     const {available, status, openVpn} = useEventVpn();
     if (!available) return null;
     const label = t("vpn.header.label", {status: status ? standStatusText(status).title.toLocaleLowerCase() : t("vpn.header.checking")});
-    return <EventTooltip content={label} placement="bottom" silent>{() => <button type="button" className={`ib-icon-btn event-vpn-button is-${status ?? "unknown"}`} aria-label={label} onClick={openVpn}>
-        <StandStatusIcon status={status} />
+    return <EventTooltip content={label} placement="bottom" silent>{() => <button type="button" className={`ib-btn ib-btn--sm ib-btn--ghost event-pin event-vpn-button is-${status ?? "unknown"}`} aria-label={label} onClick={openVpn}>
+        <StandStatusIcon status={status} /><span className="event-pin__label">{t("nav.pin.vpn")}</span>
     </button>}</EventTooltip>;
 }
