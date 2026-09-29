@@ -3012,6 +3012,8 @@
   "manage.live.prop.logoColor.mono": "Одноколірні (під тему)",
   "manage.live.logos.help": "Файли SVG, PNG або WebP до 1 МБ. Рекомендовано: прозорий фон, висота від 120 px, пропорції не ширші за 4:1. Порядок змінюється перетягуванням.",
   "manage.live.logos.pickerHint": "SVG, PNG або WebP · до 1 МБ",
+  "manage.live.logos.pickerPrompt": "Перетягніть логотип сюди або натисніть, щоб обрати",
+  "manage.live.logos.pickerLabel": "Додати логотип: обрати файл",
   "manage.live.logos.move": "Перетягніть, щоб змінити порядок",
   "manage.live.logos.moveNamed": "Перемістити «{name}»",
   "manage.live.logos.hasDark": "є файл для темної теми",

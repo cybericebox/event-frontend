@@ -88,7 +88,7 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
                 onRemove={() => onChange(items.filter((_, position) => position !== index))} />)}</ul>
         </Sortable> : <EmptyState compact message={t("manage.live.logos.empty")} />}
         <EventFilePicker id={pickerID} fileName={null} accept={liveLogoAccept} maxBytes={liveLogoMaxBytes} busy={busy} disabled={disabled || items.length >= maxLogos}
-            hint={t("manage.live.logos.pickerHint")} error={error} onFile={file => void add(file)} />
+            prompt={t("manage.live.logos.pickerPrompt")} label={t("manage.live.logos.pickerLabel")} hint={t("manage.live.logos.pickerHint")} error={error} onFile={file => void add(file)} />
         <input ref={darkInput} type="file" accept={liveLogoAccept} hidden onChange={event => void addDark(event.target.files)} />
     </div>;
 }

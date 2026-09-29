@@ -3012,6 +3012,8 @@
   "manage.live.prop.logoColor.mono": "Single colour (theme)",
   "manage.live.logos.help": "SVG, PNG or WebP files up to 1 MB. Recommended: transparent background, at least 120 px tall, no wider than 4:1. Drag to reorder.",
   "manage.live.logos.pickerHint": "SVG, PNG or WebP · up to 1 MB",
+  "manage.live.logos.pickerPrompt": "Drop a logo here or click to choose",
+  "manage.live.logos.pickerLabel": "Add a logo: choose a file",
   "manage.live.logos.move": "Drag to reorder",
   "manage.live.logos.moveNamed": "Move «{name}»",
   "manage.live.logos.hasDark": "has a dark-theme file",

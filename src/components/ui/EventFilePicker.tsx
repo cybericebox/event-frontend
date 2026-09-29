@@ -32,7 +32,7 @@ export type FilePickerHandle = {take: (files: File[]) => void};
 // dropped or picked file against `accept` and `maxBytes` before handing it on.
 // With a file it shows the name, size and a remove button. `compact` is the
 // one-line variant for dialogs.
-export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxBytes, hint, error, busy = false, compact = false, disabled = false, describedBy, pickerRef}: {
+export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxBytes, hint, error, busy = false, compact = false, prompt, label, disabled = false, describedBy, pickerRef}: {
     id: string;
     fileName: string | null;
     fileSize?: number;
@@ -45,6 +45,10 @@ export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxByte
     error?: string | null;
     busy?: boolean;
     compact?: boolean;
+    // Replaces «Перетягніть файл сюди або» + the button with one line: the whole zone is the button.
+    prompt?: string;
+    // The accessible name of the zone when `prompt` is set.
+    label?: string;
     disabled?: boolean;
     describedBy?: string;
     pickerRef?: Ref<FilePickerHandle>;
@@ -102,10 +106,10 @@ export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxByte
                 {busy ? <span className="event-file-drop__busy" role="status" aria-label={t("ui.filePicker.busy")}><BusyMark /></span>
                     : <button className="ib-icon-btn ib-icon-btn--sm" type="button" disabled={disabled} aria-label={t("ui.filePicker.clear", {name: fileName})} onClick={() => {setProblem(null); onFile(null);}}><X size={16} /></button>}
             </div>
-            : <div className={zoneClass} role="button" tabIndex={inactive ? -1 : 0} aria-disabled={inactive || undefined} aria-label={t("ui.filePicker.choose")} aria-describedby={describe}
+            : <div className={zoneClass} role="button" tabIndex={inactive ? -1 : 0} aria-disabled={inactive || undefined} aria-label={label ?? t("ui.filePicker.choose")} aria-describedby={describe}
                 onClick={open} onKeyDown={key} onDragOver={dragOver} onDragEnter={dragOver} onDragLeave={dragLeave} onDrop={drop}>
                 {busy ? <span className="event-file-drop__busy" role="status" aria-label={t("ui.filePicker.busy")}><BusyMark /></span> : <Upload className="event-file-drop__icon" size={compact ? 18 : 22} aria-hidden="true" />}
-                <span className="event-file-drop__prompt">{t("ui.filePicker.drop")} <span className="ib-btn ib-btn--sm" aria-hidden="true">{t("ui.filePicker.choose")}</span></span>
+                <span className="event-file-drop__prompt">{prompt ?? <>{t("ui.filePicker.drop")} <span className="ib-btn ib-btn--sm" aria-hidden="true">{t("ui.filePicker.choose")}</span></>}</span>
                 {hint && <small className="event-file-drop__hint" id={hintID}>{hint}</small>}
             </div>}
         {fileName && hint && <small className="event-file-drop__hint" id={hintID}>{hint}</small>}
