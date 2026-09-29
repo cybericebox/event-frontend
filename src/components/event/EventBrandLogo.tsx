@@ -31,7 +31,7 @@ export function EventBrandLogo({event, className = "", size = 32}: {
         // The backend streams only the active logo reference; a deleted or
         // unreachable image falls back to the platform mark.
         // eslint-disable-next-line @next/next/no-img-element
-        return <img className={className} src={source} width={size} height={size} alt="" onError={() => setFailedSource(source)} />;
+        return <img className={className} src={source} width={size} height={size} alt="" loading="eager" onError={() => setFailedSource(source)} />;
     }
-    return <Image className={className} src={crest} width={size} height={size} alt="" />;
+    return <Image className={className} src={crest} width={size} height={size} alt="" loading="eager" />;
 }
