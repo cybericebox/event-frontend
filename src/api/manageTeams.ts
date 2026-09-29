@@ -34,8 +34,13 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
-export async function getManageTeams(eventID: string, cursor: string | null): Promise<ManageTeamsPage> {
-    const params = new URLSearchParams({pageSize: "20"});
+export type TeamAdmissionFilter = "admitted" | "notAdmitted";
+export type ManageTeamsFilter = {search?: string; admission?: TeamAdmissionFilter | null};
+
+export async function getManageTeams(eventID: string, cursor: string | null, filter: ManageTeamsFilter = {}, pageSize = 20): Promise<ManageTeamsPage> {
+    const params = new URLSearchParams({pageSize: String(pageSize)});
+    if (filter.search?.trim()) params.set("search", filter.search.trim());
+    if (filter.admission) params.set("admission", filter.admission);
     if (cursor) params.set("cursor", cursor);
     return request(eventID, `teams?${params}`, pageSchema);
 }

@@ -29,13 +29,14 @@ export function participantListKind(participant: Pick<ManageParticipant, "Status
     return participant.Invited && participant.Status === 1 ? "invitations" : "applications";
 }
 
-export type ParticipantListFilter = {kind?: ParticipantListKind | null; status?: ParticipantStatus | null};
+export type ParticipantListFilter = {kind?: ParticipantListKind | null; status?: ParticipantStatus | null; search?: string};
 
 export async function getManageParticipants(eventID: string, filter: ParticipantListFilter, cursor: string | null, pageSize = 20): Promise<ManageParticipantsPage> {
     const api = requireApiOrigin();
     const params = new URLSearchParams({pageSize: String(pageSize)});
     if (filter.kind) params.set("kind", filter.kind);
     if (filter.status) params.set("status", String(filter.status));
+    if (filter.search?.trim()) params.set("search", filter.search.trim());
     if (cursor) params.set("cursor", cursor);
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants?${params}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},

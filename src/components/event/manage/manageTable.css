@@ -1,0 +1,38 @@
+/* Manage list table — the admin table pattern on ds-v2 tokens.
+   Fixed block height: the scroll area owns vertical and horizontal scroll, so
+   loading → empty → data never changes the block size. */
+.event-manage-table{display:flex;flex-direction:column;height:max(420px,calc(100dvh - var(--event-manage-table-offset,300px)));min-height:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:hidden}
+.event-manage-table__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-3);padding:var(--ib-4);border-bottom:1px solid var(--ib-line)}
+.event-manage-table__search{flex:1 1 240px;max-width:360px}
+.event-manage-table__toolbar .event-select{width:auto;min-width:180px}
+.event-manage-table__scroll{position:relative;display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:auto}
+.event-manage-table__scroll>table{width:100%;min-width:760px;border-collapse:separate;border-spacing:0;font-size:var(--ib-fs-13)}
+.event-manage-table__scroll>table.is-busy{opacity:.6;pointer-events:none}
+.event-manage-table thead th{position:sticky;top:0;z-index:1;padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);background:var(--ib-surface);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);letter-spacing:.04em;text-align:left;text-transform:uppercase;white-space:nowrap}
+.event-manage-table td{padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);vertical-align:middle}
+.event-manage-table tbody tr:hover td{background:var(--ib-soft)}
+.event-manage-table tr.is-clickable{cursor:pointer}
+.event-manage-table tr.is-clickable:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
+.event-manage-table__person{display:grid;gap:var(--ib-1);min-width:160px}
+.event-manage-table__person strong{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-manage-table__person small,.event-manage-table__dim{color:var(--ib-dim);font-size:var(--ib-fs-12);overflow-wrap:anywhere}
+.event-manage-table__nowrap{white-space:nowrap}
+.event-manage-table__answer{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-manage-table__tags{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-1);max-width:280px}
+.event-manage-table__count{margin-right:var(--ib-1);font-weight:var(--ib-w-semibold)}
+.event-manage-table__actions-col{width:1%}
+.event-manage-table__actions{display:flex;justify-content:flex-end;gap:var(--ib-2);white-space:nowrap}
+.event-manage-table__footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-manage-table__meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-1) var(--ib-3)}
+.event-manage-table__meta>span{white-space:nowrap}
+.event-manage-table__busy{display:inline-flex;width:16px;justify-content:center}
+.event-manage-table__busy .event-loading-logo{width:16px;height:16px}
+.event-manage-table__pager{display:flex;gap:var(--ib-2)}
+.event-manage-table__size{display:flex;align-items:center;justify-content:flex-end;gap:var(--ib-2)}
+.event-manage-table__size .event-select{width:84px;min-height:32px}
+@media(max-width:760px){
+  .event-manage-table__search{max-width:none}
+  .event-manage-table__footer{grid-template-columns:1fr}
+  .event-manage-table__size{justify-content:flex-start}
+}
+.event-manage-team-details{display:grid;gap:var(--ib-4)}
