@@ -3353,7 +3353,7 @@
   "manage.analytics.tasks.detail.col.teams": "Teams",
   "manage.analytics.tasks.detail.col.lastAt": "Last seen",
   "manage.analytics.tasks.detail.wrong": "Most common wrong answers",
-  "manage.analytics.tasks.detail.wrongHint": "Answer texts are visible only to the event owner, moderators with write rights and platform admins.",
+  "manage.analytics.tasks.detail.wrongHint": "Answer texts are visible only to the event owner, moderators with write rights and platform administrators.",
   "manage.analytics.tasks.detail.wrongEmpty": "There are no wrong answers.",
   "manage.analytics.tasks.detail.wrongFailed": "Could not load the answers",
   "manage.analytics.progress.loading": "Loading progress",
