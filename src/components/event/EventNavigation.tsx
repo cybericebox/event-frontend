@@ -41,8 +41,8 @@ function identityHref(path: string, event: PublicEventInfo) {
     return `${idOrigin}${path}?return_to=${encodeURIComponent(`${back}/`)}`;
 }
 
-// Unified account menu (utils/accountMenu): same entries, labels and icons in every app;
-// the event's own items follow the platform links.
+// Unified account menu (utils/accountMenu): the same name/email header, entries, labels and
+// icons as in every app; the event's own items follow the platform links.
 
 function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved">>) {
     const [open, setOpen] = useState(false);
@@ -84,6 +84,10 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
             <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
         ) : avatarInitials}</span></button></PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="event-account__menu">
+            {profile.data && <div className="event-account__head">
+                <b>{`${profile.data.FirstName} ${profile.data.LastName}`.trim() || profile.data.Email}</b>
+                <span>{profile.data.Email}</span>
+            </div>}
             {entries.map((entry, i) => {
                 if (entry.kind === "divider") return <Fragment key={i}>
                     {/* The event context sits right after the platform links. */}

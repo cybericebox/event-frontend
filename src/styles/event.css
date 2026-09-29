@@ -26,6 +26,9 @@ body.event-root main{overflow-x:visible}
 .event-account__menu a:hover,.event-account__menu button:hover{background:var(--ib-soft);color:var(--ib-ink);text-decoration:none}
 .event-account__menu a>svg,.event-account__menu button>svg{flex:none;color:var(--ib-dim)}
 .event-account__menu a:hover>svg,.event-account__menu button:hover>svg,.event-account__menu a:focus-visible>svg,.event-account__menu button:focus-visible>svg{color:var(--ib-ink)}
+.event-account__head{display:flex;flex-direction:column;gap:2px;min-width:0;margin:0 calc(-1 * var(--ib-1)) var(--ib-1);padding:var(--ib-2) var(--ib-3) 10px;border-bottom:1px solid var(--ib-line)}
+.event-account__head b{overflow:hidden;color:var(--ib-ink);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);text-overflow:ellipsis;white-space:nowrap}
+.event-account__head span{overflow:hidden;color:var(--ib-dim);font-size:var(--ib-fs-12);text-overflow:ellipsis;white-space:nowrap}
 .event-account__sep{height:1px;margin:var(--ib-1) calc(-1 * var(--ib-1));border:0;background:var(--ib-line)}
 .event-account__theme{display:none}
 @media(max-width:760px){.event-account__menu{width:min(290px,calc(100vw - 24px))}.event-account__theme{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}.event-account__theme .event-theme-toggle{flex:none}.event-account__theme .event-theme-toggle button{width:32px;height:32px;min-height:0;padding:0;justify-content:center}.event-header-theme--desktop,.event-header-divider{display:none}}
