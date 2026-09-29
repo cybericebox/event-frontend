@@ -2,10 +2,11 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {ChevronDown, Circle} from "lucide-react";
+import {t} from "@/i18n/t";
 
 type Option = {value: string; label: string; disabled?: boolean; disabledReason?: string};
 
-export function EventSelect({value, options, onValueChange, disabled = false, ariaLabel, placeholder = "Оберіть значення", className = ""}: {
+export function EventSelect({value, options, onValueChange, disabled = false, ariaLabel, placeholder = t("common.chooseValue"), className = ""}: {
     value: string; options: Option[]; onValueChange: (value: string) => void;
     disabled?: boolean; ariaLabel: string; placeholder?: string; className?: string;
 }) {

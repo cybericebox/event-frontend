@@ -5,6 +5,7 @@ import {getManageContent} from "@/api/manage";
 import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
 import {ContentBlocks} from "./ContentBlocks";
 import {EventLoading} from "../EventLoading";
+import {t} from "@/i18n/t";
 
 export function PrivateLanding() {
     const event = usePrivateEvent();
@@ -15,10 +16,10 @@ export function PrivateLanding() {
         retry: false,
     });
 
-    if (!event || content.isPending) return <EventLoading event={event} label="Завантажуємо головну сторінку…" />;
+    if (!event || content.isPending) return <EventLoading event={event} label={t("content.landing.loading")} />;
     if (content.isError) return <div className="event-shell-state" role="alert">
-        <h1>Не вдалося завантажити головну сторінку</h1>
-        <button className="ib-btn" onClick={() => void content.refetch()}>Повторити</button>
+        <h1>{t("content.landing.failed")}</h1>
+        <button className="ib-btn" onClick={() => void content.refetch()}>{t("common.retry")}</button>
     </div>;
     return <div className="event-landing ib-blocks">
         <ContentBlocks document={content.data.Landing} variables={content.data.Variables} title={event.Name} coverImage={event.PreviewPicture} eventID={event.EventID} />

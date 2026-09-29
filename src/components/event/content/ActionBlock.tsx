@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
 import {eventOrigin, idOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 type Action = {label: string; kind?: "link" | "join_event"; href?: string};
 
@@ -63,12 +64,7 @@ export function joinState({preview, windowOpen, timeWindowOpen, identity, status
     }
 }
 
-const joinLabels: Record<"invite" | "pending" | "approved" | "rejected", string> = {
-    invite: "Прийняти запрошення",
-    pending: "Заявка на розгляді",
-    approved: "До завдань",
-    rejected: "Заявку відхилено",
-};
+const joinLabel = (kind: "invite" | "pending" | "approved" | "rejected") => t(`content.join.${kind}`);
 
 export function ActionBlock({id, title, text, variant, alignment, selected, primaryHeading, preview, previewViewer, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID, eventTag}: {
     id: string;
@@ -120,9 +116,9 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
             case "hidden": return [];
             case "loading": return action.label ? [{label: action.label, index, status: "loading"}] : [];
             case "join": return action.label ? [{href: state.href, label: action.label, index}] : [];
-            case "invite": return [{href: "/invite", label: joinLabels.invite, index}];
-            case "approved": return [{href: "/challenges", label: joinLabels.approved, index}];
-            case "pending": case "rejected": return [{label: joinLabels[state.kind], index, status: "static"}];
+            case "invite": return [{href: "/invite", label: joinLabel("invite"), index}];
+            case "approved": return [{href: "/challenges", label: joinLabel("approved"), index}];
+            case "pending": case "rejected": return [{label: joinLabel(state.kind), index, status: "static"}];
         }
     });
     if (!visible.length && !title && !text) return null;

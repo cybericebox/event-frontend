@@ -12,6 +12,7 @@ import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
 import {resolveEventLogoURL} from "@/components/event/EventBrandLogo";
 import {clockLabel} from "@/utils/resultsFreeze";
 import "./live.css";
+import {t} from "@/i18n/t";
 
 // Series colours of the «Класика» boards (EVENT-THEME §3.4), per theme.
 const seriesColors = {
@@ -33,7 +34,7 @@ function useElementSize<T extends HTMLElement>() {
 }
 
 function frozenSuffix(results?: ManageResultsSnapshot): string {
-    return results?.Freeze.Applied && results.Freeze.FrozenAt ? ` · заморожено о ${clockLabel(results.Freeze.FrozenAt)}` : "";
+    return results?.Freeze.Applied && results.Freeze.FrozenAt ? t("live.frozenSuffix", {time: clockLabel(results.Freeze.FrozenAt)}) : "";
 }
 
 function LiveChart({widget, event, results, now, theme}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]}) {
@@ -51,11 +52,11 @@ function LiveChart({widget, event, results, now, theme}: {widget: LiveWidget; ev
     const colors = seriesColors[theme];
     const hasData = !!results?.Scoreboard.length;
     return <div className="live-chart">
-        <h2>Динаміка балів{frozenSuffix(results)}</h2>
+        <h2>{t("live.chart.title", {suffix: frozenSuffix(results)})}</h2>
         <div className="live-chart__plot" ref={ref}>
             <span className="live-chart__probe" ref={labelRef} aria-hidden="true">0</span>
-            {!hasData ? <p>Результати з’являться після першого розв’язання.</p> : size.width > 0 && <>
-                <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? "Графік балів команд" : "Графік балів учасників"}>
+            {!hasData ? <p>{t("live.chart.empty")}</p> : size.width > 0 && <>
+                <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
                     {series.map((item, index) => <path key={item.teamID} d={item.path} fill="none" stroke={colors[index % colors.length]} strokeWidth={Math.max(3, line * 0.16)} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
@@ -73,10 +74,10 @@ function LiveLogos({widget, fallback, edit}: {widget: LiveWidget; fallback: stri
     const duration = widget.props.speed === "slow" ? "80s" : widget.props.speed === "fast" ? "30s" : "50s";
     const images = urls.length ? urls : fallback ? [fallback] : [];
     return <div className={`live-logos${carousel ? " live-logos--carousel" : ""}`}>
-        <small>{typeof widget.props.title === "string" && widget.props.title ? widget.props.title : "Логотипи"}</small>
+        <small>{typeof widget.props.title === "string" && widget.props.title ? widget.props.title : t("live.logos.title")}</small>
         <div className="live-logos__track">
             <div style={carousel ? {animationDuration: duration, animationPlayState: widget.props.paused === true || edit ? "paused" : "running"} : undefined}>
-                {(carousel ? [...images, ...images] : images).map((url, index) => <img key={`${url}-${index}`} src={url} alt={index < images.length ? "Логотип" : ""} aria-hidden={index >= images.length || undefined} />)}
+                {(carousel ? [...images, ...images] : images).map((url, index) => <img key={`${url}-${index}`} src={url} alt={index < images.length ? t("live.logos.alt") : ""} aria-hidden={index >= images.length || undefined} />)}
             </div>
         </div>
     </div>;
@@ -91,23 +92,23 @@ function WidgetContent({widget, event, results, now, theme, edit}: {widget: Live
         const before = Date.parse(event.StartTime) > now;
         const target = before ? event.StartTime : event.FinishTime;
         const seconds = target ? Math.max(0, Math.floor((Date.parse(target) - now) / 1000)) : 0;
-        const label = before ? "До початку" : !target ? "Без часу завершення" : seconds > 0 ? "До завершення" : "Подію завершено";
+        const label = before ? t("live.timer.beforeStart") : !target ? t("live.timer.noFinish") : seconds > 0 ? t("live.timer.untilFinish") : t("live.timer.finished");
         return <div className="live-timer"><small>{label}</small><strong>{String(Math.floor(seconds / 3600)).padStart(2, "0")}:{String(Math.floor(seconds / 60) % 60).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</strong></div>;
     }
     if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
-    if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>Не показується на екрані. Приберіть віджет.</span></div> : null;
+    if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
     if (widget.type === "table") {
         const pageSize = Math.max(1, Number(widget.props.rowsPerPage) || 10);
         const pageCount = Math.max(1, Math.ceil(teams.length / pageSize));
         const page = Math.floor(now / 1000 / Math.max(1, Number(widget.props.pageSeconds) || 10)) % pageCount;
-        return <div className="live-table"><h2>Таблиця результатів{frozenSuffix(results)}</h2>{teams.length ? <table><thead><tr><th>№</th><th>{event.Participation === 1 ? "Команда" : "Учасник"}</th><th>Бали</th></tr></thead><tbody>{teams.slice(page * pageSize, (page + 1) * pageSize).map(team => <tr key={team.TeamID} className={team.Rank === 1 ? "is-lead" : undefined}><td>{team.Rank}</td><td>{team.TeamName}</td><td>{team.Points.toLocaleString("uk-UA")}</td></tr>)}</tbody></table> : <p>Результатів поки немає.</p>}</div>;
+        return <div className="live-table"><h2>{t("live.table.title", {suffix: frozenSuffix(results)})}</h2>{teams.length ? <table><thead><tr><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead><tbody>{teams.slice(page * pageSize, (page + 1) * pageSize).map(team => <tr key={team.TeamID} className={team.Rank === 1 ? "is-lead" : undefined}><td>{team.Rank}</td><td>{team.TeamName}</td><td>{team.Points.toLocaleString("uk-UA")}</td></tr>)}</tbody></table> : <p>{t("live.table.empty")}</p>}</div>;
     }
     if (widget.type === "solves") {
         const names = new Map(teams.map(team => [team.TeamID, team.TeamName]));
-        return <div className="live-solves"><h2>Останні розв’язання</h2>{results?.Timeline.length ? <ol>{[...results.Timeline].sort((a, b) => b.SolvedAt.localeCompare(a.SolvedAt)).slice(0, Number(widget.props.rows) || 5).map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`}><span>{names.get(item.EventTeamID) ?? "Команда"} → {item.ChallengeName}</span><b>+{item.Points}</b><time>{clockLabel(item.SolvedAt)}</time></li>)}</ol> : <p>Нових розв’язань немає.</p>}</div>;
+        return <div className="live-solves"><h2>{t("live.solves.title")}</h2>{results?.Timeline.length ? <ol>{[...results.Timeline].sort((a, b) => b.SolvedAt.localeCompare(a.SolvedAt)).slice(0, Number(widget.props.rows) || 5).map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`}><span>{names.get(item.EventTeamID) ?? t("live.table.team")} → {item.ChallengeName}</span><b>+{item.Points}</b><time>{clockLabel(item.SolvedAt)}</time></li>)}</ol> : <p>{t("live.solves.empty")}</p>}</div>;
     }
-    if (widget.type === "announcement") return <div className="live-announcement">{typeof widget.props.text === "string" && widget.props.text.trim() || "Оголошення організатора"}</div>;
+    if (widget.type === "announcement") return <div className="live-announcement">{typeof widget.props.text === "string" && widget.props.text.trim() || t("live.announcement.placeholder")}</div>;
     if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} />;
     if (widget.type === "qr") return <LiveQR url={typeof widget.props.url === "string" ? widget.props.url : ""} />;
     return null;

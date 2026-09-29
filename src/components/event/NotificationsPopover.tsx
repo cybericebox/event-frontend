@@ -10,6 +10,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {NotificationPopIn, popInDuration} from "./NotificationPopIn";
 import {NotificationMessageCard} from "./NotificationMessageCard";
 import {EventLoading} from "./EventLoading";
+import {t, tPlural} from "@/i18n/t";
 
 const readSyncKey = "cybericebox:inbox-read";
 const zeroCursor = {ID: "00000000-0000-0000-0000-000000000000", CreatedAt: "1970-01-01T00:00:00Z"};
@@ -60,7 +61,7 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
             setError("");
             return page.Items;
         } catch {
-            setError("Не вдалося завантажити вхідні повідомлення.");
+            setError(t("notifications.loadFailed"));
             return null;
         } finally {
             if (current === revision.current) setLoading(false);
@@ -84,7 +85,7 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
             });
             setError("");
         } catch {
-            setError("Не вдалося завантажити старі повідомлення.");
+            setError(t("notifications.loadOlderFailed"));
         } finally {
             loadingOlderRef.current = false;
             setLoadingOlder(false);
@@ -137,7 +138,7 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
                 setUnread(result.UnreadCount);
                 if (poppable.length) setPopIns(previous => [...previous, ...poppable.filter(item => !previous.some(entry => entry.ID === item.ID))]);
             } catch {
-                if (active) {setError("Не вдалося оновити вхідні повідомлення."); setLoading(false);}
+                if (active) {setError(t("notifications.refreshFailed")); setLoading(false);}
             } finally {
                 busy = false;
                 if (pending && active) {pending = false; queueMicrotask(() => {void poll();});}
@@ -172,7 +173,7 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
             announceRead();
             return true;
         } catch {
-            toast.error("Не вдалося позначити повідомлення прочитаним");
+            toast.error(t("notifications.markReadFailed"));
             return false;
         }
     }
@@ -185,9 +186,9 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
             setItems(current => current.map(item => ({...item, ReadAt: item.ReadAt ?? new Date().toISOString()})));
             setPopIns([]);
             announceRead();
-            toast.success("Усі повідомлення прочитано");
+            toast.success(t("notifications.allRead"));
         } catch {
-            toast.error("Не вдалося позначити повідомлення прочитаними");
+            toast.error(t("notifications.markAllReadFailed"));
         }
     }
 
@@ -197,7 +198,7 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
         if (safe) {changeOpen(false); window.location.assign(safe);}
     }
 
-    const label = unread ? "Вхідні: " + unread + " непрочитаних" : "Вхідні";
+    const label = unread ? tPlural("notifications.inboxUnread", unread) : t("notifications.inbox");
     const changeOpen = (next: boolean) => {
         openRef.current = next;
         setOpen(next);
@@ -208,28 +209,28 @@ export function NotificationsPopover({eventID}: {eventID?: string}) {
             <PopoverTrigger asChild><button className="event-navbar__icon event-notifications__trigger" type="button" aria-label={label} aria-expanded={open}>
                 <Bell size={18} aria-hidden="true" />{unread > 0 && <span className="event-notifications__count">{unread > 99 ? "99+" : unread}</span>}
             </button></PopoverTrigger>
-            <PopoverContent align="end" sideOffset={8} collisionPadding={12} aria-label="Особисті вхідні" className="event-notifications__panel">
+            <PopoverContent align="end" sideOffset={8} collisionPadding={12} aria-label={t("notifications.personalInbox")} className="event-notifications__panel">
                 <div className="event-notifications__head">
-                    <h2><span className="event-notifications__sr-only">Вхідні</span><Bell size={19} aria-hidden="true" /></h2>
-                    <div><button type="button" disabled={unread === 0} onClick={() => void readAll()}>Позначити все прочитаним</button><button className="event-notifications__icon-btn" type="button" aria-label="Закрити вхідні" onClick={() => changeOpen(false)}><X size={17} /></button></div>
+                    <h2><span className="event-notifications__sr-only">{t("notifications.inbox")}</span><Bell size={19} aria-hidden="true" /></h2>
+                    <div><button type="button" disabled={unread === 0} onClick={() => void readAll()}>{t("notifications.markAllRead")}</button><button className="event-notifications__icon-btn" type="button" aria-label={t("notifications.closeInbox")} onClick={() => changeOpen(false)}><X size={17} /></button></div>
                 </div>
                 {error && <p className="event-notifications__error" role="alert">{error}</p>}
                 <div className="event-notifications__scroll" ref={scrollRef}>
-                    {loading ? <EventLoading label="Завантаження повідомлень" /> : items.length === 0 ? <div className="event-notifications__empty" data-empty-state>
+                    {loading ? <EventLoading label={t("notifications.loading")} /> : items.length === 0 ? <div className="event-notifications__empty" data-empty-state>
                         <span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4.5 5.5h15L21.5 18a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2l2-12.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M3.5 14h4.7l1.5 2h4.6l1.5-2h4.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <p>Повідомлень поки немає.</p>
+                        <p>{t("notifications.empty")}</p>
                     </div> : <ul className="event-notifications__list">{items.map((item, index) => {
                         const href = safeHref(item.Link);
                         return <li key={item.ID} ref={index === items.length - 1 ? lastRef : undefined}>
                             <NotificationMessageCard icon={item.Icon} tone={item.Tone} accentColor={item.AccentColor} title={item.Title}
                                 body={item.Body ? <span dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(item.Body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []})}} /> : undefined}
                                 unread={!item.ReadAt} compact
-                                timestamp={<><time dateTime={item.CreatedAt}>{new Date(item.CreatedAt).toLocaleString("uk-UA")}</time>{!item.EventID && <span className="event-notification-card__source">Платформа</span>}</>}
-                                actions={href ? <a href={href} onClick={event => {event.preventDefault(); void follow(item, href);}}>Відкрити</a> : !item.ReadAt ? <button type="button" onClick={() => void read(item)}>Позначити прочитаним</button> : undefined}
+                                timestamp={<><time dateTime={item.CreatedAt}>{new Date(item.CreatedAt).toLocaleString("uk-UA")}</time>{!item.EventID && <span className="event-notification-card__source">{t("notifications.platform")}</span>}</>}
+                                actions={href ? <a href={href} onClick={event => {event.preventDefault(); void follow(item, href);}}>{t("notifications.open")}</a> : !item.ReadAt ? <button type="button" onClick={() => void read(item)}>{t("notifications.markRead")}</button> : undefined}
                             />
                         </li>;
                     })}</ul>}
-                    {loadingOlder && <p className="event-notifications__state">Завантажуємо старі повідомлення…</p>}
+                    {loadingOlder && <p className="event-notifications__state">{t("notifications.loadingOlder")}</p>}
                 </div>
             </PopoverContent>
         </Popover>

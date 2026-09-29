@@ -8,10 +8,10 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas} from "./LiveCanvas";
 import {useLiveResults} from "./useLiveResults";
 import {useFullscreen, useIdle, useWakeLock, useWindowSize, type WakeLockState} from "./liveScreenHooks";
+import {t} from "@/i18n/t";
+import {EventLoading} from "@/components/event/EventLoading";
 
-const wakeLabels: Record<WakeLockState, string> = {
-    active: "Екран не згасне", released: "Екран може згаснути", denied: "Браузер не дозволив тримати екран увімкненим", unsupported: "Браузер не вміє тримати екран увімкненим",
-};
+const wakeLabel = (state: WakeLockState) => t(`live.wake.${state}`);
 
 // Screen test (LIVE-CONSTRUCTOR §2): the frame marks the edges of the render
 // area, so a video processor's crop is visible; the panel shows the actual
@@ -21,20 +21,20 @@ function LiveScreenTest({layout}: {layout: LiveLayout}) {
     const [windowSize, ratio] = size.split("@");
     const anchored = layout.screen.anchor === "top-left";
     const area = anchored ? `${layout.screen.width}×${layout.screen.height}` : windowSize;
-    return <div className="live-test" role="status" aria-label="Тест екрана">
+    return <div className="live-test" role="status" aria-label={t("live.test.title")}>
         <span className="live-test__corner">0,0</span><span className="live-test__corner">{area.split("×")[0]}</span><span className="live-test__corner">{area.split("×")[1]}</span><span className="live-test__corner">{area}</span>
         <div className="live-test__panel">
             <strong>{area}</strong>
             <dl>
-                <dt>Вікно браузера</dt><dd>{windowSize} px</dd>
-                <dt>Щільність пікселів</dt><dd>{ratio ? `×${ratio}` : "—"}</dd>
-                <dt>Макет</dt><dd>{layout.screen.width}×{layout.screen.height} · {anchored ? "зліва зверху" : "на весь екран"}</dd>
-                <dt>Сітка</dt><dd>{layout.grid.cols}×{layout.grid.rows} · текст {Math.round(layout.screen.textScale * 100)}%</dd>
+                <dt>{t("live.test.window")}</dt><dd>{windowSize} px</dd>
+                <dt>{t("live.test.density")}</dt><dd>{ratio ? `×${ratio}` : "—"}</dd>
+                <dt>{t("live.test.layout")}</dt><dd>{layout.screen.width}×{layout.screen.height} · {anchored ? t("live.test.anchorTopLeft") : t("live.test.anchorFull")}</dd>
+                <dt>{t("live.test.grid")}</dt><dd>{t("live.test.gridValue", {cols: layout.grid.cols, rows: layout.grid.rows, scale: Math.round(layout.screen.textScale * 100)})}</dd>
             </dl>
             <div className="live-test__samples">
-                <span style={{fontSize: 14}}>14 px — підписи: Організатори · 12:30</span>
-                <span style={{fontSize: 20}}>20 px — основний текст: 1 · IceBreakers · 4 820</span>
-                <span style={{fontSize: 34}}>34 px — таймер 01:24:37</span>
+                <span style={{fontSize: 14}}>{t("live.test.sampleCaption")}</span>
+                <span style={{fontSize: 20}}>{t("live.test.sampleBody")}</span>
+                <span style={{fontSize: 34}}>{t("live.test.sampleTimer")}</span>
             </div>
         </div>
     </div>;
@@ -62,7 +62,9 @@ export function LiveScreen({event}: {event: PublicEventInfo}) {
     const toggleFullscreen = fullscreen.toggle;
     const onKey = useCallback((keyEvent: KeyboardEvent) => {
         if (keyEvent.ctrlKey || keyEvent.metaKey || keyEvent.altKey) return;
+        // eslint-disable-next-line no-restricted-syntax -- the same physical key on the Ukrainian layout, not UI text
         if (keyEvent.key === "f" || keyEvent.key === "а") toggleFullscreen();
+        // eslint-disable-next-line no-restricted-syntax -- the same physical key on the Ukrainian layout, not UI text
         if (keyEvent.key === "t" || keyEvent.key === "е") setTesting(value => !value);
     }, [toggleFullscreen]);
     useEffect(() => {
@@ -70,8 +72,8 @@ export function LiveScreen({event}: {event: PublicEventInfo}) {
         return () => window.removeEventListener("keydown", onKey);
     }, [onKey]);
 
-    if (layoutQuery.isError) return <main className="live-fullscreen"><div className="live-fullscreen__state" role="alert"><h1>Не вдалося завантажити Live-екран</h1><button className="ib-btn" type="button" onClick={() => void layoutQuery.refetch()}>Повторити</button></div></main>;
-    if (!layoutQuery.data) return <main className="live-fullscreen"><div className="live-fullscreen__state" role="status">Завантажуємо Live-екран…</div></main>;
+    if (layoutQuery.isError) return <main className="live-fullscreen"><div className="live-fullscreen__state" role="alert"><h1>{t("live.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => void layoutQuery.refetch()}>{t("common.retry")}</button></div></main>;
+    if (!layoutQuery.data) return <main className="live-fullscreen"><EventLoading event={event} label={t("live.loading")} /></main>;
     const layout = layoutQuery.data;
     const style = {"--live-screen-width": `${layout.screen.width}px`, "--live-screen-height": `${layout.screen.height}px`} as CSSProperties;
     return <main className={`live-fullscreen${layout.screen.anchor === "top-left" ? " live-fullscreen--anchor" : ""}${idle ? " is-idle" : ""}`} style={style}>
@@ -79,11 +81,11 @@ export function LiveScreen({event}: {event: PublicEventInfo}) {
             <LiveCanvas layout={layout} event={event} results={results.data} />
             {testing && <LiveScreenTest layout={layout} />}
         </div>
-        {results.isError && <div className="live-fullscreen__notice" role="alert">Дані результатів тимчасово недоступні</div>}
-        <div className="live-controls" aria-label="Керування екраном">
-            {fullscreen.supported && <button type="button" onClick={fullscreen.toggle} title="Клавіша F">{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? "Вийти з повного екрана" : "На весь екран"}</button>}
-            <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} title="Клавіша T"><MonitorCheck size={16} />Тест екрана</button>
-            <span>{wakeLabels[wake]}</span>
+        {results.isError && <div className="live-fullscreen__notice" role="alert">{t("live.resultsUnavailable")}</div>}
+        <div className="live-controls" aria-label={t("live.controls")}>
+            {fullscreen.supported && <button type="button" onClick={fullscreen.toggle} title={t("live.keyF")}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}
+            <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} title={t("live.keyT")}><MonitorCheck size={16} />{t("live.test.title")}</button>
+            <span>{wakeLabel(wake)}</span>
         </div>
     </main>;
 }

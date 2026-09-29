@@ -11,6 +11,7 @@ import {GuestShell} from "./GuestShell";
 import {EventLoading} from "./EventLoading";
 import {EventBrandProvider} from "./EventBrandLogo";
 import {idOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 const PrivateEventContext = createContext<PublicEventInfo | null>(null);
 
@@ -42,26 +43,26 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
     }, [identity.data]);
 
     if (identity.isPending || (identity.data && access.isPending)) {
-        return <EventLoading event={identity.data} full label="Завантажуємо попередній перегляд події…" />;
+        return <EventLoading event={identity.data} full label={t("shell.preview.loading")} />;
     }
     if (identity.isError || access.isError) {
         const status = identity.error instanceof ClientEventInfoError ? identity.error.status
             : access.error instanceof ManageApiError ? access.error.status : 0;
         const unavailable = status === 0 || status >= 500;
         return <div className="event-shell-state" role="alert">
-            <h1>{unavailable ? "Сервер події тимчасово недоступний" : "Подію не знайдено або доступ обмежено"}</h1>
-            <p>{unavailable ? "Спробуйте повторити запит після відновлення з’єднання." : "До публікації перегляд доступний лише менеджерам цієї події."}</p>
+            <h1>{unavailable ? t("shell.unavailable.title") : t("shell.preview.notFound")}</h1>
+            <p>{unavailable ? t("shell.preview.unavailableBody") : t("shell.preview.managersOnly")}</p>
             {unavailable
-                ? <button className="ib-btn" onClick={() => void (identity.isError ? identity.refetch() : access.refetch())}>Повторити</button>
-                : <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>Увійти</a>}
+                ? <button className="ib-btn" onClick={() => void (identity.isError ? identity.refetch() : access.refetch())}>{t("common.retry")}</button>
+                : <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>{t("account.signIn")}</a>}
         </div>;
     }
     const event = identity.data!;
     return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>
         <GuestShell event={event} authenticated>
             <div className="event-private-preview-banner" role="status">
-                <span>Попередній перегляд. Сторінка ще недоступна відвідувачам.</span>
-                <Link href={pathname === "/" ? "/manage/content/landing" : "/manage"}>{pathname === "/" ? "Редагувати головну" : "Керування подією"}</Link>
+                <span>{t("shell.preview.banner")}</span>
+                <Link href={pathname === "/" ? "/manage/content/landing" : "/manage"}>{pathname === "/" ? t("shell.preview.editLanding") : t("shell.preview.manage")}</Link>
             </div>
             {children}
         </GuestShell>

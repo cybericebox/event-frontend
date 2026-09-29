@@ -1,3 +1,4 @@
+import {t} from "@/i18n/t";
 type FreezeTimes = {FrozenAt: string | null; FinishAt: string | null};
 
 // Whole minutes between the freeze and the finish, or null without both.
@@ -8,7 +9,7 @@ export function freezeLeadMinutes(freeze: FreezeTimes): number | null {
 
 export function frozenBannerTitle(freeze: FreezeTimes): string {
     const minutes = freezeLeadMinutes(freeze);
-    return minutes === null ? "Рейтинг заморожено" : `Рейтинг заморожено за ${minutes} хв до фіналу`;
+    return minutes === null ? t("shell.freeze.title") : t("shell.freeze.titleLead", {minutes});
 }
 
 export function clockLabel(value: string | number | Date, timeZone?: string): string {
@@ -17,7 +18,7 @@ export function clockLabel(value: string | number | Date, timeZone?: string): st
 
 // «з 17:30» for the banner meta; the viewer's local time.
 export function frozenSinceLabel(freeze: FreezeTimes, timeZone?: string): string | null {
-    return freeze.FrozenAt ? `з ${clockLabel(freeze.FrozenAt, timeZone)}` : null;
+    return freeze.FrozenAt ? t("shell.freeze.since", {time: clockLabel(freeze.FrozenAt, timeZone)}) : null;
 }
 
 // Freeze start for the settings hint: finish − minutes.

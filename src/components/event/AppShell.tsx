@@ -14,6 +14,7 @@ import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 import {EventLoading} from "./EventLoading";
 import {reservedPageSlugs} from "./content/pageSlugs";
+import {t} from "@/i18n/t";
 
 export function AppShell({children, event, unavailable}: {
     children: ReactNode;
@@ -49,16 +50,16 @@ export function AppShell({children, event, unavailable}: {
 
     if (unavailable) {
         return <div className="event-shell-state" role="status">
-            <h1>Сервер події тимчасово недоступний</h1>
-            <p>Спробуйте відновити сторінку трохи пізніше.</p>
-            <button className="ib-btn" onClick={() => window.location.reload()}>Повторити</button>
+            <h1>{t("shell.unavailable.title")}</h1>
+            <p>{t("shell.unavailable.body")}</p>
+            <button className="ib-btn" onClick={() => window.location.reload()}>{t("common.retry")}</button>
         </div>;
     }
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
         if (isLive) return children;
         if (isContentPage) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
-        return <div className="event-shell-state"><h1>Подію не знайдено</h1></div>;
+        return <div className="event-shell-state"><h1>{t("shell.notFound")}</h1></div>;
     }
     if (isLive) return children;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
@@ -69,18 +70,18 @@ export function AppShell({children, event, unavailable}: {
         return <GuestShell event={event} authenticated={!!currentUser.data} joinStatus={joinStatus.data} pending={identityPending}>{children}</GuestShell>;
     }
     if (identityPending) {
-        return <EventLoading event={event} full label="Завантаження події…" />;
+        return <EventLoading event={event} full label={t("shell.loadingEventFull")} />;
     }
     if (currentUser.isError || joinStatus.isError || (approved && (participantInfo.isError || ownTeam.isError))) {
         return <div className="event-shell-state" role="status">
-            <h1>Не вдалося перевірити доступ</h1>
-            <p>Ваші дані збережені. Спробуйте повторити запит.</p>
-            <button className="ib-btn" onClick={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.isError ? participantInfo.refetch() : ownTeam.refetch())}>Повторити</button>
+            <h1>{t("shell.accessFailed.title")}</h1>
+            <p>{t("shell.accessFailed.body")}</p>
+            <button className="ib-btn" onClick={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.isError ? participantInfo.refetch() : ownTeam.refetch())}>{t("common.retry")}</button>
         </div>;
     }
     const authenticated = !!currentUser.data;
     if (approved && participantInfo.data?.EventID !== event.EventID) {
-        return <div className="event-shell-state" role="alert"><h1>Не вдалося перевірити подію</h1></div>;
+        return <div className="event-shell-state" role="alert"><h1>{t("shell.eventFailed")}</h1></div>;
     }
     return approved && !!participantInfo.data
         ? <ParticipantShell event={event} participantInfo={participantInfo.data} ownTeam={ownTeam.data ?? null}>{children}</ParticipantShell>

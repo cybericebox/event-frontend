@@ -12,6 +12,8 @@ import {collectFormAnswers, ParticipantFormFields} from "@/components/event/Part
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
+import {t} from "@/i18n/t";
+import {EventLoading} from "@/components/event/EventLoading";
 
 export default function JoinPage() {
     const router = useRouter();
@@ -39,7 +41,7 @@ export default function JoinPage() {
         if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;
         setError("");
         if (!windowOpen(Date.now())) {
-            setError("Реєстрацію на подію закрито.");
+            setError(t("join.closed"));
             return;
         }
         const collected = collectFormAnswers(form.data, answers);
@@ -58,25 +60,25 @@ export default function JoinPage() {
             }
             router.push("/");
         } catch (failure) {
-            setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, "Не вдалося зберегти додаткові поля або приєднатися. Перевірте відповіді та спробуйте ще раз."));
+            setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("join.failed")));
         } finally {setWorking(false);}
     }
 
     const status = join.data;
     return <div className="event-join-page"><div className="event-join-card">
-        <Link className="event-join-back" href="/">← На головну</Link>
-        <h1>Приєднатися до події</h1>
-        {!event || identity.isPending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <p>Завантажуємо умови участі…</p>
-            : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <div role="alert"><p>Не вдалося завантажити умови участі.</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())}>Повторити</button></div>
-            : !identity.data ? <p>Увійдіть до облікового запису, щоб приєднатися. Кнопка входу розташована вгорі сторінки.</p>
-            : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>Ви вже берете участь у події.</p>
-            : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>Заявку на участь надіслано. Дочекайтеся рішення організаторів.</p>
-            : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>Заявку відхилено. Зверніться до організаторів події.</p>
-            : !windowOpen(openedAt) ? <p>Реєстрацію на подію закрито.</p>
+        <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>
+        <h1>{t("join.title")}</h1>
+        {!event || identity.isPending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <EventLoading event={event} label={t("join.loading")} />
+            : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <div role="alert"><p>{t("join.loadFailed")}</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())}>{t("common.retry")}</button></div>
+            : !identity.data ? <p>{t("join.signInHint")}</p>
+            : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>{t("invite.already")}</p>
+            : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>{t("join.pending")}</p>
+            : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>{t("shell.join.rejected")}</p>
+            : !windowOpen(openedAt) ? <p>{t("join.closed")}</p>
             : <>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
-                <button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? "Надсилаємо…" : "Приєднатися"}</button>
+                <button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()}>{working ? t("common.sending") : t("shell.join.action")}</button>
             </>}
     </div></div>;
 }

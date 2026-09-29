@@ -12,6 +12,8 @@ import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {eventOrigin, idOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
+import {EventLoading} from "@/components/event/EventLoading";
 
 function signInHref(eventTag: string | undefined): string | null {
     const back = eventTag ? eventOrigin(eventTag) : "";
@@ -61,12 +63,12 @@ export default function InvitePage() {
         } catch (failure) {
             const code = failure instanceof ParticipantJoinError ? failure.code : undefined;
             if (code === ApiErrorCode.InvitationExpired) setExpired(true);
-            setError(apiErrorMessage(code, "Не вдалося прийняти запрошення. Перевірте відповіді та спробуйте ще раз."));
+            setError(apiErrorMessage(code, t("invite.acceptFailed")));
         } finally {setWorking(false);}
     }
 
     async function decline() {
-        if (!event || working || !window.confirm("Відхилити запрошення? Прийняти його пізніше буде неможливо.")) return;
+        if (!event || working || !window.confirm(t("invite.declineConfirm"))) return;
         setError("");
         setWorking(true);
         try {
@@ -74,28 +76,28 @@ export default function InvitePage() {
             await refreshStatus(ParticipationStatusEnum.NoParticipationStatus);
             router.push("/");
         } catch (failure) {
-            setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, "Не вдалося відхилити запрошення. Спробуйте ще раз."));
+            setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("invite.declineFailed")));
         } finally {setWorking(false);}
     }
 
-    const home = <Link className="ib-btn" href="/">На головну</Link>;
+    const home = <Link className="ib-btn" href="/">{t("common.home")}</Link>;
     const signIn = signInHref(event?.Tag);
-    const title = invitation?.InvitedTeamName ? `Вас запрошено до команди «${invitation.InvitedTeamName}»` : `Вас запрошено до події «${event?.Name ?? ""}»`;
+    const title = invitation?.InvitedTeamName ? t("invite.titleTeam", {team: invitation.InvitedTeamName}) : t("invite.titleEvent", {name: event?.Name ?? ""});
     return <div className="event-join-page"><div className="event-join-card">
-        <Link className="event-join-back" href="/">← На головну</Link>
-        {!event || identity.isPending || (identity.data && (info.isPending || (actionable && form.isPending))) ? <><h1>Запрошення</h1><p>Завантажуємо запрошення…</p></>
-            : identity.isError || info.isError || (actionable && form.isError) ? <><h1>Запрошення</h1><div role="alert"><p>Не вдалося завантажити запрошення.</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : info.isError ? info.refetch() : form.refetch())}>Повторити</button></div></>
-            : !identity.data ? <><h1>Запрошення</h1><p>Увійдіть до облікового запису, на який надійшло запрошення.</p>{signIn ? <a className="ib-btn ib-btn--primary" href={signIn}>Увійти</a> : <p>Кнопка входу розташована вгорі сторінки.</p>}</>
-            : invitation?.Status === ParticipationStatusEnum.ApprovedParticipationStatus ? <><h1>Ви вже учасник</h1><p>Ви вже берете участь у події.</p>{home}</>
-            : !invitation?.Invited || invitation.Status !== ParticipationStatusEnum.PendingParticipationStatus ? <><h1>Запрошення не знайдено</h1><p>Активного запрошення для цього облікового запису немає.</p>{home}</>
-            : invitation.InvitationExpired || expired ? <><h1>{title}</h1><p role="status">Запрошення прострочене: реєстрацію закрито.</p>{home}</>
-            : invitation.TeamUnavailable ? <><h1>Запрошення</h1><p role="status">Команда, до якої вас запросили, більше недоступна. Зверніться до організаторів події.</p>{home}</>
+        <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>
+        {!event || identity.isPending || (identity.data && (info.isPending || (actionable && form.isPending))) ? <><h1>{t("invite.title")}</h1><EventLoading event={event} label={t("invite.loading")} /></>
+            : identity.isError || info.isError || (actionable && form.isError) ? <><h1>{t("invite.title")}</h1><div role="alert"><p>{t("invite.loadFailed")}</p><button className="ib-btn" type="button" onClick={() => void (identity.isError ? identity.refetch() : info.isError ? info.refetch() : form.refetch())}>{t("common.retry")}</button></div></>
+            : !identity.data ? <><h1>{t("invite.title")}</h1><p>{t("invite.signInHint")}</p>{signIn ? <a className="ib-btn ib-btn--primary" href={signIn}>{t("account.signIn")}</a> : <p>{t("invite.signInTop")}</p>}</>
+            : invitation?.Status === ParticipationStatusEnum.ApprovedParticipationStatus ? <><h1>{t("invite.alreadyTitle")}</h1><p>{t("invite.already")}</p>{home}</>
+            : !invitation?.Invited || invitation.Status !== ParticipationStatusEnum.PendingParticipationStatus ? <><h1>{t("invite.notFoundTitle")}</h1><p>{t("invite.notFound")}</p>{home}</>
+            : invitation.InvitationExpired || expired ? <><h1>{title}</h1><p role="status">{t("shell.invite.expired")}</p>{home}</>
+            : invitation.TeamUnavailable ? <><h1>{t("invite.title")}</h1><p role="status">{t("invite.teamUnavailable")}</p>{home}</>
             : <>
                 <h1>{title}</h1>
-                <p>Прийміть запрошення, щоб стати учасником{invitation.InvitedTeamName ? " і приєднатися до команди" : ""}.</p>
+                <p>{invitation.InvitedTeamName ? t("invite.acceptHintTeam") : t("invite.acceptHint")}</p>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" />}
                 {error && <p className="event-join-error" role="alert">{error}</p>}
-                <div className="event-join-actions"><button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()}>{working ? "Зачекайте…" : "Прийняти"}</button><button className="ib-btn" type="button" disabled={working} onClick={() => void decline()}>Відхилити</button></div>
+                <div className="event-join-actions"><button className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()}>{working ? t("common.wait") : t("invite.accept")}</button><button className="ib-btn" type="button" disabled={working} onClick={() => void decline()}>{t("invite.decline")}</button></div>
             </>}
     </div></div>;
 }

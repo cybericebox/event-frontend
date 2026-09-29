@@ -8,6 +8,8 @@ import {getManageAccess, ManageApiError} from "@/api/manage";
 import {LiveScreen} from "./LiveScreen";
 import {idOrigin} from "@/utils/origins";
 import "./live.css";
+import {t} from "@/i18n/t";
+import {EventLoading} from "@/components/event/EventLoading";
 
 function signInHref(): string {
     return idOrigin ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}` : "/";
@@ -33,16 +35,16 @@ export function LiveBootstrap() {
         root.style.setProperty("--ev-accent-light", event.data.Theme.AccentLight);
         root.style.setProperty("--ev-accent-dark", event.data.Theme.AccentDark);
         root.style.setProperty("--ev-accent-live", event.data.Theme.AccentLive);
-        document.title = `Live · ${event.data.Name}`;
+        document.title = t("live.documentTitle", {name: event.data.Name});
     }, [event.data]);
 
     const failed = event.error ?? access.error;
     if (failed) {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
-        if (status === 401 || (status === 404 && event.isError)) return <State title="Увійдіть, щоб відкрити Live-екран" text="Екран відкриває організатор або модератор події під своїм обліковим записом." action={<a className="ib-btn ib-btn--primary" href={signInHref()}>Увійти</a>} />;
-        if (status === 403) return <State title="Немає доступу до Live-екрана" text="Live-екран доступний лише організаторам і модераторам цієї події." action={<Link className="ib-btn" href="/">На сайт події</Link>} />;
-        return <State title="Не вдалося відкрити Live-екран" text="Повторіть запит, коли з’єднання відновиться." action={<button className="ib-btn" type="button" onClick={() => void (event.isError ? event.refetch() : access.refetch())}>Повторити</button>} />;
+        if (status === 401 || (status === 404 && event.isError)) return <State title={t("live.signIn.title")} text={t("live.signIn.text")} action={<a className="ib-btn ib-btn--primary" href={signInHref()}>{t("account.signIn")}</a>} />;
+        if (status === 403) return <State title={t("live.forbidden.title")} text={t("live.forbidden.text")} action={<Link className="ib-btn" href="/">{t("live.toSite")}</Link>} />;
+        return <State title={t("live.openFailed.title")} text={t("live.openFailed.text")} action={<button className="ib-btn" type="button" onClick={() => void (event.isError ? event.refetch() : access.refetch())}>{t("common.retry")}</button>} />;
     }
-    if (!event.data || !access.data) return <main className="live-fullscreen"><div className="live-fullscreen__state" role="status">Перевіряємо доступ…</div></main>;
+    if (!event.data || !access.data) return <main className="live-fullscreen"><EventLoading event={event.data} label={t("live.checkingAccess")} /></main>;
     return <LiveScreen event={event.data} />;
 }

@@ -1,10 +1,11 @@
 import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import {apiOrigin} from "@/utils/origins";
+import {t, tPlural} from "@/i18n/t";
 
 export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
-    title: "Назва події", timer: "Таймер", chart: "Графік", table: "Таблиця",
-    ad_table: "Таблиця A/D", logos: "Логотипи", solves: "Останні розв’язання",
-    announcement: "Оголошення", qr: "QR-код",
+    title: t("live.widget.title"), timer: t("live.widget.timer"), chart: t("live.widget.chart"), table: t("live.widget.table"),
+    ad_table: t("live.widget.ad_table"), logos: t("live.widget.logos"), solves: t("live.widget.solves"),
+    announcement: t("live.widget.announcement"), qr: t("live.widget.qr"),
 };
 
 // Widgets offered in the palette. The A/D table waits for an Attack-Defense
@@ -36,11 +37,11 @@ function widget(type: LiveWidget["type"], x: number, y: number, w: number, h: nu
 }
 
 export const livePresets = {
-    classic: {label: "Класика", widgets: () => [widget("title", 1, 1, 12, 1), widget("chart", 1, 2, 8, 6), widget("table", 9, 2, 4, 6), widget("logos", 1, 8, 3, 1, {mode: "fixed", title: "Організатори"}), widget("logos", 4, 8, 9, 1, {mode: "carousel", title: "Партнери"})]},
-    chart: {label: "Графік-герой", widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 12, 6), widget("logos", 1, 8, 12, 1, {mode: "carousel", title: "Партнери"})]},
-    table: {label: "Лише таблиця", widgets: () => [widget("title", 1, 1, 12, 1), widget("table", 1, 2, 12, 6), widget("logos", 1, 8, 4, 1, {mode: "fixed", title: "Організатори"}), widget("logos", 5, 8, 8, 1, {mode: "carousel", title: "Партнери"})]},
-    side: {label: "Логотипи збоку", widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 7, 7), widget("table", 8, 2, 3, 7), widget("logos", 11, 2, 2, 7, {mode: "fixed", title: "Організатори"})]},
-    empty: {label: "Порожня сітка", widgets: () => [] as LiveWidget[]},
+    classic: {label: t("live.preset.classic"), widgets: () => [widget("title", 1, 1, 12, 1), widget("chart", 1, 2, 8, 6), widget("table", 9, 2, 4, 6), widget("logos", 1, 8, 3, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 4, 8, 9, 1, {mode: "carousel", title: t("live.preset.partners")})]},
+    chart: {label: t("live.preset.chart"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 12, 6), widget("logos", 1, 8, 12, 1, {mode: "carousel", title: t("live.preset.partners")})]},
+    table: {label: t("live.preset.table"), widgets: () => [widget("title", 1, 1, 12, 1), widget("table", 1, 2, 12, 6), widget("logos", 1, 8, 4, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 5, 8, 8, 1, {mode: "carousel", title: t("live.preset.partners")})]},
+    side: {label: t("live.preset.side"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 7, 7), widget("table", 8, 2, 3, 7), widget("logos", 11, 2, 2, 7, {mode: "fixed", title: t("live.preset.organizers")})]},
+    empty: {label: t("live.preset.empty"), widgets: () => [] as LiveWidget[]},
 } satisfies Record<string, {label: string; widgets: () => LiveWidget[]}>;
 
 export function presetLayout(key: keyof typeof livePresets, base: LiveLayout = defaultLiveLayout): LiveLayout {
@@ -126,12 +127,12 @@ export type DistributeAxis = "row" | "column";
 // Returns an error text when the result would break a minimum or an overlap.
 export function distributeWidgets(layout: LiveLayout, id: string, axis: DistributeAxis): LiveLayout | string {
     const anchor = layout.widgets.find(item => item.id === id);
-    if (!anchor) return "Оберіть віджет.";
+    if (!anchor) return t("live.distribute.noWidget");
     const row = axis === "row";
     const group = layout.widgets
         .filter(item => row ? item.y === anchor.y && item.h === anchor.h : item.x === anchor.x && item.w === anchor.w)
         .sort((a, b) => row ? a.x - b.x : a.y - b.y);
-    if (group.length < 2) return row ? "У цьому ряду немає інших віджетів такої ж висоти." : "У цій колонці немає інших віджетів такої ж ширини.";
+    if (group.length < 2) return row ? t("live.distribute.noRowPeers") : t("live.distribute.noColumnPeers");
     const start = row ? group[0].x : group[0].y;
     const end = Math.max(...group.map(item => row ? item.x + item.w : item.y + item.h));
     const span = end - start, base = Math.floor(span / group.length), extra = span % group.length;
@@ -144,7 +145,7 @@ export function distributeWidgets(layout: LiveLayout, id: string, axis: Distribu
     }));
     const next = {...layout, widgets: layout.widgets.map(item => sized.get(item.id) ?? item)};
     const broken = [...sized.values()].find(item => liveWidgetMinimums[item.type][row ? "w" : "h"] > (row ? item.w : item.h));
-    if (broken) return `«${liveWidgetLabels[broken.type]}» не може бути меншим за ${liveWidgetMinimums[broken.type][row ? "w" : "h"]} клітинки.`;
-    if ([...sized.keys()].some(key => layoutConflicts(next).has(key) && !layoutConflicts(layout).has(key))) return "Рівний розподіл перекриє інші віджети.";
+    if (broken) return tPlural("live.distribute.tooSmall", liveWidgetMinimums[broken.type][row ? "w" : "h"], {name: liveWidgetLabels[broken.type]});
+    if ([...sized.keys()].some(key => layoutConflicts(next).has(key) && !layoutConflicts(layout).has(key))) return t("live.distribute.overlap");
     return next;
 }

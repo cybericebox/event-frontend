@@ -6,6 +6,7 @@ import {X} from "lucide-react";
 import type {InboxItem} from "@/api/inbox";
 import {NotificationMessageCard} from "./NotificationMessageCard";
 import {notificationAccent} from "./NotificationIcon";
+import {t} from "@/i18n/t";
 
 export function popInDuration(value: number | null | undefined): number {
     return value == null ? 5000 : Math.min(10000, Math.max(3000, value));
@@ -34,10 +35,10 @@ export function NotificationPopIn({message, onClose, onAction}: {
     const accent = notificationAccent(message.Tone, message.AccentColor);
     const action = message.Actions?.find(item => item.label && safeHref(item.href));
 
-    return <div className="event-notification-popin" role="status" aria-label="Нове повідомлення"
+    return <div className="event-notification-popin" role="status" aria-label={t("notifications.new")}
         onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)} onBlurCapture={event => {if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);}}>
-        <button className="event-notification-popin__close" type="button" onClick={onClose} aria-label="Закрити сповіщення"><X size={16} /></button>
+        <button className="event-notification-popin__close" type="button" onClick={onClose} aria-label={t("notifications.close")}><X size={16} /></button>
         <div className="event-notification-popin__content"><NotificationMessageCard
             icon={message.Icon} tone={message.Tone} accentColor={message.AccentColor} title={message.Title}
             body={message.Body && <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(message.Body)}} />}

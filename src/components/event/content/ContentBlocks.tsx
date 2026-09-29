@@ -8,6 +8,7 @@ import {ActionBlock, type PreviewViewer} from "./ActionBlock";
 import {PartnersBlock} from "./PartnersBlock";
 import {CountdownWindow} from "./CountdownWindow";
 import {apiOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 type Value = string | number | boolean | null;
 
@@ -38,7 +39,7 @@ export function replaceVariables(text: string, variables: Record<string, Value>,
         if (!format) return token;
         const value = variables[name];
         if (value === undefined || value === null) return "";
-        if (typeof value === "boolean") return value ? "Так" : "Ні";
+        if (typeof value === "boolean") return value ? t("common.yes") : t("common.no");
         // Values come from event settings, not the Markdown author. Keep them
         // as literal text so they cannot create links or formatting on insert.
         const rendered = format === "date-time" && typeof value === "string" && !Number.isNaN(Date.parse(value))
@@ -106,7 +107,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 const imageURL = bannerImageURL(block.imageSource === "custom" ? block.imageURL : coverImage);
                 return <section className={`ib-block ib-block-banner${block.variant === "frame" ? " ib-block-banner--frame" : ""}${block.layout === "center" ? " ib-block-banner--caption-center" : block.layout === "right" ? " ib-block-banner--caption-right" : ""}`} key={block.id} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block-banner__inner" style={{"--ib-banner-width": `${block.widthPercent ?? 100}%`} as CSSProperties}>
-                    {imageURL ? <ProportionalBannerImage src={imageURL} alt={render(block.title, "title") || "Банер події"} eager={blockIndex === 0} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title, "title") || String(variables["event.name"] ?? "")}</strong></div>}
+                    {imageURL ? <ProportionalBannerImage src={imageURL} alt={render(block.title, "title") || t("content.banner.alt")} eager={blockIndex === 0} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title, "title") || String(variables["event.name"] ?? "")}</strong></div>}
                     {imageURL && block.title && <div className="ib-block-banner__caption"><Heading>{render(block.title, "title")}</Heading></div>}
                 </div>
             </section>;
@@ -143,7 +144,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                         const sectionID = `doc-${blockIndex}-${index}`;
                         return <section key={sectionID} aria-labelledby={sectionID}><h3 id={sectionID}>{render(item.label, `item:${index}:label`)}</h3><EventRichTextView value={item.richText} variables={variables} dateDisplays={block.dateDisplays?.[`item:${index}:richText`]} /></section>;
                     })}</article>
-                    <nav className="ib-toc" aria-label={render(block.tocTitle || "Зміст", "tocTitle")}><p className="ib-toc__title">{render(block.tocTitle || "Зміст", "tocTitle")}</p><ol className="ib-toc__list">{(block.items ?? []).map((item, index) => <li key={index}><a className="ib-toc__link" href={`#doc-${blockIndex}-${index}`}>{render(item.label, `item:${index}:label`)}</a></li>)}</ol></nav>
+                    <nav className="ib-toc" aria-label={render(block.tocTitle || t("content.toc.title"), "tocTitle")}><p className="ib-toc__title">{render(block.tocTitle || t("content.toc.title"), "tocTitle")}</p><ol className="ib-toc__list">{(block.items ?? []).map((item, index) => <li key={index}><a className="ib-toc__link" href={`#doc-${blockIndex}-${index}`}>{render(item.label, `item:${index}:label`)}</a></li>)}</ol></nav>
                 </div></div>
             </section>;
             if (block.type === "facts") return <section className={`ib-block ib-block-facts${block.variant === "rows" ? " ib-block-facts--rows" : ""}`} key={block.id} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<dl className="ib-block-facts__list">{(block.items ?? []).map((item, index) => <div className="ib-block-facts__item" key={index}><dt>{render(item.label, `item:${index}:label`)}</dt><dd>{render(item.value, `item:${index}:value`)}</dd></div>)}</dl></div></section>;

@@ -2,6 +2,7 @@
 
 import {useEffect, useId, useRef, type ReactNode} from "react";
 import {X} from "lucide-react";
+import {t} from "@/i18n/t";
 
 // ds-v2 modal (components/modal) on a native <dialog>: it lands in the top
 // layer, so it stacks correctly over the challenge window. Esc and a click on
@@ -39,7 +40,7 @@ export function DialogModal({open, onClose, title, description, size = "sm", foo
         {open && <>
             <header className="ib-modal__head">
                 <div><h2 className="ib-modal__title" id={titleID}>{title}</h2>{description && <p className="ib-modal__desc">{description}</p>}</div>
-                <button className="ib-icon-btn ib-icon-btn--sm ib-modal__close" type="button" aria-label="Закрити" onClick={onClose}><X aria-hidden="true" /></button>
+                <button className="ib-icon-btn ib-icon-btn--sm ib-modal__close" type="button" aria-label={t("common.close")} onClick={onClose}><X aria-hidden="true" /></button>
             </header>
             <div className="ib-modal__body">{children}</div>
             {footer && <footer className="ib-modal__foot">{footer}</footer>}

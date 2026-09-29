@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 import QRCode from "qrcode";
+import {t} from "@/i18n/t";
 
 // Site paths such as /register are not scannable on their own: resolve them
 // against the event site the live screen is served from.
@@ -22,5 +23,5 @@ export function LiveQR({url}: {url: string}) {
         return () => {active = false;};
     }, [url]);
     const shown = url ? code.target || url : "";
-    return <div className="live-qr">{url && code.image ? <img src={code.image} alt={`QR-код для ${shown}`} /> : <strong>Додайте посилання для QR-коду</strong>}<span>{shown}</span></div>;
+    return <div className="live-qr">{url && code.image ? <img src={code.image} alt={t("live.qr.alt", {url: shown})} /> : <strong>{t("live.qr.empty")}</strong>}<span>{shown}</span></div>;
 }

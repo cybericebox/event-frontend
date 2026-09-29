@@ -1,6 +1,7 @@
 import type {CSSProperties, ReactNode} from "react";
 import {formatDateTime} from "./dateDisplay";
 import type {ContentRichText} from "./richTextState";
+import {t} from "@/i18n/t";
 
 type Node = Record<string, unknown>;
 type Value = string | number | boolean | null;
@@ -48,7 +49,7 @@ export function EventRichTextView({value, variables = {}, dateDisplays, emptyFal
                 const raw = variables[name];
                 const display = dateDisplays?.[name];
                 const text = typeof raw === "string" && display && !Number.isNaN(Date.parse(raw)) ? formatDateTime(raw, display.format, display.pattern)
-                    : typeof raw === "boolean" ? raw ? "Так" : "Ні" : raw == null ? name : String(raw);
+                    : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? name : String(raw);
                 const formats = Array.isArray(node.formats) ? node.formats : [];
                 return <span key={key} className="event-lexical__variable" data-event-variable={name} title={name}
                     style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,

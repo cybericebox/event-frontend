@@ -1,9 +1,11 @@
 "use client";
 
 import {useEffect, useState, type CSSProperties} from "react";
+import {t, tPlural} from "@/i18n/t";
 
 const pad = (value: number) => String(value).padStart(2, "0");
-const unit = (value: number, one: string, few: string, many: string) => value % 10 === 1 && value % 100 !== 11 ? one : value % 10 >= 2 && value % 10 <= 4 && (value % 100 < 12 || value % 100 > 14) ? few : many;
+type Unit = "days" | "hours" | "minutes" | "seconds";
+const unit = (value: number, name: Unit) => tPlural(`content.countdown.${name}`, value);
 
 export type CountdownDisplay = "segments" | "compact" | "tiles" | "focus" | "dial" | "ledger" | "poster" | "tracks" | "flip" | "ticker" | "stairs" | "orbits" | "matrix" | "ribbon" | "rings";
 
@@ -19,13 +21,13 @@ export function CountdownValue({target, display = "segments"}: {target: string |
         const remaining = Number.isFinite(deadline) && now > 0 ? Math.max(0, Math.floor((deadline - now) / 1000)) : null;
         const days = remaining === null ? 0 : Math.floor(remaining / 86400);
         const parts = [
-            ...(days > 0 ? [{value: String(days), label: unit(days, "день", "дні", "днів")}] : []),
-            {value: remaining === null ? "—" : pad(Math.floor((remaining % 86400) / 3600)), label: unit(remaining === null ? 0 : Math.floor((remaining % 86400) / 3600), "година", "години", "годин")},
-            {value: remaining === null ? "—" : pad(Math.floor((remaining % 3600) / 60)), label: unit(remaining === null ? 0 : Math.floor((remaining % 3600) / 60), "хвилина", "хвилини", "хвилин")},
-            {value: remaining === null ? "—" : pad(remaining % 60), label: unit(remaining === null ? 0 : remaining % 60, "секунда", "секунди", "секунд")},
+            ...(days > 0 ? [{value: String(days), label: unit(days, "days")}] : []),
+            {value: remaining === null ? "—" : pad(Math.floor((remaining % 86400) / 3600)), label: unit(remaining === null ? 0 : Math.floor((remaining % 86400) / 3600), "hours")},
+            {value: remaining === null ? "—" : pad(Math.floor((remaining % 3600) / 60)), label: unit(remaining === null ? 0 : Math.floor((remaining % 3600) / 60), "minutes")},
+            {value: remaining === null ? "—" : pad(remaining % 60), label: unit(remaining === null ? 0 : remaining % 60, "seconds")},
         ];
-        const ariaLabel = remaining === null ? "Дату відліку ще не визначено" : remaining === 0 ? "Час настав" : parts.map(part => `${part.value} ${part.label}`).join(", ");
-        const meta = remaining === null ? "Дату ще не визначено" : remaining === 0 ? "Час настав" : "";
+        const ariaLabel = remaining === null ? t("content.countdown.noTargetAria") : remaining === 0 ? t("content.countdown.reached") : parts.map(part => `${part.value} ${part.label}`).join(", ");
+        const meta = remaining === null ? t("content.countdown.noTarget") : remaining === 0 ? t("content.countdown.reached") : "";
         if (display === "focus") {
             const [main, ...rest] = parts;
             return <div className="ib-timer ib-timer--focus" role="timer" aria-label={ariaLabel} aria-live="off"><div className="ib-timer__focus-main" aria-hidden="true"><strong>{main.value}</strong><span>{main.label}</span></div><div className="ib-timer__focus-rest" aria-hidden="true">{rest.map(part => <span key={part.label}><strong>{part.value}</strong> {part.label}</span>)}</div>{meta && <span className="ib-timer__meta">{meta}</span>}</div>;
@@ -61,14 +63,14 @@ export function CountdownValue({target, display = "segments"}: {target: string |
             {meta && <span className="ib-timer__meta">{meta}</span>}
         </div>;
     }
-    if (!Number.isFinite(deadline)) return <p className="ib-timer__meta">Дату ще не визначено</p>;
-    if (now === 0) return <div className="ib-timer ib-timer--compact" role="timer" aria-label="Завантажуємо відлік">—</div>;
+    if (!Number.isFinite(deadline)) return <p className="ib-timer__meta">{t("content.countdown.noTarget")}</p>;
+    if (now === 0) return <div className="ib-timer ib-timer--compact" role="timer" aria-label={t("content.countdown.loading")}>—</div>;
     const seconds = Math.max(0, Math.floor((deadline - now) / 1000));
-    if (seconds === 0) return <p className="ib-timer__meta">Час настав</p>;
+    if (seconds === 0) return <p className="ib-timer__meta">{t("content.countdown.reached")}</p>;
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    return <div className="ib-timer ib-timer--compact" role="timer" aria-live="off" aria-label={`${days} ${unit(days, "день", "дні", "днів")}, ${hours} ${unit(hours, "година", "години", "годин")}, ${minutes} ${unit(minutes, "хвилина", "хвилини", "хвилин")}, ${seconds % 60} ${unit(seconds % 60, "секунда", "секунди", "секунд")}`}>
-        <span className="ib-timer__value">{days > 0 && <span className="ib-timer__compact-days">{days} дн.</span>}<span className="ib-timer__compact-clock">{pad(hours)}:{pad(minutes)}:{pad(seconds % 60)}</span></span>
+    return <div className="ib-timer ib-timer--compact" role="timer" aria-live="off" aria-label={([[days, "days"], [hours, "hours"], [minutes, "minutes"], [seconds % 60, "seconds"]] as const).map(([value, name]) => `${value} ${unit(value, name)}`).join(", ")}>
+        <span className="ib-timer__value">{days > 0 && <span className="ib-timer__compact-days">{t("content.countdown.daysShort", {days})}</span>}<span className="ib-timer__compact-clock">{pad(hours)}:{pad(minutes)}:{pad(seconds % 60)}</span></span>
     </div>;
 }

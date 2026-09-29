@@ -1,15 +1,16 @@
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import {liveWidgetLabels} from "./liveLayout";
+import {t} from "@/i18n/t";
 
 // Live typography (LIVE-CONSTRUCTOR §2): sizes are multiples of
 // u = screen height / 36 × text scale, never below the LED floors
 // (body 19 px, captions 14 px, timer 34 px). live.css reads the same numbers
 // through liveTextVars, so the editor warnings match the rendered screen.
 export const liveTextRoles = {
-    display: {k: 1.07, min: 19, label: "назва"},
-    timer: {k: 1.87, min: 34, label: "таймер"},
-    body: {k: 0.87, min: 19, label: "основний текст"},
-    caption: {k: 0.6, min: 14, label: "підписи"},
+    display: {k: 1.07, min: 19, label: t("live.text.role.display")},
+    timer: {k: 1.87, min: 34, label: t("live.text.role.timer")},
+    body: {k: 0.87, min: 19, label: t("live.text.role.body")},
+    caption: {k: 0.6, min: 14, label: t("live.text.role.caption")},
 } as const;
 export type LiveTextRole = keyof typeof liveTextRoles;
 
@@ -58,12 +59,15 @@ export function liveTextWarnings(layout: LiveLayout): LiveTextWarning[] {
         const name = liveWidgetLabels[item.type];
         const low = widgetRoles[item.type].filter(role => size(role).natural < liveTextRoles[role].min);
         if (low.length) {
-            warnings.push({id: item.id, text: `«${name}»: ${low.map(role => `${liveTextRoles[role].label} ${Math.floor(size(role).natural)} px`).join(", ")} — менше за поріг ${low.map(role => `${liveTextRoles[role].min} px`).join(" / ")}; на екрані текст буде збільшено до порога.`});
+            warnings.push({id: item.id, text: t("live.text.warning", {name, problem: t("live.text.belowFloor", {
+                sizes: low.map(role => t("live.text.roleSize", {role: liveTextRoles[role].label, size: Math.floor(size(role).natural)})).join(", "),
+                floors: low.map(role => `${liveTextRoles[role].min} px`).join(" / "),
+            })})});
         }
         const boxW = item.w * width / layout.grid.cols - 2 * pad;
         const boxH = item.h * height / layout.grid.rows - 2 * pad;
         const fit = fitProblem(item, boxW, boxH, heading, size);
-        if (fit) warnings.push({id: item.id, text: `«${name}»: ${fit}`});
+        if (fit) warnings.push({id: item.id, text: t("live.text.warning", {name, problem: fit})});
     }
     return warnings;
 }
@@ -74,20 +78,20 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
         const rows = item.type === "table" ? numberProp(item, "rowsPerPage", 10) : numberProp(item, "rows", 5);
         const header = item.type === "table" ? caption * 1.7 : 0;
         const fits = Math.max(0, Math.floor((boxH - heading - header) / (body * (item.type === "table" ? 1.68 : 1.84))));
-        return fits < rows ? `вміщується ${fits} з ${rows} рядків — зменште кількість рядків або збільште віджет.` : null;
+        return fits < rows ? t("live.text.rowsFit", {fits, rows}) : null;
     }
     if (item.type === "title" || item.type === "announcement") {
-        return boxH < size("display").effective * 1.15 ? "текст не вміщується за висотою." : null;
+        return boxH < size("display").effective * 1.15 ? t("live.text.titleFit") : null;
     }
     if (item.type === "timer") {
         const timer = size("timer").effective;
-        return boxH < caption * 1.3 + timer * 1.05 || boxW < timer * 0.62 * 8 ? "таймер не вміщується — збільште віджет." : null;
+        return boxH < caption * 1.3 + timer * 1.05 || boxW < timer * 0.62 * 8 ? t("live.text.timerFit") : null;
     }
     if (item.type === "chart") {
         const lines = Math.min(10, numberProp(item, "lines", 5));
-        return boxH - heading - caption * 1.6 < lines * caption * 1.25 ? `підписи ${lines} ліній не вміщуються за висотою.` : null;
+        return boxH - heading - caption * 1.6 < lines * caption * 1.25 ? t("live.text.chartFit", {lines}) : null;
     }
-    if (item.type === "logos") return boxH < caption * 1.3 + 24 ? "логотипи не вміщуються за висотою." : null;
-    if (item.type === "qr") return Math.min(boxW, boxH - caption * 1.3) < 80 ? "QR-код замалий для сканування." : null;
+    if (item.type === "logos") return boxH < caption * 1.3 + 24 ? t("live.text.logosFit") : null;
+    if (item.type === "qr") return Math.min(boxW, boxH - caption * 1.3) < 80 ? t("live.text.qrFit") : null;
     return null;
 }

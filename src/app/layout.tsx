@@ -51,8 +51,9 @@ import {getPublicEventInfo} from "@/api/publicEventInfo";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 import {EventBrandProvider} from "@/components/event/EventBrandLogo";
 import {apiOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
-const FALLBACK_TITLE = "Cyber ICE Box";
+const FALLBACK_TITLE = t("meta.brand");
 
 export async function generateMetadata(): Promise<Metadata> {
     // Robustness: an unreachable backend (or empty response) must not crash the render of
@@ -65,7 +66,7 @@ export async function generateMetadata(): Promise<Metadata> {
         }
         const eventUrl = `https://${(await headers()).get("host")}`
         // Title is the event name only; the platform brand goes into the description.
-        const description = event.PreviewDescription?.trim() || `${name} · змагання з кібербезпеки на платформі Cyber ICE Box`
+        const description = event.PreviewDescription?.trim() || t("meta.description", {name})
         return {
             title: name,
             description,

@@ -3,6 +3,7 @@
 import {useEffect} from "react";
 import {Button} from "@/components/ui/button";
 import Link from "next/link";
+import {t} from "@/i18n/t";
 
 export default function Error({
                                   error,
@@ -20,20 +21,20 @@ export default function Error({
         <div
             className={"flex flex-col items-center justify-center h-full w-full gap-10"}
         >
-            <h1 className={"text-2xl text-orange-600 font-bold"}>Щось пішло не так</h1>
-            <p className={"text-xl text-wrap text-center"}>Не вдалося відкрити сторінку. Спробуйте ще раз або поверніться на головну.</p>
+            <h1 className={"text-2xl text-orange-600 font-bold"}>{t("error.generic")}</h1>
+            <p className={"text-xl text-wrap text-center"}>{t("error.page.body")}</p>
             <Button
                 onClick={
                     // Attempt to recover by trying to re-render the segment
                     () => reset()
                 }
             >
-                Спробувати ще раз
+                {t("common.retryAgain")}
             </Button>
             <Link
                 href={"/"}
             >
-                Повернутися на головну
+                {t("common.backHome")}
             </Link>
         </div>
     )

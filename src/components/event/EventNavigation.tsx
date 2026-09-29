@@ -20,6 +20,7 @@ import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder"
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
 import {accountLinks, type AccountLinkKey} from "@/utils/accountMenu";
+import {t} from "@/i18n/t";
 
 type Props = {
     event: PublicEventInfo;
@@ -39,10 +40,10 @@ function identityHref(path: string, event: PublicEventInfo) {
 
 // Unified account menu (utils/accountMenu): same labels and icons in every app.
 const ACCOUNT_ITEMS: Record<AccountLinkKey, {label: string; icon: LucideIcon}> = {
-    profile: {label: "Профіль", icon: UserRound},
-    admin: {label: "Адміністрування", icon: Settings},
-    exercises: {label: "Каталог завдань", icon: Puzzle},
-    main: {label: "Головна", icon: House},
+    profile: {label: "account.profile", icon: UserRound},
+    admin: {label: "account.admin", icon: Settings},
+    exercises: {label: "account.exercises", icon: Puzzle},
+    main: {label: "account.main", icon: House},
 };
 
 function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved">>) {
@@ -79,7 +80,7 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
         }
     };
     return <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild><button className="event-account__trigger" type="button" aria-label="Меню акаунта" aria-expanded={open}><span className="event-account__avatar" aria-hidden="true">{picture ? (
+        <PopoverTrigger asChild><button className="event-account__trigger" type="button" aria-label={t("account.menu")} aria-expanded={open}><span className="event-account__avatar" aria-hidden="true">{picture ? (
             // The API returns an origin-specific media URL; this app is statically exported.
             // eslint-disable-next-line @next/next/no-img-element
             <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
@@ -88,14 +89,14 @@ function AccountMenu({event, approved}: Required<Pick<Props, "event" | "approved
             {links.map(({key, href}) => {
                 const {label, icon: Icon} = ACCOUNT_ITEMS[key];
                 return <Fragment key={key}>
-                    <a href={href}><Icon size={16} />{label}</a>
+                    <a href={href}><Icon size={16} />{t(label)}</a>
                     {/* The event's own item sits right under the profile. */}
-                    {key === "profile" && approved && <Link href="/participation" onClick={() => setOpen(false)}><Users size={16} />Моя участь</Link>}
+                    {key === "profile" && approved && <Link href="/participation" onClick={() => setOpen(false)}><Users size={16} />{t("account.participation")}</Link>}
                 </Fragment>;
             })}
-            <div className="event-account__theme"><span>Тема оформлення</span><ThemeToggle /></div>
-            <button type="button" onClick={() => void leave()}><LogOut size={16} />Вийти</button>
-            {signOutError && <p className="event-account__error" role="alert">Не вдалося вийти. Повторіть спробу.</p>}
+            <div className="event-account__theme"><span>{t("theme.label")}</span><ThemeToggle /></div>
+            <button type="button" onClick={() => void leave()}><LogOut size={16} />{t("account.signOut")}</button>
+            {signOutError && <p className="event-account__error" role="alert">{t("account.signOutFailed")}</p>}
         </PopoverContent>
     </Popover>;
 }
@@ -109,7 +110,7 @@ export function EventHeaderActions({event, authenticated, approved = false}: Pic
             <NotificationsPopover eventID={event.EventID} />
             <AccountMenu event={event} approved={approved} />
         </>}
-        {!authenticated && <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>Увійти</a>}
+        {!authenticated && <a className="ib-btn ib-btn--sm ib-btn--ghost ib-navbar__signin" href={identityHref("/sign-in", event)}>{t("account.signIn")}</a>}
     </>;
 }
 
@@ -144,9 +145,9 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     const links = useMemo(() => pending ? [] : [
         ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         // Managers check tasks on the same board as the hidden moderators team.
-        ...(approved || managementAccess.data?.CanManage ? [{href: "/challenges", label: "Завдання"}] : []),
+        ...(approved || managementAccess.data?.CanManage ? [{href: "/challenges", label: t("nav.challenges")}] : []),
         ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-        ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) ? [{href: "/scoreboard", label: "Результати"}] : []),
+        ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) ? [{href: "/scoreboard", label: t("nav.results")}] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
     ], [pending, approved, canViewResults, event, navigationPages, managementAccess.data?.CanManage]);
 
@@ -184,28 +185,28 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     const overflow = links.slice(visibleCount);
     return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`} aria-busy={pending || undefined}>
         <div className="ib-navbar__bar">
-            <Link className="ib-navbar__brand" href="/" aria-label={`${event.Name}, головна події`} onClick={() => setOpen(false)}>
+            <Link className="ib-navbar__brand" href="/" aria-label={t("nav.brand", {name: event.Name})} onClick={() => setOpen(false)}>
                 <EventBrandLogo event={event} className="ib-navbar__crest" />
                 <span className="ib-navbar__name">{event.Name}</span>
             </Link>
-            <nav className="ib-navbar__nav" aria-label="Розділи події" ref={navRef}>
+            <nav className="ib-navbar__nav" aria-label={t("nav.sections")} ref={navRef}>
                 <ul className="ib-navbar__tabs">{links.slice(0, visibleCount).map(link => <li key={link.href}><Link className="ib-navbar__link" href={link.href} aria-current={path === link.href ? "page" : undefined}>{link.label}</Link></li>)}</ul>
-                {overflow.length > 0 && <div className="ib-navbar__more"><Popover open={moreOpen} onOpenChange={setMoreOpen}><PopoverTrigger asChild><button className={`ib-navbar__more-btn${overflow.some(link => path === link.href) ? " is-current" : ""}`} type="button">Ще <ChevronDown className="ib-icon" /></button></PopoverTrigger><PopoverContent align="start" sideOffset={4} className="event-navbar__more-menu">{overflow.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setMoreOpen(false)}>{link.label}</Link>)}</PopoverContent></Popover></div>}
+                {overflow.length > 0 && <div className="ib-navbar__more"><Popover open={moreOpen} onOpenChange={setMoreOpen}><PopoverTrigger asChild><button className={`ib-navbar__more-btn${overflow.some(link => path === link.href) ? " is-current" : ""}`} type="button">{t("nav.more")} <ChevronDown className="ib-icon" /></button></PopoverTrigger><PopoverContent align="start" sideOffset={4} className="event-navbar__more-menu">{overflow.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setMoreOpen(false)}>{link.label}</Link>)}</PopoverContent></Popover></div>}
                 <ul className="ib-navbar__tabs event-navbar__measure" ref={measureRef} aria-hidden="true">{links.map(link => <li key={link.href}><span className="ib-navbar__link">{link.label}</span></li>)}</ul>
-                <button className="ib-navbar__more-btn event-navbar__more-measure" type="button" ref={measureMoreRef} tabIndex={-1} aria-hidden="true">Ще <ChevronDown className="ib-icon" /></button>
+                <button className="ib-navbar__more-btn event-navbar__more-measure" type="button" ref={measureMoreRef} tabIndex={-1} aria-hidden="true">{t("nav.more")} <ChevronDown className="ib-icon" /></button>
             </nav>
             <div className="ib-navbar__actions">
                 {pending ? <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div> : <>
                 {authenticated && <ManagerEntry eventID={event.EventID} variant="nav" />}
                 <EventHeaderActions event={event} authenticated={authenticated} approved={approved} />
                 </>}
-                {!pending && <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? "Закрити меню" : "Відкрити меню"} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>}
+                {!pending && <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>}
             </div>
         </div>
-        <nav className="ib-navbar__panel" id="event-menu" aria-label="Мобільне меню">
+        <nav className="ib-navbar__panel" id="event-menu" aria-label={t("nav.mobile")}>
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
             {authenticated && <ManagerEntry eventID={event.EventID} variant="panel" />}
-            {!authenticated && <div className="event-navbar__mobile-theme"><span>Тема оформлення</span><ThemeToggle /></div>}
+            {!authenticated && <div className="event-navbar__mobile-theme"><span>{t("theme.label")}</span><ThemeToggle /></div>}
         </nav>
     </header>;
 }

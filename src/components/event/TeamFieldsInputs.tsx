@@ -4,6 +4,7 @@ import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers, ParticipantAnswer} from "@/api/participantForm";
+import {t} from "@/i18n/t";
 
 function visible(condition: {fieldKey: string; operator: string; value: string | number | boolean} | undefined, answers: ParticipantAnswers) {
     if (!condition) return true;
@@ -31,7 +32,7 @@ export function TeamFieldsInputs({form, answers, onChange, disabled}: {
                 {block.input === "long_text" ? <textarea className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} rows={3} />
                     : block.input === "checkbox" ? <input type="checkbox" checked={value === true} onChange={e => onChange(block.key, e.target.checked)} disabled={disabled} />
                     : block.input === "number" ? <input className="event-manage-input" type="number" value={value === undefined ? "" : String(value)} onChange={e => onChange(block.key, e.target.value === "" ? "" : Number(e.target.value))} required={required} disabled={disabled} />
-                    : block.input === "select" ? <select className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled}><option value="">Оберіть варіант</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
+                    : block.input === "select" ? <select className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled}><option value="">{t("common.chooseOption")}</option>{(block.options ?? []).map(option => <option value={option} key={option}>{option}</option>)}</select>
                     : block.input === "multi_select" ? <span className="grid gap-2">{(block.options ?? []).map(option => <span key={option}><input type="checkbox" checked={Array.isArray(value) && value.includes(option)} onChange={e => onChange(block.key, e.target.checked ? [...(Array.isArray(value) ? value : []), option] : (Array.isArray(value) ? value : []).filter(item => item !== option))} disabled={disabled} /> {option}</span>)}</span>
                     : <input className="event-manage-input" type="text" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} />}
             </label>;

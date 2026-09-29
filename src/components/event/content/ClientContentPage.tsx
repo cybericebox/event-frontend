@@ -8,6 +8,7 @@ import {EventPageContentSchema, type EventPageContent} from "@/types/eventConten
 import {ContentBlocks} from "./ContentBlocks";
 import {EventLoading} from "../EventLoading";
 import {requireApiOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 async function getVisiblePage(eventID: string, slug: string): Promise<EventPageContent | null> {
     const api = requireApiOrigin();
@@ -40,12 +41,12 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
         enabled: !!eventID,
         retry: false,
     });
-    if (!eventID || page.isPending) return <EventLoading event={privateEvent} label="Завантажуємо сторінку…" />;
+    if (!eventID || page.isPending) return <EventLoading event={privateEvent} label={t("content.page.loading")} />;
     if (page.isError) {
         const missing = page.error instanceof ManageApiError && [403, 404].includes(page.error.status);
         return <div className="event-shell-state" role="alert">
-            <h1>{missing ? "Сторінку не знайдено або доступ обмежено" : "Не вдалося завантажити сторінку"}</h1>
-            {!missing && <button className="ib-btn" onClick={() => void page.refetch()}>Повторити</button>}
+            <h1>{missing ? t("content.page.missing") : t("content.page.failed")}</h1>
+            {!missing && <button className="ib-btn" onClick={() => void page.refetch()}>{t("common.retry")}</button>}
         </div>;
     }
     return <ContentBlocks document={page.data.Page.Document} variables={page.data.Variables} title={page.data.Page.Title} coverImage={privateEvent?.PreviewPicture} eventID={eventID} />;
