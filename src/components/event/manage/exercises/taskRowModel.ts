@@ -13,14 +13,21 @@ export function standReadiness(challengeID: string, labs: ManageLabs | undefined
     return entries.every(lab => lab.Status === "ready") ? "ready" : "notReady";
 }
 
-// Status badges of a collapsed task row.
-export function taskBadges(challenge: Pick<EventBoardChallenge, "Published" | "ScoringOverride">, stand: StandReadiness | null): TaskBadge[] {
-    const badges: TaskBadge[] = [challenge.Published
-        ? {key: "board", label: t("manage.exercises.challenge.onBoard"), tone: "ok"}
-        : {key: "board", label: t("manage.exercises.challenge.hidden")}];
+// Status badges of a collapsed task row (visibility is per set).
+export function taskBadges(challenge: Pick<EventBoardChallenge, "ScoringOverride">, stand: StandReadiness | null): TaskBadge[] {
+    const badges: TaskBadge[] = [];
     if (challenge.ScoringOverride) badges.push({key: "scoring", label: t("manage.challenges.task.ownScoring")});
     if (stand) badges.push(stand === "ready" ? {key: "stand", label: t("manage.challenges.task.standReady"), tone: "ok"} : {key: "stand", label: t("manage.challenges.task.standNotReady"), tone: "warn"});
     return badges;
+}
+
+export type SetStatus = "shown" | "hidden" | "broken";
+
+// A set's state for its header icon (and its tasks in «Групи й порядок»):
+// a set that needs missing infrastructure cannot work, whatever its visibility.
+export function setStatus(challenges: Array<Pick<EventBoardChallenge, "Published">>, broken: boolean): SetStatus {
+    if (broken) return "broken";
+    return challenges.some(challenge => challenge.Published) ? "shown" : "hidden";
 }
 
 export type HintIndicator = {count: number; shown: boolean; tooltip: string};

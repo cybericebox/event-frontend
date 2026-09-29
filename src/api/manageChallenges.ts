@@ -101,8 +101,8 @@ export const getEventBoardChallenges = (eventID: string, attachmentID: string) =
 export const setEventChallengeGroup = (eventID: string, attachmentID: string, challenge: EventBoardChallenge, groupID: string | null) => request(eventID, `exercises/${attachmentID}/challenges/${challenge.ID}/relations`, z.null(), "PUT", {GroupID: groupID, PrerequisiteIDs: challenge.PrerequisiteIDs});
 // Complete order of one group's challenges across the event's sets (null = «Без групи»).
 export const reorderGroupChallenges = (eventID: string, groupID: string | null, challengeIDs: string[]) => request(eventID, "challenge-order", z.null(), "PUT", {GroupID: groupID, ChallengeIDs: challengeIDs});
-// «Прибрати із заходу»: the task stays in the catalog; refused (409) once teams attempted it.
-export const removeEventChallenge = (eventID: string, attachmentID: string, challengeID: string) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, z.unknown(), "DELETE").then(() => undefined);
+// Shows or hides a whole set (its tasks share one infrastructure).
+export const setEventExerciseVisibility = (eventID: string, attachmentID: string, published: boolean) => request(eventID, `exercises/${attachmentID}/visibility`, z.unknown(), "PUT", {Published: published}).then(() => undefined);
 export const reorderEventBoardChallenges = (eventID: string, attachmentID: string, challengeIDs: string[]) => request(eventID, `exercises/${attachmentID}/challenges/order`, z.null(), "PUT", {ChallengeIDs: challengeIDs});
 // Own event exercises first, then the catalog ones available to the event.
 export const getPublishedExerciseChoices = (eventID: string, search: string, infrastructure: InfrastructureFilter = "all") => request(eventID, `exercise-catalog?${catalogQuery(search, infrastructure)}`, z.array(catalogChoiceSchema));
@@ -116,7 +116,8 @@ export const forkEventExercise = (eventID: string, attachmentID: string) => requ
 export const revertEventExercise = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/revert`, attachmentSchema, "POST");
 // With attempts the server wants confirm=true (409 1810) and keeps the attachment as detached.
 export const detachEventExercise = (eventID: string, attachmentID: string, confirm = false) => request(eventID, `exercises/${attachmentID}${confirm ? "?confirm=true" : ""}`, z.unknown(), "DELETE").then(() => undefined);
-export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean; Published: boolean}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
+// Visibility is per set: see setEventExerciseVisibility.
+export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
 export const updateEventChallengeScoring = (eventID: string, attachmentID: string, challengeID: string, override: ChallengeScoringOverride | null) => request(eventID, `exercises/${attachmentID}/challenges/scoring`, z.object({updated: z.number().int()}), "PUT", {ChallengeIDs: [challengeID], Override: override});
 // Cost null clears the event's price (the hint becomes free).
 export const updateEventChallengeHintCosts = (eventID: string, attachmentID: string, challengeID: string, costs: HintCostInput[]) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}/hints`, challengeSchema, "PUT", {Costs: costs});

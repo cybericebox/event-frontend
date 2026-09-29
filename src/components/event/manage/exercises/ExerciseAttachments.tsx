@@ -5,8 +5,8 @@ import {useQuery} from "@tanstack/react-query";
 import {ChevronRight} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
-    detachEventExercise, forkEventExercise, removeEventChallenge, revertEventExercise, updateEventExercise,
-    type EventBoardChallenge, type EventExerciseAttachment,
+    detachEventExercise, forkEventExercise, revertEventExercise, setEventExerciseVisibility, updateEventExercise,
+    type EventExerciseAttachment,
 } from "@/api/manageChallenges";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {getManageConfig, getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
@@ -22,7 +22,9 @@ import {
 import {InfrastructureIcon, TipTag} from "./InfrastructureIcon";
 import {SetActions} from "./SetActions";
 import {HintMark, TaskRow} from "./TaskRow";
-import {setOpenByDefault, setSummary, standReadiness} from "./taskRowModel";
+import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRowModel";
+import {SetStatusIcon} from "./SetStatusIcon";
+import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
 import {useBoardSets} from "./useBoardSets";
 import {exercisesOrigin} from "@/utils/origins";
@@ -30,8 +32,7 @@ import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 
 type Action =
-    | {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string}
-    | {kind: "remove"; attachment: EventExerciseAttachment; challenge: EventBoardChallenge; error?: string};
+    {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string};
 
 const noSubscribe = () => () => {};
 
@@ -42,7 +43,6 @@ export function useReturnURL(): string {
 
 function actionCopy(action: Action): {title: string; description: string; confirm: string; danger?: boolean} {
     const {attachment} = action;
-    if (action.kind === "remove") return {title: t("manage.challenges.task.removeTitle"), description: t("manage.challenges.task.removeDescription"), confirm: t("manage.challenges.task.remove"), danger: true};
     if (action.kind === "update") return {title: t("manage.exercises.action.update.title", {number: attachment.LatestVersionNumber}), description: t("manage.exercises.action.update.description"), confirm: t("manage.exercises.action.update.confirm")};
     if (action.kind === "fork") return {title: t("manage.exercises.action.fork.title"), description: t("manage.exercises.action.fork.description"), confirm: t("manage.exercises.action.fork.confirm")};
     if (action.kind === "revert") return {title: t("manage.exercises.action.revert.title"), description: t("manage.exercises.action.revert.description", {number: attachment.Fork?.SourceVersionNumber ?? ""}), confirm: t("manage.exercises.action.revert.confirm")};
@@ -68,11 +68,20 @@ export function ExerciseAttachments() {
     const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), enabled: infrastructure, refetchInterval: 30_000, refetchOnWindowFocus: false, retry: false});
     const detached = (board.attachments.data ?? []).filter(isDetached);
 
+    async function toggleVisibility(attachment: EventExerciseAttachment, published: boolean) {
+        if (busy) return;
+        setBusy(true);
+        try {
+            await setEventExerciseVisibility(eventID, attachment.ID, published);
+            await board.refreshAll();
+        } catch (error) {toast.error(attachmentActionError(error, t("manage.challenges.set.visibilityFailed")));}
+        finally {setBusy(false);}
+    }
+
     async function runAction() {
         if (!action || busy) return;
         setBusy(true);
         try {
-            if (action.kind === "remove") await removeEventChallenge(eventID, action.attachment.ID, action.challenge.ID);
             if (action.kind === "update") await updateEventExercise(eventID, action.attachment.ID);
             if (action.kind === "fork") await forkEventExercise(eventID, action.attachment.ID);
             if (action.kind === "revert") await revertEventExercise(eventID, action.attachment.ID);
@@ -82,11 +91,11 @@ export function ExerciseAttachments() {
             }
             await board.refreshAll();
             setAction(null);
-            toast.success(action.kind === "remove" ? t("manage.challenges.task.removed") : t(`manage.exercises.action.${action.kind}.done`));
+            toast.success(t(`manage.exercises.action.${action.kind}.done`));
         } catch (error) {
-            const fallback = action.kind === "remove" ? t("manage.challenges.task.removeFailed") : t(`manage.exercises.action.${action.kind}.failed`);
+            const fallback = t(`manage.exercises.action.${action.kind}.failed`);
             // Attempts conflicts stay in the dialog: the organizer has to read why.
-            if (error instanceof ManageApiError && (error.code === ApiErrorCode.ExerciseTaskHasAttempts || error.code === ApiErrorCode.ChallengeRemoveHasAttempts)) setAction({...action, error: attachmentActionError(error, fallback)});
+            if (error instanceof ManageApiError && error.code === ApiErrorCode.ExerciseTaskHasAttempts) setAction({...action, error: attachmentActionError(error, fallback)});
             else {setAction(null); toast.error(attachmentActionError(error, fallback));}
         } finally {setBusy(false);}
     }
@@ -111,6 +120,8 @@ export function ExerciseAttachments() {
                 const stands = challenges.map(challenge => attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null);
                 const summary = setSummary(challenges, configQuery.data.HintsDisabled, stands);
                 const mismatch = infrastructureMismatch(attachment, configQuery.data.InfrastructureAllowed);
+                const status = setStatus(challenges, mismatch);
+                const shown = challenges.some(challenge => challenge.Published);
                 return <article className={`event-exercise-set${open ? " is-open" : ""}`} key={attachment.ID} aria-labelledby={`set-${attachment.ID}`}>
                     {/* The header row toggles the set; its buttons and links keep their own action. */}
                     <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a, [role=alert]")) toggle(); }}>
@@ -121,13 +132,13 @@ export function ExerciseAttachments() {
                                 <ChevronRight className="event-exercise-set__chevron" size={18} aria-hidden="true" />
                             </button>
                             <h3 id={`set-${attachment.ID}`}>{name}</h3>
+                            <SetStatusIcon status={status} />
                             <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
                             <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
                             {attachment.Infrastructure && <InfrastructureIcon />}
                         </div>
                         <div className="event-exercise-set__side">
                             <span className="event-task__badges">
-                                {mismatch && <span className="ib-tag ib-tag--sm ib-tag--danger">{t("manage.challenges.set.infraMissingBadge")}</span>}
                                 {summary.hints && <HintMark hints={summary.hints} />}
                                 {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
                                 {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
@@ -149,6 +160,9 @@ export function ExerciseAttachments() {
                         </div>}
                     </header>
                     {open && <div className="event-exercise-set__body" id={`set-tasks-${attachment.ID}`}>
+                        {/* Visibility is per set: its tasks share one infrastructure. */}
+                        <EventSwitch className="event-manage-form__switch" checked={shown} disabled={!canManage || busy || challenges.length === 0}
+                            onCheckedChange={checked => void toggleVisibility(attachment, checked)} label={t("manage.exercises.challenge.showOnBoard")} />
                         {attachment.UpdateAvailable && <div className="event-exercise-set__notice">
                             <span><strong>{t("manage.exercises.updateAvailable", {number: attachment.LatestVersionNumber})}</strong> {t("manage.exercises.settingsKept")}</span>
                             {canManage && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy} onClick={() => setAction({kind: "update", attachment})}>{t("manage.exercises.action.update.confirm")}</button>}
@@ -158,8 +172,8 @@ export function ExerciseAttachments() {
                         </div>}
                         {challenges.length === 0 ? <EmptyState compact message={t("manage.exercises.setEmpty")} /> : <ul className="event-task-list">
                             {challenges.map(challenge => <TaskRow key={challenge.ID} eventID={eventID} attachment={attachment} challenge={challenge}
-                                scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} hintsDisabled={configQuery.data.HintsDisabled} infrastructureMissing={mismatch} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
-                                canManage={canManage} editURL={editURL} onSaved={board.refreshSets} onRemove={() => setAction({kind: "remove", attachment, challenge})} />)}
+                                scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} hintsDisabled={configQuery.data.HintsDisabled} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
+                                canManage={canManage} onSaved={board.refreshSets} />)}
                         </ul>}
                     </div>}
                 </article>;
@@ -172,7 +186,7 @@ export function ExerciseAttachments() {
             </article>)}
         </section>
         <ConfirmDialog open={!!action} onCancel={() => setAction(null)} tone={copy?.danger ? "danger" : "default"} busy={busy} disabled={!!action?.error} error={action?.error}
-            title={copy?.title ?? ""} description={copy?.description} subject={action?.kind === "remove" ? action.challenge.Snapshot.name : action?.attachment.ExerciseName}
+            title={copy?.title ?? ""} description={copy?.description} subject={action?.attachment.ExerciseName}
             cancelLabel={action?.error ? t("common.close") : undefined} confirmLabel={copy?.confirm ?? ""} onConfirm={() => void runAction()} />
     </>;
 }

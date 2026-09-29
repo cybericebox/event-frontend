@@ -19,36 +19,32 @@ const lifecycle = {JoinPolicy: 0, FinishAt: null} as unknown as ManageLifecycle;
 
 function renderRow(patch: Partial<ManageScoring> = {}, hintsDisabled = false) {
     render(<ul><TaskRow eventID="e" attachment={attachment} challenge={challenge} scoring={{...scoring, ...patch}} lifecycle={lifecycle} hintsDisabled={hintsDisabled} stand="notReady"
-        canManage editURL={null} onSaved={vi.fn(async () => undefined)} onRemove={vi.fn()} /></ul>);
+        canManage onSaved={vi.fn(async () => undefined)} /></ul>);
 }
 
 describe("TaskRow", () => {
-    it("shows name, first description line, badges and icon actions in the row header", () => {
+    it("shows name, first description line and badges, but no actions: a set is handled as a whole", () => {
         renderRow();
         const row = screen.getByRole("button", {expanded: false}).closest(".event-task__row")!;
         expect(row.textContent).toContain("SQL injection");
         expect(row.textContent).toContain("Знайдіть прапор у формі входу");
-        expect(row.textContent).toContain("Показано");
+        // Visibility is per set: no per-task «Показано» badge.
+        expect(row.textContent).not.toContain("Показано");
         expect(row.textContent).toContain("Підказок: 1. Учасники їх бачать.");
         expect(row.querySelector(".event-task__hints.is-hidden")).toBeNull();
         expect(row.textContent).toContain("Стенд не готовий");
-        // Icon actions sit on the right of the row header.
-        expect(within(row as HTMLElement).getByRole("button", {name: "Прибрати із заходу"}).textContent).toBe("");
+        expect(within(row as HTMLElement).getAllByRole("button").map(button => button.getAttribute("aria-label"))).toEqual(["Розгорнути завдання SQL injection"]);
     });
 
-    it("expands into scoring, hints and board sections with the row actions", () => {
+    it("expands into scoring and hints only", () => {
         renderRow();
         fireEvent.click(screen.getByRole("button", {expanded: false}));
-        expect(screen.getAllByRole("heading", {level: 4}).map(heading => heading.textContent)).toEqual(["Оцінювання", "Підказки", "Показ"]);
+        expect(screen.getAllByRole("heading", {level: 4}).map(heading => heading.textContent)).toEqual(["Оцінювання", "Підказки"]);
         expect(screen.getByText("Статичне · 100 балів")).toBeTruthy();
         expect(screen.getByText("Підказка 1")).toBeTruthy();
         expect((screen.getByLabelText(/Вартість підказки 1/) as HTMLInputElement).value).toBe("20");
-        expect(screen.getByRole("switch", {name: "Показувати учасникам"})).toBeTruthy();
-        const actions = screen.getByRole("group", {name: "Дії із завданням SQL injection"});
-        const edit = within(actions).getByRole("button", {name: "Редагувати"});
-        expect(edit.getAttribute("aria-disabled")).toBe("true");
-        expect(document.getElementById(edit.getAttribute("aria-describedby")!)?.textContent).toBe("Редагувати. Щоб редагувати, спершу створіть копію набору для заходу.");
-        expect(within(actions).getByRole("button", {name: "Прибрати із заходу"}).className).toContain("is-danger");
+        expect(screen.queryByRole("switch", {name: "Показувати учасникам"})).toBeNull();
+        expect(screen.queryByRole("button", {name: /Прибрати|Редагувати/})).toBeNull();
     });
 
     it("locks task scoring when the event scoring applies to all tasks", () => {

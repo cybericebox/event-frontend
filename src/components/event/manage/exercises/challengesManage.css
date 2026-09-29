@@ -91,3 +91,8 @@ button.event-sortable__main{cursor:pointer}
   .event-task__panel{padding:var(--ib-4)}
   .event-task__kind,.event-task__number{width:100%}
 }
+
+/* A set's state (shown / hidden / cannot work) as one icon with a tooltip. */
+.event-set-status{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border-radius:var(--ib-r-sm);color:var(--ib-dim)}
+.event-set-status.is-shown{color:var(--ib-ok)}
+.event-set-status.is-broken{color:var(--ib-danger)}

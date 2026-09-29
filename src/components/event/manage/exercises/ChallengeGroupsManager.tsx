@@ -7,12 +7,16 @@ import {
     createEventChallengeGroup, deleteEventChallengeGroup, reorderEventChallengeGroups, reorderGroupChallenges,
     setEventChallengeGroup, updateEventChallengeGroup, type EventChallengeGroup,
 } from "@/api/manageChallenges";
-import {ManageApiError} from "@/api/manage";
 import {DialogModal} from "@/components/event/DialogModal";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {useQuery} from "@tanstack/react-query";
+import {getManageConfig, ManageApiError} from "@/api/manage";
+import {infrastructureMismatch} from "./attachmentModel";
+import {SetStatusIcon} from "./SetStatusIcon";
+import {setStatus} from "./taskRowModel";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -32,6 +36,8 @@ export function ChallengeGroupsManager() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const board = useBoardSets(eventID);
+    // Infrastructure decides whether a task's set can work (status icon).
+    const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const [selectedID, setSelectedID] = useState<string | null>(null);
     // «Додати групу» / «Перейменувати групу» dialog.
     const [naming, setNaming] = useState<{group: EventChallengeGroup | null; key: number} | null>(null);
@@ -166,7 +172,8 @@ export function ChallengeGroupsManager() {
                     : <SortableList key={`tasks-${selected ?? noGroup}`} ariaLabel={t("manage.challenges.groups.tasksLabel", {name: selectedName})} items={tasks}
                         itemID={task => task.challenge.ID} itemName={task => task.challenge.Snapshot.name} disabled={!canManage || busy} onReorder={ids => void reorderTasks(ids)}
                         renderItem={(task, index) => ({
-                            content: <span className="event-group-order__task"><span className="event-group-order__position">{index + 1}</span><strong>{task.challenge.Snapshot.name}</strong><small>{task.attachment.ExerciseName}</small></span>,
+                            content: <span className="event-group-order__task"><span className="event-group-order__position">{index + 1}</span><strong>{task.challenge.Snapshot.name}</strong><small>{task.attachment.ExerciseName}</small>
+                                <SetStatusIcon status={setStatus([task.challenge], !!config.data && infrastructureMismatch(task.attachment, config.data.InfrastructureAllowed))} setName={task.attachment.ExerciseName || t("manage.exercises.set")} /></span>,
                             actions: canManage && <RowActions label={t("manage.challenges.groups.taskMenu", {name: task.challenge.Snapshot.name})} busy={busy} actions={[
                                 {key: "move", label: t("manage.challenges.groups.moveTo"), icon: FolderInput, onSelect: () => setMoving({task, target: ""})},
                             ]} />,

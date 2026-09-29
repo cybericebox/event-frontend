@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import type {ManageLabs} from "@/api/manageLabs";
 import type {EventBoardChallenge} from "@/api/manageChallenges";
-import {hintIndicator, setOpenByDefault, setSummary, standReadiness, taskBadges} from "./taskRowModel";
+import {hintIndicator, setOpenByDefault, setStatus, setSummary, standReadiness, taskBadges} from "./taskRowModel";
 
 const labs = (entries: Array<{ChallengeID: string; Status: "pending" | "ready" | "failed" | "removed"}>) =>
     ({Items: [{Labs: entries.map(entry => ({...entry, ChallengeName: "", Reason: ""}))}]}) as unknown as ManageLabs;
@@ -15,10 +15,17 @@ describe("task row", () => {
         expect(standReadiness("c1", labs([{ChallengeID: "c1", Status: "ready"}, {ChallengeID: "c1", Status: "pending"}]))).toBe("notReady");
     });
 
-    it("lists status badges", () => {
-        expect(taskBadges({Published: false, ScoringOverride: null}, null).map(badge => [badge.key, badge.label])).toEqual([["board", "Приховано"]]);
-        const badges = taskBadges({Published: true, ScoringOverride: {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0}}, "notReady");
-        expect(badges.map(badge => [badge.label, badge.tone])).toEqual([["Показано", "ok"], ["Власне оцінювання", undefined], ["Стенд не готовий", "warn"]]);
+    it("lists status badges (visibility is per set)", () => {
+        expect(taskBadges({ScoringOverride: null}, null)).toEqual([]);
+        const badges = taskBadges({ScoringOverride: {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0}}, "notReady");
+        expect(badges.map(badge => [badge.label, badge.tone])).toEqual([["Власне оцінювання", undefined], ["Стенд не готовий", "warn"]]);
+    });
+
+    it("derives a set's status: broken wins, else shown when its tasks are shown", () => {
+        expect(setStatus([{Published: true}], true)).toBe("broken");
+        expect(setStatus([{Published: true}, {Published: true}], false)).toBe("shown");
+        expect(setStatus([{Published: false}], false)).toBe("hidden");
+        expect(setStatus([], false)).toBe("hidden");
     });
 
     it("shows the hint count and whether participants see the hints", () => {
