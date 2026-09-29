@@ -166,9 +166,10 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
         // Managers check tasks on the same board as the hidden moderators team.
         ...(approved || managementAccess.data?.CanManage ? [{href: "/challenges", label: t("nav.challenges")}] : []),
         ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-        ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) ? [{href: "/scoreboard", label: t("nav.results")}] : []),
+        // Staff read the results in every phase; the public info is the guest view.
+        ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) || !!managementAccess.data ? [{href: "/scoreboard", label: t("nav.results")}] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-    ], [pending, approved, canViewResults, event, navigationPages, managementAccess.data?.CanManage]);
+    ], [pending, approved, canViewResults, event, navigationPages, managementAccess.data]);
 
     useLayoutEffect(() => {
         const nav = navRef.current;

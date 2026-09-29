@@ -2717,5 +2717,11 @@
   "manage.challenges.set.status.hidden": "Hidden from participants",
   "manage.challenges.set.status.broken": "Will not work: the set needs infrastructure the event does not have",
   "manage.challenges.set.statusOf": "Set «{name}»: {state}",
-  "manage.challenges.set.visibilityFailed": "Could not change the set's visibility."
+  "manage.challenges.set.visibilityFailed": "Could not change the set's visibility.",
+  "scoreboard.searchTeams": "Search teams",
+  "scoreboard.searchParticipants": "Search participants",
+  "scoreboard.tableLabel": "Ranking",
+  "scoreboard.emptySearch": "Nothing matches this search",
+  "scoreboard.status.notStarted": "The event has not started yet",
+  "scoreboard.openLive": "Open Live"
 }

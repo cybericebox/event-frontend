@@ -1,0 +1,27 @@
+/* Participant «Результати»: the header row with the Live action, and the
+   ranking block. Loading and empty states sit centered in the block body,
+   which keeps its height from loading to data. No shadows. */
+.event-results__head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--ib-3)}
+.event-results__head .ib-page-header{flex:1 1 320px;min-width:0}
+.event-results__actions{display:flex;flex:none;gap:var(--ib-2)}
+.event-scoreboard{display:flex;flex-direction:column;min-height:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:hidden}
+.event-scoreboard__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
+.event-scoreboard__search{flex:1 1 240px;max-width:360px}
+.event-scoreboard__scroll{overflow:auto}
+.event-scoreboard table{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--ib-fs-13)}
+.event-scoreboard th{position:sticky;top:0;z-index:1;padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);background:var(--ib-surface);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);letter-spacing:.04em;text-align:left;text-transform:uppercase;white-space:nowrap}
+.event-scoreboard th.ib-num{text-align:right}
+.event-scoreboard td{padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);color:var(--ib-ink);vertical-align:middle}
+.event-scoreboard tbody tr:last-child td{border-bottom:0}
+.event-scoreboard td.ib-num{text-align:right}
+.event-scoreboard tr.is-own td{background:var(--ib-soft);font-weight:var(--ib-w-semibold)}
+.event-scoreboard__place{width:64px;color:var(--ib-dim);font-family:var(--ib-mono);font-variant-numeric:tabular-nums}
+.event-scoreboard__name{font-weight:var(--ib-w-medium);overflow-wrap:anywhere}
+.event-scoreboard__points{font-weight:var(--ib-w-semibold)}
+.event-scoreboard td.event-scoreboard__state{height:var(--event-block-state-h,240px);padding:0;border-bottom:0}
+.event-scoreboard td.event-scoreboard__state>*{min-height:var(--event-block-state-h,240px)}
+@media (max-width:640px){
+  .event-scoreboard__search{max-width:none}
+  .event-scoreboard .event-scoreboard__last{display:none}
+  .event-results__actions{width:100%}
+}

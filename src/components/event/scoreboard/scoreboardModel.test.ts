@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {chartTeamIDs, unitCount} from "./scoreboardModel";
+import {chartTeamIDs, searchScoreboard, unitCount} from "./scoreboardModel";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 
 const snapshot = (chartTeams: number) => ({
@@ -21,5 +21,10 @@ describe("scoreboard model", () => {
         expect(chartTeamIDs(snapshot(2))).toEqual(["a", "b"]);
         expect(chartTeamIDs(snapshot(2), "d")).toEqual(["a", "b", "d"]);
         expect(chartTeamIDs(snapshot(2), "b")).toEqual(["a", "b"]);
+    });
+
+    it("searches by name and keeps the places", () => {
+        expect(searchScoreboard(snapshot(2), " C ").map(entry => [entry.TeamID, entry.Rank])).toEqual([["c", 3]]);
+        expect(searchScoreboard(snapshot(2), "")).toHaveLength(4);
     });
 });

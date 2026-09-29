@@ -12,3 +12,9 @@ export function chartTeamIDs(snapshot: ManageResultsSnapshot, ownTeamID?: string
     if (ownTeamID && !ids.includes(ownTeamID) && snapshot.Scoreboard.some(entry => entry.TeamID === ownTeamID)) ids.push(ownTeamID);
     return ids;
 }
+
+// Search by name; places stay those of the full ranking.
+export function searchScoreboard(snapshot: ManageResultsSnapshot, search: string): ManageResultsSnapshot["Scoreboard"] {
+    const query = search.trim().toLocaleLowerCase("uk-UA");
+    return query ? snapshot.Scoreboard.filter(entry => entry.TeamName.toLocaleLowerCase("uk-UA").includes(query)) : snapshot.Scoreboard;
+}

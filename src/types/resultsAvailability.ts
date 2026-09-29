@@ -12,3 +12,9 @@ export function resultsAvailability(info: {CanViewResults: boolean; ResultsAvail
 export function resultsLinkVisible(availability: ResultsAvailability): boolean {
     return availability === "available" || availability === "not_started";
 }
+
+// The event's staff (moderators and organizers) always read the results, like
+// the API does for them; the public info carries only the guest view.
+export function viewerResultsAvailability(availability: ResultsAvailability, staff: boolean): ResultsAvailability {
+    return staff ? "available" : availability;
+}

@@ -2421,7 +2421,7 @@
   "participation.vpn.note": "Потрібен для завдань з інфраструктурою.",
   "participation.vpn.setup": "Налаштувати VPN",
   "participation.vpn.title": "VPN",
-  "scoreboard.afterStart": "Рейтинг зʼявиться після старту",
+  "scoreboard.afterStart": "Рейтинг зʼявиться після початку",
   "scoreboard.chartTitle": "Бали за часом · топ-{top}",
   "scoreboard.chartTitleOwn": "Бали за часом · топ-{top} і ви",
   "scoreboard.chartTitleOwnTeam": "Бали за часом · топ-{top} і ваша команда",
@@ -2717,5 +2717,11 @@
   "manage.challenges.set.status.hidden": "Приховано від учасників",
   "manage.challenges.set.status.broken": "Не працюватиме: набору потрібна інфраструктура, якої в заходу немає",
   "manage.challenges.set.statusOf": "Набір «{name}»: {state}",
-  "manage.challenges.set.visibilityFailed": "Не вдалося змінити показ набору."
+  "manage.challenges.set.visibilityFailed": "Не вдалося змінити показ набору.",
+  "scoreboard.searchTeams": "Пошук команди",
+  "scoreboard.searchParticipants": "Пошук учасника",
+  "scoreboard.tableLabel": "Рейтинг",
+  "scoreboard.emptySearch": "Нічого не знайдено за цим запитом",
+  "scoreboard.status.notStarted": "Захід ще не почався",
+  "scoreboard.openLive": "Відкрити Live"
 }
