@@ -127,7 +127,7 @@ export default async function RootLayout({
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS avoids stale constructor styles behind the development edge. */}
             <link rel="stylesheet" href="/event-page-builder-v50.css" />
             {/* eslint-disable-next-line @next/next/no-css-tags -- Versioned CSS keeps the manage page frame current behind the development edge cache. */}
-            <link rel="stylesheet" href="/event-manage-layout-v2.css" />
+            <link rel="stylesheet" href="/event-manage-layout-v3.css" />
         </head>
         <body className="event-root">
         <Providers>

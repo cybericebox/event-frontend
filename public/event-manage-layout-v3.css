@@ -16,3 +16,9 @@
 /* Number fields: no native stepper arrows; ArrowUp/ArrowDown still step the value. */
 input[type="number"]{-moz-appearance:textfield;appearance:textfield}
 input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+/* Overview: read-only status lines that link to the tab owning each setting. */
+.event-manage-setup__facts{display:grid;gap:var(--ib-2);margin:0}
+.event-manage-setup__facts>div{display:flex;align-items:baseline;flex-wrap:wrap;gap:var(--ib-1) var(--ib-3);font-size:var(--ib-fs-13)}
+.event-manage-setup__facts dt{min-width:160px;color:var(--ib-dim)}
+.event-manage-setup__facts dd{margin:0;color:var(--ib-ink);font-weight:var(--ib-w-medium)}
+.event-manage-setup__facts a{color:var(--ib-action)}
