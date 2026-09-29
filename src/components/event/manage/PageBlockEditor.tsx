@@ -9,6 +9,7 @@ import type {ContentBlock, ContentValue} from "@/types/eventContent";
 import {emptyRichText, richTextPlainText, type ContentRichText} from "@/components/event/content/richTextState";
 import {initialVisibilityValue, insertableContentVariable, visibilityOperators, type ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {useSortableItem} from "@/components/ui/Sortable";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {blockPalette} from "./blockPalette";
@@ -218,7 +219,7 @@ function EditorLinkField({eventID, label, value, placeholder, required, help, er
     </div>;
 }
 
-export function PageBlockEditor({eventID, coverImage, block, index, count, anchorsInUse = [], values, catalog, canEdit, selected = false, open = selected, error, onSelect, onToggle, onDragStateChange, onUpdate, onMove, onReorder, onDuplicate, onDelete}: {
+export function PageBlockEditor({eventID, coverImage, block, index, count, anchorsInUse = [], values, catalog, canEdit, selected = false, open = selected, error, onSelect, onToggle, onUpdate, onMove, onDuplicate, onDelete}: {
     eventID: string;
     coverImage: string;
     block: ContentBlock;
@@ -235,19 +236,12 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
     error?: string;
     onSelect: () => void;
     onToggle?: () => void;
-    // Drag-and-drop start (true) and end (true on drop or cancel: false).
-    onDragStateChange?: (dragging: boolean) => void;
     onUpdate: (value: ContentBlock | ((current: ContentBlock) => ContentBlock)) => void;
     onMove: (direction: -1 | 1) => void;
-    onReorder: (sourceID: string, targetID: string) => void;
     onDuplicate?: () => void;
     onDelete: () => void;
 }) {
-    const pointerID = useRef<number | null>(null);
-    const dropTarget = useRef<HTMLElement | null>(null);
-    const dragGhost = useRef<HTMLElement | null>(null);
-    const dragOffset = useRef({x: 0, y: 0});
-    const lastHoverID = useRef("");
+    const sortable = useSortableItem(block.id, !canEdit);
     const [rulesOpen, setRulesOpen] = useState(!!block.visibility?.length);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [imageError, setImageError] = useState("");
@@ -257,64 +251,6 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
     const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const errorField = error ? blockValidationField(error, block) : null;
     const errorMessage = error?.replace(/^[^:\d]+ \d+: /, "").replace(/^./, first => first.toLocaleUpperCase("uk"));
-
-    function blockAt(clientX: number, clientY: number): HTMLElement | null {
-        return document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-editor-block-id]") ?? null;
-    }
-
-    function clearDropTarget() {
-        document.removeEventListener("pointerup", clearDropTarget);
-        document.removeEventListener("pointercancel", clearDropTarget);
-        dropTarget.current?.classList.remove("is-drop-target");
-        dropTarget.current = null;
-        document.querySelector<HTMLElement>(`[data-editor-block-id="${block.id}"]`)?.classList.remove("is-dragging");
-        dragGhost.current?.remove();
-        dragGhost.current = null;
-        lastHoverID.current = "";
-        if (pointerID.current !== null) onDragStateChange?.(false);
-        pointerID.current = null;
-    }
-
-    function beginDrag(event: React.PointerEvent<HTMLButtonElement>) {
-        if (event.button !== 0) return;
-        event.preventDefault();
-        const source = event.currentTarget.closest<HTMLElement>("[data-editor-block-id]");
-        if (!source) return;
-        const bounds = source.getBoundingClientRect();
-        dragOffset.current = {x: event.clientX - bounds.left, y: event.clientY - bounds.top};
-        const ghost = source.cloneNode(true) as HTMLElement;
-        ghost.removeAttribute("data-editor-block-id");
-        ghost.querySelectorAll("[id]").forEach(node => node.removeAttribute("id"));
-        // Every block collapses while dragging, so the ghost shows the header only.
-        ghost.querySelectorAll(".event-content-editor__block-error,.event-content-editor__block-body").forEach(node => node.remove());
-        ghost.classList.remove("is-open");
-        ghost.classList.add("event-content-editor__drag-ghost");
-        ghost.setAttribute("aria-hidden", "true");
-        ghost.style.width = `${bounds.width}px`;
-        ghost.style.left = `${bounds.left}px`;
-        ghost.style.top = `${bounds.top}px`;
-        document.body.appendChild(ghost);
-        dragGhost.current = ghost;
-        source.classList.add("is-dragging");
-        pointerID.current = event.pointerId;
-        event.currentTarget.setPointerCapture(event.pointerId);
-        document.addEventListener("pointerup", clearDropTarget);
-        document.addEventListener("pointercancel", clearDropTarget);
-        onDragStateChange?.(true);
-    }
-
-    function moveDrag(event: React.PointerEvent<HTMLButtonElement>) {
-        if (pointerID.current !== event.pointerId) return;
-        if (dragGhost.current) {
-            dragGhost.current.style.left = `${event.clientX - dragOffset.current.x}px`;
-            dragGhost.current.style.top = `${event.clientY - dragOffset.current.y}px`;
-        }
-        const target = blockAt(event.clientX, event.clientY);
-        const targetID = target?.dataset.editorBlockId ?? "";
-        if (!targetID || targetID === block.id || targetID === lastHoverID.current) return;
-        lastHoverID.current = targetID;
-        onReorder(block.id, targetID);
-    }
 
     function fieldValue(field: string): string {
         if (field.startsWith("item:")) {
@@ -506,13 +442,13 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
     const blockSummary = block.type === "text" && !block.title ? rawSummary ?? "" : replaceVariables(rawSummary ?? "", values, new Map((block.variables ?? []).map(variable => [variable.name, variable.format])), false, block.dateDisplays?.[summaryField]);
     const bodyID = `block-body-${block.id}`;
     const toggleLabel = open ? t("manage.blocks.toggle.collapse") : t("manage.blocks.toggle.expand");
-    return <section className={`event-content-editor__block${selected ? " is-selected" : ""}${open ? " is-open" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={open && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect(); if (!open) onToggle?.();}}}>
+    return <section {...sortable.itemProps} className={`event-content-editor__block${selected ? " is-selected" : ""}${open ? " is-open" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockLabel} ${index + 1}`} aria-describedby={open && error && !errorField ? `block-error-${block.id}` : undefined} tabIndex={0} onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onFocusCapture={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onSelect();}} onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect(); if (!open) onToggle?.();}}}>
         {/* The whole row toggles the block except its action buttons; the title and
             chevron buttons have no handlers of their own, their clicks bubble here. */}
         <div className="event-content-editor__block-head" onClick={event => {if (!(event.target as Element).closest(".event-content-editor__block-actions")) onToggle?.();}}>
             <button type="button" className="event-content-editor__block-title" aria-expanded={open} aria-controls={bodyID} aria-label={toggleLabel}><span className="event-content-editor__order">{index + 1}</span><strong>{blockLabel}</strong>{blockSummary && <span className="event-content-editor__block-summary">{blockSummary}</span>}</button>
             {canEdit && <div className="event-content-editor__block-actions">
-                <EventTooltip content={t("manage.blocks.drag.tooltip")}>{id => <button type="button" className="event-content-editor__drag" aria-label={t("manage.blocks.drag.aria", {n: index + 1})} aria-describedby={id} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={clearDropTarget} onPointerCancel={clearDropTarget}><GripVertical size={16} /></button>}</EventTooltip>
+                <EventTooltip content={t("manage.blocks.drag.tooltip")}>{id => <button type="button" className="event-content-editor__drag" {...sortable.handleProps} aria-label={t("manage.blocks.drag.aria", {n: index + 1})} aria-describedby={`${id} ${sortable.handleProps["aria-describedby"]}`}><GripVertical size={16} /></button>}</EventTooltip>
                 <EventTooltip content={t("manage.blocks.move.up")}>{id => <button type="button" aria-label={t("manage.blocks.move.upAria", {n: index + 1})} aria-describedby={id} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>}</EventTooltip>
                 <EventTooltip content={t("manage.blocks.move.down")}>{id => <button type="button" aria-label={t("manage.blocks.move.downAria", {n: index + 1})} aria-describedby={id} disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown size={16} /></button>}</EventTooltip>
                 {onDuplicate && <EventTooltip content={t("manage.blocks.duplicate")}>{id => <button type="button" aria-label={t("manage.blocks.duplicateAria", {n: index + 1})} aria-describedby={id} onClick={onDuplicate}><Copy size={16} /></button>}</EventTooltip>}

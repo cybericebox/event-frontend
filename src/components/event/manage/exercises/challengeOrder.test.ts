@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {EventBoardChallenge, EventChallengeGroup, EventExerciseAttachment} from "@/api/manageChallenges";
-import {descriptionFirstLine, groupBuckets, moveItem, orderedGroups} from "./challengeOrder";
+import {descriptionFirstLine, groupBuckets, orderedGroups} from "./challengeOrder";
 
 const attachment = (id: string, createdAt: string) => ({ID: id, CreatedAt: createdAt}) as EventExerciseAttachment;
 const challenge = (id: string, patch: Partial<EventBoardChallenge> = {}) => ({ID: id, GroupID: null, Order: 0, BoardOrder: null, ...patch}) as EventBoardChallenge;
@@ -24,13 +24,6 @@ describe("challenge order", () => {
             ["web", ["a", "b", "c"]],
             [null, ["gone"]],
         ]);
-    });
-
-    it("moves an item and ignores moves out of range", () => {
-        expect(moveItem(["a", "b", "c"], 0, 2)).toEqual(["b", "c", "a"]);
-        expect(moveItem(["a", "b", "c"], 2, 0)).toEqual(["c", "a", "b"]);
-        const same = ["a"];
-        expect(moveItem(same, 0, 1)).toBe(same);
     });
 
     it("reads the first description line as plain text", () => {

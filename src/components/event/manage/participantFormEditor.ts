@@ -162,17 +162,6 @@ export function invalidOptions(options: string[]): Set<number> {
     return invalid;
 }
 
-// Moves a block to where another block is (drag and drop).
-export function reorderBlocks(blocks: FormBlock[], sourceID: string, targetID: string): FormBlock[] {
-    const from = blocks.findIndex(block => block.id === sourceID);
-    const to = blocks.findIndex(block => block.id === targetID);
-    if (from < 0 || to < 0 || from === to) return blocks;
-    const next = [...blocks];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
-    return next;
-}
-
 // A copy right below the block. A question gets its own key, so answers and
 // conditions of the original stay with the original.
 export function duplicateBlock(blocks: FormBlock[], index: number): {blocks: FormBlock[]; copy: FormBlock} | null {

@@ -2696,5 +2696,14 @@
   "manage.exercises.attachDialog.noInfrastructure": "The event has no infrastructure — sets with stands cannot be added.",
   "manage.exercises.attachDialog.noInfrastructureBefore": "The platform administrator can enable it before publication.",
   "manage.challenges.groups.groupMenu": "Actions for the group {name}",
-  "manage.challenges.task.menu": "Actions for {name}"
+  "manage.challenges.task.menu": "Actions for {name}",
+  "ui.sortable.pickedUp": "Picked up «{name}», position {position} of {count}.",
+  "ui.sortable.movedTo": "«{name}»: position {position} of {count}.",
+  "ui.sortable.outside": "«{name}» is outside the list.",
+  "ui.sortable.dropped": "«{name}» dropped at position {position} of {count}.",
+  "ui.sortable.cancelled": "Moving «{name}» cancelled.",
+  "ui.sortable.instructions": "To pick up an item, press Space or Enter. Use the up and down arrows to move it, Space or Enter to drop it, Escape to cancel.",
+  "ui.sortable.roleDescription": "sortable item",
+  "manage.challenges.order.dragNamed": "Drag «{name}»",
+  "manage.table.columns.dragNamed": "Drag column «{label}»"
 }

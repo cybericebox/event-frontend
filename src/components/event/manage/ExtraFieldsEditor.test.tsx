@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {FormBlock, ParticipantForm} from "@/api/manageParticipantForm";
+import {keyboardDrag, stackLayout} from "@/components/ui/sortableTestUtils";
 import {ExtraFieldsEditor} from "./ExtraFieldsEditor";
 
 let form: ParticipantForm;
@@ -15,6 +16,9 @@ vi.mock("@/api/manageTeamFields", () => ({getManageTeamFields: async () => form,
 const question = (id: string, extra: Partial<Extract<FormBlock, {type: "field"}>> = {}): FormBlock => ({id, type: "field", key: id, input: "text", label: `Питання ${id}`, ...extra});
 
 afterEach(cleanup);
+let restoreLayout: () => void;
+beforeAll(() => {restoreLayout = stackLayout();});
+afterAll(() => restoreLayout());
 beforeEach(() => {
     form = {Version: 1, Enabled: true, Required: false, Document: {blocks: [
         question("a", {label: "Курс", input: "number", required: true, editable: true}),
@@ -68,11 +72,22 @@ describe.each(["participant", "team"] as const)("field cards (%s)", scope => {
     it("collapse every card while one is dragged and restore them after", async () => {
         await renderEditor(scope);
         fireEvent.click(within(card("Питання 1")).getByText("Курс"));
-        fireEvent.pointerDown(within(card("Питання 2")).getByRole("button", {name: "Перетягнути блок 2"}), {button: 0, pointerId: 1});
-        expect(chevron(card("Питання 1")).getAttribute("aria-expanded")).toBe("false");
-        fireEvent.pointerUp(document, {pointerId: 1});
+        await keyboardDrag(within(card("Питання 2")).getByRole("button", {name: "Перетягнути блок 2"}), -1, "cancel", () => {
+            expect(chevron(card("Питання 1")).getAttribute("aria-expanded")).toBe("false");
+        });
         expect(chevron(card("Питання 1")).getAttribute("aria-expanded")).toBe("true");
         expect(chevron(card("Питання 2")).getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("move a card several positions in one drag", async () => {
+        form.Document.blocks = [...form.Document.blocks, question("c", {label: "Факультет"}), question("d", {label: "Місто"})];
+        await renderEditor(scope);
+        await keyboardDrag(within(card("Питання 4")).getByRole("button", {name: "Перетягнути блок 4"}), -3);
+        expect(within(card("Питання 1")).getByText("Місто")).toBeTruthy();
+        expect(within(card("Питання 4")).getByText("Факультет")).toBeTruthy();
+        await keyboardDrag(within(card("Питання 1")).getByRole("button", {name: "Перетягнути блок 1"}), 2);
+        expect(within(card("Питання 3")).getByText("Місто")).toBeTruthy();
+        expect(screen.getByText("Є незбережені зміни")).toBeTruthy();
     });
 });
 

@@ -4,9 +4,7 @@
 .event-sortable{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
 .event-sortable__row{display:flex;align-items:center;gap:var(--ib-2);min-width:0;min-height:44px;padding:0 var(--ib-2);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
 .event-sortable__row.is-selected{border-color:var(--ib-action);background:var(--ib-soft)}
-.event-sortable__row.is-dragging{opacity:.5}
-.event-sortable__row.is-over{border-color:var(--ib-action);border-style:dashed}
-.event-sortable__grip{display:grid;place-items:center;flex:none;width:20px;height:28px;color:var(--ib-dim);cursor:grab}
+.event-sortable__grip{display:grid;place-items:center;flex:none;width:20px;height:28px;padding:0;border:0;background:transparent;color:var(--ib-dim);cursor:grab;touch-action:none}
 .event-sortable__grip:active{cursor:grabbing}
 .event-sortable__main{display:flex;align-items:center;flex:1;min-width:0;min-height:42px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left}
 button.event-sortable__main{cursor:pointer}

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import {afterEach, describe, expect, it, vi} from "vitest";
+import {afterAll, afterEach, beforeAll, describe, expect, it, vi} from "vitest";
 import {useState} from "react";
 import {cleanup, fireEvent, render, screen, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {t} from "@/i18n/t";
+import {keyboardDrag, stackLayout} from "@/components/ui/sortableTestUtils";
 import {BlockStackEditor} from "./BlockStackEditor";
 
 vi.mock("@/api/clientAuth", () => ({
@@ -19,14 +20,19 @@ vi.mock("@/api/manage", () => ({
 }));
 
 afterEach(cleanup);
+let restoreLayout: () => void;
+beforeAll(() => {restoreLayout = stackLayout();});
+afterAll(() => restoreLayout());
 // jsdom has no element scrolling; the preview scrolls to the selected block.
 Element.prototype.scrollTo = () => {};
 
 const first: ContentBlock = {id: "first", type: "section", label: "Перший", variant: "left"};
 const second: ContentBlock = {id: "second", type: "section", label: "Другий", variant: "left"};
+const third: ContentBlock = {id: "third", type: "section", label: "Третій", variant: "left"};
+const fourth: ContentBlock = {id: "fourth", type: "section", label: "Четвертий", variant: "left"};
 
-function Harness({validation = null}: {validation?: string | null}) {
-    const [document, setDocument] = useState<ContentDocument>({blocks: [first, second]});
+function Harness({validation = null, blocks = [first, second]}: {validation?: string | null; blocks?: ContentBlock[]}) {
+    const [document, setDocument] = useState<ContentDocument>({blocks});
     return <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
         <BlockStackEditor editorKey="e:landing" eventID="e" coverImage="" document={document} catalog={[]} values={{}} validation={validation} canEdit previewTitle="" onChange={update => setDocument(update)} />
     </QueryClientProvider>;
@@ -35,6 +41,7 @@ function Harness({validation = null}: {validation?: string | null}) {
 const block = (n: number) => screen.getByRole("region", {name: new RegExp(` ${n}$`)});
 const titleToggle = (n: number) => block(n).querySelector<HTMLButtonElement>(".event-content-editor__block-title")!;
 const isOpen = (n: number) => block(n).querySelector(".event-content-editor__block-body") !== null;
+const order = () => screen.getAllByRole("region").map(region => region.getAttribute("data-editor-block-id")).filter(Boolean);
 const chevron = (n: number) => block(n).querySelector<HTMLButtonElement>(".event-content-editor__block-toggle")!;
 
 describe("collapsible blocks", () => {
@@ -84,19 +91,28 @@ describe("collapsible blocks", () => {
         expect(isOpen(3)).toBe(true);
     });
 
-    it("collapses every block while dragging and restores them after the drop", () => {
+    it("collapses every block while dragging and restores them after the drop", async () => {
         render(<Harness />);
         fireEvent.click(titleToggle(2));
         expect(isOpen(2)).toBe(true);
-        const handle = screen.getByRole("button", {name: t("manage.blocks.drag.aria", {n: 1})});
-        handle.setPointerCapture = () => {};
-        fireEvent.pointerDown(handle, {button: 0, pointerId: 1, clientX: 5, clientY: 5});
-        expect(isOpen(1)).toBe(false);
+        await keyboardDrag(screen.getByRole("button", {name: t("manage.blocks.drag.aria", {n: 1})}), 1, "drop", () => {
+            expect(isOpen(1)).toBe(false);
+            expect(isOpen(2)).toBe(false);
+        });
+        // The open block moved up and is open again.
+        expect(block(1).getAttribute("data-editor-block-id")).toBe("second");
+        expect(isOpen(1)).toBe(true);
         expect(isOpen(2)).toBe(false);
-        fireEvent.pointerUp(handle, {pointerId: 1});
-        expect(isOpen(1)).toBe(false);
-        expect(isOpen(2)).toBe(true);
-        document.querySelectorAll(".event-content-editor__drag-ghost").forEach(node => node.remove());
+    });
+
+    it("moves a block several positions in one drag, to the last and the first place", async () => {
+        render(<Harness blocks={[first, second, third, fourth]} />);
+        await keyboardDrag(screen.getByRole("button", {name: t("manage.blocks.drag.aria", {n: 1})}), 3);
+        expect(order()).toEqual(["second", "third", "fourth", "first"]);
+        await keyboardDrag(screen.getByRole("button", {name: t("manage.blocks.drag.aria", {n: 3})}), -2);
+        expect(order()).toEqual(["fourth", "second", "third", "first"]);
+        await keyboardDrag(screen.getByRole("button", {name: t("manage.blocks.drag.aria", {n: 2})}), 2, "cancel");
+        expect(order()).toEqual(["fourth", "second", "third", "first"]);
     });
 
     it("opens a collapsed block that gets a validation error", () => {

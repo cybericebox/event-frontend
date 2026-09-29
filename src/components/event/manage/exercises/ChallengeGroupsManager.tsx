@@ -143,7 +143,7 @@ export function ChallengeGroupsManager() {
                 <div className="event-manage-section__head event-group-order__head"><h2 id="challenge-groups-title">{t("manage.exercises.groups.groups")}</h2>
                     {canManage && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy} onClick={() => setNaming({group: null, key: Date.now()})}><Plus aria-hidden="true" />{t("manage.exercises.groups.add")}</button>}
                 </div>
-                {groups.length === 0 ? <EmptyState compact message={t("manage.exercises.groups.empty")} /> : <SortableList listID="groups" ariaLabel={t("manage.exercises.groups.groups")} items={groups}
+                {groups.length === 0 ? <EmptyState compact message={t("manage.exercises.groups.empty")} /> : <SortableList ariaLabel={t("manage.exercises.groups.groups")} items={groups}
                     itemID={group => group.ID} itemName={group => group.Name} disabled={!canManage || busy} onReorder={ids => void reorderGroups(ids)}
                     renderItem={group => ({
                         selected: selected === group.ID,
@@ -162,7 +162,7 @@ export function ChallengeGroupsManager() {
                 <div className="event-manage-section__head"><h2 id="group-tasks-title">{selectedName}</h2><p>{t("manage.challenges.groups.tasksHelp")}</p></div>
                 {!hasSets ? <EmptyState message={t("manage.exercises.groups.noSets")} />
                     : tasks.length === 0 ? <EmptyState message={t("manage.challenges.groups.groupEmpty")} />
-                    : <SortableList listID={`tasks-${selected ?? noGroup}`} ariaLabel={t("manage.challenges.groups.tasksLabel", {name: selectedName})} items={tasks}
+                    : <SortableList key={`tasks-${selected ?? noGroup}`} ariaLabel={t("manage.challenges.groups.tasksLabel", {name: selectedName})} items={tasks}
                         itemID={task => task.challenge.ID} itemName={task => task.challenge.Snapshot.name} disabled={!canManage || busy} onReorder={ids => void reorderTasks(ids)}
                         renderItem={(task, index) => ({
                             content: <span className="event-group-order__task"><span className="event-group-order__position">{index + 1}</span><strong>{task.challenge.Snapshot.name}</strong><small>{task.attachment.ExerciseName}</small></span>,

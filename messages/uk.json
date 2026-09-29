@@ -2696,5 +2696,14 @@
   "manage.exercises.attachDialog.noInfrastructure": "У заходу немає інфраструктури — набори зі стендами додати не можна.",
   "manage.exercises.attachDialog.noInfrastructureBefore": "Її може увімкнути адміністратор платформи до публікації.",
   "manage.challenges.groups.groupMenu": "Дії з групою {name}",
-  "manage.challenges.task.menu": "Дії із завданням {name}"
+  "manage.challenges.task.menu": "Дії із завданням {name}",
+  "ui.sortable.pickedUp": "Узято «{name}», позиція {position} з {count}.",
+  "ui.sortable.movedTo": "«{name}»: позиція {position} з {count}.",
+  "ui.sortable.outside": "«{name}» поза списком.",
+  "ui.sortable.dropped": "«{name}» поставлено на позицію {position} з {count}.",
+  "ui.sortable.cancelled": "Перенесення «{name}» скасовано.",
+  "ui.sortable.instructions": "Щоб узяти елемент, натисніть пробіл або Enter. Стрілками вгору й униз змініть позицію, пробілом або Enter поставте, Escape скасує.",
+  "ui.sortable.roleDescription": "елемент, що перетягується",
+  "manage.challenges.order.dragNamed": "Перетягнути «{name}»",
+  "manage.table.columns.dragNamed": "Перетягнути стовпець «{label}»"
 }

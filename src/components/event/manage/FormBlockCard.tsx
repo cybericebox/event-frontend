@@ -5,12 +5,12 @@ import {ArrowDown, ArrowUp, ChevronDown, Copy, GitBranch, GripVertical, PencilLi
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {EventRichTextEditor} from "@/components/event/manage/EventLexicalEditor";
 import {emptyRichText, richTextPlainText} from "@/components/event/content/richTextState";
-import {changeInput, isChoiceInput, isFormField, reorderBlocks} from "@/components/event/manage/participantFormEditor";
+import {changeInput, isChoiceInput, isFormField} from "@/components/event/manage/participantFormEditor";
 import {FormConditionEditor, FormDateSettings, FormFileSettings, FormOptionsEditor} from "@/components/event/manage/FormFieldControls";
-import {useBlockDrag} from "@/components/event/manage/useBlockDrag";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {useSortableItem} from "@/components/ui/Sortable";
 import {t} from "@/i18n/t";
 
 export type FieldsScope = "participant" | "team";
@@ -58,8 +58,8 @@ function CardTitle({block, scope}: {block: FormBlock; scope: FieldsScope}) {
 
 // A card of the fields editor with the page constructor's behaviour: the
 // header row toggles it (not its action buttons), the chevron is last, and the
-// drag handle reorders cards.
-export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, selected, error, onSelect, onToggle, onDragStateChange, onChange, onMove, onDuplicate, onDelete}: {
+// drag handle reorders cards inside the editor's Sortable.
+export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, selected, error, onSelect, onToggle, onChange, onMove, onDuplicate, onDelete}: {
     blocks: FormBlock[];
     index: number;
     scope: FieldsScope;
@@ -70,21 +70,20 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
     error?: string;
     onSelect: () => void;
     onToggle: () => void;
-    onDragStateChange: (dragging: boolean) => void;
     onChange: (blocks: FormBlock[]) => void;
     onMove: (direction: -1 | 1) => void;
     onDuplicate: () => void;
     onDelete: () => void;
 }) {
     const block = blocks[index];
-    const drag = useBlockDrag({blockID: block.id, onDragStateChange, onReorder: (sourceID, targetID) => onChange(reorderBlocks(blocks, sourceID, targetID))});
+    const sortable = useSortableItem(block.id, disabled);
     const n = index + 1;
     const bodyID = `form-block-body-${block.id}`;
     const toggleLabel = open ? t("manage.blocks.toggle.collapse") : t("manage.blocks.toggle.expand");
     const update = (value: FormBlock) => onChange(blocks.map((item, position) => position === index ? value : item));
     const outsideActions = (target: EventTarget) => !(target as Element).closest(".event-content-editor__block-actions");
 
-    return <section className={`event-content-editor__block event-form-card${selected ? " is-selected" : ""}${open ? " is-open" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockKind(block)} ${n}`} tabIndex={0}
+    return <section {...sortable.itemProps} className={`event-content-editor__block event-form-card${selected ? " is-selected" : ""}${open ? " is-open" : ""}${error ? " is-invalid" : ""}`} data-editor-block-id={block.id} aria-label={`${blockKind(block)} ${n}`} tabIndex={0}
         onClick={event => {if (outsideActions(event.target)) onSelect();}} onFocusCapture={event => {if (outsideActions(event.target)) onSelect();}}
         onKeyDown={event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); onSelect(); if (!open) onToggle();}}}>
         {/* The whole row toggles the card except its action buttons; the title and
@@ -92,7 +91,7 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
         <div className="event-content-editor__block-head" onClick={event => {if (outsideActions(event.target)) onToggle();}}>
             <button type="button" className="event-content-editor__block-title" aria-expanded={open} aria-controls={bodyID}><span className="event-content-editor__order">{n}</span><CardTitle block={block} scope={scope} /></button>
             {canEdit && <div className="event-content-editor__block-actions">
-                <EventTooltip content={t("manage.blocks.drag.tooltip")}>{id => <button type="button" className="event-content-editor__drag" aria-label={t("manage.blocks.drag.aria", {n})} aria-describedby={id} disabled={disabled} {...drag}><GripVertical size={16} /></button>}</EventTooltip>
+                <EventTooltip content={t("manage.blocks.drag.tooltip")}>{id => <button type="button" className="event-content-editor__drag" {...sortable.handleProps} aria-label={t("manage.blocks.drag.aria", {n})} aria-describedby={`${id} ${sortable.handleProps["aria-describedby"]}`} disabled={disabled}><GripVertical size={16} /></button>}</EventTooltip>
                 <button type="button" aria-label={t("manage.fields.editor.moveUp", {n})} disabled={index === 0 || disabled} onClick={() => onMove(-1)}><ArrowUp size={16} /></button>
                 <button type="button" aria-label={t("manage.fields.editor.moveDown", {n})} disabled={index === blocks.length - 1 || disabled} onClick={() => onMove(1)}><ArrowDown size={16} /></button>
                 <button type="button" aria-label={t("manage.blocks.duplicateAria", {n})} disabled={disabled} onClick={onDuplicate}><Copy size={16} /></button>

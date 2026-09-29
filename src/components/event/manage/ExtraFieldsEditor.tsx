@@ -19,6 +19,8 @@ import {fileRulesText} from "@/components/event/AnswerFileInput";
 import {DateAnswerInput} from "@/components/event/DateAnswerInput";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {Sortable} from "@/components/ui/Sortable";
+import {moveItem} from "@/components/ui/sortableOrder";
 import {EventButton} from "@/components/ui/EventButton";
 
 const emptyForm: ParticipantFormInput = {Enabled: false, Required: false, Document: {blocks: []}};
@@ -93,13 +95,6 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
         setBlockOpen(result.copy.id, true);
     }
     function remove(index: number) { setBlocks(removeBlock(blocks, index)); }
-    function move(index: number, direction: -1 | 1) {
-        const target = index + direction;
-        if (target < 0 || target >= blocks.length) return;
-        const next = [...blocks];
-        [next[index], next[target]] = [next[target], next[index]];
-        change({...draft, Document: {blocks: next}});
-    }
     async function save() {
         if (!canManage || saving || !dirty || validation) return;
         setSaving(true);
@@ -120,9 +115,12 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
         <section className="event-manage-section event-manage-form__settings"><div className="event-manage-field"><ManageFieldLabel title={t("manage.fields.title")} help={scope === "team" ? t("manage.fields.enabledHelpTeam") : t("manage.fields.enabledHelpParticipant")} /><EventSwitch className="event-manage-form__switch" checked={draft.Enabled} onCheckedChange={checked => change({...draft, Enabled: checked, Required: checked && draft.Required})} disabled={!canManage || saving} label={t("manage.fields.show")} /></div><div className="event-manage-field"><ManageFieldLabel title={t("manage.fields.required")} help={scope === "team" ? t("manage.fields.requiredHelpTeam") : t("manage.fields.requiredHelpParticipant")} /><EventSwitch className="event-manage-form__switch" checked={draft.Required} onCheckedChange={checked => change({...draft, Required: checked})} disabled={!canManage || saving || !draft.Enabled} label={t("manage.fields.requireFill")} /></div></section>
         <div className="event-manage-content__layout"><div className="event-content-editor"><div className="event-content-editor__top"><div><h2>{t("manage.fields.editor.title")}</h2><p>{t("manage.fields.editor.subtitle")}</p></div><span>{blocks.length}</span></div>
             {blocks.length === 0 && <EmptyState message={t("manage.fields.editor.empty")} />}
+            <Sortable ids={blocks.map(block => block.id)} itemName={id => {const block = blocks.find(item => item.id === id); return block && isFormField(block) ? block.label.trim() || t("manage.fields.editor.untitledQuestion") : block?.type === "section" ? t("manage.fields.block.section") : block?.type === "text" ? t("manage.fields.block.text") : t("manage.fields.block.divider");}}
+                onMove={(from, to) => {setBlocks(moveItem(blocks, from, to)); setSelected(current => ({...current, [draftKey]: blocks[from].id}));}} onDragStateChange={setDragging}>
             <div className="event-content-editor__stack">{blocks.map((block, index) => <FormBlockCard key={block.id} blocks={blocks} index={index} scope={scope} canEdit={canManage} disabled={!canManage || saving} open={!dragging && openIDs.includes(block.id)} selected={selectedID === block.id} error={problem?.index === index ? validation ?? undefined : undefined}
-                onSelect={() => setSelected(current => ({...current, [draftKey]: block.id}))} onToggle={() => setBlockOpen(block.id, !openIDs.includes(block.id))} onDragStateChange={setDragging}
-                onChange={setBlocks} onMove={direction => move(index, direction)} onDuplicate={() => duplicate(index)} onDelete={() => remove(index)} />)}</div>
+                onSelect={() => setSelected(current => ({...current, [draftKey]: block.id}))} onToggle={() => setBlockOpen(block.id, !openIDs.includes(block.id))}
+                onChange={setBlocks} onMove={direction => setBlocks(moveItem(blocks, index, index + direction))} onDuplicate={() => duplicate(index)} onDelete={() => remove(index)} />)}</div>
+            </Sortable>
             {canManage && <div className="event-content-editor__add" aria-label={t("manage.fields.editor.addBlock")}><button className="ib-btn" type="button" onClick={() => add(createFormField())}><Plus size={16} /> {t("manage.fields.editor.addField")}</button><button className="ib-btn" type="button" onClick={() => add({id: `section-${crypto.randomUUID()}`, type: "section", label: ""})}><Plus size={16} /> {t("manage.fields.block.section")}</button><button className="ib-btn" type="button" onClick={() => add({id: `text-${crypto.randomUUID()}`, type: "text", richText: emptyRichText()})}><Plus size={16} /> {t("manage.fields.block.text")}</button><button className="ib-btn" type="button" onClick={() => add({id: `divider-${crypto.randomUUID()}`, type: "divider"})}><Plus size={16} /> {t("manage.fields.block.divider")}</button></div>}
             {validation && (!invalidID || dragging || !openIDs.includes(invalidID)) && <p className="event-manage-validation" role="alert">{validation}</p>}
             {(dirty || saving) && <div className="event-content-editor__footer"><span>{t("manage.fields.unsavedChanges")}</span><div><button className="ib-btn" type="button" onClick={discard} disabled={saving}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canManage || saving || !!validation} onClick={() => void save()} busy={saving}>{t("manage.fields.save")}</EventButton></div></div>}

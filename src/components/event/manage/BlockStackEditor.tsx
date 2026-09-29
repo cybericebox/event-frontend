@@ -13,6 +13,8 @@ import {EditedDocumentContext} from "./useEventLinkOptions";
 import {t, tPlural} from "@/i18n/t";
 import {currentPreviewPhase, defaultPreviewRegistration, previewPageAccess, previewPhases, previewRegistrations, previewValues, previewViewers, type PreviewPhase, type PreviewRegistration, type PreviewViewer} from "./previewScenario";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {Sortable} from "@/components/ui/Sortable";
+import {moveItem} from "@/components/ui/sortableOrder";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const undoMilliseconds = 6000;
@@ -89,24 +91,8 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
     function updateBlock(blockID: string, value: ContentBlock | ((current: ContentBlock) => ContentBlock)) {
         onChange(current => ({blocks: current.blocks.map(block => block.id === blockID ? typeof value === "function" ? value(block) : value : block)}));
     }
-    function moveBlock(index: number, direction: -1 | 1) {
-        onChange(current => {
-            const blocks = [...current.blocks];
-            if (index + direction < 0 || index + direction >= blocks.length) return current;
-            [blocks[index], blocks[index + direction]] = [blocks[index + direction], blocks[index]];
-            return {blocks};
-        });
-    }
-    function reorderBlock(sourceID: string, targetID: string) {
-        onChange(current => {
-            const blocks = [...current.blocks];
-            const from = blocks.findIndex(block => block.id === sourceID);
-            const to = blocks.findIndex(block => block.id === targetID);
-            if (from < 0 || to < 0 || from === to) return current;
-            blocks.splice(to, 0, blocks.splice(from, 1)[0]);
-            return {blocks};
-        });
-        select(sourceID);
+    function moveBlock(from: number, to: number) {
+        onChange(current => ({blocks: moveItem(current.blocks, from, to)}));
     }
     function insertAfter(block: ContentBlock, predecessorID: string | null) {
         onChange(current => {
@@ -149,8 +135,10 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
             {before}
             <div className="event-content-editor__top"><div><h2>{t("manage.blocks.stack.title")}</h2><p>{t("manage.blocks.stack.hint")}</p></div><span>{tPlural("manage.blocks.count", document.blocks.length)}</span></div>
             {document.blocks.length === 0 && <EmptyState message={t("manage.blocks.stack.emptyMessage")} />}
+            <Sortable ids={document.blocks.map(block => block.id)} itemName={id => {const type = document.blocks.find(block => block.id === id)?.type; return blockPalette.find(item => item.type === type)?.label ?? type ?? "";}} onMove={(from, to) => {moveBlock(from, to); select(document.blocks[from].id);}} onDragStateChange={setDragging}>
             <div className="event-content-editor__stack">{document.blocks.map((block, index) => <PageBlockEditor key={block.id} eventID={eventID} coverImage={coverImage} block={block} index={index} count={document.blocks.length} anchorsInUse={document.blocks.filter(item => item.id !== block.id).flatMap(item => [item.id, item.anchor ?? ""])} values={values} catalog={catalog} canEdit={canEdit} selected={selectedBlockID === block.id} open={!dragging && openIDs.includes(block.id)} error={invalidBlockIndex === index ? validation ?? undefined : undefined}
-                onSelect={() => select(block.id)} onToggle={() => setBlockOpen(block.id, !openIDs.includes(block.id))} onDragStateChange={setDragging} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, direction)} onReorder={reorderBlock} onDuplicate={() => duplicateBlock(block)} onDelete={() => deleteBlock(block, index)} />)}</div>
+                onSelect={() => select(block.id)} onToggle={() => setBlockOpen(block.id, !openIDs.includes(block.id))} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, index + direction)} onDuplicate={() => duplicateBlock(block)} onDelete={() => deleteBlock(block, index)} />)}</div>
+            </Sortable>
             {canEdit && <div className="event-content-editor__add" aria-label={t("manage.blocks.stack.add")}>{blockPalette.filter(item => item.type !== "hero" || !document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}
             {validation && invalidBlockIndex === null && <p className="event-manage-validation" role="alert">{validation}</p>}
         </div>

@@ -49,14 +49,14 @@ describe("constructor preview", () => {
     });
 
     it("warns under a join button that the real site will not show it", () => {
-        render(wrap(<PageBlockEditor eventID="event-1" coverImage="" block={cta} index={0} count={1} values={real} catalog={[]} canEdit selected onSelect={() => {}} onUpdate={() => {}} onMove={() => {}} onReorder={() => {}} onDelete={() => {}} />));
+        render(wrap(<PageBlockEditor eventID="event-1" coverImage="" block={cta} index={0} count={1} values={real} catalog={[]} canEdit selected onSelect={() => {}} onUpdate={() => {}} onMove={() => {}} onDelete={() => {}} />));
         const note = screen.getByRole("note");
         expect(note.textContent).toContain("Реєстрацію закрито");
         expect(screen.getByRole("link", {name: "Налаштування реєстрації"}).getAttribute("href")).toBe("/manage/registration");
     });
 
     it("does not warn when the real registration can open", () => {
-        render(wrap(<PageBlockEditor eventID="event-1" coverImage="" block={cta} index={0} count={1} values={{...real, "event.registration": "open"}} catalog={[]} canEdit selected onSelect={() => {}} onUpdate={() => {}} onMove={() => {}} onReorder={() => {}} onDelete={() => {}} />));
+        render(wrap(<PageBlockEditor eventID="event-1" coverImage="" block={cta} index={0} count={1} values={{...real, "event.registration": "open"}} catalog={[]} canEdit selected onSelect={() => {}} onUpdate={() => {}} onMove={() => {}} onDelete={() => {}} />));
         expect(screen.queryByRole("note")).toBeNull();
     });
 });

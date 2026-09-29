@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {addOption, changeInput, conditionOperators, conditionSources, createFormField, dateModeFor, parseDateAnswer, duplicateBlock, participantFormProblem, reorderBlocks, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
+import {addOption, changeInput, conditionOperators, conditionSources, createFormField, dateModeFor, parseDateAnswer, duplicateBlock, participantFormProblem, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
 import {emptyRichText} from "../content/richTextState";
 
 describe("formatted text in forms and surveys", () => {
@@ -94,12 +94,6 @@ describe("file questions", () => {
 
 describe("card operations", () => {
     const blocks: FormBlock[] = [field("a", "text"), field("b", "select", {options: ["x"]}), field("c", "text", {condition: {fieldKey: "b", operator: "equals", value: "x"}})];
-
-    it("reorder a card onto another card's place", () => {
-        expect(reorderBlocks(blocks, "c", "a").map(block => block.id)).toEqual(["c", "a", "b"]);
-        expect(reorderBlocks(blocks, "a", "b").map(block => block.id)).toEqual(["b", "a", "c"]);
-        expect(reorderBlocks(blocks, "a", "missing")).toBe(blocks);
-    });
 
     it("duplicate a question with its own id and key right below it", () => {
         const result = duplicateBlock(blocks, 1)!;

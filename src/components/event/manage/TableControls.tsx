@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, type DragEvent, type ReactNode} from "react";
+import {useRef, type ReactNode} from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowDown, ArrowUp, Columns3, GripVertical, SlidersHorizontal} from "lucide-react";
@@ -11,8 +11,10 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {Sortable, useSortableItem} from "@/components/ui/Sortable";
 import {answerFilterKind, moveColumn, resolveTableColumns, toSavedColumns, type AnswerFilterDraft, type ColumnDefinition, type TableColumn} from "./listColumns";
 import {t} from "@/i18n/t";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 
 // The shared (event-wide) column layout of a manage table: order and
 // visibility of standard and form field columns. Saving is optimistic.
@@ -38,13 +40,13 @@ export function useTableColumns(eventID: string, list: ManagedList, definitions:
     return {columns, visible: columns.filter(column => column.visible), save: (next: TableColumn[]) => void save(next), reset: () => void save(null)};
 }
 
-function ToolbarPopover({label, icon, count, countLabel, children, className}: {label: string; icon: ReactNode; count?: number; countLabel?: string; children: ReactNode; className?: string}) {
+function ToolbarPopover({label, icon, count, countLabel, children, className, onEscapeKeyDown}: {label: string; icon: ReactNode; count?: number; countLabel?: string; children: ReactNode; className?: string; onEscapeKeyDown?: (event: KeyboardEvent) => void}) {
     return <PopoverPrimitive.Root>
         <PopoverPrimitive.Trigger asChild>
             <button className="ib-btn event-manage-table__tool" type="button" aria-label={count ? countLabel : undefined}>{icon}{label}{!!count && <span className="event-manage-table__tool-count" aria-hidden="true">{count}</span>}</button>
         </PopoverPrimitive.Trigger>
         <PopoverPrimitive.Portal>
-            <PopoverPrimitive.Content className={`event-manage-table__popover${className ? ` ${className}` : ""}`} align="start" sideOffset={6} collisionPadding={12} aria-label={label}>
+            <PopoverPrimitive.Content className={`event-manage-table__popover${className ? ` ${className}` : ""}`} align="start" sideOffset={6} collisionPadding={12} aria-label={label} onEscapeKeyDown={onEscapeKeyDown}>
                 {children}
             </PopoverPrimitive.Content>
         </PopoverPrimitive.Portal>
@@ -54,35 +56,38 @@ function ToolbarPopover({label, icon, count, countLabel, children, className}: {
 export function TableColumnsPopover({columns, canManage, onChange, onReset}: {
     columns: TableColumn[]; canManage: boolean; onChange: (columns: TableColumn[]) => void; onReset: () => void;
 }) {
-    const [dragIndex, setDragIndex] = useState<number | null>(null);
-    const [overIndex, setOverIndex] = useState<number | null>(null);
-
-    function drop(event: DragEvent, index: number) {
-        event.preventDefault();
-        if (dragIndex !== null) onChange(moveColumn(columns, dragIndex, index));
-        setDragIndex(null); setOverIndex(null);
-    }
-
-    return <ToolbarPopover label={t("manage.table.columns.button")} icon={<Columns3 size={16} aria-hidden="true" />} className="event-manage-table__popover--columns">
+    const move = (from: number, to: number) => onChange(moveColumn(columns, from, to));
+    // Escape during a drag cancels the drag only; the popover stays open.
+    const dragging = useRef(false);
+    return <ToolbarPopover label={t("manage.table.columns.button")} icon={<Columns3 size={16} aria-hidden="true" />} className="event-manage-table__popover--columns"
+        onEscapeKeyDown={event => {if (dragging.current) event.preventDefault();}}>
         <div className="event-manage-table__popover-head"><strong>{t("manage.table.columns.title")}</strong><small>{t("manage.table.columns.shared")}</small></div>
-        <ol className="event-manage-table__columns">{columns.map((column, index) => {
-            const movable = canManage && !column.locked;
-            return <li key={column.key} className={`${dragIndex === index ? "is-dragging" : ""}${overIndex === index && dragIndex !== index ? " is-over" : ""}`.trim() || undefined}
-                draggable={movable} onDragStart={event => {event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", column.key); setDragIndex(index);}}
-                onDragOver={event => {if (dragIndex !== null && movable) {event.preventDefault(); setOverIndex(index);}}}
-                onDragLeave={() => setOverIndex(current => current === index ? null : current)} onDrop={event => drop(event, index)} onDragEnd={() => {setDragIndex(null); setOverIndex(null);}}>
-                <span className={`event-manage-table__grip${movable ? "" : " is-disabled"}`} aria-hidden="true" title={movable ? t("manage.table.columns.drag") : undefined}><GripVertical size={16} /></span>
-                <span className="event-manage-table__column-label">{column.label}</span>
-                <span className="event-manage-table__column-move">
-                    <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.table.columns.moveUp", {label: column.label})} disabled={!movable || index === 0 || columns[index - 1]?.locked} onClick={() => onChange(moveColumn(columns, index, index - 1))}><ArrowUp size={14} /></button>
-                    <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.table.columns.moveDown", {label: column.label})} disabled={!movable || index === columns.length - 1} onClick={() => onChange(moveColumn(columns, index, index + 1))}><ArrowDown size={14} /></button>
-                </span>
-                <EventSwitch checked={column.visible} disabled={!canManage || !!column.locked} ariaLabel={t("manage.table.columns.show", {label: column.label})}
-                    onCheckedChange={visible => onChange(columns.map(item => item.key === column.key ? {...item, visible} : item))} />
-            </li>;
-        })}</ol>
+        <Sortable ids={columns.map(column => column.key)} itemName={key => columns.find(column => column.key === key)?.label ?? key} onMove={move} onDragStateChange={value => {dragging.current = value;}}>
+            <ol className="event-manage-table__columns">{columns.map((column, index) => <ColumnRow key={column.key} columns={columns} index={index} canManage={canManage} move={move}
+                onVisibleChange={visible => onChange(columns.map(item => item.key === column.key ? {...item, visible} : item))} />)}</ol>
+        </Sortable>
         {canManage && <div className="event-manage-table__popover-foot"><button className="ib-btn ib-btn--sm" type="button" onClick={onReset}>{t("manage.table.columns.reset")}</button></div>}
     </ToolbarPopover>;
+}
+
+// A column row is dragged by its whole body (its buttons and switch excepted);
+// the grip is the keyboard handle.
+function ColumnRow({columns, index, canManage, move, onVisibleChange}: {
+    columns: TableColumn[]; index: number; canManage: boolean; move: (from: number, to: number) => void; onVisibleChange: (visible: boolean) => void;
+}) {
+    const column = columns[index];
+    const movable = canManage && !column.locked;
+    const sortable = useSortableItem(column.key, !movable);
+    return <li {...sortable.itemProps} {...(movable ? sortable.bodyProps : {})} className={movable ? "is-movable" : undefined}>
+        {movable ? <EventTooltip content={t("manage.table.columns.drag")} silent>{() => <button type="button" className="event-manage-table__grip" {...sortable.handleProps} aria-label={t("manage.table.columns.dragNamed", {label: column.label})}><GripVertical size={16} aria-hidden="true" /></button>}</EventTooltip>
+            : <span className="event-manage-table__grip is-disabled" aria-hidden="true"><GripVertical size={16} /></span>}
+        <span className="event-manage-table__column-label">{column.label}</span>
+        <span className="event-manage-table__column-move">
+            <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.table.columns.moveUp", {label: column.label})} disabled={!movable || index === 0 || columns[index - 1]?.locked} onClick={() => move(index, index - 1)}><ArrowUp size={14} /></button>
+            <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.table.columns.moveDown", {label: column.label})} disabled={!movable || index === columns.length - 1} onClick={() => move(index, index + 1)}><ArrowDown size={14} /></button>
+        </span>
+        <EventSwitch checked={column.visible} disabled={!canManage || !!column.locked} ariaLabel={t("manage.table.columns.show", {label: column.label})} onCheckedChange={onVisibleChange} />
+    </li>;
 }
 
 export function TableFiltersPopover({fields, drafts, onChange, active}: {

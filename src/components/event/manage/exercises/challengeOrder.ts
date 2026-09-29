@@ -36,15 +36,6 @@ export function groupBuckets(groups: EventChallengeGroup[], sets: BoardSet[]): G
     return [...buckets].map(([groupID, tasks]) => ({groupID, tasks: tasks.sort(compareGroupTasks)}));
 }
 
-// Moves one item to another index; out of range leaves the list as is.
-export function moveItem<T>(items: T[], from: number, to: number): T[] {
-    if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
-    const next = [...items];
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    return next;
-}
-
 // The first non-empty line of a task description as plain text.
 export function descriptionFirstLine(description: unknown): string {
     const text = typeof description === "string" ? description : richTextPlainText(description);
