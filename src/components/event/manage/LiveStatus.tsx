@@ -6,6 +6,7 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import type {StreamMode} from "@/utils/eventStream";
 import {staleStreamMs} from "@/utils/streamTiming";
 import {t} from "@/i18n/t";
+import "./liveStatus.css";
 
 // How a page keeps its data fresh, shown at the top right of the page header.
 // One wording system for every page:
