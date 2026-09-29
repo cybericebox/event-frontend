@@ -12,6 +12,14 @@ export function parseLocal(value: string): Date | null {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
+// A date-only value ("YYYY-MM-DD") as local midnight.
+export function parseLocalDate(value: string): Date | null {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) return null;
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return datePart(date) === value ? date : null;
+}
+
 export function formatLocal(date: Date, seconds = false): string {
     return `${datePart(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}${seconds ? `:${pad(date.getSeconds())}` : ""}`;
 }

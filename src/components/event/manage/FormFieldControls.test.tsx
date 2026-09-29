@@ -3,15 +3,15 @@ import {afterEach, describe, expect, it} from "vitest";
 import {useState} from "react";
 import {cleanup, fireEvent, render, screen} from "@testing-library/react";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {FormConditionEditor, FormOptionsEditor} from "./FormFieldControls";
+import {FormConditionEditor, FormFileSettings, FormOptionsEditor} from "./FormFieldControls";
 
 afterEach(cleanup);
 
 let latest: FormBlock[] = [];
 
-function Harness({initial, index, editor}: {initial: FormBlock[]; index: number; editor: "options" | "condition"}) {
+function Harness({initial, index, editor}: {initial: FormBlock[]; index: number; editor: "options" | "condition" | "file"}) {
     const [blocks, setBlocks] = useState(initial);
-    const Editor = editor === "options" ? FormOptionsEditor : FormConditionEditor;
+    const Editor = editor === "options" ? FormOptionsEditor : editor === "file" ? FormFileSettings : FormConditionEditor;
     return <Editor blocks={blocks} index={index} disabled={false} onChange={next => {latest = next; setBlocks(next);}} />;
 }
 
@@ -65,5 +65,26 @@ describe("display condition editor", () => {
         expect(screen.getByRole("button", {name: "Якщо «Курс» ≠ «3»"}).getAttribute("aria-expanded")).toBe("true");
         fireEvent.change(screen.getByRole("spinbutton", {name: "Значення умови 2"}), {target: {value: "5"}});
         expect((latest[1] as FormField).condition?.value).toBe(5);
+    });
+});
+
+describe("file formats", () => {
+    it("tick Office as a group of Word, Excel and PowerPoint", () => {
+        render(<Harness initial={[field("cv", "file", {fileTypes: ["pdf"]})]} index={0} editor="file" />);
+        fireEvent.click(screen.getByRole("checkbox", {name: "Документи Office"}));
+        expect((latest[0] as FormField).fileTypes).toEqual(["pdf", "word", "excel", "powerpoint"]);
+        fireEvent.click(screen.getByRole("checkbox", {name: "Excel (XLS, XLSX, ODS)"}));
+        expect((latest[0] as FormField).fileTypes).toEqual(["pdf", "word", "powerpoint"]);
+        expect((screen.getByRole("checkbox", {name: "Документи Office"}) as HTMLInputElement).checked).toBe(false);
+        fireEvent.click(screen.getByRole("checkbox", {name: "Архіви (ZIP, 7Z, RAR, TAR, TAR.GZ)"}));
+        expect((latest[0] as FormField).fileTypes).toEqual(["pdf", "word", "powerpoint", "archive"]);
+    });
+});
+
+describe("date conditions in the editor", () => {
+    it("offer before and after for a date source", async () => {
+        render(<Harness initial={[field("born", "date", {dateMode: "date"}), field("b", "text", {condition: {fieldKey: "born", operator: "before", value: "2008-01-01"}})]} index={1} editor="condition" />);
+        expect(screen.getByRole("button", {name: /Якщо «born» раніше за 1 січня 2008/})).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Порівняння для умови 2"}).textContent).toContain("Раніше за");
     });
 });

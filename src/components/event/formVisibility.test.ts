@@ -38,3 +38,19 @@ describe("file answers in conditions", () => {
         expect([...visibleFieldKeys(withFile, {cv: {id: "1", name: "cv.pdf", size: 1, contentType: "application/pdf"}})]).toEqual(["cv"]);
     });
 });
+
+describe("date conditions", () => {
+    const blocks: FormBlock[] = [
+        {id: "1", type: "field", key: "born", input: "date", label: "Дата народження", dateMode: "date"},
+        {id: "2", type: "field", key: "parent", input: "text", label: "Згода батьків", condition: {fieldKey: "born", operator: "after", value: "2008-09-29"}},
+        {id: "3", type: "field", key: "start", input: "date", label: "Початок", dateMode: "datetime"},
+        {id: "4", type: "field", key: "late", input: "text", label: "Чому пізно?", condition: {fieldKey: "start", operator: "after", value: "2026-10-01T09:00:00.000Z"}},
+    ];
+    it("compare dates and datetimes in time", () => {
+        expect(visibleFieldKeys(blocks, {born: "2010-01-01"}).has("parent")).toBe(true);
+        expect(visibleFieldKeys(blocks, {born: "2008-09-29"}).has("parent")).toBe(false);
+        expect(visibleFieldKeys(blocks, {}).has("parent")).toBe(false);
+        expect(visibleFieldKeys(blocks, {start: "2026-10-01T09:00:01Z"}).has("late")).toBe(true);
+        expect(visibleFieldKeys(blocks, {start: "2026-10-01T08:59:00Z"}).has("late")).toBe(false);
+    });
+});

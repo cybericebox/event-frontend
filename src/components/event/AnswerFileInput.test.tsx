@@ -10,7 +10,7 @@ vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => <span
 
 afterEach(cleanup);
 
-const field: FormField = {id: "cv", type: "field", key: "cv", input: "file", label: "CV", fileTypes: ["pdf", "doc"], maxSizeMB: 1};
+const field: FormField = {id: "cv", type: "field", key: "cv", input: "file", label: "CV", fileTypes: ["pdf", "word"], maxSizeMB: 1};
 const stored: AnswerFile = {id: "0190", name: "cv.pdf", size: 4, contentType: "application/pdf"};
 
 function choose(file: File) {
@@ -23,7 +23,7 @@ describe("file answer", () => {
         const upload = vi.fn(async () => stored);
         const onChange = vi.fn();
         render(<AnswerFileInput id="answer-cv" field={field} value={undefined} upload={upload} onChange={onChange} />);
-        expect(screen.getByText("PDF, Word (DOC, DOCX) · до 1 МБ")).toBeTruthy();
+        expect(screen.getByText("PDF, Word (DOC, DOCX, ODT) · до 1 МБ")).toBeTruthy();
         expect((document.getElementById("answer-cv") as HTMLInputElement).accept).toContain(".docx");
         choose(new File(["%PDF"], "cv.pdf", {type: "application/pdf"}));
         await waitFor(() => expect(onChange).toHaveBeenCalledWith(stored));

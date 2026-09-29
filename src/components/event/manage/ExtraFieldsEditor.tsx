@@ -12,10 +12,11 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
-import {createFormField, duplicateBlock, isFormField, participantFormProblem, removeBlock} from "@/components/event/manage/participantFormEditor";
+import {createFormField, dateModeOf, duplicateBlock, isFormField, participantFormProblem, removeBlock} from "@/components/event/manage/participantFormEditor";
 import {FormBlockCard, type FieldsScope} from "@/components/event/manage/FormBlockCard";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {fileRulesText} from "@/components/event/AnswerFileInput";
+import {DateAnswerInput} from "@/components/event/DateAnswerInput";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
@@ -35,6 +36,7 @@ function FormPreview({blocks, selectedID, scope}: {blocks: FormBlock[]; selected
             {block.input === "long_text" ? <textarea className="event-manage-input" rows={3} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} /> :
                 block.input === "checkbox" ? <label className="event-form-preview__choice"><input type="checkbox" disabled /> {t("common.yes")}</label> :
                 block.input === "file" ? <AnswerFilePreview field={block} /> :
+                block.input === "date" ? <DateAnswerInput mode={dateModeOf(block)} value="" onChange={() => undefined} ariaLabel={block.label || t("manage.fields.preview.newQuestion")} disabled /> :
                 block.input === "select" || block.input === "multi_select" ? <div className="event-form-preview__choices">{(block.options ?? []).map((option, index) => <label className="event-form-preview__choice" key={index}><input type={block.input === "select" ? "radio" : "checkbox"} disabled />{option || t("manage.fields.preview.option", {n: index + 1})}</label>)}</div> :
                 <input className="event-manage-input" type={block.input === "number" ? "number" : "text"} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} />}
         </div>}

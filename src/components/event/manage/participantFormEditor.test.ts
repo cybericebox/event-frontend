@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
-import {addOption, changeInput, conditionSources, createFormField, duplicateBlock, participantFormProblem, reorderBlocks, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
+import {addOption, changeInput, conditionOperators, conditionSources, createFormField, parseDateAnswer, duplicateBlock, participantFormProblem, reorderBlocks, defaultCondition, invalidOptions, moveOption, removeBlock, removeOption, renameOption, validateParticipantForm} from "./participantFormEditor";
 import {emptyRichText} from "../content/richTextState";
 
 describe("formatted text in forms and surveys", () => {
@@ -85,7 +85,7 @@ describe("file questions", () => {
     });
 
     it("need a format and a size within the platform limit", () => {
-        expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf", "zip"], maxSizeMB: 25})]})).toBeNull();
+        expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf", "archive"], maxSizeMB: 25})]})).toBeNull();
         expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: []})]})).toBe("Питання 1: оберіть хоча б один формат файлу.");
         expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf"], maxSizeMB: 26})]})).toBe("Питання 1: розмір файлу має бути від 1 до 25 МБ.");
         expect(validateParticipantForm({blocks: [field("a", "file", {fileTypes: ["pdf"]}), field("b", "text", {condition: {fieldKey: "a", operator: "equals", value: "x"}})]})).toBe("Питання 2: для умови оберіть питання з однією відповіддю.");
@@ -114,5 +114,39 @@ describe("card operations", () => {
     it("report the block a problem is about", () => {
         expect(participantFormProblem({blocks: [field("a", "text"), field("b", "text", {label: " "})]})).toEqual({index: 1, message: "Питання 2: додайте текст питання."});
         expect(participantFormProblem({blocks})).toBeNull();
+    });
+});
+
+describe("date questions", () => {
+    it("start as a day and reset their settings with the type", () => {
+        const date = createFormField("date");
+        expect(date.dateMode).toBe("date");
+        const next = changeInput([date], 0, "text")[0] as FormField;
+        expect([next.dateMode, next.minDate, next.maxDate]).toEqual([undefined, undefined, undefined]);
+    });
+
+    it("read answers of their kind only", () => {
+        expect(parseDateAnswer("date", "2026-02-28")).toBe(Date.UTC(2026, 1, 28));
+        expect(parseDateAnswer("date", "2026-02-30")).toBeNull();
+        expect(parseDateAnswer("date", "2026-02-28T00:00:00Z")).toBeNull();
+        expect(parseDateAnswer("datetime", "2026-09-29T12:30:00.000Z")).toBe(Date.UTC(2026, 8, 29, 12, 30));
+        expect(parseDateAnswer("datetime", "2026-09-29T12:30:00+03:00")).toBeNull();
+    });
+
+    it("drive conditions with before and after; other questions only compare", () => {
+        const born = field("born", "date", {dateMode: "date"});
+        expect(conditionOperators(born)).toEqual(["equals", "not_equals", "before", "after"]);
+        expect(conditionOperators(field("a", "text"))).toEqual(["equals", "not_equals"]);
+        expect(validateParticipantForm({blocks: [born, field("b", "text", {condition: {fieldKey: "born", operator: "before", value: "2008-01-01"}})]})).toBeNull();
+        expect(validateParticipantForm({blocks: [born, field("b", "text", {condition: {fieldKey: "born", operator: "before", value: ""}})]})).toBe("Питання 2: оберіть дату в умові.");
+        expect(validateParticipantForm({blocks: [field("a", "text"), field("b", "text", {condition: {fieldKey: "a", operator: "after", value: "x"}})]})).toBe("Питання 2: таке порівняння недоступне для цього питання.");
+        const blocks: FormBlock[] = [born, field("b", "text", {condition: {fieldKey: "born", operator: "after", value: "2008-01-01"}})];
+        expect((changeInput(blocks, 0, "text")[1] as FormField).condition).toEqual({fieldKey: "born", operator: "equals", value: ""});
+    });
+
+    it("check the limits", () => {
+        expect(validateParticipantForm({blocks: [field("a", "date", {minDate: "2000-01-01", maxDate: "2010-01-01"})]})).toBeNull();
+        expect(validateParticipantForm({blocks: [field("a", "date", {minDate: "2010-01-01", maxDate: "2000-01-01"})]})).toBe("Питання 1: найраніша дата пізніша за найпізнішу.");
+        expect(validateParticipantForm({blocks: [field("a", "date", {dateMode: "datetime", minDate: "2010-01-01"})]})).toBe("Питання 1: некоректна межа дати.");
     });
 });

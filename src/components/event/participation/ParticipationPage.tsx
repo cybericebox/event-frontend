@@ -13,7 +13,7 @@ import {
     leaveEventTeam, regenerateEventTeamCode, renameEventTeam, TeamRole, transferEventTeamCaptain, updateOwnTeamFields, type TeamMember,
 } from "@/api/eventTeams";
 import {getOwnParticipantAnswers, ParticipantJoinError, putOwnParticipantAnswers, putSelfPseudonym, type ParticipantAnswers} from "@/api/participantForm";
-import type {ParticipantForm} from "@/api/manageParticipantForm";
+import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import type {ParticipantEventInfo} from "@/types/participantEventInfo";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
@@ -27,6 +27,8 @@ import {t, tPlural} from "@/i18n/t";
 import {changedEditableAnswers, formatAnswer, formFields, rosterLine} from "./participationModel";
 import {EventButton} from "@/components/ui/EventButton";
 import {isFileAnswer, selfAnswerFileUrl} from "@/api/answerFiles";
+import {formatDateAnswer} from "@/components/event/DateAnswerInput";
+import {dateModeOf} from "@/components/event/manage/participantFormEditor";
 
 function errorText(error: unknown, fallback: string): string {
     if (error instanceof EventTeamError || error instanceof ParticipantJoinError) return apiErrorMessage(error.code, fallback);
@@ -73,14 +75,16 @@ function FieldRows({form, answers, canEdit, onEdit}: {form: ParticipantForm; ans
     if (!fields.length) return null;
     const anyEditable = canEdit && fields.some(field => field.editable);
     return <>
-        <dl className="event-part__rows">{fields.map(field => <FieldRow key={field.key} label={field.label}><span className="event-part__field-value"><AnswerValue value={answers[field.key]} /></span></FieldRow>)}</dl>
+        <dl className="event-part__rows">{fields.map(field => <FieldRow key={field.key} label={field.label}><span className="event-part__field-value"><AnswerValue field={field} value={answers[field.key]} /></span></FieldRow>)}</dl>
         {anyEditable && <div className="event-part__actions"><button type="button" className="ib-btn ib-btn--sm" onClick={onEdit}>{t("participation.editFields")}</button></div>}
     </>;
 }
 
-// A file answer downloads; everything else is text.
-function AnswerValue({value}: {value: unknown}) {
-    return isFileAnswer(value) ? <a className="ib-link" href={selfAnswerFileUrl(value.id)} download>{value.name}</a> : <>{formatAnswer(value)}</>;
+// A file answer downloads, a date reads in the viewer's words; the rest is text.
+function AnswerValue({field, value}: {field: FormField; value: unknown}) {
+    if (isFileAnswer(value)) return <a className="ib-link" href={selfAnswerFileUrl(value.id)} download>{value.name}</a>;
+    if (field.input === "date" && typeof value === "string" && value) return <>{formatDateAnswer(dateModeOf(field), value)}</>;
+    return <>{formatAnswer(value)}</>;
 }
 
 function FieldRow({label, children}: {label: string; children: ReactNode}) {

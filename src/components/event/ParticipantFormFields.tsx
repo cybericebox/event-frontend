@@ -3,9 +3,10 @@
 import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
-import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {dateModeOf, isFormField} from "@/components/event/manage/participantFormEditor";
 import {visibleFieldKeys} from "@/components/event/formVisibility";
 import {AnswerFileInput} from "@/components/event/AnswerFileInput";
+import {DateAnswerInput} from "@/components/event/DateAnswerInput";
 import {isFileAnswer, uploadSelfAnswerFile} from "@/api/answerFiles";
 import {t} from "@/i18n/t";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
@@ -46,6 +47,7 @@ export function ParticipantFormFields({form, answers, onChange, idPrefix = "join
                 const update = (value: ParticipantAnswers[string]) => onChange({...answers, [key]: value});
                 return <div className="event-join-question" key={block.id}><label htmlFor={id}><strong>{block.label}</strong>{block.required && <span className="event-field-required" aria-label={t("forms.field.required")}>*</span>}</label>{block.help && <p>{block.help}</p>}
                     {block.input === "file" ? <AnswerFileInput id={id} field={block} value={isFileAnswer(answers[key]) ? answers[key] : undefined} upload={file => uploadSelfAnswerFile("participant", key, file)} onChange={value => {const next = {...answers}; if (value) next[key] = value; else delete next[key]; onChange(next);}} />
+                        : block.input === "date" ? <DateAnswerInput id={id} mode={dateModeOf(block)} value={typeof answers[key] === "string" ? answers[key] : ""} onChange={value => update(value)} ariaLabel={block.label} />
                         : block.input === "long_text" ? <textarea id={id} className="event-join-input" rows={4} value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />
                         : block.input === "number" ? <input id={id} className="event-join-input" type="number" value={typeof answers[key] === "number" ? answers[key] as number : ""} onChange={e => update(e.target.value === "" ? "" : Number(e.target.value))} />
                         : block.input === "checkbox" ? <EventCheckbox className="event-join-choice" id={id} checked={answers[key] === true} onCheckedChange={checked => update(checked)} label={t("common.yes")} />

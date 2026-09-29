@@ -1,13 +1,14 @@
 "use client";
 
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
-import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {dateModeOf, isFormField} from "@/components/event/manage/participantFormEditor";
 import {visibleFieldKeys} from "@/components/event/formVisibility";
 import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers, ParticipantAnswer} from "@/api/participantForm";
 import {t} from "@/i18n/t";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {AnswerFileInput} from "@/components/event/AnswerFileInput";
+import {DateAnswerInput} from "@/components/event/DateAnswerInput";
 import {isFileAnswer, uploadSelfAnswerFile, type AnswerFile} from "@/api/answerFiles";
 
 // editableOnly renders just the questions that may change later; visibility is
@@ -34,9 +35,10 @@ export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnl
             const value = answers[block.key];
             const required = form.Required && !!block.required;
             // choices carry their own <label>, so their field is a group, not a label
-            const Field = block.input === "checkbox" || block.input === "multi_select" || block.input === "file" ? "div" : "label";
+            const Field = block.input === "checkbox" || block.input === "multi_select" || block.input === "file" || block.input === "date" ? "div" : "label";
             return <Field className="event-manage-field" key={block.id} role={Field === "div" ? "group" : undefined} aria-label={Field === "div" ? block.label : undefined}><span>{block.label}{block.required && <span className="event-field-required"> *</span>}</span>{block.help && <small>{block.help}</small>}
                 {block.input === "file" ? <AnswerFileInput id={`team-${block.id}`} field={block} value={isFileAnswer(value) ? value : undefined} upload={file => upload(block.key, file)} onChange={next => onChange(block.key, next ?? "")} disabled={disabled} />
+                    : block.input === "date" ? <DateAnswerInput mode={dateModeOf(block)} value={typeof value === "string" ? value : ""} onChange={next => onChange(block.key, next)} ariaLabel={block.label} disabled={disabled} />
                     : block.input === "long_text" ? <textarea className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} rows={3} />
                     : block.input === "checkbox" ? <EventCheckbox checked={value === true} onCheckedChange={checked => onChange(block.key, checked)} disabled={disabled} label={t("common.yes")} />
                     : block.input === "number" ? <input className="event-manage-input" type="number" value={value === undefined ? "" : String(value)} onChange={e => onChange(block.key, e.target.value === "" ? "" : Number(e.target.value))} required={required} disabled={disabled} />

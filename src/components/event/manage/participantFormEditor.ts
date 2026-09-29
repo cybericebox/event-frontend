@@ -1,4 +1,4 @@
-import type {FileKind, FormBlock, FormDocument, FormField} from "@/api/manageParticipantForm";
+import type {ConditionOperator, FileKind, FormBlock, FormDocument, FormField} from "@/api/manageParticipantForm";
 import {richTextHasContent} from "../content/richTextState";
 import {t} from "@/i18n/t";
 
@@ -8,15 +8,44 @@ export function isChoiceInput(input: FormField["input"]): boolean { return input
 
 // «Файл» questions: the formats an organizer may allow and the size limits,
 // the same as the backend (eventFormModel.MaxAnswerFileMB).
-export const fileKinds: FileKind[] = ["pdf", "image", "doc", "zip"];
+export const fileKinds: FileKind[] = ["pdf", "image", "word", "excel", "powerpoint", "text", "archive"];
+export const officeFileKinds: FileKind[] = ["word", "excel", "powerpoint"];
 export const defaultFileMB = 10;
 export const maxFileMB = 25;
 
 // Fields a question of this answer type carries besides the common ones.
-function inputSettings(input: FormField["input"], field?: FormField): Pick<FormField, "options" | "fileTypes" | "maxSizeMB"> {
-    if (isChoiceInput(input)) return {options: field?.options?.length ? field.options : [""], fileTypes: undefined, maxSizeMB: undefined};
-    if (input === "file") return {options: undefined, fileTypes: field?.fileTypes?.length ? field.fileTypes : ["pdf"], maxSizeMB: field?.maxSizeMB ?? defaultFileMB};
-    return {options: undefined, fileTypes: undefined, maxSizeMB: undefined};
+type InputSettings = Pick<FormField, "options" | "fileTypes" | "maxSizeMB" | "dateMode" | "minDate" | "maxDate">;
+const noSettings: InputSettings = {options: undefined, fileTypes: undefined, maxSizeMB: undefined, dateMode: undefined, minDate: undefined, maxDate: undefined};
+
+function inputSettings(input: FormField["input"], field?: FormField): InputSettings {
+    if (isChoiceInput(input)) return {...noSettings, options: field?.options?.length ? field.options : [""]};
+    if (input === "file") return {...noSettings, fileTypes: field?.fileTypes?.length ? field.fileTypes : ["pdf"], maxSizeMB: field?.maxSizeMB ?? defaultFileMB};
+    if (input === "date") return {...noSettings, dateMode: "date"};
+    return noSettings;
+}
+
+// «Дата» answers: a day ("YYYY-MM-DD") or a UTC ISO datetime, as the backend
+// (eventFormModel.ParseDateAnswer) reads them.
+export function dateModeOf(field: FormField): "date" | "datetime" {
+    return field.dateMode === "datetime" ? "datetime" : "date";
+}
+
+export function parseDateAnswer(mode: "date" | "datetime", value: unknown): number | null {
+    if (typeof value !== "string") return null;
+    if (mode === "date") {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        if (!match) return null;
+        const at = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        return new Date(at).toISOString().slice(0, 10) === value ? at : null;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/.test(value)) return null;
+    const at = Date.parse(value);
+    return Number.isNaN(at) ? null : at;
+}
+
+// Operators of a condition on this source: dates also compare in time.
+export function conditionOperators(source: FormField | undefined): ConditionOperator[] {
+    return source?.input === "date" ? ["equals", "not_equals", "before", "after"] : ["equals", "not_equals"];
 }
 
 export function createFormField(input: FormField["input"] = "text"): FormField {
@@ -32,6 +61,7 @@ export function conditionSources(blocks: FormBlock[], index: number): FormField[
 }
 
 export function initialConditionValue(source: FormField): string | number | boolean {
+    if (source.input === "date") return "";
     if (source.input === "number") return 0;
     if (source.input === "checkbox") return true;
     if (source.input === "select") return source.options?.find(option => option.trim()) ?? "";
@@ -66,7 +96,9 @@ export function changeInput(blocks: FormBlock[], index: number, input: FormField
     const field = blocks[index];
     if (!field || !isFormField(field) || field.input === input) return blocks;
     const next: FormField = {...field, input, ...inputSettings(input, field)};
-    return mapDependents(replaceField(blocks, index, next), field.key, condition => comparableInput(input) ? {...condition, value: initialConditionValue(next)} : undefined);
+    return mapDependents(replaceField(blocks, index, next), field.key, condition => comparableInput(input)
+        ? {...condition, operator: conditionOperators(next).includes(condition.operator) ? condition.operator : "equals", value: initialConditionValue(next)}
+        : undefined);
 }
 
 function setOptions(blocks: FormBlock[], index: number, options: string[], renamed?: {from: string; to: string}): FormBlock[] {
@@ -170,11 +202,20 @@ export function participantFormProblem(document: FormDocument): {message: string
             const size = block.maxSizeMB ?? defaultFileMB;
             if (!Number.isInteger(size) || size < 1 || size > maxFileMB) return {index, message: t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB})};
         }
+        if (block.input === "date") {
+            const mode = dateModeOf(block);
+            const min = block.minDate ? parseDateAnswer(mode, block.minDate) : undefined;
+            const max = block.maxDate ? parseDateAnswer(mode, block.maxDate) : undefined;
+            if (min === null || max === null) return {index, message: t("manage.fields.validation.dateLimit", {n: index + 1})};
+            if (min !== undefined && max !== undefined && max < min) return {index, message: t("manage.fields.validation.dateRange", {n: index + 1})};
+        }
         if (block.condition) {
             const source = previous.get(block.condition.fieldKey);
             if (!source) return {index, message: t("manage.fields.validation.conditionSource", {n: index + 1})};
             if (!comparableInput(source.input)) return {index, message: t("manage.fields.validation.conditionSingle", {n: index + 1})};
             const value = block.condition.value;
+            if (!conditionOperators(source).includes(block.condition.operator)) return {index, message: t("manage.fields.validation.conditionOperator", {n: index + 1})};
+            if (source.input === "date" && parseDateAnswer(dateModeOf(source), value) === null) return {index, message: t("manage.fields.validation.conditionDate", {n: index + 1})};
             if (source.input === "number" && (typeof value !== "number" || !Number.isFinite(value))) return {index, message: t("manage.fields.validation.conditionNumber", {n: index + 1})};
             if (source.input === "checkbox" && typeof value !== "boolean") return {index, message: t("manage.fields.validation.conditionValue", {n: index + 1})};
             if (source.input === "select" && !source.options?.includes(String(value))) return {index, message: t("manage.fields.validation.conditionOption", {n: index + 1})};

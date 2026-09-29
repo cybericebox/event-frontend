@@ -13,8 +13,11 @@ import "./answerFile.css";
 const accepted: Record<FileKind, string> = {
     pdf: ".pdf,application/pdf",
     image: ".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/gif,image/webp",
-    doc: ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    zip: ".zip,application/zip",
+    word: ".doc,.docx,.odt",
+    excel: ".xls,.xlsx,.ods",
+    powerpoint: ".ppt,.pptx,.odp",
+    text: ".txt,.md,.csv,.rtf",
+    archive: ".zip,.7z,.rar,.tar,.gz,.tgz",
 };
 
 export function fileLimitMB(field: FormField): number {

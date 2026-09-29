@@ -3,7 +3,7 @@
 import {useEffect, useId, useRef, useState, type KeyboardEvent} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import {CalendarDays, ChevronLeft, ChevronRight} from "lucide-react";
-import {calendarDays, datePart, formatLocal, monthStart, moveDay, parseLocal, stepTime, timePart, zoneLabel} from "./dateTimePicker";
+import {calendarDays, datePart, formatLocal, monthStart, moveDay, parseLocal, parseLocalDate, stepTime, timePart, zoneLabel} from "./dateTimePicker";
 import {t} from "@/i18n/t";
 import "./eventDateTimePicker.css";
 
@@ -20,7 +20,9 @@ const partMax: Record<Part, number> = {hour: 23, minute: 59, second: 59};
 // The one date-time input of the manage screens: a calendar popover and a
 // time row. Values are wall-clock strings in the viewer's own time zone
 // (shown next to the value); callers send them to the API as UTC ISO.
-export function EventDateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false, placeholder}: {
+// dateOnly picks a calendar day: the value is "YYYY-MM-DD", with no time row
+// and no time zone.
+export function EventDateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false, dateOnly = false, placeholder}: {
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
@@ -28,9 +30,10 @@ export function EventDateTimePicker({value, onChange, disabled = false, ariaLabe
     id?: string;
     allowClear?: boolean;
     showSeconds?: boolean;
+    dateOnly?: boolean;
     placeholder?: string;
 }) {
-    const chosen = parseLocal(value);
+    const chosen = dateOnly ? parseLocalDate(value) : parseLocal(value);
     const [open, setOpen] = useState(false);
     const [focused, setFocused] = useState<Date>(() => chosen ?? new Date());
     const [month, setMonth] = useState<Date>(() => monthStart(chosen ?? new Date()));
@@ -65,6 +68,7 @@ export function EventDateTimePicker({value, onChange, disabled = false, ariaLabe
     }
 
     function emit(day: Date, parts: {hour: number; minute: number; second: number}) {
+        if (dateOnly) {onChange(datePart(day)); return;}
         onChange(formatLocal(new Date(day.getFullYear(), day.getMonth(), day.getDate(), parts.hour, parts.minute, showSeconds ? parts.second : 0), showSeconds));
     }
 
@@ -125,8 +129,8 @@ export function EventDateTimePicker({value, onChange, disabled = false, ariaLabe
 
     return <Popover.Root open={open} onOpenChange={openChange}>
         <Popover.Trigger ref={triggerRef} id={id} type="button" className="event-manage-input event-date-picker__trigger" aria-label={ariaLabel} aria-haspopup="dialog" disabled={disabled}>
-            <span className={chosen ? "event-date-picker__value" : "event-date-picker__placeholder"}>{chosen ? t("ui.datePicker.value", {date: dateLabel(chosen), time: `${pad(time.hour)}:${pad(time.minute)}${showSeconds ? `:${pad(time.second)}` : ""}`}) : placeholder ?? t("ui.datePicker.placeholder")}</span>
-            {chosen && <span className="event-date-picker__zone" title={zone}>{offset}</span>}
+            <span className={chosen ? "event-date-picker__value" : "event-date-picker__placeholder"}>{chosen ? dateOnly ? dateLabel(chosen) : t("ui.datePicker.value", {date: dateLabel(chosen), time: `${pad(time.hour)}:${pad(time.minute)}${showSeconds ? `:${pad(time.second)}` : ""}`}) : placeholder ?? t("ui.datePicker.placeholder")}</span>
+            {chosen && !dateOnly && <span className="event-date-picker__zone" title={zone}>{offset}</span>}
             <CalendarDays size={17} aria-hidden="true" />
         </Popover.Trigger>
         <Popover.Portal container={container ?? undefined}>
@@ -149,7 +153,7 @@ export function EventDateTimePicker({value, onChange, disabled = false, ariaLabe
                     })}
                 </div>
                 <div className="event-date-picker__footer">
-                    <div className="event-date-picker__time" role="group" aria-label={t("ui.datePicker.time")}>
+                    {!dateOnly && <div className="event-date-picker__time" role="group" aria-label={t("ui.datePicker.time")}>
                         <span>{t("ui.datePicker.time")}</span>
                         {parts.map((part, index) => <span className="event-date-picker__part" key={part}>
                             {index > 0 && <span aria-hidden="true">:</span>}
@@ -158,7 +162,7 @@ export function EventDateTimePicker({value, onChange, disabled = false, ariaLabe
                                 onBlur={event => commitPart(part, event.currentTarget.value)} onKeyDown={event => partKey(event, part)} />
                         </span>)}
                         <span className="event-date-picker__zone" title={zone}>{t("ui.datePicker.zone", {zone, offset})}</span>
-                    </div>
+                    </div>}
                     <div className="event-date-picker__actions">
                         {allowClear && chosen && <button className="ib-btn" type="button" onClick={() => { onChange(""); setOpen(false); }}>{t("ui.datePicker.noDate")}</button>}
                         <Popover.Close className="ib-btn ib-btn--primary" type="button">{t("common.done")}</Popover.Close>

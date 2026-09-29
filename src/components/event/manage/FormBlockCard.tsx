@@ -6,7 +6,7 @@ import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {EventRichTextEditor} from "@/components/event/manage/EventLexicalEditor";
 import {emptyRichText, richTextPlainText} from "@/components/event/content/richTextState";
 import {changeInput, isChoiceInput, isFormField, reorderBlocks} from "@/components/event/manage/participantFormEditor";
-import {FormConditionEditor, FormFileSettings, FormOptionsEditor} from "@/components/event/manage/FormFieldControls";
+import {FormConditionEditor, FormDateSettings, FormFileSettings, FormOptionsEditor} from "@/components/event/manage/FormFieldControls";
 import {useBlockDrag} from "@/components/event/manage/useBlockDrag";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
@@ -23,6 +23,7 @@ const inputOptions: {value: FormField["input"]; label: string}[] = [
     {value: "multi_select", label: t("manage.fields.input.multiSelect")},
     {value: "checkbox", label: t("manage.fields.input.checkbox")},
     {value: "file", label: t("manage.fields.input.file")},
+    {value: "date", label: t("manage.fields.input.date")},
 ];
 
 function blockKind(block: FormBlock): string {
@@ -112,6 +113,7 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
             <label className="event-manage-field"><span>{scope === "team" ? t("manage.fields.editor.helpTeam") : t("manage.fields.editor.helpParticipant")}</span><input className="event-manage-input" value={block.help ?? ""} onChange={e => update({...block, help: e.target.value})} disabled={disabled} placeholder={t("manage.fields.editor.optional")} /></label>
             {isChoiceInput(block.input) && <FormOptionsEditor blocks={blocks} index={index} disabled={disabled} onChange={onChange} />}
             {block.input === "file" && <FormFileSettings blocks={blocks} index={index} disabled={disabled} onChange={onChange} />}
+            {block.input === "date" && <FormDateSettings blocks={blocks} index={index} disabled={disabled} onChange={onChange} />}
             <FormConditionEditor blocks={blocks} index={index} disabled={disabled} onChange={onChange} />
         </> : block.type === "section" ? <label className="event-manage-field"><span>{t("manage.fields.block.section")}<span className="event-field-required">*</span></span><input className="event-manage-input" value={block.label ?? ""} onChange={e => update({...block, label: e.target.value})} disabled={disabled} /></label>
             : block.type === "text" ? <div className="event-manage-field"><span>{t("manage.fields.block.text")}<span className="event-field-required">*</span></span><EventRichTextEditor value={block.richText ?? emptyRichText()} onChange={value => update({...block, richText: value})} variables={[]} values={{}} disabled={disabled} ariaLabel={t("manage.fields.block.text")} /></div>
