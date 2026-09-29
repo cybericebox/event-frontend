@@ -35,11 +35,27 @@ export function t(key: MessageKey | (string & {}), vars?: MessageVars): string {
  * around them (keyed fragments), ready to render as children.
  */
 export function tRich(key: MessageKey | (string & {}), vars: Record<string, ReactNode>): ReactNode[] {
-  return t(key).split(/(\{\w+\})/).map((part, i) => {
+  return richParts(t(key), vars)
+}
+
+function richParts(text: string, vars: Record<string, ReactNode>): ReactNode[] {
+  return text.split(/(\{\w+\})/).map((part, i) => {
     const name = /^\{(\w+)\}$/.exec(part)?.[1]
     // the split of a fixed message never reorders, so the position is a stable key
     return createElement(Fragment, {key: i}, name !== undefined && name in vars ? vars[name] : part)
   })
+}
+
+/**
+ * tRich for a « · »-separated credit line: each segment becomes an unbreakable
+ * (nowrap) span and keeps its trailing dot, so lines break only after a separator.
+ */
+export function tSegments(key: MessageKey | (string & {}), vars: Record<string, ReactNode>): ReactNode[] {
+  const parts = t(key).split(" · ")
+  return parts.flatMap((part, i) => [
+    createElement("span", {key: i, style: {whiteSpace: "nowrap"}}, ...richParts(part, vars), i < parts.length - 1 ? " ·" : null),
+    i < parts.length - 1 ? " " : null,
+  ])
 }
 
 const pluralRules = new Intl.PluralRules(activeLocale)
