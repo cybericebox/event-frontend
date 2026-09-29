@@ -834,7 +834,7 @@
   "manage.board.showDifficulty": "Show difficulty",
   "manage.board.showHints": "Show hints (for challenges that have them enabled)",
   "manage.board.subtitle": "What participants see in the challenge window.",
-  "manage.board.title": "Board display",
+  "manage.board.title": "Show on board",
   "manage.content.landing.forbidden": "You are not allowed to change the page.",
   "manage.content.landing.lead": "Build the page from blocks in the order you need.",
   "manage.content.landing.loadFailed": "Could not load the home page",
