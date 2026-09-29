@@ -461,7 +461,7 @@
   "manage.journal.subtitleHints": "Хто, коли і за скільки балів відкрив підказки.",
   "manage.journal.title": "Журнал спроб",
   "manage.journal.view.attempts": "Спроби розв’язання",
-  "manage.journal.view.hints": "Підказки",
+  "manage.journal.view.hints": "Відкриті підказки",
   "manage.journal.views": "Розділ журналу",
   "manage.attempts.accept": "Зарахувати вручну",
   "manage.attempts.annul.confirm": "Анулювати",

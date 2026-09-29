@@ -461,7 +461,7 @@
   "manage.journal.subtitleHints": "Who opened which hints, when and for how many points.",
   "manage.journal.title": "Attempts log",
   "manage.journal.view.attempts": "Solution attempts",
-  "manage.journal.view.hints": "Hints",
+  "manage.journal.view.hints": "Unlocked hints",
   "manage.journal.views": "Log section",
   "manage.attempts.accept": "Accept manually",
   "manage.attempts.annul.confirm": "Annul",

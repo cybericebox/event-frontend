@@ -85,7 +85,7 @@ describe("Журнал спроб", () => {
     it("switches to the hints log and keeps its address", async () => {
         mockApi({Items: [], Total: 0}, [{TeamID: ids.team, TeamName: "Blue", EventChallengeID: ids.challenge, ChallengeName: "Warmup", HintID: ids.user, HintIndex: 0, UnlockedBy: ids.user, UnlockedByName: "Olena", UnlockedAt: "2026-09-29T07:30:00Z", Cost: 10}]);
         renderManager();
-        fireEvent.click(screen.getByRole("button", {name: "Підказки"}));
+        fireEvent.click(screen.getByRole("button", {name: "Відкриті підказки"}));
         expect(router.replace).toHaveBeenCalledWith("/manage/submissions?tab=hints", {scroll: false});
         const table = screen.getByRole("table");
         expect(within(table).getByRole("columnheader", {name: "Вартість"})).toBeTruthy();
