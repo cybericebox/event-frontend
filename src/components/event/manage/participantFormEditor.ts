@@ -65,8 +65,22 @@ export function createFormField(input: FormField["input"] = "text"): FormField {
 // answer: not a multi-select and not a file.
 function comparableInput(input: FormField["input"]): boolean { return input !== "multi_select" && input !== "file"; }
 
+// A participant question cannot depend on a staff-only one (participants never see it).
 export function conditionSources(blocks: FormBlock[], index: number): FormField[] {
-    return blocks.slice(0, index).filter(isFormField).filter(field => comparableInput(field.input));
+    const dependent = blocks[index];
+    const staff = !!dependent && isFormField(dependent) && !!dependent.staffOnly;
+    return blocks.slice(0, index).filter(isFormField).filter(field => comparableInput(field.input) && (staff || !field.staffOnly));
+}
+
+// Marks a question staff-only (or back): organizers fill it, so it is never
+// required or editable by the participant.
+export function setStaffOnly(blocks: FormBlock[], index: number, staffOnly: boolean): FormBlock[] {
+    const field = blocks[index];
+    if (!field || !isFormField(field)) return blocks;
+    const next: FormField = staffOnly
+        ? {...field, staffOnly: true, required: false, editable: undefined, ...(field.input === "file" ? inputSettings("text") : {}), input: field.input === "file" ? "text" : field.input}
+        : {...field, staffOnly: undefined};
+    return replaceField(blocks, index, next);
 }
 
 export function initialConditionValue(source: FormField): string | number | boolean {
@@ -195,6 +209,7 @@ export function participantFormProblem(document: FormDocument): {message: string
             if (emptyAt >= 0) return {index, message: t("manage.fields.validation.optionEmpty", {n: index + 1, option: emptyAt + 1})};
             if (invalidOptions(options).size) return {index, message: t("manage.fields.validation.optionDuplicate", {n: index + 1})};
         }
+        if (block.staffOnly && block.input === "file") return {index, message: t("manage.fields.validation.staffFile", {n: index + 1})};
         if (block.input === "file") {
             if (!block.fileTypes?.length) return {index, message: t("manage.fields.validation.fileTypes", {n: index + 1})};
             const size = block.maxSizeMB ?? defaultFileMB;
@@ -212,6 +227,7 @@ export function participantFormProblem(document: FormDocument): {message: string
             const source = previous.get(block.condition.fieldKey);
             if (!source) return {index, message: t("manage.fields.validation.conditionSource", {n: index + 1})};
             if (!comparableInput(source.input)) return {index, message: t("manage.fields.validation.conditionSingle", {n: index + 1})};
+            if (source.staffOnly && !block.staffOnly) return {index, message: t("manage.fields.validation.conditionStaff", {n: index + 1})};
             const value = block.condition.value;
             if (!conditionOperators(source).includes(block.condition.operator)) return {index, message: t("manage.fields.validation.conditionOperator", {n: index + 1})};
             if (source.input === "date" && parseDateAnswer(dateModeOf(source), value) === null) return {index, message: t("manage.fields.validation.conditionDate", {n: index + 1})};

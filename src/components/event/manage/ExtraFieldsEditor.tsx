@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {Eye, Plus} from "lucide-react";
+import {Eye, EyeOff, Plus} from "lucide-react";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {emptyRichText} from "@/components/event/content/richTextState";
 import {toast} from "react-hot-toast";
@@ -22,6 +22,8 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {Sortable} from "@/components/ui/Sortable";
 import {moveItem} from "@/components/ui/sortableOrder";
 import {EventButton} from "@/components/ui/EventButton";
+import {RequiredFieldsPolicyDialog} from "@/components/event/manage/RequiredFieldsPolicyDialog";
+import {policyQuestion, type PolicyChoice} from "@/components/event/manage/requiredFieldsPolicy";
 
 const emptyForm: ParticipantFormInput = {Enabled: false, Required: false, Document: {blocks: []}};
 
@@ -34,7 +36,7 @@ function FormPreview({blocks, selectedID, scope}: {blocks: FormBlock[]; selected
         {block.type === "section" && <h3>{block.label || t("manage.fields.block.section")}</h3>}
         {block.type === "text" && <div className="event-form-preview__text"><EventRichTextView value={block.richText} emptyFallback={t("manage.fields.block.text")} /></div>}
         {block.type === "divider" && <hr />}
-        {isFormField(block) && <div className="event-manage-field"><strong>{block.label || t("manage.fields.preview.newQuestion")}{block.required && <span className="event-field-required">*</span>}</strong>{block.condition && <small className="event-form-preview__condition">{t("manage.fields.preview.conditional", {question: blocks.find(item => isFormField(item) && item.key === block.condition?.fieldKey)?.label || t("manage.fields.preview.previousQuestion")})}</small>}{block.help && <small>{block.help}</small>}
+        {isFormField(block) && <div className="event-manage-field"><strong>{block.label || t("manage.fields.preview.newQuestion")}{block.required && <span className="event-field-required">*</span>}{block.staffOnly && <span className="ib-tag ib-tag--sm event-form-preview__staff"><EyeOff size={12} aria-hidden="true" />{t("manage.fields.preview.staffOnly")}</span>}</strong>{block.condition && <small className="event-form-preview__condition">{t("manage.fields.preview.conditional", {question: blocks.find(item => isFormField(item) && item.key === block.condition?.fieldKey)?.label || t("manage.fields.preview.previousQuestion")})}</small>}{block.help && <small>{block.help}</small>}
             {block.input === "long_text" ? <textarea className="event-manage-input" rows={3} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} /> :
                 block.input === "checkbox" ? <label className="event-form-preview__choice"><input type="checkbox" disabled /> {t("common.yes")}</label> :
                 block.input === "file" ? <AnswerFilePreview field={block} /> :
@@ -61,6 +63,7 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
     const [openBlocks, setOpenBlocks] = useState<{key: string; ids: string[]}>({key: draftKey, ids: []});
     const [dragging, setDragging] = useState(false);
     const [expandedError, setExpandedError] = useState("");
+    const [askPolicy, setAskPolicy] = useState(false);
     const saved: ParticipantFormInput = query.data ? {Enabled: query.data.Enabled, Required: query.data.Required, Document: query.data.Document} : emptyForm;
     const draft = edited[draftKey] ?? saved;
     const blocks = draft.Document.blocks;
@@ -95,13 +98,21 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
         setBlockOpen(result.copy.id, true);
     }
     function remove(index: number) { setBlocks(removeBlock(blocks, index)); }
-    async function save() {
+    // A new required field while answers exist: ask what to do with them first.
+    const newRequired = policyQuestion(query.data, draft);
+    function save() {
         if (!canManage || saving || !dirty || validation) return;
+        if (newRequired.length > 0) {setAskPolicy(true); return;}
+        void submit(undefined);
+    }
+    async function submit(choice: PolicyChoice | undefined) {
         setSaving(true);
         try {
-            const result = scope === "team" ? await putManageTeamFields(eventID, draft) : await putManageParticipantForm(eventID, draft);
+            const input = choice ? {...draft, ...choice} : draft;
+            const result = scope === "team" ? await putManageTeamFields(eventID, input) : await putManageParticipantForm(eventID, input);
             queryClient.setQueryData(queryKey, result);
             discard();
+            setAskPolicy(false);
             toast.success(scope === "team" ? t("manage.fields.savedTeam") : t("manage.fields.savedParticipant"));
         } catch {toast.error(t("manage.fields.saveFailed"));}
         finally {setSaving(false);}
@@ -113,6 +124,7 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
     return <div className="event-manage-content event-manage-form">
         <div className="event-manage-form__head"><p>{scope === "team" ? t("manage.fields.introTeam") : t("manage.fields.introParticipant")}</p><span className="event-attempts-manager__total">{query.data ? t("manage.fields.version", {version: query.data.Version}) : t("manage.fields.notSaved")}</span></div>
         <section className="event-manage-section event-manage-form__settings"><div className="event-manage-field"><ManageFieldLabel title={t("manage.fields.title")} help={scope === "team" ? t("manage.fields.enabledHelpTeam") : t("manage.fields.enabledHelpParticipant")} /><EventSwitch className="event-manage-form__switch" checked={draft.Enabled} onCheckedChange={checked => change({...draft, Enabled: checked, Required: checked && draft.Required})} disabled={!canManage || saving} label={t("manage.fields.show")} /></div><div className="event-manage-field"><ManageFieldLabel title={t("manage.fields.required")} help={scope === "team" ? t("manage.fields.requiredHelpTeam") : t("manage.fields.requiredHelpParticipant")} /><EventSwitch className="event-manage-form__switch" checked={draft.Required} onCheckedChange={checked => change({...draft, Required: checked})} disabled={!canManage || saving || !draft.Enabled} label={t("manage.fields.requireFill")} /></div></section>
+        {query.data?.RequireExisting && <div className="event-manage-notice" role="status">{t(`manage.fields.policy.active.${scope}${query.data.BlockSubmissions ? "Blocking" : ""}`)}</div>}
         <div className="event-manage-content__layout"><div className="event-content-editor"><div className="event-content-editor__top"><div><h2>{t("manage.fields.editor.title")}</h2><p>{t("manage.fields.editor.subtitle")}</p></div><span>{blocks.length}</span></div>
             {blocks.length === 0 && <EmptyState message={t("manage.fields.editor.empty")} />}
             <Sortable ids={blocks.map(block => block.id)} itemName={id => {const block = blocks.find(item => item.id === id); return block && isFormField(block) ? block.label.trim() || t("manage.fields.editor.untitledQuestion") : block?.type === "section" ? t("manage.fields.block.section") : block?.type === "text" ? t("manage.fields.block.text") : t("manage.fields.block.divider");}}
@@ -123,7 +135,8 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
             </Sortable>
             {canManage && <div className="event-content-editor__add" aria-label={t("manage.fields.editor.addBlock")}><button className="ib-btn" type="button" onClick={() => add(createFormField())}><Plus size={16} /> {t("manage.fields.editor.addField")}</button><button className="ib-btn" type="button" onClick={() => add({id: `section-${crypto.randomUUID()}`, type: "section", label: ""})}><Plus size={16} /> {t("manage.fields.block.section")}</button><button className="ib-btn" type="button" onClick={() => add({id: `text-${crypto.randomUUID()}`, type: "text", richText: emptyRichText()})}><Plus size={16} /> {t("manage.fields.block.text")}</button><button className="ib-btn" type="button" onClick={() => add({id: `divider-${crypto.randomUUID()}`, type: "divider"})}><Plus size={16} /> {t("manage.fields.block.divider")}</button></div>}
             {validation && (!invalidID || dragging || !openIDs.includes(invalidID)) && <p className="event-manage-validation" role="alert">{validation}</p>}
-            {(dirty || saving) && <div className="event-content-editor__footer"><span>{t("manage.fields.unsavedChanges")}</span><div><button className="ib-btn" type="button" onClick={discard} disabled={saving}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canManage || saving || !!validation} onClick={() => void save()} busy={saving}>{t("manage.fields.save")}</EventButton></div></div>}
-        </div><aside className="event-manage-content__preview" aria-label={t("manage.fields.preview.label")}><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>{t("manage.fields.preview.title")}</h2><p>{t("manage.fields.preview.subtitle")}</p></div></div><div className="event-manage-content__preview-window"><FormPreview blocks={blocks} selectedID={selectedID} scope={scope} /></div></aside></div>
+            {(dirty || saving) && <div className="event-content-editor__footer"><span>{t("manage.fields.unsavedChanges")}</span><div><button className="ib-btn" type="button" onClick={discard} disabled={saving}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canManage || saving || !!validation} onClick={save} busy={saving}>{t("manage.fields.save")}</EventButton></div></div>}
+        </div>{askPolicy && <RequiredFieldsPolicyDialog scope={scope} fields={newRequired} answered={query.data?.Answered ?? 0} busy={saving} onCancel={() => setAskPolicy(false)} onConfirm={choice => void submit(choice)} />}
+        <aside className="event-manage-content__preview" aria-label={t("manage.fields.preview.label")}><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>{t("manage.fields.preview.title")}</h2><p>{t("manage.fields.preview.subtitle")}</p></div></div><div className="event-manage-content__preview-window"><FormPreview blocks={blocks} selectedID={selectedID} scope={scope} /></div></aside></div>
     </div>;
 }

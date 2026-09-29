@@ -21,18 +21,27 @@ export const formFieldSchema = z.object({
     maxDate: z.string().optional(),
     // The captain (team fields) or the participant (own fields) may change this answer later.
     editable: z.boolean().optional(),
+    // Hidden from participants everywhere; organizers fill it in the tables. Never required.
+    staffOnly: z.boolean().optional(),
     condition: z.object({fieldKey: z.string(), operator: z.enum(["equals", "not_equals", "before", "after"]), value: z.union([z.string(), z.number(), z.boolean()])}).optional(),
 });
 export const formBlockSchema = z.union([formFieldSchema, ContentBlockSchema]);
 export const formDocumentSchema = z.object({blocks: z.array(formBlockSchema).nullable().transform(blocks => blocks ?? [])});
-export const participantFormSchema = z.object({Version: z.number().int(), Enabled: z.boolean(), Required: z.boolean(), Document: formDocumentSchema});
+// RequireExisting/BlockSubmissions: what people who answered before a required
+// field was added must do; Answered counts them (organizer views only).
+export const participantFormSchema = z.object({
+    Version: z.number().int(), Enabled: z.boolean(), Required: z.boolean(), Document: formDocumentSchema,
+    RequireExisting: z.boolean().optional(), BlockSubmissions: z.boolean().optional(), Answered: z.number().int().optional(),
+});
 export type FormField = z.infer<typeof formFieldSchema>;
 export type FileKind = z.output<typeof fileKindSchema>;
 export type ConditionOperator = NonNullable<FormField["condition"]>["operator"];
 export type FormBlock = z.infer<typeof formBlockSchema>;
 export type FormDocument = z.infer<typeof formDocumentSchema>;
 export type ParticipantForm = z.infer<typeof participantFormSchema>;
-export type ParticipantFormInput = Pick<ParticipantForm, "Enabled" | "Required" | "Document">;
+// RequireExisting/BlockSubmissions are sent only when the organizer chose them;
+// left out, the previous version's policy carries over.
+export type ParticipantFormInput = Pick<ParticipantForm, "Enabled" | "Required" | "Document"> & {RequireExisting?: boolean; BlockSubmissions?: boolean};
 
 export async function getManageParticipantForm(eventID: string): Promise<ParticipantForm | null> {
     const api = requireApiOrigin();

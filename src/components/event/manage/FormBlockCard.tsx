@@ -1,11 +1,12 @@
 "use client";
 
 import type {ReactNode} from "react";
-import {ArrowDown, ArrowUp, ChevronDown, Copy, GitBranch, GripVertical, PencilLine, Trash2} from "lucide-react";
+import {ArrowDown, ArrowUp, ChevronDown, Copy, EyeOff, GitBranch, GripVertical, PencilLine, Trash2} from "lucide-react";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {EventRichTextEditor} from "@/components/event/manage/EventLexicalEditor";
 import {emptyRichText, richTextPlainText} from "@/components/event/content/richTextState";
-import {changeInput, isChoiceInput, isFormField} from "@/components/event/manage/participantFormEditor";
+import {changeInput, isChoiceInput, isFormField, setStaffOnly} from "@/components/event/manage/participantFormEditor";
+import {FieldLabel} from "@/components/event/manage/FieldLabel";
 import {FormConditionEditor, FormDateSettings, FormFileSettings, FormOptionsEditor} from "@/components/event/manage/FormFieldControls";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
@@ -49,7 +50,8 @@ function CardTitle({block, scope}: {block: FormBlock; scope: FieldsScope}) {
     return <span className="event-form-card__title">
         <span className={`event-form-card__question${block.label.trim() ? "" : " is-empty"}`}>{block.label.trim() || t("manage.fields.editor.untitledQuestion")}</span>
         {block.required && <span className="event-field-required" aria-label={t("manage.fields.requiredField")}>*</span>}
-        {(block.editable || block.condition) && <span className="event-form-card__meta">
+        {(block.editable || block.condition || block.staffOnly) && <span className="event-form-card__meta">
+            {block.staffOnly && <CardIcon label={t("manage.fields.card.staffOnly")}><EyeOff size={14} aria-hidden="true" /></CardIcon>}
             {block.editable && <CardIcon label={editable}><PencilLine size={14} aria-hidden="true" /></CardIcon>}
             {block.condition && <CardIcon label={t("manage.fields.card.conditional")}><GitBranch size={14} aria-hidden="true" /></CardIcon>}
         </span>}
@@ -103,10 +105,12 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
         {open && <div className="event-content-editor__block-body" id={bodyID}>{isFormField(block) ? <>
             <div className="event-form-card__main">
                 <label className="event-manage-field"><span>{t("manage.fields.block.question")}<span className="event-field-required">*</span></span><input className="event-manage-input" value={block.label} onChange={e => update({...block, label: e.target.value})} disabled={disabled} placeholder={t("manage.fields.editor.questionPlaceholder")} /></label>
-                <div className="event-manage-field"><span>{t("manage.fields.editor.answerType")}</span><EventSelect ariaLabel={t("manage.fields.editor.answerTypeFor", {n})} value={block.input} options={inputOptions} disabled={disabled} onValueChange={value => onChange(changeInput(blocks, index, value as FormField["input"]))} /></div>
+                <div className="event-manage-field"><span>{t("manage.fields.editor.answerType")}</span><EventSelect ariaLabel={t("manage.fields.editor.answerTypeFor", {n})} value={block.input} options={block.staffOnly ? inputOptions.filter(option => option.value !== "file") : inputOptions} disabled={disabled} onValueChange={value => onChange(changeInput(blocks, index, value as FormField["input"]))} /></div>
                 <div className="event-form-card__switches">
-                    <EventSwitch className="event-manage-form__switch" checked={!!block.required} onCheckedChange={checked => update({...block, required: checked})} disabled={disabled} label={t("manage.fields.editor.answerRequired")} />
-                    <EventSwitch className="event-manage-form__switch" checked={!!block.editable} onCheckedChange={checked => update({...block, editable: checked || undefined})} disabled={disabled} label={scope === "team" ? t("manage.fields.editor.editableTeam") : t("manage.fields.editor.editableParticipant")} />
+                    {!block.staffOnly && <EventSwitch className="event-manage-form__switch" checked={!!block.required} onCheckedChange={checked => update({...block, required: checked})} disabled={disabled} label={t("manage.fields.editor.answerRequired")} />}
+                    {!block.staffOnly && <EventSwitch className="event-manage-form__switch" checked={!!block.editable} onCheckedChange={checked => update({...block, editable: checked || undefined})} disabled={disabled} label={scope === "team" ? t("manage.fields.editor.editableTeam") : t("manage.fields.editor.editableParticipant")} />}
+                    <EventSwitch className="event-manage-form__switch" checked={!!block.staffOnly} onCheckedChange={checked => onChange(setStaffOnly(blocks, index, checked))} disabled={disabled}
+                        label={<FieldLabel label={t("manage.fields.editor.staffOnly")} help={scope === "team" ? t("manage.fields.editor.staffOnlyHelpTeam") : t("manage.fields.editor.staffOnlyHelpParticipant")} />} />
                 </div>
             </div>
             <label className="event-manage-field"><span>{scope === "team" ? t("manage.fields.editor.helpTeam") : t("manage.fields.editor.helpParticipant")}</span><input className="event-manage-input" value={block.help ?? ""} onChange={e => update({...block, help: e.target.value})} disabled={disabled} placeholder={t("manage.fields.editor.optional")} /></label>
