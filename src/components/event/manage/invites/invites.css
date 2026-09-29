@@ -1,0 +1,33 @@
+/* Invitation dialogs: DS modal on the raised fill (no tinted background), no
+   divider above the actions; email chips input; DS file picker. */
+.event-modal-backdrop{overflow:auto}
+.event-modal{max-height:calc(100dvh - 2 * var(--ib-4))}
+.event-modal:focus{outline:none}
+.event-modal__form{display:flex;flex-direction:column;min-height:0}
+.event-modal .ib-modal__foot{border-top:0;padding-top:0}
+.event-modal__summary{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.event-modal__issues{display:flex;flex-direction:column;gap:var(--ib-1);margin:0;padding:0;list-style:none;
+  font-size:var(--ib-fs-13);color:var(--ib-danger);max-height:180px;overflow:auto}
+.event-modal__modes{align-self:flex-start}
+
+.event-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:var(--ib-control-h-lg);height:auto;
+  padding:6px var(--ib-2);cursor:text;max-height:220px;overflow:auto}
+.event-chips:focus-within{outline:2px solid var(--ib-action);outline-offset:-1px;border-color:var(--ib-action)}
+.event-chips[aria-invalid="true"]:focus-within{outline-color:var(--ib-danger)}
+.event-chips__input{flex:1 0 160px;min-width:120px;height:26px;border:0;padding:0 var(--ib-1);background:transparent;color:var(--ib-ink);
+  font:inherit;outline:none}
+.event-chips__input::placeholder{color:var(--ib-faint)}
+.event-chip{height:26px;padding:0 2px 0 var(--ib-2);color:var(--ib-ink);background:var(--ib-tag-bg)}
+.event-chip.is-invalid{border-color:var(--ib-danger);color:var(--ib-danger);background:var(--ib-danger-bg)}
+.event-chip__text{overflow:hidden;text-overflow:ellipsis}
+.event-chip__remove{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin:0;padding:0;border:0;
+  border-radius:var(--ib-r-sm);background:transparent;color:inherit;cursor:pointer}
+.event-chip__remove:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+.event-chip__remove:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
+.event-chip__remove svg{width:14px;height:14px}
+
+.event-file-picker{display:flex;align-items:center;gap:var(--ib-2);min-width:0}
+.event-file-picker__name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-13);color:var(--ib-ink)}
+.event-file-picker__name.is-empty{color:var(--ib-dim)}
+.event-file-picker__input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.event-field-help{display:inline-flex;align-items:center;gap:var(--ib-1)}

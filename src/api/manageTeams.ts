@@ -14,6 +14,8 @@ const teamSchema = z.object({
     PendingInvitations: z.array(pendingInvitationSchema).nullish().transform(value => value ?? []),
     Admitted: z.boolean().default(true), AdmittedManually: z.boolean().default(false),
     MinTeamSize: z.number().int().nullish().transform(value => value ?? null),
+    // The captain is an invitee who has not accepted yet.
+    CaptainPending: z.boolean().default(false),
 });
 export type ManageTeamMember = z.infer<typeof memberSchema>;
 export type ManageTeamPendingInvitation = z.infer<typeof pendingInvitationSchema>;
@@ -43,10 +45,6 @@ export async function getManageTeams(eventID: string, cursor: string | null, fil
     if (filter.admission) params.set("admission", filter.admission);
     if (cursor) params.set("cursor", cursor);
     return request(eventID, `teams?${params}`, pageSchema);
-}
-
-export async function createManageTeam(eventID: string, name: string, captainID: string, fields: Record<string, string | number | boolean | string[]> = {}): Promise<ManageTeam> {
-    return request(eventID, "teams", teamSchema, "POST", {Name: name, CaptainID: captainID, Fields: fields});
 }
 
 export async function updateManageTeam(eventID: string, teamID: string, input: ManageTeamInput): Promise<ManageTeam> {

@@ -22,7 +22,6 @@ export type ManageParticipantsPage = z.infer<typeof pageSchema>;
 export type ManageParticipantCounts = z.infer<typeof countsSchema>;
 export type ParticipantStatus = ManageParticipant["Status"];
 export type ParticipantListKind = "participants" | "applications" | "invitations";
-export type ParticipantInvitationResult = {Email: string; UserID: string | null; Error: string};
 
 export function participantListKind(participant: Pick<ManageParticipant, "Status" | "Invited">): ParticipantListKind {
     if (participant.Status === 2) return "participants";
@@ -61,18 +60,6 @@ export async function setIndividualParticipantHidden(eventID: string, userID: st
         body: JSON.stringify({Hidden: hidden}),
     });
     if (!response.ok) throw await manageApiError(response);
-}
-
-export async function inviteManageParticipants(eventID: string, emails: string[], teamID?: string): Promise<ParticipantInvitationResult[]> {
-    const api = requireApiOrigin();
-    const invitationPath = teamID ? `teams/${encodeURIComponent(teamID)}/invitations` : "participants/invitations";
-    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${invitationPath}`, {
-        method: "POST", credentials: "include", cache: "no-store",
-        headers: {Accept: "application/json", "Content-Type": "application/json"},
-        body: JSON.stringify({Entries: emails.map(Email => ({Email}))}),
-    });
-    if (!response.ok) throw await manageApiError(response);
-    return z.object({Data: z.array(z.object({Email: z.string(), UserID: z.string(), Error: z.string()}))}).parse(await response.json()).Data.map(result => ({...result, UserID: result.UserID === "00000000-0000-0000-0000-000000000000" ? null : result.UserID}));
 }
 
 const resendSchema = z.object({UserID: id, Email: z.string(), InvitationSentAt: z.string().nullable()});

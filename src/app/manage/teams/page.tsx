@@ -1,22 +1,22 @@
 "use client";
 
-import {useEffect, useState, type FormEvent} from "react";
+import {useEffect, useState} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
-import {getManageParticipants, inviteManageParticipants} from "@/api/manageParticipants";
+import {getManageParticipants} from "@/api/manageParticipants";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import {changeManageTeamMember, createManageTeam, deleteManageTeam, getManageTeams, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember, type TeamAdmissionFilter} from "@/api/manageTeams";
+import {changeManageTeamMember, deleteManageTeam, getManageTeams, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember, type TeamAdmissionFilter} from "@/api/manageTeams";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {CreateTeamDialog} from "@/components/event/manage/CreateTeamDialog";
 import {TeamInvitationDialog} from "@/components/event/manage/TeamInvitationDialog";
 import {ManageTable, ManageTablePagination, ManageTableSearch, useCursorPages} from "@/components/event/manage/ManageTable";
 import {AnswersList, FieldColumnsButton, useFieldColumns} from "@/components/event/manage/FieldColumns";
 import {formFields, formatAnswer} from "@/components/event/manage/listColumns";
-import {invitationEmails, parseInvitationCsv} from "@/components/event/manage/participantInvitations";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {t} from "@/i18n/t";
@@ -55,13 +55,8 @@ export default function ManageTeamsPage() {
     const [debounced, setDebounced] = useState("");
     const [admission, setAdmissionFilter] = useState<TeamAdmissionFilter | null>(null);
     const [managedID, setManagedID] = useState<string | null>(null);
-    const [name, setName] = useState("");
-    const [captainID, setCaptainID] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
     const [inviteTeam, setInviteTeam] = useState<{ID: string; Name: string; InitialEmails?: string[]} | null>(null);
-    const [createInviteManual, setCreateInviteManual] = useState("");
-    const [createInviteCsv, setCreateInviteCsv] = useState<string[]>([]);
-    const [fieldAnswers, setFieldAnswers] = useState<ParticipantAnswers>({});
     const [editing, setEditing] = useState<{id: string; name: string; hidden: boolean; fields: ParticipantAnswers} | null>(null);
     const [answersTeam, setAnswersTeam] = useState<ManageTeam | null>(null);
     const [memberChoices, setMemberChoices] = useState<Record<string, string>>({});
@@ -82,7 +77,6 @@ export default function ManageTeamsPage() {
         refetchOnWindowFocus: false,
     });
     const participants = participantsQuery.data?.pages.flatMap(page => page.Items) ?? [];
-    const participantByID = new Map(participants.map(participant => [participant.UserID, participant]));
     const available = participants.filter(participant => !participant.TeamID);
     const teams = teamsQuery.data?.Items ?? [];
     const fields = formFields(fieldsQuery.data?.Document.blocks);
@@ -103,45 +97,6 @@ export default function ManageTeamsPage() {
             queryClient.invalidateQueries({queryKey: ["event-management-team-participants", eventID]}),
             queryClient.invalidateQueries({queryKey: ["event-management-participants", eventID]}),
         ]);
-    }
-
-    async function create(submitEvent: FormEvent<HTMLFormElement>) {
-        submitEvent.preventDefault();
-        if (!canManage || busy || !name.trim() || !captainID) return;
-        const captainEmail = participantByID.get(captainID)?.Email.toLowerCase();
-        const emails = invitationEmails(createInviteManual, createInviteCsv).filter(email => email !== captainEmail);
-        if (emails.length > 200) return;
-        setBusy(true);
-        let team: ManageTeam;
-        try {
-            team = await createManageTeam(eventID, name.trim(), captainID, fieldAnswers);
-        } catch {
-            toast.error(t("manage.teams.createFailed"));
-            setBusy(false);
-            return;
-        }
-        setName(""); setCaptainID(""); setFieldAnswers({});
-        setCreateInviteManual(""); setCreateInviteCsv([]);
-        setCreateOpen(false);
-        try {await refresh();} catch {toast.error(t("manage.teams.createdNoRefresh"));}
-        if (emails.length === 0) {
-            toast.success(t("manage.teams.created"));
-            setBusy(false);
-            return;
-        }
-        try {
-            const results = await inviteManageParticipants(eventID, emails, team.ID);
-            const failed = results.filter(result => result.Error).map(result => result.Email);
-            const sent = results.length - failed.length;
-            if (failed.length) {
-                setInviteTeam({ID: team.ID, Name: team.Name, InitialEmails: failed});
-                toast.error(t("manage.teams.createdPartial", {sent, failed: failed.length}));
-            } else toast.success(t("manage.teams.createdInvited", {count: sent}));
-            try {await refresh();} catch {toast.error(t("manage.participants.refreshFailed"));}
-        } catch {
-            setInviteTeam({ID: team.ID, Name: team.Name, InitialEmails: emails});
-            toast.error(t("manage.teams.createdInviteFailed"));
-        } finally {setBusy(false);}
     }
 
     async function saveTeam(team: ManageTeam) {
@@ -209,7 +164,7 @@ export default function ManageTeamsPage() {
 
     return <div className="event-manage-settings event-manage-teams">
         <header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1><p>{t("manage.teams.subtitle")}</p></div><div className="event-manage-heading__actions"><FieldColumnsButton eventID={eventID} list="teams" columns={columns} canManage={canManage} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>{t("manage.teams.create")}</button>}</div></header>
-        <Dialog open={createOpen} onOpenChange={open => {if (!busy) setCreateOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(480px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{t("manage.teams.newTitle")}</DialogTitle><DialogDescription>{t("manage.teams.newDescription")}</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={create}><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={name} onChange={e => setName(e.target.value)} minLength={3} maxLength={64} required disabled={busy} placeholder={t("manage.teams.namePlaceholder")} /></label><div className="event-manage-field"><span>{t("manage.teams.captain")}</span><EventSelect ariaLabel={t("manage.teams.newCaptain")} value={captainID} placeholder={t("manage.teams.chooseParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={setCaptainID} disabled={busy || available.length === 0} /></div>{fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}<label className="event-manage-field"><span>{t("manage.participants.invite.title")}</span><textarea className="event-manage-input" rows={3} value={createInviteManual} onChange={e => setCreateInviteManual(e.target.value)} placeholder={t("manage.teams.invitePlaceholder")} disabled={busy} /></label><label className="event-manage-field"><span>{t("manage.teams.inviteCsv")}</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={busy} onChange={async e => {const file = e.target.files?.[0]; if (file) {try {setCreateInviteCsv(parseInvitationCsv(await file.text()));} catch {toast.error(t("manage.participants.invite.csvFailed"));}}}} /><small>{t("manage.teams.inviteCsvHint")}</small></label>{invitationEmails(createInviteManual, createInviteCsv).length > 200 && <p className="event-manage-validation" role="alert">{t("manage.participants.invite.limit")}</p>}<div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={busy} onClick={() => setCreateOpen(false)}>{t("common.cancel")}</button><button className="ib-btn ib-btn--primary" type="submit" disabled={busy || !name.trim() || !captainID || invitationEmails(createInviteManual, createInviteCsv).length > 200}>{t("manage.teams.create")}</button></div></form></DialogContent></Dialog>
+        <CreateTeamDialog eventID={eventID} open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
         <TeamInvitationDialog key={inviteTeam?.ID ?? "closed"} eventID={eventID} team={inviteTeam} onClose={() => setInviteTeam(null)} onSent={refresh} />
         <ManageTable event={event} state={tableState} busy={teamsQuery.isFetching && !teamsQuery.isPending} loadingLabel={t("manage.teams.loading")} errorMessage={t("manage.teams.loadFailed")}
             onRetry={() => {void teamsQuery.refetch(); void participantsQuery.refetch(); void fieldsQuery.refetch();}}

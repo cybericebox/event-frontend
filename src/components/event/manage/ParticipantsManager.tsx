@@ -7,17 +7,16 @@ import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
-import {decideManageParticipant, getManageParticipants, inviteManageParticipants, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantInvitationResult, type ParticipantStatus} from "@/api/manageParticipants";
+import {decideManageParticipant, getManageParticipants, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {AnswersList, FieldColumnsButton, useFieldColumns} from "./FieldColumns";
 import {formFields, formatAnswer} from "./listColumns";
-import {invitationEmails, parseInvitationCsv} from "./participantInvitations";
+import {InviteParticipantsDialog} from "./InviteParticipantsDialog";
 import {ManageTable, ManageTablePagination, ManageTableSearch, useCursorPages} from "./ManageTable";
 import {participantTabHref, participantTabs, type ParticipantTab} from "./participantTabs";
 import {useManager} from "./ManagerShell";
 import {t} from "@/i18n/t";
-import {EventButton} from "@/components/ui/EventButton";
 
 const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
 const statusNames: Record<ParticipantStatus, string> = {1: t("manage.participants.status.pending"), 2: t("manage.participants.status.approved"), 3: t("manage.participants.status.rejected")};
@@ -45,11 +44,6 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const [busyID, setBusyID] = useState<string | null>(null);
     const [opened, setOpened] = useState<ManageParticipant | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
-    const [inviteText, setInviteText] = useState("");
-    const [csvEmails, setCsvEmails] = useState<string[]>([]);
-    const [inviteResults, setInviteResults] = useState<ParticipantInvitationResult[]>([]);
-    const [inviting, setInviting] = useState(false);
-    const emails = invitationEmails(inviteText, csvEmails);
     const {cursor, pageSize, reset: resetPages} = pages;
     const status = tab === "applications" ? statusFilter : null;
     const query = useQuery({
@@ -117,22 +111,6 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         void run(participant, () => setIndividualParticipantHidden(eventID, participant.UserID, !participant.Hidden), participant.Hidden ? t("manage.participants.shown") : t("manage.participants.hidden"), t("manage.participants.visibilityFailed"));
     }
 
-    async function invite() {
-        if (!canManage || inviting || emails.length === 0 || emails.length > 200) return;
-        setInviting(true);
-        try {
-            const results = await inviteManageParticipants(eventID, emails);
-            setInviteResults(results);
-            const sent = results.filter(result => !result.Error).length;
-            if (sent) {
-                await refresh();
-                toast.success(t("manage.participants.invite.sent", {count: sent}));
-            }
-            if (sent === results.length) {setInviteText(""); setCsvEmails([]);}
-        } catch {toast.error(t("manage.participants.invite.sendFailed"));}
-        finally {setInviting(false);}
-    }
-
     const open = (participant: ManageParticipant) => {if (showAnswers) setOpened(participant);};
     const stop = (event: MouseEvent) => event.stopPropagation();
     const onRowKey = (event: KeyboardEvent, participant: ManageParticipant) => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault(); open(participant);}};
@@ -141,8 +119,8 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const tableState = query.isPending ? "loading" : query.isError && !query.data ? "error" : items.length === 0 ? "empty" : "ready";
     const dateLabel = tab === "invitations" ? t("manage.participants.col.invited") : t("manage.participants.col.registered");
     return <div className="event-manage-settings event-manage-participants">
-        <header className="event-manage-heading"><div><h1>{t("manage.nav.participants")}</h1><p>{teamMode ? t("manage.participants.subtitleTeams") : t("manage.participants.subtitle")}</p></div><div className="event-manage-heading__actions">{showAnswers && <FieldColumnsButton eventID={eventID} list="participants" columns={columns} canManage={canManage} />}{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => {setInviteResults([]); setInviteOpen(true);}}>{t("manage.participants.invite.title")}</button>}</div></header>
-        <Dialog open={inviteOpen} onOpenChange={open => {if (!inviting) setInviteOpen(open);}}><DialogContent className="max-h-[90dvh] max-w-[min(560px,calc(100vw-24px))] overflow-y-auto"><DialogHeader><DialogTitle>{t("manage.participants.invite.title")}</DialogTitle><DialogDescription>{t("manage.participants.invite.description")}</DialogDescription></DialogHeader><div className="grid gap-4"><label className="event-manage-field"><span>{t("manage.participants.invite.emails")}</span><textarea className="event-manage-input" rows={5} value={inviteText} onChange={e => setInviteText(e.target.value)} placeholder={t("manage.participants.invite.emailsPlaceholder")} disabled={inviting} /></label><label className="event-manage-field"><span>{t("manage.participants.invite.csv")}</span><input className="event-manage-input" type="file" accept=".csv,text/csv" disabled={inviting} onChange={async e => {const file = e.target.files?.[0]; if (file) {try {setCsvEmails(parseInvitationCsv(await file.text())); setInviteResults([]);} catch {toast.error(t("manage.participants.invite.csvFailed"));}}}} /><small>{t("manage.participants.invite.csvHint")}</small></label><p>{t("manage.participants.invite.count", {count: emails.length})}</p>{emails.length > 200 && <p className="event-manage-validation" role="alert">{t("manage.participants.invite.limit")}</p>}{inviteResults.length > 0 && <div role="status" className="grid gap-1">{inviteResults.map(result => <p key={result.Email}>{result.Email}: {result.Error || t("manage.participants.invite.resultSent")}</p>)}</div>}<div className="event-manage-section__actions"><button className="ib-btn" type="button" onClick={() => setInviteOpen(false)} disabled={inviting}>{t("common.close")}</button><EventButton className="ib-btn ib-btn--primary" type="button" onClick={() => void invite()} disabled={inviting || emails.length === 0 || emails.length > 200} busy={inviting}>{t("manage.participants.invite.send")}</EventButton></div></div></DialogContent></Dialog>
+        <header className="event-manage-heading"><div><h1>{t("manage.nav.participants")}</h1><p>{teamMode ? t("manage.participants.subtitleTeams") : t("manage.participants.subtitle")}</p></div><div className="event-manage-heading__actions">{showAnswers && <FieldColumnsButton eventID={eventID} list="participants" columns={columns} canManage={canManage} />}{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setInviteOpen(true)}>{t("manage.participants.invite.title")}</button>}</div></header>
+        <InviteParticipantsDialog eventID={eventID} open={inviteOpen} onOpenChange={setInviteOpen} onSent={refresh} />
         <div className="event-manage-participants__filters" role="tablist" aria-label={t("manage.participants.sections")}>{participantTabs.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => changeTab(option.value)}>{option.label}{counts && <span className="event-manage-participants__count">{counts[option.count]}</span>}</button>)}</div>
         <ManageTable event={event} state={tableState} busy={query.isFetching && !query.isPending} loadingLabel={t("manage.participants.loading")} errorMessage={t("manage.participants.loadFailed")} onRetry={() => void query.refetch()}
             emptyMessage={filtered ? t("manage.participants.emptySearch") : emptyTexts[tab]}
