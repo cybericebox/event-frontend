@@ -1,0 +1,32 @@
+/* Page header — title + count + optional sub line + actions, then a filters row.
+   Source: proto/id-admin2.html (.ph/.toolbar/.bulk) and proto/event3.html (.s-head).
+   The filters row can switch to a selection row (.ib-page-header__bulk) when rows are selected.
+   Narrow container (<640px): actions drop under the title, filters wrap, search takes the full row. */
+
+.ib-page-header{container:ib-page-header/inline-size;display:flex;flex-direction:column;gap:var(--ib-4);margin-bottom:var(--ib-3)}
+.ib-page-header__top{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--ib-6)}
+.ib-page-header__heading{min-width:0}
+.ib-page-header__title{display:flex;align-items:baseline;flex-wrap:wrap;gap:var(--ib-3);font-size:var(--ib-fs-24);font-weight:var(--ib-w-semibold);letter-spacing:-.025em;color:var(--ib-ink)}
+.ib-page-header__count{font:var(--ib-w-regular) var(--ib-fs-16)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:0;color:var(--ib-dim)}
+.ib-page-header__sub{margin-top:var(--ib-1);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-page-header__actions{display:flex;align-items:center;gap:var(--ib-2);flex:none}
+
+.ib-page-header__filters,
+.ib-page-header__bulk{display:flex;align-items:center;gap:var(--ib-3);min-height:var(--ib-control-h-lg)}
+.ib-page-header__search{width:300px;max-width:100%}
+.ib-page-header__total{margin-left:auto;font-size:var(--ib-fs-13);color:var(--ib-dim);white-space:nowrap}
+
+/* selection row replaces the filters while rows are selected */
+.ib-page-header__bulk{padding:0 var(--ib-2) 0 var(--ib-3);border-radius:var(--ib-r);background:var(--ib-soft);font-size:var(--ib-fs-13);color:var(--ib-body)}
+.ib-page-header__bulk b{font-weight:var(--ib-w-semibold);color:var(--ib-ink);margin-right:var(--ib-2)}
+.ib-page-header__bulk .ib-page-header__end{margin-left:auto}
+
+@container ib-page-header (max-width: 639px){
+  .ib-page-header__top{flex-direction:column;align-items:stretch;gap:var(--ib-3)}
+  .ib-page-header__actions{flex-wrap:wrap}
+  .ib-page-header__actions>*{flex:1 1 auto}
+  .ib-page-header__filters,.ib-page-header__bulk{flex-wrap:wrap;gap:var(--ib-2)}
+  .ib-page-header__search{width:100%;flex:1 1 100%}
+  .ib-page-header__total{margin-left:0;flex:1 1 100%}
+  .ib-page-header__bulk{padding:var(--ib-2) var(--ib-3)}
+}

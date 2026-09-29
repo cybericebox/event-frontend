@@ -1,0 +1,66 @@
+/* Banner — рядок на всю ширину вгорі контенту. Тон = мала іконка + тонований фон.
+   Без кольорової смуги зліва, без іконки в плитці, без тіні. Одна дія + закрити. */
+
+:root,[data-theme="light"]{
+  --ib-banner-info-bg:color-mix(in srgb,#FCFCFF,var(--ev-brand) 6%);              /* ink 15.5 · dim 5.8 · control 3.2 */
+  --ib-banner-success-bg:var(--ib-ok-bg);   /* ok 4.65 · dim 5.9 · control 3.3 */
+  --ib-banner-warning-bg:var(--ib-warn-bg); /* warn 5.3 · dim 6.0 · control 3.3 */
+  --ib-banner-danger-bg:var(--ib-danger-bg);/* danger 5.7 · dim 5.8 · control 3.2 */
+  --ib-banner-control:var(--ib-control);
+}
+[data-theme="dark"]{
+  /* 10% тону поверх paper — тихіше за --ib-*-bg, щоб dim-текст тримав ≥4.5 */
+  --ib-banner-info-bg:color-mix(in srgb,#565757,var(--ev-brand) 25%);              /* dim 4.7 · body 6.4 · action 7.2 */
+  --ib-banner-success-bg:color-mix(in srgb,#49574E,var(--ev-brand) 25%);           /* dim 4.9 · ok 6.2 */
+  --ib-banner-warning-bg:color-mix(in srgb,#585145,var(--ev-brand) 25%);           /* dim 5.0 · warn 5.1 */
+  --ib-banner-danger-bg:color-mix(in srgb,#5A4E4D,var(--ev-brand) 25%);            /* dim 5.0 · danger 5.1 */
+  --ib-banner-control:#A9A7B7;              /* ≥3.8 на всіх тонах; --ib-control тут дає лише 3.1 */
+}
+
+.ib-banner{
+  --ib-banner-px:var(--ib-6);
+  display:grid;grid-template-columns:16px minmax(0,1fr) auto auto;grid-template-areas:"icon text action close";
+  align-items:center;column-gap:var(--ib-3);
+  min-height:48px;padding:var(--ib-2) var(--ib-2) var(--ib-2) var(--ib-banner-px);
+  background:var(--ib-banner-info-bg);border-bottom:1px solid var(--ib-line);
+  color:var(--ib-body);font-size:var(--ib-fs-14);line-height:var(--ib-lh-ui);
+}
+.ib-banner:not(:has(.ib-banner__close)){padding-right:var(--ib-banner-px)}
+.ib-banner--success{background:var(--ib-banner-success-bg)}
+.ib-banner--warning{background:var(--ib-banner-warning-bg)}
+.ib-banner--danger {background:var(--ib-banner-danger-bg)}
+/* кнопки всередині тонованого фону отримують сильнішу рамку */
+.ib-banner{--ib-control:var(--ib-banner-control)}
+
+.ib-banner svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-banner__icon{grid-area:icon;display:flex;color:var(--ib-action)}
+.ib-banner--success .ib-banner__icon{color:var(--ib-ok)}
+.ib-banner--warning .ib-banner__icon{color:var(--ib-warn)}
+.ib-banner--danger  .ib-banner__icon{color:var(--ib-danger)}
+
+.ib-banner__text{grid-area:text;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--ib-2);row-gap:2px}
+.ib-banner__title{color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.ib-banner__msg{color:var(--ib-body)}
+.ib-banner__meta{font-family:var(--ib-mono);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+
+.ib-banner__action{grid-area:action;display:flex;align-items:center;gap:var(--ib-2);white-space:nowrap}
+.ib-banner__note{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+
+/* закрити — .ib-icon-btn.ib-icon-btn--sm (components/icon-button) */
+.ib-banner__close{grid-area:close}
+
+.ib-banner.is-leaving{opacity:0;transition:opacity var(--ib-dur) var(--ib-ease)}
+
+/* стопка банерів — між ними лише лінія */
+.ib-banner-stack{display:flex;flex-direction:column}
+
+@media (max-width:640px){
+  .ib-banner{
+    --ib-banner-px:var(--ib-4);
+    grid-template-columns:16px minmax(0,1fr) auto;grid-template-areas:"icon text close" ". action action";
+    align-items:start;row-gap:var(--ib-2);padding-top:var(--ib-3);padding-bottom:var(--ib-3);
+  }
+  .ib-banner__icon{margin-top:2px}
+  .ib-banner__close{margin-top:-6px}
+  .ib-banner__action{white-space:normal;flex-wrap:wrap}
+}

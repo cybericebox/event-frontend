@@ -1,0 +1,44 @@
+/* Modal — generic dialog: header (title + one line + close), body (any form), footer (actions right).
+   Overlay → the one allowed shadow. Sizes: --sm 480px (short forms: «Запросити користувачів»), default 640px (--ib-modal-w).
+   Behaviour (modal.js, IB.Modal): open(el) / close(el); focus goes to [data-ib-modal-focus] or the first field,
+   Tab is trapped, Esc and a click on the backdrop close, focus returns to the opener. [data-ib-modal-close] closes.
+   IB.ConfirmDialog is built on the same base (IB.Modal.trap).
+   <div class="ib-modal-backdrop" id="invite" hidden>
+     <div class="ib-modal ib-modal--sm" role="dialog" aria-modal="true" aria-labelledby="invite-t" aria-describedby="invite-d">
+       <header class="ib-modal__head"><div><h2 class="ib-modal__title" id="invite-t">Запросити користувачів</h2>
+         <p class="ib-modal__desc" id="invite-d">Кожен отримає лист із посиланням.</p></div>
+         <button class="ib-icon-btn ib-icon-btn--sm ib-modal__close" type="button" data-ib-modal-close aria-label="Закрити">…i-x…</button></header>
+       <div class="ib-modal__body">…fields…</div>
+       <footer class="ib-modal__foot"><button class="ib-btn" data-ib-modal-close>Скасувати</button><button class="ib-btn ib-btn--primary">Надіслати</button></footer>
+     </div>
+   </div>
+   --static on the backdrop = in-flow preview for cards. */
+
+.ib-modal-backdrop{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:var(--ib-4);
+  background:var(--ib-backdrop);animation:ib-modal-fade var(--ib-dur) var(--ib-ease)}
+.ib-modal-backdrop[hidden]{display:none}
+.ib-modal-backdrop--static{position:relative;inset:auto;z-index:auto;min-height:360px;border-radius:var(--ib-r-lg);animation:none}
+@keyframes ib-modal-fade{from{opacity:0}to{opacity:1}}
+
+.ib-modal{width:var(--ib-modal-w);max-width:100%;max-height:100%;display:flex;flex-direction:column;
+  background:var(--ib-raised);color:var(--ib-body);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);
+  box-shadow:var(--ib-shadow-overlay);animation:ib-modal-in var(--ib-dur-move) var(--ib-ease)}
+.ib-modal--sm{width:480px}
+.ib-modal-backdrop--static .ib-modal{animation:none}
+@keyframes ib-modal-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.ib-modal__head{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-5) var(--ib-6) 0;flex:none}
+.ib-modal__head>div{flex:1;min-width:0}
+.ib-modal__title{font-size:var(--ib-fs-16);line-height:var(--ib-lh-ui);color:var(--ib-ink)}
+.ib-modal__desc{margin-top:var(--ib-1);font-size:var(--ib-fs-14);color:var(--ib-dim)}
+.ib-modal__close{margin:-4px -8px 0 0;flex:none}
+.ib-modal__body{display:flex;flex-direction:column;gap:var(--ib-4);padding:var(--ib-5) var(--ib-6);overflow:auto;min-height:0}
+.ib-modal__foot{display:flex;justify-content:flex-end;align-items:center;gap:var(--ib-2);padding:var(--ib-4) var(--ib-6) var(--ib-5);border-top:1px solid var(--ib-line);flex:none}
+.ib-modal__foot-start{margin-right:auto;font-size:var(--ib-fs-13);color:var(--ib-dim)}
+
+@media (max-width:480px){
+  .ib-modal-backdrop:not(.ib-modal-backdrop--static){align-items:flex-end;padding:var(--ib-2)}
+  .ib-modal__head{padding:var(--ib-4) var(--ib-4) 0}
+  .ib-modal__body{padding:var(--ib-4)}
+  .ib-modal__foot{flex-direction:column-reverse;align-items:stretch;padding:var(--ib-3) var(--ib-4) var(--ib-4)}
+}

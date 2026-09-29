@@ -1,0 +1,26 @@
+/* Field — label + control + hint + error.
+   <div class="ib-field">
+     <div class="ib-field__row"><label class="ib-field__label" for="x">Пароль<span class="ib-field__req" aria-hidden="true">*</span></label>
+       <a class="ib-link ib-field__aside" href="…">Відновити доступ</a></div>
+     control (.ib-input / .ib-select / .ib-input-wrap …)  with aria-describedby="x-hint x-err", aria-invalid when error
+     <p class="ib-field__hint" id="x-hint">…</p>
+     <p class="ib-field__error" id="x-err"><svg/>…</p>
+   </div>
+   .is-invalid on .ib-field shows the error; .ib-field__error:empty is hidden. --inline: label left, control right (settings). */
+
+.ib-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ib-field__row{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3)}
+.ib-field__label{font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);color:var(--ib-ink);line-height:var(--ib-lh-ui)}
+.ib-field__opt{font-weight:var(--ib-w-regular);color:var(--ib-dim);margin-left:6px}
+.ib-field__req{color:var(--ib-danger);margin-left:2px;font-weight:var(--ib-w-semibold)}
+.ib-field__aside{font-size:var(--ib-fs-13)}
+.ib-field__hint{font-size:var(--ib-fs-12);color:var(--ib-dim);line-height:var(--ib-lh-ui)}
+.ib-field__error{display:flex;gap:6px;align-items:flex-start;font-size:var(--ib-fs-13);color:var(--ib-danger);font-weight:var(--ib-w-medium);line-height:var(--ib-lh-ui)}
+.ib-field__error:empty{display:none}
+.ib-field__error>svg{width:16px;height:16px;flex:none;margin-top:0;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-field.is-disabled .ib-field__label{color:var(--ib-faint)}
+
+.ib-field--inline{display:grid;grid-template-columns:minmax(120px,200px) 1fr;column-gap:var(--ib-4);align-items:center}
+.ib-field--inline>.ib-field__hint,.ib-field--inline>.ib-field__error{grid-column:2}
+
+.ib-form{display:flex;flex-direction:column;gap:14px}

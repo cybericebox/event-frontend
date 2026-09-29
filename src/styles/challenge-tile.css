@@ -1,0 +1,50 @@
+/* Challenge tile — a <button> that opens the challenge modal.
+   Unsolved = brand mass (#211A52 in both themes), white name, mono points.
+   Solved   = --ib-solved with hairline, dim name, «Розв’язано» + check in ok colour.
+   Updated  = small «Оновлено» label. No difficulty, no author, no first blood. */
+
+:root,[data-theme="light"]{
+  --ib-tile-solved-name:#5A5A70;   /* = dim; 5.5:1 on #F0F0F5 */
+}
+[data-theme="dark"]{
+  --ib-tile-solved-name:#BBB9CB;   /* 6.1:1 on #383645 */
+}
+
+.ib-tile{display:flex;flex-direction:column;justify-content:space-between;gap:var(--ib-1);min-width:0;width:100%;height:76px;
+  padding:9px 11px;border:1px solid var(--ib-brand);border-radius:var(--ib-r-lg);background:var(--ib-brand);color:var(--ib-on-brand);
+  font:inherit;text-align:left;cursor:pointer;
+  transition:background-color var(--ib-dur-fast) var(--ib-ease),border-color var(--ib-dur-fast) var(--ib-ease),outline-color var(--ib-dur-move) var(--ib-ease)}
+.ib-tile:hover,.ib-tile.is-hover{background:var(--ib-brand-hover);border-color:var(--ib-brand-hover)}
+.ib-tile:focus-visible,.ib-tile.is-focus{outline:2px solid var(--ib-action);outline-offset:2px}
+
+.ib-tile__name{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);line-height:1.25;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.ib-tile__foot{display:flex;align-items:center;gap:var(--ib-2);min-width:0;position:relative}
+.ib-tile__pts{font:var(--ib-w-regular) 13.5px/1 var(--ib-mono);font-variant-numeric:tabular-nums;color:var(--ib-brand-points);margin-right:auto}
+.ib-tile__upd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid var(--ib-brand-line);border-radius:var(--ib-r-sm);
+  font-size:var(--ib-fs-11);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-on-brand-2);white-space:nowrap}
+.ib-tile__solved{display:none;align-items:center;gap:var(--ib-1);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-ok);white-space:nowrap}
+.ib-tile__solved svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* solved */
+.ib-tile.is-solved{background:var(--ib-solved);border-color:var(--ib-solved-line);color:var(--ib-tile-solved-name)}
+.ib-tile.is-solved:hover,.ib-tile.is-solved.is-hover{background:var(--ib-solved);border-color:var(--ib-control)}
+.ib-tile.is-solved .ib-tile__name{font-weight:var(--ib-w-medium)}
+.ib-tile.is-solved .ib-tile__pts{color:var(--ib-faint)}
+.ib-tile.is-solved .ib-tile__solved{display:inline-flex}
+.ib-tile.is-solved .ib-tile__upd{border-color:var(--ib-line);color:var(--ib-dim)}
+/* solved + updated: keep the check, move the word to screen readers so the row fits */
+.ib-tile.is-solved .ib-tile__upd~.ib-tile__solved .ib-tile__solved-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* just accepted: one ok ring that fades (outline, not a shadow) */
+.ib-tile.is-accepted{animation:ib-tile-ok 1.6s ease-out}
+@keyframes ib-tile-ok{0%{outline:3px solid var(--ib-ok);outline-offset:2px}100%{outline:3px solid transparent;outline-offset:2px}}
+
+/* large — used in the category rail */
+.ib-tile--lg{height:100px;padding:12px 14px}
+.ib-tile--lg .ib-tile__name{font-size:15px;letter-spacing:-.01em}
+.ib-tile--lg .ib-tile__pts{font-size:var(--ib-fs-16)}
+
+/* grids */
+.ib-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:6px}
+.ib-tiles--lg{grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:var(--ib-2)}
