@@ -71,7 +71,7 @@ function LogoField({eventID, logos, disabled, onChange}: {eventID: string; logos
         <span className="event-live-editor__label">{t("manage.live.logos.title")}</span>
         {logos.length ? <ul>{logos.map((logo, index) => <li key={`${logo}-${index}`}>
             {liveLogoURL(logo) ? <img src={liveLogoURL(logo)!} alt="" /> : <span className="event-live-editor__logo-broken">?</span>}
-            <EventTooltip content={logo} className="event-live-editor__logo-tip">{id => <span className="event-live-editor__logo-name" tabIndex={0} aria-describedby={id}>{logo.includes("/content-images/") ? t("manage.live.logos.file", {number: index + 1}) : logo}</span>}</EventTooltip>
+            <EventTooltip content={logo} className="event-live-editor__logo-tip">{id => <span className="event-live-editor__logo-name" aria-describedby={id}>{logo.includes("/content-images/") ? t("manage.live.logos.file", {number: index + 1}) : logo}</span>}</EventTooltip>
             <button type="button" aria-label={t("manage.live.logos.up")} disabled={disabled || index === 0} onClick={() => move(index, -1)}><ArrowUp size={14} /></button>
             <button type="button" aria-label={t("manage.live.logos.down")} disabled={disabled || index === logos.length - 1} onClick={() => move(index, 1)}><ArrowDown size={14} /></button>
             <button type="button" aria-label={t("manage.live.logos.remove")} disabled={disabled} onClick={() => onChange(logos.filter((_, other) => other !== index))}><X size={14} /></button>

@@ -216,7 +216,7 @@ export default function ManageTeamsPage() {
         case "@name": return <td><div className="event-manage-table__person"><strong>{team.Name}</strong>{team.Hidden && <small>{t("manage.teams.hidden")}</small>}</div></td>;
         case "@captain": return <td><div className="event-manage-table__person"><span>{captainName(team)}</span>{team.CaptainPending && <small>{t("manage.teams.pendingConfirmation")}</small>}</div></td>;
         case "@members": return <td><div className="event-manage-table__person"><div className="event-manage-table__tags"><span className="event-manage-table__count">{team.MemberCount}</span>{tags.slice(0, MEMBER_TAGS).map(tag => tag.pending
-            ? <EventTooltip key={tag.id} content={t("manage.teams.pendingConfirmation")}>{id => <span className="ib-tag ib-tag--sm ib-tag--warn" tabIndex={0} aria-describedby={id}>{tag.name}</span>}</EventTooltip>
+            ? <EventTooltip key={tag.id} content={t("manage.teams.pendingConfirmation")}>{id => <span className="ib-tag ib-tag--sm ib-tag--warn" aria-describedby={id}>{tag.name}</span>}</EventTooltip>
             : <span className="ib-tag ib-tag--sm" key={tag.id}>{tag.name}</span>)}{tags.length > MEMBER_TAGS && <span className="ib-tag ib-tag--sm">{t("manage.teams.moreMembers", {count: tags.length - MEMBER_TAGS})}</span>}</div>{team.PendingInvitations.length > 0 && <small>{t("manage.teams.pendingCount", {count: team.PendingInvitations.length})}</small>}</div></td>;
         case "@status": return <td><span className={`ib-tag ${admissionTag(team)}`}>{admissionText(team)}</span></td>;
         case "@created": return <td className="event-manage-table__nowrap event-manage-table__dim">{t("manage.participants.dateUtc", {date: sentAt.format(new Date(team.CreatedAt))})}</td>;

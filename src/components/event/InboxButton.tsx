@@ -377,7 +377,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                                 unread={unreadItem} compact
                                 timestamp={<span className="event-notifications__meta">
                                     {resolved
-                                        ? <EventTooltip content={formatInboxTime(item.CreatedAt)}>{id => <span tabIndex={0} aria-describedby={id}>{resolvedLine(item)}</span>}</EventTooltip>
+                                        ? <EventTooltip content={formatInboxTime(item.CreatedAt)}>{id => <span aria-describedby={id}>{resolvedLine(item)}</span>}</EventTooltip>
                                         : <time dateTime={item.CreatedAt}>{formatInboxTime(item.CreatedAt)}</time>}
                                     {!event && <EventLabel name={item.EventName} />}
                                 </span>}

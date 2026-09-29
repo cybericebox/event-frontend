@@ -168,7 +168,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         case "@pseudonym": return <td>{participant.Pseudonym || <span className="event-manage-table__dim">—</span>}</td>;
         case "@status": return <td>{tab === "invitations"
             ? participant.InvitationExpired ? <span className="ib-tag ib-tag--danger">{t("manage.participants.expired")}</span>
-                : participant.InvitationSentAt ? <EventTooltip content={t("manage.participants.sentAt", {date: date.format(new Date(participant.InvitationSentAt))})}>{id => <span className="ib-tag ib-tag--ok" tabIndex={0} aria-describedby={id}>{t("manage.participants.invitationSent")}</span>}</EventTooltip>
+                : participant.InvitationSentAt ? <EventTooltip content={t("manage.participants.sentAt", {date: date.format(new Date(participant.InvitationSentAt))})}>{id => <span className="ib-tag ib-tag--ok" aria-describedby={id}>{t("manage.participants.invitationSent")}</span>}</EventTooltip>
                     : <span className="ib-tag ib-tag--warn">{t("manage.participants.notSent")}</span>
             : <span className={`ib-tag ${statusTags[participant.Status]}`}>{statusNames[participant.Status]}</span>}</td>;
         case "@team": return <td>{tab === "invitations"
