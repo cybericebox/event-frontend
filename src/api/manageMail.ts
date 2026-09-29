@@ -7,7 +7,9 @@ import {t} from "@/i18n/t";
 // optional event SMTP and the delivery journal (spec 2026-09-29 §6).
 
 export type MailTLSMode = "starttls" | "tls";
-export type MailTransport = "event" | "platform" | "env";
+// An event knows two routes: its own SMTP and the platform. The server-config
+// fallback is not an event concept: the backend reports it as the platform.
+export type MailTransport = "event" | "platform";
 export type MailResult = "done" | "error";
 
 export const tlsModeOptions: {value: MailTLSMode; label: string}[] = [
@@ -15,10 +17,11 @@ export const tlsModeOptions: {value: MailTLSMode; label: string}[] = [
     {value: "tls", label: "TLS (465)"},
 ];
 export const defaultPortByTLSMode: Record<MailTLSMode, number> = {starttls: 587, tls: 465};
-export const mailTransportLabels: Record<MailTransport, string> = {event: t("manage.mail.transport.event"), platform: t("manage.mail.transport.platform"), env: t("manage.mail.transport.env")};
+export const mailTransportLabels: Record<MailTransport, string> = {event: t("manage.mail.transport.event"), platform: t("manage.mail.transport.platform")};
 export const mailResultLabels: Record<MailResult, string> = {done: t("manage.mail.result.done"), error: t("manage.mail.result.error")};
 
 export function mailTransportLabel(value: string): string {
+    if (value === "env") return mailTransportLabels.platform;
     return mailTransportLabels[value as MailTransport] ?? (value || "—");
 }
 
@@ -28,9 +31,16 @@ const smtpSchema = z.object({
 });
 const partySchema = z.object({Name: z.string().nullable().transform(value => value ?? ""), Address: z.string().nullable().transform(value => value ?? "")});
 const identitySchema = z.object({Sender: partySchema, ReplyTo: partySchema});
+export type MailFieldSource = "event" | "derived" | "platform" | "default" | "none";
+const sourceSchema = z.enum(["event", "derived", "platform", "default", "none"]).catch("none");
+const inheritedSourcesSchema = z.object({
+    SenderName: sourceSchema, SenderAddress: sourceSchema, ReplyToName: sourceSchema, ReplyToAddress: sourceSchema,
+});
 const settingsSchema = z.object({
     Identity: identitySchema,
+    // What applies where the event leaves a field empty, with where each value comes from.
     Inherited: identitySchema,
+    InheritedSources: inheritedSourcesSchema.default({SenderName: "none", SenderAddress: "none", ReplyToName: "none", ReplyToAddress: "none"}),
     SMTP: smtpSchema.nullable(),
     PlatformConfigured: z.boolean(),
 });
@@ -54,6 +64,11 @@ const journalPageSchema = z.object({
 });
 
 export type MailParty = z.infer<typeof partySchema>;
+// A field tooltip: what the field is, then where the placeholder value comes from.
+export function withSource(help: string, source: MailFieldSource): string {
+    return `${help} ${t(`manage.mail.fieldSource.${source}`)}`;
+}
+
 export type MailIdentity = z.infer<typeof identitySchema>;
 export type EventMailSettings = z.infer<typeof settingsSchema>;
 export type EventMailSMTP = z.infer<typeof smtpSchema>;

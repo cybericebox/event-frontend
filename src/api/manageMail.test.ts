@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {
     emptyMailJournalFilters, identityError, identityForm, identityInput, journalTarget, mailJournalQueryParams,
-    mailTransportLabel, smtpError, smtpForm, smtpInput, type MailJournalItem,
+    mailTransportLabel, mailTransportLabels, withSource, smtpError, smtpForm, smtpInput, type MailJournalItem,
 } from "./manageMail";
 
 describe("event mail identity form", () => {
@@ -71,7 +71,21 @@ describe("mail journal", () => {
     it("labels transports in Ukrainian", () => {
         expect(mailTransportLabel("event")).toBe("SMTP заходу");
         expect(mailTransportLabel("platform")).toBe("Платформа");
-        expect(mailTransportLabel("env")).toBe("Резервний (env)");
+        expect(mailTransportLabel("env")).toBe("Платформа");
         expect(mailTransportLabel("")).toBe("—");
+    });
+});
+
+describe("event mail transports", () => {
+    it("offers only the event SMTP and the platform; the env fallback is the platform", () => {
+        expect(Object.keys(mailTransportLabels)).toEqual(["event", "platform"]);
+        expect(mailTransportLabel("env")).toBe(mailTransportLabel("platform"));
+    });
+});
+
+describe("placeholder sources", () => {
+    it("appends where the inherited value comes from to the field help", () => {
+        expect(withSource("Help.", "derived")).toBe("Help. Зараз: тег заходу та домен відправлення платформи.");
+        expect(withSource("Help.", "platform")).toBe("Help. Зараз: береться з налаштувань платформи.");
     });
 });

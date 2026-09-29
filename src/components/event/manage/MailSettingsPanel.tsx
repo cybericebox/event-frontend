@@ -7,7 +7,7 @@ import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {
     defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityForm, identityInput,
-    mailTransportLabel, maxMailNameLength, putEventMailIdentity, putEventMailSMTP, smtpError, smtpForm, smtpInput,
+    mailTransportLabel, maxMailNameLength, withSource, putEventMailIdentity, putEventMailSMTP, smtpError, smtpForm, smtpInput,
     testEventMailSMTP, tlsModeOptions, type EventMailSettings, type IdentityForm, type MailTestResult,
     type MailTLSMode, type SMTPForm,
 } from "@/api/manageMail";
@@ -127,22 +127,22 @@ export function MailSettingsPanel() {
             <div className="event-manage-section__head"><h2 id="mail-sender-title">{t("manage.mail.sender.title")}</h2><p>{t("manage.mail.sender.intro")}</p></div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-sender-name" title={t("manage.mail.identity.name")} help={t("manage.mail.sender.nameHelp")} />
+                    <ManageFieldLabel htmlFor="mail-sender-name" title={t("manage.mail.identity.name")} help={withSource(t("manage.mail.sender.nameHelp"), settings.InheritedSources.SenderName)} />
                     <input id="mail-sender-name" className="event-manage-input" value={idForm.senderName} placeholder={inherited.Sender.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={identityInvalid === "senderName"} onChange={change => setIdentityDraft({...idForm, senderName: change.target.value})} />
                 </div>
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-sender-address" title={t("manage.mail.identity.address")} help={t("manage.mail.sender.addressHelp")} />
+                    <ManageFieldLabel htmlFor="mail-sender-address" title={t("manage.mail.identity.address")} help={withSource(t("manage.mail.sender.addressHelp"), settings.InheritedSources.SenderAddress)} />
                     <input id="mail-sender-address" className="event-manage-input" type="email" value={idForm.senderAddress} placeholder={inherited.Sender.Address} disabled={disabled} maxLength={254} aria-invalid={identityInvalid === "senderAddress"} onChange={change => setIdentityDraft({...idForm, senderAddress: change.target.value})} />
                 </div>
             </div>
             <div className="event-manage-section__head"><h2 id="mail-replyto-title">{t("manage.mail.replyTo.title")}</h2><p>{t("manage.mail.replyTo.intro")}</p></div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-replyto-name" title={t("manage.mail.identity.name")} help={t("manage.mail.replyTo.nameHelp")} />
+                    <ManageFieldLabel htmlFor="mail-replyto-name" title={t("manage.mail.identity.name")} help={withSource(t("manage.mail.replyTo.nameHelp"), settings.InheritedSources.ReplyToName)} />
                     <input id="mail-replyto-name" className="event-manage-input" value={idForm.replyToName} placeholder={inherited.ReplyTo.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={identityInvalid === "replyToName"} onChange={change => setIdentityDraft({...idForm, replyToName: change.target.value})} />
                 </div>
                 <div className="event-manage-field">
-                    <ManageFieldLabel htmlFor="mail-replyto-address" title={t("manage.mail.identity.address")} help={t("manage.mail.replyTo.addressHelp")} />
+                    <ManageFieldLabel htmlFor="mail-replyto-address" title={t("manage.mail.identity.address")} help={withSource(t("manage.mail.replyTo.addressHelp"), settings.InheritedSources.ReplyToAddress)} />
                     <input id="mail-replyto-address" className="event-manage-input" type="email" value={idForm.replyToAddress} placeholder={inherited.ReplyTo.Address} disabled={disabled} maxLength={254} aria-invalid={identityInvalid === "replyToAddress"} onChange={change => setIdentityDraft({...idForm, replyToAddress: change.target.value})} />
                 </div>
             </div>
