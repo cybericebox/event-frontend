@@ -55,42 +55,5 @@ export async function readApiErrorCode(response: Response): Promise<number | und
     return body.success ? errorDetailCode(body.data.Status.Code) : undefined;
 }
 
-const messages: Partial<Record<number, string>> = {
-    [ApiErrorCode.RegistrationClosed]: "Реєстрацію на подію закрито.",
-    [ApiErrorCode.AlreadyParticipant]: "Ви вже берете участь у події.",
-    [ApiErrorCode.ParticipantFormRequired]: "Заповніть обов’язкові додаткові поля.",
-    [ApiErrorCode.EventFormRequired]: "Заповніть обов’язкові додаткові поля.",
-    [ApiErrorCode.InvitationRequired]: "Запрошення не знайдено або вже використано.",
-    [ApiErrorCode.TeamInvitationUnavailable]: "Команда, до якої вас запросили, більше недоступна.",
-    [ApiErrorCode.InvitationExpired]: "Запрошення прострочене: реєстрацію закрито.",
-    [ApiErrorCode.PseudonymsDisabled]: "Псевдоніми на цій події вимкнено.",
-    [ApiErrorCode.PseudonymInvalid]: "Псевдонім має містити від 2 до 32 символів.",
-    [ApiErrorCode.PseudonymTaken]: "Цей псевдонім уже зайнятий.",
-    [ApiErrorCode.PseudonymLocked]: "Псевдонім не можна змінити після старту події.",
-    [ApiErrorCode.ParticipantFieldNotEditable]: "Це поле не можна змінити після реєстрації.",
-    [ApiErrorCode.ParticipantFieldsLocked]: "Поля не можна змінити після завершення події.",
-    [ApiErrorCode.ParticipantAnswersInvalid]: "Перевірте заповнені поля.",
-    [ApiErrorCode.TeamNameInvalid]: "Назва команди некоректна.",
-    [ApiErrorCode.TeamFull]: "Команда вже заповнена.",
-    [ApiErrorCode.TeamNotFound]: "Команду не знайдено.",
-    [ApiErrorCode.TeamExists]: "Команда з такою назвою вже існує.",
-    [ApiErrorCode.RosterLocked]: "Склад команди заморожено після старту.",
-    [ApiErrorCode.TeamFieldsInvalid]: "Перевірте додаткові поля команди.",
-    [ApiErrorCode.TeamNotAdmitted]: "Команду ще не допущено до завдань.",
-    [ApiErrorCode.TeamFieldNotEditable]: "Це поле команди не можна змінити після створення.",
-    [ApiErrorCode.TeamFieldsLocked]: "Поля команди не можна змінити після завершення події.",
-    [ApiErrorCode.ExerciseAlreadyAttached]: "Цей набір уже додано до події.",
-    [ApiErrorCode.ExerciseTaskHasAttempts]: "Нова версія прибирає завдання, яке команди вже розвʼязували. Оновлення неможливе.",
-    [ApiErrorCode.ExerciseNotAvailable]: "Цей набір недоступний для події.",
-    [ApiErrorCode.ExerciseNoForkSource]: "Дію недоступно для цього набору.",
-    [ApiErrorCode.HintCostsInvalid]: "Вартість підказки — ціле число від 0 до 10000.",
-    [ApiErrorCode.MailSMTPInvalid]: "Перевірте хост, порт і режим TLS.",
-    [ApiErrorCode.MailSecretsKeyMissing]: "Пароль SMTP не можна зберегти: на платформі не налаштовано ключ шифрування.",
-    [ApiErrorCode.MailNotificationRequired]: "Це сповіщення обовʼязкове, його не можна вимкнути.",
-    [ApiErrorCode.MailSettingsInvalid]: "Перевірте контактну пошту й години нагадування.",
-};
-
-// Returns a user-facing message for a known backend code, or the fallback.
-export function apiErrorMessage(code: number | undefined, fallback: string): string {
-    return (code !== undefined && messages[code]) || fallback;
-}
+// Messages live in messages/errors.{uk,en}.json, keyed by detail code.
+export {apiErrorMessage} from "@/i18n/apiError";
