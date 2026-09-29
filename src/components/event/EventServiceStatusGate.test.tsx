@@ -81,7 +81,13 @@ describe("EventServiceStatusGate", () => {
 
         act(() => { reportServiceUnavailable(); });
         expect(screen.queryByRole("alertdialog")).toBeNull();
-        await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+        expect(fetch).toHaveBeenCalledOnce();
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+        await act(async () => { await vi.advanceTimersByTimeAsync(14_999); });
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+        await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+        expect(fetch).toHaveBeenCalledTimes(2);
         expect(screen.getByRole("alertdialog")).toBeTruthy();
         expect(screen.getByText(uk["shell.unavailable.title"])).toBeTruthy();
         // The page underneath stays rendered.
@@ -94,13 +100,40 @@ describe("EventServiceStatusGate", () => {
         expect(invalidate).toHaveBeenCalled();
     });
 
+    it("shows nothing when the API is back before the first probe (10 s)", async () => {
+        vi.useFakeTimers();
+        const fetch = vi.fn().mockResolvedValue(new Response("{}", {status: 200}));
+        vi.stubGlobal("fetch", fetch);
+        render(withQuery(<EventServiceStatusGate />));
+        act(() => { reportServiceUnavailable(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+        expect(fetch).toHaveBeenCalledOnce();
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+        expect(getServiceStatus()).toBe("up");
+    });
+
+    it("shows nothing when the first probe fails but the API is back for the second (20 s)", async () => {
+        vi.useFakeTimers();
+        const fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+        vi.stubGlobal("fetch", fetch);
+        render(withQuery(<EventServiceStatusGate />));
+        act(() => { reportServiceUnavailable(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+        expect(getServiceStatus()).toBe("suspect");
+        fetch.mockResolvedValue(new Response("{}", {status: 200}));
+        await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+        expect(fetch).toHaveBeenCalledTimes(2);
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+        expect(getServiceStatus()).toBe("up");
+    });
+
     it("stays hidden when the probe gets a 4xx: the API answers", async () => {
         vi.useFakeTimers();
         const fetch = vi.fn().mockResolvedValue(new Response("{}", {status: 403}));
         vi.stubGlobal("fetch", fetch);
         render(withQuery(<EventServiceStatusGate />));
         act(() => { reportServiceUnavailable(); });
-        await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
         expect(fetch).toHaveBeenCalledWith("https://api.test/api/auth/me", expect.objectContaining({credentials: "include"}));
         expect(screen.queryByRole("alertdialog")).toBeNull();
         expect(getServiceStatus()).toBe("up");
@@ -113,11 +146,11 @@ describe("EventServiceStatusGate", () => {
         render(withQuery(<EventServiceStatusGate />));
         const tracked = trackApiFetch(fetch, "https://api.test");
         await act(async () => { await expect(tracked("https://api.test/api/events/e1/results/live")).rejects.toThrow(); });
-        await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
         expect(screen.queryByRole("alertdialog")).toBeNull();
 
         await act(async () => { await expect(tracked("https://api.test/api/events/self/info")).rejects.toThrow(); });
-        await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
         expect(screen.getByRole("alertdialog")).toBeTruthy();
         expect(screen.getByText(uk["shell.unavailable.nextTry"].replace("{seconds}", "3"))).toBeTruthy();
     });

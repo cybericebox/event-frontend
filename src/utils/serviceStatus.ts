@@ -1,7 +1,7 @@
 import {apiOrigin} from "./origins";
 
 // Backend reachability, shared by every browser API call. A network failure or a
-// 5xx marks the service "suspect"; the gate confirms with a probe before it shows
+// 5xx marks the service "suspect"; the gate confirms with two probes 15 s apart before it shows
 // the outage modal ("down") and reports recovery ("up").
 export type ServiceStatus = "up" | "suspect" | "down";
 
@@ -94,6 +94,34 @@ export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): type
             if (isNetworkOutage(error, init?.signal ?? (input instanceof Request ? input.signal : null))) reportServiceUnavailable();
             throw error;
         }
+    };
+}
+
+// Short backend restarts must not flash the modal: after the first failure the
+// gate waits, probes, waits again and probes again; only when every probe fails
+// (about 30 s in all) does the outage show.
+export const OUTAGE_GRACE_MS = 15_000;
+export const OUTAGE_GRACE_PROBES = 2;
+
+// Runs the grace period for a "suspect" status: one probe per OUTAGE_GRACE_MS, a
+// success reports the API as available, and only the last failed probe confirms
+// the outage. Returns a cancel function.
+export function startOutageGrace(probe: () => Promise<boolean>): () => void {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const step = (left: number) => {
+        timer = setTimeout(async () => {
+            const ok = await probe();
+            if (cancelled) return;
+            if (ok) reportServiceAvailable();
+            else if (left > 1) step(left - 1);
+            else confirmServiceUnavailable();
+        }, OUTAGE_GRACE_MS);
+    };
+    step(OUTAGE_GRACE_PROBES);
+    return () => {
+        cancelled = true;
+        clearTimeout(timer);
     };
 }
 

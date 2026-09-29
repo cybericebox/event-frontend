@@ -6,12 +6,12 @@ import {useQueryClient} from "@tanstack/react-query";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {EventButton} from "@/components/ui/EventButton";
 import {
-    confirmServiceUnavailable,
     getServiceStatus,
     installServiceStatusTracking,
     onServiceRestored,
     probeService,
     reportServiceAvailable,
+    startOutageGrace,
     subscribeServiceStatus,
 } from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
@@ -19,10 +19,8 @@ import "@/styles/service-gate.css";
 
 installServiceStatusTracking();
 
-// A failed call is confirmed by one probe before the modal shows, so a single
-// flaky request does not cover the page; the modal shows only when the probe
-// itself fails.
-const CONFIRM_MS = 3000;
+// A failed call is confirmed by two probes 15 s apart (see startOutageGrace), so
+// a short backend restart never flashes the modal.
 // Seconds between automatic tries while the outage lasts.
 const BACKOFF_S = [3, 5, 10, 20, 30];
 
@@ -101,11 +99,7 @@ export function EventServiceStatusGate({serverUnavailable = false}: {serverUnava
 
     useEffect(() => {
         if (status !== "suspect") return;
-        const id = window.setTimeout(async () => {
-            if (await probeService()) reportServiceAvailable();
-            else confirmServiceUnavailable();
-        }, CONFIRM_MS);
-        return () => window.clearTimeout(id);
+        return startOutageGrace(() => probeService());
     }, [status]);
 
     const onCheck = useCallback(async () => {
