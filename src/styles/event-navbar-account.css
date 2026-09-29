@@ -38,3 +38,6 @@
 @container ib-navbar (max-width:760px){.event-pin-tip:has(.event-pin--page){display:none}.event-vpn-button{padding:0;width:var(--ib-control-h)}.event-vpn-button .event-pin__label{display:none}}
 .event-navbar__panel-pin{gap:var(--ib-3)}
 .event-navbar__panel-pin svg{width:18px;height:18px;flex:none;color:var(--ib-dim)}
+/* Footer: the theme switch sits at the right end of the row, after the links. */
+.ib-footer__end{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-3) var(--ib-6)}
+@media(max-width:760px){.ib-footer--event .ib-footer__end{justify-content:flex-start}}

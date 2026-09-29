@@ -8,9 +8,8 @@ import {EventNavbar} from "./EventNavigation";
 import {EventVpnProvider} from "./vpn/EventVpn";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {t} from "@/i18n/t";
-import {PlatformCredit} from "./PlatformCredit";
+import {EventFooter} from "./EventFooter";
 import {MissingFieldsNotice} from "./MissingFieldsNotice";
-import {CookieSettingsLink} from "@/components/consent/CookieSettingsLink";
 
 type ParticipantContextValue = {event: PublicEventInfo; participantInfo: ParticipantEventInfo; ownTeam: OwnTeam | null};
 const ParticipantContext = createContext<ParticipantContextValue | null>(null);
@@ -27,6 +26,6 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
     return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><EventVpnProvider eventID={event.EventID} enabled={vpn}><div className="event-guest-shell">
         <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <main className="event-guest-main"><div className="event-page-content"><MissingFieldsNotice eventID={event.EventID} ownTeam={ownTeam} />{children}</div></main>
-        <footer className="ib-footer ib-footer--event"><div className="ib-footer__inner"><div className="ib-footer__row"><span className="ib-footer__org"><PlatformCredit /></span><nav className="ib-footer__links" aria-label={t("shell.footerLinks")}><CookieSettingsLink /></nav></div></div></footer>
+        <EventFooter />
     </div></EventVpnProvider></ParticipantContext.Provider>;
 }

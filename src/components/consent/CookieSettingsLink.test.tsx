@@ -32,13 +32,12 @@ describe("cookie settings entry", () => {
         expect(withGa.container.querySelector('[data-src*="googletagmanager"]')).not.toBeNull();
     });
 
-    it("both event footers render it unconditionally", async () => {
+    it("the shared event footer renders it unconditionally, and both shells use it", async () => {
         const {readFileSync} = await import("node:fs");
         const path = await import("node:path");
-        for (const f of ["GuestShell.tsx", "ParticipantShell.tsx"]) {
-            const src = readFileSync(path.join(process.cwd(), "src/components/event", f), "utf8");
-            expect(src).toContain("<CookieSettingsLink />");
-            expect(src).not.toMatch(/GOOGLE_ANALYTICS_ID/);
-        }
+        const read = (f: string) => readFileSync(path.join(process.cwd(), "src/components/event", f), "utf8");
+        expect(read("EventFooter.tsx")).toContain("<CookieSettingsLink />");
+        expect(read("EventFooter.tsx")).not.toMatch(/GOOGLE_ANALYTICS_ID/);
+        for (const f of ["GuestShell.tsx", "ParticipantShell.tsx"]) expect(read(f)).toContain("<EventFooter />");
     });
 });
