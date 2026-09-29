@@ -1,8 +1,8 @@
 "use client";
 
-import {AnalyticsPlaceholder} from "@/components/event/manage/analytics/AnalyticsPlaceholder";
+import {AnalyticsTasks} from "@/components/event/manage/analytics/tasks/AnalyticsTasks";
 
-// Replaced by the «tasks» report (docs/EVENT-ANALYTICS.md); until then a placeholder.
+// «Завдання» (docs/EVENT-ANALYTICS.md §6.3).
 export default function AnalyticsTasksPage() {
-    return <AnalyticsPlaceholder section="tasks" />;
+    return <AnalyticsTasks />;
 }
