@@ -1,18 +1,19 @@
 import type {ContentValue} from "@/types/eventContent";
+import {t} from "@/i18n/t";
 
 export type PreviewViewer = "guest" | "participant" | "moderator";
 export type PreviewPhase = "before" | "during" | "after";
 
 export const previewViewers: {value: PreviewViewer; label: string}[] = [
-    {value: "guest", label: "Гість"},
-    {value: "participant", label: "Учасник"},
-    {value: "moderator", label: "Модератор"},
+    {value: "guest", label: t("manage.editor.preview.guest")},
+    {value: "participant", label: t("manage.editor.preview.participant")},
+    {value: "moderator", label: t("manage.editor.preview.moderator")},
 ];
 
 export const previewPhases: {value: PreviewPhase; label: string}[] = [
-    {value: "before", label: "До старту"},
-    {value: "during", label: "Під час"},
-    {value: "after", label: "Після фінішу"},
+    {value: "before", label: t("manage.editor.preview.before")},
+    {value: "during", label: t("manage.editor.preview.during")},
+    {value: "after", label: t("manage.editor.preview.after")},
 ];
 
 const hour = 3_600_000;
@@ -79,7 +80,7 @@ export function previewValues(values: Record<string, ContentValue>, phase: Previ
 
 // Who may open a page with this visibility (0 public, 1 participants, 2 managers).
 export function previewPageAccess(visibility: 0 | 1 | 2, viewer: PreviewViewer): string | null {
-    if (visibility === 1 && viewer === "guest") return "Гість не бачить цю сторінку: вона лише для підтверджених учасників.";
-    if (visibility === 2 && viewer !== "moderator") return "Сторінку бачать лише модератори події.";
+    if (visibility === 1 && viewer === "guest") return t("manage.editor.preview.guestDenied");
+    if (visibility === 2 && viewer !== "moderator") return t("manage.editor.preview.moderatorsOnly");
     return null;
 }

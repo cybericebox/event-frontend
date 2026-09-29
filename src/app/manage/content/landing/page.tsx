@@ -12,6 +12,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {EventLoading} from "@/components/event/EventLoading";
 import {validateLanding} from "@/components/event/manage/validatePageBlocks";
 import type {ContentDocument} from "@/types/eventContent";
+import {t} from "@/i18n/t";
 
 export default function ManageLandingPage() {
     const {event, canManage} = useManager();
@@ -38,9 +39,9 @@ export default function ManageLandingPage() {
     const validation = useMemo(() => draft && variables.data ? validateLanding(draft, catalog, event.PreviewPicture ?? "") : null, [draft, variables.data, catalog, event.PreviewPicture]);
     const publicValues = useMemo(() => Object.fromEntries(catalog.map(variable => [variable.name, content.data?.Variables[variable.name] ?? null])), [content.data?.Variables, catalog]);
 
-    function failure(error: unknown, action: string) {
+    function failure(error: unknown, fallbackKey: string) {
         const status = error instanceof ManageApiError ? error.status : 0;
-        toast.error(status === 403 ? "Немає права змінювати сторінку." : status === 400 ? "Сервер відхилив вміст. Перевірте блоки та умови показу." : status === 404 ? "Чернетку вже опубліковано або скасовано. Оновіть сторінку." : `Не вдалося ${action}. Повторіть запит.`);
+        toast.error(status === 403 ? t("manage.content.landing.forbidden") : status === 400 ? t("manage.content.landing.rejected") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
     }
 
     async function saveDraft(): Promise<boolean> {
@@ -56,8 +57,8 @@ export default function ManageLandingPage() {
         setBusy("save");
         try {
             await saveDraft();
-            toast.success("Чернетку збережено. На сайті — попередня версія.");
-        } catch (error) { failure(error, "зберегти чернетку"); } finally { setBusy(null); }
+            toast.success(t("manage.content.page.draftSaved"));
+        } catch (error) { failure(error, "manage.content.page.saveFailed"); } finally { setBusy(null); }
     }
 
     async function publish() {
@@ -68,8 +69,8 @@ export default function ManageLandingPage() {
             await publishManageLanding(eventID);
             queryClient.setQueryData(["event-management-content", eventID], {...content.data!, Landing: draft, LandingDraft: null});
             setEdited(null);
-            toast.success("Головну сторінку опубліковано");
-        } catch (error) { failure(error, "опублікувати сторінку"); } finally { setBusy(null); }
+            toast.success(t("manage.content.landing.published"));
+        } catch (error) { failure(error, "manage.content.page.publishFailed"); } finally { setBusy(null); }
     }
 
     async function discardDraft() {
@@ -79,17 +80,17 @@ export default function ManageLandingPage() {
             await discardManageLandingDraft(eventID);
             queryClient.setQueryData(["event-management-content", eventID], {...content.data, LandingDraft: null});
             setEdited(null);
-            toast.success("Неопубліковані зміни скасовано");
-        } catch (error) { failure(error, "скасувати зміни"); } finally { setBusy(null); }
+            toast.success(t("manage.content.page.discarded"));
+        } catch (error) { failure(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
     }
 
-    if (content.isError || variables.isError) return <div className="event-manage-error" role="alert"><h1>Не вдалося завантажити головну сторінку</h1><button className="ib-btn" onClick={() => void Promise.all([content.refetch(), variables.refetch()])}>Повторити</button></div>;
-    if (content.isPending || variables.isPending || !draft) return <EventLoading event={event} label="Завантажуємо головну сторінку…" />;
+    if (content.isError || variables.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.content.landing.loadFailed")}</h1><button className="ib-btn" onClick={() => void Promise.all([content.refetch(), variables.refetch()])}>{t("common.retry")}</button></div>;
+    if (content.isPending || variables.isPending || !draft) return <EventLoading event={event} label={t("manage.content.landing.loading")} />;
 
     return <div className="event-manage-content">
-        <header className="event-manage-heading"><div><h1>Головна сторінка</h1><p>Побудуйте сторінку з блоків у потрібному порядку.</p></div>{event.Status !== 0 && event.Status !== 4 && <Link className="ib-btn" href="/" target="_blank">Відкрити на сайті <ArrowUpRight size={16} /></Link>}</header>
-        {!canManage && <div className="event-manage-notice" role="status">Доступний лише перегляд. Змінювати головну сторінку може менеджер події.</div>}
-        {event.Status === 0 && <div className="event-manage-notice" role="status">Сайт ще не опубліковано. Опублікована головна сторінка з’явиться разом із сайтом.</div>}
+        <header className="event-manage-heading"><div><h1>{t("manage.content.landing.title")}</h1><p>{t("manage.content.landing.lead")}</p></div>{event.Status !== 0 && event.Status !== 4 && <Link className="ib-btn" href="/" target="_blank">{t("manage.content.landing.openOnSite")} <ArrowUpRight size={16} /></Link>}</header>
+        {!canManage && <div className="event-manage-notice" role="status">{t("manage.content.landing.readOnly")}</div>}
+        {event.Status === 0 && <div className="event-manage-notice" role="status">{t("manage.content.landing.siteUnpublished")}</div>}
         <DraftBar state={{dirty, hasDraft: !!content.data.LandingDraft, published: true}} busy={busy} canManage={canManage} invalid={!!validation}
             onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={() => void discardDraft()} />
         <BlockStackEditor editorKey={`landing:${eventID}`} eventID={eventID} coverImage={event.PreviewPicture ?? ""} document={draft} catalog={catalog} values={publicValues} validation={validation}

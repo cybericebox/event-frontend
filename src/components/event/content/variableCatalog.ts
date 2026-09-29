@@ -1,5 +1,6 @@
 import type {ContentValue} from "@/types/eventContent";
 import {z} from "zod";
+import {t} from "@/i18n/t";
 
 export type ContentVariableFormat = "text" | "number" | "date-time" | "boolean";
 export const ContentVariableDefinitionSchema = z.object({
@@ -17,9 +18,9 @@ export function insertableContentVariable(variable: ContentVariableDefinition) {
 }
 
 export function visibilityOperators(format: ContentVariableFormat) {
-    if (format === "boolean" || format === "text") return [{value: "equals", label: "Дорівнює"}, {value: "not_equals", label: "Не дорівнює"}];
-    if (format === "date-time") return [{value: "before", label: "До"}, {value: "after", label: "Після"}, {value: "equals", label: "Дорівнює"}, {value: "not_equals", label: "Не дорівнює"}];
-    return [{value: "equals", label: "Дорівнює"}, {value: "not_equals", label: "Не дорівнює"}, {value: "greater_than", label: "Більше"}, {value: "greater_or_equal", label: "Не менше"}, {value: "less_than", label: "Менше"}, {value: "less_or_equal", label: "Не більше"}];
+    if (format === "boolean" || format === "text") return [{value: "equals", label: t("content.variables.operator.equals")}, {value: "not_equals", label: t("content.variables.operator.notEquals")}];
+    if (format === "date-time") return [{value: "before", label: t("content.variables.operator.before")}, {value: "after", label: t("content.variables.operator.after")}, {value: "equals", label: t("content.variables.operator.equals")}, {value: "not_equals", label: t("content.variables.operator.notEquals")}];
+    return [{value: "equals", label: t("content.variables.operator.equals")}, {value: "not_equals", label: t("content.variables.operator.notEquals")}, {value: "greater_than", label: t("content.variables.operator.greaterThan")}, {value: "greater_or_equal", label: t("content.variables.operator.greaterOrEqual")}, {value: "less_than", label: t("content.variables.operator.lessThan")}, {value: "less_or_equal", label: t("content.variables.operator.lessOrEqual")}];
 }
 
 export function initialVisibilityValue(format: ContentVariableFormat): ContentValue {

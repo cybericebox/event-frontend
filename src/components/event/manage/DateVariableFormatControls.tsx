@@ -4,6 +4,7 @@ import type {ContentVariableDefinition} from "@/components/event/content/variabl
 import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {FieldLabel} from "./FieldLabel";
+import {t} from "@/i18n/t";
 
 export function DateVariableFormatControls({field, value, block, catalog, values, disabled, onUpdate}: {
     field: string;
@@ -33,9 +34,9 @@ export function DateVariableFormatControls({field, value, block, catalog, values
         const invalid = format === "custom" && !validDatePattern(display?.pattern ?? "");
         const label = catalog.find(variable => variable.name === name)?.label ?? name;
         return <div className="event-content-editor__date-display" key={name}>
-            <div className="event-manage-field"><FieldLabel label={`Формат «${label}»`} help="Виберіть, як показувати цю дату саме в цьому полі.\nСвій формат дозволяє задати порядок дати й часу." /><EventSelect ariaLabel={`Формат «${label}» у полі «${field}»`} value={format} options={[...dateDisplayOptions]} disabled={disabled} onValueChange={next => setDisplay(name, {format: next as typeof format})} /></div>
-            {format === "custom" && <div className="event-manage-field"><FieldLabel label="Свій формат дати" required help="Приклад: dd.MM.yyyy HH:mm.\nТекст у квадратних дужках показується без змін, наприклад [о] HH:mm." /><input className={`event-manage-input${invalid ? " is-invalid" : ""}`} aria-label={`Свій формат «${label}» у полі «${field}»`} value={display?.pattern ?? ""} placeholder="dd.MM.yyyy HH:mm" disabled={disabled} onChange={event => setDisplay(name, {pattern: event.target.value})} />{invalid && <p className="event-content-editor__field-error" role="alert">Вкажіть коректний формат дати.</p>}</div>}
-            {preview && <small className="event-content-editor__hint">На сторінці: {preview}</small>}
+            <div className="event-manage-field"><FieldLabel label={t("manage.editor.dateFormat.label", {label})} help={t("manage.editor.dateFormat.help")} /><EventSelect ariaLabel={t("manage.editor.dateFormat.selectLabel", {label, field})} value={format} options={[...dateDisplayOptions]} disabled={disabled} onValueChange={next => setDisplay(name, {format: next as typeof format})} /></div>
+            {format === "custom" && <div className="event-manage-field"><FieldLabel label={t("manage.editor.dateFormat.custom")} required help={t("manage.editor.dateFormat.customHelp")} /><input className={`event-manage-input${invalid ? " is-invalid" : ""}`} aria-label={t("manage.editor.dateFormat.customLabel", {label, field})} value={display?.pattern ?? ""} placeholder="dd.MM.yyyy HH:mm" disabled={disabled} onChange={event => setDisplay(name, {pattern: event.target.value})} />{invalid && <p className="event-content-editor__field-error" role="alert">{t("manage.validation.dateFormatField")}</p>}</div>}
+            {preview && <small className="event-content-editor__hint">{t("manage.editor.dateFormat.preview", {preview})}</small>}
         </div>;
     })}</div>;
 }

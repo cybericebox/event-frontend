@@ -5,6 +5,7 @@ import {useQuery} from "@tanstack/react-query";
 import {getManageContent, getManagePages} from "@/api/manage";
 import type {ContentDocument, ContentValue} from "@/types/eventContent";
 import {eventOrigin, idOrigin} from "@/utils/origins";
+import {t} from "@/i18n/t";
 
 // The document being edited: its anchors link as "#anchor" (they may not be
 // saved yet). `landing` tells the picker that "/#anchor" is this document.
@@ -42,13 +43,13 @@ export function useEventLinkOptions(eventID: string, values: Record<string, Cont
     const landing = !edited?.landing && content.data ? content.data.LandingDraft ?? content.data.Landing : null;
     return {
         options: [
-            ...(edited ? documentAnchors(edited.document).map(item => ({value: `#${item.anchor}`, label: `Якір на цій сторінці · ${item.label}`})) : []),
-            {value: "/", label: "Головна сторінка"},
-            ...(landing ? documentAnchors(landing).map(item => ({value: `/#${item.anchor}`, label: `Головна · ${item.label}`})) : []),
-            {value: "/challenges", label: "Завдання"},
-            {value: "/scoreboard", label: "Результати"},
-            {value: "/participation", label: "Моя участь"},
-            ...(profileURL ? [{value: profileURL, label: "Профіль"}] : []),
+            ...(edited ? documentAnchors(edited.document).map(item => ({value: `#${item.anchor}`, label: t("manage.editor.links.anchorHere", {label: item.label})})) : []),
+            {value: "/", label: t("manage.editor.links.home")},
+            ...(landing ? documentAnchors(landing).map(item => ({value: `/#${item.anchor}`, label: t("manage.editor.links.homeAnchor", {label: item.label})})) : []),
+            {value: "/challenges", label: t("manage.editor.links.challenges")},
+            {value: "/scoreboard", label: t("manage.editor.links.results")},
+            {value: "/participation", label: t("manage.editor.links.participation")},
+            ...(profileURL ? [{value: profileURL, label: t("manage.editor.links.profile")}] : []),
             ...(pages.data ?? []).flatMap(page => {
                 // Links point to the address the page will have once its draft is published.
                 const slug = page.Draft?.Slug ?? page.Slug;
@@ -56,7 +57,7 @@ export function useEventLinkOptions(eventID: string, values: Record<string, Cont
                 const document = page.Draft?.Document ?? page.Document;
                 const current = edited && !edited.landing && edited.document === document;
                 return [
-                    {value: `/${slug}`, label: `Додаткова · ${title}`},
+                    {value: `/${slug}`, label: t("manage.editor.links.extraPage", {title})},
                     ...(current ? [] : documentAnchors(document).map(item => ({value: `/${slug}#${item.anchor}`, label: `${title} · ${item.label}`}))),
                 ];
             }),

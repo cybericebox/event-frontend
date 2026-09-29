@@ -4,6 +4,7 @@ import {createContext, useContext, type JSX, type ReactNode} from "react";
 import {useLexicalNodeSelection} from "@lexical/react/useLexicalNodeSelection";
 import {DecoratorNode, $getSelection, $isRangeSelection, type DOMConversionMap, type DOMConversionOutput, type DOMExportOutput, type NodeKey, type SerializedLexicalNode, type Spread, type TextFormatType} from "lexical";
 import {formatDateTime} from "../content/dateDisplay";
+import {t} from "@/i18n/t";
 
 type Display = {format: "date-time" | "date" | "time" | "short" | "custom"; pattern?: string};
 type SerializedEventVariableNode = Spread<{varName: string; formats?: TextFormatType[]}, SerializedLexicalNode>;
@@ -22,7 +23,7 @@ function EventVariablePreview({name, formats, nodeKey}: {name: string; formats: 
     const display = dateDisplays?.[name];
     const rendered = typeof value === "string" && display && !Number.isNaN(Date.parse(value))
         ? formatDateTime(value, display.format, display.pattern)
-        : typeof value === "boolean" ? value ? "Так" : "Ні" : value == null ? labels[name] ?? name : String(value);
+        : typeof value === "boolean" ? value ? t("common.yes") : t("common.no") : value == null ? labels[name] ?? name : String(value);
     return <span className={`event-lexical__variable${isSelected ? " is-selected" : ""}`} data-event-variable={name} contentEditable={false} title={labels[name] ?? name}
         onMouseDown={event => { event.preventDefault(); clearSelection(); setSelected(true); }}
         style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,

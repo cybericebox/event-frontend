@@ -1,9 +1,11 @@
+import {t} from "@/i18n/t";
+
 export const dateDisplayOptions = [
-    {value: "date-time", label: "Дата й час"},
-    {value: "date", label: "Лише дата"},
-    {value: "time", label: "Лише час"},
-    {value: "short", label: "Коротко: 30.09.2026 01:17"},
-    {value: "custom", label: "Свій формат"},
+    {value: "date-time", label: t("content.date.format.dateTime")},
+    {value: "date", label: t("content.date.format.date")},
+    {value: "time", label: t("content.date.format.time")},
+    {value: "short", label: t("content.date.format.short")},
+    {value: "custom", label: t("content.date.format.custom")},
 ] as const;
 
 export type DateDisplayFormat = typeof dateDisplayOptions[number]["value"];
