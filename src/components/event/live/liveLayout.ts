@@ -8,9 +8,29 @@ export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
     announcement: t("live.widget.announcement"), qr: t("live.widget.qr"),
 };
 
-// Widgets offered in the palette. The A/D table waits for an Attack-Defense
+// Widgets offered in the palette: a type with starting props and the cells
+// its preview thumbnail shows. Logos come as two items, the fixed organizers
+// block and the partners carousel. The A/D table waits for an Attack-Defense
 // mode; layouts that already hold one still load and render nothing.
-export const livePaletteTypes = (Object.keys(liveWidgetLabels) as LiveWidget["type"][]).filter(type => type !== "ad_table");
+export type LivePaletteItem = {key: string; type: LiveWidget["type"]; label: string; props: LiveWidget["props"]; preview: {w: number; h: number}};
+export const livePaletteItems: LivePaletteItem[] = [
+    {key: "title", type: "title", label: liveWidgetLabels.title, props: {}, preview: {w: 6, h: 1}},
+    {key: "timer", type: "timer", label: liveWidgetLabels.timer, props: {}, preview: {w: 3, h: 1}},
+    {key: "chart", type: "chart", label: liveWidgetLabels.chart, props: {}, preview: {w: 6, h: 4}},
+    {key: "table", type: "table", label: liveWidgetLabels.table, props: {}, preview: {w: 4, h: 4}},
+    {key: "organizers", type: "logos", label: t("live.preset.organizers"), props: {mode: "fixed", title: t("live.preset.organizers")}, preview: {w: 6, h: 1}},
+    {key: "partners", type: "logos", label: t("live.preset.partners"), props: {mode: "carousel", title: t("live.preset.partners")}, preview: {w: 6, h: 1}},
+    {key: "solves", type: "solves", label: liveWidgetLabels.solves, props: {}, preview: {w: 4, h: 3}},
+    {key: "announcement", type: "announcement", label: liveWidgetLabels.announcement, props: {}, preview: {w: 6, h: 1}},
+    {key: "qr", type: "qr", label: liveWidgetLabels.qr, props: {}, preview: {w: 2, h: 2}},
+];
+
+// The name of a placed widget: logos blocks go by their own title.
+export function liveWidgetName(widget: LiveWidget): string {
+    return widget.type === "logos" && typeof widget.props.title === "string" && widget.props.title.trim() ? widget.props.title.trim() : liveWidgetLabels[widget.type];
+}
+
+export const liveGridPresets = [{cols: 12, rows: 8}, {cols: 16, rows: 9}, {cols: 24, rows: 16}];
 
 export function liveLogoURL(value: string): string | null {
     if (value.startsWith("/") && !value.startsWith("//")) {
@@ -37,9 +57,9 @@ function widget(type: LiveWidget["type"], x: number, y: number, w: number, h: nu
 }
 
 export const livePresets = {
-    classic: {label: t("live.preset.classic"), widgets: () => [widget("title", 1, 1, 12, 1), widget("chart", 1, 2, 8, 6), widget("table", 9, 2, 4, 6), widget("logos", 1, 8, 3, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 4, 8, 9, 1, {mode: "carousel", title: t("live.preset.partners")})]},
+    classic: {label: t("live.preset.classic"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 8, 6), widget("table", 9, 2, 4, 6), widget("logos", 1, 8, 3, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 4, 8, 9, 1, {mode: "carousel", title: t("live.preset.partners")})]},
     chart: {label: t("live.preset.chart"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 12, 6), widget("logos", 1, 8, 12, 1, {mode: "carousel", title: t("live.preset.partners")})]},
-    table: {label: t("live.preset.table"), widgets: () => [widget("title", 1, 1, 12, 1), widget("table", 1, 2, 12, 6), widget("logos", 1, 8, 4, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 5, 8, 8, 1, {mode: "carousel", title: t("live.preset.partners")})]},
+    table: {label: t("live.preset.table"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("table", 1, 2, 12, 6), widget("logos", 1, 8, 4, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 5, 8, 8, 1, {mode: "carousel", title: t("live.preset.partners")})]},
     side: {label: t("live.preset.side"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 7, 7), widget("table", 8, 2, 3, 7), widget("logos", 11, 2, 2, 7, {mode: "fixed", title: t("live.preset.organizers")})]},
     empty: {label: t("live.preset.empty"), widgets: () => [] as LiveWidget[]},
 } satisfies Record<string, {label: string; widgets: () => LiveWidget[]}>;

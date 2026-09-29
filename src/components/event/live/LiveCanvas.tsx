@@ -8,10 +8,12 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {liveLogoURL, liveWidgetLabels} from "./liveLayout";
 import {liveTextVars} from "./liveText";
 import {chartSeries, spreadLabels} from "./liveChart";
+import {liveSampleSpan} from "./liveSample";
 import {LiveQR} from "./LiveQR";
 import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
 import {resolveEventLogoURL} from "@/components/event/EventBrandLogo";
 import {clockLabel} from "@/utils/resultsFreeze";
+import crest from "@/styles/assets/crest-128.png";
 import "./live.css";
 import {t} from "@/i18n/t";
 
@@ -38,12 +40,14 @@ function frozenSuffix(results?: ManageResultsSnapshot): string {
     return results?.Freeze.Applied && results.Freeze.FrozenAt ? t("live.frozenSuffix", {time: clockLabel(results.Freeze.FrozenAt)}) : "";
 }
 
-function LiveChart({widget, event, results, now, theme}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]}) {
+function LiveChart({widget, event, results, now, theme, sample}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const [labelRef, labelSize] = useElementSize<HTMLSpanElement>();
     const lines = Math.min(10, Math.max(1, Number(widget.props.lines) || 5));
-    const start = Date.parse(event.StartTime);
-    const end = Math.max(start + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now || start + 60000));
+    // Sample results cover their own three hours before GeneratedAt.
+    const sampleEnd = sample && results ? Date.parse(results.GeneratedAt) : 0;
+    const start = sample ? sampleEnd - liveSampleSpan : Date.parse(event.StartTime);
+    const end = sample ? sampleEnd : Math.max(start + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now || start + 60000));
     // One caption line is the unit of the chart margins.
     const line = labelSize.height || 18;
     const axis = line * 2.6, labels = Math.min(size.width * 0.3, line * 9);
@@ -69,11 +73,12 @@ function LiveChart({widget, event, results, now, theme}: {widget: LiveWidget; ev
     </div>;
 }
 
-function LiveLogos({widget, fallback, edit}: {widget: LiveWidget; fallback: string | null; edit: boolean}) {
+function LiveLogos({widget, fallback, edit, sample}: {widget: LiveWidget; fallback: string | null; edit: boolean; sample: boolean}) {
     const urls = Array.isArray(widget.props.logos) ? widget.props.logos.filter((value): value is string => typeof value === "string").map(liveLogoURL).filter((value): value is string => !!value) : [];
     const carousel = widget.props.mode === "carousel" && urls.length > 1;
     const duration = widget.props.speed === "slow" ? "80s" : widget.props.speed === "fast" ? "30s" : "50s";
-    const images = urls.length ? urls : fallback ? [fallback] : [];
+    // With sample data and no logo at all, the platform crest stands in.
+    const images = urls.length ? urls : fallback ? [fallback] : sample ? [crest.src, crest.src, crest.src] : [];
     return <div className={`live-logos${carousel ? " live-logos--carousel" : ""}`}>
         <small>{typeof widget.props.title === "string" && widget.props.title ? widget.props.title : t("live.logos.title")}</small>
         <div className="live-logos__track">
@@ -84,19 +89,22 @@ function LiveLogos({widget, fallback, edit}: {widget: LiveWidget; fallback: stri
     </div>;
 }
 
-function WidgetContent({widget, event, results, now, theme, edit}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean}) {
+function LiveTimer({widget, event, now}: {widget: LiveWidget; event: PublicEventInfo; now: number}) {
+    // The Jeopardy countdown; the A/D `format` prop of older layouts is ignored.
+    const before = Date.parse(event.StartTime) > now;
+    const target = before ? event.StartTime : event.FinishTime;
+    const seconds = target ? Math.max(0, Math.floor((Date.parse(target) - now) / 1000)) : 0;
+    const label = before ? t("live.timer.beforeStart") : !target ? t("live.timer.noFinish") : seconds > 0 ? t("live.timer.untilFinish") : t("live.timer.finished");
+    const parts = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, ...(widget.props.showSeconds === false ? [] : [seconds % 60])];
+    return <div className="live-timer">{widget.props.showLabel !== false && <small>{label}</small>}<strong>{parts.map(part => String(part).padStart(2, "0")).join(":")}</strong></div>;
+}
+
+function WidgetContent({widget, event, results, now, theme, edit, sample}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean}) {
     const teams = results?.Scoreboard ?? [];
     const logo = resolveEventLogoURL(event.LogoURL);
     if (widget.type === "title") return <div className="live-title">{logo && <span className="live-title__logo"><img src={logo} alt="" /></span>}<div><strong>{event.Name}</strong>{typeof widget.props.subtitle === "string" && widget.props.subtitle && <span>{widget.props.subtitle}</span>}</div></div>;
-    if (widget.type === "timer") {
-        // The Jeopardy countdown; the A/D `format` prop of older layouts is ignored.
-        const before = Date.parse(event.StartTime) > now;
-        const target = before ? event.StartTime : event.FinishTime;
-        const seconds = target ? Math.max(0, Math.floor((Date.parse(target) - now) / 1000)) : 0;
-        const label = before ? t("live.timer.beforeStart") : !target ? t("live.timer.noFinish") : seconds > 0 ? t("live.timer.untilFinish") : t("live.timer.finished");
-        return <div className="live-timer"><small>{label}</small><strong>{String(Math.floor(seconds / 3600)).padStart(2, "0")}:{String(Math.floor(seconds / 60) % 60).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</strong></div>;
-    }
-    if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} />;
+    if (widget.type === "timer") return <LiveTimer widget={widget} event={event} now={now} />;
+    if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
     if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
     if (widget.type === "table") {
@@ -110,15 +118,15 @@ function WidgetContent({widget, event, results, now, theme, edit}: {widget: Live
         return <div className="live-solves"><h2>{t("live.solves.title")}</h2>{results?.Timeline.length ? <ol>{[...results.Timeline].sort((a, b) => b.SolvedAt.localeCompare(a.SolvedAt)).slice(0, Number(widget.props.rows) || 5).map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`}><span>{names.get(item.EventTeamID) ?? t("live.table.team")} → {item.ChallengeName}</span><b>+{item.Points}</b><time>{clockLabel(item.SolvedAt)}</time></li>)}</ol> : <EmptyState compact message={t("live.solves.empty")} />}</div>;
     }
     if (widget.type === "announcement") return <div className="live-announcement">{typeof widget.props.text === "string" && widget.props.text.trim() || t("live.announcement.placeholder")}</div>;
-    if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} />;
+    if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} sample={sample} />;
     if (widget.type === "qr") return <LiveQR url={typeof widget.props.url === "string" ? widget.props.url : ""} />;
     return null;
 }
 
 export type LiveGhost = {x: number; y: number; w: number; h: number; ok: boolean};
 
-export function LiveCanvas({layout, event, results, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
-    layout: LiveLayout; event: PublicEventInfo; results?: ManageResultsSnapshot; selectedID?: string | null;
+export function LiveCanvas({layout, event, results, sample = false, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
+    layout: LiveLayout; event: PublicEventInfo; results?: ManageResultsSnapshot; sample?: boolean; selectedID?: string | null;
     onSelect?: (id: string) => void; edit?: boolean; showGrid?: boolean;
     onPointerDown?: (event: PointerEvent<HTMLButtonElement | HTMLSpanElement>, widget: LiveWidget, mode: "move" | "resize") => void;
     conflicts?: Set<string>; warned?: Set<string>; ghost?: LiveGhost | null;
@@ -136,9 +144,9 @@ export function LiveCanvas({layout, event, results, selectedID, onSelect, edit =
     const area = (widget: {x: number; y: number; w: number; h: number}) => ({gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`});
     return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={area(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
-            <WidgetContent widget={widget} event={event} results={results} now={now} theme={layout.theme} edit />
+            <WidgetContent widget={widget} event={event} results={results} now={now} theme={layout.theme} edit sample={sample} />
             <span className="live-widget__resize" role="presentation" onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, "resize");}} />
-        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} results={results} now={now} theme={layout.theme} edit={false} /></div>)}
+        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} results={results} now={now} theme={layout.theme} edit={false} sample={sample} /></div>)}
         {ghost && <div className={`live-drop-ghost${ghost.ok ? "" : " is-blocked"}`} style={area(ghost)} aria-hidden="true" />}
     </div>;
 }

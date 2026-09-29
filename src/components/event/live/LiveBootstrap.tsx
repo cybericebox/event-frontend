@@ -20,9 +20,9 @@ function State({title, text, action}: {title: string; text?: string; action?: Re
     return <main className="live-fullscreen"><div className="live-fullscreen__state" role="alert"><h1>{title}</h1>{text && <p>{text}</p>}{action}</div></main>;
 }
 
-// L1: the live screen is not public. A moderator opens it under their own
-// account and puts it on the projector, so it checks management access first
-// and reads everything through the browser session (works before publication).
+// A moderator opens the screen under their own account and puts it on the
+// projector: management access unlocks the live board (works before
+// publication). Anyone else who may see the results gets the viewer screen.
 export function LiveBootstrap() {
     const event = useQuery({queryKey: ["event-live-info"], queryFn: getClientEventInfo, retry: false, refetchOnWindowFocus: false});
     const access = useQuery({
@@ -39,6 +39,8 @@ export function LiveBootstrap() {
         document.title = t("live.documentTitle", {name: event.data.Name});
     }, [event.data]);
 
+    const accessStatus = access.error instanceof ManageApiError ? access.error.status : 0;
+    if (event.data && (accessStatus === 401 || accessStatus === 403)) return <LiveScreen event={event.data} manager={false} />;
     const failed = event.error ?? access.error;
     if (failed) {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
@@ -47,5 +49,5 @@ export function LiveBootstrap() {
         return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} /></main>;
     }
     if (!event.data || !access.data) return <main className="live-fullscreen"><EventLoading event={event.data} label={t("live.checkingAccess")} /></main>;
-    return <LiveScreen event={event.data} />;
+    return <LiveScreen event={event.data} manager />;
 }

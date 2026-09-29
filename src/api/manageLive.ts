@@ -3,6 +3,9 @@ import {ManageApiError} from "./manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
+export const liveRefreshDefault = 5;
+export const liveRefreshOptions = [2, 3, 5, 10, 15, 20, 30];
+
 const widgetSchema = z.object({
     id: z.string(), type: z.enum(["title", "timer", "chart", "table", "ad_table", "logos", "solves", "announcement", "qr"]),
     x: z.number().int(), y: z.number().int(), w: z.number().int(), h: z.number().int(),
@@ -14,20 +17,24 @@ export const liveLayoutSchema = z.object({
     screen: z.object({width: z.number().int(), height: z.number().int(), anchor: z.enum(["full", "top-left"]), textScale: z.number()}),
     grid: z.object({cols: z.number().int(), rows: z.number().int()}),
     widgets: z.array(widgetSchema),
+    // Results refresh on the open screen, 2–30 s; layouts stored before the
+    // setting existed get the default.
+    refreshSeconds: z.number().int().optional().transform(value => value || liveRefreshDefault),
 });
-export type LiveLayout = z.infer<typeof liveLayoutSchema>;
+export type LiveLayout = z.output<typeof liveLayoutSchema>;
 export type LiveWidget = LiveLayout["widgets"][number];
 const editorSchema = z.object({Published: liveLayoutSchema, Draft: liveLayoutSchema.nullable()});
 export type LiveEditor = z.infer<typeof editorSchema>;
 
 export const defaultLiveLayout: LiveLayout = {
-    version: 1, theme: "dark", aspect: "16:9", screen: {width: 1920, height: 1080, anchor: "full", textScale: 1},
+    version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1},
     grid: {cols: 12, rows: 8}, widgets: [
-        {id: "title", type: "title", x: 1, y: 1, w: 12, h: 1, props: {}},
+        {id: "title", type: "title", x: 1, y: 1, w: 10, h: 1, props: {}},
         {id: "chart", type: "chart", x: 1, y: 2, w: 8, h: 6, props: {}},
         {id: "table", type: "table", x: 9, y: 2, w: 4, h: 6, props: {}},
         {id: "organizers", type: "logos", x: 1, y: 8, w: 3, h: 1, props: {mode: "fixed", title: t("manage.live.defaultOrganizers")}},
         {id: "partners", type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: t("manage.live.defaultPartners")}},
+        {id: "timer", type: "timer", x: 11, y: 1, w: 2, h: 1, props: {}},
     ],
 };
 
@@ -61,6 +68,15 @@ export const publishManageLive = (eventID: string) => liveRequest(eventID, "/pub
 // The live screen is a manager view (L1): it reads the published layout
 // through the management API, so unpublished events work too.
 export const getPublishedLiveLayout = async (eventID: string) => (await getManageLive(eventID)).Published;
+
+// Viewers who do not manage the event read the published layout from the
+// public event content (the event must be published).
+export async function getPublicLiveLayout(eventID: string): Promise<LiveLayout> {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/content`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
+    if (!response.ok) throw new ManageApiError(response.status);
+    return z.object({Data: z.object({Live: liveLayoutSchema})}).parse(await response.json()).Data.Live;
+}
 
 // Open live screens poll this light version and reload the layout on a change.
 export async function getLiveLayoutVersion(eventID: string): Promise<number> {

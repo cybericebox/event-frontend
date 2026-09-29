@@ -1,15 +1,15 @@
 import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
-import {distributeWidgets, layoutConflicts, livePaletteTypes, recomputeGrid, widgetAt} from "./liveLayout";
+import {distributeWidgets, layoutConflicts, livePaletteItems, liveWidgetName, presetLayout, recomputeGrid, widgetAt} from "./liveLayout";
 
-const item = (id: string, type: LiveWidget["type"], x: number, y: number, w: number, h: number): LiveWidget => ({id, type, x, y, w, h, props: {}});
+const item = (id: string, type: LiveWidget["type"], x: number, y: number, w: number, h: number, props: LiveWidget["props"] = {}): LiveWidget => ({id, type, x, y, w, h, props});
 const layoutOf = (widgets: LiveWidget[], cols = 12, rows = 8): LiveLayout => ({...defaultLiveLayout, grid: {cols, rows}, widgets});
 
 describe("recomputeGrid", () => {
     it("doubles the classic preset exactly on 0-based cells", () => {
         const next = recomputeGrid(defaultLiveLayout, 24, 16);
         expect(next.grid).toEqual({cols: 24, rows: 16});
-        expect(next.widgets.map(({x, y, w, h}) => [x, y, w, h])).toEqual([[1, 1, 24, 2], [1, 3, 16, 12], [17, 3, 8, 12], [1, 15, 6, 2], [7, 15, 18, 2]]);
+        expect(next.widgets.map(({x, y, w, h}) => [x, y, w, h])).toEqual([[1, 1, 20, 2], [1, 3, 16, 12], [17, 3, 8, 12], [1, 15, 6, 2], [7, 15, 18, 2], [21, 1, 4, 2]]);
         expect(layoutConflicts(next).size).toBe(0);
     });
 
@@ -59,18 +59,34 @@ describe("distributeWidgets", () => {
     });
 
     it("refuses a split below a widget minimum", () => {
-        expect(distributeWidgets(layoutOf([item("a", "qr", 1, 1, 1, 3), item("b", "chart", 2, 1, 4, 3)]), "a", "row")).toMatch(/Графік/);
+        expect(distributeWidgets(layoutOf([item("a", "qr", 1, 1, 1, 3), item("b", "chart", 2, 1, 4, 3)]), "a", "row")).toMatch(/Динаміка результатів/);
     });
 
     it("needs a neighbour of the same height", () => {
-        expect(distributeWidgets(defaultLiveLayout, "title", "row")).toMatch(/немає інших/);
+        expect(distributeWidgets(layoutOf([item("title", "title", 1, 1, 12, 1)]), "title", "row")).toMatch(/немає інших/);
     });
 });
 
 describe("palette and drop", () => {
     it("does not offer the A/D table", () => {
-        expect(livePaletteTypes).not.toContain("ad_table");
-        expect(livePaletteTypes).toContain("timer");
+        const types = livePaletteItems.map(entry => entry.type);
+        expect(types).not.toContain("ad_table");
+        expect(types).toContain("timer");
+    });
+
+    it("offers organizers and partners as two logo blocks", () => {
+        expect(livePaletteItems.filter(entry => entry.type === "logos").map(entry => entry.props.mode)).toEqual(["fixed", "carousel"]);
+    });
+
+    it("names a logos widget by its title", () => {
+        expect(liveWidgetName(item("p", "logos", 1, 1, 2, 1, {title: "Партнери"}))).toBe("Партнери");
+        expect(liveWidgetName(item("c", "chart", 1, 1, 4, 3))).toBe("Динаміка результатів");
+    });
+
+    it("shows the timer in the default layout and the classic preset", () => {
+        expect(defaultLiveLayout.widgets.some(widget => widget.type === "timer")).toBe(true);
+        expect(presetLayout("classic").widgets.some(widget => widget.type === "timer")).toBe(true);
+        expect(layoutConflicts(presetLayout("classic")).size).toBe(0);
     });
 
     it("places a dropped widget at the cell, clamped inside the grid", () => {
