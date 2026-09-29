@@ -10,9 +10,9 @@ import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {GuestShell} from "./GuestShell";
 import {EventErrorScreen} from "./EventErrorScreen";
 import {EventLoading} from "./EventLoading";
+import {EventNotFoundScreen} from "./EventNotFoundScreen";
 import {EventBrandProvider} from "./EventBrandLogo";
 import {OutageShell} from "./OutageShell";
-import {idOrigin} from "@/utils/origins";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
@@ -57,11 +57,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // Only a missing event or a missing right sends to the sign-in; any other failure
         // (server error, network) is a load failure with a retry.
         if (![401, 403, 404].includes(status)) return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
-        return <div className="event-shell-state" role="alert">
-            <h1>{t("shell.preview.notFound")}</h1>
-            <p>{t("shell.preview.managersOnly")}</p>
-            <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>{t("account.signIn")}</a>
-        </div>;
+        return <EventNotFoundScreen />;
     }
     const event = identity.data!;
     return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>

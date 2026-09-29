@@ -14,6 +14,7 @@ import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 import {EventLoading} from "./EventLoading";
+import {EventNotFoundScreen} from "./EventNotFoundScreen";
 import {EventServiceStatusGate} from "./EventServiceStatusGate";
 import {OutageShell} from "./OutageShell";
 import {reservedPageSlugs} from "./content/pageSlugs";
@@ -70,7 +71,7 @@ function ShellContent({children, event, unavailable}: Props) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
         if (isLive) return children;
         if (isContentPage) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
-        return <div className="event-shell-state"><h1>{t("shell.notFound")}</h1></div>;
+        return <EventNotFoundScreen />;
     }
     if (isLive) return children;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;

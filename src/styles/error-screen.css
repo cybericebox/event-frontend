@@ -5,6 +5,7 @@
 .event-error--page{min-height:100dvh;background:var(--ib-paper)}
 .event-error__logo{width:64px;height:64px;object-fit:contain}
 .event-error__mark{width:32px;height:32px;color:var(--ib-danger)}
+.event-error__mark--muted{color:var(--ib-dim)}
 .event-error h1{max-width:40ch;color:var(--ib-ink);font-size:var(--ib-fs-24);letter-spacing:-.015em;text-wrap:balance}
 .event-error p{max-width:52ch;color:var(--ib-dim)}
 .event-error__actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--ib-2);margin-top:var(--ib-2)}
