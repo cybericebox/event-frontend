@@ -49,12 +49,21 @@
 .event-manage-table__popover-head strong{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
 .event-manage-table__popover-head small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-manage-table__popover-foot{display:flex;justify-content:flex-end}
-.event-manage-table__columns{display:grid;gap:2px;margin:0;padding:0;list-style:none}
-.event-manage-table__columns li{display:flex;align-items:center;gap:var(--ib-2);min-height:40px;padding:0 var(--ib-1);border:1px solid transparent;border-radius:var(--ib-r-sm)}
+/* Column cards: a 1px bordered soft card per column; the whole card drags
+   (grab cursor), its buttons and switch stay clickable. While dragging, the
+   card's slot is the drop indicator and the lifted copy gets a stronger
+   border (ui/sortable.css), never a shadow. */
+.event-manage-table__columns{display:grid;gap:var(--ib-2);margin:0;padding:0;list-style:none}
+.event-manage-table__columns li{display:flex;align-items:center;gap:var(--ib-2);min-height:44px;padding:var(--ib-1) var(--ib-2) var(--ib-1) var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-soft);transition:border-color var(--ib-dur-fast) var(--ib-ease)}
 .event-manage-table__columns li.is-movable{cursor:grab}
-.event-manage-table__grip{display:inline-flex;padding:0;border:0;background:transparent;color:var(--ib-faint);cursor:grab;touch-action:none}
+.event-manage-table__columns li.is-movable:hover,.event-manage-table__columns li:focus-within{border-color:var(--ib-control)}
+.event-manage-table__columns li:active{cursor:grabbing}
+.event-manage-table__columns li :is(button,[role="switch"],label){cursor:pointer}
+.event-manage-table__columns li button:disabled{cursor:default}
+.event-manage-table__grip{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-faint);cursor:grab;touch-action:none}
+.event-manage-table__grip:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
 .event-manage-table__grip.is-disabled{visibility:hidden}
-.event-manage-table__column-label{flex:1;min-width:0;overflow:hidden;font-size:var(--ib-fs-13);text-overflow:ellipsis;white-space:nowrap}
+.event-manage-table__column-label{flex:1;min-width:0;overflow:hidden;color:var(--ib-ink);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);text-overflow:ellipsis;white-space:nowrap}
 .event-manage-table__column-move{display:inline-flex;gap:2px}
 .event-manage-table__filters{display:grid;gap:var(--ib-3)}
 .event-manage-table__filter{display:grid;gap:var(--ib-2);min-width:0;margin:0;padding:0;border:0}

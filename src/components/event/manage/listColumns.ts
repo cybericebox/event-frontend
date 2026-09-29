@@ -54,39 +54,6 @@ export function toSavedColumns(columns: TableColumn[]): ListColumn[] {
     return columns.map(column => ({Key: column.key, Visible: column.locked ? true : column.visible}));
 }
 
-// A form answer filter as the list endpoints take it (`filters` parameter).
-export type AnswerFilter =
-    | {Key: string; Op: "contains"; Value: string}
-    | {Key: string; Op: "any"; Values: string[]}
-    | {Key: string; Op: "bool" | "present"; Value: boolean};
-export type AnswerFilterKind = "contains" | "any" | "bool" | "present";
-export type AnswerFilterDraft = {text?: string; values?: string[]; flag?: boolean | null};
-
-export function answerFilterKind(field: Pick<FormField, "input">): AnswerFilterKind {
-    const input: string = field.input;
-    if (input === "select" || input === "multi_select") return "any";
-    if (input === "checkbox") return "bool";
-    if (input === "file") return "present";
-    return "contains";
-}
-
-// Drafts keyed by field key → the filters to send; empty drafts are dropped.
-export function toAnswerFilters(fields: FormField[], drafts: Record<string, AnswerFilterDraft>): AnswerFilter[] {
-    const filters: AnswerFilter[] = [];
-    for (const field of fields) {
-        const draft = drafts[field.key];
-        if (!draft) continue;
-        const kind = answerFilterKind(field);
-        if (kind === "contains") {
-            const text = draft.text?.trim();
-            if (text) filters.push({Key: field.key, Op: "contains", Value: text.slice(0, 100)});
-        } else if (kind === "any") {
-            if (draft.values?.length) filters.push({Key: field.key, Op: "any", Values: draft.values});
-        } else if (typeof draft.flag === "boolean") filters.push({Key: field.key, Op: kind, Value: draft.flag});
-    }
-    return filters;
-}
-
 export function formatAnswer(value: unknown): string {
     if (value === undefined || value === null || value === "") return "—";
     if (value === true) return t("common.yes");

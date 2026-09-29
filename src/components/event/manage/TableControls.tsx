@@ -1,18 +1,14 @@
 "use client";
 
-import {useRef, type ReactNode} from "react";
+import {useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode} from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ArrowDown, ArrowUp, Columns3, GripVertical, SlidersHorizontal} from "lucide-react";
+import {ArrowDown, ArrowUp, Columns3, GripVertical} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {getManageListColumns, putManageListColumns, type ListColumns, type ManagedList} from "@/api/manageListColumns";
-import type {FormField} from "@/api/manageParticipantForm";
-import {EmptyState} from "@/components/ui/EmptyState";
-import {EventCheckbox} from "@/components/ui/EventCheckbox";
-import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {Sortable, useSortableItem} from "@/components/ui/Sortable";
-import {answerFilterKind, moveColumn, resolveTableColumns, toSavedColumns, type AnswerFilterDraft, type ColumnDefinition, type TableColumn} from "./listColumns";
+import {moveColumn, resolveTableColumns, toSavedColumns, type ColumnDefinition, type TableColumn} from "./listColumns";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
@@ -70,47 +66,33 @@ export function TableColumnsPopover({columns, canManage, onChange, onReset}: {
     </ToolbarPopover>;
 }
 
-// A column row is dragged by its whole body (its buttons and switch excepted);
-// the grip is the keyboard handle.
+// A column row is a card dragged by its whole body (its buttons and switch
+// excepted); the grip is the keyboard handle. Alt+ArrowUp/Down moves the
+// card the focus is in, and the focus follows it to its new place.
 function ColumnRow({columns, index, canManage, move, onVisibleChange}: {
     columns: TableColumn[]; index: number; canManage: boolean; move: (from: number, to: number) => void; onVisibleChange: (visible: boolean) => void;
 }) {
     const column = columns[index];
     const movable = canManage && !column.locked;
     const sortable = useSortableItem(column.key, !movable);
-    return <li {...sortable.itemProps} {...(movable ? sortable.bodyProps : {})} className={movable ? "is-movable" : undefined}>
-        {movable ? <EventTooltip content={t("manage.table.columns.drag")} silent>{() => <button type="button" className="event-manage-table__grip" {...sortable.handleProps} aria-label={t("manage.table.columns.dragNamed", {label: column.label})}><GripVertical size={16} aria-hidden="true" /></button>}</EventTooltip>
+    function onKeyDown(event: ReactKeyboardEvent<HTMLLIElement>) {
+        if (!movable || sortable.dragging || !event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+        const target = event.key === "ArrowUp" ? index - 1 : index + 1;
+        if (target < 0 || target >= columns.length || columns[target].locked) return;
+        event.preventDefault();
+        const focused = (event.target as HTMLElement).closest<HTMLElement>("[data-column-control]")?.dataset.columnControl ?? "grip";
+        move(index, target);
+        requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-column-key="${CSS.escape(column.key)}"] [data-column-control="${focused}"]:not(:disabled)`)?.focus());
+    }
+
+    return <li {...sortable.itemProps} {...(movable ? sortable.bodyProps : {})} className={movable ? "is-movable" : undefined} data-column-key={column.key} onKeyDown={onKeyDown}>
+        {movable ? <EventTooltip content={t("manage.table.columns.drag")} silent>{() => <button type="button" className="event-manage-table__grip" data-column-control="grip" {...sortable.handleProps} aria-label={t("manage.table.columns.dragNamed", {label: column.label})} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"><GripVertical size={16} aria-hidden="true" /></button>}</EventTooltip>
             : <span className="event-manage-table__grip is-disabled" aria-hidden="true"><GripVertical size={16} /></span>}
         <span className="event-manage-table__column-label">{column.label}</span>
         <span className="event-manage-table__column-move">
-            <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.table.columns.moveUp", {label: column.label})} disabled={!movable || index === 0 || columns[index - 1]?.locked} onClick={() => move(index, index - 1)}><ArrowUp size={14} /></button>
-            <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.table.columns.moveDown", {label: column.label})} disabled={!movable || index === columns.length - 1} onClick={() => move(index, index + 1)}><ArrowDown size={14} /></button>
+            <button className="ib-icon-btn ib-icon-btn--sm" type="button" data-column-control="up" aria-label={t("manage.table.columns.moveUp", {label: column.label})} disabled={!movable || index === 0 || columns[index - 1]?.locked} onClick={() => move(index, index - 1)}><ArrowUp size={14} /></button>
+            <button className="ib-icon-btn ib-icon-btn--sm" type="button" data-column-control="down" aria-label={t("manage.table.columns.moveDown", {label: column.label})} disabled={!movable || index === columns.length - 1} onClick={() => move(index, index + 1)}><ArrowDown size={14} /></button>
         </span>
         <EventSwitch checked={column.visible} disabled={!canManage || !!column.locked} ariaLabel={t("manage.table.columns.show", {label: column.label})} onCheckedChange={onVisibleChange} />
     </li>;
-}
-
-export function TableFiltersPopover({fields, drafts, onChange, active}: {
-    fields: FormField[]; drafts: Record<string, AnswerFilterDraft>; onChange: (drafts: Record<string, AnswerFilterDraft>) => void; active: number;
-}) {
-    const set = (key: string, draft: AnswerFilterDraft) => onChange({...drafts, [key]: draft});
-    return <ToolbarPopover label={t("manage.table.filters.button")} icon={<SlidersHorizontal size={16} aria-hidden="true" />} count={active} countLabel={t("manage.table.filters.buttonActive", {count: active})} className="event-manage-table__popover--filters">
-        <div className="event-manage-table__popover-head"><strong>{t("manage.table.filters.title")}</strong></div>
-        {fields.length === 0 ? <EmptyState compact message={t("manage.table.filters.noFields")} /> : <div className="event-manage-table__filters">{fields.map(field => {
-            const draft = drafts[field.key] ?? {};
-            const kind = answerFilterKind(field);
-            const label = field.label || field.key;
-            return <fieldset key={field.key} className="event-manage-table__filter">
-                <legend>{label}</legend>
-                {kind === "contains" && <input className="ib-input ib-input--sm" type="search" value={draft.text ?? ""} maxLength={100} placeholder={t("manage.table.filters.contains")} aria-label={t("manage.table.filters.containsLabel", {label})} onChange={event => set(field.key, {text: event.target.value})} />}
-                {kind === "any" && <div className="event-manage-table__filter-options">{(field.options ?? []).map(option => <EventCheckbox key={option} label={option} checked={!!draft.values?.includes(option)}
-                    onCheckedChange={checked => set(field.key, {values: checked ? [...(draft.values ?? []), option] : (draft.values ?? []).filter(value => value !== option)})} />)}</div>}
-                {(kind === "bool" || kind === "present") && <EventSelect ariaLabel={label} value={draft.flag === true ? "yes" : draft.flag === false ? "no" : "any"}
-                    onValueChange={value => set(field.key, {flag: value === "any" ? null : value === "yes"})}
-                    options={[{value: "any", label: t("manage.table.filters.any")},
-                        {value: "yes", label: kind === "bool" ? t("common.yes") : t("manage.table.filters.hasFile")},
-                        {value: "no", label: kind === "bool" ? t("common.no") : t("manage.table.filters.noFile")}]} />}
-            </fieldset>;
-        })}</div>}
-    </ToolbarPopover>;
 }

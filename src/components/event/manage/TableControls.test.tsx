@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen, within} from "@testing-library/react";
-import {TableColumnsPopover, TableFiltersPopover} from "./TableControls";
+import {TableColumnsPopover} from "./TableControls";
 import type {TableColumn} from "./listColumns";
 
 afterEach(cleanup);
+
+// The grip tooltip reads hover capability; jsdom has no matchMedia.
+window.matchMedia ??= ((query: string) => ({matches: false, media: query, onchange: null, addListener: () => {}, removeListener: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false})) as typeof window.matchMedia;
 
 const columns: TableColumn[] = [
     {key: "@name", label: "Ім’я", visible: true, locked: true},
@@ -43,24 +46,18 @@ describe("columns popover", () => {
     });
 });
 
-describe("filters popover", () => {
-    const fields = [
-        {id: "1", type: "field" as const, key: "city", label: "Місто", input: "text" as const},
-        {id: "2", type: "field" as const, key: "langs", label: "Мови", input: "multi_select" as const, options: ["Go", "Rust"]},
-    ];
-
-    it("edits text and choice drafts and shows the active count", () => {
+describe("columns keyboard", () => {
+    it("moves the focused card with Alt+Arrow keys and keeps the name column first", () => {
         const onChange = vi.fn();
-        render(<TableFiltersPopover fields={fields} drafts={{langs: {values: ["Go"]}}} onChange={onChange} active={1} />);
-        const popover = openPopover("Фільтри: 1");
-        fireEvent.change(within(popover).getByRole("searchbox", {name: "«Місто» містить"}), {target: {value: "Київ"}});
-        expect(onChange).toHaveBeenLastCalledWith({langs: {values: ["Go"]}, city: {text: "Київ"}});
-        fireEvent.click(within(popover).getByRole("checkbox", {name: "Rust"}));
-        expect(onChange).toHaveBeenLastCalledWith({langs: {values: ["Go", "Rust"]}});
-    });
-
-    it("shows an empty state when the form has no fields", () => {
-        render(<TableFiltersPopover fields={[]} drafts={{}} onChange={vi.fn()} active={0} />);
-        expect(within(openPopover("Фільтри")).getByText("У формі немає полів для фільтрів.")).toBeTruthy();
+        render(<TableColumnsPopover columns={columns} canManage onChange={onChange} onReset={vi.fn()} />);
+        const popover = openPopover("Колонки");
+        const email = within(popover).getByText("Пошта").closest("li") as HTMLElement;
+        fireEvent.keyDown(within(email).getByRole("switch"), {key: "ArrowDown", altKey: true});
+        expect(onChange.mock.lastCall?.[0].map((column: TableColumn) => column.key)).toEqual(["@name", "city", "@email"]);
+        onChange.mockClear();
+        fireEvent.keyDown(within(email).getByRole("switch"), {key: "ArrowUp", altKey: true});
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.keyDown(within(email).getByRole("switch"), {key: "ArrowDown"});
+        expect(onChange).not.toHaveBeenCalled();
     });
 });

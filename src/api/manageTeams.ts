@@ -1,7 +1,6 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import type {AnswerFilter} from "@/components/event/manage/listColumns";
 import type {TableFilter, TableSort} from "@/components/event/manage/tableFilterModel";
 import {requireApiOrigin} from "@/utils/origins";
 
@@ -39,13 +38,12 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
 }
 
 export type TeamAdmissionFilter = "admitted" | "notAdmitted";
-export type ManageTeamsFilter = {search?: string; admission?: TeamAdmissionFilter | null; fields?: AnswerFilter[]};
+export type ManageTeamsFilter = {search?: string; admission?: TeamAdmissionFilter | null};
 
 export async function getManageTeams(eventID: string, cursor: string | null, filter: ManageTeamsFilter = {}, pageSize = 20): Promise<ManageTeamsPage> {
     const params = new URLSearchParams({pageSize: String(pageSize)});
     if (filter.search?.trim()) params.set("search", filter.search.trim());
     if (filter.admission) params.set("admission", filter.admission);
-    if (filter.fields?.length) params.set("filters", JSON.stringify(filter.fields));
     if (cursor) params.set("cursor", cursor);
     return request(eventID, `teams?${params}`, pageSchema);
 }

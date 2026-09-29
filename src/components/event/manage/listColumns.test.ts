@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {answerFilterKind, fieldColumnDefinitions, formatAnswer, moveColumn, resolveTableColumns, toAnswerFilters, toSavedColumns, type TableColumn} from "./listColumns";
+import {fieldColumnDefinitions, formatAnswer, moveColumn, resolveTableColumns, toSavedColumns, type TableColumn} from "./listColumns";
 import {participantTabFromParams, participantTabHref} from "./participantTabs";
 
 const fields = [{key: "city", label: "Місто"}, {key: "age", label: "Вік"}, {key: "role", label: ""}];
@@ -29,26 +29,6 @@ describe("table columns", () => {
         const moved = moveColumn(columns, 5, 1);
         expect(moved.map(column => column.key)).toEqual(["@name", columns[5].key, ...columns.slice(1, 5).map(column => column.key)]);
         expect(toSavedColumns(moved)[0]).toEqual({Key: "@name", Visible: true});
-    });
-});
-
-describe("answer filters", () => {
-    const field = (key: string, input: string, options?: string[]) => ({id: key, type: "field" as const, key, label: key, input: input as "text", options});
-    const form = [field("city", "text"), field("langs", "multi_select", ["Go", "Rust"]), field("size", "select", ["S", "M"]), field("agree", "checkbox"), field("cv", "file"), field("age", "number")];
-
-    it("maps input types to filter kinds", () => {
-        expect(form.map(answerFilterKind)).toEqual(["contains", "any", "any", "bool", "present", "contains"]);
-    });
-
-    it("builds filters from drafts and drops empty ones", () => {
-        expect(toAnswerFilters(form, {
-            city: {text: "  Київ "}, langs: {values: ["Rust"]}, size: {values: []}, agree: {flag: false}, cv: {flag: null}, age: {text: "  "}, unknown: {text: "x"},
-        })).toEqual([
-            {Key: "city", Op: "contains", Value: "Київ"},
-            {Key: "langs", Op: "any", Values: ["Rust"]},
-            {Key: "agree", Op: "bool", Value: false},
-        ]);
-        expect(toAnswerFilters(form, {cv: {flag: true}})).toEqual([{Key: "cv", Op: "present", Value: true}]);
     });
 });
 

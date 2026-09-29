@@ -38,18 +38,6 @@ describe("manage list requests", () => {
         expect(Object.fromEntries(url().searchParams)).toEqual({pageSize: "100", search: "Blue", admission: "notAdmitted"});
     });
 
-    it("sends answer filters as a JSON array", async () => {
-        const url = stubList();
-        await getManageParticipants(eventID, {kind: "participants", fields: [{Key: "city", Op: "contains", Value: "Київ"}, {Key: "agree", Op: "bool", Value: true}]}, null);
-        expect(JSON.parse(url().searchParams.get("filters") ?? "")).toEqual([{Key: "city", Op: "contains", Value: "Київ"}, {Key: "agree", Op: "bool", Value: true}]);
-    });
-
-    it("omits empty answer filters for teams", async () => {
-        const url = stubList();
-        await getManageTeams(eventID, null, {fields: []});
-        expect(url().searchParams.has("filters")).toBe(false);
-    });
-
     it("asks the participants table page with filters and sort", async () => {
         const fetchMock = vi.fn(async () => new Response(JSON.stringify({Data: {Items: [], Total: 0, Page: 2, PageSize: 50, Counts: {Participants: 0, Applications: 0, Invitations: 0}}}), {status: 200}));
         vi.stubGlobal("fetch", fetchMock);
