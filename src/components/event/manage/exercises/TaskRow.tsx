@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {ChevronRight, Lightbulb, LightbulbOff, Pencil, Unlink} from "lucide-react";
-import {ActionMenu} from "./ActionMenu";
+import {ActionToolbar} from "./SetActions";
 import {toast} from "react-hot-toast";
 import {
     updateEventBoardChallenge, updateEventChallengeHintCosts, updateEventChallengeScoring,
@@ -227,7 +227,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
             <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} />
             <TaskBoard eventID={eventID} attachmentID={attachment.ID} challenge={challenge} disabled={!canManage} onSaved={onSaved} />
             {canManage && <div className="event-task__actions">
-                <ActionMenu label={t("manage.challenges.task.menu", {name: challenge.Snapshot.name})} items={[
+                <ActionToolbar label={t("manage.challenges.task.menu", {name: challenge.Snapshot.name})} busy={false} actions={[
                     editURL ? {key: "edit", label: t("common.edit"), icon: Pencil, href: editURL}
                         : {key: "edit", label: t("common.edit"), icon: Pencil, disabledReason: t("manage.challenges.task.editNeedsFork")},
                     {key: "remove", label: t("manage.challenges.task.remove"), icon: Unlink, danger: true, onSelect: onRemove},

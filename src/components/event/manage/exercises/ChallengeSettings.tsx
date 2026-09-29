@@ -8,6 +8,7 @@ import {
     type ManageConfig, type ManageScoring, type ManageScoringInput,
 } from "@/api/manage";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
@@ -51,7 +52,7 @@ export function ChallengeSettings() {
     const [savingConfig, setSavingConfig] = useState(false);
 
     if (scoring.isPending || lifecycle.isPending || config.isPending) return <EventLoading event={event} />;
-    if (scoring.isError || lifecycle.isError || config.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.challenges.settings.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}}>{t("common.retry")}</button></div>;
+    if (scoring.isError || lifecycle.isError || config.isError) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
 
     const original = draftOf(scoring.data);
     const value = edit?.eventID === eventID ? edit.value : original;

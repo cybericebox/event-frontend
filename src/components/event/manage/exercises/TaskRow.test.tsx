@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {cleanup, fireEvent, render, screen, within} from "@testing-library/react";
 import type {EventBoardChallenge, EventExerciseAttachment} from "@/api/manageChallenges";
 import type {ManageLifecycle, ManageScoring} from "@/api/manage";
 import {TaskRow} from "./TaskRow";
@@ -43,10 +43,11 @@ describe("TaskRow", () => {
         expect(screen.getByText("Підказка 1")).toBeTruthy();
         expect((screen.getByLabelText(/Вартість підказки 1/) as HTMLInputElement).value).toBe("20");
         expect(screen.getByRole("switch", {name: "Показувати учасникам"})).toBeTruthy();
-        fireEvent.pointerDown(screen.getByRole("button", {name: "Дії із завданням SQL injection"}), {button: 0, ctrlKey: false});
-        const items = screen.getAllByRole("menuitem");
-        expect(items.map(item => item.textContent)).toEqual(["Редагувати" + "Щоб редагувати, спершу створіть копію набору для заходу.", "Прибрати із заходу"]);
-        expect(items[0].getAttribute("aria-disabled")).toBe("true");
+        const actions = screen.getByRole("toolbar", {name: "Дії із завданням SQL injection"});
+        const edit = within(actions).getByRole("button", {name: "Редагувати"});
+        expect(edit.getAttribute("aria-disabled")).toBe("true");
+        expect(document.getElementById(edit.getAttribute("aria-describedby")!)?.textContent).toBe("Щоб редагувати, спершу створіть копію набору для заходу.");
+        expect(within(actions).getByRole("button", {name: "Прибрати із заходу"}).className).toContain("ib-btn--danger");
     });
 
     it("locks task scoring when the event scoring applies to all tasks", () => {

@@ -12,6 +12,7 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {getManageConfig, getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
 import {getManageLabs} from "@/api/manageLabs";
 import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {
@@ -91,7 +92,7 @@ export function ExerciseAttachments() {
     }
 
     if (board.pending || scoringQuery.isPending || lifecycleQuery.isPending || configQuery.isPending) return <EventLoading event={event} />;
-    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <div className="event-manage-error" role="alert"><h1>{t("manage.exercises.loadFailed")}</h1><button className="ib-btn" type="button" onClick={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}}>{t("common.retry")}</button></div>;
+    if (board.failed || scoringQuery.isError || lifecycleQuery.isError || configQuery.isError) return <EventLoadError message={t("manage.exercises.loadFailed")} onRetry={() => {board.retry(); void scoringQuery.refetch(); void lifecycleQuery.refetch(); void configQuery.refetch();}} />;
 
     const copy = action && actionCopy(action);
     // Infrastructure can be enabled only before publication.
@@ -114,6 +115,11 @@ export function ExerciseAttachments() {
                     {/* The header row toggles the set; its buttons and links keep their own action. */}
                     <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a, [role=alert]")) toggle(); }}>
                         <div className="event-exercise-set__title">
+                            {/* Tree-style disclosure: right when collapsed, down when open. */}
+                            <button type="button" className="ib-icon-btn ib-icon-btn--sm event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`}
+                                aria-label={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} onClick={toggle}>
+                                <ChevronRight className="event-exercise-set__chevron" size={18} aria-hidden="true" />
+                            </button>
                             <h3 id={`set-${attachment.ID}`}>{name}</h3>
                             <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
                             <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
@@ -126,12 +132,6 @@ export function ExerciseAttachments() {
                                 {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
                                 {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
                             </span>
-                            {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy} broken={mismatch}
-                                onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}
-                            <button type="button" className="ib-icon-btn ib-icon-btn--sm event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`}
-                                aria-label={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} onClick={toggle}>
-                                <ChevronRight className="event-exercise-set__chevron" size={18} aria-hidden="true" />
-                            </button>
                         </div>
                         <p className="event-exercise-set__meta">
                             {[
@@ -147,6 +147,8 @@ export function ExerciseAttachments() {
                         </div>}
                     </header>
                     {open && <div className="event-exercise-set__body" id={`set-tasks-${attachment.ID}`}>
+                        {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy} broken={mismatch}
+                            onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}
                         {attachment.UpdateAvailable && <div className="event-exercise-set__notice">
                             <span><strong>{t("manage.exercises.updateAvailable", {number: attachment.LatestVersionNumber})}</strong> {t("manage.exercises.settingsKept")}</span>
                             {canManage && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy} onClick={() => setAction({kind: "update", attachment})}>{t("manage.exercises.action.update.confirm")}</button>}
