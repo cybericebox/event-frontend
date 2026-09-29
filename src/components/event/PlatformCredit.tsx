@@ -10,5 +10,5 @@ export function PlatformCredit() {
         year: YEAR,
         department: <EventTooltip content={t("shell.departmentFull")}>{tipId => <a href="https://ice.nure.ua/ua/" target="_blank" rel="noopener noreferrer" aria-describedby={tipId}>{t("shell.department")}</a>}</EventTooltip>,
         nure: <EventTooltip content={t("shell.nureFull")}>{tipId => <a href="https://nure.ua" target="_blank" rel="noopener noreferrer" aria-describedby={tipId}>{t("shell.nure")}</a>}</EventTooltip>,
-    })}</span>;
+    }, {groupFrom: 1})}</span>;
 }

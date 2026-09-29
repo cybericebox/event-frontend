@@ -49,13 +49,22 @@ function richParts(text: string, vars: Record<string, ReactNode>): ReactNode[] {
 /**
  * tRich for a « · »-separated credit line: each segment becomes an unbreakable
  * (nowrap) span and keeps its trailing dot, so lines break only after a separator.
+ * `groupFrom` glues the segments from that index on into one inline-block group:
+ * the group moves to the next line whole and splits (at its dots) only when it
+ * cannot fit a line by itself.
  */
-export function tSegments(key: MessageKey | (string & {}), vars: Record<string, ReactNode>): ReactNode[] {
+export function tSegments(key: MessageKey | (string & {}), vars: Record<string, ReactNode>, {groupFrom}: {groupFrom?: number} = {}): ReactNode[] {
   const parts = t(key).split(" · ")
-  return parts.flatMap((part, i) => [
-    createElement("span", {key: i, style: {whiteSpace: "nowrap"}}, ...richParts(part, vars), i < parts.length - 1 ? " ·" : null),
-    i < parts.length - 1 ? " " : null,
-  ])
+  const last = parts.length - 1
+  const segment = (part: string, i: number): ReactNode[] => [
+    createElement("span", {key: i, style: {whiteSpace: "nowrap"}}, ...richParts(part, vars), i < last ? " ·" : null),
+    i < last ? " " : null,
+  ]
+  if (groupFrom === undefined || groupFrom <= 0 || groupFrom > last) return parts.flatMap(segment)
+  return [
+    ...parts.slice(0, groupFrom).flatMap(segment),
+    createElement("span", {key: "group", style: {display: "inline-block"}}, ...parts.slice(groupFrom).flatMap((part, j) => segment(part, groupFrom + j))),
+  ]
 }
 
 const pluralRules = new Intl.PluralRules(activeLocale)

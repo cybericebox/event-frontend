@@ -37,3 +37,7 @@
   .ib-footer--event .ib-footer__row{gap:var(--ib-3)}
   .ib-footer__org>span{display:block;margin:var(--ib-1) 0 0}
 }
+/* «За підтримки кафедри …» is one unbreakable segment: a step smaller on the narrowest phones so it fits */
+@container ib-footer (max-width: 359px){
+  .ib-footer__credit{font-size:var(--ib-fs-12)}
+}
