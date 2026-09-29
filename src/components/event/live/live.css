@@ -34,7 +34,7 @@
 .live-table th:first-child,.live-table td:first-child{width:2.4em;color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace)}
 .live-table th:last-child,.live-table td:last-child{width:5.2em;text-align:right}
 .live-table td:last-child{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
-.live-table tr.is-lead td{background:var(--live-lead)}
+.live-table tr.is-lead{background:var(--live-lead)}
 .live-table tr.is-lead td:nth-child(2),.live-table tr.is-lead td:last-child{color:var(--live-accent)}
 .live-solves ol{margin:0;padding:0;list-style:none}
 .live-solves li{display:flex;gap:.6em;align-items:baseline;padding:.42em 0;border-bottom:1px solid var(--live-line);font-size:var(--live-fs-body)}
@@ -168,3 +168,5 @@
   .live-fullscreen:not(.live-fullscreen--anchor) .live-table th,.live-fullscreen:not(.live-fullscreen--anchor) .live-table td{padding:.45em .3em}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-title strong{white-space:normal;font-size:22px}
 }
+.event-live-editor__properties>*,.event-live-editor__grid-fields label,.event-live-editor__properties input,.event-live-editor__properties select{min-width:0}
+.event-live-editor__distribute .ib-btn{white-space:normal;text-align:left}

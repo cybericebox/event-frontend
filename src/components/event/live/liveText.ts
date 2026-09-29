@@ -58,7 +58,7 @@ export function liveTextWarnings(layout: LiveLayout): LiveTextWarning[] {
         const name = liveWidgetLabels[item.type];
         const low = widgetRoles[item.type].filter(role => size(role).natural < liveTextRoles[role].min);
         if (low.length) {
-            warnings.push({id: item.id, text: `«${name}»: ${low.map(role => `${liveTextRoles[role].label} ${Math.round(size(role).natural)} px`).join(", ")} — менше за поріг ${low.map(role => `${liveTextRoles[role].min} px`).join(" / ")}; на екрані текст буде збільшено до порога.`});
+            warnings.push({id: item.id, text: `«${name}»: ${low.map(role => `${liveTextRoles[role].label} ${Math.floor(size(role).natural)} px`).join(", ")} — менше за поріг ${low.map(role => `${liveTextRoles[role].min} px`).join(" / ")}; на екрані текст буде збільшено до порога.`});
         }
         const boxW = item.w * width / layout.grid.cols - 2 * pad;
         const boxH = item.h * height / layout.grid.rows - 2 * pad;

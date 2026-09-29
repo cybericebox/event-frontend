@@ -6,7 +6,13 @@ export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
     announcement: "Оголошення", qr: "QR-код",
 };
 
+// Widgets offered in the palette. The A/D table waits for an Attack-Defense
+// mode; layouts that already hold one still load and render nothing.
+export const livePaletteTypes = (Object.keys(liveWidgetLabels) as LiveWidget["type"][]).filter(type => type !== "ad_table");
+
 export function liveLogoURL(value: string): string | null {
+    // Mock uploads are object URLs.
+    if (process.env.NEXT_PUBLIC_USE_MOCKS === "1" && value.startsWith("blob:")) return value;
     if (value.startsWith("/") && !value.startsWith("//")) {
         const domain = process.env.NEXT_PUBLIC_DOMAIN;
         return value.startsWith("/api/events/") && domain ? `https://api.${domain}${value}` : value;
@@ -62,20 +68,85 @@ export function firstFreeWidget(layout: LiveLayout, type: LiveWidget["type"]): L
     return null;
 }
 
-export function fitGrid(layout: LiveLayout, cols: number, rows: number): LiveLayout | null {
-    const next: LiveLayout = {...layout, grid: {cols, rows}, widgets: []};
-    for (const item of layout.widgets) {
+// A widget at the grid cell (x, y) with its minimum size, or null when it
+// does not fit there.
+export function widgetAt(layout: LiveLayout, type: LiveWidget["type"], x: number, y: number): LiveWidget | null {
+    const {w, h} = liveWidgetMinimums[type];
+    const candidate = widget(type, Math.min(Math.max(1, x), Math.max(1, layout.grid.cols - w + 1)), Math.min(Math.max(1, y), Math.max(1, layout.grid.rows - h + 1)), w, h);
+    return canPlace(layout, candidate) ? candidate : null;
+}
+
+function overlaps(a: LiveWidget, b: LiveWidget): boolean {
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+// IDs of widgets the backend would reject: overlapping, outside the grid or
+// below the type minimum. The editor highlights them instead of refusing a
+// grid change.
+export function layoutConflicts(layout: LiveLayout): Set<string> {
+    const conflicts = new Set<string>();
+    layout.widgets.forEach((item, index) => {
         const min = liveWidgetMinimums[item.type];
-        const w = Math.min(cols, Math.max(min.w, Math.round(item.w * cols / layout.grid.cols)));
-        const h = Math.min(rows, Math.max(min.h, Math.round(item.h * rows / layout.grid.rows)));
-        let placed = false;
-        for (let y = Math.max(1, Math.round((item.y - 1) * rows / layout.grid.rows) + 1); y <= rows - h + 1 && !placed; y++) {
-            for (let x = 1; x <= cols - w + 1; x++) {
-                const candidate = {...item, x, y, w, h};
-                if (canPlace(next, candidate)) {next.widgets.push(candidate); placed = true; break;}
-            }
+        if (item.x < 1 || item.y < 1 || item.x + item.w - 1 > layout.grid.cols || item.y + item.h - 1 > layout.grid.rows || item.w < min.w || item.h < min.h) conflicts.add(item.id);
+        for (const other of layout.widgets.slice(index + 1)) {
+            if (overlaps(item, other)) {conflicts.add(item.id); conflicts.add(other.id);}
         }
-        if (!placed) return null;
+    });
+    return conflicts;
+}
+
+// Grid change (L7): positions and sizes scale proportionally, x' = round(x·cols'/cols)
+// on 0-based cells, so 12→24 doubles exactly. A widget that lands on an
+// earlier one moves down to the first free rows; when nothing is free below,
+// it stays and layoutConflicts reports it.
+export function recomputeGrid(layout: LiveLayout, cols: number, rows: number): LiveLayout {
+    const sx = cols / layout.grid.cols, sy = rows / layout.grid.rows;
+    const order = layout.widgets.map((item, index) => ({item, index})).sort((a, b) => a.item.y - b.item.y || a.item.x - b.item.x);
+    const placed: LiveWidget[] = [];
+    const result: LiveWidget[] = [...layout.widgets];
+    for (const {item, index} of order) {
+        const min = liveWidgetMinimums[item.type];
+        const w = Math.min(cols, Math.max(min.w, Math.round(item.w * sx)));
+        const h = Math.min(rows, Math.max(min.h, Math.round(item.h * sy)));
+        const x = Math.min(Math.max(1, Math.round((item.x - 1) * sx) + 1), cols - w + 1);
+        const y = Math.min(Math.max(1, Math.round((item.y - 1) * sy) + 1), rows - h + 1);
+        let next = {...item, x, y, w, h};
+        for (let shifted = y; shifted <= rows - h + 1; shifted++) {
+            const candidate = {...next, y: shifted};
+            if (placed.every(other => !overlaps(candidate, other))) {next = candidate; break;}
+        }
+        placed.push(next);
+        result[index] = next;
     }
+    return {...layout, grid: {cols, rows}, widgets: result};
+}
+
+export type DistributeAxis = "row" | "column";
+
+// «Розподілити рівномірно»: the selected widget's neighbours sharing its rows
+// (or columns) get equal widths (or heights) across the span they cover.
+// Returns an error text when the result would break a minimum or an overlap.
+export function distributeWidgets(layout: LiveLayout, id: string, axis: DistributeAxis): LiveLayout | string {
+    const anchor = layout.widgets.find(item => item.id === id);
+    if (!anchor) return "Оберіть віджет.";
+    const row = axis === "row";
+    const group = layout.widgets
+        .filter(item => row ? item.y === anchor.y && item.h === anchor.h : item.x === anchor.x && item.w === anchor.w)
+        .sort((a, b) => row ? a.x - b.x : a.y - b.y);
+    if (group.length < 2) return row ? "У цьому ряду немає інших віджетів такої ж висоти." : "У цій колонці немає інших віджетів такої ж ширини.";
+    const start = row ? group[0].x : group[0].y;
+    const end = Math.max(...group.map(item => row ? item.x + item.w : item.y + item.h));
+    const span = end - start, base = Math.floor(span / group.length), extra = span % group.length;
+    let cursor = start;
+    const sized = new Map(group.map((item, index) => {
+        const size = base + (index < extra ? 1 : 0);
+        const next = row ? {...item, x: cursor, w: size} : {...item, y: cursor, h: size};
+        cursor += size;
+        return [item.id, next] as const;
+    }));
+    const next = {...layout, widgets: layout.widgets.map(item => sized.get(item.id) ?? item)};
+    const broken = [...sized.values()].find(item => liveWidgetMinimums[item.type][row ? "w" : "h"] > (row ? item.w : item.h));
+    if (broken) return `«${liveWidgetLabels[broken.type]}» не може бути меншим за ${liveWidgetMinimums[broken.type][row ? "w" : "h"]} клітинки.`;
+    if ([...sized.keys()].some(key => layoutConflicts(next).has(key) && !layoutConflicts(layout).has(key))) return "Рівний розподіл перекриє інші віджети.";
     return next;
 }
