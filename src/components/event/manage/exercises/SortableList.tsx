@@ -44,10 +44,11 @@ function SortableRow({id, index, count, name, disabled, move, content, actions, 
         {onSelect
             ? <button type="button" className="event-sortable__main" aria-pressed={!!selected} onClick={onSelect}>{content}</button>
             : <div className="event-sortable__main">{content}</div>}
+        {/* ↑ ↓ first, then the row's own actions (edit, delete last). */}
         <div className="event-sortable__actions">
-            {actions}
             <EventTooltip content={t("manage.exercises.groups.moveUp")} silent>{() => <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.challenges.order.moveUp", {name})} disabled={disabled || index === 0} onClick={() => move(index, index - 1)}><ArrowUp size={16} aria-hidden="true" /></button>}</EventTooltip>
             <EventTooltip content={t("manage.exercises.groups.moveDown")} silent>{() => <button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.challenges.order.moveDown", {name})} disabled={disabled || index === count - 1} onClick={() => move(index, index + 1)}><ArrowDown size={16} aria-hidden="true" /></button>}</EventTooltip>
+            {actions}
         </div>
     </li>;
 }

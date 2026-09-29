@@ -11,7 +11,7 @@ button.event-sortable__main{cursor:pointer}
 .event-sortable__actions{display:flex;align-items:center;flex:none;gap:2px}
 
 /* «Групи й порядок»: groups | tasks of the selected group. */
-.event-group-order{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:var(--ib-5);align-items:start}
+.event-group-order{display:grid;grid-template-columns:minmax(340px,440px) minmax(0,1fr);gap:var(--ib-5);align-items:start}
 .event-group-order__groups,.event-group-order__tasks{display:grid;gap:var(--ib-3);min-width:0}
 .event-group-order__head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3)}
 .event-group-order__label{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3);width:100%;min-width:0}
@@ -94,5 +94,11 @@ button.event-sortable__main{cursor:pointer}
 
 /* A set's state (shown / hidden / cannot work) as one icon with a tooltip. */
 .event-set-status{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border-radius:var(--ib-r-sm);color:var(--ib-dim)}
-.event-set-status.is-shown{color:var(--ib-ok)}
-.event-set-status.is-broken{color:var(--ib-danger)}
+.event-set-status.is-broken,.event-set-status.is-broken svg{color:var(--ib-danger)}
+
+/* Row actions show on hover or keyboard focus (always on touch); they keep
+   their space, so nothing jumps. */
+.event-sortable__actions,.event-exercise-set__head .event-row-actions{opacity:0;transition:opacity .12s ease}
+.event-sortable__row:hover .event-sortable__actions,.event-sortable__row:focus-within .event-sortable__actions,
+.event-exercise-set__head:hover .event-row-actions,.event-exercise-set__head:focus-within .event-row-actions{opacity:1}
+@media (hover:none),(pointer:coarse){.event-sortable__actions,.event-exercise-set__head .event-row-actions{opacity:1}}
