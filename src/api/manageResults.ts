@@ -80,14 +80,20 @@ export type ModeratorResults = z.infer<typeof moderatorResultsSchema>;
 export type ModeratorResultsTeam = z.infer<typeof moderatorTeamSchema>;
 export type ModeratorResultsSolve = ModeratorResultsTeam["Solves"][number];
 
+const liveAudienceSchema = z.union([z.literal(0), z.literal(1), z.literal(2)]);
 const settingsSchema = z.object({
     ScoreboardVisibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),
     FreezeEnabled: z.boolean(), FreezeMinutes: z.number().int(), LiveFreeze: z.boolean(),
     ChartEnabled: z.boolean(), ChartTeams: z.number().int(), RowsLimit: z.number().int().nullable(),
     OpenedAt: z.string().nullable(), Freeze: freezeSchema,
+    // Who may open /live: 0 staff, 1 participants, 2 everyone; the effective
+    // value is narrowed to ScoreboardVisibility by the backend.
+    LiveAudience: liveAudienceSchema.default(0), EffectiveLiveAudience: liveAudienceSchema.default(0),
 });
 export type ResultsSettings = z.infer<typeof settingsSchema>;
-export type ResultsSettingsInput = Omit<ResultsSettings, "OpenedAt" | "Freeze">;
+export type LiveAudience = z.infer<typeof liveAudienceSchema>;
+// LiveAudience is optional: omitted keeps the stored value.
+export type ResultsSettingsInput = Omit<ResultsSettings, "OpenedAt" | "Freeze" | "LiveAudience" | "EffectiveLiveAudience"> & {LiveAudience?: LiveAudience};
 
 export function resultsSettingsInput(settings: ResultsSettings): ResultsSettingsInput {
     const {ScoreboardVisibility, FreezeEnabled, FreezeMinutes, LiveFreeze, ChartEnabled, ChartTeams, RowsLimit} = settings;

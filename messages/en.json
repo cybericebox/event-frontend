@@ -1460,8 +1460,7 @@
   "manage.live.error.noSpaceHere": "There is no room for this widget here: pick free cells.",
   "manage.live.error.overlap": "The widget overlaps another one or goes beyond the grid.",
   "manage.live.freeze.disabled": "The freeze is disabled in “Results settings”.",
-  "manage.live.freeze.error": "Could not change the freeze setting.",
-  "manage.live.freeze.immediate": "Applies immediately, without publishing.",
+  "manage.live.freeze.immediate": "Applies to the organizers' screen. During a freeze participants and guests always see frozen results. Applies immediately.",
   "manage.live.freeze.label": "Respect the results freeze",
   "manage.live.freeze.off": "The live screen shows the current ranking",
   "manage.live.freeze.on": "The live screen respects the freeze",
@@ -2789,5 +2788,16 @@
   "scoreboard.status.notStarted": "The event has not started yet",
   "scoreboard.openLive": "Open Live",
   "scoreboard.status.current": "current ranking",
-  "scoreboard.status.final": "final ranking"
+  "scoreboard.status.final": "final ranking",
+  "manage.live.audience.label": "Who can open Live",
+  "manage.live.audience.public": "Everyone (public)",
+  "manage.live.audience.participants": "Participants",
+  "manage.live.audience.staff": "Organizers only",
+  "manage.live.audience.hint": "Organizers and moderators can always open the screen. Applies immediately.",
+  "manage.live.audience.narrowed": "“{audience}” applies now: the results visibility does not allow more.",
+  "manage.live.audience.capHidden": "Results are hidden in “Results settings”.",
+  "manage.live.audience.capParticipants": "Only participants see the results.",
+  "manage.live.audience.saved": "Live access changed",
+  "manage.live.access.error": "Could not change Live access.",
+  "live.unavailable.closed": "The organizers have not opened the live screen to you. If you are a participant, sign in with your account."
 }

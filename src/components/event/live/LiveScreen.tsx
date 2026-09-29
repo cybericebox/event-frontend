@@ -44,10 +44,11 @@ function LiveScreenTest({layout}: {layout: LiveLayout}) {
     </div>;
 }
 
-// `manager`: organizers and moderators read the layout and the live board
-// through the management API (works before publication). Everyone else sees
-// the published layout of a published event with the results-page board,
-// under the same visibility rules as /results.
+// `manager`: organizers and moderators read the layout through the
+// management API (works before publication). Everyone else sees the
+// published layout of a published event. Both read the view=live board: the
+// backend lets a viewer in only within the live audience and the results
+// visibility, with the results-page data and freeze.
 export function LiveScreen({event, manager}: {event: PublicEventInfo; manager: boolean}) {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
@@ -60,7 +61,7 @@ export function LiveScreen({event, manager}: {event: PublicEventInfo; manager: b
     useEffect(() => {
         if (version.data !== undefined && layoutQuery.data && version.data !== layoutQuery.data.version) void queryClient.invalidateQueries({queryKey: ["event-live-screen-layout", eventID]});
     }, [version.data, layoutQuery.data, queryClient, eventID]);
-    const {results} = useLiveResults(eventID, layoutQuery.isSuccess, {view: manager ? "live" : "page", refreshSeconds: layoutQuery.data?.refreshSeconds});
+    const {results} = useLiveResults(eventID, layoutQuery.isSuccess, {refreshSeconds: layoutQuery.data?.refreshSeconds});
     const fullscreen = useFullscreen();
     const wake = useWakeLock(true);
     const idle = useIdle(3000);
@@ -83,7 +84,9 @@ export function LiveScreen({event, manager}: {event: PublicEventInfo; manager: b
         return () => window.removeEventListener("keydown", onKey);
     }, [onKey]);
 
-    const unavailable = layoutQuery.error instanceof ManageApiError && layoutQuery.error.status === 404 && !manager ? "unpublished" : results.error instanceof ResultsUnavailableError ? results.error.reason : null;
+    const unavailable = layoutQuery.error instanceof ManageApiError && layoutQuery.error.status === 404 && !manager ? "unpublished"
+        : results.error instanceof ResultsUnavailableError ? results.error.reason
+            : results.error instanceof ManageApiError && results.error.status === 403 ? "closed" : null;
     if (unavailable) return <main className="live-fullscreen"><div className="live-fullscreen__state" role="alert"><h1>{t("live.unavailable.title")}</h1><p>{t(`live.unavailable.${unavailable}`)}</p></div></main>;
     if (layoutQuery.isError) return <main className="live-fullscreen"><EventLoadError message={t("live.loadFailed")} onRetry={() => void layoutQuery.refetch()} /></main>;
     if (!layoutQuery.data) return <main className="live-fullscreen"><EventLoading event={event} label={t("live.loading")} /></main>;
@@ -94,7 +97,7 @@ export function LiveScreen({event, manager}: {event: PublicEventInfo; manager: b
             <LiveCanvas layout={layout} event={event} results={results.data} />
             {testing && <LiveScreenTest layout={layout} />}
         </div>
-        {results.isError && !(results.error instanceof ResultsUnavailableError) && <div className="live-fullscreen__notice" role="alert">{t("live.resultsUnavailable")}</div>}
+        {results.isError && !unavailable && <div className="live-fullscreen__notice" role="alert">{t("live.resultsUnavailable")}</div>}
         <div className="live-controls" aria-label={t("live.controls")}>
             {fullscreen.supported && <EventTooltip content={t("live.keyF")}>{id => <button type="button" onClick={fullscreen.toggle} aria-keyshortcuts="F" aria-describedby={id}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}</EventTooltip>}
             <EventTooltip content={t("live.keyT")}>{id => <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} aria-keyshortcuts="T" aria-describedby={id}><MonitorCheck size={16} />{t("live.test.title")}</button>}</EventTooltip>

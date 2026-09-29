@@ -1460,8 +1460,7 @@
   "manage.live.error.noSpaceHere": "Тут немає місця для цього віджета: оберіть вільні клітинки.",
   "manage.live.error.overlap": "Віджет перетинається з іншим або виходить за межі сітки.",
   "manage.live.freeze.disabled": "Заморожування вимкнено в «Налаштуваннях результатів».",
-  "manage.live.freeze.error": "Не вдалося змінити налаштування заморожування.",
-  "manage.live.freeze.immediate": "Діє одразу, без публікації.",
+  "manage.live.freeze.immediate": "Стосується екрана організаторів. Учасники й гості під час заморожування завжди бачать заморожені результати. Діє одразу.",
   "manage.live.freeze.label": "Враховувати заморожування результатів",
   "manage.live.freeze.off": "Live-екран показує актуальний рейтинг",
   "manage.live.freeze.on": "Live-екран враховує заморожування",
@@ -2789,5 +2788,16 @@
   "scoreboard.status.notStarted": "Захід ще не почався",
   "scoreboard.openLive": "Відкрити Live",
   "scoreboard.status.current": "актуальний рейтинг",
-  "scoreboard.status.final": "підсумковий рейтинг"
+  "scoreboard.status.final": "підсумковий рейтинг",
+  "manage.live.audience.label": "Хто може відкрити Live",
+  "manage.live.audience.public": "Усі (публічно)",
+  "manage.live.audience.participants": "Учасники",
+  "manage.live.audience.staff": "Лише організатори",
+  "manage.live.audience.hint": "Організатори й модератори відкривають екран завжди. Діє одразу.",
+  "manage.live.audience.narrowed": "Зараз діє «{audience}»: ширше не дозволяє видимість результатів.",
+  "manage.live.audience.capHidden": "Результати приховано в «Налаштуваннях результатів».",
+  "manage.live.audience.capParticipants": "Результати бачать лише учасники.",
+  "manage.live.audience.saved": "Доступ до Live змінено",
+  "manage.live.access.error": "Не вдалося змінити доступ до Live.",
+  "live.unavailable.closed": "Організатори не відкрили Live-екран для вас. Якщо ви учасник, увійдіть під своїм обліковим записом."
 }
