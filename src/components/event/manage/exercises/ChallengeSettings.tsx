@@ -78,11 +78,17 @@ export function ChallengeSettings() {
 
     async function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode">>) {
         if (!config.data || savingConfig || !canManage) return;
+        const key = ["event-management-config", eventID];
+        const previous = config.data;
+        // Optimistic: the switch and the blocks it shows react at once; a failed save rolls back.
+        queryClient.setQueryData(key, {...previous, ...patch});
         setSavingConfig(true);
         try {
-            queryClient.setQueryData(["event-management-config", eventID], await putManageConfig(eventID, {...manageConfigInput(config.data), ...patch}));
-        } catch {toast.error(t("manage.board.saveFailed"));}
-        finally {setSavingConfig(false);}
+            queryClient.setQueryData(key, await putManageConfig(eventID, {...manageConfigInput(previous), ...patch}));
+        } catch {
+            queryClient.setQueryData(key, previous);
+            toast.error(t("manage.board.saveFailed"));
+        } finally {setSavingConfig(false);}
     }
 
     return <div className="event-manage-settings event-manage-general event-challenge-settings">
@@ -126,13 +132,13 @@ export function ChallengeSettings() {
         <section className="event-manage-section" aria-labelledby="hints-title">
             <div className="event-manage-section__head"><h2 id="hints-title">{t("manage.challenges.hints.title")}</h2><p>{t("manage.challenges.hints.subtitle")}</p></div>
             <div className="event-challenge-settings__switch">
-                <EventSwitch className="event-manage-form__switch" checked={config.data.HintsDisabled} disabled={!canManage || savingConfig} onCheckedChange={checked => void saveConfig({HintsDisabled: checked})} label={t("manage.challenges.hints.disableAll")} />
-                <p>{t("manage.challenges.hints.disableAllNote")}</p>
+                <EventSwitch className="event-manage-form__switch" checked={!config.data.HintsDisabled} disabled={!canManage} onCheckedChange={checked => void saveConfig({HintsDisabled: !checked})} label={t("manage.challenges.hints.enable")} />
+                <p>{t("manage.challenges.hints.enableNote")}</p>
             </div>
-            <fieldset className="event-hint-charge" disabled={!canManage || savingConfig}>
+            {!config.data.HintsDisabled && <fieldset className="event-hint-charge" disabled={!canManage || savingConfig}>
                 <legend>{t("manage.board.chargeLegend")}</legend>
                 <div className="event-manage-choice-group">{chargeModes().map(mode => <label key={mode.value}><input type="radio" name="hint-charge-mode" value={mode.value} checked={config.data.HintChargeMode === mode.value} onChange={() => void saveConfig({HintChargeMode: mode.value})} /><span><strong>{mode.label}</strong><small>{mode.note}</small></span></label>)}</div>
-            </fieldset>
+            </fieldset>}
         </section>
         <section className="event-manage-section" aria-labelledby="board-title">
             <div className="event-manage-section__head"><h2 id="board-title">{t("manage.challenges.display.title")}</h2><p>{t("manage.board.subtitle")}</p></div>
