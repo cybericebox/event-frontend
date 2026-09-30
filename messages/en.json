@@ -3772,6 +3772,7 @@
   "manage.analytics.integrity.kind.follows_solve": "Right after a team",
   "manage.analytics.integrity.evidence.no_access": "The team did not open the task, download its files or unlock a hint before solving it.",
   "manage.analytics.integrity.evidence.no_lab": "A lab task was solved, but the team never connected to the VPN.",
+  "manage.analytics.integrity.evidence.no_lab_knock": "The team's VPN client knocked at the lab ({time}), but the lab never answered before the solve.",
   "manage.analytics.integrity.evidence.too_fast": "Solved {time} after the first open of the task (threshold for the “{level}” level: {floor}).",
   "manage.analytics.integrity.evidence.first_try_hard": "Solved on the first attempt. Median attempts among the teams that solved the task ({teams}): {attempts}.",
   "manage.analytics.integrity.evidence.shared_wrong": "Wrong answers of this team match answers of other teams: {count}.",

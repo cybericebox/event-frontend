@@ -124,6 +124,7 @@ describe("signal evidence", () => {
     it("writes one sentence per kind, with formatted durations", () => {
         expect(signalEvidence(sig({Kind: "no_access"}), "easy")).toBe("Команда не відкривала завдання, не завантажувала його файли й не брала підказок до розв'язання.");
         expect(signalEvidence(sig({Kind: "no_lab"}), "easy")).toBe("Розв'язано завдання з лабораторією, але команда жодного разу не підключала VPN.");
+        expect(signalEvidence(sig({Kind: "no_lab", Extra: 1, At: "2026-09-29T10:00:00.000Z"}), "easy")).toMatch(/^Клієнт VPN команди стукався до лабораторії \(.+\), але лабораторія не відповіла жодного разу до розв'язання\.$/);
         expect(signalEvidence(sig({Kind: "too_fast", Seconds: 3, Baseline: 20}), "easy")).toBe("Здано через 3 с після першого відкриття завдання (поріг для рівня «Легке» — 20 с).");
         expect(signalEvidence(sig({Kind: "first_try_hard", Count: 8, Baseline: 5}), "hard")).toBe("Розв'язано з першої спроби. Медіана спроб серед команд, що розв'язали завдання (8): 5.");
         expect(signalEvidence(sig({Kind: "shared_wrong", Count: 2, Teams: [{ID: "a", Name: "Red"}, {ID: "b", Name: "Green"}]}), "medium")).toBe("Неправильні відповіді цієї команди збігаються з відповідями інших команд (2). Команди: Red, Green.");

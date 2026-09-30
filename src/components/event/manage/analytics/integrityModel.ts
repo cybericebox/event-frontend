@@ -28,7 +28,7 @@ const teamNames = (signal: IntegritySignal) => signal.Teams.map(team => team.Nam
 export function signalEvidence(signal: IntegritySignal, level: IntegrityLevel): string {
     switch (signal.Kind) {
         case "no_access": return t("manage.analytics.integrity.evidence.no_access");
-        case "no_lab": return t("manage.analytics.integrity.evidence.no_lab");
+        case "no_lab": return signal.Extra === 1 ? t("manage.analytics.integrity.evidence.no_lab_knock", {time: formatDateTime(signal.At)}) : t("manage.analytics.integrity.evidence.no_lab");
         case "too_fast": return t("manage.analytics.integrity.evidence.too_fast", {time: formatDuration(signal.Seconds), level: levelLabel(level), floor: formatDuration(signal.Baseline)});
         case "first_try_hard": return t("manage.analytics.integrity.evidence.first_try_hard", {teams: signal.Count, attempts: signal.Baseline});
         case "shared_wrong": return t(signal.Answers.length > 0 ? "manage.analytics.integrity.evidence.shared_wrong" : "manage.analytics.integrity.evidence.shared_wrong_teams", {count: signal.Count, teams: teamNames(signal)});

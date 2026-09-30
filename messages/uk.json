@@ -3772,6 +3772,7 @@
   "manage.analytics.integrity.kind.follows_solve": "Слідом за командою",
   "manage.analytics.integrity.evidence.no_access": "Команда не відкривала завдання, не завантажувала його файли й не брала підказок до розв'язання.",
   "manage.analytics.integrity.evidence.no_lab": "Розв'язано завдання з лабораторією, але команда жодного разу не підключала VPN.",
+  "manage.analytics.integrity.evidence.no_lab_knock": "Клієнт VPN команди стукався до лабораторії ({time}), але лабораторія не відповіла жодного разу до розв'язання.",
   "manage.analytics.integrity.evidence.too_fast": "Здано через {time} після першого відкриття завдання (поріг для рівня «{level}» — {floor}).",
   "manage.analytics.integrity.evidence.first_try_hard": "Розв'язано з першої спроби. Медіана спроб серед команд, що розв'язали завдання ({teams}): {attempts}.",
   "manage.analytics.integrity.evidence.shared_wrong": "Неправильні відповіді цієї команди збігаються з відповідями інших команд: {count}.",
