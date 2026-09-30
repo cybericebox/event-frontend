@@ -36,6 +36,8 @@ export type BlockEditorProps = {
   onUploadImage: (file: File) => Promise<string>;
   imageURL: (fileID: string) => string;
   disabled?: boolean;
+  /** Block types the editor does not offer (a broadcast has no draft to upload images to). */
+  hiddenBlocks?: Array<EmailBodyBlock["type"]>;
 };
 
 const BLOCK_LABEL_KEYS: Record<EmailBodyBlock["type"], string> = {
@@ -74,7 +76,7 @@ function newKey(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function BlockEditor({ value, onChange, variables, presets, onUploadImage, imageURL, disabled = false }: BlockEditorProps) {
+export function BlockEditor({ value, onChange, variables, presets, onUploadImage, imageURL, disabled = false, hiddenBlocks = [] }: BlockEditorProps) {
   // Keys follow internal add/remove/reorder operations. For a parent-initiated
   // length change, adjust them before rendering children so mounted editors keep
   // their identity and no ref is read or mutated during render.
@@ -278,7 +280,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
         <div className="mt-4 rounded-xl border border-dashed border-(--ib-line) p-4">
           <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.08em] text-(--ib-dim)">{t("manage.tpl.editor.addBlock")}</div>
           <div className="mb-4 flex flex-wrap gap-2">
-            {ADD_BLOCK_TYPES.map((type) => (
+            {ADD_BLOCK_TYPES.filter((type) => !hiddenBlocks.includes(type)).map((type) => (
               <button key={type} type="button" aria-label={t(ADD_BLOCK_ARIA_KEYS[type])} onClick={() => addBlock(type)}
                 className="rounded border border-(--ib-line) bg-(--ib-surface) px-2.5 py-1 text-xs font-medium transition-colors hover:bg-(--ib-soft)">
                 {t(BLOCK_LABEL_KEYS[type])}

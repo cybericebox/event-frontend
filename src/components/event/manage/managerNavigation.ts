@@ -31,6 +31,9 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     for (const base of ["/manage/notifications/", "/manage/email/"]) {
         if (pathname.startsWith(base)) return signalLabel(decodeURIComponent(pathname.slice(base.length))).title;
     }
+    if (pathname === "/manage/broadcasts/new") return t("manage.broadcasts.new");
+    if (pathname === "/manage/broadcasts" || pathname.startsWith("/manage/broadcasts/")) return t("manage.nav.broadcasts");
+    if (pathname === "/manage/banners") return t("manage.nav.banners");
     if (pathname === "/manage/mail") return t("manage.nav.mail");
     if (pathname === "/manage/mail-journal") return t("manage.nav.mailJournal");
     if (pathname === "/manage/content/pages/new") return t("manage.nav.newPage");
