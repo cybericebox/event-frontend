@@ -125,7 +125,8 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
     onRetryPages: () => void;
     onNavigate: () => void;
 }) {
-    const [openGroupID, setOpenGroupID] = useState<string | null>(null);
+    // The group holding the current page starts open; the reader can open others.
+    const [openGroupID, setOpenGroupID] = useState<string | null>(() => groups.find(group => group.items.some(item => pathname === item.href || pathname.startsWith(`${item.href}/`)))?.id ?? null);
     const teamMode = event.Participation === 1;
     const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructureAllowed) && (!item.sensitiveOnly || !!analytics?.Sensitive);
     const openGroup = (groupID: string) => setOpenGroupID(groupID);

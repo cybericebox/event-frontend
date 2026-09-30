@@ -18,7 +18,8 @@ const event = {
 
 function renderSidebar(participation: 0 | 1, infrastructure = false) {
     render(<ManagerSidebar event={{...event, Participation: participation}} pathname="/manage/participants" pages={[]} pagesError={false} canManage infrastructureAllowed={infrastructure} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", {name: "Участь"}));
+    // The group of the current page (/manage/participants) opens on its own.
+    expect(screen.getByRole("button", {name: "Участь"}).getAttribute("aria-expanded")).toBe("true");
 }
 
 describe("participation navigation", () => {
@@ -125,7 +126,7 @@ describe("participation navigation", () => {
             expect(row.classList.contains("ib-admin-side__item")).toBe(true);
             expect(row.querySelector("svg")).toBeTruthy();
         }
-        for (const heading of Array.from(nav.querySelectorAll("button[aria-expanded]"))) fireEvent.click(heading);
+        for (const heading of Array.from(nav.querySelectorAll("button[aria-expanded=false]"))) fireEvent.click(heading);
         for (const link of Array.from(nav.querySelectorAll("section a.ib-admin-side__item"))) expect(link.querySelector("svg"), link.textContent ?? "").toBeTruthy();
     });
 
