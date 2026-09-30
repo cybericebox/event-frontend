@@ -1,7 +1,8 @@
 "use client";
 
-import {useEffect, useId, useRef, useState, type FormEvent} from "react";
+import {useEffect, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {ChallengeSolvesTab} from "./ChallengeSolvesTab";
+import {descriptionValues} from "./descriptionValues";
 import {labLinkErrorMessage, useLabLink, type LabLinkState} from "./useLabLink";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery} from "@tanstack/react-query";
@@ -259,6 +260,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         }
     }
 
+    const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], lab.data), [challenge?.Snapshot.placeholders, lab.data]);
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
     const category = challenge?.GroupName || t("challenges.otherCategory");
@@ -298,7 +300,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                     onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{challenge.SolveCount !== null ? solvesLabel(challenge.SolveCount) : t("challenges.modal.solvesTab")}</button>}
             </div>
             <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
-                <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
+                <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
                 {files.length > 0 && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.modal.files")}</h3>
                     <ul className="ib-cmodal__files">{files.map(file => <li key={file.FileID}>

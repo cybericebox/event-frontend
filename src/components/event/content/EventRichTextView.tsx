@@ -32,9 +32,18 @@ function formattedText(text: string, format: unknown): ReactNode {
     return result;
 }
 
-export function EventRichTextView({value, variables = {}, dateDisplays, emptyFallback}: {
+// A lab address may be plain http (reached over the team's VPN), so a variable link
+// has its own check: http(s) only, no credentials.
+function variableHref(href: string | undefined): string | null {
+    if (!href) return null;
+    try {const url = new URL(href); return (url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password ? url.href : null;} catch {return null;}
+}
+
+export function EventRichTextView({value, variables = {}, links = {}, dateDisplays, emptyFallback}: {
     value?: ContentRichText | null | unknown;
     variables?: Record<string, Value>;
+    // Variables that render as a working link (name -> URL); the text stays the variable's value.
+    links?: Record<string, string>;
     dateDisplays?: Record<string, Display>;
     emptyFallback?: ReactNode;
 }) {
@@ -54,6 +63,8 @@ export function EventRichTextView({value, variables = {}, dateDisplays, emptyFal
                 const text = typeof raw === "string" && display && !Number.isNaN(Date.parse(raw)) ? formatDateTime(raw, display.format, display.pattern)
                     : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? name : String(raw);
                 const formats = Array.isArray(node.formats) ? node.formats : [];
+                const href = variableHref(links[name]);
+                if (href) return <a key={key} className="event-lexical__link" href={href} target="_blank" rel="noopener noreferrer" data-event-variable={name}>{text}</a>;
                 return <span key={key} className="event-lexical__variable" data-event-variable={name}
                     style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,
                         textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined,

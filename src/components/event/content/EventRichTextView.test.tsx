@@ -24,4 +24,13 @@ describe("EventRichTextView", () => {
         const html = renderToStaticMarkup(<EventRichTextView value={{root: {type: "root", children}}} />);
         for (const tag of ["h4", "h5", "h6"]) expect(html).toContain(`<${tag} class="event-lexical__${tag}"><span>${tag}</span></${tag}>`);
     });
+    it("renders a link variable as a safe new-tab anchor, even over plain http", () => {
+        const value = {root: {type: "root", children: [{type: "paragraph", children: [{type: "variable", varName: "ph_a"}, {type: "variable", varName: "ph_bad"}]}]}};
+        const html = renderToStaticMarkup(<EventRichTextView value={value}
+            variables={{ph_a: "http://10.128.1.5:8080/x", ph_bad: "javascript:alert(1)"}} links={{ph_a: "http://10.128.1.5:8080/x", ph_bad: "javascript:alert(1)"}} />);
+        expect(html).toContain('<a class="event-lexical__link" href="http://10.128.1.5:8080/x" target="_blank" rel="noopener noreferrer"');
+        expect(html).toContain(">http://10.128.1.5:8080/x</a>");
+        expect(html).not.toContain("javascript:alert(1)\"");
+        expect(html).toContain("<span");
+    });
 });

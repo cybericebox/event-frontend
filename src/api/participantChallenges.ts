@@ -19,11 +19,27 @@ export const hintSchema = z.object({
     UnlockedAt: z.string().nullish().transform(value => value ?? null),
     UnlockedByName: z.string().nullish().transform(value => value ?? ""),
 });
+// A description placeholder as the exercise stores it (snake_case, like the rest of the snapshot).
+const placeholderSchema = z.object({
+    key: z.string().default(""),
+    kind: z.string(),
+    ip_reference: z.string().optional(),
+    octets_1to3: z.string().optional(),
+    last_octet: z.number().int().optional(),
+    show_mask: z.boolean().optional(),
+    as_link: z.boolean().optional(),
+    scheme: z.string().optional(),
+    port: z.number().int().optional(),
+    path: z.string().optional(),
+    device_name: z.string().optional(),
+});
+export type SnapshotPlaceholder = z.infer<typeof placeholderSchema>;
 const snapshotSchema = z.object({
     name: z.string(),
     description: z.unknown().optional(),
     difficulty: z.enum(["elementary", "trivial", "easy", "medium", "hard", "insane"]).catch("medium"),
     attachments: z.array(attachmentSchema).nullish().transform(value => value ?? []),
+    placeholders: z.array(placeholderSchema).nullish().transform(value => value ?? []),
 });
 const fileSchema = z.object({FileID: id, Name: z.string(), Size: z.number().int().default(0)});
 const prerequisiteSchema = z.object({EventChallengeID: id, Name: z.string(), Solved: z.boolean()});

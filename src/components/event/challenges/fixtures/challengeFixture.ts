@@ -58,6 +58,7 @@ export const fixtureChallenge: OwnChallenge = {
         description: fixtureDescription,
         difficulty: "hard",
         attachments: [{file_id: "33333333-3333-4333-8333-333333333333", name: "very-long-attachment-name-" + "x".repeat(80) + ".zip"}],
+        placeholders: [],
     },
     Readiness: 100,
     SolvedAt: "2026-09-29T09:30:00Z",
