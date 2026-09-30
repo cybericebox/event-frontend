@@ -138,7 +138,7 @@ export async function getOwnChallengeLab(eventID: string, challengeID: string): 
     return z.object({Data: LabRuntimeSchema}).parse(await response.json()).Data;
 }
 
-// The link that opens one web device of a task's lab: https://<device>-<labid>.<base>/_auth?t=...
+// The link that opens one web device of a task's lab: https://<device>-<code>.<base>/_auth?t=...
 // It is short-lived and single use, so it is fetched on every click and never kept.
 // The lab proxy turns it into its own cookie on the lab domain; the platform sets none.
 // Staff testing tasks as the moderators team use the manage route.
