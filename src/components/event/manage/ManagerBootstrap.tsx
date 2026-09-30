@@ -8,7 +8,9 @@ import {EventErrorScreen} from "../EventErrorScreen";
 import {EventLoading} from "../EventLoading";
 import {EventBrandProvider} from "../EventBrandLogo";
 import {OutageShell} from "../OutageShell";
-import {idOrigin} from "@/utils/origins";
+import {EventNotFoundScreen} from "../EventNotFoundScreen";
+import {NoAccessScreen} from "../NoAccessScreen";
+import {SignInRedirect} from "../SignInRedirect";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
@@ -37,12 +39,12 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         // An outage keeps the /manage frame; the outage modal covers it and the
         // query refetches once the API answers.
         if (isOutageError(event.error, status)) return <OutageShell manage />;
-        if (![401, 403, 404].includes(status)) return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => void event.refetch()} />;
-        return <div className="event-shell-state" role="alert">
-            <h1>{t("manage.shell.eventNotFoundTitle")}</h1>
-            <p>{t("manage.shell.eventNotFoundBody")}</p>
-            <a className="ib-btn ib-btn--primary" href={`${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}`}>{t("common.signIn")}</a>
-        </div>;
+        if (status === 401) return <SignInRedirect />;
+        if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} />;
+        // 404 does not say whether the event is missing or closed to this visitor: a visitor
+        // goes to the sign-in, a signed-in account gets the neutral "not available" screen.
+        if (status === 404) return <EventNotFoundScreen redirectVisitor />;
+        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => void event.refetch()} />;
     }
     return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data}>{children}</ManagerShell></EventBrandProvider>;
 }

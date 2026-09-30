@@ -1,26 +1,19 @@
 "use client";
 
-import {useEffect, useSyncExternalStore, type ReactNode} from "react";
+import {useEffect, useSyncExternalStore} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
-import Link from "next/link";
 import {useQuery} from "@tanstack/react-query";
 import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {getManageAccess, ManageApiError} from "@/api/manage";
 import {getLiveScreenByLink, liveScreenTokenFromHash, LiveScreenLinkError} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveLinkClosed, LiveScreen} from "./LiveScreen";
-import {idOrigin} from "@/utils/origins";
 import "./live.css";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
-
-function signInHref(): string {
-    return idOrigin ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(window.location.href)}` : "/";
-}
-
-function State({title, text, action}: {title: string; text?: string; action?: ReactNode}) {
-    return <main className="live-fullscreen"><div className="live-fullscreen__state" role="alert"><h1>{title}</h1>{text && <p>{text}</p>}{action}</div></main>;
-}
+import {EventNotFoundScreen} from "@/components/event/EventNotFoundScreen";
+import {NoAccessScreen} from "@/components/event/NoAccessScreen";
+import {SignInRedirect} from "@/components/event/SignInRedirect";
 
 function applyEventTheme(event: PublicEventInfo) {
     const root = document.documentElement;
@@ -69,8 +62,9 @@ function LiveStaffBootstrap() {
     const failed = event.error ?? access.error;
     if (failed) {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
-        if (status === 401 || (status === 404 && event.isError)) return <State title={t("live.signIn.title")} text={t("live.signIn.text")} action={<a className="ib-btn ib-btn--primary" href={signInHref()}>{t("account.signIn")}</a>} />;
-        if (status === 403) return <State title={t("live.forbidden.title")} text={t("live.forbidden.text")} action={<Link className="ib-btn" href="/">{t("live.toSite")}</Link>} />;
+        if (status === 401) return <SignInRedirect />;
+        if (status === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;
+        if (status === 404 && event.isError) return <EventNotFoundScreen redirectVisitor />;
         return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} error={event.error ?? access.error} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} /></main>;
     }
     if (!event.data || !access.data) return <main className="live-fullscreen"><EventLoading event={event.data} label={t("live.checkingAccess")} /></main>;

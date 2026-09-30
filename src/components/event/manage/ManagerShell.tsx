@@ -10,21 +10,15 @@ import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
 import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavigation";
 import {OutageShell} from "../OutageShell";
+import {NoAccessScreen} from "../NoAccessScreen";
+import {SignInRedirect} from "../SignInRedirect";
 import {useAnalyticsAccess} from "./analytics/useAnalyticsAccess";
 import {SetupChip} from "./setup/SetupChip";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {managerLocationTitle} from "./managerNavigation";
-import Link from "next/link";
-import {eventOrigin, idOrigin} from "@/utils/origins";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
-
-function signInHref(event: PublicEventInfo): string {
-    const back = eventOrigin(event.Tag);
-    if (!idOrigin || !back) return "/";
-    return `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${back}/manage`)}`;
-}
 
 const ManagerContext = createContext<{event: PublicEventInfo; canManage: boolean} | null>(null);
 
@@ -58,12 +52,10 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         const status = access.error instanceof ManageApiError ? access.error.status : 0;
         // An outage keeps the frame under the outage modal; access refetches on recovery.
         if (isOutageError(access.error, status)) return <OutageShell manage event={event} />;
-        if (status !== 401 && status !== 403) return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} onRetry={() => void access.refetch()} page />;
-        return <div className="event-shell-state" role="alert">
-            <h1>{status === 403 ? t("manage.shell.forbiddenTitle") : t("manage.shell.signInTitle")}</h1>
-            <p>{status === 403 ? t("manage.shell.forbiddenBody") : t("manage.shell.signInBody")}</p>
-            {status === 401 ? <a className="ib-btn ib-btn--primary" href={signInHref(event)}>{t("common.signIn")}</a> : <Link className="ib-btn" href="/">{t("manage.shell.toEventSite")}</Link>}
-        </div>;
+        // 401: no session, straight to the sign-in and back here. 403: signed in without rights.
+        if (status === 401) return <SignInRedirect event={event} />;
+        if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} homeHref="/" />;
+        return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} onRetry={() => void access.refetch()} page />;
     }
 
     return <div className="event-manage-frame">

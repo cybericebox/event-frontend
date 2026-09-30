@@ -7,15 +7,19 @@ import {idOrigin, mainOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {EventLoading} from "./EventLoading";
+import {SignInRedirect} from "./SignInRedirect";
 import "@/styles/error-screen.css";
 
 // The event of this address is not available: missing, unpublished or closed to this
 // account. The text never says which. A visitor is offered the sign-in; both lead back
-// to the platform. Same frame as EventErrorScreen.
-export function EventNotFoundScreen() {
+// to the platform. Same frame as EventErrorScreen. `redirectVisitor` is for pages that
+// need a session (the private preview, /manage): a visitor goes straight to the sign-in
+// and back, and only a signed-in account sees this screen.
+export function EventNotFoundScreen({redirectVisitor = false}: {redirectVisitor?: boolean}) {
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
     if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;
     const signedIn = !!user.data;
+    if (redirectVisitor && !signedIn) return <SignInRedirect />;
     const Icon = signedIn ? Lock : SearchX;
     return <main className="event-error event-error--page" role="alert">
         <EventBrandLogo className="event-error__logo" size={64} />

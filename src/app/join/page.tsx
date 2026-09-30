@@ -15,6 +15,7 @@ import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
+import {SignInRedirect} from "@/components/event/SignInRedirect";
 import {EventButton} from "@/components/ui/EventButton";
 
 export default function JoinPage() {
@@ -69,7 +70,7 @@ export default function JoinPage() {
         <h1>{t("join.title")}</h1>
         {!event || identity.isPending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <EventLoading event={event} label={t("join.loading")} />
             : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <EventLoadError message={t("join.loadFailed")} error={identity.error ?? join.error ?? registration.error ?? invitation.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
-            : !identity.data ? <p>{t("join.signInHint")}</p>
+            : !identity.data ? <SignInRedirect event={event} full={false} />
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>{t("invite.already")}</p>
             : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>{t("join.pending")}</p>
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>{t("shell.join.rejected")}</p>

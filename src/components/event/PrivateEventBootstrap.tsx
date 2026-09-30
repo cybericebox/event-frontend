@@ -13,6 +13,8 @@ import {EventLoading} from "./EventLoading";
 import {EventNotFoundScreen} from "./EventNotFoundScreen";
 import {EventBrandProvider} from "./EventBrandLogo";
 import {OutageShell} from "./OutageShell";
+import {NoAccessScreen} from "./NoAccessScreen";
+import {SignInRedirect} from "./SignInRedirect";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
@@ -54,10 +56,14 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // An outage keeps the guest frame under the outage modal; the queries
         // refetch once the API answers.
         if (isOutageError(identity.error ?? access.error, status)) return <OutageShell />;
-        // Only a missing event or a missing right sends to the sign-in; any other failure
-        // (server error, network) is a load failure with a retry.
-        if (![401, 403, 404].includes(status)) return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
-        return <EventNotFoundScreen />;
+        // 401: straight to the sign-in and back. 403: signed in without rights. 404 does not
+        // say whether the event is missing or closed: a visitor goes to the sign-in, a signed-in
+        // account sees the neutral screen. Any other failure (server error, network) is a load
+        // failure with a retry.
+        if (status === 401) return <SignInRedirect />;
+        if (status === 403) return <NoAccessScreen />;
+        if (status === 404) return <EventNotFoundScreen redirectVisitor />;
+        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
     }
     const event = identity.data!;
     return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>
