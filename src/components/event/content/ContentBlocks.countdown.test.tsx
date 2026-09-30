@@ -3,7 +3,7 @@ import {afterEach, expect, it} from "vitest";
 import {cleanup, render, screen} from "@testing-library/react";
 import type {ContentBlock} from "@/types/eventContent";
 import {t} from "@/i18n/t";
-import {BlockDataGapNotice} from "../manage/BlockDataGapNotice";
+import {blockDataWarning} from "../manage/previewScenario";
 import {ContentBlocks} from "./ContentBlocks";
 
 afterEach(cleanup);
@@ -34,13 +34,12 @@ it("keeps the dimmed block in the preview", () => {
     expect(container.querySelector(".ib-block-countdown[data-preview-gap]")).not.toBeNull();
 });
 
-it("names the missing field in the editor notice", () => {
-    render(<BlockDataGapNotice block={countdown} values={{}} catalog={catalog} />);
-    expect(screen.getByRole("status").textContent).toContain(t("manage.blocks.gap.countdownNamed", {name: "Час завершення заходу"}));
-    expect(screen.getByRole("link").getAttribute("href")).toBe("/manage/schedule");
+it("names the missing field in the editor warning", () => {
+    const warning = blockDataWarning(countdown, {}, catalog);
+    expect(warning?.message).toBe(t("manage.blocks.gap.countdownNamed", {name: "Час завершення заходу"}));
+    expect(warning?.href).toBe("/manage/schedule");
 });
 
-it("shows no editor notice when the date is set", () => {
-    render(<BlockDataGapNotice block={countdown} values={{"event.finish": "2099-01-01T00:00:00Z"}} catalog={catalog} />);
-    expect(screen.queryByRole("status")).toBeNull();
+it("has no editor warning when the date is set", () => {
+    expect(blockDataWarning(countdown, {"event.finish": "2099-01-01T00:00:00Z"}, catalog)).toBeNull();
 });

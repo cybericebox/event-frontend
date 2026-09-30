@@ -4402,6 +4402,5 @@
   "manage.blocks.gap.countdown": "Date is not set: the block is not shown on the site",
   "manage.blocks.gap.countdownNamed": "Date is not set (\"{name}\"): the block is not shown on the site",
   "manage.blocks.gap.hero": "Timer date is not set: the timer is not shown on the site",
-  "manage.blocks.gap.heroNamed": "Timer date is not set (\"{name}\"): the timer is not shown on the site",
-  "manage.blocks.gap.open": "Set up dates"
+  "manage.blocks.gap.heroNamed": "Timer date is not set (\"{name}\"): the timer is not shown on the site"
 }

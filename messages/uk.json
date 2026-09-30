@@ -4402,6 +4402,5 @@
   "manage.blocks.gap.countdown": "Дату не задано: блок не показується на сайті",
   "manage.blocks.gap.countdownNamed": "Дату не задано («{name}»): блок не показується на сайті",
   "manage.blocks.gap.hero": "Дату таймера не задано: таймер не показується на сайті",
-  "manage.blocks.gap.heroNamed": "Дату таймера не задано («{name}»): таймер не показується на сайті",
-  "manage.blocks.gap.open": "Налаштувати дати"
+  "manage.blocks.gap.heroNamed": "Дату таймера не задано («{name}»): таймер не показується на сайті"
 }

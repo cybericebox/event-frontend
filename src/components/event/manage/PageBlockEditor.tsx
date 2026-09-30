@@ -21,12 +21,11 @@ import {contentImageURL, replaceVariables} from "@/components/event/content/Cont
 import {anchorError, anchorFromText, maxAnchorLength} from "./blockAnchor";
 import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {useEventLinkOptions} from "./useEventLinkOptions";
-import {BlockDataGapNotice} from "./BlockDataGapNotice";
 import {DateVariableFormatControls} from "./DateVariableFormatControls";
 import {updateBlockRichText} from "./richTextBlockUpdate";
 import {t} from "@/i18n/t";
 import {BusyMark} from "@/components/ui/EventButton";
-import {actionWarning} from "./previewScenario";
+import {actionWarning, blockDataWarning, type ActionWarning} from "./previewScenario";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 
 export {FieldLabel} from "./FieldLabel";
@@ -359,7 +358,10 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
     // Real-settings reasons why this button will not show on the site; the
     // preview emulates them away, so they are stated here.
     function actionWarningNote(secondary = false) {
-        const warning = actionWarning(secondary ? block.secondaryAction : block.action, values);
+        return warningNote(actionWarning(secondary ? block.secondaryAction : block.action, values));
+    }
+
+    function warningNote(warning: ActionWarning | null) {
         if (!warning) return null;
         return <div className="event-manage-warning event-content-editor__action-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>{warning.message} <Link href={warning.href}>{warning.link}</Link></span></div>;
     }
@@ -459,7 +461,6 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
         </div>
         {error && open && !errorField && <p className="event-content-editor__block-error" id={`block-error-${block.id}`} role="alert">{errorMessage}</p>}
         {open && <div className="event-content-editor__block-body" id={bodyID}>
-            {(block.type === "countdown" || block.type === "hero") && <BlockDataGapNotice block={block} values={values} catalog={catalog} />}
             {block.type === "section" && inputField("label", t("manage.blocks.section.heading"), t("manage.blocks.field.sectionTitle"), false, true)}
             {block.type === "section" && <div className="event-manage-field"><FieldLabel label={t("manage.blocks.section.align")} required help={t("manage.blocks.section.alignHelp")} /><EventSelect ariaLabel={t("manage.blocks.section.align")} value={block.variant ?? "left"} options={[{value: "left", label: t("manage.blocks.align.left")}, {value: "center", label: t("manage.blocks.align.center")}, {value: "right", label: t("manage.blocks.align.right")}, {value: "justify", label: t("manage.blocks.align.justify")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {block.type === "text" && richField("richText", t("manage.blocks.text.content"))}
@@ -502,6 +503,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
             </>}
             {block.type === "hero" && <>
                 {countdownSource(true)}
+                {warningNote(blockDataWarning(block, values, catalog))}
                 {(block.targetVariable || block.targetDate) && <>{countdownDisplay()}<div className="event-manage-field"><FieldLabel label={t("manage.blocks.countdown.size")} required help={t("manage.blocks.hero.sizeHelp")} /><EventSelect ariaLabel={t("manage.blocks.hero.sizeAria")} value={block.timerSize ?? "xl"} options={[{value: "large", label: t("manage.blocks.size.large")}, {value: "xl", label: t("manage.blocks.size.xl")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div></>}
                 {inputField("note", t("manage.blocks.hero.note"), t("manage.blocks.field.optional"))}
             </>}
@@ -518,7 +520,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
                 <div className="event-manage-field"><FieldLabel label={t("manage.blocks.style.label")} required help={t("manage.blocks.cta.styleHelp")} /><EventSelect value={block.variant ?? "plain"} ariaLabel={t("manage.blocks.cta.styleAria")} options={[{value: "plain", label: t("manage.blocks.style.plain")}, {value: "mass", label: t("manage.blocks.style.branded")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {block.action?.label && actionPosition()}
             </>}
-            {block.type === "countdown" && <>{countdownSource(false)}{countdownDisplay()}
+            {block.type === "countdown" && <>{countdownSource(false)}{warningNote(blockDataWarning(block, values, catalog))}{countdownDisplay()}
                 <div className="event-manage-field"><FieldLabel label={t("manage.blocks.layout.label")} required help={t("manage.blocks.countdown.layoutHelp")} /><EventSelect ariaLabel={t("manage.blocks.countdown.layoutAria")} value={block.variant ?? "split"} options={[{value: "split", label: t("manage.blocks.countdown.split")}, {value: "center", label: t("manage.blocks.layout.allCenter")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {block.variant !== "center" && (block.title || block.text) && <div className="event-manage-field"><FieldLabel label={t("manage.blocks.countdown.vertical")} required help={t("manage.blocks.countdown.verticalHelp")} /><EventSelect ariaLabel={t("manage.blocks.countdown.vertical")} value={block.verticalAlignment ?? "center"} options={[{value: "start", label: t("manage.blocks.align.top")}, {value: "center", label: t("manage.blocks.align.center")}, {value: "end", label: t("manage.blocks.align.bottom")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, verticalAlignment: value})} /></div>}
                 <div className="event-manage-field"><FieldLabel label={t("manage.blocks.countdown.size")} required help={t("manage.blocks.countdown.sizeHelp")} /><EventSelect ariaLabel={t("manage.blocks.countdown.sizeAria")} value={block.timerSize ?? "large"} options={[{value: "large", label: t("manage.blocks.size.large")}, {value: "xl", label: t("manage.blocks.size.xl")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, timerSize: value})} /></div>

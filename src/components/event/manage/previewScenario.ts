@@ -1,4 +1,5 @@
-import type {ContentValue} from "@/types/eventContent";
+import type {ContentBlock, ContentValue} from "@/types/eventContent";
+import {blockDataGap} from "@/components/event/content/blockDataGaps";
 import {t} from "@/i18n/t";
 
 export type PreviewViewer = "guest" | "participant" | "moderator";
@@ -115,6 +116,15 @@ export function previewPageAccess(visibility: 0 | 1 | 2, viewer: PreviewViewer):
 }
 
 export type ActionWarning = {message: string; href: string; link: string};
+
+/** Why a block (or its timer) will not show on the site: the data it needs is not configured. */
+export function blockDataWarning(block: ContentBlock, values: Record<string, ContentValue>, catalog: {name: string; label: string}[]): ActionWarning | null {
+    const gap = blockDataGap(block, values);
+    if (!gap) return null;
+    const name = gap.variable ? catalog.find(item => item.name === gap.variable)?.label : undefined;
+    const key = block.type === "hero" ? "hero" : "countdown";
+    return {message: name ? t(`manage.blocks.gap.${key}Named`, {name}) : t(`manage.blocks.gap.${key}`), href: "/manage/schedule", link: t("manage.blocks.action.warning.scheduleLink")};
+}
 
 /**
  * Why an action button configured in the editor will never show (or lead
