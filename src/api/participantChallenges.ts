@@ -22,7 +22,7 @@ export const hintSchema = z.object({
 const snapshotSchema = z.object({
     name: z.string(),
     description: z.unknown().optional(),
-    difficulty: z.enum(["trivial", "easy", "medium", "hard", "insane"]).catch("medium"),
+    difficulty: z.enum(["elementary", "trivial", "easy", "medium", "hard", "insane"]).catch("medium"),
     attachments: z.array(attachmentSchema).nullish().transform(value => value ?? []),
 });
 const fileSchema = z.object({FileID: id, Name: z.string(), Size: z.number().int().default(0)});

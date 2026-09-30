@@ -1,40 +1,72 @@
 import {z} from "zod";
-import {analyticsExportPath, analyticsRequest, wholeEvent, type AnalyticsPeriod} from "@/api/manageAnalytics";
+import {manageApiError} from "@/api/manage";
+import {analyticsRequest, type AnalyticsPeriod, wholeEvent} from "@/api/manageAnalytics";
+import {requireApiOrigin} from "@/utils/origins";
 
-// «Доброчесність» (docs/EVENT-ANALYTICS.md §6.6): GET .../manage/analytics/integrity.
-// Signals to review, from timing, answer similarity and attempt patterns. No IP,
-// no penalty. Sensitive: owner, write moderators and platform admins only.
+// «Доброчесність» (docs/ANTI-CHEAT.md): GET .../manage/analytics/integrity.
+// One list of flagged solves with the evidence of every signal. Hints for a
+// person to review, never a verdict; no IP, no penalty. Sensitive: owner, write
+// moderators and platform admins only.
 
 const count = z.number().int();
 
-export const IntegrityKindSchema = z.enum(["same_answer", "burst", "fast_solve"]);
+export const integrityKinds = ["no_access", "no_lab", "too_fast", "first_try_hard", "shared_wrong", "burst", "brute_force", "follows_solve"] as const;
+export const IntegrityKindSchema = z.enum(integrityKinds);
 export type IntegrityKind = z.infer<typeof IntegrityKindSchema>;
 
+// Lowest first. An unknown level reads as medium, like the task board.
+export const integrityLevels = ["elementary", "trivial", "easy", "medium", "hard", "insane"] as const;
+export type IntegrityLevel = typeof integrityLevels[number];
+
+const floorSchema = z.object({
+    elementary: count.default(0), trivial: count.default(0), easy: count.default(0), medium: count.default(0), hard: count.default(0), insane: count.default(0),
+});
+
 const thresholdsSchema = z.object({
-    SameAnswerWindowSeconds: count, SameAnswerMinLength: count, IncludeCorrect: z.boolean(),
-    BurstAttempts: count, BurstWindowSeconds: count, FastSolveGapSeconds: count,
+    FloorSeconds: floorSchema,
+    BruteForceAttempts: count,
+    BruteForceWindowSeconds: count,
+    FollowGapSeconds: count,
 });
 export type IntegrityThresholds = z.infer<typeof thresholdsSchema>;
 
+const teamRef = z.object({ID: z.string(), Name: z.string()});
+
 const signalSchema = z.object({
     Kind: IntegrityKindSchema,
-    ChallengeID: z.string(),
-    ChallengeName: z.string(),
-    Teams: z.array(z.object({ID: z.string(), Name: z.string()})).nullish().transform(value => value ?? []),
-    From: z.string(),
-    To: z.string(),
-    Answer: z.string().default(""),
-    Correct: z.boolean().default(false),
-    Attempts: count,
-    Rejections: count,
-    GapSeconds: count,
+    Count: count.nullish().transform(value => value ?? 0),
+    Extra: count.nullish().transform(value => value ?? 0),
+    Seconds: z.number().nullish().transform(value => value ?? 0),
+    Baseline: z.number().nullish().transform(value => value ?? 0),
+    Teams: z.array(teamRef).nullish().transform(value => value ?? []),
 });
 export type IntegritySignal = z.infer<typeof signalSchema>;
 
-export const AnalyticsIntegritySchema = z.object({
+const reviewSchema = z.object({Note: z.string().default(""), ReviewedBy: z.string().default(""), ReviewedAt: z.string()});
+export type IntegrityReview = z.infer<typeof reviewSchema>;
+
+const itemSchema = z.object({
+    TeamChallengeID: z.string(),
+    TeamID: z.string(),
+    TeamName: z.string(),
+    ChallengeID: z.string(),
+    ChallengeName: z.string(),
+    Level: z.enum(integrityLevels).catch("medium"),
+    SolvedAt: z.string(),
     Signals: z.array(signalSchema).nullish().transform(value => value ?? []),
-    // Total counts the signals before the response cap.
-    Total: count, SameAnswer: count, Burst: count, FastSolve: count,
+    Review: reviewSchema.nullish().transform(value => value ?? null),
+});
+export type IntegrityItem = z.infer<typeof itemSchema>;
+
+const countsSchema = z.object(Object.fromEntries(integrityKinds.map(kind => [kind, count.default(0)])) as Record<IntegrityKind, z.ZodDefault<z.ZodNumber>>);
+export type IntegrityCounts = z.infer<typeof countsSchema>;
+
+export const AnalyticsIntegritySchema = z.object({
+    Items: z.array(itemSchema).nullish().transform(value => value ?? []),
+    // Total counts the flagged solves before the response cap.
+    Total: count,
+    // Per kind, honoring every filter except the signal filter.
+    Counts: countsSchema.nullish().transform(value => value ?? countsSchema.parse({})),
     // The effective (clamped) values and the defaults.
     Thresholds: thresholdsSchema,
     Defaults: thresholdsSchema,
@@ -42,67 +74,99 @@ export const AnalyticsIntegritySchema = z.object({
 });
 export type AnalyticsIntegrity = z.infer<typeof AnalyticsIntegritySchema>;
 
-// The allowed range of every threshold, matching the server's clamping.
+// The allowed range of every threshold; the server clamps the same way.
 export const thresholdLimits = {
-    SameAnswerWindowSeconds: {min: 10, max: 3600},
-    SameAnswerMinLength: {min: 1, max: 100},
-    BurstAttempts: {min: 3, max: 1000},
-    BurstWindowSeconds: {min: 10, max: 3600},
-    FastSolveGapSeconds: {min: 5, max: 3600},
+    floor: {min: 0, max: 3600},
+    BruteForceAttempts: {min: 3, max: 1000},
+    BruteForceWindowSeconds: {min: 10, max: 3600},
+    FollowGapSeconds: {min: 5, max: 3600},
 } as const;
 
+function clampTo(value: number, limit: {min: number; max: number}): number {
+    return Math.min(limit.max, Math.max(limit.min, Math.round(Number.isFinite(value) ? value : limit.min)));
+}
+
 export function clampThresholds(value: IntegrityThresholds): IntegrityThresholds {
-    const clamp = (n: number, key: keyof typeof thresholdLimits) => Math.min(thresholdLimits[key].max, Math.max(thresholdLimits[key].min, Math.round(Number.isFinite(n) ? n : thresholdLimits[key].min)));
+    const floors = Object.fromEntries(integrityLevels.map(level => [level, clampTo(value.FloorSeconds[level], thresholdLimits.floor)])) as IntegrityThresholds["FloorSeconds"];
     return {
-        ...value,
-        SameAnswerWindowSeconds: clamp(value.SameAnswerWindowSeconds, "SameAnswerWindowSeconds"),
-        SameAnswerMinLength: clamp(value.SameAnswerMinLength, "SameAnswerMinLength"),
-        BurstAttempts: clamp(value.BurstAttempts, "BurstAttempts"),
-        BurstWindowSeconds: clamp(value.BurstWindowSeconds, "BurstWindowSeconds"),
-        FastSolveGapSeconds: clamp(value.FastSolveGapSeconds, "FastSolveGapSeconds"),
+        FloorSeconds: floors,
+        BruteForceAttempts: clampTo(value.BruteForceAttempts, thresholdLimits.BruteForceAttempts),
+        BruteForceWindowSeconds: clampTo(value.BruteForceWindowSeconds, thresholdLimits.BruteForceWindowSeconds),
+        FollowGapSeconds: clampTo(value.FollowGapSeconds, thresholdLimits.FollowGapSeconds),
     };
 }
 
 export function thresholdsEqual(a: IntegrityThresholds, b: IntegrityThresholds): boolean {
-    return a.SameAnswerWindowSeconds === b.SameAnswerWindowSeconds && a.SameAnswerMinLength === b.SameAnswerMinLength && a.IncludeCorrect === b.IncludeCorrect
-        && a.BurstAttempts === b.BurstAttempts && a.BurstWindowSeconds === b.BurstWindowSeconds && a.FastSolveGapSeconds === b.FastSolveGapSeconds;
+    return integrityLevels.every(level => a.FloorSeconds[level] === b.FloorSeconds[level])
+        && a.BruteForceAttempts === b.BruteForceAttempts && a.BruteForceWindowSeconds === b.BruteForceWindowSeconds && a.FollowGapSeconds === b.FollowGapSeconds;
 }
 
+export type IntegrityReviewedFilter = "no" | "yes" | "all";
+
+// `null` team / task / signal: no such filter.
+export type IntegrityFilters = {signal: IntegrityKind | null; teamID: string | null; challengeID: string | null; reviewed: IntegrityReviewedFilter};
+export const defaultIntegrityFilters: IntegrityFilters = {signal: null, teamID: null, challengeID: null, reviewed: "no"};
+
 // `null` thresholds: the server defaults.
-function thresholdParams(period: AnalyticsPeriod, thresholds: IntegrityThresholds | null): URLSearchParams {
+export function integrityQuery(period: AnalyticsPeriod, filters: IntegrityFilters, thresholds: IntegrityThresholds | null): string {
     const params = new URLSearchParams();
     if (period.from) params.set("from", period.from);
     if (period.to) params.set("to", period.to);
+    if (filters.signal) params.set("signal", filters.signal);
+    if (filters.teamID) params.set("teamId", filters.teamID);
+    if (filters.challengeID) params.set("challengeId", filters.challengeID);
+    if (filters.reviewed !== "all") params.set("reviewed", filters.reviewed);
     if (thresholds) {
-        params.set("sameAnswerWindow", String(thresholds.SameAnswerWindowSeconds));
-        params.set("sameAnswerMinLength", String(thresholds.SameAnswerMinLength));
-        params.set("includeCorrect", String(thresholds.IncludeCorrect));
-        params.set("burstAttempts", String(thresholds.BurstAttempts));
-        params.set("burstWindow", String(thresholds.BurstWindowSeconds));
-        params.set("fastSolveGap", String(thresholds.FastSolveGapSeconds));
+        for (const level of integrityLevels) params.set(`floor${level[0].toUpperCase()}${level.slice(1)}`, String(thresholds.FloorSeconds[level]));
+        params.set("bruteForceAttempts", String(thresholds.BruteForceAttempts));
+        params.set("bruteForceWindow", String(thresholds.BruteForceWindowSeconds));
+        params.set("followGap", String(thresholds.FollowGapSeconds));
     }
-    return params;
+    const text = params.toString();
+    return text ? `?${text}` : "";
 }
 
-export function getAnalyticsIntegrity(eventID: string, period: AnalyticsPeriod = wholeEvent, thresholds: IntegrityThresholds | null = null) {
-    const query = thresholdParams(period, thresholds).toString();
-    return analyticsRequest(eventID, `integrity${query ? `?${query}` : ""}`, AnalyticsIntegritySchema);
+export function getAnalyticsIntegrity(eventID: string, period: AnalyticsPeriod = wholeEvent, filters: IntegrityFilters = defaultIntegrityFilters, thresholds: IntegrityThresholds | null = null) {
+    return analyticsRequest(eventID, `integrity${integrityQuery(period, filters, thresholds)}`, AnalyticsIntegritySchema);
 }
 
-// The CSV export path with the same period and thresholds as the screen.
-export function integrityExportPath(period: AnalyticsPeriod, thresholds: IntegrityThresholds | null): string {
-    const query = thresholdParams(period, thresholds).toString();
-    return `${analyticsExportPath("integrity")}${query ? `?${query}` : ""}`;
+// The CSV export path with the same period, filters and thresholds as the screen.
+export const integrityExportPath = (period: AnalyticsPeriod, filters: IntegrityFilters, thresholds: IntegrityThresholds | null) =>
+    `analytics/integrity/export.csv${integrityQuery(period, filters, thresholds)}`;
+
+// The attempts journal (/manage/submissions) narrowed to the solve's team and task.
+export function integrityJournalHref(solve: {TeamID: string; ChallengeID: string}): string {
+    return `/manage/submissions?${new URLSearchParams({tab: "attempts", challengeId: solve.ChallengeID, teamId: solve.TeamID}).toString()}`;
 }
 
-// The attempts journal (/manage/submissions) narrowed to a signal: its task and
-// the span it is made of, widened by a minute each way. A single-team signal
-// (a burst) also narrows to the team.
-export function integrityJournalHref(signal: IntegritySignal): string {
-    const params = new URLSearchParams({tab: "attempts", challengeId: signal.ChallengeID});
-    if (signal.Kind === "burst" && signal.Teams.length === 1) params.set("teamId", signal.Teams[0].ID);
-    const minute = 60_000;
-    params.set("from", new Date(Date.parse(signal.From) - minute).toISOString());
-    params.set("to", new Date(Date.parse(signal.To) + minute).toISOString());
-    return `/manage/submissions?${params.toString()}`;
+// The integrity page narrowed to a team and a task (the journal marker links here).
+export function integrityPageHref(solve: {TeamID: string; ChallengeID: string}): string {
+    return `/manage/analytics/integrity?${new URLSearchParams({challengeId: solve.ChallengeID, teamId: solve.TeamID}).toString()}`;
 }
+
+async function reviewRequest(eventID: string, teamChallengeID: string, method: "PUT" | "DELETE", note?: string): Promise<void> {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/analytics/integrity/solves/${encodeURIComponent(teamChallengeID)}/review`, {
+        method, credentials: "include", cache: "no-store",
+        headers: {Accept: "application/json", ...(method === "PUT" ? {"Content-Type": "application/json"} : {})},
+        body: method === "PUT" ? JSON.stringify({Note: note ?? ""}) : undefined,
+    });
+    if (!response.ok) throw await manageApiError(response);
+}
+
+export const maxReviewNoteLength = 1000;
+export const putIntegrityReview = (eventID: string, teamChallengeID: string, note: string) => reviewRequest(eventID, teamChallengeID, "PUT", note);
+export const deleteIntegrityReview = (eventID: string, teamChallengeID: string) => reviewRequest(eventID, teamChallengeID, "DELETE");
+
+// Unreviewed flagged solves of the whole event, for the attempts journal.
+const flagSchema = z.object({
+    TeamChallengeID: z.string(),
+    TeamID: z.string(),
+    ChallengeID: z.string(),
+    Count: count.default(0),
+    Signals: z.array(z.string()).nullish().transform(value => value ?? []),
+});
+export type IntegrityFlag = z.infer<typeof flagSchema>;
+
+export const getIntegrityFlags = (eventID: string) =>
+    analyticsRequest(eventID, "integrity/flags", z.array(flagSchema).nullish().transform(value => value ?? []));

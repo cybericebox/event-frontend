@@ -1,9 +1,26 @@
-/* «Доброчесність»: the thresholds panel and the notes around the signal table. */
+/* «Доброчесність»: signal chips, the thresholds panel and the flagged-solve list. */
 .event-integrity__notice{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
-.event-integrity-thresholds{display:grid;gap:var(--ib-4);padding-bottom:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
-.event-integrity-thresholds__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--ib-4);padding:0 var(--ib-5)}
+.event-integrity__chips{display:flex;flex-wrap:wrap;gap:var(--ib-2)}
+.event-integrity__chip{display:inline-flex;align-items:center;gap:var(--ib-2);min-height:32px;padding:0 var(--ib-3);border:1px solid var(--ib-line);border-radius:999px;background:var(--ib-surface);color:var(--ib-ink);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}
+.event-integrity__chip:hover{background:var(--ib-hover)}
+.event-integrity__chip[aria-pressed="true"]{border-color:var(--ib-action);background:var(--ib-soft);font-weight:var(--ib-w-semibold)}
+.event-integrity__chip-count{color:var(--ib-dim);font-variant-numeric:tabular-nums}
+.event-integrity-thresholds{display:grid;gap:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
+.event-integrity-thresholds__toggle{display:flex;align-items:center;gap:var(--ib-2);width:100%;padding:var(--ib-3) var(--ib-5);border:0;background:none;color:var(--ib-ink);font:inherit;text-align:left;cursor:pointer}
+.event-integrity-thresholds__toggle svg:last-child{margin-left:auto}
+.event-integrity-thresholds__body{display:grid;gap:var(--ib-4);padding:0 var(--ib-5) var(--ib-4)}
+.event-integrity-thresholds__group{margin:0;font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
+.event-integrity-thresholds__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--ib-4)}
 .event-integrity-thresholds__input{display:flex;align-items:center;gap:var(--ib-2)}
 .event-integrity-thresholds__input .ib-input{min-width:0}
 .event-integrity-thresholds__input span{color:var(--ib-dim);font-size:var(--ib-fs-13);white-space:nowrap}
-.event-integrity-thresholds__actions{display:flex;justify-content:flex-end;gap:var(--ib-2);padding:0 var(--ib-5)}
-.event-integrity__details{min-width:260px;overflow-wrap:anywhere}
+.event-integrity-thresholds__actions{display:flex;justify-content:flex-end;gap:var(--ib-2)}
+.event-integrity__toggle-col{width:1%;padding-right:0}
+.event-integrity__task{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
+.event-integrity__actions{display:flex;justify-content:flex-end;gap:var(--ib-2);white-space:nowrap}
+.event-integrity__detail>td{background:var(--ib-hover)}
+.event-integrity__evidence{display:grid;gap:var(--ib-2);font-size:var(--ib-fs-13);overflow-wrap:anywhere}
+.event-integrity__evidence ul{display:grid;gap:var(--ib-2);margin:0;padding:0;list-style:none}
+.event-integrity__review{display:grid;gap:var(--ib-1);margin:0}
+.event-integrity__note{color:var(--ib-dim);white-space:pre-wrap}
+.event-integrity__counter{color:var(--ib-dim);font-size:var(--ib-fs-12);text-align:right}

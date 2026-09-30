@@ -8,7 +8,7 @@ const gridLine = "#e2e8f0";
 const axisLine = "#cbd5e1";
 const palette = {ok: "#22C55E", tooEasy: "#F59E0B", tooHard: "#EF4444", neutral: "#94a3b8", band: "#0091EA", solves: "#22C55E", attempts: "#0091EA"};
 
-export const difficultyOrder = ["trivial", "easy", "medium", "hard", "insane"] as const;
+export const difficultyOrder = ["elementary", "trivial", "easy", "medium", "hard", "insane"] as const;
 
 export const difficultyLabel = (difficulty: string) =>
     (difficultyOrder as readonly string[]).includes(difficulty) ? t(`manage.exercises.difficulty.${difficulty}`) : t("manage.analytics.tasks.difficultyUnknown");

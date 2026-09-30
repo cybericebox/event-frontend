@@ -14,6 +14,10 @@ import {AnalyticsIntegrity} from "./AnalyticsIntegrity";
 import {AnalyticsReport} from "./AnalyticsReport";
 import {AnalyticsStands} from "./AnalyticsStands";
 
+// jsdom has no modal dialogs.
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute("open"); };
+
 afterEach(cleanup);
 beforeEach(() => download.mockClear());
 
@@ -90,50 +94,205 @@ describe("Стенди", () => {
     });
 });
 
-const thresholds = {SameAnswerWindowSeconds: 120, SameAnswerMinLength: 6, IncludeCorrect: false, BurstAttempts: 15, BurstWindowSeconds: 60, FastSolveGapSeconds: 60};
+const thresholds = {FloorSeconds: {elementary: 0, trivial: 5, easy: 20, medium: 60, hard: 120, insane: 240}, BruteForceAttempts: 15, BruteForceWindowSeconds: 60, FollowGapSeconds: 30};
+const counts = {no_access: 1, no_lab: 0, too_fast: 2, first_try_hard: 0, shared_wrong: 1, burst: 0, brute_force: 0, follows_solve: 0};
+const tcBlue = "0190c6a4-0000-7000-8000-0000000000b1";
+const tcRed = "0190c6a4-0000-7000-8000-0000000000b2";
 
-function integrity() {
+function integrity(extra: Record<string, unknown> = {}) {
     return {
-        Signals: [
-            {Kind: "same_answer", ChallengeID: challenge, ChallengeName: "Web 1", Teams: [{ID: blue, Name: "Blue"}, {ID: red, Name: "Red"}], From: past, To: past, Answer: "flag{shared}", Correct: false, Attempts: 2, Rejections: 0, GapSeconds: 0},
-            {Kind: "burst", ChallengeID: challenge, ChallengeName: "Web 1", Teams: [{ID: red, Name: "Red"}], From: past, To: past, Answer: "", Correct: false, Attempts: 20, Rejections: 4, GapSeconds: 0},
+        Items: [
+            {TeamChallengeID: tcBlue, TeamID: blue, TeamName: "Blue", ChallengeID: challenge, ChallengeName: "Web 1", Level: "easy", SolvedAt: past, Review: null,
+                Signals: [{Kind: "too_fast", Count: 0, Extra: 0, Seconds: 3, Baseline: 20, Teams: []}, {Kind: "shared_wrong", Count: 2, Extra: 0, Seconds: 0, Baseline: 0, Teams: [{ID: red, Name: "Red"}]}]},
+            {TeamChallengeID: tcRed, TeamID: red, TeamName: "Red", ChallengeID: challenge, ChallengeName: "Web 1", Level: "elementary", SolvedAt: past,
+                Review: {Note: "Same room", ReviewedBy: "Olena", ReviewedAt: past}, Signals: [{Kind: "no_access", Count: 0, Extra: 0, Seconds: 0, Baseline: 0, Teams: []}]},
         ],
-        Total: 2, SameAnswer: 1, Burst: 1, FastSolve: 0, Thresholds: thresholds, Defaults: thresholds, Period: {From: past, To: past},
+        Total: 2, Counts: counts, Thresholds: thresholds, Defaults: thresholds, Period: {From: past, To: past}, ...extra,
     };
 }
 
+type Recorded = {url: string; method: string; body: string | null};
+
+// Answers by path after /manage/; the review endpoint answers with `review`.
+function mockIntegrity(options: {access?: unknown; data?: unknown; failList?: boolean; review?: {status: number; code?: number}} = {}) {
+    const calls: Recorded[] = [];
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+        calls.push({url, method, body: typeof init?.body === "string" ? init.body : null});
+        const path = url.split("/manage/")[1]?.split("?")[0] ?? "";
+        const ok = (data: unknown) => new Response(JSON.stringify({Status: {Code: 0}, Data: data}), {status: 200});
+        if (path === "analytics/access") return ok(options.access ?? {Sections: true, Sensitive: true});
+        if (path === "analytics/integrity") return options.failList ? new Response("{}", {status: 500}) : ok(options.data ?? integrity());
+        if (path.startsWith("analytics/integrity/solves/")) {
+            const review = options.review ?? {status: 200};
+            return new Response(review.status === 200 ? JSON.stringify({Status: {Code: 0}}) : JSON.stringify({Status: {Code: review.code ?? 0}}), {status: review.status});
+        }
+        return new Response("{}", {status: 404});
+    }) as typeof fetch;
+    return calls;
+}
+
+const listCalls = (calls: Recorded[]) => calls.filter(call => call.method === "GET" && /\/analytics\/integrity(\?|$)/.test(call.url));
+const lastList = (calls: Recorded[]) => new URL(listCalls(calls).at(-1)!.url).searchParams;
+
 describe("Доброчесність", () => {
     it("is closed to viewers without the sensitive level and asks for nothing", async () => {
-        const calls = mockApi({access: {Sections: true, Sensitive: false}});
+        const calls = mockIntegrity({access: {Sections: true, Sensitive: false}});
         renderWith(<AnalyticsIntegrity />);
-        expect(await screen.findByText(/Сигнали доброчесності бачать лише власник заходу/)).toBeTruthy();
-        expect(calls.some(url => url.includes("/analytics/integrity"))).toBe(false);
+        expect(await screen.findByText(/Ці дані бачать лише власник заходу/)).toBeTruthy();
+        expect(calls.some(call => call.url.includes("/analytics/integrity"))).toBe(false);
     });
 
-    it("lists the signals, each linking to the attempts journal filtered on it", async () => {
-        mockApi({access: {Sections: true, Sensitive: true}, integrity: integrity()});
+    it("lists flagged solves with team, task, level and signals, unreviewed by default", async () => {
+        const calls = mockIntegrity();
         renderWith(<AnalyticsIntegrity />);
         const table = await screen.findByRole("table");
-        expect(within(table).getByText("Однакова неправильна відповідь «flag{shared}», спроб: 2")).toBeTruthy();
-        expect(within(table).getByText(/20 спроб за/)).toBeTruthy();
-        const links = within(table).getAllByRole("link", {name: "Журнал спроб"});
-        expect(links).toHaveLength(2);
-        const same = new URL(links[0].getAttribute("href")!, "https://event.test").searchParams;
-        expect(same.get("challengeId")).toBe(challenge);
-        expect(same.get("teamId")).toBeNull();
-        const burst = new URL(links[1].getAttribute("href")!, "https://event.test").searchParams;
-        expect(burst.get("teamId")).toBe(red);
-        expect(screen.getByText(/IP-адреси не використовуються/)).toBeTruthy();
+        const blueRow = within(table).getByText("Blue").closest("tr")!;
+        expect(within(blueRow).getByText("Web 1")).toBeTruthy();
+        expect(within(blueRow).getByText("Легке")).toBeTruthy();
+        expect(within(blueRow).getByText("Надто швидко")).toBeTruthy();
+        expect(within(blueRow).getByText("Спільні помилки")).toBeTruthy();
+        const redRow = within(table).getByText("Red").closest("tr")!;
+        expect(within(redRow).getByText("Елементарне")).toBeTruthy();
+        expect(within(redRow).getByText("Перевірено")).toBeTruthy();
+        expect(lastList(calls).get("reviewed")).toBe("no");
+        expect(screen.getByText(/а не вердикти/)).toBeTruthy();
+        const journal = new URL(within(blueRow).getByRole("link", {name: "Журнал спроб"}).getAttribute("href")!, "https://event.test").searchParams;
+        expect(journal.get("teamId")).toBe(blue);
+        expect(journal.get("challengeId")).toBe(challenge);
     });
 
-    it("sends the applied thresholds and remembers a change of the defaults", async () => {
-        const calls = mockApi({access: {Sections: true, Sensitive: true}, integrity: integrity()});
+    it("shows the evidence of every signal, and the review, when a row is expanded", async () => {
+        mockIntegrity();
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        expect(within(table).queryByText(/Здано через 3 с/)).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Blue, Web 1"}));
+        expect(within(table).getByText("Здано через 3 с після першого відкриття завдання (поріг для рівня «Легке» — 20 с).")).toBeTruthy();
+        expect(within(table).getByText("Неправильні відповіді цієї команди збігаються з відповідями інших команд (2). Команди: Red.")).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Red, Web 1"}));
+        expect(within(table).getByText("Same room")).toBeTruthy();
+        expect(within(table).getByText(/Olena, /)).toBeTruthy();
+    });
+
+    it("shows the counts on the signal chips and toggles the signal filter", async () => {
+        const calls = mockIntegrity();
         renderWith(<AnalyticsIntegrity />);
         await screen.findByRole("table");
-        const burst = screen.getByLabelText("Спроб у серії");
-        fireEvent.change(burst, {target: {value: "30"}});
+        const group = screen.getByRole("group", {name: "Тип сигналу"});
+        const fast = within(group).getByRole("button", {name: /Надто швидко/});
+        expect(fast.textContent).toContain("2");
+        expect(fast.getAttribute("aria-pressed")).toBe("false");
+        fireEvent.click(fast);
+        await waitFor(() => expect(lastList(calls).get("signal")).toBe("too_fast"));
+        expect(within(group).getByRole("button", {name: /Надто швидко/}).getAttribute("aria-pressed")).toBe("true");
+        fireEvent.click(within(group).getByRole("button", {name: /Надто швидко/}));
+        await waitFor(() => expect(lastList(calls).get("signal")).toBeNull());
+    });
+
+    it("filters by the review state", async () => {
+        const calls = mockIntegrity();
+        renderWith(<AnalyticsIntegrity />);
+        await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: "Перевірені"}));
+        await waitFor(() => expect(lastList(calls).get("reviewed")).toBe("yes"));
+        fireEvent.click(screen.getByRole("button", {name: "Усі"}));
+        await waitFor(() => expect(lastList(calls).has("reviewed")).toBe(false));
+    });
+
+    it("presets the team and task from the link and sends them", async () => {
+        const calls = mockIntegrity();
+        renderWith(<AnalyticsIntegrity initialFilters={{teamId: blue, challengeId: challenge}} />);
+        await screen.findByRole("table");
+        expect(lastList(calls).get("teamId")).toBe(blue);
+        expect(lastList(calls).get("challengeId")).toBe(challenge);
+    });
+
+    it("sends the applied thresholds and resets them to the defaults", async () => {
+        const calls = mockIntegrity();
+        renderWith(<AnalyticsIntegrity />);
+        await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: /Пороги/}));
+        fireEvent.change(screen.getByLabelText("Середнє"), {target: {value: "90"}});
         fireEvent.click(screen.getByRole("button", {name: "Застосувати"}));
-        await waitFor(() => expect(calls.some(url => url.includes("/analytics/integrity?") && url.includes("burstAttempts=30"))).toBe(true));
+        await waitFor(() => expect(lastList(calls).get("floorMedium")).toBe("90"));
+        expect(lastList(calls).get("floorElementary")).toBe("0");
+        expect(lastList(calls).get("followGap")).toBe("30");
+        fireEvent.click(screen.getByRole("button", {name: "Скинути до типових"}));
+        await waitFor(() => expect(lastList(calls).has("floorMedium")).toBe(false));
+    });
+
+    it("shows the event loader while the list loads", async () => {
+        mockIntegrity();
+        const answer = globalThis.fetch;
+        globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => String(input).endsWith("/analytics/integrity?reviewed=no") ? new Promise<Response>(() => undefined) : answer(input, init)) as typeof fetch;
+        renderWith(<AnalyticsIntegrity />);
+        expect(await screen.findByRole("status", {name: "Завантажуємо розв'язки"})).toBeTruthy();
+        expect(screen.queryByRole("table")).toBeNull();
+    });
+
+    it("says so, inside the block, when nothing is flagged", async () => {
+        mockIntegrity({data: integrity({Items: [], Total: 0})});
+        renderWith(<AnalyticsIntegrity />);
+        expect(await screen.findByText("Розв'язків для перевірки немає")).toBeTruthy();
+        expect(screen.getByRole("table")).toBeTruthy();
+    });
+
+    it("shows the load error with a retry", async () => {
+        mockIntegrity({failList: true});
+        renderWith(<AnalyticsIntegrity />);
+        expect(await screen.findByText("Не вдалося завантажити розв'язки для перевірки")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+    });
+
+    it("marks a solve as reviewed with a note, then refetches", async () => {
+        const calls = mockIntegrity();
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        fireEvent.click(within(within(table).getByText("Blue").closest("tr")!).getByRole("button", {name: "Позначити як перевірене"}));
+        const dialog = await screen.findByRole("alertdialog");
+        fireEvent.change(within(dialog).getByLabelText("Нотатка"), {target: {value: "  Checked the logs  "}});
+        expect(within(dialog).getByText("20 / 1000")).toBeTruthy();
+        const before = listCalls(calls).length;
+        fireEvent.click(within(dialog).getByRole("button", {name: "Позначити"}));
+        await waitFor(() => expect(calls.some(call => call.method === "PUT")).toBe(true));
+        const put = calls.find(call => call.method === "PUT")!;
+        expect(put.url).toContain(`/analytics/integrity/solves/${tcBlue}/review`);
+        expect(JSON.parse(put.body!)).toEqual({Note: "Checked the logs"});
+        await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+        await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    });
+
+    it("keeps the dialog open with the server's message when the review fails", async () => {
+        mockIntegrity({review: {status: 404, code: 62205}});
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        fireEvent.click(within(within(table).getByText("Blue").closest("tr")!).getByRole("button", {name: "Позначити як перевірене"}));
+        fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", {name: "Позначити"}));
+        expect(await screen.findByText("Розв'язок не знайдено. Оновіть сторінку.")).toBeTruthy();
+        expect(screen.getByRole("alertdialog")).toBeTruthy();
+    });
+
+    it("falls back to a generic message for an unknown failure", async () => {
+        mockIntegrity({review: {status: 500}});
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        fireEvent.click(within(within(table).getByText("Blue").closest("tr")!).getByRole("button", {name: "Позначити як перевірене"}));
+        fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", {name: "Позначити"}));
+        expect(await screen.findByText("Не вдалося зберегти позначку")).toBeTruthy();
+    });
+
+    it("removes the review mark after a confirmation", async () => {
+        const calls = mockIntegrity();
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        fireEvent.click(within(within(table).getByText("Red").closest("tr")!).getByRole("button", {name: "Зняти позначку"}));
+        const dialog = await screen.findByRole("alertdialog");
+        expect(within(dialog).queryByLabelText("Нотатка")).toBeNull();
+        fireEvent.click(within(dialog).getByRole("button", {name: "Зняти позначку"}));
+        await waitFor(() => expect(calls.some(call => call.method === "DELETE" && call.url.includes(`/solves/${tcRed}/review`))).toBe(true));
+        await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     });
 });
 

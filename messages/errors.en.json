@@ -46,6 +46,8 @@
   "2102": "The SMTP password cannot be saved: no encryption key is configured on the platform.",
   "2103": "This notification is mandatory and cannot be disabled.",
   "2104": "Check the contact email and reminder hours.",
+  "2205": "The solve was not found. Reload the page.",
+  "2206": "The note is too long: at most 1000 characters.",
   "220": "Broadcast not found.",
   "221": "The broadcast is not filled in correctly.",
   "222": "This audience has no recipients.",

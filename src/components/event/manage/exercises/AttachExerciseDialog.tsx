@@ -20,7 +20,7 @@ import {EventButton} from "@/components/ui/EventButton";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
-const difficulties = new Set(["trivial", "easy", "medium", "hard", "insane"]);
+const difficulties = new Set(["elementary", "trivial", "easy", "medium", "hard", "insane"]);
 
 function difficultyLabel(value: string): string {
     return difficulties.has(value) ? t(`manage.exercises.difficulty.${value}`) : value;

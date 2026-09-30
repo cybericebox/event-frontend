@@ -43,6 +43,8 @@ export const ApiErrorCode = {
     MailSecretsKeyMissing: 2102,
     MailNotificationRequired: 2103,
     MailSettingsInvalid: 2104,
+    EventAnalyticsSolveNotFound: 2205,
+    EventAnalyticsReviewNoteTooLong: 2206,
     BroadcastNotFound: 220,
     BroadcastInvalid: 221,
     BroadcastEmptyAudience: 222,
