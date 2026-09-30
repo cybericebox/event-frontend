@@ -5,7 +5,7 @@ import {useQuery} from "@tanstack/react-query";
 import {ChevronRight} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
-    detachEventExercise, forkEventExercise, revertEventExercise, setEventExerciseVisibility, updateEventExercise,
+    detachEventExercise, forkEventExercise, revertEventExercise, updateEventExercise,
     type EventExerciseAttachment,
 } from "@/api/manageChallenges";
 import {ApiErrorCode} from "@/api/apiErrors";
@@ -27,6 +27,7 @@ import {SetStatusIcon} from "./SetStatusIcon";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
 import {useBoardSets} from "./useBoardSets";
+import {useBoardMutations} from "./useBoardMutations";
 import {exercisesOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -57,6 +58,7 @@ export function ExerciseAttachments() {
     const eventID = event.EventID;
     const returnURL = useReturnURL();
     const board = useBoardSets(eventID);
+    const mutations = useBoardMutations(eventID);
     const [busy, setBusy] = useState(false);
     const [action, setAction] = useState<Action | null>(null);
     const openState = useSetOpenState(eventID);
@@ -68,16 +70,6 @@ export function ExerciseAttachments() {
     // Stand readiness is optional: a failure only hides the stand badges.
     const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), enabled: infrastructure, refetchInterval: 30_000, refetchOnWindowFocus: false, retry: false});
     const detached = (board.attachments.data ?? []).filter(isDetached);
-
-    async function toggleVisibility(attachment: EventExerciseAttachment, published: boolean) {
-        if (busy) return;
-        setBusy(true);
-        try {
-            await setEventExerciseVisibility(eventID, attachment.ID, published);
-            await board.refreshAll();
-        } catch (error) {toast.error(attachmentActionError(error, t("manage.challenges.set.visibilityFailed")));}
-        finally {setBusy(false);}
-    }
 
     async function runAction() {
         if (!action || busy) return;
@@ -162,8 +154,8 @@ export function ExerciseAttachments() {
                     </header>
                     {open && <div className="event-exercise-set__body" id={`set-tasks-${attachment.ID}`}>
                         {/* Visibility is per set: its tasks share one infrastructure. */}
-                        <EventSwitch className="event-manage-form__switch" checked={shown} disabled={!canManage || busy || challenges.length === 0}
-                            onCheckedChange={checked => void toggleVisibility(attachment, checked)} label={t("manage.exercises.challenge.showOnBoard")} />
+                        <EventSwitch className="event-manage-form__switch" checked={shown} disabled={!canManage || challenges.length === 0}
+                            onCheckedChange={checked => mutations.setPublished(attachment.ID, checked)} label={t("manage.exercises.challenge.showOnBoard")} />
                         {attachment.UpdateAvailable && <div className="event-exercise-set__notice">
                             <span><strong>{t("manage.exercises.updateAvailable", {number: attachment.LatestVersionNumber})}</strong> {t("manage.exercises.settingsKept")}</span>
                             {canManage && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy} onClick={() => setAction({kind: "update", attachment})}>{t("manage.exercises.action.update.confirm")}</button>}
@@ -174,7 +166,7 @@ export function ExerciseAttachments() {
                         {challenges.length === 0 ? <EmptyState compact message={t("manage.exercises.setEmpty")} /> : <ul className="event-task-list">
                             {challenges.map(challenge => <TaskRow key={challenge.ID} eventID={eventID} attachment={attachment} challenge={challenge}
                                 scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} hintsDisabled={configQuery.data.HintsDisabled} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
-                                canManage={canManage} onSaved={board.refreshSets} />)}
+                                canManage={canManage} onSaved={board.refreshSets} onHintsEnabled={(challengeID, enabled) => mutations.setHintsEnabled(attachment.ID, challengeID, enabled)} />)}
                         </ul>}
                     </div>}
                 </article>;

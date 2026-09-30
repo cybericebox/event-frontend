@@ -9,13 +9,14 @@ import {t} from "@/i18n/t";
 import {ManageTable, ManageTableSearch, type ManageTableState} from "../ManageTable";
 import {listStatus, orderedVersions} from "./notificationModel";
 import {TemplateStatusTag} from "./TemplateStatusTag";
+import {zoneOffset} from "@/utils/dateTime";
 
 type ListedTemplate = {ID: string; NotificationType: string; Status: "draft" | "published" | "unpublished"; UpdatedAt: string; Source: "platform" | "event"};
 
 // The list of an event's templates of one channel, like admin's template list:
 // a row per signal with its status, the last change and the on/off switch of
 // sending it. A row opens the template page.
-export function TemplateList({event, state, onRetry, error, loadingLabel, errorMessage, emptyMessage, signals, rows, templates, basePath, canManage, busy, onToggle}: {
+export function TemplateList({event, state, onRetry, error, loadingLabel, errorMessage, emptyMessage, signals, rows, templates, basePath, canManage, onToggle}: {
     event: PublicEventInfo;
     state: ManageTableState;
     onRetry: () => void;
@@ -28,7 +29,6 @@ export function TemplateList({event, state, onRetry, error, loadingLabel, errorM
     templates: ListedTemplate[];
     basePath: string;
     canManage: boolean;
-    busy: boolean;
     onToggle: (signal: string, enabled: boolean) => void;
 }) {
     const [search, setSearch] = useState("");
@@ -40,7 +40,7 @@ export function TemplateList({event, state, onRetry, error, loadingLabel, errorM
         head={<tr>
             <th scope="col">{t("manage.notifications.list.colType")}</th>
             <th scope="col">{t("manage.notifications.list.colStatus")}</th>
-            <th scope="col">{t("manage.notifications.list.colUpdated")}</th>
+            <th scope="col">{t("manage.notifications.list.colUpdated", {zone: zoneOffset()})}</th>
             <th scope="col">{t("manage.notifications.list.colSend")}</th>
         </tr>}>
         <tbody>{shown.map(signal => {
@@ -55,7 +55,7 @@ export function TemplateList({event, state, onRetry, error, loadingLabel, errorM
                 <td><div className="event-template-list__status"><TemplateStatusTag status={status} />{draftPending && <span className="ib-tag ib-tag--warn">{t("manage.notifications.list.draftPending")}</span>}
                     {versions.filter(item => item.Source === "event").map(item => <Link key={item.ID} href={`${href}?id=${item.ID}`}>{t(`manage.notifications.status.${item.Status}`)}</Link>)}</div></td>
                 <td className="event-manage-table__nowrap">{effective && effective.Source === "event" ? new Date(effective.UpdatedAt).toLocaleDateString("uk-UA") : <span className="event-manage-table__dim">—</span>}</td>
-                <td>{row ? <EventSwitch checked={row.Enabled} disabled={!canManage || busy || row.Required} ariaLabel={t("manage.notifications.switchLabel", {title: label.title})} onCheckedChange={checked => onToggle(signal, checked)} /> : <span className="event-manage-table__dim">—</span>}</td>
+                <td>{row ? <EventSwitch checked={row.Enabled} disabled={!canManage || row.Required} ariaLabel={t("manage.notifications.switchLabel", {title: label.title})} onCheckedChange={checked => onToggle(signal, checked)} /> : <span className="event-manage-table__dim">—</span>}</td>
             </tr>;
         })}</tbody>
     </ManageTable>;

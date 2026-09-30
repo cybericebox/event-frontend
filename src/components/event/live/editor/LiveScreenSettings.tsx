@@ -1,10 +1,10 @@
 "use client";
 
-import {useState} from "react";
+import {useRef} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {liveRefreshOptions, type LiveLayout} from "@/api/manageLive";
-import type {ManageResultsSnapshot} from "@/api/manageResults";
+import type {ManageResultsSnapshot, ResultsSettings} from "@/api/manageResults";
 import {getResultsSettings, putResultsSettings, resultsSettingsInput} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -15,25 +15,39 @@ import {LiveMiniature} from "./LiveMiniature";
 import {LiveField, LiveNumberInput, LiveSwitch} from "./LiveFields";
 
 // «Враховувати заморожування результатів»: a results setting, applied at once.
-function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boolean}) {
+export function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boolean}) {
     const queryClient = useQueryClient();
     const queryKey = ["event-management-results-settings", eventID];
     const settings = useQuery({queryKey, queryFn: () => getResultsSettings(eventID), refetchOnWindowFocus: false});
-    const [busy, setBusy] = useState(false);
-    async function change(value: boolean) {
-        if (!settings.data) return;
-        setBusy(true);
-        try {
-            queryClient.setQueryData(queryKey, await putResultsSettings(eventID, {...resultsSettingsInput(settings.data), LiveFreeze: value}));
-            await queryClient.invalidateQueries({queryKey: ["event-live-results", eventID]});
-            toast.success(t(value ? "manage.live.freeze.on" : "manage.live.freeze.off"));
-        } catch {toast.error(t("manage.live.freeze.error"));}
-        finally {setBusy(false);}
+    // The switch flips at once; saves run one after another and never disable it.
+    const queue = useRef<Promise<void>>(Promise.resolve());
+    const waiting = useRef(0);
+    function change(value: boolean) {
+        const current = queryClient.getQueryData<ResultsSettings>(queryKey);
+        if (!current) return;
+        queryClient.setQueryData<ResultsSettings>(queryKey, {...current, LiveFreeze: value});
+        waiting.current += 1;
+        queue.current = queue.current.then(async () => {
+            try {
+                const wanted = queryClient.getQueryData<ResultsSettings>(queryKey) ?? current;
+                const saved = await putResultsSettings(eventID, {...resultsSettingsInput(wanted), LiveFreeze: wanted.LiveFreeze});
+                waiting.current -= 1;
+                const shown = queryClient.getQueryData<ResultsSettings>(queryKey);
+                // Apply the answer only when no newer change waits and it differs from what is shown.
+                if (waiting.current === 0 && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData(queryKey, saved);
+                void queryClient.invalidateQueries({queryKey: ["event-live-results", eventID]});
+                toast.success(t(saved.LiveFreeze ? "manage.live.freeze.on" : "manage.live.freeze.off"));
+            } catch {
+                waiting.current -= 1;
+                if (waiting.current === 0) await queryClient.invalidateQueries({queryKey});
+                toast.error(t("manage.live.freeze.error"));
+            }
+        });
     }
     const hint = settings.data && !settings.data.FreezeEnabled ? t("manage.live.freeze.disabled") : null;
     if (settings.isError) return <div className="event-live-settings__freeze"><EventLoadError compact message={t("manage.live.freeze.readError")} error={settings.error} onRetry={() => void settings.refetch()} /></div>;
     return <div className="event-live-settings__freeze">
-        <LiveSwitch label={t("manage.live.freeze.label")} help={t("manage.live.freeze.help")} checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || busy || !settings.data} onChange={value => void change(value)} />
+        <LiveSwitch label={t("manage.live.freeze.label")} help={t("manage.live.freeze.help")} checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || !settings.data} onChange={change} />
         {hint && <small>{hint}</small>}
     </div>;
 }

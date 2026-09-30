@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CircleHelp, Plus} from "lucide-react";
 import {toast} from "react-hot-toast";
@@ -101,6 +101,8 @@ export function BannersManager() {
     const [removing, setRemoving] = useState<ManageBanner | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const toggleQueue = useRef<Promise<void>>(Promise.resolve());
+    const toggling = useRef(0);
     const banners = query.data ?? [];
     const validation = editing ? bannerValidation(editing.form) : "";
 
@@ -127,9 +129,28 @@ export function BannersManager() {
         if (done) setEditing(null);
     }
 
-    async function toggle(banner: ManageBanner) {
-        const done = await run(() => updateManageBanner(eventID, banner.ID, {...bannerInput(banner), IsActive: !banner.IsActive}), t(banner.IsActive ? "manage.banners.deactivated" : "manage.banners.activated"), saveErrorMessage);
-        if (!done) toast.error(t("manage.banners.error.save"));
+    // «Вимкнути / Увімкнути»: the label flips at once, saves run one after another and block nothing.
+    function toggle(banner: ManageBanner) {
+        if (!canManage) return;
+        const key = ["event-manage-banners", eventID];
+        const active = !banner.IsActive;
+        const patch = (next: Partial<ManageBanner>) => (rows: ManageBanner[] | undefined) => rows?.map(row => row.ID === banner.ID ? {...row, ...next} : row);
+        queryClient.setQueryData<ManageBanner[]>(key, patch({IsActive: active}));
+        toggling.current += 1;
+        toggleQueue.current = toggleQueue.current.then(async () => {
+            try {
+                const saved = await updateManageBanner(eventID, banner.ID, {...bannerInput(banner), IsActive: active});
+                toggling.current -= 1;
+                // Apply the answer only when no newer change waits and it differs from what is shown.
+                const shown = queryClient.getQueryData<ManageBanner[]>(key)?.find(row => row.ID === banner.ID);
+                if (toggling.current === 0 && shown && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData<ManageBanner[]>(key, patch(saved));
+                toast.success(t(active ? "manage.banners.activated" : "manage.banners.deactivated"));
+            } catch {
+                toggling.current -= 1;
+                if (toggling.current === 0) await queryClient.invalidateQueries({queryKey: key});
+                toast.error(t("manage.banners.error.save"));
+            }
+        });
     }
 
     async function remove() {
@@ -160,7 +181,7 @@ export function BannersManager() {
                             </div>
                             {canManage && <div className="event-banner-list__actions">
                                 <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => {setError(""); setEditing({banner, form: bannerToForm(banner)});}}>{t("manage.banners.edit")}</button>
-                                <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void toggle(banner)}>{t(banner.IsActive ? "manage.banners.deactivate" : "manage.banners.activate")}</button>
+                                <button className="ib-btn ib-btn--sm" type="button" onClick={() => toggle(banner)}>{t(banner.IsActive ? "manage.banners.deactivate" : "manage.banners.activate")}</button>
                                 <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => {setError(""); setRemoving(banner);}}>{t("manage.banners.delete")}</button>
                             </div>}
                         </li>)}</ul>}

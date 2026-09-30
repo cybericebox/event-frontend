@@ -40,7 +40,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const [variant, setVariant] = useState(0);
     const [variantMode, setVariantMode] = useState<0 | 1>(0);
     const [busy, setBusy] = useState(false);
-    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure], queryFn: () => getPublishedExerciseChoices(eventID, search, infrastructure), enabled: open, refetchOnWindowFocus: false});
+    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure], queryFn: () => getPublishedExerciseChoices(eventID, search, infrastructure), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
     const preview = useQuery({
         queryKey: ["event-exercise-preview", eventID, selected?.PublishedVersionID, variant],
         queryFn: () => getPublishedExercisePreview(eventID, selected!.PublishedVersionID, variant),

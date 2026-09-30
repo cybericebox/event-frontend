@@ -6,13 +6,14 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {
     channelSignals, customizeManageInAppTemplate, getManageInAppTemplates, getManageNotificationSubscriptions,
-    getManageNotificationTypes, publishManageInAppTemplate, putManageNotificationSubscription, resetManageInAppTemplate,
+    getManageNotificationTypes, publishManageInAppTemplate, resetManageInAppTemplate,
     rollbackManageInAppTemplate, signalLabel, updateManageInAppTemplate, type ManageInAppTemplate, type ManageInAppTemplateInput,
 } from "@/api/manageNotifications";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {useSubscriptionToggle} from "./useSubscriptionToggle";
 import {t} from "@/i18n/t";
 import {useManager} from "../ManagerShell";
 import {InAppEditor} from "./InAppEditor";
@@ -89,9 +90,8 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
         }, success, t("manage.notifications.updateError"));
     }
 
-    function toggle(enabled: boolean) {
-        if (subscription) void run(() => putManageNotificationSubscription(eventID, {SignalType: subscription.SignalType, Channel: subscription.Channel, Enabled: enabled, Audience: subscription.Audience}), t("manage.notifications.showUpdated"), t("manage.notifications.showError"));
-    }
+    const toggleSubscription = useSubscriptionToggle(eventID, canManage, {success: t("manage.notifications.showUpdated"), failure: t("manage.notifications.showError")});
+    const toggle = (enabled: boolean) => {if (subscription) toggleSubscription(subscription.SignalType, subscription.Channel, enabled);};
 
     if (subscriptions.isPending || templates.isPending) return <EventLoading event={event} label={t("manage.notifications.loading")} />;
     if (subscriptions.isError || templates.isError) return <EventLoadError message={t("manage.notifications.loadError")} error={subscriptions.error ?? templates.error} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} />;
@@ -103,7 +103,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     return <div className="event-manage-settings event-template-page">
         <TemplateHeader backHref={BASE} backLabel={t("manage.notifications.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
-                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || busy || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
+                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
                 {editable && <button className={`ib-btn${dirty ? " ib-btn--primary" : ""}`} type="button" disabled={!dirty || !!validation || busy} onClick={() => void mutate(() => updateManageInAppTemplate(eventID, template!.ID, draft!), t("manage.notifications.draftSaved"))}>{t("manage.notifications.saveDraft")}</button>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageInAppTemplate(eventID, template!), t("manage.notifications.published"))}>{t("manage.notifications.publish")}</button>}
                 <TemplateActions mode={mode} canManage={canManage} busy={busy}

@@ -114,24 +114,14 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
 }
 
 // «Підказки»: on/off plus the event's price per hint (the catalog sets only the level).
-function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, onSaved}: {
-    eventID: string; attachmentID: string; challenge: EventBoardChallenge; hintsDisabled: boolean; disabled: boolean; onSaved: () => Promise<unknown>;
+function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, onSaved, onHintsEnabled}: {
+    eventID: string; attachmentID: string; challenge: EventBoardChallenge; hintsDisabled: boolean; disabled: boolean; onSaved: () => Promise<unknown>; onHintsEnabled: (enabled: boolean) => void;
 }) {
     const [drafts, setDrafts] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
     const changes = hintCostChanges(challenge.Hints, drafts);
     const valid = Object.values(drafts).every(hintCostDraftValid);
     const locked = disabled || saving;
-
-    async function toggle(enabled: boolean) {
-        if (locked) return;
-        setSaving(true);
-        try {
-            await updateEventBoardChallenge(eventID, attachmentID, challenge.ID, {...boardFields(challenge), HintsEnabled: enabled});
-            await onSaved();
-        } catch {toast.error(t("manage.exercises.challenge.saveFailed"));}
-        finally {setSaving(false);}
-    }
 
     async function saveCosts() {
         if (locked || !valid || changes.length === 0) return;
@@ -148,7 +138,7 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
     return <section className="event-task__section" aria-labelledby={`task-hints-${challenge.ID}`}>
         <h4 id={`task-hints-${challenge.ID}`}>{t("manage.exercises.hints.title")}</h4>
         {challenge.Hints.length === 0 ? <p className="event-task__note">{t("manage.challenges.task.noHints")}</p> : <>
-            <EventSwitch className="event-manage-form__switch" checked={challenge.HintsEnabled} onCheckedChange={checked => void toggle(checked)} disabled={locked} label={t("manage.challenges.task.hintsEnabled")} />
+            <EventSwitch className="event-manage-form__switch" checked={challenge.HintsEnabled} onCheckedChange={onHintsEnabled} disabled={disabled} label={t("manage.challenges.task.hintsEnabled")} />
             {hintsDisabled && <p className="event-task__note">{t("manage.challenges.task.hintsDisabledByEvent")}</p>}
             <ol className="event-exercise-hints__list">{challenge.Hints.map((hint, index) => {
                 const value = drafts[hint.ID] ?? String(hint.Cost);
@@ -184,9 +174,9 @@ export function HintMark({hints}: {hints: HintIndicator}) {
 // One task of a set: a thin row (name, first description line, badges) that
 // expands into «Оцінювання» and «Підказки». A task has no actions of its own:
 // a set is edited, shown and removed as a whole.
-export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, onSaved}: {
+export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, onSaved, onHintsEnabled}: {
     eventID: string; attachment: EventExerciseAttachment; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;
-    hintsDisabled: boolean; stand: StandReadiness | null; canManage: boolean; onSaved: () => Promise<unknown>;
+    hintsDisabled: boolean; stand: StandReadiness | null; canManage: boolean; onSaved: () => Promise<unknown>; onHintsEnabled: (challengeID: string, enabled: boolean) => void;
 }) {
     const [open, setOpen] = useState(false);
     const toggle = () => setOpen(current => !current);
@@ -208,7 +198,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
         </div>
         {open && <div className="event-task__panel" id={panelID}>
             <TaskScoring key={`${challenge.Points}:${JSON.stringify(challenge.ScoringOverride)}`} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} scoring={scoring} lifecycle={lifecycle} disabled={!canManage} onSaved={onSaved} />
-            <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} />
+            <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} onHintsEnabled={enabled => onHintsEnabled(challenge.ID, enabled)} />
         </div>}
     </li>;
 }

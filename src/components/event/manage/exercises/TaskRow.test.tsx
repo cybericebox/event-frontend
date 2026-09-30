@@ -19,7 +19,7 @@ const lifecycle = {JoinPolicy: 0, FinishAt: null} as unknown as ManageLifecycle;
 
 function renderRow(patch: Partial<ManageScoring> = {}, hintsDisabled = false) {
     render(<ul><TaskRow eventID="e" attachment={attachment} challenge={challenge} scoring={{...scoring, ...patch}} lifecycle={lifecycle} hintsDisabled={hintsDisabled} stand="notReady"
-        canManage onSaved={vi.fn(async () => undefined)} /></ul>);
+        canManage onSaved={vi.fn(async () => undefined)} onHintsEnabled={vi.fn()} /></ul>);
 }
 
 describe("TaskRow", () => {

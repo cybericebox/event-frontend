@@ -96,6 +96,41 @@ describe("Банери заходу", () => {
         expect(put.body).toMatchObject({Text: "Банер 1", IsActive: false});
     });
 
+    it("flips the banner state before the server answers and keeps every other button enabled", async () => {
+        let release: (response: Response) => void = () => undefined;
+        const calls: Call[] = [];
+        globalThis.fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+            const method = init?.method ?? "GET";
+            calls.push({method, path: new URL(String(input)).pathname, body: undefined});
+            if (method === "PUT") return new Promise<Response>(resolve => {release = resolve;});
+            return Promise.resolve(new Response(JSON.stringify({Status: {Code: 0}, Data: [banner(1), banner(2)]}), {status: 200}));
+        }) as typeof fetch;
+        wrap();
+        await screen.findByText("Банер 1");
+        fireEvent.click(screen.getAllByRole("button", {name: "Вимкнути"})[0]);
+        // Optimistic: the label is already «Увімкнути»; the save is still in flight.
+        await waitFor(() => expect(screen.getAllByRole("button", {name: "Увімкнути"})).toHaveLength(1));
+        expect(calls.filter(call => call.method === "PUT")).toHaveLength(1);
+        for (const button of screen.getAllByRole("button", {name: /Вимкнути|Увімкнути|Видалити|Редагувати/})) expect((button as HTMLButtonElement).disabled).toBe(false);
+        release(new Response(JSON.stringify({Status: {Code: 0}, Data: banner(1, {IsActive: false})}), {status: 200}));
+        await waitFor(() => expect(screen.getAllByRole("button", {name: "Увімкнути"})).toHaveLength(1));
+    });
+
+    it("rolls the banner state back and refetches when the save fails", async () => {
+        let gets = 0;
+        globalThis.fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+            const method = init?.method ?? "GET";
+            if (method === "PUT") return new Response("{}", {status: 500});
+            gets += 1;
+            return new Response(JSON.stringify({Status: {Code: 0}, Data: [banner(1)]}), {status: 200});
+        }) as typeof fetch;
+        wrap();
+        await screen.findByText("Банер 1");
+        fireEvent.click(screen.getByRole("button", {name: "Вимкнути"}));
+        await waitFor(() => expect(gets).toBe(2));
+        await waitFor(() => expect(screen.getByRole("button", {name: "Вимкнути"})).toBeTruthy());
+    });
+
     it("deletes through the danger confirmation", async () => {
         const calls = mockServer([banner(1)]);
         wrap();

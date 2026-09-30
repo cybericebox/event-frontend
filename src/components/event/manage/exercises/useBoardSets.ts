@@ -1,6 +1,6 @@
 "use client";
 
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query";
 import {getEventBoardChallenges, getEventChallengeGroups, getEventExerciseAttachments} from "@/api/manageChallenges";
 import type {BoardSet} from "./challengeOrder";
 
@@ -17,6 +17,8 @@ export function useBoardSets(eventID: string) {
             attachment, challenges: (await getEventBoardChallenges(eventID, attachment.ID)).sort((a, b) => a.Order - b.Order),
         }))),
         enabled: attachments.isSuccess, refetchOnWindowFocus: false,
+        // The key follows the sets' revisions: keep the shown board while the new key loads.
+        placeholderData: keepPreviousData,
     });
     const refreshSets = () => queryClient.invalidateQueries({queryKey: ["event-exercise-boards", eventID]});
     const refreshGroups = () => queryClient.invalidateQueries({queryKey: ["event-challenge-groups", eventID]});

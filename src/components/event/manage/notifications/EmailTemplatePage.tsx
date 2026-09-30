@@ -19,6 +19,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {useSubscriptionToggle} from "./useSubscriptionToggle";
 import {t} from "@/i18n/t";
 import {EmailStylingEditor} from "../EmailStylingEditor";
 import {ManageFieldLabel} from "../ManageFieldLabel";
@@ -128,9 +129,8 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
         finally {setTesting(false);}
     }
 
-    function toggle(enabled: boolean) {
-        if (subscription) void run(() => putManageNotificationSubscription(eventID, {SignalType: subscription.SignalType, Channel: subscription.Channel, Enabled: enabled, Audience: subscription.Audience}), t("manage.email.sendUpdated"), t("manage.email.sendError"));
-    }
+    const toggleSubscription = useSubscriptionToggle(eventID, canManage, {success: t("manage.email.sendUpdated"), failure: t("manage.email.sendError")});
+    const toggle = (enabled: boolean) => {if (subscription) toggleSubscription(subscription.SignalType, subscription.Channel, enabled);};
 
     if (subscriptions.isPending || templates.isPending) return <EventLoading event={event} label={t("manage.email.loading")} />;
     if (subscriptions.isError || templates.isError) return <EventLoadError message={t("manage.email.loadError")} error={subscriptions.error ?? templates.error} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} />;
@@ -142,7 +142,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     return <div className="event-manage-settings event-template-page">
         <TemplateHeader backHref={BASE} backLabel={t("manage.email.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
-                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || busy || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
+                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
                 {canManage && template && <EventButton className="ib-btn" type="button" disabled={testing || busy} busy={testing} onClick={() => void sendTest()}><Send size={15} /> {t("manage.email.sendTest")}</EventButton>}
                 {editable && <button className={`ib-btn${dirty ? " ib-btn--primary" : ""}`} type="button" disabled={!dirty || !!validation || busy} onClick={() => void mutate(() => updateManageEmailTemplate(eventID, template!.ID, draft!), t("manage.email.draftSaved"))}>{t("manage.notifications.saveDraft")}</button>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageEmailTemplate(eventID, template!), t("manage.email.published"))}>{t("manage.notifications.publish")}</button>}
