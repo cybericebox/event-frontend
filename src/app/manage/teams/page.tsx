@@ -11,7 +11,7 @@ import {getModeratorsTeam} from "@/api/moderatorsBoard";
 import {getManageParticipants} from "@/api/manageParticipants";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import {changeManageTeamMember, deleteManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, setManageTeamHidden, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
+import {changeManageTeamMember, deleteManageTeam, formManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, setManageTeamHidden, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -82,7 +82,7 @@ export default function ManageTeamsPage() {
     // Only the team being saved is locked; the other rows and teams stay usable.
     const [busyTeams, setBusyTeams] = useState<string[]>([]);
     const isBusy = (teamID?: string | null) => !!teamID && busyTeams.includes(teamID);
-    const [confirm, setConfirm] = useState<{kind: "delete"; team: ManageTeam} | {kind: "remove" | "captain"; team: ManageTeam; userID: string; name: string} | null>(null);
+    const [confirm, setConfirm] = useState<{kind: "delete"; team: ManageTeam} | {kind: "remove" | "captain"; team: ManageTeam; userID: string; name: string} | {kind: "form"; team: ManageTeam} | null>(null);
     const [confirmError, setConfirmError] = useState("");
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
     const fields = formFields(fieldsQuery.data?.Document.blocks);
@@ -168,17 +168,30 @@ export default function ManageTeamsPage() {
 
     function confirmDialog(open: boolean) {
         const current = confirm;
-        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone={current?.kind === "captain" ? "default" : "danger"} busy={isBusy(current?.team.ID)} error={confirmError}
-            title={t(current?.kind === "captain" ? "manage.teams.captainTitle" : current?.kind === "remove" ? "manage.teams.removeMemberTitle" : "manage.teams.deleteTitle")}
-            description={current?.kind === "captain" ? undefined : t(current?.kind === "remove" ? "manage.teams.removeMemberBody" : "manage.teams.deleteBody")}
-            subject={current ? current.kind === "delete" ? current.team.Name : current.name : undefined}
-            confirmLabel={t(current?.kind === "captain" ? "manage.teams.makeCaptain" : current?.kind === "remove" ? "manage.teams.removeMember" : "manage.teams.deleteConfirm")}
+        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone={current?.kind === "captain" || current?.kind === "form" ? "default" : "danger"} busy={isBusy(current?.team.ID)} error={confirmError}
+            title={t(current?.kind === "captain" ? "manage.teams.captainTitle" : current?.kind === "remove" ? "manage.teams.removeMemberTitle" : current?.kind === "form" ? "manage.teams.formTitle" : "manage.teams.deleteTitle")}
+            description={current?.kind === "captain" ? undefined : t(current?.kind === "remove" ? "manage.teams.removeMemberBody" : current?.kind === "form" ? "manage.teams.formBody" : "manage.teams.deleteBody")}
+            subject={current ? current.kind === "delete" || current.kind === "form" ? current.team.Name : current.name : undefined}
+            confirmLabel={t(current?.kind === "captain" ? "manage.teams.makeCaptain" : current?.kind === "remove" ? "manage.teams.removeMember" : current?.kind === "form" ? "manage.teams.formConfirm" : "manage.teams.deleteConfirm")}
             onConfirm={() => {
                 if (!current) return;
                 if (current.kind === "delete") void removeTeam(current.team);
+                else if (current.kind === "form") void formTeam(current.team);
                 else if (current.kind === "remove") void changeMember(current.team, current.userID, "remove");
                 else void transferCaptain(current.team, current.userID);
             }} />;
+    }
+
+    async function formTeam(team: ManageTeam) {
+        if (!canManage || isBusy(team.ID)) return;
+        setBusyTeams(ids => [...ids, team.ID]);
+        try {
+            await formManageTeam(eventID, team.ID);
+            setConfirm(null);
+            await refresh();
+            toast.success(t("manage.teams.formDone"));
+        } catch (error) {setConfirmError(failure(error, t("manage.teams.formFailed")));}
+        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     async function removeTeam(team: ManageTeam) {
@@ -254,7 +267,7 @@ export default function ManageTeamsPage() {
         case "@members": return <td><div className="event-manage-table__person"><div className="event-manage-table__tags"><span className="event-manage-table__count">{team.MemberCount}</span>{tags.slice(0, MEMBER_TAGS).map(tag => tag.pending
             ? <EventTooltip key={tag.id} content={t("manage.teams.pendingConfirmation")}>{id => <span className="ib-tag ib-tag--sm ib-tag--warn" aria-describedby={id}>{tag.name}</span>}</EventTooltip>
             : <span className="ib-tag ib-tag--sm" key={tag.id}>{tag.name}</span>)}{tags.length > MEMBER_TAGS && <span className="ib-tag ib-tag--sm">{t("manage.teams.moreMembers", {count: tags.length - MEMBER_TAGS})}</span>}</div>{team.PendingInvitations.length > 0 && <small>{t("manage.teams.pendingCount", {count: team.PendingInvitations.length})}</small>}</div></td>;
-        case "@status": return <td><span className={`ib-tag ${admissionTag(team)}`}>{admissionText(team)}</span></td>;
+        case "@status": return <td><div className="event-manage-table__tags"><span className={`ib-tag ${admissionTag(team)}`}>{admissionText(team)}</span><EventTooltip content={team.FormedAt ? t("manage.teams.formedAt", {time: formatDateTime(team.FormedAt)}) : t("manage.teams.notFormed")}>{id => <span className={`ib-tag ${team.Formed ? "ib-tag--ok" : "ib-tag--warn"}`} aria-describedby={id}>{team.Formed ? t("manage.teams.formed") : t("manage.teams.notFormed")}</span>}</EventTooltip></div></td>;
         case "@created": return <td className="event-manage-table__nowrap event-manage-table__dim">{formatDateTime(team.CreatedAt)}</td>;
         case "@missing": return <td>{team.FieldsMissing > 0
             ? <EventTooltip content={tPlural("manage.fields.missing.tooltip", team.FieldsMissing)}>{id => <span className="ib-tag ib-tag--warn" aria-describedby={id}>{team.FieldsMissing}</span>}</EventTooltip>
@@ -312,6 +325,7 @@ export default function ManageTeamsPage() {
                 const choice = memberChoices[team.ID] ?? "";
                 return <div className="event-manage-team-details">
                     <div className="event-manage-teams__head"><div><p>{t("manage.teams.summary", {count: team.MemberCount, captain: captainName(team)})}{team.Hidden ? t("manage.teams.hiddenSuffix") : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? t("common.cancel") : t("manage.teams.edit")}</button></div>}</div>
+                    {canManage && !team.Formed && <div><button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(team.ID)} onClick={() => ask({kind: "form", team})}>{t("manage.teams.form")}</button></div>}
                     {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={isBusy(team.ID)} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
                     {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={isBusy(team.ID)} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={isBusy(team.ID)} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={isBusy(team.ID) || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={{...fieldsQuery.data, Document: {blocks: fieldsQuery.data.Document.blocks.filter(block => !(isFormField(block) && block.staffOnly))}}} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={isBusy(team.ID)} /></div>}</div>}
                     <div className="event-manage-teams__members"><h3>{t("manage.teams.results")}</h3>

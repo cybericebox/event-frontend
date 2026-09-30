@@ -20,6 +20,8 @@ const teamSchema = z.object({
     MinTeamSize: z.number().int().nullish().transform(value => value ?? null),
     // The captain is an invitee who has not accepted yet.
     CaptainPending: z.boolean().default(false),
+    // The roster is closed for good; FormedAt says when (the start for events without late join).
+    Formed: z.boolean().optional(), FormedAt: z.string().nullish(),
 });
 export type ManageTeamMember = z.infer<typeof memberSchema>;
 export type ManageTeamPendingInvitation = z.infer<typeof pendingInvitationSchema>;
@@ -36,7 +38,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         body: payload === undefined ? undefined : JSON.stringify(payload),
     });
     if (!response.ok) throw await manageApiError(response);
-    if (method === "DELETE" || path.includes("/members/") || path.includes("/captain/")) return schema.parse(null);
+    if (method === "DELETE" || path.includes("/members/") || path.includes("/captain/") || path.endsWith("/form")) return schema.parse(null);
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
@@ -62,6 +64,11 @@ export async function setManageTeamAdmission(eventID: string, teamID: string, ad
 // Hides the team from the ranking and counters, or shows it again. The moderators team is locked (403).
 export async function setManageTeamHidden(eventID: string, teamID: string, hidden: boolean): Promise<ManageTeam> {
     return request(eventID, `teams/${encodeURIComponent(teamID)}/hidden`, teamSchema, "PUT", {Hidden: hidden});
+}
+
+// Forms the team without the minimum size check (the moderator's way out of a stuck team).
+export async function formManageTeam(eventID: string, teamID: string): Promise<void> {
+    await request(eventID, `teams/${encodeURIComponent(teamID)}/form`, z.null(), "POST");
 }
 
 export async function deleteManageTeam(eventID: string, teamID: string): Promise<void> {

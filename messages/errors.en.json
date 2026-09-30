@@ -53,5 +53,9 @@
   "221": "The broadcast is not filled in correctly.",
   "222": "This audience has no recipients.",
   "223": "Banner not found.",
-  "224": "The banner is not filled in correctly."
+  "224": "The banner is not filled in correctly.",
+  "1720": "The team roster is fixed: its members cannot move to another team.",
+  "1721": "The team roster is fixed.",
+  "1722": "The team does not have enough members to confirm the roster.",
+  "1723": "The captain has not confirmed the team roster yet."
 }

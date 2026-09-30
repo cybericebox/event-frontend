@@ -9,7 +9,7 @@ import {t} from "@/i18n/t";
 const reasons = [
     "not_signed_in", "staff_cannot_participate", "not_published", "registration_closed", "closed_at_start", "event_finished", "event_withdrawn",
     "pending", "rejected", "already_participant", "not_approved", "roster_frozen_at_start", "not_team_event", "already_in_team", "no_team",
-    "not_captain", "captain_must_transfer", "not_started",
+    "not_captain", "captain_must_transfer", "not_started", "team_formed", "team_switch_locked", "forms_at_start", "team_not_formed", "below_minimum",
 ] as const;
 type Reason = typeof reasons[number];
 

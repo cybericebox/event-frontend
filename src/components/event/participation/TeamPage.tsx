@@ -5,7 +5,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type {OwnTeam, Participation} from "@/api/clientAuth";
 import {
-    disbandEventTeam, getOwnTeamMembers, getSelfTeamFields, kickEventTeamMember, leaveEventTeam, regenerateEventTeamCode, renameEventTeam,
+    disbandEventTeam, formEventTeam, getOwnTeamMembers, getSelfTeamFields, kickEventTeamMember, leaveEventTeam, regenerateEventTeamCode, renameEventTeam,
     TeamRole, transferEventTeamCaptain, updateOwnTeamFields, type JoinLinkExpiry, type TeamMember,
 } from "@/api/eventTeams";
 import type {ParticipantAnswers} from "@/api/participantForm";
@@ -24,6 +24,7 @@ import {missingMembers} from "@/components/event/challenges/challengeBoardModel"
 import {eventRoleLabel} from "@/utils/roles";
 import {EventButton} from "@/components/ui/EventButton";
 import {t, tPlural} from "@/i18n/t";
+import {formatDateTime} from "@/utils/dateTime";
 import {AnswersCard} from "./AnswersCard";
 import {NoTeam} from "./NoTeam";
 import {InviteCard} from "./TeamInvite";
@@ -102,7 +103,13 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     // Every action follows its own server rule; a closed one says why.
     const manage = participation?.ManageTeam?.Allowed ?? rosterOpen;
     const leave = participation?.LeaveTeam?.Allowed ?? rosterOpen;
+    // A formed team keeps its people: it cannot be disbanded, and leaving or being kicked is leaving the event.
+    const remove = participation?.RemoveMember?.Allowed ?? rosterOpen;
+    const disband = participation?.DisbandTeam?.Allowed ?? rosterOpen;
+    const formed = !!team.Formed || !!participation?.TeamFormed;
+    const formCap = participation?.FormTeam;
     const manageReason = reasonText(participation?.ManageTeam?.Reason ?? "");
+    const disbandReason = reasonText(participation?.DisbandTeam?.Reason ?? "");
     const leaveReason = reasonText(participation?.LeaveTeam?.Reason ?? "");
     const roster: TeamMember[] | undefined = preview ? (stats.stats ? moderatorsRoster(stats.stats) : undefined) : members.data;
     // Roles are reported as owner / other; only the owner is named.
@@ -130,7 +137,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     };
     const memberActions = (member: TeamMember) => !preview && captain && manage && !member.Own && !member.Pending && <>
         <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
-        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>
+        {remove && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>}
     </>;
     const min = team.MinTeamSize ?? info?.MinTeamSize;
     const max = team.MaxTeamSize ?? info?.MaxTeamSize;
@@ -150,6 +157,8 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
             onRename={name => run(() => renameEventTeam(event.EventID, team.ID, name), t("participation.team.renamed"), t("participation.team.renameFailed"))()} />
         <StatTiles label={t("participation.stats.teamTitle")} tiles={tiles} />
         <MembersCard event={event} roster={roster} error={members.error} onRetry={() => void members.refetch()} stats={data?.Team.Members ?? []} actions={memberActions} rosterLine={rosterLine(team.MemberCount, max, min)} roleLabels={roleLabels} />
+        {!preview && <FormationCard team={team} captain={captain} formed={formed} form={formCap}
+            onForm={() => setConfirm({title: t("participation.team.formTitle"), text: t("participation.team.formText"), action: t("participation.team.formAction"), run: run(() => formEventTeam(event.EventID), t("participation.team.formed"), t("participation.team.formFailed"), true)})} />}
         {!preview && <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage} preview={false} now={now}
             onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />}
         <div className="event-pp-charts">
@@ -167,12 +176,27 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
                 await run(() => updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft, team.MissingFields ?? [])).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"), true)();
             }} />}
         {own && <section className="event-pp-card event-pp-danger" aria-label={captain ? t("participation.team.disband") : t("participation.team.leave")}>
-            <p>{captain ? (manage ? t("participation.team.disbandNote") : manageReason || t("participation.team.disbandNote")) : (leave ? t("participation.team.leaveNote") : leaveReason || t("participation.team.leaveNote"))}</p>
-            {captain && manage && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"), true)})}>{t("participation.team.disband")}</button>}
-            {!captain && leave && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.leaveTitle"), text: t("participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"), true)})}>{t("participation.team.leave")}</button>}
+            <p>{captain ? (disband ? t("participation.team.disbandNote") : (manage ? disbandReason : manageReason) || t("participation.team.disbandNote")) : formed ? t("participation.team.leaveEventNote") : (leave ? t("participation.team.leaveNote") : leaveReason || t("participation.team.leaveNote"))}</p>
+            {captain && disband && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"), true)})}>{t("participation.team.disband")}</button>}
+            {!captain && leave && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t(formed ? "participation.team.leaveEventTitle" : "participation.team.leaveTitle"), text: t(formed ? "participation.team.leaveEventText" : "participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"), true)})}>{t(formed ? "participation.team.leaveEvent" : "participation.team.leave")}</button>}
         </section>}
         <TeamConfirm confirm={confirm} onClose={() => setConfirm(null)} />
     </div>;
+}
+
+// Team formation: the captain confirms the roster (it closes for good and the tasks open); the others see where it stands.
+// With no late join the start forms every team, so there is nothing to confirm and only the status shows.
+export function FormationCard({team, captain, formed, form, onForm}: {team: OwnTeam; captain: boolean; formed: boolean; form: Participation["FormTeam"] | undefined; onForm: () => void}) {
+    if (formed) {
+        return <section className="event-pp-card event-pp-danger" aria-label={t("participation.team.formTitle")}>
+            <p>{team.FormedAt ? t("participation.team.statusFormed", {time: formatDateTime(team.FormedAt)}) : t("participation.team.statusFormedAtStart")}</p>
+        </section>;
+    }
+    const reason = form && !form.Allowed ? reasonText(form.Reason) : "";
+    return <section className="event-pp-card event-pp-danger" aria-label={t("participation.team.formTitle")}>
+        <p>{captain ? reason || t("participation.team.formNote") : t("participation.team.statusOpen")}</p>
+        {captain && form?.Allowed && <button type="button" className="ib-btn ib-btn--primary" onClick={onForm}>{t("participation.team.form")}</button>}
+    </section>;
 }
 
 // The «Команда» tab of «Моя участь»: the roster, the team's results and, for the captain, the join link and the roster management.

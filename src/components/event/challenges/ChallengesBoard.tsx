@@ -123,7 +123,7 @@ export function ChallengesBoard() {
     const challenges = useQuery({
         queryKey: ["event-own-challenges", event?.EventID],
         queryFn: () => getOwnChallenges(event!.EventID),
-        enabled: !!participant && !!event && started && !!ownTeam && admitted,
+        enabled: !!participant && !!event && started && !!ownTeam && admitted && !!ownTeam.Formed,
         retry: false,
         refetchInterval: 30000,
     });
@@ -144,6 +144,7 @@ export function ChallengesBoard() {
     }
     const countdown = <EventCountdown event={event} hint={t("countdown.start.challenges")} showFinished={false} />;
     if (!started) return <Page countdown={countdown}><EmptyState message={t("challenges.beforeStart")} /></Page>;
+    if (!ownTeam.Formed) return <Page countdown={countdown}><EmptyState message={t("challenges.teamNotFormed")} /></Page>;
     if (challenges.isPending) return <EventLoading label={t("challenges.loading")} />;
     if (challenges.isError) return <Page banners={finishedBanner || undefined} countdown={countdown}><EventLoadError message={t("challenges.loadFailed.title")} error={challenges.error} onRetry={() => void challenges.refetch()} /></Page>;
 

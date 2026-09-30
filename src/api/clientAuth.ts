@@ -22,7 +22,8 @@ export const participationSchema = z.object({
     Staff: z.boolean().default(false),
     RegistrationWindowOpen: z.boolean().default(false), RosterOpen: z.boolean().default(false),
     RegistrationReason: z.string().default(""), RosterReason: z.string().default(""),
-    Register: capabilitySchema, CreateTeam: capabilitySchema, JoinTeam: capabilitySchema, LeaveTeam: capabilitySchema, ManageTeam: capabilitySchema,
+    Register: capabilitySchema, CreateTeam: capabilitySchema, JoinTeam: capabilitySchema, LeaveTeam: capabilitySchema, ManageTeam: capabilitySchema, RemoveMember: capabilitySchema,
+    DisbandTeam: capabilitySchema, FormTeam: capabilitySchema, TeamFormed: z.boolean().default(false),
     EditAnswers: capabilitySchema, SeeTasks: capabilitySchema, Submit: capabilitySchema,
 });
 export type Participation = z.infer<typeof participationSchema>;
@@ -46,6 +47,8 @@ const ownTeamSchema = z.object({
     Admitted: z.boolean().optional(), MinTeamSize: z.number().int().nullish(), MaxTeamSize: z.number().int().nullish(),
     // Required team fields the organizer asked every team for and this team has not filled.
     MissingFields: z.array(z.string()).nullish(), BlockingFields: z.boolean().optional(),
+    // The roster is closed for good (FormedAt says when); only a formed team gets tasks.
+    Formed: z.boolean().optional(), FormedAt: z.string().nullish(),
 });
 export type OwnTeam = z.infer<typeof ownTeamSchema>;
 

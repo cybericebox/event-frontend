@@ -41,6 +41,10 @@ export async function getOwnTeamMembers(eventID: string): Promise<TeamMember[]> 
 export async function leaveEventTeam(eventID: string): Promise<void> {
     await send(eventID, "/mine/leave", {});
 }
+// The captain confirms the roster: it closes for good and the team gets its tasks.
+export async function formEventTeam(eventID: string): Promise<void> {
+    await send(eventID, "/mine/form", {});
+}
 export async function renameEventTeam(eventID: string, teamID: string, name: string): Promise<void> {
     await send(eventID, `/${encodeURIComponent(teamID)}`, {Name: name}, "PUT");
 }
