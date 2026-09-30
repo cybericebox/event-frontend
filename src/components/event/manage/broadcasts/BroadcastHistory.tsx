@@ -6,13 +6,14 @@ import {CircleHelp, Send} from "lucide-react";
 import {getEventBroadcasts, type Broadcast} from "@/api/manageBroadcasts";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
+import {formatDateTime} from "@/utils/dateTime";
 import {useManager} from "../ManagerShell";
 import {ManageTable, useCursorPages} from "../ManageTable";
 import {audienceLabel, broadcastTitle, channelsLabel} from "./broadcastModel";
 import "./broadcasts.css";
 
 export function formatBroadcastTime(value: string): string {
-    return new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"}).format(new Date(value));
+    return formatDateTime(value);
 }
 
 export function BroadcastStatus({status}: {status: Broadcast["Status"]}) {

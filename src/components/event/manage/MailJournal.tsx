@@ -14,14 +14,11 @@ import {t} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
+import {formatDateTime, zoneOffset} from "@/utils/dateTime";
 
 const all = "all";
 
 const typeTitle = (type: string) => mailJournalTypeLabel(type, value => signalLabel(value).title);
-
-function timestamp(value: string) {
-    return new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"}).format(new Date(value));
-}
 
 // «Журнал надсилання»: every message the platform tried to send for this
 // event, in the same table as the other manage journals.
@@ -67,7 +64,7 @@ export function MailJournal() {
         <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.mail.journal.loading")} emptyMessage={t(filtered ? "manage.mail.journal.emptyFiltered" : "manage.mail.journal.empty")}
             errorMessage={t("manage.mail.journal.loadError")} onRetry={() => void query.refetch()} error={query.error} toolbar={toolbar}
             head={<tr>
-                <th scope="col">{t("manage.mail.journal.col.time")}</th>
+                <th scope="col">{t("manage.mail.journal.col.time", {zone: zoneOffset()})}</th>
                 <th scope="col">{t("manage.mail.journal.col.recipient")}</th>
                 <th scope="col">{t("manage.mail.journal.col.type")}</th>
                 <th scope="col">{t("manage.mail.journal.col.status")}</th>
@@ -81,7 +78,7 @@ export function MailJournal() {
                 const target = journalTarget(item, filters.channel);
                 const status = targetResult(target);
                 return <tr key={item.ID}>
-                    <td className="event-manage-table__nowrap"><time dateTime={target?.UpdatedAt ?? item.CreatedAt}>{timestamp(target?.UpdatedAt ?? item.CreatedAt)}</time></td>
+                    <td className="event-manage-table__nowrap"><time dateTime={target?.UpdatedAt ?? item.CreatedAt}>{formatDateTime(target?.UpdatedAt ?? item.CreatedAt)}</time></td>
                     <td>{target?.Recipient || item.RecipientEmail || <span className="event-manage-table__dim">—</span>}</td>
                     <td>{item.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${item.BroadcastID}`}>{typeTitle(item.NotificationType)}</Link> : typeTitle(item.NotificationType)}{item.NotificationType === mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}</td>
                     <td><div className="event-participants-table__person">
@@ -101,7 +98,7 @@ export function MailJournal() {
                 <dl className="event-mail-detail__facts">
                     <div><dt>{t("manage.mail.journal.col.type")}</dt><dd>{detail.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${detail.BroadcastID}`}>{typeTitle(detail.NotificationType)}</Link> : typeTitle(detail.NotificationType)}</dd></div>
                     <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd>{detail.RecipientEmail || "—"}</dd></div>
-                    <div><dt>{t("manage.mail.journal.detail.created")}</dt><dd><time dateTime={detail.CreatedAt}>{timestamp(detail.CreatedAt)}</time></dd></div>
+                    <div><dt>{t("manage.mail.journal.detail.created")}</dt><dd><time dateTime={detail.CreatedAt}>{formatDateTime(detail.CreatedAt)}</time></dd></div>
                     <div><dt>{t("manage.mail.journal.col.status")}</dt><dd>{t(`manage.mail.journal.status.${detail.Status}`)}</dd></div>
                 </dl>
                 <h3>{t("manage.mail.journal.detail.targets")}</h3>
@@ -113,7 +110,7 @@ export function MailJournal() {
                             <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd>{target.Recipient || "—"}</dd></div>
                             <div><dt>{t("manage.mail.journal.col.attempts")}</dt><dd>{target.Attempts}</dd></div>
                             {target.Transport && <div><dt>{t("manage.mail.journal.col.transport")}</dt><dd>{mailTransportLabel(target.Transport)}</dd></div>}
-                            <div><dt>{t("manage.mail.journal.detail.updated")}</dt><dd><time dateTime={target.UpdatedAt}>{timestamp(target.UpdatedAt)}</time></dd></div>
+                            <div><dt>{t("manage.mail.journal.detail.updated")}</dt><dd><time dateTime={target.UpdatedAt}>{formatDateTime(target.UpdatedAt)}</time></dd></div>
                         </dl>
                         {target.Error && (target.Status === "deferred" ? <p>{t("manage.mail.journal.detail.reason", {reason: target.Error})}</p> : <p className="event-manage-mail__error">{t("manage.mail.journal.detail.error", {error: target.Error})}</p>)}
                         {target.FallbackError && <p>{t("manage.mail.journal.fallbackError", {error: target.FallbackError})}</p>}

@@ -27,8 +27,8 @@ import {participantTabHref, participantTabs, type ParticipantTab} from "./partic
 import {useManager} from "./ManagerShell";
 import {t, tPlural} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {formatDateTime} from "@/utils/dateTime";
 
-const date = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
 const statusNames: Record<ParticipantStatus, string> = {1: t("manage.participants.status.pending"), 2: t("manage.participants.status.approved"), 3: t("manage.participants.status.rejected")};
 const statusTags: Record<ParticipantStatus, string> = {1: "ib-tag--warn", 2: "ib-tag--ok", 3: "ib-tag--danger"};
 const emptyTexts: Record<ParticipantTab, string> = {participants: t("manage.participants.empty.participants"), applications: t("manage.participants.empty.applications"), invitations: t("manage.participants.empty.invitations")};
@@ -177,13 +177,13 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         case "@pseudonym": return <td>{participant.Pseudonym || <span className="event-manage-table__dim">—</span>}</td>;
         case "@status": return <td>{tab === "invitations"
             ? participant.InvitationExpired ? <span className="ib-tag ib-tag--danger">{t("manage.participants.expired")}</span>
-                : participant.InvitationSentAt ? <EventTooltip content={t("manage.participants.sentAt", {date: date.format(new Date(participant.InvitationSentAt))})}>{id => <span className="ib-tag ib-tag--ok" aria-describedby={id}>{t("manage.participants.invitationSent")}</span>}</EventTooltip>
+                : participant.InvitationSentAt ? <EventTooltip content={t("manage.participants.sentAt", {date: formatDateTime(participant.InvitationSentAt)})}>{id => <span className="ib-tag ib-tag--ok" aria-describedby={id}>{t("manage.participants.invitationSent")}</span>}</EventTooltip>
                     : <span className="ib-tag ib-tag--warn">{t("manage.participants.notSent")}</span>
             : <span className={`ib-tag ${statusTags[participant.Status]}`}>{statusNames[participant.Status]}</span>}</td>;
         case "@team": return <td>{tab === "invitations"
             ? participant.InvitedToTeam ? participant.InvitedTeamName || t("manage.participants.col.team") : <span className="event-manage-table__dim">—</span>
             : participant.TeamID ? <Link href="/manage/teams" onClick={stop}>{participant.TeamName || t("manage.participants.inTeam")}</Link> : <span className="event-manage-table__dim">{t("manage.participants.noTeam")}</span>}</td>;
-        case "@date": return <td className="event-manage-table__nowrap event-manage-table__dim">{t("manage.participants.dateUtc", {date: date.format(new Date(participant.CreatedAt))})}</td>;
+        case "@date": return <td className="event-manage-table__nowrap event-manage-table__dim">{formatDateTime(participant.CreatedAt)}</td>;
         case "@missing": return <td>{participant.FieldsMissing > 0
             ? <EventTooltip content={tPlural("manage.fields.missing.tooltip", participant.FieldsMissing)}>{id => <span className="ib-tag ib-tag--warn" aria-describedby={id}>{participant.FieldsMissing}</span>}</EventTooltip>
             : <span className="event-manage-table__dim">—</span>}</td>;
@@ -234,7 +234,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         </ManageTable>
         <ManageDialog open={current !== null} onOpenChange={value => {if (!value) setOpened(null);}} size="md"
             title={current ? personName(current) : ""}
-            description={current ? [current.Pseudonym && t("manage.participants.pseudonym", {pseudonym: current.Pseudonym}), current.Email, !current.Invited && t("manage.participants.submittedAt", {date: date.format(new Date(current.CreatedAt))})].filter(Boolean).join(" · ") : undefined}
+            description={current ? [current.Pseudonym && t("manage.participants.pseudonym", {pseudonym: current.Pseudonym}), current.Email, !current.Invited && t("manage.participants.submittedAt", {date: formatDateTime(current.CreatedAt)})].filter(Boolean).join(" · ") : undefined}
             footer={<>
                 <button className="ib-btn" type="button" onClick={() => setOpened(null)}>{t("common.close")}</button>
                 {canManage && current && tab === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={!!busyID} busy={!!busyID && !confirm} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}

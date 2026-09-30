@@ -44,7 +44,7 @@ describe("Журнал надсилання", () => {
         renderJournal();
         expect(screen.getByRole("heading", {name: "Журнал надсилання"})).toBeTruthy();
         const table = screen.getByRole("table");
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (UTC)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби", "Деталі"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (GMT+3)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби", "Деталі"]);
         await waitFor(() => expect(within(table).getByText("user1@example.com")).toBeTruthy());
         expect(within(table).getByText("550 rejected")).toBeTruthy();
         expect(within(table).getByText("SMTP заходу")).toBeTruthy();

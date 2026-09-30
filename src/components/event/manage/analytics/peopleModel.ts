@@ -60,6 +60,7 @@ export function registrationsChartOption(registrations: AnalyticsParticipants["R
         data: registrations.Days.map((day, index) => [days[index], pick(day)]),
     });
     return {
+        useUTC: true,
         grid: {...baseGrid, bottom: 64},
         legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
         tooltip: {trigger: "axis", axisPointer: {type: "line"}},
