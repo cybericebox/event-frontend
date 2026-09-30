@@ -265,12 +265,12 @@ describe("Доброчесність", () => {
     });
 
     it("keeps the dialog open with the server's message when the review fails", async () => {
-        mockIntegrity({review: {status: 404, code: 62205}});
+        mockIntegrity({review: {status: 404, code: 32205}});
         renderWith(<AnalyticsIntegrity />);
         const table = await screen.findByRole("table");
         fireEvent.click(within(within(table).getByText("Blue").closest("tr")!).getByRole("button", {name: "Позначити як перевірене"}));
         fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", {name: "Позначити"}));
-        expect(await screen.findByText("Розв'язок не знайдено. Оновіть сторінку.")).toBeTruthy();
+        expect(await screen.findByText("Розв'язок не знайдено в цьому заході")).toBeTruthy();
         expect(screen.getByRole("alertdialog")).toBeTruthy();
     });
 
