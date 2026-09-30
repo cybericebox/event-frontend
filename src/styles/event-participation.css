@@ -50,7 +50,7 @@
 .event-pp-table tr:last-child td{border-bottom:0}
 .event-pp-table th:first-child,.event-pp-table td:first-child{padding-left:var(--ib-5)}
 .event-pp-table th:last-child,.event-pp-table td:last-child{padding-right:var(--ib-5)}
-.event-pp-table .is-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.event-pp-table .is-num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .event-pp-table .is-nowrap{white-space:nowrap}
 .event-pp-table tr.is-own td{font-weight:var(--ib-w-semibold)}
 .event-pp-table td.is-actions{text-align:right;white-space:nowrap}
