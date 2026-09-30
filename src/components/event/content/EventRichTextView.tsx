@@ -65,10 +65,9 @@ export function EventRichTextView({value, variables = {}, links = {}, dateDispla
                 const formats = Array.isArray(node.formats) ? node.formats : [];
                 const href = variableHref(links[name]);
                 if (href) return <a key={key} className="event-lexical__link" href={href} target="_blank" rel="noopener noreferrer" data-event-variable={name}>{text}</a>;
-                return <span key={key} className="event-lexical__variable" data-event-variable={name}
+                return <span key={key} data-event-variable={name}
                     style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,
-                        textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined,
-                        fontFamily: formats.includes("code") ? "monospace" : undefined}}>{text}</span>;
+                        textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined}}>{text}</span>;
             }
             // Code blocks keep tabs and highlight runs as plain text.
             case "tab": return <span key={key}>{"\t"}</span>;

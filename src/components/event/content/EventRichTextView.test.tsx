@@ -9,7 +9,8 @@ describe("EventRichTextView", () => {
         expect(html).toContain("text-align:center");
         expect(html).toContain("<strong>Початок </strong>");
         expect(html).toContain("01:17:09");
-        expect(html).toContain("event-lexical__variable");
+        expect(html).not.toContain("event-lexical__variable");
+        expect(html).toContain("<span data-event-variable=\"event.startAt\"");
         expect(html).not.toContain("{{");
     });
     it("never renders an unsafe link or an unknown node", () => {
