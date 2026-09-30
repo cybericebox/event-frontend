@@ -47,3 +47,9 @@ All user-facing text lives in `messages/uk.json` and `messages/en.json` and is r
 ## Deployment
 
 Deployment and cluster configuration: see the infrastructure repository.
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+
+Copyright 2024-2026 CyberICEBox
