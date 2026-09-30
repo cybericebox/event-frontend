@@ -2,6 +2,7 @@
 
 import {useId, useMemo, useState} from "react";
 import Link from "next/link";
+import {EmptyState} from "@/components/ui/EmptyState";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, ChevronDown, Trash2} from "lucide-react";
@@ -167,6 +168,8 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         }
     }
 
+    // A new page has nothing to read: a viewer gets the shared read-only state.
+    if (isNew && !canManage) return <div className="event-manage-content"><EmptyState message={t("manage.content.page.viewerCannotCreate")} /></div>;
     if (page.isError || pages.isError || config.isError || content.isError || definitions.isError) return <EventLoadError message={t("manage.content.page.loadFailed")} error={page.error ?? pages.error ?? config.error ?? content.error ?? definitions.error} onRetry={() => void Promise.all([page.refetch(), pages.refetch(), config.refetch(), content.refetch(), definitions.refetch()])} />;
     if ((!isNew && page.isPending) || pages.isPending || config.isPending || content.isPending || definitions.isPending) return <EventLoading event={event} label={t("manage.content.page.loading")} />;
 

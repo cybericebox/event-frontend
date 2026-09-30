@@ -76,7 +76,7 @@ export function DismissDialog({draft, onChange, onClose, onDone}: {draft: Dismis
 }
 
 export function DismissalsPanel() {
-    const {event} = useManager();
+    const {event, canManage} = useManager();
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const [removing, setRemoving] = useState<{item: IntegrityDismissal; busy: boolean; error: string | null} | null>(null);
@@ -124,7 +124,7 @@ export function DismissalsPanel() {
                 <td>{item.CreatedBy}</td>
                 <td className="event-manage-table__nowrap">{formatDateTime(item.CreatedAt)}</td>
                 <td className="event-integrity__note">{item.Note}</td>
-                <td className="event-manage-table__actions-col"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setRemoving({item, busy: false, error: null})}>{t("manage.analytics.integrity.dismissals.remove")}</button></td>
+                <td className="event-manage-table__actions-col">{canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setRemoving({item, busy: false, error: null})}>{t("manage.analytics.integrity.dismissals.remove")}</button>}</td>
             </tr>)}</tbody>
         </ManageTable>
         <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} busy={removing?.busy ?? false} error={removing?.error}

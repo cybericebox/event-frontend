@@ -929,6 +929,7 @@
   "manage.content.page.deleteTip": "Delete this page",
   "manage.content.page.deleteTitle": "Delete the page “{title}”?",
   "manage.content.page.deleted": "Page deleted",
+  "manage.content.page.viewerCannotCreate": "Only the event owner and moderators with write access can create pages. Your access is read-only.",
   "manage.content.page.discardFailed": "Could not discard the changes. Try again.",
   "manage.content.page.discarded": "Unpublished changes discarded",
   "manage.content.page.draftSaved": "Draft saved. The site shows the previous version.",

@@ -123,19 +123,19 @@ function SignalChip({signal}: {signal: IntegritySignal}) {
     return <span className={`ib-tag ib-tag--sm ${tone}${signal.Info ? " event-integrity__chip--muted" : ""}`} title={kindReason(signal.Kind)}>{label}</span>;
 }
 
-function Evidence({item, onDismiss}: {item: IntegrityItem; onDismiss: (item: IntegrityItem, kind: IntegrityKind, key: string) => void}) {
+function Evidence({item, canManage, onDismiss}: {item: IntegrityItem; canManage: boolean; onDismiss: (item: IntegrityItem, kind: IntegrityKind, key: string) => void}) {
     const review = item.Review;
     return <div className="event-integrity__evidence">
         <ul>{item.Signals.map((signal, index) => <li key={`${signal.Kind}-${index}`}>
             <div className="event-integrity__signal">
                 <SignalChip signal={signal} />
                 <span>{signalEvidence(signal, item.Level)}</span>
-                {isDismissible(signal.Kind) && signal.Kind !== "shared_wrong" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onDismiss(item, signal.Kind, "")}>{t("manage.analytics.integrity.dismiss.action")}</button>}
+                {canManage && isDismissible(signal.Kind) && signal.Kind !== "shared_wrong" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onDismiss(item, signal.Kind, "")}>{t("manage.analytics.integrity.dismiss.action")}</button>}
             </div>
             {signal.Answers.length > 0 && <ul className="event-integrity__answers">{signal.Answers.map(answer => <li key={answer.Value}>
                 <div className="event-integrity__signal">
                     <code className="event-integrity__value">{answer.Value}</code>
-                    <button className="ib-btn ib-btn--sm" type="button" onClick={() => onDismiss(item, signal.Kind, answer.Value)}>{t("manage.analytics.integrity.dismiss.answerAction")}</button>
+                    {canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onDismiss(item, signal.Kind, answer.Value)}>{t("manage.analytics.integrity.dismiss.answerAction")}</button>}
                 </div>
                 <ol className="event-integrity__order">{answer.Order.map((entry, position) => <li key={`${entry.TeamID}-${entry.At}`}>{t("manage.analytics.integrity.answerOrder", {n: position + 1, team: entry.TeamName, time: formatClock(entry.At)})}</li>)}</ol>
             </li>)}</ul>}
@@ -151,7 +151,7 @@ function Evidence({item, onDismiss}: {item: IntegrityItem; onDismiss: (item: Int
 // for a person to review, never a verdict. Only for viewers with the sensitive
 // level; no IP or device data is used.
 export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: IntegrityInitialFilters}) {
-    const {event} = useManager();
+    const {event, canManage} = useManager();
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const access = useAnalyticsAccess(eventID);
@@ -271,12 +271,12 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
                         <td className="ib-num">{formatCount(item.Signals.length)}</td>
                         <td className="event-manage-table__actions-col"><div className="event-integrity__actions">
                             <Link className="ib-btn ib-btn--sm" href={integrityJournalHref(item)}>{t("manage.analytics.integrity.openJournal")}</Link>
-                            {item.Review
+                            {canManage && (item.Review
                                 ? <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDraft({mode: "unreview", item, note: "", busy: false, error: null})}>{t("manage.analytics.integrity.unreview.action")}</button>
-                                : <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDraft({mode: "review", item, note: "", busy: false, error: null})}>{t("manage.analytics.integrity.review.action")}</button>}
+                                : <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDraft({mode: "review", item, note: "", busy: false, error: null})}>{t("manage.analytics.integrity.review.action")}</button>)}
                         </div></td>
                     </tr>
-                    {open && <tr className="event-integrity__detail"><td colSpan={7}><Evidence item={item} onDismiss={(target, kind, keyValue) => setDismiss({item: target, kind, keyValue, scope: "event", note: "", busy: false, error: null})} /></td></tr>}
+                    {open && <tr className="event-integrity__detail"><td colSpan={7}><Evidence item={item} canManage={canManage} onDismiss={(target, kind, keyValue) => setDismiss({item: target, kind, keyValue, scope: "event", note: "", busy: false, error: null})} /></td></tr>}
                 </Fragment>;
             })}</tbody>
         </ManageTable>

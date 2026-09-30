@@ -5,7 +5,8 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null}));
 const download = vi.hoisted(() => vi.fn(async () => undefined));
-vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event, canManage: true})}));
+const manager = vi.hoisted(() => ({canManage: true}));
+vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event, canManage: manager.canManage})}));
 vi.mock("echarts-for-react", () => ({default: ({option}: {option: {series: unknown[]}}) => <div data-testid="chart" data-series={option.series.length} />}));
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 vi.mock("@/api/csvDownload", async original => ({...(await original() as object), downloadManageFile: download}));
@@ -19,7 +20,7 @@ HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { t
 HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 
 afterEach(cleanup);
-beforeEach(() => download.mockClear());
+beforeEach(() => {download.mockClear(); manager.canManage = true;});
 
 const past = new Date(Date.now() - 3_600_000).toISOString();
 const challenge = "0190c6a4-0000-7000-8000-0000000000aa";
@@ -308,6 +309,23 @@ describe("Доброчесність", () => {
         await screen.findByRole("table");
         fireEvent.click(screen.getByRole("button", {name: "Докази: Green, Web 1"}));
         expect(screen.queryByRole("button", {name: "Не підсвічувати такі випадки"})).toBeNull();
+    });
+
+    it("is read-only for a viewer: no review, no dismissal, no removal", async () => {
+        manager.canManage = false;
+        mockIntegrity({dismissals: [dismissal]});
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        expect(screen.queryByRole("button", {name: "Позначити як перевірене"})).toBeNull();
+        expect(screen.queryByRole("button", {name: "Зняти позначку"})).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Blue, Web 1"}));
+        expect(within(table).getByText("flag{shared}")).toBeTruthy();
+        expect(within(table).queryByRole("button", {name: "Допустима відповідь"})).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Red, Web 1"}));
+        expect(within(table).queryByRole("button", {name: "Не підсвічувати такі випадки"})).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Виключення"}));
+        const row = (await screen.findByText("Common path")).closest("tr")!;
+        expect(within(row).queryByRole("button", {name: "Прибрати"})).toBeNull();
     });
 
     it("lists the dismissals and removes one after a confirmation", async () => {

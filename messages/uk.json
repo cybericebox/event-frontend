@@ -929,6 +929,7 @@
   "manage.content.page.deleteTip": "Видалити цю сторінку",
   "manage.content.page.deleteTitle": "Видалити сторінку «{title}»?",
   "manage.content.page.deleted": "Сторінку видалено",
+  "manage.content.page.viewerCannotCreate": "Створювати сторінки можуть власник заходу та модератори з правом запису. Ваш доступ лише для перегляду.",
   "manage.content.page.discardFailed": "Не вдалося скасувати зміни. Повторіть запит.",
   "manage.content.page.discarded": "Неопубліковані зміни скасовано",
   "manage.content.page.draftSaved": "Чернетку збережено. На сайті — попередня версія.",
