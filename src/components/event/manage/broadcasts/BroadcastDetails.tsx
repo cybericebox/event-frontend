@@ -16,6 +16,7 @@ import {InAppPreview} from "../notifications/InAppPreview";
 import {audienceLabel, broadcastSampleValues, broadcastTitle, channelLabel, channelsLabel, inAppPreviewInput} from "./broadcastModel";
 import {BroadcastStatus, formatBroadcastTime} from "./BroadcastHistory";
 import "./broadcasts.css";
+import {zoneOffset} from "@/utils/dateTime";
 
 const PAGE = 50;
 
@@ -65,7 +66,7 @@ export function BroadcastDetails({broadcastID}: {broadcastID: string}) {
             <div><dt>{t("manage.broadcasts.col.sent")}</dt><dd>{item.SentCount}</dd></div>
             <div><dt>{t("manage.broadcasts.col.failed")}</dt><dd>{item.FailedCount}</dd></div>
             <div><dt>{t("manage.broadcasts.col.author")}</dt><dd>{item.CreatedByName || "—"}</dd></div>
-            <div><dt>{t("manage.broadcasts.col.date")}</dt><dd><time dateTime={item.CreatedAt}>{formatBroadcastTime(item.CreatedAt)}</time></dd></div>
+            <div><dt>{t("manage.broadcasts.col.date", {zone: zoneOffset()})}</dt><dd><time dateTime={item.CreatedAt}>{formatBroadcastTime(item.CreatedAt)}</time></dd></div>
             {item.FinishedAt && <div><dt>{t("manage.broadcasts.finished")}</dt><dd><time dateTime={item.FinishedAt}>{formatBroadcastTime(item.FinishedAt)}</time></dd></div>}
         </dl>
         <div className="event-template-grid">

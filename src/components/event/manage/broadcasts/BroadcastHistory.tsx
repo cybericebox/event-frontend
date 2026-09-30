@@ -6,7 +6,7 @@ import {CircleHelp, Send} from "lucide-react";
 import {getEventBroadcasts, type Broadcast} from "@/api/manageBroadcasts";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
-import {formatDateTime} from "@/utils/dateTime";
+import {formatDateTime, zoneOffset} from "@/utils/dateTime";
 import {useManager} from "../ManagerShell";
 import {ManageTable, useCursorPages} from "../ManageTable";
 import {audienceLabel, broadcastTitle, channelsLabel} from "./broadcastModel";
@@ -55,7 +55,7 @@ export function BroadcastHistory() {
                 <th scope="col" className="ib-num">{t("manage.broadcasts.col.failed")}</th>
                 <th scope="col">{t("manage.broadcasts.col.status")}</th>
                 <th scope="col">{t("manage.broadcasts.col.author")}</th>
-                <th scope="col">{t("manage.broadcasts.col.date")}</th>
+                <th scope="col">{t("manage.broadcasts.col.date", {zone: zoneOffset()})}</th>
             </tr>}
             footer={<div className="event-manage-table__footer">
                 <div className="event-manage-table__meta"><span>{t("manage.broadcasts.page", {page: pages.page})}</span></div>

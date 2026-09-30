@@ -32,6 +32,7 @@ import {loadThresholds, saveThresholds} from "./integrityThresholds";
 import {useAnalyticsAccess} from "./useAnalyticsAccess";
 import {useAnalyticsPeriod} from "./useAnalyticsPeriod";
 import "./analyticsIntegrity.css";
+import {zoneOffset} from "@/utils/dateTime";
 
 export const INTEGRITY_POLL_SECONDS = 30;
 
@@ -246,7 +247,7 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
                 <th scope="col" className="event-integrity__toggle-col"><span className="sr-only">{t("manage.analytics.integrity.col.evidence")}</span></th>
                 <th scope="col">{t("manage.analytics.integrity.col.team")}</th>
                 <th scope="col">{t("manage.analytics.integrity.col.task")}</th>
-                <th scope="col">{t("manage.analytics.integrity.col.time")}</th>
+                <th scope="col">{t("manage.analytics.integrity.col.time", {zone: zoneOffset()})}</th>
                 <th scope="col">{t("manage.analytics.integrity.col.signals")}</th>
                 <th scope="col" className="ib-num">{t("manage.analytics.integrity.col.count")}</th>
                 <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.analytics.integrity.col.actions")}</span></th>

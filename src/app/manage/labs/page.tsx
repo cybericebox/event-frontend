@@ -19,6 +19,7 @@ import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
+import {zoneOffset} from "@/utils/dateTime";
 
 const timeFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 const formatTime = (value: string | null) => value ? timeFormat.format(new Date(value)) : null;
@@ -158,7 +159,7 @@ export default function ManageLabsPage() {
         <div className="event-stands__summary" role="status">{summary.map(entry => <div key={entry.label}><span>{entry.label}</span><strong>{entry.value}</strong></div>)}</div>
         <section className="event-manage-section event-stands__table">
             {items.length === 0 ? <EmptyState message={t("manage.labs.empty")} /> : <div className="event-participants-table"><table>
-                <thead><tr><th>{t("manage.labs.column.team")}</th><th>{t("manage.labs.column.status")}</th><th>{t("manage.labs.column.updated")}</th><th>{t("manage.labs.column.reason")}</th><th><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
+                <thead><tr><th>{t("manage.labs.column.team")}</th><th>{t("manage.labs.column.status")}</th><th>{t("manage.labs.column.updated", {zone: zoneOffset()})}</th><th>{t("manage.labs.column.reason")}</th><th><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
                 <tbody>{items.map(stand => {
                     const open = expanded === stand.TeamID;
                     return <Fragment key={stand.TeamID}>

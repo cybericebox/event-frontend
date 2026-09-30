@@ -27,7 +27,7 @@ import {participantTabHref, participantTabs, type ParticipantTab} from "./partic
 import {useManager} from "./ManagerShell";
 import {t, tPlural} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
-import {formatDateTime} from "@/utils/dateTime";
+import {formatDateTime, zoneOffset} from "@/utils/dateTime";
 
 const statusNames: Record<ParticipantStatus, string> = {1: t("manage.participants.status.pending"), 2: t("manage.participants.status.approved"), 3: t("manage.participants.status.rejected")};
 const statusTags: Record<ParticipantStatus, string> = {1: "ib-tag--warn", 2: "ib-tag--ok", 3: "ib-tag--danger"};
@@ -67,7 +67,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         ...(tab === "applications" ? [{key: "@status", label: t("manage.participants.col.status"), kind: "any" as const, options: [{value: "1", label: statusNames[1]}, {value: "3", label: statusNames[3]}]}] : []),
         ...(tab === "invitations" ? [{key: "@invitation", label: t("manage.participants.col.status"), kind: "any" as const, options: [{value: "sent", label: t("manage.participants.invitationSent")}, {value: "notSent", label: t("manage.participants.notSent")}]}] : []),
         ...(teamMode && tab !== "applications" ? [{key: "@team", label: t("manage.participants.col.team"), kind: "any" as const, options: [{value: "none", label: t("manage.participants.noTeam")}, ...(teamsQuery.data?.Items ?? []).map(team => ({value: team.ID, label: team.Name}))]}] : []),
-        {key: "@date", label: tab === "invitations" ? t("manage.participants.col.invited") : t("manage.participants.col.registered"), kind: "date"},
+        {key: "@date", label: tab === "invitations" ? t("manage.participants.col.invited", {zone: zoneOffset()}) : t("manage.participants.col.registered", {zone: zoneOffset()}), kind: "date"},
         ...(askedEveryone && tab === "participants" ? [{key: "@missing", label: t("manage.fields.missing.filter"), kind: "bool" as const, yes: t("manage.fields.missing.yes"), no: t("manage.fields.missing.no")}] : []),
         ...(showAnswers ? fieldFilterSpecs(fields) : []),
     ];
@@ -83,7 +83,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         ...(pseudonyms ? [{key: "@pseudonym", label: t("manage.participants.col.pseudonym")}] : []),
         {key: "@status", label: t("manage.participants.col.status")},
         ...(teamMode ? [{key: "@team", label: t("manage.participants.col.team")}] : []),
-        {key: "@date", label: t("manage.participants.col.registered")},
+        {key: "@date", label: t("manage.participants.col.registered", {zone: zoneOffset()})},
         ...(askedEveryone ? [{key: "@missing", label: t("manage.fields.missing.column")}] : []),
         ...fieldColumnDefinitions(fields),
     ], canManage);
@@ -163,7 +163,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
 
     function headerLabel(column: TableColumn): string {
         if (tab === "invitations" && column.key === "@name") return t("manage.participants.col.address");
-        if (tab === "invitations" && column.key === "@date") return t("manage.participants.col.invited");
+        if (tab === "invitations" && column.key === "@date") return t("manage.participants.col.invited", {zone: zoneOffset()});
         return column.label;
     }
 

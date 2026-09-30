@@ -27,7 +27,7 @@ describe("Електронні листи, список", () => {
         ]);
         renderPage();
         const table = screen.getByRole("table");
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Тип", "Статус", "Оновлено", "Надсилати"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Тип", "Статус", "Оновлено (GMT+3)", "Надсилати"]);
         const reminder = (await within(table).findByRole("link", {name: "Нагадування про старт"})).closest("tr")!;
         expect(within(reminder).getByText("Опублікована", {selector: ".ib-tag"})).toBeTruthy();
         expect(within(reminder).getByText("Чернетка очікує")).toBeTruthy();

@@ -15,6 +15,7 @@ import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {t} from "@/i18n/t";
 import {formatDateTime} from "./analyticsFormat";
 import {integrityDismissalsKey, integrityFlagsKey, integrityKey, kindLabel} from "./integrityModel";
+import {zoneOffset} from "@/utils/dateTime";
 
 // «Виключення»: patterns the organizers asked not to highlight (docs/ANTI-CHEAT.md).
 // A dismissal is for this event or for every event using the catalog exercise.
@@ -111,7 +112,7 @@ export function DismissalsPanel() {
                 <th scope="col">{t("manage.analytics.integrity.dismissals.col.task")}</th>
                 <th scope="col">{t("manage.analytics.integrity.dismissals.col.scope")}</th>
                 <th scope="col">{t("manage.analytics.integrity.dismissals.col.author")}</th>
-                <th scope="col">{t("manage.analytics.integrity.dismissals.col.date")}</th>
+                <th scope="col">{t("manage.analytics.integrity.dismissals.col.date", {zone: zoneOffset()})}</th>
                 <th scope="col">{t("manage.analytics.integrity.dismissals.col.note")}</th>
                 <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.analytics.integrity.col.actions")}</span></th>
             </tr>}>

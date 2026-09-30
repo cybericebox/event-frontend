@@ -58,7 +58,7 @@ describe("Історія розсилок", () => {
         wrap(<BroadcastHistory />);
         const table = screen.getByRole("table");
         await waitFor(() => expect(within(table).getByText("Тема 1")).toBeTruthy());
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Повідомлення", "Канали", "Аудиторія", "Отримувачі", "Надіслано", "Помилки", "Статус", "Автор", "Дата"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Повідомлення", "Канали", "Аудиторія", "Отримувачі", "Надіслано", "Помилки", "Статус", "Автор", "Дата (GMT+3)"]);
         expect(within(table).getByText("Електронна пошта, У застосунку")).toBeTruthy();
         expect(within(table).getByText("Лише схвалені учасники")).toBeTruthy();
         expect(within(table).getByText("Заголовок 2")).toBeTruthy();

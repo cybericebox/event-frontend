@@ -35,7 +35,7 @@ import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
-import {formatDateTime} from "@/utils/dateTime";
+import {formatDateTime, zoneOffset} from "@/utils/dateTime";
 
 const MEMBER_TAGS = 3;
 
@@ -97,7 +97,7 @@ export default function ManageTeamsPage() {
             {value: "notAdmitted", label: t("manage.teams.filter.notAdmitted")},
         ]},
         {key: "@pending", label: t("manage.teams.filter.pendingInvitees"), kind: "bool"},
-        {key: "@created", label: t("manage.teams.col.created"), kind: "date"},
+        {key: "@created", label: t("manage.teams.col.created", {zone: zoneOffset()}), kind: "date"},
         ...(askedEveryone ? [{key: "@missing", label: t("manage.fields.missing.filter"), kind: "bool" as const, yes: t("manage.fields.missing.yes"), no: t("manage.fields.missing.no")}] : []),
         ...fieldFilterSpecs(fields),
     ];
@@ -127,7 +127,7 @@ export default function ManageTeamsPage() {
         {key: "@captain", label: t("manage.teams.col.captain")},
         {key: "@members", label: t("manage.teams.col.members")},
         {key: "@status", label: t("manage.teams.col.status")},
-        {key: "@created", label: t("manage.teams.col.created")},
+        {key: "@created", label: t("manage.teams.col.created", {zone: zoneOffset()})},
         ...(askedEveryone ? [{key: "@missing", label: t("manage.fields.missing.column")}] : []),
         ...fieldColumnDefinitions(fields),
     ], canManage);
