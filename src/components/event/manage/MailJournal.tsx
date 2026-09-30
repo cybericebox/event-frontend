@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import Link from "next/link";
 import {Info} from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {
@@ -82,7 +83,7 @@ export function MailJournal() {
                 return <tr key={item.ID}>
                     <td className="event-manage-table__nowrap"><time dateTime={target?.UpdatedAt ?? item.CreatedAt}>{timestamp(target?.UpdatedAt ?? item.CreatedAt)}</time></td>
                     <td>{target?.Recipient || item.RecipientEmail || <span className="event-manage-table__dim">—</span>}</td>
-                    <td>{typeTitle(item.NotificationType)}{item.NotificationType === mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}</td>
+                    <td>{item.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${item.BroadcastID}`}>{typeTitle(item.NotificationType)}</Link> : typeTitle(item.NotificationType)}{item.NotificationType === mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}</td>
                     <td><div className="event-participants-table__person">
                         <span className={`event-manage-participants__status ${status === "done" ? "is-2" : status === "error" ? "is-3" : "is-1"}`}>{status ? mailResultLabels[status] : t("manage.mail.journal.pending")}</span>
                         {target?.Error && <small className="event-manage-mail__error">{target.Error}</small>}
@@ -98,7 +99,7 @@ export function MailJournal() {
             footer={<button className="ib-btn" type="button" onClick={() => setDetail(null)}>{t("manage.mail.journal.detail.close")}</button>}>
             {detail && <div className="event-mail-detail">
                 <dl className="event-mail-detail__facts">
-                    <div><dt>{t("manage.mail.journal.col.type")}</dt><dd>{typeTitle(detail.NotificationType)}</dd></div>
+                    <div><dt>{t("manage.mail.journal.col.type")}</dt><dd>{detail.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${detail.BroadcastID}`}>{typeTitle(detail.NotificationType)}</Link> : typeTitle(detail.NotificationType)}</dd></div>
                     <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd>{detail.RecipientEmail || "—"}</dd></div>
                     <div><dt>{t("manage.mail.journal.detail.created")}</dt><dd><time dateTime={detail.CreatedAt}>{timestamp(detail.CreatedAt)}</time></dd></div>
                     <div><dt>{t("manage.mail.journal.col.status")}</dt><dd>{t(`manage.mail.journal.status.${detail.Status}`)}</dd></div>

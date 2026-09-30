@@ -56,6 +56,8 @@ const journalItemSchema = z.object({
     ID: z.string(), NotificationType: z.string(), RecipientUserID: z.string().optional(), Status: z.string(),
     CreatedAt: z.string(), UpdatedAt: z.string(),
     ScopeEventID: z.string().nullable().optional(), EventName: z.string().nullable().optional(),
+    // Set when the message is one recipient of a custom broadcast («Розсилка»).
+    BroadcastID: z.string().nullish(),
     RecipientEmail: z.string().nullable().optional().transform(value => value ?? ""),
     Targets: z.array(targetSchema).nullable().optional().transform(value => value ?? []),
 });
@@ -139,15 +141,19 @@ export type MailJournalFilters = {type: string | null; status: string | null; re
 export const emptyMailJournalFilters: MailJournalFilters = {type: null, status: null, result: null, transport: null, channel: "email"};
 // Journal kind of an SMTP test send from the mail settings (not a signal type).
 export const mailTestType = "smtp_test";
+// Journal kind of a custom broadcast message.
+export const mailBroadcastType = "broadcast";
 
 // Label of a journal row type: the SMTP test kind, else the signal label.
 export function mailJournalTypeLabel(type: string, signalTitle: (type: string) => string): string {
+    if (type === mailBroadcastType) return t("manage.broadcasts.journalType");
     return type === mailTestType ? t("manage.mail.journal.smtpTest") : signalTitle(type);
 }
 
 // Type filter values: the signal types plus the SMTP test kind.
 export function mailJournalTypes(signalTypes: string[]): string[] {
-    return signalTypes.includes(mailTestType) ? signalTypes : [...signalTypes, mailTestType];
+    const withTest = signalTypes.includes(mailTestType) ? signalTypes : [...signalTypes, mailTestType];
+    return withTest.includes(mailBroadcastType) ? withTest : [...withTest, mailBroadcastType];
 }
 
 export const mailDispatchStatuses = ["pending", "started", "done", "error"] as const;

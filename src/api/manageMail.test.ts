@@ -92,8 +92,8 @@ describe("placeholder sources", () => {
 
 describe("SMTP test journal kind", () => {
     it("is offered as a type filter and labelled apart from signals", () => {
-        expect(mailJournalTypes(["flag_accepted"])).toEqual(["flag_accepted", mailTestType]);
-        expect(mailJournalTypes([mailTestType])).toEqual([mailTestType]);
+        expect(mailJournalTypes(["flag_accepted"])).toEqual(["flag_accepted", mailTestType, "broadcast"]);
+        expect(mailJournalTypes([mailTestType])).toEqual([mailTestType, "broadcast"]);
         expect(mailJournalTypeLabel(mailTestType, () => "signal")).toBe("Перевірка SMTP");
         expect(mailJournalTypeLabel("flag_accepted", () => "signal")).toBe("signal");
     });

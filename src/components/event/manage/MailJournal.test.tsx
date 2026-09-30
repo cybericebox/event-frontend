@@ -74,6 +74,14 @@ describe("Журнал надсилання", () => {
         await waitFor(() => expect(urls.some(url => url.includes("type=smtp_test"))).toBe(true));
     });
 
+    it("shows «Розсилка» with a link to the broadcast when the row has a BroadcastID", async () => {
+        mockApi([{Items: [item(1, {NotificationType: "broadcast", BroadcastID: "0190c6a4-0000-7000-8000-00000000abcd"}), item(2)], Total: 2}]);
+        renderJournal();
+        const link = await screen.findByRole("link", {name: "Розсилка"});
+        expect(link.getAttribute("href")).toBe("/manage/broadcasts/0190c6a4-0000-7000-8000-00000000abcd");
+        expect(screen.getAllByRole("link")).toHaveLength(1);
+    });
+
     it("shows the empty state inside the table body", async () => {
         mockApi([{Items: [], Total: 0}]);
         renderJournal();
