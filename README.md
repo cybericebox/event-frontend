@@ -1,35 +1,48 @@
 # event-frontend
 
-The event sites of Cyber ICE Box, served on `<tag>.<domain>` for each event. A Next.js standalone server renders the event landing, the participant area, the live screen and the manager area.
+The event site of the Cyber ICE Box platform, for participants and for event managers. Unlike the other frontends it is server-rendered.
 
-## Environment variables
+## Stack
 
-The Docker image reads these at container start.
+Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Radix UI, TanStack Query, Lexical editor, dnd-kit, ECharts. Tests: Vitest with Testing Library. Lint: ESLint 9.
 
-| Variable | Required | Default | Description |
-| --- | --- | --- | --- |
-| `NEXT_PUBLIC_DOMAIN` | yes | — | Platform apex domain, e.g. `cybericebox.com`; event sites are `<tag>.<domain>`. |
-| `NEXT_PUBLIC_API_DOMAIN` | no | `api.<domain>` | API host (bare host, no scheme). |
-| `NEXT_PUBLIC_ID_DOMAIN` | no | `id.<domain>` | ID app host. |
-| `NEXT_PUBLIC_EXERCISES_DOMAIN` | no | `exercises.<domain>` | Exercises app host. |
-| `NEXT_PUBLIC_ADMIN_DOMAIN` | no | `admin.<domain>` | Admin app host. |
-| `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | analytics off | Google Analytics 4 measurement id (`G-…`). |
-| `INTERNAL_API_ORIGIN` | no | public API origin | In-cluster API origin for server-side requests. |
+## Prerequisites
+
+Node.js 24 or newer (the container image uses Node 24).
 
 ## Commands
 
 ```bash
 npm install
-npm run dev          # http://localhost:3003
-npm run build
+npm run dev      # dev server on http://localhost:3003
+npm run build    # production build (standalone server output)
+npm start        # next start -p 3002
 npm run lint
-npx vitest run
-
-docker build -f deploy/Dockerfile -t cybericebox/event-frontend .
-docker run --rm -p 3000:3000 -e NEXT_PUBLIC_DOMAIN=cybericebox.local cybericebox/event-frontend
+npm test         # Vitest (time zone pinned to Europe/Kyiv)
 ```
+
+## SSR, not a static export
+
+The app builds with `output: "standalone"` and runs as a Node server (`next start` or the standalone `server.js`). Event sites are served on per-event subdomains of the platform domain, so pages are rendered on request.
+
+## Configuration
+
+Read at runtime by the server.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_DOMAIN` | yes | Platform apex domain; the other hosts derive from it. |
+| `NEXT_PUBLIC_API_DOMAIN` | no | API host (bare host, no scheme). Defaults to `api.<domain>`. |
+| `NEXT_PUBLIC_ID_DOMAIN` | no | ID app host. Defaults to `id.<domain>`. |
+| `NEXT_PUBLIC_ADMIN_DOMAIN` | no | Admin app host. Defaults to `admin.<domain>`. |
+| `NEXT_PUBLIC_EXERCISES_DOMAIN` | no | Exercises app host. Defaults to `exercises.<domain>`. |
+| `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
+| `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
+
+## i18n
+
+All user-facing text lives in `messages/uk.json` and `messages/en.json` and is rendered through the translate function `t("key", { vars })`. Ukrainian is the default language. Every key must exist in both files.
 
 ## Deployment
 
-- **Docker images** — a push to `develop` builds `cybericebox/event-frontend:<commit sha>` (`develop-image.yml`); a published release builds `:latest` and `:<release tag>` (`publish-image.yml`).
-- **Kubernetes** — manifests are in `deploy/manifests`. Put the values in `config.yaml`; an empty key uses the default.
+Deployment and cluster configuration: see the infrastructure repository.
