@@ -32,3 +32,6 @@
 .event-banner-list__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2)}
 .event-banner-block{min-height:320px;display:grid}
 .event-banner-block>.event-block-state{min-height:320px}
+.event-broadcast-template{max-width:360px}
+.event-broadcast-template__loading{display:flex;align-items:center;min-height:40px}
+.event-broadcast-preview .event-manage-warning ul{margin:0;padding:0;list-style:none}

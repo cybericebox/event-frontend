@@ -4,7 +4,7 @@ import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import Link from "next/link";
-import {ArrowLeft, Send} from "lucide-react";
+import {ArrowLeft, Send, TriangleAlert} from "lucide-react";
 import {apiErrorMessage, ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {countEventBroadcastAudience, sendEventBroadcast, type BroadcastAudience} from "@/api/manageBroadcasts";
@@ -27,8 +27,10 @@ import {EmailPreview} from "../notifications/EmailPreview";
 import {InAppPreview} from "../notifications/InAppPreview";
 import {useDebounced} from "../notifications/useDebounced";
 import {AudiencePicker} from "./AudiencePicker";
+import {TemplateStart} from "./TemplateStart";
+import {draftUnsupported, previewDraft, type BroadcastTemplate} from "./broadcastTemplates";
 import {
-    audienceReady, broadcastPayload, broadcastSampleValues, broadcastVariables, composeValidation, emailPreviewInput, emailValidation,
+    audienceReady, broadcastPayload, emailBodyFilled, broadcastSampleValues, broadcastVariables, composeValidation, emailPreviewInput, emailValidation,
     emptyDraft, inAppPreviewInput, normalizedAudience, type BroadcastDraft,
 } from "./broadcastModel";
 import "./broadcasts.css";
@@ -52,6 +54,8 @@ export function BroadcastCompose() {
     const queryClient = useQueryClient();
     const [draft, setDraft] = useState<BroadcastDraft>(emptyDraft);
     const [confirming, setConfirming] = useState(false);
+    // A template chosen over existing content waits here for the replacement to be confirmed.
+    const [pendingTemplate, setPendingTemplate] = useState<BroadcastTemplate | null>(null);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState("");
     const variables = broadcastVariables();
@@ -71,9 +75,25 @@ export function BroadcastCompose() {
     const validation = composeValidation(draft);
     const canSend = canManage && !validation && recipients !== undefined && recipients > 0 && !count.isFetching;
     const emailInvalid = !!emailValidation(draft);
-    const previewKey = useDebounced(draft.email && !emailInvalid ? JSON.stringify(emailPreviewInput(draft)) : "");
+    const shown = useMemo(() => previewDraft(draft), [draft]);
+    const unsupported = useMemo(() => draftUnsupported(draft), [draft]);
+    const previewKey = useDebounced(draft.email && !emailInvalid ? JSON.stringify(emailPreviewInput(shown)) : "");
     const livePreview = useMemo(() => previewKey ? JSON.parse(previewKey) as ManageEmailTemplateInput : null, [previewKey]);
-    const inAppPreview = inAppPreviewInput(draft);
+    const inAppPreview = inAppPreviewInput(shown);
+
+    function applyTemplate(template: BroadcastTemplate) {
+        setDraft(current => ({
+            ...current,
+            ...(template.email ? {email: true, ...template.email} : {}),
+            ...(template.inApp ? {inApp: true, ...template.inApp} : {}),
+        }));
+    }
+    function pickTemplate(template: BroadcastTemplate) {
+        const replaces = (template.email && (draft.Subject.trim() !== "" || draft.Preheader.trim() !== "" || emailBodyFilled(draft.Body)))
+            || (template.inApp && (draft.InAppTitle.trim() !== "" || draft.InAppBody.trim() !== "" || draft.InAppLink.trim() !== ""));
+        if (replaces) setPendingTemplate(template);
+        else applyTemplate(template);
+    }
 
     async function send() {
         if (!canSend || sending) return;
@@ -104,6 +124,7 @@ export function BroadcastCompose() {
         <p className="event-template-page__intro">{t("manage.broadcasts.composeIntro")}</p>
         <div className="event-template-grid">
             <div className="event-template-grid__fields">
+                <TemplateStart event={event} onPick={pickTemplate} />
                 <section className="event-broadcast-section">
                     <ManageFieldLabel title={t("manage.broadcasts.channels")} help={t("manage.broadcasts.channelsHelp")} required />
                     <div className="event-broadcast-channels">
@@ -158,12 +179,19 @@ export function BroadcastCompose() {
                 {recipients === 0 && !validation && ready && <p className="event-manage-validation" role="alert">{t("manage.broadcasts.error.emptyAudience")}</p>}
             </div>
             <div className="event-template-grid__preview event-broadcast-preview">
+                {unsupported.length > 0 && <div className="event-manage-warning" role="note">
+                    <TriangleAlert size={18} aria-hidden="true" />
+                    <ul>{unsupported.map(name => <li key={name}>{t("manage.broadcasts.template.unsupported", {name})}</li>)}</ul>
+                </div>}
                 {draft.email && <div><h2>{t("manage.broadcasts.previewEmail")}</h2><EmailPreview event={event} input={livePreview} valid={!emailInvalid} /></div>}
                 {draft.inApp && <div><h2>{t("manage.broadcasts.previewInApp")}</h2>
                     <InAppPreview template={inAppPreview} values={broadcastSampleValues(event.Name)} /><small>{t("manage.notifications.previewHint")}</small></div>}
                 {!draft.email && !draft.inApp && <EmptyState message={t("manage.broadcasts.validation.channels")} />}
             </div>
         </div>
+        <ConfirmDialog open={pendingTemplate !== null} onCancel={() => setPendingTemplate(null)} title={t("manage.broadcasts.template.replace.title")}
+            description={t("manage.broadcasts.template.replace.body", {name: pendingTemplate?.label ?? ""})} confirmLabel={t("manage.broadcasts.template.replace.action")}
+            onConfirm={() => {if (pendingTemplate) applyTemplate(pendingTemplate); setPendingTemplate(null);}} />
         <ConfirmDialog open={confirming} onCancel={() => setConfirming(false)} title={t("manage.broadcasts.confirm.title", {count: recipients ?? 0})}
             description={t("manage.broadcasts.confirm.body")} confirmLabel={t("manage.broadcasts.confirm.action")} busy={sending} error={error || undefined} onConfirm={() => void send()} />
     </div>;

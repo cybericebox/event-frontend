@@ -128,7 +128,20 @@ describe("Розсилка: деталі", () => {
     });
 });
 
+const emailTemplates: unknown[] = [];
+const inAppTemplates: unknown[] = [];
+const templateBase = {ScopeEventID: null, NotificationType: "participant.event.finished", Status: "published", PublishedAt: "2026-09-01T00:00:00Z", UpdatedByUserID: null, CreatedAt: "2026-09-01T00:00:00Z", UpdatedAt: "2026-09-01T00:00:00Z", Source: "platform"};
+
 describe("Нова розсилка", () => {
+    beforeEach(() => {
+        emailTemplates.splice(0, emailTemplates.length, {...templateBase, ID: uuid(61), Subject: "Привіт, {{.user_name}} {{.team_name}}", Preheader: "", Body: [{type: "button", label: "Відкрити {{.team_name}}", url: "https://x.test"}], Styling: {}});
+        inAppTemplates.splice(0, inAppTemplates.length, {...templateBase, ID: uuid(62), Title: "Дякуємо, {{.user_name}}", Body: "", Link: "", Icon: "bell", Tone: "neutral", AccentColor: "", Surface: "", AutoDismissMs: null, Actions: [], Dismissible: true});
+    });
+    async function pickTemplate() {
+        fireEvent.pointerDown(await screen.findByRole("button", {name: "Почати з шаблону"}), {button: 0, ctrlKey: false});
+        fireEvent.click(await screen.findByRole("menuitemradio", {name: "Захід завершено"}));
+    }
+
     function server(extra?: (call: Call) => unknown | undefined) {
         return mockServer(call => {
             const own = extra?.(call);
@@ -136,6 +149,8 @@ describe("Нова розсилка", () => {
             if (call.path.endsWith("/audience-count")) return {Count: 12};
             if (call.method === "POST" && call.path.endsWith("/manage/broadcasts")) return broadcast(9);
             if (call.path.endsWith("/presets")) return [];
+            if (call.path.endsWith("/notification-templates/email")) return emailTemplates;
+            if (call.path.endsWith("/notification-templates/in-app")) return inAppTemplates;
             if (call.path.includes("/preview")) return {Subject: "s", Preheader: "", HTML: "<p>x</p>"};
             return {};
         });
@@ -213,5 +228,39 @@ describe("Нова розсилка", () => {
         wrap(<BroadcastCompose />);
         expect(screen.getByText(/лише для перегляду/)).toBeTruthy();
         expect(screen.queryByRole("button", {name: /Надіслати повідомлення/})).toBeNull();
+    });
+
+    it("starts from a template: prefills the email and in-app fields and warns about an unsupported variable", async () => {
+        const calls = server();
+        wrap(<BroadcastCompose />);
+        await pickTemplate();
+        expect((await screen.findByRole("textbox", {name: "Тема листа"})).textContent).toContain("Привіт");
+        expect((await screen.findByRole("textbox", {name: "Заголовок"})).textContent).toContain("Дякуємо");
+        expect(screen.queryByText("Замінити вміст розсилки шаблоном?")).toBeNull();
+        expect(await screen.findByText("Змінна team_name недоступна в розсилці — буде порожньою")).toBeTruthy();
+        expect(screen.queryByText(/Змінна user_name недоступна/)).toBeNull();
+        // The preview is asked for with the unsupported variable already empty.
+        await waitFor(() => {
+            const preview = calls.filter(call => call.path.includes("/preview")).at(-1)?.body as {Subject: string; Body: unknown[]} | undefined;
+            expect(preview?.Subject).toBe("Привіт, {{.user_name}} ");
+            expect(JSON.stringify(preview?.Body)).not.toContain("team_name");
+        }, {timeout: 3000});
+        // The template itself is never written.
+        expect(calls.some(call => call.method !== "GET" && call.path.includes("notification-templates") && !call.path.endsWith("/preview"))).toBe(false);
+    });
+
+    it("asks before replacing content that is already there", async () => {
+        server();
+        wrap(<BroadcastCompose />);
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        subject.textContent = "Моя тема";
+        fireEvent.input(subject);
+        await pickTemplate();
+        const dialog = (await screen.findByText("Замінити вміст розсилки шаблоном?")).closest("dialog")!;
+        fireEvent.click(within(dialog).getByRole("button", {name: "Скасувати"}));
+        expect(screen.getByRole("textbox", {name: "Тема листа"}).textContent).toBe("Моя тема");
+        await pickTemplate();
+        fireEvent.click(within((await screen.findByText("Замінити вміст розсилки шаблоном?")).closest("dialog")!).getByRole("button", {name: "Замінити"}));
+        await waitFor(() => expect(screen.getByRole("textbox", {name: "Тема листа"}).textContent).toContain("Привіт"));
     });
 });

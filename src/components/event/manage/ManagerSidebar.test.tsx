@@ -105,4 +105,13 @@ describe("participation navigation", () => {
             expect(items().map(([label]) => label)).toEqual(["Огляд", "Учасники", "Завдання", "Прогрес", "Стенди", "Доброчесність", "Комунікації", "Звіт"]);
         });
     });
+
+    it("orders the notifications group in three blocks split by dividers", () => {
+        renderSidebar(0);
+        fireEvent.click(screen.getByRole("button", {name: "Сповіщення"}));
+        const group = document.getElementById("event-manage-group-notifications")!;
+        const order = Array.from(group.children).map(node => node.tagName === "HR" ? "|" : node.textContent?.trim());
+        expect(order).toEqual(["Розсилка", "Банери", "|", "Шаблони на сайті", "Шаблони листів", "Налаштування", "|", "Журнал надсилання"]);
+        expect(group.querySelector('a[href="/manage/mail"]')).toBeTruthy();
+    });
 });

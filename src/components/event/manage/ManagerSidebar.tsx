@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {Fragment, useState} from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -44,7 +44,7 @@ import "./managerSidebar.css";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
-type Item = {href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
+type Item = {dividerBefore?: boolean; href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
 type Group = {id: string; label: string; items: Item[]};
 
 // Пауза: повернути до навігації, коли з'явиться механізм призупинення заходу.
@@ -86,13 +86,14 @@ const groups: Group[] = [
         {href: "/manage/analytics/communications", label: t("manage.nav.analytics.communications"), icon: Mail},
         {href: "/manage/analytics/report", label: t("manage.nav.analytics.report"), icon: ChartNoAxesCombined},
     ]},
+    // Three blocks split by thin dividers: actions, settings (templates + notification settings), log.
     {id: "notifications", label: t("manage.nav.group.notifications"), items: [
-        {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: Bell},
-        {href: "/manage/email", label: t("manage.nav.email"), icon: Mail},
-        {href: "/manage/mail", label: t("manage.nav.mail"), icon: SlidersHorizontal},
         {href: "/manage/broadcasts", label: t("manage.nav.broadcasts"), icon: Megaphone},
         {href: "/manage/banners", label: t("manage.nav.banners"), icon: PanelTop},
-        {href: "/manage/mail-journal", label: t("manage.nav.mailJournal"), icon: ScrollText},
+        {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: Bell, dividerBefore: true},
+        {href: "/manage/email", label: t("manage.nav.emailTemplates"), icon: Mail},
+        {href: "/manage/mail", label: t("manage.nav.mail"), icon: SlidersHorizontal},
+        {href: "/manage/mail-journal", label: t("manage.nav.mailJournal"), icon: ScrollText, dividerBefore: true},
     ]},
 ];
 
@@ -133,7 +134,10 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
                         <span>{group.label}</span><ChevronDown size={15} aria-hidden="true" />
                     </button>
                     <div id={`event-manage-group-${group.id}`} className="event-manage-sidebar__items" hidden={!isOpen}>
-                        {items.map(item => <Link className="ib-admin-side__item" href={item.href} key={item.href} aria-current={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}}><item.icon size={16} aria-hidden="true" /><SideLabel text={item.label} /></Link>)}
+                        {items.map(item => <Fragment key={item.href}>
+                            {item.dividerBefore && <hr className="event-manage-sidebar__divider" />}
+                            <Link className="ib-admin-side__item" href={item.href} aria-current={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}}><item.icon size={16} aria-hidden="true" /><SideLabel text={item.label} /></Link>
+                        </Fragment>)}
                         {group.id === "pages" && <>
                             {[...(pages ?? [])].sort(comparePageOrder).map(page => {
                                 const editorSlug = page.Draft?.Slug ?? page.Slug;
