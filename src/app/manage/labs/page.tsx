@@ -1,5 +1,6 @@
 "use client";
 
+import {MODERATORS_VPN_FILE} from "@/utils/wireguard";
 import {Fragment, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {AlertTriangle, ChevronDown, Download, ListChecks, RotateCcw} from "lucide-react";
@@ -28,11 +29,11 @@ function StatusBadge({label, tone}: {label: string; tone: StatusTone}) {
     return <span className={`event-stands__status is-${tone}`}>{label}</span>;
 }
 
-function downloadConfig(config: string, eventTag: string) {
+function downloadConfig(config: string) {
     const url = URL.createObjectURL(new Blob([config], {type: "text/plain"}));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${eventTag || "event"}-moderators.conf`;
+    link.download = MODERATORS_VPN_FILE;
     link.click();
     URL.revokeObjectURL(url);
 }
@@ -136,7 +137,7 @@ export default function ManageLabsPage() {
     async function vpn() {
         if (vpnBusy) return;
         setVpnBusy(true);
-        try {downloadConfig(await getModeratorVPNConfig(eventID), event.Tag);}
+        try {downloadConfig(await getModeratorVPNConfig(eventID));}
         catch (failure) {toast.error(standErrorMessage(failure, t("manage.labs.vpnFailed")));}
         finally {setVpnBusy(false);}
     }

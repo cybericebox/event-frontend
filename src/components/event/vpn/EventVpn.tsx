@@ -1,5 +1,6 @@
 "use client";
 
+import {MODERATORS_VPN_FILE, PARTICIPANT_VPN_FILE} from "@/utils/wireguard";
 import {createContext, useContext, useMemo, useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ArrowUpRight, Download, ShieldAlert, ShieldCheck, ShieldEllipsis, ShieldOff} from "lucide-react";
@@ -47,7 +48,7 @@ function VpnModal({eventID, moderators, status, open, onClose}: {eventID: string
         setIssuing(true);
         setError("");
         try {
-            downloadText(moderators ? await getModeratorVPNConfig(eventID) : await issueVPNConfig(eventID), moderators ? "cybericebox-moderators.conf" : "cybericebox-vpn.conf");
+            downloadText(moderators ? await getModeratorVPNConfig(eventID) : await issueVPNConfig(eventID), moderators ? MODERATORS_VPN_FILE : PARTICIPANT_VPN_FILE);
         } catch (failure) {
             setError(failure instanceof VPNApiError && failure.status === 404 ? t("vpn.error.notReady") : t("vpn.error.failed"));
         } finally {
