@@ -75,4 +75,14 @@ describe("hidden teams (teams table)", () => {
         fireEvent.click(screen.getByRole("button", {name: "Показати команду Red Team"}));
         await waitFor(() => expect(setHidden).toHaveBeenCalledWith("e1", RED, false));
     });
+
+    it("locks only the team being saved while its hide request is pending", async () => {
+        setHidden.mockReturnValueOnce(new Promise(() => {}));
+        renderPage();
+        await screen.findByText("Blue Team");
+        fireEvent.click(screen.getByRole("button", {name: "Приховати команду Blue Team"}));
+        await waitFor(() => expect(setHidden).toHaveBeenCalledWith("e1", BLUE, true));
+        expect((screen.getByRole("button", {name: "Приховати команду Blue Team"}) as HTMLButtonElement).disabled).toBe(true);
+        expect((screen.getByRole("button", {name: "Показати команду Red Team"}) as HTMLButtonElement).disabled).toBe(false);
+    });
 });

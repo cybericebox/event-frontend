@@ -47,7 +47,9 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const teamMode = event.Participation === 1;
     const queryClient = useQueryClient();
     const [tab, setTab] = useState<ParticipantTab>(initialTab);
-    const [busyID, setBusyID] = useState<string | null>(null);
+    // Only the participant being saved is locked; every other row stays usable.
+    const [busyIDs, setBusyIDs] = useState<string[]>([]);
+    const isBusy = (userID?: string) => !!userID && busyIDs.includes(userID);
     const [confirm, setConfirm] = useState<{kind: "reject" | "revoke"; participant: ManageParticipant} | null>(null);
     const [confirmError, setConfirmError] = useState("");
     const [opened, setOpened] = useState<ManageParticipant | null>(null);
@@ -107,15 +109,15 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     }
 
     async function run(participant: ManageParticipant, action: () => Promise<unknown>, success: string, failure: string) {
-        if (!canManage || busyID) return;
-        setBusyID(participant.UserID);
+        if (!canManage || isBusy(participant.UserID)) return;
+        setBusyIDs(ids => [...ids, participant.UserID]);
         try {
             await action();
             await refresh();
             if (opened?.UserID === participant.UserID && participant.Status === 1) setOpened(null);
             toast.success(success);
         } catch (error) {toast.error(errorText(error, failure));}
-        finally {setBusyID(null);}
+        finally {setBusyIDs(ids => ids.filter(id => id !== participant.UserID));}
     }
 
     function decide(participant: ManageParticipant, action: "approve" | "reject") {
@@ -128,15 +130,15 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     }
 
     function ask(kind: "reject" | "revoke", participant: ManageParticipant) {
-        if (!canManage || busyID) return;
+        if (!canManage || isBusy(participant.UserID)) return;
         setConfirmError("");
         setConfirm({kind, participant});
     }
 
     async function runConfirmed() {
-        if (!confirm || !canManage || busyID) return;
+        if (!confirm || !canManage || isBusy(confirm.participant.UserID)) return;
         const {kind, participant} = confirm;
-        setBusyID(participant.UserID);
+        setBusyIDs(ids => [...ids, participant.UserID]);
         setConfirmError("");
         try {
             await (kind === "reject" ? decideManageParticipant(eventID, participant.UserID, "reject") : revokeManageInvitation(eventID, participant.UserID));
@@ -145,7 +147,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             await refresh();
             toast.success(t(kind === "reject" ? "manage.participants.rejected" : "manage.participants.revoked"));
         } catch (error) {setConfirmError(errorText(error, t(kind === "reject" ? "manage.participants.decideFailed" : "manage.participants.revokeFailed")));}
-        finally {setBusyID(null);}
+        finally {setBusyIDs(ids => ids.filter(id => id !== participant.UserID));}
     }
 
     function resend(participant: ManageParticipant) {
@@ -193,7 +195,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
 
     // Rendered inside the participant dialog while it is open (Radix hides everything outside it), else on the page.
     function confirmDialog(open: boolean) {
-        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone="danger" busy={!!busyID} error={confirmError}
+        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone="danger" busy={isBusy(confirm?.participant.UserID)} error={confirmError}
             title={t(confirm?.kind === "revoke" ? "manage.participants.revokeTitle" : "manage.participants.rejectTitle")}
             description={confirm?.kind === "revoke" ? t("manage.participants.revokeBody") : undefined}
             subject={confirm ? confirm.kind === "revoke" ? confirm.participant.Email || personName(confirm.participant) : personName(confirm.participant) : undefined}
@@ -226,9 +228,9 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             <tbody>{items.map(participant => <tr key={participant.UserID} className={showAnswers ? "is-clickable" : undefined} tabIndex={showAnswers ? 0 : undefined} aria-label={showAnswers ? t("manage.participants.answersFor", {name: personName(participant)}) : undefined} onClick={() => open(participant)} onKeyDown={event => onRowKey(event, participant)}>
                 {shown.map(column => <Fragment key={column.key}>{cell(column, participant)}</Fragment>)}
                 {canManage && <td onClick={stop}><div className="event-manage-table__actions">
-                    {tab === "participants" && !teamMode && participant.TeamID && <button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => setHidden(participant)}>{participant.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</button>}
-                    {tab === "applications" && participant.Status === 1 && <><button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={!!busyID} onClick={() => decide(participant, "approve")}>{t("manage.participants.approve")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => decide(participant, "reject")}>{t("manage.participants.reject")}</button></>}
-                    {tab === "invitations" && <><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID || participant.InvitationExpired} onClick={() => resend(participant)}>{t("manage.participants.resend")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={!!busyID} onClick={() => revoke(participant)}>{t("manage.participants.revoke")}</button></>}
+                    {tab === "participants" && !teamMode && participant.TeamID && <button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(participant.UserID)} onClick={() => setHidden(participant)}>{participant.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</button>}
+                    {tab === "applications" && participant.Status === 1 && <><button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={isBusy(participant.UserID)} onClick={() => decide(participant, "approve")}>{t("manage.participants.approve")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(participant.UserID)} onClick={() => decide(participant, "reject")}>{t("manage.participants.reject")}</button></>}
+                    {tab === "invitations" && <><button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(participant.UserID) || participant.InvitationExpired} onClick={() => resend(participant)}>{t("manage.participants.resend")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(participant.UserID)} onClick={() => revoke(participant)}>{t("manage.participants.revoke")}</button></>}
                 </div></td>}
             </tr>)}</tbody>
         </ManageTable>
@@ -237,10 +239,10 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             description={current ? [current.Pseudonym && t("manage.participants.pseudonym", {pseudonym: current.Pseudonym}), current.Email, !current.Invited && t("manage.participants.submittedAt", {date: formatDateTime(current.CreatedAt)})].filter(Boolean).join(" · ") : undefined}
             footer={<>
                 <button className="ib-btn" type="button" onClick={() => setOpened(null)}>{t("common.close")}</button>
-                {canManage && current && tab === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={!!busyID} busy={!!busyID && !confirm} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}
+                {canManage && current && tab === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}
                 {canManage && current && current.Status === 1 && tab === "applications" && <>
-                    <button className="ib-btn" type="button" disabled={!!busyID} onClick={() => decide(current, "reject")}>{t("manage.participants.reject")}</button>
-                    <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!!busyID} busy={!!busyID && !confirm} onClick={() => decide(current, "approve")}>{t("manage.participants.approve")}</EventButton>
+                    <button className="ib-btn" type="button" disabled={isBusy(current.UserID)} onClick={() => decide(current, "reject")}>{t("manage.participants.reject")}</button>
+                    <EventButton className="ib-btn ib-btn--primary" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} onClick={() => decide(current, "approve")}>{t("manage.participants.approve")}</EventButton>
                 </>}
             </>}>
             {current && <AnswersList fields={fields} answers={current.Answers} />}

@@ -79,7 +79,9 @@ export default function ManageTeamsPage() {
     const [editing, setEditing] = useState<{id: string; name: string; hidden: boolean; fields: ParticipantAnswers} | null>(null);
     const [answersTeam, setAnswersTeam] = useState<ManageTeam | null>(null);
     const [memberChoices, setMemberChoices] = useState<Record<string, string>>({});
-    const [busy, setBusy] = useState(false);
+    // Only the team being saved is locked; the other rows and teams stay usable.
+    const [busyTeams, setBusyTeams] = useState<string[]>([]);
+    const isBusy = (teamID?: string | null) => !!teamID && busyTeams.includes(teamID);
     const [confirm, setConfirm] = useState<{kind: "delete"; team: ManageTeam} | {kind: "remove" | "captain"; team: ManageTeam; userID: string; name: string} | null>(null);
     const [confirmError, setConfirmError] = useState("");
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
@@ -147,26 +149,26 @@ export default function ManageTeamsPage() {
     }
 
     async function saveTeam(team: ManageTeam) {
-        if (!canManage || busy || editing?.id !== team.ID || !editing.name.trim()) return;
-        setBusy(true);
+        if (!canManage || isBusy(team.ID) || editing?.id !== team.ID || !editing.name.trim()) return;
+        setBusyTeams(ids => [...ids, team.ID]);
         try {
             await updateManageTeam(eventID, team.ID, {Name: editing.name.trim(), Hidden: editing.hidden, ...(fields.length > 0 ? {Fields: withoutKeys(editing.fields, staffKeys)} : {})});
             setEditing(null);
             await refresh();
             toast.success(t("manage.teams.updated"));
         } catch (error) {toast.error(failure(error, t("manage.teams.saveFailed")));}
-        finally {setBusy(false);}
+        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     function ask(next: NonNullable<typeof confirm>) {
-        if (!canManage || busy) return;
+        if (!canManage || isBusy(next.team.ID)) return;
         setConfirmError("");
         setConfirm(next);
     }
 
     function confirmDialog(open: boolean) {
         const current = confirm;
-        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone={current?.kind === "captain" ? "default" : "danger"} busy={busy} error={confirmError}
+        return <ConfirmDialog open={open} onCancel={() => setConfirm(null)} tone={current?.kind === "captain" ? "default" : "danger"} busy={isBusy(current?.team.ID)} error={confirmError}
             title={t(current?.kind === "captain" ? "manage.teams.captainTitle" : current?.kind === "remove" ? "manage.teams.removeMemberTitle" : "manage.teams.deleteTitle")}
             description={current?.kind === "captain" ? undefined : t(current?.kind === "remove" ? "manage.teams.removeMemberBody" : "manage.teams.deleteBody")}
             subject={current ? current.kind === "delete" ? current.team.Name : current.name : undefined}
@@ -180,20 +182,20 @@ export default function ManageTeamsPage() {
     }
 
     async function removeTeam(team: ManageTeam) {
-        if (!canManage || busy) return;
-        setBusy(true);
+        if (!canManage || isBusy(team.ID)) return;
+        setBusyTeams(ids => [...ids, team.ID]);
         try {
             await deleteManageTeam(eventID, team.ID);
             setConfirm(null);
             await refresh();
             toast.success(t("manage.teams.deleted"));
         } catch {setConfirmError(t("manage.teams.deleteFailed"));}
-        finally {setBusy(false);}
+        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     async function changeMember(team: ManageTeam, userID: string, action: "add" | "remove") {
-        if (!canManage || busy || !userID) return;
-        setBusy(true);
+        if (!canManage || isBusy(team.ID) || !userID) return;
+        setBusyTeams(ids => [...ids, team.ID]);
         try {
             await changeManageTeamMember(eventID, team.ID, userID, action);
             setMemberChoices(current => ({...current, [team.ID]: ""}));
@@ -204,41 +206,41 @@ export default function ManageTeamsPage() {
             if (action === "remove") setConfirmError(failure(error, t("manage.teams.memberFailed")));
             else toast.error(failure(error, t("manage.teams.memberFailed")));
         }
-        finally {setBusy(false);}
+        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     async function transferCaptain(team: ManageTeam, userID: string) {
-        if (!canManage || busy) return;
-        setBusy(true);
+        if (!canManage || isBusy(team.ID)) return;
+        setBusyTeams(ids => [...ids, team.ID]);
         try {
             await transferManageTeamCaptain(eventID, team.ID, userID);
             setConfirm(null);
             await refresh();
             toast.success(t("manage.teams.captainChanged"));
         } catch (error) {setConfirmError(failure(error, t("manage.teams.captainFailed")));}
-        finally {setBusy(false);}
+        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     async function toggleHidden(team: ManageTeam) {
-        if (!canManage || busy) return;
-        setBusy(true);
+        if (!canManage || isBusy(team.ID)) return;
+        setBusyTeams(ids => [...ids, team.ID]);
         try {
             await setManageTeamHidden(eventID, team.ID, !team.Hidden);
             await refresh();
             toast.success(team.Hidden ? t("manage.teams.shown") : t("manage.teams.hiddenDone"));
         } catch (error) {toast.error(failure(error, t("manage.teams.hiddenFailed")));}
-        finally {setBusy(false);}
+        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     async function setAdmission(team: ManageTeam, admitted: boolean) {
-        if (!canManage || busy) return;
-        setBusy(true);
+        if (!canManage || isBusy(team.ID)) return;
+        setBusyTeams(ids => [...ids, team.ID]);
         try {
             await setManageTeamAdmission(eventID, team.ID, admitted);
             await refresh();
             toast.success(admitted ? t("manage.teams.admittedManually") : t("manage.teams.admissionCancelled"));
         } catch (error) {toast.error(failure(error, t("manage.teams.admissionFailed")));}
-        finally {setBusy(false);}
+        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     if (!teamMode) return <div className="event-manage-settings event-manage-teams"><header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1></div></header><div className="event-manage-notice">{t("manage.teams.teamModeOnly")}</div></div>;
@@ -297,21 +299,21 @@ export default function ManageTeamsPage() {
                     <td><div className="event-manage-table__actions">
                         {canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button>}
                         <button className="ib-btn ib-btn--sm" type="button" aria-label={t("manage.teams.manageLabel", {name: team.Name})} onClick={() => {setEditing(null); setManagedID(team.ID);}}>{t("manage.teams.manage")}</button>
-                        {canManage && <EventTooltip content={t(team.Hidden ? "manage.teams.showLabel" : "manage.teams.hideLabel", {name: team.Name})} silent>{() => <button className="ib-btn ib-btn--sm" type="button" aria-label={t(team.Hidden ? "manage.teams.showLabel" : "manage.teams.hideLabel", {name: team.Name})} disabled={busy} onClick={() => void toggleHidden(team)}>{team.Hidden ? <Eye size={16} /> : <EyeOff size={16} />}</button>}</EventTooltip>}
-                        {canManage && <EventTooltip content={t("manage.teams.deleteLabel", {name: team.Name})} silent>{() => <button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={busy} onClick={() => ask({kind: "delete", team})}><Trash2 size={16} /></button>}</EventTooltip>}
+                        {canManage && <EventTooltip content={t(team.Hidden ? "manage.teams.showLabel" : "manage.teams.hideLabel", {name: team.Name})} silent>{() => <button className="ib-btn ib-btn--sm" type="button" aria-label={t(team.Hidden ? "manage.teams.showLabel" : "manage.teams.hideLabel", {name: team.Name})} disabled={isBusy(team.ID)} onClick={() => void toggleHidden(team)}>{team.Hidden ? <Eye size={16} /> : <EyeOff size={16} />}</button>}</EventTooltip>}
+                        {canManage && <EventTooltip content={t("manage.teams.deleteLabel", {name: team.Name})} silent>{() => <button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={isBusy(team.ID)} onClick={() => ask({kind: "delete", team})}><Trash2 size={16} /></button>}</EventTooltip>}
                     </div></td>
                 </tr>;
             })}</tbody>
         </ManageTable>
-        <ManageDialog open={managed !== null} onOpenChange={open => {if (!open && !busy) {setManagedID(null); setEditing(null);}}} size="md" title={managed?.Name ?? ""} description={t("manage.teams.detailsDescription")}
-            footer={<button className="ib-btn" type="button" onClick={() => {if (!busy) {setManagedID(null); setEditing(null);}}}>{t("common.close")}</button>}>
+        <ManageDialog open={managed !== null} onOpenChange={open => {if (!open && !isBusy(managedID)) {setManagedID(null); setEditing(null);}}} size="md" title={managed?.Name ?? ""} description={t("manage.teams.detailsDescription")}
+            footer={<button className="ib-btn" type="button" onClick={() => {if (!isBusy(managedID)) {setManagedID(null); setEditing(null);}}}>{t("common.close")}</button>}>
             {managed && (() => {
                 const team = managed;
                 const choice = memberChoices[team.ID] ?? "";
                 return <div className="event-manage-team-details">
                     <div className="event-manage-teams__head"><div><p>{t("manage.teams.summary", {count: team.MemberCount, captain: captainName(team)})}{team.Hidden ? t("manage.teams.hiddenSuffix") : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? t("common.cancel") : t("manage.teams.edit")}</button></div>}</div>
-                    {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={busy} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
-                    {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={busy} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={busy} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={busy || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={{...fieldsQuery.data, Document: {blocks: fieldsQuery.data.Document.blocks.filter(block => !(isFormField(block) && block.staffOnly))}}} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={busy} /></div>}</div>}
+                    {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={isBusy(team.ID)} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
+                    {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={isBusy(team.ID)} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={isBusy(team.ID)} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={isBusy(team.ID) || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={{...fieldsQuery.data, Document: {blocks: fieldsQuery.data.Document.blocks.filter(block => !(isFormField(block) && block.staffOnly))}}} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={isBusy(team.ID)} /></div>}</div>}
                     <div className="event-manage-teams__members"><h3>{t("manage.teams.results")}</h3>
                         {profile.isPending ? <EventLoading compact label={t("manage.teams.resultsLoading")} /> : profile.isError ? <EventLoadError compact message={t("manage.teams.resultsFailed")} error={profile.error} onRetry={() => void profile.refetch()} />
                             : !profile.data.Results ? <EmptyState compact message={t("manage.teams.resultsNone")} />
@@ -324,9 +326,9 @@ export default function ManageTeamsPage() {
                     </div>
                     {fields.length > 0 && <div className="event-manage-teams__members"><div className="event-manage-teams__members-head"><h3>{t("manage.fields.title")}</h3><button className="ib-btn ib-btn--sm" type="button" onClick={() => setAnswersTeam(team)}>{t("manage.teams.allAnswers")}</button></div>{fieldColumns.length > 0 && <dl className="event-manage-teams__fields">{fieldColumns.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{formatAnswer(team.ExtraFields[column.key])}</dd></div>)}</dl>}</div>}
                     {fieldsQuery.data && hasStaffFields(fieldsQuery.data) && <StaffFieldsPanel key={team.ID} eventID={eventID} scope="team" subjectID={team.ID} form={fieldsQuery.data} answers={team.ExtraFields} canManage={canManage} onSaved={refresh} />}
-                    <div className="event-manage-teams__members"><h3>{t("manage.teams.roster")}</h3>{team.Members.length === 0 ? <EmptyState compact message={t("manage.teams.noMembers")} /> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: person.Pseudonym})}</small>}{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "captain", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.makeCaptain")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => ask({kind: "remove", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.removeMember")}</button></div>}</div>)}</div>
+                    <div className="event-manage-teams__members"><h3>{t("manage.teams.roster")}</h3>{team.Members.length === 0 ? <EmptyState compact message={t("manage.teams.noMembers")} /> : team.Members.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{memberName(person)}</strong>{person.Pseudonym && <small>{t("manage.participants.pseudonym", {pseudonym: person.Pseudonym})}</small>}{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}</span>{canManage && person.UserID !== team.CaptainID && <div><button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(team.ID)} onClick={() => ask({kind: "captain", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.makeCaptain")}</button><button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(team.ID)} onClick={() => ask({kind: "remove", team, userID: person.UserID, name: memberName(person)})}>{t("manage.teams.removeMember")}</button></div>}</div>)}</div>
                     {team.PendingInvitations.length > 0 && <div className="event-manage-teams__members"><h3>{t("manage.teams.invited")}</h3>{team.PendingInvitations.map(person => <div className="event-manage-teams__member" key={person.UserID}><span><strong>{person.Email || person.Name || person.UserID.slice(0, 8)}</strong>{person.UserID === team.CaptainID && <small>{t("manage.teams.captain")}</small>}<small>{t("manage.teams.pendingConfirmation")}</small><small>{person.InvitationSentAt ? t("manage.participants.sentAt", {date: formatDateTime(person.InvitationSentAt)}) : t("manage.participants.notSent")}</small></span></div>)}</div>}
-                    {canManage && <div className="event-manage-teams__assign"><div className="event-manage-field"><span>{t("manage.teams.addMember")}</span><EventSelect ariaLabel={t("manage.teams.addMemberTo", {name: team.Name})} value={choice} placeholder={t("manage.teams.chooseParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={value => setMemberChoices(current => ({...current, [team.ID]: value}))} disabled={busy || available.length === 0} /></div><button className="ib-btn" type="button" disabled={busy || !choice} onClick={() => void changeMember(team, choice, "add")}>{t("common.add")}</button></div>}
+                    {canManage && <div className="event-manage-teams__assign"><div className="event-manage-field"><span>{t("manage.teams.addMember")}</span><EventSelect ariaLabel={t("manage.teams.addMemberTo", {name: team.Name})} value={choice} placeholder={t("manage.teams.chooseParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name || person.Email || person.UserID}))} onValueChange={value => setMemberChoices(current => ({...current, [team.ID]: value}))} disabled={isBusy(team.ID) || available.length === 0} /></div><button className="ib-btn" type="button" disabled={isBusy(team.ID) || !choice} onClick={() => void changeMember(team, choice, "add")}>{t("common.add")}</button></div>}
                     {canManage && participantsQuery.hasNextPage && <EventButton className="ib-btn event-manage-teams__load-more" type="button" disabled={participantsQuery.isFetchingNextPage} onClick={() => void participantsQuery.fetchNextPage()} busy={participantsQuery.isFetchingNextPage}>{t("manage.teams.loadMore")}</EventButton>}
                 </div>;
             })()}

@@ -115,27 +115,30 @@ export default function ManageLabsPage() {
     const [expanded, setExpanded] = useState<string | null>(null);
     const [confirm, setConfirm] = useState<ManageStand | null>(null);
     const [confirmError, setConfirmError] = useState("");
-    const [busy, setBusy] = useState(false);
+    // Recreating locks only that team's button; the VPN download has its own flag.
+    const [recreating, setRecreating] = useState<string[]>([]);
+    const [vpnBusy, setVpnBusy] = useState(false);
     const [challengesOpen, setChallengesOpen] = useState(false);
 
     async function recreate() {
-        if (!confirm || busy || !canManage) return;
-        setBusy(true);
+        if (!confirm || recreating.includes(confirm.TeamID) || !canManage) return;
+        const teamID = confirm.TeamID;
+        setRecreating(ids => [...ids, teamID]);
         try {
             await recreateStand(eventID, confirm.TeamID);
             await queryClient.invalidateQueries({queryKey: ["event-management-labs", eventID]});
             toast.success(t("manage.labs.recreate.started"));
             setConfirm(null);
         } catch (failure) {setConfirmError(standErrorMessage(failure, t("manage.labs.recreate.failed")));}
-        finally {setBusy(false);}
+        finally {setRecreating(ids => ids.filter(id => id !== teamID));}
     }
 
     async function vpn() {
-        if (busy) return;
-        setBusy(true);
+        if (vpnBusy) return;
+        setVpnBusy(true);
         try {downloadConfig(await getModeratorVPNConfig(eventID), event.Tag);}
         catch (failure) {toast.error(standErrorMessage(failure, t("manage.labs.vpnFailed")));}
-        finally {setBusy(false);}
+        finally {setVpnBusy(false);}
     }
 
     const heading = <header className="event-manage-heading"><div><h1>{t("manage.labs.title")}</h1><p>{t("manage.labs.subtitle")}</p></div></header>;
@@ -169,8 +172,8 @@ export default function ManageLabsPage() {
                             <td className="event-participants-table__dim">{formatTime(stand.UpdatedAt) ?? "—"}</td>
                             <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason || t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason || "—"}</span>}</td>
                             <td><div className="event-manage-participants__actions event-stands__actions">
-                                {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
-                                {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
+                                {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={vpnBusy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
+                                {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={recreating.includes(stand.TeamID)} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
                             </div></td>
                         </tr>
                         {open && <tr className="event-stands__labs"><td colSpan={5}><ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{lab.Reason}</small>}</li>)}</ul></td></tr>}
@@ -178,7 +181,7 @@ export default function ManageLabsPage() {
                 })}</tbody>
             </table></div>}
         </section>
-        <ConfirmDialog open={confirm !== null} onCancel={() => {if (!busy) setConfirm(null);}} tone="danger" busy={busy} error={confirmError}
+        <ConfirmDialog open={confirm !== null} onCancel={() => {if (!confirm || !recreating.includes(confirm.TeamID)) setConfirm(null);}} tone="danger" busy={!!confirm && recreating.includes(confirm.TeamID)} error={confirmError}
             title={t("manage.labs.recreate.title")} description={t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}
             confirmLabel={t("manage.labs.recreate.confirm")} onConfirm={() => void recreate()} />
         <ModeratorChallengesDialog eventID={eventID} open={challengesOpen} onClose={() => setChallengesOpen(false)} />
