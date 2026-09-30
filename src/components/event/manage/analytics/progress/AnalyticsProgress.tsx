@@ -61,7 +61,7 @@ export function AnalyticsProgress() {
     const scoreControls = <>
         <EventSelect ariaLabel={t("manage.analytics.progress.scores.top")} value={String(top)} options={TOP_OPTIONS.map(count => ({value: String(count), label: t("manage.analytics.progress.scores.topN", {count})}))} onValueChange={value => setTop(Number(value))} />
         <EventSelect ariaLabel={t("manage.analytics.progress.scores.addTeam")} value="" placeholder={t("manage.analytics.progress.scores.addTeam")} disabled={chosen.length >= MAX_CHOSEN_TEAMS || !scoreData}
-            options={pickableTeams(scoreData, chosen)} onValueChange={id => setChosen(current => current.includes(id) ? current : [...current, id])} />
+            options={pickableTeams(scoreData, chosen)} emptyLabel={t("manage.analytics.progress.scores.noTeams")} onValueChange={id => setChosen(current => current.includes(id) ? current : [...current, id])} />
     </>;
 
     // Matrix ------------------------------------------------------------

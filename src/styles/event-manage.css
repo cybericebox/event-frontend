@@ -617,6 +617,7 @@ button.event-content-editor__block-title{padding:0;border:0;background:none;colo
 .event-content-editor__item-head button:hover{background:var(--ib-danger-bg);color:var(--ib-danger)}
 .event-select{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-2)}
 .event-select__menu{z-index:80;width:var(--radix-dropdown-menu-trigger-width);min-width:0;max-width:calc(100vw - 24px);outline:0}
+.event-select__empty{padding:10px 12px;color:var(--ib-dim);font-size:var(--ib-fs-13);text-align:center}
 .event-select__option{position:relative;height:auto;min-height:var(--ib-control-h);padding:7px 8px 7px 28px;line-height:1.35;white-space:normal}
 .event-select__indicator{position:absolute;left:9px;display:flex;width:10px;height:10px;align-items:center;justify-content:center}
 .event-select__indicator svg{display:block;stroke-width:2}
