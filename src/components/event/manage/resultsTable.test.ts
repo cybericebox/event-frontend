@@ -1,9 +1,9 @@
 import {describe, expect, it} from "vitest";
 import type {ModeratorResultsTeam} from "@/api/manageResults";
-import {matchesResultsFilter, pageOf, resultsStatus, selectResults} from "./resultsTable";
+import {matchesResultsFilter, pageOf, resultsStatus, selectResults, teamLabel} from "./resultsTable";
 
 const team = (id: string, patch: Partial<ModeratorResultsTeam> = {}): ModeratorResultsTeam => ({
-    Rank: null, TeamID: id, Name: id, RealName: id, Pseudonym: null, Individual: false, Hidden: false, Admitted: true,
+    Rank: null, TeamID: id, Name: id, RealName: id, Pseudonym: null, Individual: false, Hidden: false, Moderators: false, Admitted: true,
     Points: 0, Solved: 0, LastSolveAt: null, Hints: 0, HintPoints: 0, Solves: [], ...patch,
 });
 
@@ -45,5 +45,14 @@ describe("moderator results table", () => {
 
     it("pages the selection", () => {
         expect(pageOf([1, 2, 3, 4, 5], 2, 2)).toEqual([3, 4]);
+    });
+});
+
+describe("moderators team", () => {
+    const moderators = team("m", {Name: "", Moderators: true, Hidden: true});
+    it("is labelled and searchable by the translated name, and is hidden and unranked", () => {
+        expect(teamLabel(moderators)).toBe("Команда модераторів");
+        expect(resultsStatus(moderators)).toBe("hidden");
+        expect(selectResults([moderators, ...teams], "модератор", [], {key: "@rank", desc: false}).map(item => item.TeamID)).toEqual(["m"]);
     });
 });

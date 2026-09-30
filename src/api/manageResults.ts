@@ -85,7 +85,9 @@ export function resultsLiveURL(eventID: string, revision: number, view: ResultsV
 
 export const moderatorTeamSchema = z.object({
     Rank: z.number().int().nullable(), TeamID: id, Name: z.string(), RealName: z.string(), Pseudonym: z.string().nullable(),
-    Individual: z.boolean(), Hidden: z.boolean(), Admitted: z.boolean(), Points: z.number().int(), Solved: z.number().int(), LastSolveAt: z.string().nullable(),
+    Individual: z.boolean(), Hidden: z.boolean(),
+    // The hidden moderators team: Name is empty, it has no rank.
+    Moderators: z.boolean().default(false), Admitted: z.boolean(), Points: z.number().int(), Solved: z.number().int(), LastSolveAt: z.string().nullable(),
     Hints: z.number().int().default(0), HintPoints: z.number().int().default(0),
     Solves: z.array(z.object({ChallengeID: id, ChallengeName: z.string(), Points: z.number().int(), SolvedAt: z.string(), FirstBlood: z.boolean()})).default([]),
 });

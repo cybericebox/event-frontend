@@ -51,10 +51,17 @@ export const challengeSchema = z.object({
     BoardPublished: z.boolean().optional(),
 });
 const submissionSchema = z.object({Correct: z.boolean(), FirstSolve: z.boolean().default(false)});
-const solveSchema = z.object({TeamName: z.string(), SolvedAt: z.string(), Own: z.boolean()});
+const solveSchema = z.object({TeamName: z.string(), SolvedAt: z.string(), Own: z.boolean(), FirstBlood: z.boolean().default(false)});
+const solvesPageSchema = z.object({
+    Total: z.number().int().default(0),
+    Items: z.array(solveSchema).nullish().transform(value => value ?? []),
+    NextCursor: id.nullish().transform(value => value ?? null),
+});
+export const SOLVES_PAGE_SIZE = 30;
 export type OwnChallenge = z.infer<typeof challengeSchema>;
 export type ChallengeSubmission = z.infer<typeof submissionSchema>;
 export type ChallengeSolve = z.infer<typeof solveSchema>;
+export type ChallengeSolvesPage = z.infer<typeof solvesPageSchema>;
 export type ChallengeFile = {FileID: string; Name: string; Size: number};
 export type ChallengeHint = z.infer<typeof hintSchema>;
 
@@ -85,10 +92,18 @@ export async function getOwnChallenges(eventID: string): Promise<OwnChallenge[]>
     return z.object({Data: challengeSchema.array().nullish().transform(value => value ?? [])}).parse(await response.json()).Data;
 }
 
-export async function getChallengeSolves(eventID: string, challengeID: string): Promise<ChallengeSolve[]> {
-    const response = await fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/solves`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
+// Who solved a challenge, oldest first (first blood on top), one cursor page at a
+// time. The moderators board reads the organizer preview of the same list.
+// Closed results answer 403 with the results-denied code.
+export async function getChallengeSolves(eventID: string, challengeID: string, cursor: string | null = null, moderators = false): Promise<ChallengeSolvesPage> {
+    const params = new URLSearchParams({pageSize: String(SOLVES_PAGE_SIZE)});
+    if (cursor) params.set("cursor", cursor);
+    const path = moderators
+        ? `${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/labs/moderators/challenges/${encodeURIComponent(challengeID)}/solves`
+        : `${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/solves`;
+    const response = await fetch(`${path}?${params}`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
     if (!response.ok) throw await failure(response);
-    return z.object({Data: solveSchema.array().nullish().transform(value => value ?? [])}).parse(await response.json()).Data;
+    return z.object({Data: solvesPageSchema}).parse(await response.json()).Data;
 }
 
 export async function submitChallenge(eventID: string, challengeID: string, answer: string, idempotencyKey: string): Promise<ChallengeSubmission> {

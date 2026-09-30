@@ -14,9 +14,12 @@ const state = vi.hoisted(() => ({
     rosterOpen: true,
     members: [] as unknown[],
     missing: [] as string[],
-    moderators: null as unknown,
+    stats: null as unknown,
+    asArgs: [] as (string | undefined)[],
+    statsStatus: 0,
 }));
 
+vi.mock("echarts-for-react", () => ({default: () => <div data-testid="chart" />}));
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => state.participant}));
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.guest}));
@@ -27,7 +30,15 @@ vi.mock("@/api/participantForm", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/participantForm")>()),
     getOwnParticipantAnswers: async () => ({Form: {Fields: []}, Answers: {}, Editable: true, Missing: state.missing, Blocking: false}),
 }));
-vi.mock("@/api/moderatorsBoard", () => ({getModeratorsTeam: async () => { if (!state.moderators) throw new Error("unavailable"); return state.moderators; }}));
+vi.mock("@/api/participationStats", async importOriginal => {
+    const original = await importOriginal<typeof import("@/api/participationStats")>();
+    return {...original, getParticipationStats: async (_eventID: string, as?: string) => {
+        state.asArgs.push(as);
+        if (state.statsStatus) throw new original.ParticipationStatsError(state.statsStatus);
+        if (!state.stats) throw new Error("unavailable");
+        return state.stats;
+    }};
+});
 vi.mock("@/api/eventTeams", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/eventTeams")>()),
     getOwnTeamMembers: async () => state.members,
@@ -47,7 +58,7 @@ function view() {
 }
 
 beforeEach(() => {
-    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = []; state.moderators = null; state.missing = [];
+    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = []; state.stats = null; state.statsStatus = 0; state.asArgs = []; state.missing = [];
     window.history.replaceState(null, "", "/participation?tab=team");
     sessionStorage.clear();
 });
@@ -99,34 +110,71 @@ it("tells a participant without a team why the roster is closed instead of offer
     expect(screen.queryByPlaceholderText("Посилання або код команди")).toBeNull();
 });
 
+const ORG = "00000000-0000-4000-8000-0000000000c1";
+const OTHER = "00000000-0000-4000-8000-0000000000c2";
+const orgMember = (id: string, name: string, role: number, solves = 0) => ({UserID: id, Name: name, Role: role, JoinedAt: "2026-01-01T00:10:00Z", Points: solves * 100, Solves: solves, FirstBloods: 0, Attempts: solves * 2, CorrectAttempts: solves, Hints: 0});
+const moderatorsStats = (solves: {name: string; by: string}[] = []) => ({
+    Rank: 0, Points: solves.length * 100, Solved: solves.length, Frozen: false,
+    Team: {
+        TeamID: "00000000-0000-4000-8000-0000000000bb", TeamName: "", Attempts: solves.length * 2, CorrectAttempts: solves.length, Hints: 0, FirstBloods: 0,
+        Solves: solves.map((item, index) => ({EventChallengeID: `00000000-0000-4000-8000-00000000010${index}`, ChallengeName: item.name, Category: "Web", Points: 100, SolvedAt: "2026-01-01T01:00:00Z", SolvedByUserID: item.by, SolvedByName: "Богдан Мельник", FirstBlood: false})),
+        Members: [orgMember(ORG, "Богдан Мельник", 0, solves.length), orgMember(OTHER, "Ірина Гончар", 1)],
+    },
+    Me: orgMember(ORG, "Богдан Мельник", 0, solves.length),
+    Timeline: solves.map((item, index) => ({EventChallengeID: `00000000-0000-4000-8000-00000000010${index}`, Points: 100, SolvedAt: "2026-01-01T01:00:00Z"})),
+});
+
 it("shows organizers the real moderators team, read-only", async () => {
     state.guest = event;
     state.staff = true;
-    state.moderators = {TeamID: "00000000-0000-4000-8000-0000000000bb", Members: [{UserID: "00000000-0000-4000-8000-0000000000c1", Name: "Богдан Мельник", Role: 1}]};
+    state.stats = moderatorsStats([{name: "Веб-вхід", by: ORG}]);
     view();
     expect(await screen.findByText("Перевірка завдань від імені команди модераторів")).toBeTruthy();
-    expect(screen.getByText("Богдан Мельник")).toBeTruthy();
+    expect(state.asArgs.every(value => value === "moderators")).toBe(true);
+    expect(screen.getAllByText("Богдан Мельник").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ірина Гончар")).toBeTruthy();
     expect(screen.getAllByText("Команда модераторів").length).toBeGreaterThan(0);
-    expect(screen.getByText(/приклад даних/)).toBeTruthy();
+    expect(await screen.findByText("Веб-вхід")).toBeTruthy();
     expect(screen.getByLabelText("Показники команди")).toBeTruthy();
-    expect(screen.getByText("Бали команди з часом")).toBeTruthy();
-    expect(screen.getByText("Розв’язано за категоріями")).toBeTruthy();
-    expect(screen.getByText("Розв’язано та хибні спроби")).toBeTruthy();
-    expect(screen.getByText("Розв’язані завдання команди")).toBeTruthy();
-    expect(screen.getByText("Розв’язав")).toBeTruthy();
-    expect(screen.getByLabelText<HTMLInputElement>("Посилання для запрошення")).toBeTruthy();
-    expect((screen.getByRole("button", {name: "Перевипустити"}) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("Недоступно в режимі перегляду")).toBeTruthy();
-    expect(screen.getByRole("button", {name: "Розпустити команду"})).toBeTruthy();
+    expect(screen.queryByText(/приклад даних/)).toBeNull();
+    expect(screen.queryByText("Команда «Зразок»")).toBeNull();
+    expect(screen.queryByLabelText("Посилання для запрошення")).toBeNull();
+    expect(screen.queryByRole("button", {name: "Розпустити команду"})).toBeNull();
+    expect(screen.queryByText("Місце команди")).toBeNull();
 });
 
-it("lets organizers open the page as a captain with sample data when there is no moderators team", async () => {
+it("shows the empty state in each block of the moderators team without solves, never fake numbers", async () => {
     state.guest = event;
     state.staff = true;
+    state.stats = moderatorsStats();
     view();
-    expect(await screen.findByText("Перегляд для організаторів")).toBeTruthy();
-    expect(screen.getByText("Команда «Зразок»")).toBeTruthy();
-    expect(screen.getByLabelText("Посилання для запрошення")).toBeTruthy();
+    expect((await screen.findAllByText("Розв’язаних завдань поки немає.")).length).toBeGreaterThan(0);
+    expect(document.querySelectorAll("[data-empty-state]").length).toBeGreaterThan(1);
+    expect(screen.queryByText("Веб-вхід")).toBeNull();
+});
+
+it("shows the real organizer on the profile tab of the preview", async () => {
+    window.history.replaceState(null, "", "/participation");
+    state.guest = event;
+    state.staff = true;
+    state.stats = moderatorsStats([{name: "Веб-вхід", by: ORG}]);
+    view();
+    expect(await screen.findByRole("heading", {name: "Богдан Мельник"})).toBeTruthy();
+    expect(screen.getByText("Власник")).toBeTruthy();
+    expect(screen.queryByText("Олена Коваль")).toBeNull();
+    expect(screen.getByText("Веб-вхід")).toBeTruthy();
+    expect(screen.getByText("Організатори не заповнюють анкету учасника.")).toBeTruthy();
+});
+
+it("explains in one empty state that the moderators team does not exist yet (409)", async () => {
+    window.history.replaceState(null, "", "/participation");
+    state.guest = event;
+    state.staff = true;
+    state.statsStatus = 409;
+    view();
+    expect(await screen.findByText(/Команду модераторів ще не створено/)).toBeTruthy();
+    expect(document.querySelectorAll("[data-empty-state]").length).toBe(1);
+    expect(screen.queryByRole("tablist")).toBeNull();
 });
 
 it("asks a visitor with a join link to register first and remembers the code", async () => {

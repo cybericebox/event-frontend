@@ -21,6 +21,9 @@
 .event-manage-table tr.is-clickable:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
 .event-manage-table__person{display:grid;gap:var(--ib-1);min-width:160px}
 .event-manage-table__person strong{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-manage-table__name{display:flex;align-items:center;gap:var(--ib-2)}
+.event-manage-table__hidden{display:inline-flex;color:var(--ib-dim)}
+tr.is-locked{background:var(--ib-soft)}
 .event-manage-table__person small,.event-manage-table__dim{color:var(--ib-dim);font-size:var(--ib-fs-12);overflow-wrap:anywhere}
 .event-manage-table__nowrap{white-space:nowrap}
 .event-manage-table__answer{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

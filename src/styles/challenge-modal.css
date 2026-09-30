@@ -56,14 +56,20 @@ dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal__ok svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .ib-cmodal__ok .ib-num{margin-left:auto;font-weight:var(--ib-w-medium)}
 
-/* solves */
-.ib-cmodal__solves{width:100%;border-collapse:collapse;font-size:var(--ib-fs-13)}
-.ib-cmodal__solves th{padding:0 var(--ib-2) var(--ib-2);border-bottom:1px solid var(--ib-line);text-align:left;font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-dim)}
-.ib-cmodal__solves td{height:36px;padding:0 var(--ib-2);border-bottom:1px solid var(--ib-line);color:var(--ib-ink)}
-.ib-cmodal__solves .is-n{width:40px;font-family:var(--ib-mono);color:var(--ib-faint)}
-.ib-cmodal__solves .is-t{text-align:right;font-family:var(--ib-mono);color:var(--ib-dim)}
-.ib-cmodal__solves tr.is-own td{background:var(--ib-soft);font-weight:var(--ib-w-semibold)}
-.ib-cmodal__solves tr.is-own .is-n,.ib-cmodal__solves tr.is-own .is-t{color:var(--ib-ink)}
+/* Solves tab: fixed height, windowed rows of a fixed height. */
+.ib-solvers{display:flex;height:320px;flex-direction:column}
+.ib-solvers__scroll{flex:1 1 auto;min-height:0;overflow-y:auto}
+.ib-solvers__list{position:relative;margin:0;padding:0;list-style:none}
+.ib-solvers__row{position:absolute;right:0;left:0;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:var(--ib-2);padding:0 var(--ib-2);border-bottom:1px solid var(--ib-line);font-size:var(--ib-fs-13);color:var(--ib-ink)}
+.ib-solvers__row.is-own{background:var(--ib-soft);font-weight:var(--ib-w-semibold)}
+.ib-solvers__n{font-family:var(--ib-mono);color:var(--ib-faint)}
+.ib-solvers__name{display:flex;min-width:0;align-items:center;gap:var(--ib-2)}
+.ib-solvers__name .ib-tag{flex:none}
+.ib-solvers__name .ib-tag svg{margin-right:4px}
+.ib-solvers__tip{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib-solvers__time{font-family:var(--ib-mono);color:var(--ib-dim);white-space:nowrap}
+.ib-solvers__more{display:flex;min-height:40px;align-items:center;justify-content:center}
+.ib-solvers__sentinel{width:100%;height:1px}
 .ib-cmodal__empty{padding:26px 0;text-align:center;color:var(--ib-dim)}
 /* Solves tab: loader, empty and table share the compact state height. */
 .ib-cmodal__body--solves{display:flex;flex-direction:column;min-height:calc(160px + 44px)}

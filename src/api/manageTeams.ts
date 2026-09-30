@@ -59,6 +59,11 @@ export async function setManageTeamAdmission(eventID: string, teamID: string, ad
     return request(eventID, `teams/${encodeURIComponent(teamID)}/admission`, teamSchema, "PUT", {AdmittedManually: admittedManually});
 }
 
+// Hides the team from the ranking and counters, or shows it again. The moderators team is locked (403).
+export async function setManageTeamHidden(eventID: string, teamID: string, hidden: boolean): Promise<ManageTeam> {
+    return request(eventID, `teams/${encodeURIComponent(teamID)}/hidden`, teamSchema, "PUT", {Hidden: hidden});
+}
+
 export async function deleteManageTeam(eventID: string, teamID: string): Promise<void> {
     await request(eventID, `teams/${encodeURIComponent(teamID)}`, z.null(), "DELETE");
 }

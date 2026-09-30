@@ -13,7 +13,9 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
 import {StandStatusIcon, standStatusText, useEventVpn} from "@/components/event/vpn/EventVpn";
 import {EventButton} from "@/components/ui/EventButton";
+import {EmptyState} from "@/components/ui/EmptyState";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {eventRoleLabel} from "@/utils/roles";
 import {t} from "@/i18n/t";
 import {AnswersCard} from "./AnswersCard";
 import {CategoryChartCard, Card, PointsChartCard, SolvesTable, StatTiles, statTiles, formatNumber, type BlockState} from "./participationBlocks";
@@ -65,11 +67,12 @@ function VpnCard() {
 
 // The participant's own page: who they are, how they do and what they answered.
 export function ProfileTab({event, info, team, finished, preview, now, onOpenTeam}: {
-    event: PublicEventInfo; info: ParticipantEventInfo; team: OwnTeam | null; finished: boolean; preview: boolean; now: number; onOpenTeam: () => void;
+    event: PublicEventInfo; info: ParticipantEventInfo | null; team: OwnTeam | null; finished: boolean; preview: boolean; now: number; onOpenTeam: () => void;
 }) {
     const queryClient = useQueryClient();
     const accent = useEventAccent();
-    const teamMode = event.Participation === 1;
+    // The organizers' preview reads the real moderators team, so it is always a team.
+    const teamMode = event.Participation === 1 || preview;
     const stats = useParticipationStats(event.EventID, {preview, enabled: true});
     const answers = useQuery({queryKey: ["event-own-answers", event.EventID], queryFn: () => getOwnParticipantAnswers(), enabled: !preview, retry: false, refetchOnWindowFocus: false});
     const data = stats.stats;
@@ -99,24 +102,27 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
     });
     const shownTiles = tiles.map(tile => data ? tile : {...tile, value: "—", note: undefined});
     const admitted = team?.Admitted !== false;
-    const name = info.DisplayName || info.RealName || "—";
+    const teamName = preview ? t("participation.team.moderatorsName") : team?.Name;
+    const name = info?.DisplayName || info?.RealName || me?.Name || "—";
     return <div className="event-pp">
         {preview && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
         <section className="event-pp-card event-pp-hero" aria-label={t("participation.self.title")}>
             <div className="event-pp-hero__who">
                 <h2 className="event-pp-hero__name">{name}</h2>
-                {info.AllowPseudonyms && info.RealName && info.DisplayName && info.DisplayName !== info.RealName && <span className="event-pp-hero__sub">{t("participation.self.realName", {name: info.RealName})}</span>}
+                {info?.AllowPseudonyms && info.RealName && info.DisplayName && info.DisplayName !== info.RealName && <span className="event-pp-hero__sub">{t("participation.self.realName", {name: info.RealName})}</span>}
                 <div className="event-pp-hero__tags">
-                    <span className="ib-tag ib-tag--ok">{t("participation.self.confirmed")}</span>
-                    {teamMode && team && <>
-                        <button type="button" className="ib-tag ib-tag--role" onClick={onOpenTeam} aria-label={t("participation.self.openTeam", {name: team.Name})}>{team.Name}</button>
+                    {preview
+                        ? me && <span className="ib-tag ib-tag--role">{me.Role === 0 ? eventRoleLabel(0) : t("participation.team.member")}</span>
+                        : <span className="ib-tag ib-tag--ok">{t("participation.self.confirmed")}</span>}
+                    {teamMode && teamName && <>
+                        <button type="button" className="ib-tag ib-tag--role" onClick={onOpenTeam} aria-label={t("participation.self.openTeam", {name: teamName})}>{teamName}</button>
                         {!admitted && <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>}
                     </>}
                 </div>
-                {info.AllowPseudonyms && !preview && <PseudonymEditor info={info} eventID={event.EventID} />}
+                {info?.AllowPseudonyms && !preview && <PseudonymEditor info={info} eventID={event.EventID} />}
             </div>
             <dl className="event-pp-hero__score">
-                <div><dt>{teamMode ? t("participation.stats.teamPlace") : t("participation.stats.myPlace")}</dt><dd>{data ? placeText(data.Rank) : "—"}</dd></div>
+                {!preview && <div><dt>{teamMode ? t("participation.stats.teamPlace") : t("participation.stats.myPlace")}</dt><dd>{data ? placeText(data.Rank) : "—"}</dd></div>}
                 <div><dt>{teamMode ? t("participation.stats.myPoints") : t("participation.stats.points")}</dt><dd>{data ? formatNumber(points) : "—"}</dd></div>
             </dl>
             <dl className="event-pp-dates">
@@ -132,6 +138,7 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
             <CategoryChartCard event={event} state={scopeState} solves={mine} color={accent} error={stats.error} onRetry={stats.retry} />
         </div>
         <SolvesTable event={event} state={scopeState} solves={mine} now={now} showSolver={false} error={stats.error} onRetry={stats.retry} title={t("participation.solves.title")} />
+        {preview && <Card title={t("participation.form.cardTitle")}><EmptyState message={t("participation.preview.noForm")} compact /></Card>}
         {answers.isPending && !preview && <Card title={t("participation.form.cardTitle")}><EventLoading event={event} label={t("participation.loading")} /></Card>}
         {answers.isError && <Card title={t("participation.form.cardTitle")}><EventLoadError message={t("participation.fields.loadFailed")} error={answers.error} onRetry={() => void answers.refetch()} /></Card>}
         {answers.data && answers.data.Form.Enabled && <AnswersCard scope="participant" title={t("participation.form.cardTitle")} note={t("participation.self.note")} form={answers.data.Form} answers={answers.data.Answers}

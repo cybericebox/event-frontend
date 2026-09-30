@@ -1,4 +1,5 @@
 import type {ModeratorResultsTeam} from "@/api/manageResults";
+import {t} from "@/i18n/t";
 import type {TableFilter, TableSort} from "./tableFilterModel";
 
 // «Таблиця результатів» holds every team at once, so search, column filters,
@@ -11,8 +12,13 @@ export function resultsStatus(team: ModeratorResultsTeam): ResultsStatus {
     return team.Admitted ? "ranked" : "notAdmitted";
 }
 
+// The moderators team arrives without a name.
+export function teamLabel(team: ModeratorResultsTeam): string {
+    return team.Moderators ? t("manage.teams.moderatorsName") : team.Name;
+}
+
 function searchText(team: ModeratorResultsTeam): string {
-    return [team.Name, team.RealName, team.Pseudonym ?? ""].join(" ").toLocaleLowerCase("uk-UA");
+    return [teamLabel(team), team.RealName, team.Pseudonym ?? ""].join(" ").toLocaleLowerCase("uk-UA");
 }
 
 function inRange(value: number, filter: Extract<TableFilter, {Op: "range"}>): boolean {
@@ -53,7 +59,7 @@ export function selectResults(teams: ModeratorResultsTeam[], search: string, fil
     const rows = teams.filter(team => (!query || searchText(team).includes(query)) && filters.every(filter => matchesResultsFilter(team, filter)));
     const direction = sort.desc ? -1 : 1;
     const compare = (a: ModeratorResultsTeam, b: ModeratorResultsTeam): number => {
-        if (sort.key === "@name") return a.Name.localeCompare(b.Name, "uk-UA");
+        if (sort.key === "@name") return teamLabel(a).localeCompare(teamLabel(b), "uk-UA");
         if (sort.key === "@rank") return order.get(a.TeamID)! - order.get(b.TeamID)!;
         const left = numberOf(a, sort.key), right = numberOf(b, sort.key);
         // Empty values («—») always go last, whatever the direction.

@@ -1,22 +1,22 @@
 "use client";
 
-import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {getParticipationStats, type ParticipationStats} from "@/api/participationStats";
+import {getParticipationStats, ParticipationStatsError} from "@/api/participationStats";
 import type {ChartState} from "@/components/event/manage/analytics/analyticsModel";
-import {previewStats} from "./participationPreview";
 import {isEmptyStats} from "./participationStatsModel";
 
 const POLL_MS = 30_000;
 
-// The caller's own results: one query shared by both tabs. The organizers' preview gets made-up data and no request.
+// The caller's own results: one query shared by both tabs. The organizers' preview
+// (`preview`) reads the real moderators team instead; `unavailable` means the event
+// has no owner to lead it (409), so there is nothing to show.
 export function useParticipationStats(eventID: string | undefined, {preview, enabled}: {preview: boolean; enabled: boolean}) {
     const query = useQuery({
-        queryKey: ["event-participation-stats", eventID], queryFn: () => getParticipationStats(eventID!),
-        enabled: !!eventID && enabled && !preview, retry: false, refetchOnWindowFocus: false, refetchInterval: POLL_MS,
+        queryKey: ["event-participation-stats", eventID, preview ? "moderators" : "own"], queryFn: () => getParticipationStats(eventID!, preview ? "moderators" : undefined),
+        enabled: !!eventID && enabled, retry: false, refetchOnWindowFocus: false, refetchInterval: POLL_MS,
     });
-    const [sample] = useState(() => preview ? previewStats(Date.now()) : undefined);
-    const stats: ParticipationStats | undefined = sample ?? query.data;
+    const stats = query.data;
     const state: ChartState = stats ? (isEmptyStats(stats) ? "empty" : "ready") : query.isError ? "error" : "loading";
-    return {stats, state, error: query.error, retry: () => void query.refetch()};
+    const unavailable = preview && query.error instanceof ParticipationStatsError && query.error.status === 409;
+    return {stats, state, error: query.error, unavailable, retry: () => void query.refetch()};
 }

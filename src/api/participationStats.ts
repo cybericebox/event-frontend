@@ -39,9 +39,12 @@ export type TimelineEntry = z.infer<typeof timelineSchema>;
 
 // The caller's own team only; counters and solved tasks, never answers. The
 // browser revalidates with the ETag, so a poll of an unchanged page is a 304.
-export async function getParticipationStats(eventID: string): Promise<ParticipationStats> {
+// `as: "moderators"` is the organizers' preview: the real moderators team, where
+// Me is the viewing organizer. 409 means the event has no owner to lead that team.
+export async function getParticipationStats(eventID: string, as?: "moderators"): Promise<ParticipationStats> {
     const api = requireApiOrigin();
-    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/results/participation`, {credentials: "include", cache: "no-cache", headers: {Accept: "application/json"}});
+    const query = as ? `?as=${as}` : "";
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/results/participation${query}`, {credentials: "include", cache: "no-cache", headers: {Accept: "application/json"}});
     if (!response.ok) throw new ParticipationStatsError(response.status, await readApiErrorCode(response));
     return z.object({Data: participationStatsSchema}).parse(await response.json()).Data;
 }

@@ -2,14 +2,16 @@
 
 import {Fragment, useState} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
-import {Trash2} from "lucide-react";
+import {Eye, EyeOff, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
+import {HiddenMark} from "@/components/event/manage/HiddenMark";
+import {getModeratorsTeam} from "@/api/moderatorsBoard";
 import {getManageParticipants} from "@/api/manageParticipants";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import {changeManageTeamMember, deleteManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
+import {changeManageTeamMember, deleteManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, setManageTeamHidden, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -117,6 +119,9 @@ export default function ManageTeamsPage() {
     const participants = participantsQuery.data?.pages.flatMap(page => page.Items) ?? [];
     const available = participants.filter(participant => !participant.TeamID);
     const teams = teamsQuery.data?.Items ?? [];
+    // The moderators team is not in the list: one locked row on top of the first unfiltered page. A failed request just hides it.
+    const moderatorsTeam = useQuery({queryKey: ["event-management-moderators-team", eventID], queryFn: () => getModeratorsTeam(eventID), enabled: teamMode, retry: false, refetchOnWindowFocus: false});
+    const moderatorsRow = moderatorsTeam.data && table.page === 1 && !table.filtered ? moderatorsTeam.data : null;
     const tableColumns = useTableColumns(eventID, "teams", [
         {key: "@name", label: t("manage.teams.col.name"), locked: true},
         {key: "@captain", label: t("manage.teams.col.captain")},
@@ -214,6 +219,17 @@ export default function ManageTeamsPage() {
         finally {setBusy(false);}
     }
 
+    async function toggleHidden(team: ManageTeam) {
+        if (!canManage || busy) return;
+        setBusy(true);
+        try {
+            await setManageTeamHidden(eventID, team.ID, !team.Hidden);
+            await refresh();
+            toast.success(team.Hidden ? t("manage.teams.shown") : t("manage.teams.hiddenDone"));
+        } catch (error) {toast.error(failure(error, t("manage.teams.hiddenFailed")));}
+        finally {setBusy(false);}
+    }
+
     async function setAdmission(team: ManageTeam, admitted: boolean) {
         if (!canManage || busy) return;
         setBusy(true);
@@ -231,7 +247,7 @@ export default function ManageTeamsPage() {
         const pending = team.PendingInvitations.filter(person => person.UserID !== team.CaptainID);
         const tags = [...others.map(member => ({id: member.UserID, name: memberName(member), pending: false})), ...pending.map(person => ({id: person.UserID, name: memberName(person), pending: true}))];
         switch (column.key) {
-        case "@name": return <td><div className="event-manage-table__person"><strong>{team.Name}</strong>{team.Hidden && <small>{t("manage.teams.hidden")}</small>}</div></td>;
+        case "@name": return <td><div className="event-manage-table__person"><span className="event-manage-table__name"><strong>{team.Name}</strong>{team.Hidden && <HiddenMark />}</span></div></td>;
         case "@captain": return <td><div className="event-manage-table__person"><span>{captainName(team)}</span>{team.CaptainPending && <small>{t("manage.teams.pendingConfirmation")}</small>}</div></td>;
         case "@members": return <td><div className="event-manage-table__person"><div className="event-manage-table__tags"><span className="event-manage-table__count">{team.MemberCount}</span>{tags.slice(0, MEMBER_TAGS).map(tag => tag.pending
             ? <EventTooltip key={tag.id} content={t("manage.teams.pendingConfirmation")}>{id => <span className="ib-tag ib-tag--sm ib-tag--warn" aria-describedby={id}>{tag.name}</span>}</EventTooltip>
@@ -269,12 +285,19 @@ export default function ManageTeamsPage() {
                 {tableColumns.visible.map(column => <SortHeader key={column.key} columnKey={column.key} label={column.label} sort={table.sort} onSort={table.setSort} />)}
                 <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.teams.col.actions")}</span></th>
             </tr>}>
-            <tbody>{teams.map(team => {
+            <tbody>{moderatorsRow && <tr className="is-locked" data-moderators-team>
+                {tableColumns.visible.map(column => column.key === "@name"
+                    ? <td key={column.key}><div className="event-manage-table__person"><span className="event-manage-table__name"><strong>{t("manage.teams.moderatorsName")}</strong><HiddenMark moderators /></span></div></td>
+                    : column.key === "@members" ? <td key={column.key}><span className="event-manage-table__count">{moderatorsRow.Members.length}</span></td>
+                        : <td key={column.key} className="event-manage-table__dim">—</td>)}
+                <td />
+            </tr>}{teams.map(team => {
                 return <tr key={team.ID} className="is-clickable" onClick={event => {if (!(event.target as HTMLElement).closest("button, a, input, label")) {setEditing(null); setManagedID(team.ID);}}}>
                     {tableColumns.visible.map(column => <Fragment key={column.key}>{teamCell(column, team)}</Fragment>)}
                     <td><div className="event-manage-table__actions">
                         {canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button>}
                         <button className="ib-btn ib-btn--sm" type="button" aria-label={t("manage.teams.manageLabel", {name: team.Name})} onClick={() => {setEditing(null); setManagedID(team.ID);}}>{t("manage.teams.manage")}</button>
+                        {canManage && <EventTooltip content={t(team.Hidden ? "manage.teams.showLabel" : "manage.teams.hideLabel", {name: team.Name})} silent>{() => <button className="ib-btn ib-btn--sm" type="button" aria-label={t(team.Hidden ? "manage.teams.showLabel" : "manage.teams.hideLabel", {name: team.Name})} disabled={busy} onClick={() => void toggleHidden(team)}>{team.Hidden ? <Eye size={16} /> : <EyeOff size={16} />}</button>}</EventTooltip>}
                         {canManage && <EventTooltip content={t("manage.teams.deleteLabel", {name: team.Name})} silent>{() => <button className="ib-btn ib-btn--sm event-content-editor__delete" type="button" aria-label={t("manage.teams.deleteLabel", {name: team.Name})} disabled={busy} onClick={() => ask({kind: "delete", team})}><Trash2 size={16} /></button>}</EventTooltip>}
                     </div></td>
                 </tr>;

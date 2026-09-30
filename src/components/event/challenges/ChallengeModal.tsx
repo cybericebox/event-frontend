@@ -1,18 +1,16 @@
 "use client";
 
 import {useEffect, useId, useRef, useState, type FormEvent} from "react";
-import {EventLoadError} from "@/components/event/EventLoadError";
-import {EventLoading} from "@/components/event/EventLoading";
-import {EmptyState} from "@/components/ui/EmptyState";
+import {ChallengeSolvesTab} from "./ChallengeSolvesTab";
 import {useQuery} from "@tanstack/react-query";
 import {Network} from "lucide-react";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {
-    challengeAttachmentUrl, challengeFiles, getChallengeSolves, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
+    challengeAttachmentUrl, challengeFiles, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
     type ChallengeHint, type OwnChallenge,
 } from "@/api/participantChallenges";
 import {reportTaskOpened} from "@/api/taskOpenedBeacon";
-import {checkModeratorFlag, moderatorFileUrl} from "@/api/moderatorsBoard";
+import {moderatorFileUrl, submitModeratorFlag} from "@/api/moderatorsBoard";
 import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
@@ -174,13 +172,8 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         enabled: !!challenge?.Infrastructure && !challenge.Locked,
         retry: false, refetchInterval: 30000, refetchOnWindowFocus: false,
     });
-    const solvesVisible = !moderators && challenge?.SolveCount !== null && challenge?.SolveCount !== undefined;
-    const solves = useQuery({
-        queryKey: ["event-challenge-solves", eventID, challengeID],
-        queryFn: () => getChallengeSolves(eventID, challengeID!),
-        enabled: solvesVisible && tab === "solves",
-        retry: false, refetchOnWindowFocus: false,
-    });
+    // The moderators board lists its own team's solves; participants see them only when the event shows counts.
+    const solvesVisible = moderators || (challenge?.SolveCount !== null && challenge?.SolveCount !== undefined);
 
     useEffect(() => {
         const dialog = ref.current;
@@ -232,7 +225,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         setMessage(null);
         try {
             const correct = moderators
-                ? await checkModeratorFlag(eventID, challenge.EventChallengeID, value)
+                ? (await submitModeratorFlag(eventID, challenge.EventChallengeID, value)).Correct
                 : (await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID())).Correct;
             if (correct) {
                 setAccepted(true);
@@ -262,7 +255,6 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
     const category = challenge?.GroupName || t("challenges.otherCategory");
-    const count = solves.data?.length ?? challenge?.SolveCount ?? 0;
     const hints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
     const fileUrl = (fileID: string) => moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
 
@@ -296,7 +288,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                 <button type="button" role="tab" id={`${id}-tab1`} aria-controls={`${id}-p1`} aria-selected={tab === "task"} tabIndex={tab === "task" ? 0 : -1} onClick={() => setTab("task")}
                     onKeyDown={event => { if (solvesVisible && ["ArrowRight", "ArrowLeft", "End"].includes(event.key)) { event.preventDefault(); setTab("solves"); } }}>{t("challenges.modal.taskTab")}</button>
                 {solvesVisible && <button type="button" role="tab" id={`${id}-tab2`} aria-controls={`${id}-p2`} aria-selected={tab === "solves"} tabIndex={tab === "solves" ? 0 : -1} onClick={() => setTab("solves")}
-                    onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{solvesLabel(count)}</button>}
+                    onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{challenge.SolveCount !== null ? solvesLabel(challenge.SolveCount) : t("challenges.modal.solvesTab")}</button>}
             </div>
             <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
                 <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
@@ -326,15 +318,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                 </form>}
             </div>
             {solvesVisible && <div className="ib-cmodal__body ib-cmodal__body--solves" id={`${id}-p2`} role="tabpanel" aria-labelledby={`${id}-tab2`} hidden={tab !== "solves"}>
-                {solves.isPending ? <EventLoading compact label={t("challenges.solves.loading")} />
-                    : solves.isError ? <EventLoadError compact message={t("challenges.solves.unavailableTitle")} error={solves.error} onRetry={() => void solves.refetch()} />
-                    : !solves.data.length ? <EmptyState compact message={t("challenges.solves.emptyMessage")} />
-                    : <table className="ib-cmodal__solves">
-                        <thead><tr><th className="is-n">#</th><th>{teamMode ? t("scoreboard.col.team") : t("scoreboard.col.participant")}</th><th className="is-t">{t("challenges.solves.time")}</th></tr></thead>
-                        <tbody>{solves.data.map((row, index) => <tr key={`${row.TeamName}-${row.SolvedAt}`} className={row.Own ? "is-own" : undefined}>
-                            <td className="is-n">{index + 1}</td><td>{row.TeamName}</td><td className="is-t">{formatClock(row.SolvedAt, true)}</td>
-                        </tr>)}</tbody>
-                    </table>}
+                {tab === "solves" && <ChallengeSolvesTab key={challenge.EventChallengeID} eventID={eventID} challengeID={challenge.EventChallengeID} moderators={moderators} enabled />}
             </div>}
         </>}
     </dialog>;

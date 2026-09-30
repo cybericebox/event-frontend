@@ -7,12 +7,13 @@ import {ChevronRight, Download, ExternalLink, Radio, Snowflake} from "lucide-rea
 import {downloadResultsCSV, getModeratorResults, resultsLiveURL, setResultsOpened, type ModeratorResults, type ModeratorResultsTeam} from "@/api/manageResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageTable, ManageTablePagination, ManageTableSearch} from "@/components/event/manage/ManageTable";
+import {HiddenMark} from "@/components/event/manage/HiddenMark";
 import {LiveStatus} from "@/components/event/manage/LiveStatus";
 import {SortHeader, TableFilterChips, TableFiltersButton} from "@/components/event/manage/TableFilters";
 import type {FilterSpec} from "@/components/event/manage/tableFilterModel";
 import {useTableState} from "@/components/event/manage/useTableState";
 import {journalTime} from "@/components/event/manage/journalShared";
-import {pageOf, selectResults} from "@/components/event/manage/resultsTable";
+import {pageOf, selectResults, teamLabel} from "@/components/event/manage/resultsTable";
 import {zoneLabel} from "@/components/ui/dateTimePicker";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
@@ -37,7 +38,7 @@ function freezeStatus(freeze: ModeratorResults["Freeze"], now: number): string {
 
 function TeamName({team}: {team: ModeratorResultsTeam}) {
     return <span className="event-manage-table__person">
-        <span className="event-results-table__title"><strong>{team.Name}</strong>{team.Hidden && <span className="ib-tag ib-tag--sm">{t("manage.results.hidden")}</span>}{!team.Admitted && <span className="ib-tag ib-tag--sm ib-tag--warn">{t("manage.results.notAdmitted")}</span>}</span>
+        <span className="event-results-table__title"><strong>{teamLabel(team)}</strong>{team.Moderators ? <HiddenMark moderators /> : team.Hidden && <span className="ib-tag ib-tag--sm">{t("manage.results.hidden")}</span>}{!team.Admitted && <span className="ib-tag ib-tag--sm ib-tag--warn">{t("manage.results.notAdmitted")}</span>}</span>
         {team.Individual && (team.RealName !== team.Name || team.Pseudonym) && <small>{team.RealName}{team.Pseudonym ? ` · ${t("manage.results.pseudonym", {pseudonym: team.Pseudonym})}` : ""}</small>}
     </span>;
 }
@@ -168,7 +169,7 @@ export default function ManageResultsPage() {
                 return <Fragment key={team.TeamID}>
                     <tr className={`is-clickable${open ? " is-open" : ""}`} onClick={() => toggle(team.TeamID)}>
                         <td><button className="ib-icon-btn ib-icon-btn--sm event-results-table__toggle" type="button" aria-expanded={open} aria-controls={detailID}
-                            aria-label={t(open ? "manage.results.detail.hide" : "manage.results.detail.show", {name: team.Name})} onClick={clickEvent => {clickEvent.stopPropagation(); toggle(team.TeamID);}}>
+                            aria-label={t(open ? "manage.results.detail.hide" : "manage.results.detail.show", {name: teamLabel(team)})} onClick={clickEvent => {clickEvent.stopPropagation(); toggle(team.TeamID);}}>
                             <ChevronRight size={16} aria-hidden="true" />
                         </button></td>
                         <td className="event-results-table__rank">{team.Rank ?? "—"}</td>
