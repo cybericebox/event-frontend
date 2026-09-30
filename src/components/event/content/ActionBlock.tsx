@@ -3,6 +3,7 @@
 import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
+import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {useParticipation} from "@/components/event/participation/participationRules";
 import {eventOrigin, idOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
@@ -32,13 +33,16 @@ export type JoinState =
     | {kind: "loading"}
     | {kind: "hidden"}
     | {kind: "join"; href: string}
+    | {kind: "staffPreview"}
     | {kind: "invite"}
     | {kind: "pending"}
     | {kind: "approved"}
     | {kind: "rejected"};
 
-export function joinState({preview, windowOpen, timeWindowOpen, registerAllowed, identity, status, invitation, signInHref}: {
+export function joinState({preview, staff, windowOpen, timeWindowOpen, registerAllowed, identity, status, invitation, signInHref}: {
     preview?: PreviewViewer;
+    // Staff cannot join their own event; they get the registration preview instead.
+    staff?: boolean;
     windowOpen: boolean;
     timeWindowOpen: boolean;
     // The server's verdict for a signed-in visitor without an application (staff, registration mode, schedule); it overrides windowOpen.
@@ -52,6 +56,7 @@ export function joinState({preview, windowOpen, timeWindowOpen, registerAllowed,
     if (preview) return windowOpen ? {kind: "join", href: "/join"} : {kind: "hidden"};
     if (identity === "loading") return {kind: "loading"};
     if (identity === "guest") return windowOpen ? {kind: "join", href: signInHref} : {kind: "hidden"};
+    if (staff) return {kind: "staffPreview"};
     if (status === "loading" || status === undefined) return {kind: "loading"};
     if (status === "error") return {kind: "hidden"};
     switch (status) {
@@ -101,6 +106,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     // real clock and join policy must not close it again.
     const timeWindowOpen = viewer ? true : registrationWindowOpen(true, joinPolicy, startAt, finishAt, now);
     const windowOpen = registrationOpen && timeWindowOpen;
+    const staff = useStaffAccess(eventID, hasJoin && !viewer);
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !viewer, retry: false, refetchInterval: false});
     const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !!eventID && !!identity.data, retry: false, refetchInterval: false});
     const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !viewer && join.data === 1, retry: false, refetchInterval: false});
@@ -110,7 +116,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
         ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${eventSite}/join`)}`
         : "/join";
     const state = hasJoin ? joinState({
-        preview: viewer, windowOpen, timeWindowOpen, signInHref,
+        preview: viewer, staff: staff.staff, windowOpen, timeWindowOpen, signInHref,
         registerAllowed: participation.isPending ? "loading" : participation.data ? participation.data.Register.Allowed : undefined,
         identity: identity.isPending ? "loading" : identity.data ? "user" : "guest",
         status: join.isPending ? "loading" : join.isError ? "error" : join.data,
@@ -125,6 +131,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
             case "hidden": return [];
             case "loading": return action.label ? [{label: action.label, index, status: "loading"}] : [];
             case "join": return action.label ? [{href: state.href, label: action.label, index}] : [];
+            case "staffPreview": return action.label ? [{href: "/join", label: t("joinPreview.entry"), index}] : [];
             case "invite": return [{href: "/invite", label: joinLabel("invite"), index}];
             case "approved": return [{href: "/challenges", label: joinLabel("approved"), index}];
             case "pending": case "rejected": return [{label: joinLabel(state.kind), index, status: "static"}];

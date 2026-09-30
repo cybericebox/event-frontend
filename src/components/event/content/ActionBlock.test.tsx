@@ -95,3 +95,13 @@ describe("join action states", () => {
         expect(screen.queryByRole("link")).toBeNull();
     });
 });
+
+describe("staff join action", () => {
+    const base = {windowOpen: true, timeWindowOpen: true, identity: "user" as const, status: 0, signInHref: "/join"};
+    it("offers staff the registration preview instead of a join", () => {
+        expect(joinState({...base, staff: true, registerAllowed: false})).toEqual({kind: "staffPreview"});
+    });
+    it("keeps the refusal for a participant-side visitor", () => {
+        expect(joinState({...base, registerAllowed: false})).toEqual({kind: "hidden"});
+    });
+});

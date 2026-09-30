@@ -52,6 +52,7 @@ import "@/styles/event-page-builder.css";
 import "@/styles/rich-text-view.css";
 import "@/styles/event-manage-layout.css";
 import "@/styles/event-page-frame.css";
+import "@/styles/join-preview.css";
 import type React from "react";
 import {Analytics} from "@/components/consent/Analytics";
 import {GeistSans} from "geist/font/sans";

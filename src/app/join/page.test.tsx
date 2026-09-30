@@ -8,12 +8,15 @@ import JoinPage from "./page";
 const state = vi.hoisted(() => ({
     status: 0,
     participation: null as unknown,
+    staff: false,
 }));
 
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
 vi.mock("next/navigation", () => ({useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event-1", Name: "Олімпіада", Registration: 2})}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => null}));
+vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
+vi.mock("@/components/event/join/JoinPreview", () => ({JoinPreview: () => <div>join-preview</div>}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
 vi.mock("@/api/clientAuth", () => ({
     getCurrentUser: async () => ({ID: "u", FirstName: "", LastName: "", Email: ""}),
@@ -33,7 +36,7 @@ function view() {
     return render(<QueryClientProvider client={client}><JoinPage /></QueryClientProvider>);
 }
 
-beforeEach(() => { state.status = 0; state.participation = null; });
+beforeEach(() => { state.status = 0; state.participation = null; state.staff = false; });
 afterEach(cleanup);
 
 describe("join page", () => {
@@ -43,11 +46,19 @@ describe("join page", () => {
         expect(await screen.findByRole("button", {name: "Приєднатися"})).toBeTruthy();
     });
 
-    it("tells event staff they cannot register, and offers no button", async () => {
+    it("gives event staff the registration preview instead of the refusal", async () => {
+        state.staff = true;
         state.participation = block({Allowed: false, Reason: "staff_cannot_participate"}, {Staff: true});
         view();
-        expect(await screen.findByText(/Власники й модератори заходу не беруть участі як учасники/)).toBeTruthy();
-        expect(screen.queryByRole("button", {name: "Приєднатися"})).toBeNull();
+        expect(await screen.findByText("join-preview")).toBeTruthy();
+        expect(screen.queryByText(/Власники й модератори заходу не беруть участі як учасники/)).toBeNull();
+    });
+
+    it("never shows a participant the preview", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        view();
+        expect(await screen.findByRole("button", {name: "Приєднатися"})).toBeTruthy();
+        expect(screen.queryByText("join-preview")).toBeNull();
     });
 
     it.each([
