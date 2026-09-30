@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, type FormEvent} from "react";
+import {useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {
@@ -49,7 +49,8 @@ export function ChallengeSettings() {
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const [edit, setEdit] = useState<{eventID: string; value: ScoringDraft} | null>(null);
     const [saving, setSaving] = useState(false);
-    const [savingConfig, setSavingConfig] = useState(false);
+    // Config saves run one after another; the controls never wait for them.
+    const configQueue = useRef<Promise<void>>(Promise.resolve());
 
     if (scoring.isPending || lifecycle.isPending || config.isPending) return <EventLoading event={event} />;
     if (scoring.isError || lifecycle.isError || config.isError) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} error={scoring.error ?? lifecycle.error ?? config.error} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
@@ -76,19 +77,24 @@ export function ChallengeSettings() {
         finally {setSaving(false);}
     }
 
-    async function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode">>) {
-        if (!config.data || savingConfig || !canManage) return;
+    function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode">>) {
+        if (!config.data || !canManage) return;
         const key = ["event-management-config", eventID];
-        const previous = config.data;
-        // Optimistic: the switch and the blocks it shows react at once; a failed save rolls back.
-        queryClient.setQueryData(key, {...previous, ...patch});
-        setSavingConfig(true);
-        try {
-            queryClient.setQueryData(key, await putManageConfig(eventID, {...manageConfigInput(previous), ...patch}));
-        } catch {
-            queryClient.setQueryData(key, previous);
-            toast.error(t("manage.board.saveFailed"));
-        } finally {setSavingConfig(false);}
+        // Optimistic: every control reacts at once and nothing else on the page is disabled or reloaded.
+        queryClient.setQueryData<ManageConfig>(key, current => current ? {...current, ...patch} : current);
+        configQueue.current = configQueue.current.then(async () => {
+            const wanted = queryClient.getQueryData<ManageConfig>(key);
+            if (!wanted) return;
+            try {
+                const saved = await putManageConfig(eventID, manageConfigInput(wanted));
+                // Apply the server answer only when no newer change is waiting and it differs from what is shown.
+                const shown = queryClient.getQueryData<ManageConfig>(key);
+                if (shown === wanted && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData(key, saved);
+            } catch {
+                await queryClient.invalidateQueries({queryKey: key});
+                toast.error(t("manage.board.saveFailed"));
+            }
+        });
     }
 
     return <div className="event-manage-settings event-manage-general event-challenge-settings">
@@ -135,14 +141,14 @@ export function ChallengeSettings() {
                 <EventSwitch className="event-manage-form__switch" checked={!config.data.HintsDisabled} disabled={!canManage} onCheckedChange={checked => void saveConfig({HintsDisabled: !checked})} label={t("manage.challenges.hints.enable")} />
                 <p>{t("manage.challenges.hints.enableNote")}</p>
             </div>
-            {!config.data.HintsDisabled && <fieldset className="event-hint-charge" disabled={!canManage || savingConfig}>
+            {!config.data.HintsDisabled && <fieldset className="event-hint-charge" disabled={!canManage}>
                 <legend>{t("manage.board.chargeLegend")}</legend>
                 <div className="event-manage-choice-group">{chargeModes().map(mode => <label key={mode.value}><input type="radio" name="hint-charge-mode" value={mode.value} checked={config.data.HintChargeMode === mode.value} onChange={() => void saveConfig({HintChargeMode: mode.value})} /><span><strong>{mode.label}</strong><small>{mode.note}</small></span></label>)}</div>
             </fieldset>}
         </section>
         <section className="event-manage-section" aria-labelledby="board-title">
             <div className="event-manage-section__head"><h2 id="board-title">{t("manage.challenges.display.title")}</h2><p>{t("manage.board.subtitle")}</p></div>
-            <EventSwitch className="event-manage-form__switch" checked={config.data.ShowDifficulty} disabled={!canManage || savingConfig} onCheckedChange={checked => void saveConfig({ShowDifficulty: checked})} label={t("manage.board.showDifficulty")} />
+            <EventSwitch className="event-manage-form__switch" checked={config.data.ShowDifficulty} disabled={!canManage} onCheckedChange={checked => void saveConfig({ShowDifficulty: checked})} label={t("manage.board.showDifficulty")} />
         </section>
     </div>;
 }
