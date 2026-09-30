@@ -7,6 +7,7 @@ import {CircleAlert, Info, TriangleAlert, X} from "lucide-react";
 import {getSiteBanners, type VisibleBanner} from "@/api/siteBanners";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
+import { keepBrand } from "@/i18n/brand";
 
 export type SiteBannerData = Pick<VisibleBanner, "Text" | "LinkURL" | "LinkLabel" | "Level" | "Dismissible">;
 
@@ -26,10 +27,10 @@ export function safeBannerLink(url: string): boolean {
 export function SiteBanner({banner, onDismiss}: {banner: SiteBannerData; onDismiss?: () => void}) {
     const Icon = icons[banner.Level];
     const link = banner.LinkURL.trim();
-    const label = banner.LinkLabel.trim() || t("siteBanner.more");
+    const label = keepBrand(banner.LinkLabel.trim() || t("siteBanner.more"));
     return <div className={`ib-banner ib-banner--${tones[banner.Level]}`} role={banner.Level === "critical" ? "alert" : "status"} data-level={banner.Level}>
         <span className="ib-banner__icon"><Icon aria-hidden="true" /></span>
-        <div className="ib-banner__text"><span className="ib-banner__msg">{banner.Text}</span></div>
+        <div className="ib-banner__text"><span className="ib-banner__msg">{keepBrand(banner.Text)}</span></div>
         {link && safeBannerLink(link) && <div className="ib-banner__action">
             {link.startsWith("/") ? <Link className="ib-link ib-link--standalone" href={link}>{label}</Link>
                 : <a className="ib-link ib-link--standalone" href={link} target="_blank" rel="noopener noreferrer">{label}<span className="ib-sr"> {t("siteBanner.newTab")}</span></a>}
