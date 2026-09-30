@@ -4349,5 +4349,12 @@
   "manage.teams.shown": "Team shown",
   "manage.teams.hiddenFailed": "Could not change the team's visibility.",
   "participation.preview.noModerators": "The moderators team is not created yet: the event has no owner to lead it.",
-  "participation.preview.noForm": "Organizers do not fill in the participant form."
+  "participation.preview.noForm": "Organizers do not fill in the participant form.",
+  "challenges.lab.starting": "Opening access to the service…",
+  "challenges.lab.moderatorsNote": "Moderator web links open without a participant session; if the service does not respond, use the VPN.",
+  "challenges.lab.error.unavailable": "Infrastructure is unavailable right now.",
+  "challenges.lab.error.notAdmitted": "The team has not been admitted to challenges yet.",
+  "challenges.lab.error.notPublished": "The task is not published for the team yet.",
+  "challenges.lab.error.notApproved": "Only approved participants can access the service.",
+  "challenges.lab.error.failed": "Could not open access to the service."
 }

@@ -122,6 +122,15 @@ export async function getOwnChallengeLab(eventID: string, challengeID: string): 
     return z.object({Data: LabRuntimeSchema}).parse(await response.json()).Data;
 }
 
+// Starts or renews the caller's lab proxy cookie (set by the server on the lab
+// domain, HttpOnly); only its expiry comes back.
+export async function openLabSession(eventID: string, challengeID: string): Promise<{expiresAt: number}> {
+    const response = await fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/lab/session`, {method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
+    if (!response.ok) throw await failure(response);
+    const data = z.object({Data: z.object({expires_at: z.string()})}).parse(await response.json()).Data;
+    return {expiresAt: new Date(data.expires_at).getTime()};
+}
+
 // Idempotent per team: a repeat returns the first unlock. Cost is 0 once solved or finished.
 export async function unlockChallengeHint(eventID: string, challengeID: string, hintID: string): Promise<ChallengeHint> {
     const response = await fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/hints/${encodeURIComponent(hintID)}/unlock`, {

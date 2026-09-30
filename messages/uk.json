@@ -4349,5 +4349,12 @@
   "manage.teams.shown": "Команду показано",
   "manage.teams.hiddenFailed": "Не вдалося змінити видимість команди.",
   "participation.preview.noModerators": "Команду модераторів ще не створено: у заході немає власника, який би її очолив.",
-  "participation.preview.noForm": "Організатори не заповнюють анкету учасника."
+  "participation.preview.noForm": "Організатори не заповнюють анкету учасника.",
+  "challenges.lab.starting": "Відкриваємо доступ до сервісу…",
+  "challenges.lab.moderatorsNote": "Вебпосилання модераторів відкриваються без сесії учасника; якщо сервіс не відповідає, скористайтеся VPN.",
+  "challenges.lab.error.unavailable": "Інфраструктура зараз недоступна.",
+  "challenges.lab.error.notAdmitted": "Команду ще не допущено до завдань.",
+  "challenges.lab.error.notPublished": "Завдання ще не опубліковано для команди.",
+  "challenges.lab.error.notApproved": "Доступ до сервісу мають лише схвалені учасники.",
+  "challenges.lab.error.failed": "Не вдалося відкрити доступ до сервісу."
 }
