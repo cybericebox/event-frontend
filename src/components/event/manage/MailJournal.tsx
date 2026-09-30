@@ -12,7 +12,7 @@ import {signalLabel, signalLabels} from "@/api/manageNotifications";
 import {DialogModal} from "@/components/event/DialogModal";
 import {t} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
-import {MailErrorText, MailRecipient} from "./MailJournalParts";
+import {DetailRecipient, MailErrorText, MailRecipient} from "./MailJournalParts";
 import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
 import {formatDateTime, zoneOffset} from "@/utils/dateTime";
@@ -98,7 +98,7 @@ export function MailJournal() {
             {detail && <div className="event-mail-detail">
                 <dl className="event-mail-detail__facts">
                     <div><dt>{t("manage.mail.journal.col.type")}</dt><dd>{detail.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${detail.BroadcastID}`}>{typeTitle(detail.NotificationType)}</Link> : typeTitle(detail.NotificationType)}</dd></div>
-                    <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd><MailRecipient name={detail.RecipientName.trim()} email={detail.RecipientEmail} /></dd></div>
+                    <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd><DetailRecipient item={detail} /></dd></div>
                     <div><dt>{t("manage.mail.journal.detail.created")}</dt><dd><time dateTime={detail.CreatedAt}>{formatDateTime(detail.CreatedAt)}</time></dd></div>
                     <div><dt>{t("manage.mail.journal.col.status")}</dt><dd>{t(`manage.mail.journal.status.${detail.Status}`)}</dd></div>
                 </dl>
@@ -108,7 +108,6 @@ export function MailJournal() {
                         <div className="event-mail-detail__head"><strong>{t(target.Channel === "email" ? "manage.mail.channel.email" : "manage.mail.channel.inApp")}</strong>
                             <span className={`event-manage-participants__status ${target.Status === "done" ? "is-2" : target.Status === "error" ? "is-3" : "is-1"}`}>{targetResult(target) ? mailResultLabels[targetResult(target)!] : t("manage.mail.journal.pending")}</span></div>
                         <dl className="event-mail-detail__facts">
-                            <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd><MailRecipient {...targetRecipient(detail, target)} /></dd></div>
                             <div><dt>{t("manage.mail.journal.col.attempts")}</dt><dd>{target.Attempts}</dd></div>
                             {target.Transport && <div><dt>{t("manage.mail.journal.col.transport")}</dt><dd>{mailTransportLabel(target.Transport)}</dd></div>}
                             <div><dt>{t("manage.mail.journal.detail.updated")}</dt><dd><time dateTime={target.UpdatedAt}>{formatDateTime(target.UpdatedAt)}</time></dd></div>

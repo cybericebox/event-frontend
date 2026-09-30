@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
+import {useSyncExternalStore} from "react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {ManageParticipant} from "@/api/manageParticipants";
@@ -15,6 +16,12 @@ let form: ParticipantForm;
 let rows: ManageParticipant[];
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "e1", Participation: 0}, canManage: true})}));
 vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => null}));
+const nav = vi.hoisted(() => ({state: {search: ""}, listeners: new Set<() => void>()}));
+vi.mock("next/navigation", () => ({
+    usePathname: () => "/manage/participants",
+    useRouter: () => ({replace: (url: string) => {nav.state.search = url.split("?")[1] ?? ""; window.history.replaceState(null, "", url); nav.listeners.forEach(listener => listener());}}),
+    useSearchParams: () => new URLSearchParams(useSyncExternalStore(listener => {nav.listeners.add(listener); return () => nav.listeners.delete(listener);}, () => nav.state.search, () => nav.state.search)),
+}));
 vi.mock("next/link", () => ({default: ({href, children}: {href: string; children: React.ReactNode}) => <a href={href}>{children}</a>}));
 vi.mock("@/api/manage", async original => ({...(await original() as object), getManageConfig: async () => ({AllowPseudonyms: false})}));
 vi.mock("@/api/manageParticipantForm", async original => ({...(await original() as object), getManageParticipantForm: async () => form}));
@@ -27,6 +34,7 @@ vi.mock("@/api/manageStaffFields", () => ({
 vi.mock("@/api/manageParticipants", async original => ({
     ...(await original() as object),
     decideManageParticipant: vi.fn(async () => ({})),
+    getManageParticipant: async (_event: string, id: string) => ({...rows.find(row => row.UserID === id)!, TeamRole: null, JoinedVia: "open", Attempts: 0, Solves: 0}),
     getManageParticipantsTable: async () => ({Items: rows, Total: rows.length, Page: 1, PageSize: 25, Counts: {Participants: rows.length, Applications: 0, Invitations: 0}}),
 }));
 
@@ -38,6 +46,8 @@ const person = (id: string, name: string, extra: Partial<ManageParticipant> = {}
 });
 
 beforeEach(() => {
+    nav.state.search = "";
+    window.history.replaceState(null, "", "/manage/participants");
     form = {Version: 2, Enabled: true, Required: true, Document: {blocks: [
         field("city", "Місто", {required: true}), field("note", "Нотатка організаторів", {input: "long_text", staffOnly: true}),
     ]}};

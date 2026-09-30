@@ -2,13 +2,14 @@
 
 import {Fragment, useState, type KeyboardEvent, type MouseEvent} from "react";
 import Link from "next/link";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {getManageConfig} from "@/api/manage";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
-import {decideManageParticipant, getManageParticipantsTable, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
+import {decideManageParticipant, getManageParticipant, getManageParticipantsTable, participantListKind, resendManageInvitation, revokeManageInvitation, setIndividualParticipantHidden, type ManageParticipant, type ParticipantStatus} from "@/api/manageParticipants";
 import {getManageTeams} from "@/api/manageTeams";
 import {ManageDialog} from "./invites/ManageDialog";
 import {EventButton} from "@/components/ui/EventButton";
@@ -26,6 +27,10 @@ import {ManageTable, ManageTablePagination, ManageTableSearch} from "./ManageTab
 import {participantTabHref, participantTabs, type ParticipantTab} from "./participantTabs";
 import {useManager} from "./ManagerShell";
 import {t, tPlural} from "@/i18n/t";
+import {EventLoading} from "@/components/event/EventLoading";
+import {EventLoadError} from "@/components/event/EventLoadError";
+import {EmptyState} from "@/components/ui/EmptyState";
+import {ParticipantFacts} from "./ParticipantFacts";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {formatDateTime, zoneOffset} from "@/utils/dateTime";
 
@@ -52,12 +57,28 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     const isBusy = (userID?: string) => !!userID && busyIDs.includes(userID);
     const [confirm, setConfirm] = useState<{kind: "reject" | "revoke"; participant: ManageParticipant} | null>(null);
     const [confirmError, setConfirmError] = useState("");
-    const [opened, setOpened] = useState<ManageParticipant | null>(null);
+    // The open participant lives in the URL (`?participant=<userID>`), so a modal is linkable and survives reloads.
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const openedID = searchParams?.get("participant") || null;
+    function setOpened(participant: Pick<ManageParticipant, "UserID"> | null) {
+        const params = new URLSearchParams(window.location.search);
+        if (participant) params.set("participant", participant.UserID); else params.delete("participant");
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, {scroll: false});
+    }
     const [inviteOpen, setInviteOpen] = useState(false);
     const showAnswers = tab !== "invitations";
     const formQuery = useQuery({queryKey: ["event-management-participant-form", eventID], queryFn: () => getManageParticipantForm(eventID), refetchOnWindowFocus: false});
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const teamsQuery = useQuery({queryKey: ["event-management-teams", eventID, "options"], queryFn: () => getManageTeams(eventID, null, {}, 200), enabled: teamMode, refetchOnWindowFocus: false});
+    const detailQuery = useQuery({
+        queryKey: ["event-management-participant", eventID, openedID],
+        queryFn: () => getManageParticipant(eventID, openedID!),
+        enabled: !!openedID, refetchOnWindowFocus: false, placeholderData: previous => previous?.UserID === openedID ? previous : undefined,
+        retry: (count, error) => !(error instanceof ManageApiError && (error.status === 404 || error.status === 400)) && count < 2,
+    });
     const fields = formFields(formQuery.data?.Document.blocks);
     const pseudonyms = !!configQuery.data?.AllowPseudonyms;
     // «Не заповнено» exists once the organizer asked everyone for the new required fields.
@@ -103,6 +124,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     async function refresh() {
         await Promise.all([
             queryClient.invalidateQueries({queryKey: ["event-management-participants", eventID]}),
+            queryClient.invalidateQueries({queryKey: ["event-management-participant", eventID]}),
             queryClient.invalidateQueries({queryKey: ["event-management-team-participants", eventID], refetchType: "all"}),
             queryClient.invalidateQueries({queryKey: ["event-management-teams", eventID]}),
         ]);
@@ -114,7 +136,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         try {
             await action();
             await refresh();
-            if (opened?.UserID === participant.UserID && participant.Status === 1) setOpened(null);
+            if (openedID === participant.UserID && participant.Status === 1) setOpened(null);
             toast.success(success);
         } catch (error) {toast.error(errorText(error, failure));}
         finally {setBusyIDs(ids => ids.filter(id => id !== participant.UserID));}
@@ -204,7 +226,12 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
 
     const pseudonymShown = shown.some(column => column.key === "@pseudonym");
     const items = query.data?.Items ?? [];
-    const current = opened ? items.find(item => item.UserID === opened.UserID) ?? opened : null;
+    // The detail endpoint is the source for the modal; a row already in the list fills it while that loads.
+    const listRow = openedID ? items.find(item => item.UserID === openedID) : undefined;
+    const detail = detailQuery.data?.UserID === openedID ? detailQuery.data : undefined;
+    const current: ManageParticipant | null = openedID ? detail ?? listRow ?? null : null;
+    const modalKind = current ? participantListKind(current) : null;
+    const notFound = !!openedID && !current && detailQuery.isError;
     const tableState = query.isPending ? "loading" : query.isError && !query.data ? "error" : items.length === 0 ? "empty" : "ready";
     return <div className="event-manage-settings event-manage-participants">
         <header className="event-manage-heading"><div><h1>{t("manage.nav.participants")}</h1><p>{teamMode ? t("manage.participants.subtitleTeams") : t("manage.participants.subtitle")}</p></div><div className="event-manage-heading__actions"><LiveStatus freshness={{kind: "manual", onRefresh: () => void query.refetch(), refreshing: query.isFetching}} updatedAt={query.dataUpdatedAt} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setInviteOpen(true)}>{t("manage.participants.invite.title")}</button>}</div></header>
@@ -234,17 +261,23 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
                 </div></td>}
             </tr>)}</tbody>
         </ManageTable>
-        <ManageDialog open={current !== null} onOpenChange={value => {if (!value) setOpened(null);}} size="md"
-            title={current ? personName(current) : ""}
+        <ManageDialog open={openedID !== null} onOpenChange={value => {if (!value) setOpened(null);}} size="md"
+            title={current ? personName(current) : notFound ? t("manage.participants.detail.notFound") : ""}
             description={current ? [current.Pseudonym && t("manage.participants.pseudonym", {pseudonym: current.Pseudonym}), current.Email, !current.Invited && t("manage.participants.submittedAt", {date: formatDateTime(current.CreatedAt)})].filter(Boolean).join(" · ") : undefined}
             footer={<>
                 <button className="ib-btn" type="button" onClick={() => setOpened(null)}>{t("common.close")}</button>
-                {canManage && current && tab === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}
-                {canManage && current && current.Status === 1 && tab === "applications" && <>
+                {canManage && current && modalKind === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}
+                {canManage && current && current.Status === 1 && modalKind === "applications" && <>
                     <button className="ib-btn" type="button" disabled={isBusy(current.UserID)} onClick={() => decide(current, "reject")}>{t("manage.participants.reject")}</button>
                     <EventButton className="ib-btn ib-btn--primary" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} onClick={() => decide(current, "approve")}>{t("manage.participants.approve")}</EventButton>
                 </>}
             </>}>
+            {notFound && <div className="event-manage-participants__modal-state">{detailQuery.error instanceof ManageApiError && (detailQuery.error.status === 404 || detailQuery.error.status === 400)
+                ? <EmptyState message={t("manage.participants.detail.notFound")} />
+                : <EventLoadError message={t("manage.participants.detail.loadFailed")} onRetry={() => void detailQuery.refetch()} error={detailQuery.error} />}</div>}
+            {openedID && !current && !notFound && <div className="event-manage-participants__modal-state"><EventLoading event={event} label={t("manage.participants.loading")} /></div>}
+            {current && (detail ? <ParticipantFacts participant={detail} teamMode={teamMode} pseudonyms={pseudonyms} />
+                : <div className="event-manage-participants__facts-state"><EventLoading event={event} compact label={t("manage.participants.loading")} /></div>)}
             {current && <AnswersList fields={fields} answers={current.Answers} />}
             {current && formQuery.data && hasStaffFields(formQuery.data) && <StaffFieldsPanel key={current.UserID} eventID={eventID} scope="participant" subjectID={current.UserID} form={formQuery.data} answers={current.Answers} canManage={canManage} onSaved={refresh} />}
             {confirmDialog(confirm !== null && current !== null)}

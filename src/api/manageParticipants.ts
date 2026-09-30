@@ -102,3 +102,21 @@ export async function getManageParticipantsTable(eventID: string, query: Partici
     if (!response.ok) throw await manageApiError(response);
     return z.object({Data: tablePageSchema}).parse(await response.json()).Data;
 }
+
+const detailSchema = participantSchema.extend({
+    // 0 captain, 1 member, null when the participant has no team.
+    TeamRole: z.union([z.literal(0), z.literal(1)]).nullish().transform(value => value ?? null),
+    JoinedVia: z.enum(["open", "approval", "invitation"]).nullish().transform(value => value ?? null),
+    Attempts: z.number().int().default(0), Solves: z.number().int().default(0),
+});
+export type ManageParticipantDetail = z.infer<typeof detailSchema>;
+
+// One participant by id (the modal opened from `?participant=`), wherever it sits in the lists. 404 = unknown.
+export async function getManageParticipant(eventID: string, userID: string): Promise<ManageParticipantDetail> {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/participants/${encodeURIComponent(userID)}`, {
+        credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
+    });
+    if (!response.ok) throw await manageApiError(response);
+    return z.object({Data: detailSchema}).parse(await response.json()).Data;
+}

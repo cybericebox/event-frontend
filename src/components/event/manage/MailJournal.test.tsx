@@ -128,8 +128,48 @@ describe("Журнал надсилання", () => {
         expect(within(table).getByText("solo@example.com")).toBeTruthy();
         fireEvent.click(screen.getAllByRole("button", {name: "Деталі надсилання: Захід завершено"})[0]);
         const dialog = screen.getByText("Деталі надсилання", {selector: "h2"}).closest("dialog")!;
-        expect(within(dialog).getAllByText("Ірина Коваль").length).toBeGreaterThan(0);
-        expect(within(dialog).getAllByText("iryna@example.com").length).toBeGreaterThan(0);
+        expect(within(dialog).getByText("Ірина Коваль (user1@example.com)")).toBeTruthy();
+        expect(within(dialog).getAllByText(/Ірина Коваль/)).toHaveLength(1);
+    });
+
+    it("shows the recipient once at the top as a participant link, not in the channel cards", async () => {
+        const uid = "0190c6a4-1111-7000-8000-000000000001";
+        mockApi([{Items: [item(1, {RecipientName: "Ірина Коваль", RecipientUserID: uid, Targets: [
+            {Channel: "email", Status: "done", Attempts: 1, Transport: "platform", Recipient: "user1@example.com", UpdatedAt: "2026-09-29T07:30:00Z"},
+            {Channel: "in_app", Status: "done", Attempts: 1, Recipient: "user1@example.com", RecipientName: "Ірина Коваль", UpdatedAt: "2026-09-29T07:30:00Z"}]})], Total: 1}]);
+        renderJournal();
+        fireEvent.click(await screen.findByRole("button", {name: "Деталі надсилання: Захід завершено"}));
+        const dialog = screen.getByText("Деталі надсилання", {selector: "h2"}).closest("dialog")!;
+        const link = within(dialog).getByRole("link", {name: "Ірина Коваль (user1@example.com)"});
+        expect(link.getAttribute("href")).toBe(`/manage/participants?participant=${uid}`);
+        expect(within(dialog).getAllByText("Одержувач")).toHaveLength(1);
+        expect(within(dialog).queryAllByText(/user1@example\.com/)).toHaveLength(1);
+    });
+
+    it("shows the recipient as plain text without a real user id", async () => {
+        mockApi([{Items: [item(1, {RecipientUserID: "00000000-0000-0000-0000-000000000000"}), item(2, {RecipientUserID: undefined})], Total: 2}]);
+        renderJournal();
+        for (const n of [0, 1]) {
+            fireEvent.click((await screen.findAllByRole("button", {name: "Деталі надсилання: Захід завершено"}))[n]);
+            const dialog = screen.getByText("Деталі надсилання", {selector: "h2"}).closest("dialog")!;
+            expect(within(dialog).getAllByText(`user${n + 1}@example.com`).length).toBeGreaterThan(0);
+            expect(within(dialog).queryByRole("link", {name: `user${n + 1}@example.com`})).toBeNull();
+            fireEvent.click(within(dialog).getAllByRole("button", {name: "Закрити"}).at(-1)!);
+        }
+    });
+
+    it("shows a 530 authentication failure as the friendly SMTP line with the raw text", async () => {
+        const raw = "email: failed to send: gomail: could not send email 1: 530 Authentication required";
+        mockApi([{Items: [item(1, {Targets: [{Channel: "email", Status: "error", Error: raw, ErrorKind: "smtp_auth", ErrorCode: "530", Attempts: 1, Transport: "event", Recipient: "user1@example.com", UpdatedAt: "2026-09-29T07:31:00Z"}]})], Total: 1}]);
+        renderJournal();
+        const table = screen.getByRole("table");
+        expect(await within(table).findByText("SMTP-сервер відхилив вхід: перевірте логін і пароль SMTP")).toBeTruthy();
+        expect(within(table).getByText(raw)).toBeTruthy();
+        expect(within(table).getByText("Технічні деталі")).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "Деталі надсилання: Захід завершено"}));
+        const dialog = screen.getByText("Деталі надсилання", {selector: "h2"}).closest("dialog")!;
+        expect(within(dialog).getByText("Помилка: SMTP-сервер відхилив вхід: перевірте логін і пароль SMTP")).toBeTruthy();
+        expect(within(dialog).getByText(raw)).toBeTruthy();
     });
 
     it("shows the human SMTP error with the raw text under «Технічні деталі»", async () => {

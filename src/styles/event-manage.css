@@ -369,6 +369,8 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-manage-results__freeze{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--ib-3)}
 .event-manage-results__freeze p{margin:0;font-size:var(--ib-fs-13)}
 .event-manage-participants{display:grid;gap:var(--ib-4)}
+.event-manage-participants__modal-state{display:grid;place-items:center;min-height:200px}
+.event-manage-participants__facts-state{display:grid;place-items:center;min-height:120px}
 .event-manage-participants__filters{display:flex;flex-wrap:wrap;gap:var(--ib-2)}
 .event-manage-participants__filter{display:inline-flex;align-items:center;gap:var(--ib-2);min-height:36px;padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-body);font:var(--ib-w-semibold) var(--ib-fs-13)/var(--ib-lh-ui) var(--ib-font);cursor:pointer}
 .event-manage-participants__filter:hover{border-color:var(--ib-brand)}
