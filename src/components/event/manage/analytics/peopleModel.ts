@@ -1,5 +1,5 @@
 import type {
-    AnalyticsBucket, AnalyticsCommsType, AnalyticsCommunications, AnalyticsParticipants, AnalyticsQuestion, FunnelStage,
+    AnalyticsBucket, AnalyticsCommsType, AnalyticsParticipants, AnalyticsQuestion, FunnelStage,
 } from "@/api/manageAnalyticsPeople";
 import {t} from "@/i18n/t";
 import {percent} from "./analyticsModel";
@@ -136,28 +136,6 @@ export const formatRate = (rate: number | null) => rate === null ? "—" : `${Ma
 
 export const commsHasData = (totals: AnalyticsCommsType) =>
     totals.EmailSent + totals.EmailErrors + totals.InAppSent + totals.InAppErrors + totals.InAppCreated > 0;
-
-export const commsHasEngagement = (totals: AnalyticsCommsType) => totals.EmailTracked > 0;
-
-// Opened and clicked emails per UTC send day (opens are approximate).
-export function emailEngagementChartOption(days: AnalyticsCommunications["EmailDaily"]) {
-    const line = (name: string, color: string, pick: (day: AnalyticsCommunications["EmailDaily"][number]) => number) => ({
-        name, type: "bar", color, emphasis: {focus: "series"}, barMaxWidth: 28,
-        data: days.map(day => [Date.parse(day.Day), pick(day)]),
-    });
-    return {
-        useUTC: true,
-        grid: {...baseGrid, bottom: 40},
-        legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
-        tooltip: {trigger: "axis", axisPointer: {type: "line"}},
-        xAxis: {type: "time", axisLine, axisLabel: {color: axisText}, splitLine: {show: false}},
-        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},
-        series: [
-            line(t("manage.analytics.comms.series.emailOpened"), palette.main, day => day.Opened),
-            line(t("manage.analytics.comms.series.emailClicked"), palette.green, day => day.Clicked),
-        ],
-    };
-}
 
 // The label of a notification type: the settings-page title when there is one,
 // else the raw code.

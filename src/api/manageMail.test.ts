@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {
     emptyMailJournalFilters, identityError, identityForm, identityInput, journalTarget, mailJournalQueryParams,
-    mailJournalTypeLabel, mailJournalTypes, mailTestType, mailTransportLabel, mailTransportLabels, targetEngagement, withSource, smtpError, smtpForm, smtpInput, type MailJournalItem,
+    mailJournalTypeLabel, mailJournalTypes, mailTestType, mailTransportLabel, mailTransportLabels, withSource, smtpError, smtpForm, smtpInput, type MailJournalItem,
 } from "./manageMail";
 
 describe("event mail identity form", () => {
@@ -73,8 +73,8 @@ describe("mail journal", () => {
 
     it("picks the target of the shown channel", () => {
         const target = {Channel: "email", Status: "done", Error: "", Attempts: 2, Transport: "platform", Recipient: "a@b.c", FallbackError: "timeout", UpdatedAt: "2026-09-29T08:00:00Z"};
-        const item: MailJournalItem = {ID: "1", NotificationType: "t", Status: "done", CreatedAt: "", UpdatedAt: "", RecipientEmail: "", IsTest: false, Links: [], Targets: [{...target, Channel: "in_app"}, target].map(row => ({...row, Tracked: false, FirstOpenedAt: null, LastOpenedAt: null, OpenCount: 0, FirstClickedAt: null, LastClickedAt: null, ClickCount: 0}))};
-        expect(journalTarget(item, "email")).toBe(item.Targets[1]);
+        const item: MailJournalItem = {ID: "1", NotificationType: "t", Status: "done", CreatedAt: "", UpdatedAt: "", RecipientEmail: "", Targets: [{...target, Channel: "in_app"}, target]};
+        expect(journalTarget(item, "email")).toBe(target);
         expect(journalTarget({...item, Targets: []}, "email")).toBeNull();
     });
 
@@ -110,22 +110,5 @@ describe("SMTP test journal kind", () => {
 
     it("filters the journal by the test type", () => {
         expect(mailJournalQueryParams({...emptyMailJournalFilters, type: mailTestType}).get("type")).toBe("smtp_test");
-    });
-});
-
-describe("email engagement of a journal target", () => {
-    const base = {Channel: "email", Status: "done", Error: "", Attempts: 1, Transport: "platform", Recipient: "a@b.c", FallbackError: "", UpdatedAt: "2026-09-29T08:00:00Z",
-        Tracked: true, FirstOpenedAt: null, LastOpenedAt: null, OpenCount: 0, FirstClickedAt: null, LastClickedAt: null, ClickCount: 0};
-
-    it("is null (a dash) for an untracked email, an in-app target or no target", () => {
-        expect(targetEngagement({...base, Tracked: false})).toBeNull();
-        expect(targetEngagement({...base, Channel: "in_app"})).toBeNull();
-        expect(targetEngagement(null)).toBeNull();
-    });
-
-    it("tells tracked-but-unopened from opened, and counts a click as an open", () => {
-        expect(targetEngagement(base)).toEqual({opened: false, openedAt: null, clicks: 0});
-        expect(targetEngagement({...base, OpenCount: 2, FirstOpenedAt: "2026-09-29T09:00:00Z"})).toEqual({opened: true, openedAt: "2026-09-29T09:00:00Z", clicks: 0});
-        expect(targetEngagement({...base, ClickCount: 3, FirstClickedAt: "2026-09-29T10:00:00Z"})).toEqual({opened: true, openedAt: "2026-09-29T10:00:00Z", clicks: 3});
     });
 });

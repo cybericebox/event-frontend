@@ -139,33 +139,6 @@ describe("Комунікації", () => {
         expect(calls.some(url => url.endsWith("/manage/analytics/communications"))).toBe(true);
     });
 
-    it("shows approximate email opens and clicks per type and in the totals, a dash without tracked emails", async () => {
-        const engaged = {EmailTracked: 8, EmailOpened: 4, EmailClicked: 2, EmailOpenRate: 0.5, EmailClickRate: 0.25};
-        mockApi({...body, Totals: {...body.Totals, ...engaged}, Types: [{...body.Types[0], ...engaged}, body.Types[1]],
-            EmailDaily: [{Day: "2026-09-25T00:00:00Z", Tracked: 5, Opened: 4, Clicked: 1}, {Day: "2026-09-26T00:00:00Z", Tracked: 3, Opened: 2, Clicked: 1}]});
-        renderWith(<AnalyticsCommunications />);
-        const stats = await screen.findByRole("region", {name: "Ключові числа"});
-        expect(within(stats).getByText("Листи відкрито (приблизно)")).toBeTruthy();
-        expect(within(stats).getByText("Відкрито 4 із 8")).toBeTruthy();
-        expect(within(stats).getByText("Перейшли в 2 із 8")).toBeTruthy();
-        const types = screen.getByRole("region", {name: "Листи й сповіщення"});
-        expect(within(types).getByRole("columnheader", {name: "Відкрито (приблизно)"})).toBeTruthy();
-        expect(within(types).getByText("4 / 8 (50%)")).toBeTruthy();
-        expect(within(types).getByText("2 / 8 (25%)")).toBeTruthy();
-        const rows = within(types).getAllByRole("row");
-        expect(within(rows[2]).getAllByText("—").length).toBeGreaterThanOrEqual(2);
-        expect(screen.getByRole("img", {name: "Відкриття й переходи за днями"})).toBeTruthy();
-    });
-
-    it("parses old payloads without the engagement fields and shows dashes", async () => {
-        mockApi(body);
-        renderWith(<AnalyticsCommunications />);
-        const stats = await screen.findByRole("region", {name: "Ключові числа"});
-        expect(within(stats).getByText("Листи відкрито (приблизно)")).toBeTruthy();
-        expect(within(stats).getAllByText("—").length).toBe(2);
-        expect(within(screen.getByRole("img", {name: "Відкриття й переходи за днями"})).getByText("Відстежуваних листів за цей період немає")).toBeTruthy();
-    });
-
     it("says so, inside the blocks, when nothing was sent", async () => {
         mockApi({...body, Totals: {...body.Totals, EmailSent: 0, EmailErrors: 0, InAppSent: 0, InAppCreated: 0, InAppRead: 0, ReadRate: null}, Types: [], Forms: []});
         renderWith(<AnalyticsCommunications />);

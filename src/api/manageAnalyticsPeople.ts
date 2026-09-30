@@ -68,16 +68,12 @@ const commsTypeSchema = z.object({
     Type: z.string(),
     EmailSent: count, EmailErrors: count, InAppSent: count, InAppErrors: count, InAppCreated: count, InAppRead: count,
     ReadRate: optionalNumber,
-    // Email engagement (approximate opens); rates are null with no tracked emails.
-    EmailTracked: count.default(0), EmailOpened: count.default(0), EmailClicked: count.default(0),
-    EmailOpenRate: optionalNumber, EmailClickRate: optionalNumber,
 });
 export type AnalyticsCommsType = z.infer<typeof commsTypeSchema>;
 
 export const AnalyticsCommunicationsSchema = z.object({
     Totals: commsTypeSchema,
     Types: list(commsTypeSchema),
-    EmailDaily: list(z.object({Day: z.string(), Tracked: count.default(0), Opened: count.default(0), Clicked: count.default(0)})),
     Forms: list(z.object({
         ID: z.string(), Title: z.string(), Registration: z.boolean(), Enabled: z.boolean(),
         Assigned: count, Completed: count, Answers: count, CompletionRate: optionalNumber,

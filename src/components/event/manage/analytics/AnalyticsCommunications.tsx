@@ -12,7 +12,7 @@ import {AnalyticsPage} from "./AnalyticsPage";
 import {AnalyticsPeriodFilter} from "./AnalyticsPeriodFilter";
 import {AnalyticsStat, AnalyticsStatGrid} from "./AnalyticsStat";
 import {useAnalyticsPeriod} from "./useAnalyticsPeriod";
-import {commsChartOption, commsHasData, commsHasEngagement, emailEngagementChartOption, formatRate, notificationTypeLabel} from "./peopleModel";
+import {commsChartOption, commsHasData, formatRate, notificationTypeLabel} from "./peopleModel";
 
 export const COMMUNICATIONS_POLL_SECONDS = 30;
 
@@ -37,8 +37,6 @@ export function AnalyticsCommunications() {
     const chart: ChartState = query.isPending ? "loading" : !data ? "error" : hasData ? "ready" : "empty";
     const tableState = (rows: number) => query.isPending ? "loading" as const : !data ? "error" as const : rows === 0 ? "empty" as const : "ready" as const;
     const totals = data?.Totals;
-    const engagementReady = !!data && data.EmailDaily.length > 0 && commsHasEngagement(data.Totals);
-    const engagementChart: ChartState = query.isPending ? "loading" : !data ? "error" : engagementReady ? "ready" : "empty";
 
     return <AnalyticsPage title={t("manage.analytics.section.communications.title")} description={t("manage.analytics.section.communications.description")}
         filter={<AnalyticsPeriodFilter period={filter} open />}>
@@ -46,20 +44,12 @@ export function AnalyticsCommunications() {
             <AnalyticsStat label={t("manage.analytics.comms.stat.emails")} value={number.format(totals.EmailSent)} note={t("manage.analytics.comms.stat.errorsNote", {count: totals.EmailErrors})} hint={t("manage.analytics.comms.stat.emailsHint")} />
             <AnalyticsStat label={t("manage.analytics.comms.stat.inApp")} value={number.format(totals.InAppSent)} note={t("manage.analytics.comms.stat.errorsNote", {count: totals.InAppErrors})} hint={t("manage.analytics.comms.stat.inAppHint")} />
             <AnalyticsStat label={t("manage.analytics.comms.stat.readRate")} value={formatRate(totals.ReadRate)} note={t("manage.analytics.comms.stat.readNote", {read: totals.InAppRead, total: totals.InAppCreated})} hint={t("manage.analytics.comms.stat.readRateHint")} />
-            <AnalyticsStat label={t("manage.analytics.comms.stat.emailOpened")} value={formatRate(totals.EmailOpenRate)} note={commsHasEngagement(totals) ? t("manage.analytics.comms.stat.openedNote", {opened: totals.EmailOpened, total: totals.EmailTracked}) : undefined} hint={t("manage.analytics.comms.stat.emailOpenedHint")} />
-            <AnalyticsStat label={t("manage.analytics.comms.stat.emailClicked")} value={formatRate(totals.EmailClickRate)} note={commsHasEngagement(totals) ? t("manage.analytics.comms.stat.clickedNote", {clicked: totals.EmailClicked, total: totals.EmailTracked}) : undefined} hint={t("manage.analytics.comms.stat.emailClickedHint")} />
         </AnalyticsStatGrid>}
 
         <AnalyticsBlock title={t("manage.analytics.comms.chart.title")} subtitle={t("manage.analytics.comms.chart.subtitle")} hint={t("manage.analytics.comms.chart.hint")}>
             <AnalyticsChart event={event} state={chart} option={hasData && data ? commsChartOption(data.Types) : undefined} height={340}
                 ariaLabel={t("manage.analytics.comms.chart.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage={t("manage.analytics.chart.loadFailed")}
                 emptyMessage={t("manage.analytics.comms.chart.empty")} onRetry={retry} error={query.error} />
-        </AnalyticsBlock>
-
-        <AnalyticsBlock title={t("manage.analytics.comms.engagement.title")} subtitle={t("manage.analytics.comms.engagement.subtitle")} hint={t("manage.analytics.comms.engagement.hint")}>
-            <AnalyticsChart event={event} state={engagementChart} option={engagementReady && data ? emailEngagementChartOption(data.EmailDaily) : undefined} height={300}
-                ariaLabel={t("manage.analytics.comms.engagement.title")} loadingLabel={t("manage.analytics.chart.loading")} errorMessage={t("manage.analytics.chart.loadFailed")}
-                emptyMessage={t("manage.analytics.comms.engagement.empty")} onRetry={retry} error={query.error} />
         </AnalyticsBlock>
 
         <AnalyticsBlock title={t("manage.analytics.comms.types.title")} subtitle={t("manage.analytics.comms.types.subtitle")} hint={t("manage.analytics.comms.types.hint")}
@@ -73,8 +63,6 @@ export function AnalyticsCommunications() {
                         <th scope="col" className="ib-num">{t("manage.analytics.comms.types.col.inAppSent")}</th>
                         <th scope="col" className="ib-num">{t("manage.analytics.comms.types.col.inAppErrors")}</th>
                         <th scope="col" className="ib-num">{t("manage.analytics.comms.types.col.read")}</th>
-                        <th scope="col" className="ib-num">{t("manage.analytics.comms.types.col.opened")}</th>
-                        <th scope="col" className="ib-num">{t("manage.analytics.comms.types.col.clicked")}</th>
                     </tr>}>
                     <tbody>{(data?.Types ?? []).map(row => <tr key={row.Type}>
                         <td><div className="event-manage-table__person"><strong>{notificationTypeLabel(row.Type)}</strong>{row.Type && <small>{row.Type}</small>}</div></td>
@@ -83,8 +71,6 @@ export function AnalyticsCommunications() {
                         <td className="ib-num">{number.format(row.InAppSent)}</td>
                         <td className="ib-num">{number.format(row.InAppErrors)}</td>
                         <td className="ib-num">{row.InAppCreated > 0 ? `${number.format(row.InAppRead)} / ${number.format(row.InAppCreated)} (${formatRate(row.ReadRate)})` : "—"}</td>
-                        <td className="ib-num">{commsHasEngagement(row) ? `${number.format(row.EmailOpened)} / ${number.format(row.EmailTracked)} (${formatRate(row.EmailOpenRate)})` : "—"}</td>
-                        <td className="ib-num">{commsHasEngagement(row) ? `${number.format(row.EmailClicked)} / ${number.format(row.EmailTracked)} (${formatRate(row.EmailClickRate)})` : "—"}</td>
                     </tr>)}</tbody>
                 </ManageTable>
             </div>
