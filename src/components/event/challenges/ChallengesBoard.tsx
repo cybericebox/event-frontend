@@ -104,7 +104,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     const banner = <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
     if (board.isPending) return <EventLoading label={t("challenges.loading")} />;
     if (board.isError) return <Page banners={banner}><EventLoadError message={t("challenges.moderators.unavailableTitle")} error={board.error} onRetry={() => void board.refetch()} /></Page>;
-    return <EventVpnProvider eventID={event.EventID} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
+    return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
         <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode finished={finished} showDifficulty showHints
             userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner} />
     </EventVpnProvider>;

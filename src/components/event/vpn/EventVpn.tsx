@@ -1,6 +1,6 @@
 "use client";
 
-import {MODERATORS_VPN_FILE, PARTICIPANT_VPN_FILE} from "@/utils/wireguard";
+import {eventVpnFileName} from "@/utils/wireguard";
 import {createContext, useContext, useMemo, useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ArrowUpRight, Download, ShieldAlert, ShieldCheck, ShieldEllipsis, ShieldOff} from "lucide-react";
@@ -39,7 +39,7 @@ function downloadText(text: string, name: string) {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function VpnModal({eventID, moderators, status, open, onClose}: {eventID: string; moderators: boolean; status: StandStatus | null; open: boolean; onClose: () => void}) {
+function VpnModal({eventID, eventTag, moderators, status, open, onClose}: {eventID: string; eventTag: string; moderators: boolean; status: StandStatus | null; open: boolean; onClose: () => void}) {
     const [issuing, setIssuing] = useState(false);
     const [error, setError] = useState("");
     const probe = useQuery({queryKey: ["event-vpn-status", eventID], queryFn: () => getVPNStatus(eventID), enabled: open && !moderators && status === "ready", retry: false, refetchOnWindowFocus: false});
@@ -48,7 +48,7 @@ function VpnModal({eventID, moderators, status, open, onClose}: {eventID: string
         setIssuing(true);
         setError("");
         try {
-            downloadText(moderators ? await getModeratorVPNConfig(eventID) : await issueVPNConfig(eventID), moderators ? MODERATORS_VPN_FILE : PARTICIPANT_VPN_FILE);
+            downloadText(moderators ? await getModeratorVPNConfig(eventID) : await issueVPNConfig(eventID), eventVpnFileName(eventTag));
         } catch (failure) {
             setError(failure instanceof VPNApiError && failure.status === 404 ? t("vpn.error.notReady") : t("vpn.error.failed"));
         } finally {
@@ -76,7 +76,7 @@ function VpnModal({eventID, moderators, status, open, onClose}: {eventID: string
 }
 
 // VPN is shown only when the event has infrastructure tasks; it never blocks anything.
-export function EventVpnProvider({eventID, enabled, moderators = false, children}: {eventID: string; enabled: boolean; moderators?: boolean; children: ReactNode}) {
+export function EventVpnProvider({eventID, eventTag, enabled, moderators = false, children}: {eventID: string; eventTag: string; enabled: boolean; moderators?: boolean; children: ReactNode}) {
     const [open, setOpen] = useState(false);
     const own = useQuery({queryKey: ["event-own-stand", eventID], queryFn: () => getOwnStandStatus(eventID), enabled: enabled && !moderators, retry: false, refetchInterval: 30000, refetchOnWindowFocus: false});
     const labs = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), enabled: enabled && moderators, retry: false, refetchInterval: 30000, refetchOnWindowFocus: false});
@@ -84,7 +84,7 @@ export function EventVpnProvider({eventID, enabled, moderators = false, children
     const value = useMemo(() => ({available: enabled, status, openVpn: () => setOpen(true)}), [enabled, status]);
     return <VpnContext.Provider value={value}>
         {children}
-        {enabled && <VpnModal eventID={eventID} moderators={moderators} status={status} open={open} onClose={() => setOpen(false)} />}
+        {enabled && <VpnModal eventID={eventID} eventTag={eventTag} moderators={moderators} status={status} open={open} onClose={() => setOpen(false)} />}
     </VpnContext.Provider>;
 }
 

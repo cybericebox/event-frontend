@@ -8,6 +8,8 @@ export function wireguardFileName(base: string): string {
     return `${name}.conf`;
 }
 
-// The two configs of an event: the participant's and the moderators team's.
-export const PARTICIPANT_VPN_FILE = wireguardFileName("cybericebox");
-export const MODERATORS_VPN_FILE = wireguardFileName("cybericebox-mod");
+// Every WireGuard config of an event (participant or moderators) is named after
+// the event tag: [a-z0-9], 3..64 chars, cut to the 15 an interface name allows.
+export function eventVpnFileName(eventTag: string): string {
+    return wireguardFileName(eventTag || "cybericebox");
+}

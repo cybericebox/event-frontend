@@ -1,17 +1,19 @@
 import {describe, expect, it} from "vitest";
-import {MODERATORS_VPN_FILE, PARTICIPANT_VPN_FILE, wireguardFileName} from "./wireguard";
+import {eventVpnFileName, wireguardFileName} from "./wireguard";
 
 const valid = (file: string) => /^[a-zA-Z0-9_=+.-]{1,15}\.conf$/.test(file);
 
-describe("wireguardFileName", () => {
-    it("keeps the name wg-quick accepts", () => {
-        expect(PARTICIPANT_VPN_FILE).toBe("cybericebox.conf");
-        expect(MODERATORS_VPN_FILE).toBe("cybericebox-mod.conf");
-        expect(valid(PARTICIPANT_VPN_FILE) && valid(MODERATORS_VPN_FILE)).toBe(true);
+describe("wireguard file names", () => {
+    it("names an event config after the event tag", () => {
+        expect(eventVpnFileName("autumnctf")).toBe("autumnctf.conf");
     });
-    it("cuts long names to 15 characters and replaces invalid characters", () => {
-        expect(valid(wireguardFileName("a-very-long-event-tag-moderators"))).toBe(true);
-        expect(wireguardFileName("тег заходу")).toMatch(/^[-a-zA-Z0-9_=+.]*\.conf$/);
+    it("cuts a long tag to the 15 characters wg-quick allows", () => {
+        const file = eventVpnFileName("cybersecuritychampionship2026");
+        expect(file).toBe("cybersecuritych.conf");
+        expect(valid(file)).toBe(true);
+    });
+    it("replaces invalid characters and never returns an empty name", () => {
+        expect(valid(wireguardFileName("тег заходу"))).toBe(true);
         expect(wireguardFileName("")).toBe("wg0.conf");
     });
 });

@@ -24,7 +24,7 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
 }) {
     // The VPN modal needs an admitted team; W5 serves the stand only then.
     const vpn = participantInfo.HasInfrastructureChallenges && !!ownTeam && ownTeam.Admitted !== false;
-    return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><EventVpnProvider eventID={event.EventID} enabled={vpn}><div className="event-guest-shell">
+    return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={vpn}><div className="event-guest-shell">
         <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <SiteBannerBar eventID={event.EventID} />
         <main className="event-guest-main"><div className="event-page-content"><MissingFieldsNotice eventID={event.EventID} ownTeam={ownTeam} />{children}</div></main>
