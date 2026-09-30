@@ -123,9 +123,13 @@ export async function getOwnChallengeLab(eventID: string, challengeID: string): 
 }
 
 // Starts or renews the caller's lab proxy cookie (set by the server on the lab
-// domain, HttpOnly); only its expiry comes back.
-export async function openLabSession(eventID: string, challengeID: string): Promise<{expiresAt: number}> {
-    const response = await fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/lab/session`, {method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
+// domain, HttpOnly); only its expiry comes back. Staff testing tasks as the
+// moderators team use the manage route.
+export async function openLabSession(eventID: string, challengeID: string, moderators = false): Promise<{expiresAt: number}> {
+    const path = moderators
+        ? `${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/labs/moderators/challenges/${encodeURIComponent(challengeID)}`
+        : `${baseUrl(eventID)}/${encodeURIComponent(challengeID)}`;
+    const response = await fetch(`${path}/lab/session`, {method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
     if (!response.ok) throw await failure(response);
     const data = z.object({Data: z.object({expires_at: z.string()})}).parse(await response.json()).Data;
     return {expiresAt: new Date(data.expires_at).getTime()};

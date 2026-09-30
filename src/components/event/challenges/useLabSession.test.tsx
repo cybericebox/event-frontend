@@ -9,8 +9,8 @@ vi.mock("@/api/participantChallenges", async importOriginal => ({...await import
 const {useLabSession, labSessionErrorMessage} = await import("./useLabSession");
 const {ParticipantChallengeError} = await import("@/api/participantChallenges");
 
-function Probe({challengeID, active = true}: {challengeID?: string; active?: boolean}) {
-    const {state, retry} = useLabSession("e", challengeID, active);
+function Probe({challengeID, active = true, moderators = false}: {challengeID?: string; active?: boolean; moderators?: boolean}) {
+    const {state, retry} = useLabSession("e", challengeID, active, moderators);
     return <button onClick={retry}>{state.status}</button>;
 }
 const flush = () => act(async () => { await Promise.resolve(); });
@@ -24,8 +24,14 @@ describe("useLabSession", () => {
         render(<Probe challengeID="c1" />);
         await flush();
         expect(open).toHaveBeenCalledTimes(1);
-        expect(open).toHaveBeenCalledWith("e", "c1");
+        expect(open).toHaveBeenCalledWith("e", "c1", false);
         expect(screen.getByRole("button").textContent).toBe("ready");
+    });
+
+    it("uses the manage route for the moderators team", async () => {
+        render(<Probe challengeID="c1" moderators />);
+        await flush();
+        expect(open).toHaveBeenCalledWith("e", "c1", true);
     });
 
     it("does nothing for a task without web access or a closed modal", async () => {

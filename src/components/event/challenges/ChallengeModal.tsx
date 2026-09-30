@@ -65,7 +65,7 @@ function CopyField({value, url, linkPending = false}: {value: string; url?: stri
     </div>;
 }
 
-function HostBlock({lab, pending, session, moderators, onRetry}: {lab: LabRuntime | undefined; pending: boolean; session: LabSessionState; moderators: boolean; onRetry: () => void}) {
+function HostBlock({lab, pending, session, onRetry}: {lab: LabRuntime | undefined; pending: boolean; session: LabSessionState; onRetry: () => void}) {
     const access = lab?.Access ?? [];
     const web = access.some(item => /^https?$/i.test(item.Protocol) || !!item.URL);
     return <section className="ib-cmodal__blk">
@@ -73,12 +73,11 @@ function HostBlock({lab, pending, session, moderators, onRetry}: {lab: LabRuntim
         {access.length
             ? <div className="event-cmodal__hosts">{access.map(item => {
                 const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
-                const gated = !!item.URL && !moderators && session.status !== "ready";
+                const gated = !!item.URL && session.status !== "ready";
                 return <CopyField key={`${item.Device}-${item.Port}`} value={value} url={gated && session.status === "error" ? undefined : item.URL || undefined} linkPending={gated && session.status !== "error"} />;
             })}</div>
             : <p className="ib-cmodal__hint">{pending && <BusyMark />}{pending ? t("challenges.host.checking") : t("challenges.host.preparing")}</p>}
         {session.status === "error" && <EventLoadError compact error={session.error} message={labSessionErrorMessage(session.error)} onRetry={onRetry} />}
-        {moderators && web && <p className="ib-cmodal__hint">{t("challenges.lab.moderatorsNote")}</p>}
         <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>
     </section>;
 }
@@ -179,9 +178,9 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         enabled: !!challenge?.Infrastructure && !challenge.Locked,
         retry: false, refetchInterval: 30000, refetchOnWindowFocus: false,
     });
-    // Web links need the proxy cookie; the moderators board has no participant team, so no session there.
+    // Web links need the proxy cookie; the moderators team gets it from the manage route.
     const hasWeb = !!lab.data?.Access.some(item => !!item.URL);
-    const labSession = useLabSession(eventID, challengeID, !moderators && hasWeb);
+    const labSession = useLabSession(eventID, challengeID, hasWeb, moderators);
     // The moderators board lists its own team's solves; participants see them only when the event shows counts.
     const solvesVisible = moderators || (challenge?.SolveCount !== null && challenge?.SolveCount !== undefined);
 
@@ -308,7 +307,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
-                {challenge.Infrastructure && <HostBlock lab={lab.data} pending={lab.isPending} session={labSession.state} moderators={moderators} onRetry={labSession.retry} />}
+                {challenge.Infrastructure && <HostBlock lab={lab.data} pending={lab.isPending} session={labSession.state} onRetry={labSession.retry} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={challenge} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} onUnlocked={() => onHintUnlocked?.()} />}
                 {moderators && <p className="ib-cmodal__hint event-cmodal__note">{t("challenges.modal.moderatorsNote")}</p>}
                 {accepted && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? t("challenges.modal.flagCorrect") : t("challenges.modal.flagAccepted")}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}

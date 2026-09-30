@@ -24,7 +24,7 @@ export function labSessionErrorMessage(error: unknown): string {
 // Keeps the lab proxy cookie alive while `active` (a web task is open): one call
 // on start, then a silent renewal at 80% of the lifetime; a hidden tab waits
 // until it is visible again. The cookie lives on the lab domain, nothing is kept here.
-export function useLabSession(eventID: string, challengeID: string | undefined, active: boolean): {state: LabSessionState; retry: () => void} {
+export function useLabSession(eventID: string, challengeID: string | undefined, active: boolean, moderators = false): {state: LabSessionState; retry: () => void} {
     const [state, setState] = useState<LabSessionState>({status: "idle"});
     const [attempt, setAttempt] = useState(0);
     const running = active && !!challengeID;
@@ -44,7 +44,7 @@ export function useLabSession(eventID: string, challengeID: string | undefined, 
         async function run(silent: boolean) {
             if (!silent) setState({status: "pending"});
             try {
-                const {expiresAt} = await openLabSession(eventID, challengeID!);
+                const {expiresAt} = await openLabSession(eventID, challengeID!, moderators);
                 if (stopped) return;
                 setState({status: "ready"});
                 const delay = Math.max(MIN_DELAY_MS, (expiresAt - Date.now()) * LAB_SESSION_REFRESH_SHARE);
@@ -63,7 +63,7 @@ export function useLabSession(eventID: string, challengeID: string | undefined, 
             window.clearTimeout(timer);
             document.removeEventListener("visibilitychange", onVisible);
         };
-    }, [eventID, challengeID, running, attempt]);
+    }, [eventID, challengeID, running, moderators, attempt]);
 
     return {state: running ? state : {status: "idle"}, retry: () => setAttempt(value => value + 1)};
 }

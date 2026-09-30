@@ -37,3 +37,15 @@ describe("getChallengeSolves", () => {
         expect(ParticipantChallengeError).toBeTruthy();
     });
 });
+
+describe("openLabSession", () => {
+    it("posts to the team route, or the manage route for the moderators team", async () => {
+        const {openLabSession} = await import("./participantChallenges");
+        fetchMock.mockImplementation(async () => reply({Data: {expires_at: "2026-09-30T13:00:00Z"}}));
+        expect(await openLabSession("e1", "c1")).toEqual({expiresAt: Date.parse("2026-09-30T13:00:00Z")});
+        await openLabSession("e1", "c1", true);
+        expect(fetchMock.mock.calls[0][0]).toMatch(/\/api\/events\/e1\/teams\/challenges\/c1\/lab\/session$/);
+        expect(fetchMock.mock.calls[1][0]).toBe("https://api.test/api/events/e1/manage/labs/moderators/challenges/c1/lab/session");
+        expect(fetchMock.mock.calls[1][1]).toMatchObject({method: "POST", credentials: "include"});
+    });
+});
