@@ -13,6 +13,7 @@ import {collectFormAnswers, ParticipantFormFields} from "@/components/event/Part
 import {NoTeam} from "@/components/event/participation/NoTeam";
 import {EventButton} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
+import {JoinResultCard} from "./JoinResultCard";
 import {defaultOutcome, joinOutcomes, nextStep, type JoinOutcome, type JoinPreviewStep} from "./joinPreviewModel";
 
 // What a participant sees on /join and after it, played for the organizer. State lives in
@@ -53,11 +54,8 @@ export function JoinPreview({event}: {event: PublicEventInfo}) {
                     <EventButton className="ib-btn ib-btn--primary" type="button" onClick={submit}>{invitation ? t("invite.accept") : t("shell.join.action")}</EventButton>
                 </>}
         </>}
-        {step === "result" && <div className="event-join-result">
-            <h2>{t(`joinPreview.result.${outcome}.title`)}</h2>
-            <p>{t(`joinPreview.result.${outcome}.text`)}</p>
-            <div className="event-join-result__acts"><EventButton className="ib-btn ib-btn--primary" type="button" onClick={advance}>{t("common.next")}</EventButton></div>
-        </div>}
+        {step === "result" && <JoinResultCard outcome={outcome} title={t(`joinPreview.result.${outcome}.title`)} text={t(`joinPreview.result.${outcome}.text`)}
+            action={<EventButton className="ib-btn ib-btn--primary" type="button" onClick={advance}>{t("common.next")}</EventButton>} />}
         {step === "team" && <div className="event-join-preview__team">
             <h1>{t("joinPreview.team.title")}</h1>
             <p>{t("joinPreview.team.text")}</p>

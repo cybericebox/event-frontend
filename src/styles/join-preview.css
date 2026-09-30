@@ -6,3 +6,7 @@
 .event-join-result p{max-width:52ch;color:var(--ib-dim);font-size:var(--ib-fs-14)}
 .event-join-result__acts{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--ib-3);margin-top:var(--ib-2)}
 .event-join-preview__team{display:grid;gap:var(--ib-4)}
+.event-join-result__icon{display:grid;width:72px;height:72px;place-items:center;border-radius:50%;background:var(--join-tone-bg);color:var(--join-tone)}
+.event-join-result--approved{--join-tone:var(--ib-ok);--join-tone-bg:var(--ib-ok-bg)}
+.event-join-result--pending{--join-tone:var(--ib-warn);--join-tone-bg:var(--ib-warn-bg)}
+.event-join-result--rejected{--join-tone:var(--ib-danger);--join-tone-bg:var(--ib-danger-bg)}

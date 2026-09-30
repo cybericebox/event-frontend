@@ -16,6 +16,7 @@ import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
+import {JoinResultCard} from "@/components/event/join/JoinResultCard";
 import {EventButton} from "@/components/ui/EventButton";
 import {JoinPreview} from "@/components/event/join/JoinPreview";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
@@ -76,9 +77,9 @@ export default function JoinPage() {
         {!event || identity.isPending || staff.pending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <EventLoading event={event} label={t("join.loading")} />
             : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <EventLoadError message={t("join.loadFailed")} error={identity.error ?? join.error ?? registration.error ?? invitation.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
             : !identity.data ? <SignInRedirect event={event} full={false} />
-            : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <p>{t("invite.already")}</p>
-            : status === ParticipationStatusEnum.PendingParticipationStatus ? <p>{t("join.pending")}</p>
-            : status === ParticipationStatusEnum.RejectedParticipationStatus ? <p>{t("shell.join.rejected")}</p>
+            : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <JoinResultCard outcome="approved" title={t("joinPreview.result.approved.title")} text={t("invite.already")} />
+            : status === ParticipationStatusEnum.PendingParticipationStatus ? <JoinResultCard outcome="pending" title={t("joinPreview.result.pending.title")} text={t("join.pending")} />
+            : status === ParticipationStatusEnum.RejectedParticipationStatus ? <JoinResultCard outcome="rejected" title={t("joinPreview.result.rejected.title")} text={t("shell.join.rejected")} />
             : !register?.Allowed ? <p>{reasonText(register?.Reason ?? "") || t("join.closed")}</p>
             : <>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} />}
