@@ -8,6 +8,7 @@ import {formatDateTime} from "./dateDisplay";
 import {ActionBlock, type PreviewViewer} from "./ActionBlock";
 import {PartnersBlock} from "./PartnersBlock";
 import {CountdownWindow} from "./CountdownWindow";
+import {blockDataGap, countdownTarget} from "./blockDataGaps";
 import {apiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
@@ -115,9 +116,10 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
             </section>;
             }
             if (block.type === "hero") {
-                const target = block.targetDate || variables[block.targetVariable ?? ""];
+                const target = countdownTarget(block, variables);
+                const gap = !!blockDataGap(block, variables);
                 const mass = block.variant === "mass";
-                return <section className={`ib-block ib-block-hero${mass ? " ib-mass ib-mass-waves" : ""}${block.layout === "center" ? " ib-block-hero--center" : ""}${block.timerSize !== "large" ? " ib-block-hero--timer-xl" : ""}`} key={block.id} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined}>
+                return <section className={`ib-block ib-block-hero${mass ? " ib-mass ib-mass-waves" : ""}${block.layout === "center" ? " ib-block-hero--center" : ""}${block.timerSize !== "large" ? " ib-block-hero--timer-xl" : ""}`} key={block.id} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined} data-preview-gap={(gap && preview) || undefined}>
                     <div className="ib-block__in">
                         {block.by && <p className="ib-block-hero__by">{render(block.by, "by")}</p>}
                         {block.kicker && <span className="ib-block-hero__kicker">{render(block.kicker, "kicker")}</span>}
@@ -125,7 +127,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                         <div className="ib-block-hero__row">
                             <dl className="ib-block-hero__facts">{(block.items ?? []).map((item, index) => <div key={index}><dt>{render(item.label, `item:${index}:label`)}</dt><dd>{render(item.value, `item:${index}:value`)}</dd></div>)}</dl>
                             <div className="ib-block-hero__aside">
-                                {(block.targetVariable || block.targetDate) && <CountdownValue target={typeof target === "string" ? target : null} display={block.timerDisplay} />}
+                                {(block.targetVariable || block.targetDate) && (!gap || preview) && <CountdownValue target={target} display={block.timerDisplay} />}
                                 {block.note && <p className="ib-block-hero__note">{render(block.note, "note")}</p>}
                             </div>
                         </div>
@@ -156,9 +158,11 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 return <ActionBlock key={block.id} id={blockElementID(block)} title={render(block.title, "title")} text={render(block.text, "text")} variant={block.variant} alignment={block.actionAlignment} selected={selectedBlockId === block.id} primaryHeading={block.id === primaryID} preview={preview} previewViewer={previewViewer} actions={[block.action, block.secondaryAction].filter(action => !!action).map(action => ({label: render(action.label, action === block.action ? "action:label" : "secondaryAction:label"), kind: action.kind, href: render(action.href, action === block.action ? "action:href" : "secondaryAction:href")}))} registrationOpen={variables["event.registrationOpen"] === true} joinPolicy={String(variables["event.joinPolicy"] ?? "")} startAt={String(variables["event.startAt"] ?? "")} finishAt={String(variables["event.effectiveFinishAt"] ?? "")} eventID={eventID ?? ""} eventTag={String(variables["event.tag"] ?? "")} />;
             }
             if (block.type === "countdown") {
-                const target = block.targetDate || variables[block.targetVariable ?? ""];
+                const target = countdownTarget(block, variables);
+                const gap = !!blockDataGap(block, variables);
+                if (gap && !preview) return null;
                 const showFrom = block.showFromSource === "custom" ? block.showFromDate : block.showFromSource === "event" ? variables[block.showFromVariable ?? ""] : null;
-                return <CountdownWindow key={block.id} showFrom={typeof showFrom === "string" ? showFrom : null} target={typeof target === "string" ? target : null} hideAfterFinish={block.hideAfterFinish}><section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}${!block.title && !block.text ? " ib-block-countdown--timer-only" : ""}${block.timerSize === "xl" ? " ib-block-countdown--timer-xl" : ""}${block.surface === "frame" ? " ib-block-countdown--frame" : ""} ib-block-countdown--text-${block.verticalAlignment ?? "center"}`} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in"><div>{block.title && <Heading className="ib-block-countdown__title">{render(block.title, "title")}</Heading>}{block.text && <p className="ib-block-countdown__text">{render(block.text, "text")}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} display={block.timerDisplay} /></div></div></section></CountdownWindow>;
+                return <CountdownWindow key={block.id} showFrom={typeof showFrom === "string" ? showFrom : null} target={typeof target === "string" ? target : null} hideAfterFinish={block.hideAfterFinish}><section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}${!block.title && !block.text ? " ib-block-countdown--timer-only" : ""}${block.timerSize === "xl" ? " ib-block-countdown--timer-xl" : ""}${block.surface === "frame" ? " ib-block-countdown--frame" : ""} ib-block-countdown--text-${block.verticalAlignment ?? "center"}`} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined} data-preview-gap={gap || undefined}><div className="ib-block__in"><div>{block.title && <Heading className="ib-block-countdown__title">{render(block.title, "title")}</Heading>}{block.text && <p className="ib-block-countdown__text">{render(block.text, "text")}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} display={block.timerDisplay} /></div></div></section></CountdownWindow>;
             }
             if (block.type === "partners") return <PartnersBlock key={block.id} id={blockElementID(block)} selected={selectedBlockId === block.id} heading={heading} text={render(block.text, "text")} groups={(block.groups ?? []).map((group, groupIndex) => ({
                 title: render(group.title, `group:${groupIndex}:title`),

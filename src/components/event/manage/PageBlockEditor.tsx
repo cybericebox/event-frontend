@@ -21,6 +21,7 @@ import {contentImageURL, replaceVariables} from "@/components/event/content/Cont
 import {anchorError, anchorFromText, maxAnchorLength} from "./blockAnchor";
 import {dateDisplayOptions, formatDateTime, validDatePattern} from "@/components/event/content/dateDisplay";
 import {useEventLinkOptions} from "./useEventLinkOptions";
+import {BlockDataGapNotice} from "./BlockDataGapNotice";
 import {DateVariableFormatControls} from "./DateVariableFormatControls";
 import {updateBlockRichText} from "./richTextBlockUpdate";
 import {t} from "@/i18n/t";
@@ -458,6 +459,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
         </div>
         {error && open && !errorField && <p className="event-content-editor__block-error" id={`block-error-${block.id}`} role="alert">{errorMessage}</p>}
         {open && <div className="event-content-editor__block-body" id={bodyID}>
+            {(block.type === "countdown" || block.type === "hero") && <BlockDataGapNotice block={block} values={values} catalog={catalog} />}
             {block.type === "section" && inputField("label", t("manage.blocks.section.heading"), t("manage.blocks.field.sectionTitle"), false, true)}
             {block.type === "section" && <div className="event-manage-field"><FieldLabel label={t("manage.blocks.section.align")} required help={t("manage.blocks.section.alignHelp")} /><EventSelect ariaLabel={t("manage.blocks.section.align")} value={block.variant ?? "left"} options={[{value: "left", label: t("manage.blocks.align.left")}, {value: "center", label: t("manage.blocks.align.center")}, {value: "right", label: t("manage.blocks.align.right")}, {value: "justify", label: t("manage.blocks.align.justify")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>}
             {block.type === "text" && richField("richText", t("manage.blocks.text.content"))}

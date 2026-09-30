@@ -4398,5 +4398,10 @@
   "manage.participants.detail.solves": "Tasks solved",
   "manage.participants.detail.attempts": "Attempts",
   "manage.participants.detail.notFound": "Participant not found",
-  "manage.participants.detail.loadFailed": "Could not load the participant"
+  "manage.participants.detail.loadFailed": "Could not load the participant",
+  "manage.blocks.gap.countdown": "Date is not set: the block is not shown on the site",
+  "manage.blocks.gap.countdownNamed": "Date is not set (\"{name}\"): the block is not shown on the site",
+  "manage.blocks.gap.hero": "Timer date is not set: the timer is not shown on the site",
+  "manage.blocks.gap.heroNamed": "Timer date is not set (\"{name}\"): the timer is not shown on the site",
+  "manage.blocks.gap.open": "Set up dates"
 }
