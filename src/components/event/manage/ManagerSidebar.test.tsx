@@ -138,7 +138,7 @@ describe("participation navigation", () => {
     });
 
     describe("return to administration", () => {
-        const back = () => screen.queryByRole("link", {name: "Повернутися до адміністрування"});
+        const back = () => screen.queryByRole("link", {name: "Повернутися до адмінки"});
         it("is hidden without an origin", () => {
             renderSidebar(0);
             expect(back()).toBeNull();

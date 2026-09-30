@@ -54,6 +54,7 @@ export function ParticipationPage() {
         </div>;
     }
     if (previewing && previewStats.unavailable) return <div className="event-participation"><Heading /><EmptyState message={t("participation.preview.noModerators")} /></div>;
+    if (previewing && previewStats.notMember) return <div className="event-participation"><Heading /><EmptyState message={t("participation.preview.notMember")} /></div>;
     if (access && !info) return <EventLoading label={t("participation.loading")} />;
     if (!explicit && captain && members.isPending) return <EventLoading label={t("participation.loading")} />;
     const started = Date.parse(event.StartTime) <= now;

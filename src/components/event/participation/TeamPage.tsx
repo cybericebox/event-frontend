@@ -219,6 +219,7 @@ export function TeamTab() {
     const finished = !!event.FinishTime && Date.parse(event.FinishTime) <= now;
     if (previewing) {
         if (previewStats.unavailable) return <EmptyState message={t("participation.preview.noModerators")} />;
+        if (previewStats.notMember) return <EmptyState message={t("participation.preview.notMember")} />;
         if (previewStats.state === "loading") return <EventLoading event={event} label={t("participation.loading")} />;
         if (!previewStats.stats) return <EventLoadError message={t("participation.team.loadFailed")} error={previewStats.error} onRetry={previewStats.retry} />;
     }

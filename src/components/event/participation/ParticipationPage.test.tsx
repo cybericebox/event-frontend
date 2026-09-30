@@ -177,6 +177,17 @@ it("explains in one empty state that the moderators team does not exist yet (409
     expect(screen.queryByRole("tablist")).toBeNull();
 });
 
+it("explains in one empty state that read-only staff are not in the moderators team (403)", async () => {
+    window.history.replaceState(null, "", "/participation");
+    state.guest = event;
+    state.staff = true;
+    state.statsStatus = 403;
+    view();
+    expect(await screen.findByText(/не входите до команди модераторів/)).toBeTruthy();
+    expect(document.querySelectorAll("[data-empty-state]").length).toBe(1);
+    expect(screen.queryByRole("tablist")).toBeNull();
+});
+
 it("asks a visitor with a join link to register first and remembers the code", async () => {
     state.guest = event;
     window.history.replaceState(null, "", "/participation?tab=team&join=abc");
