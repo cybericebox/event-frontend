@@ -123,7 +123,7 @@ export function blockDataWarning(block: ContentBlock, values: Record<string, Con
     if (!gap) return null;
     const name = gap.variable ? catalog.find(item => item.name === gap.variable)?.label : undefined;
     const key = block.type === "hero" ? "hero" : "countdown";
-    return {message: name ? t(`manage.blocks.gap.${key}Named`, {name}) : t(`manage.blocks.gap.${key}`), href: "/manage/schedule", link: t("manage.blocks.action.warning.scheduleLink")};
+    return {message: name ? t(`manage.blocks.action.warning.${key}Named`, {name}) : t(`manage.blocks.action.warning.${key}`), href: "/manage/schedule", link: t("manage.blocks.action.warning.scheduleLink")};
 }
 
 /**

@@ -36,7 +36,7 @@ it("keeps the dimmed block in the preview", () => {
 
 it("names the missing field in the editor warning", () => {
     const warning = blockDataWarning(countdown, {}, catalog);
-    expect(warning?.message).toBe(t("manage.blocks.gap.countdownNamed", {name: "Час завершення заходу"}));
+    expect(warning?.message).toBe(t("manage.blocks.action.warning.countdownNamed", {name: "Час завершення заходу"}));
     expect(warning?.href).toBe("/manage/schedule");
 });
 
