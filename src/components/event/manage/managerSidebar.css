@@ -14,3 +14,8 @@
 .event-manage-sidebar__tip{flex:1;min-width:0}
 .event-manage-sidebar__divider{height:1px;margin:var(--ib-1) var(--ib-2);border:0;background:var(--ib-brand-line)}
 .ib-admin-side__foot{display:grid;gap:2px}
+.event-manage-sidebar__items{padding-top:var(--ib-1)}
+.event-manage-sidebar__heading{font-weight:600}
+.event-manage-sidebar__items .ib-admin-side__item{font-size:13px}
+.event-manage-sidebar__items .ib-admin-side__item:not([aria-current="page"]){color:var(--ib-on-brand-3)}
+.event-manage-sidebar__items .ib-admin-side__item:not([aria-current="page"]):hover{color:var(--ib-on-brand)}
