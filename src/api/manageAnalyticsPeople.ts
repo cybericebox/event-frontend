@@ -71,7 +71,19 @@ const commsTypeSchema = z.object({
 });
 export type AnalyticsCommsType = z.infer<typeof commsTypeSchema>;
 
+const funnelsSchema = z.object({
+    Invitations: z.object({Sent: count.default(0), Accepted: count.default(0), AcceptRate: optionalNumber, MedianAcceptSeconds: optionalNumber}),
+    Registration: z.object({Started: count.default(0), Completed: count.default(0), CompletionRate: optionalNumber}),
+    Applications: z.object({
+        Submitted: count.default(0), Decided: count.default(0), Approved: count.default(0), Rejected: count.default(0),
+        DecidedRate: optionalNumber, ApprovedRate: optionalNumber, RejectedRate: optionalNumber, MedianDecisionSeconds: optionalNumber,
+    }),
+});
+export type AnalyticsFunnels = z.infer<typeof funnelsSchema>;
+
 export const AnalyticsCommunicationsSchema = z.object({
+    // Absent in payloads of an older backend: no funnel cards then.
+    Funnels: funnelsSchema.nullish().transform(value => value ?? null),
     Totals: commsTypeSchema,
     Types: list(commsTypeSchema),
     Forms: list(z.object({

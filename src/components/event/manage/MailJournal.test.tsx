@@ -116,4 +116,49 @@ describe("Журнал надсилання", () => {
         fireEvent.click(await screen.findByRole("menuitemradio", {name: "Очікує"}));
         await waitFor(() => expect(urls.at(-1)).toContain("status=pending"));
     });
+
+    it("shows the in-app recipient user as name and email, in the row and in the details", async () => {
+        mockApi([{Items: [item(1, {RecipientName: "Ірина Коваль", Targets: [{Channel: "in_app", Status: "done", Attempts: 1, Recipient: "iryna@example.com", RecipientName: "Ірина Коваль", UpdatedAt: "2026-09-29T07:30:00Z"}]}), item(2, {RecipientEmail: "", Targets: [{Channel: "in_app", Status: "done", Attempts: 1, Recipient: "solo@example.com", UpdatedAt: "2026-09-29T07:30:00Z"}]})], Total: 2}]);
+        renderJournal();
+        fireEvent.pointerDown(await screen.findByRole("button", {name: "Канал"}), {button: 0, ctrlKey: false});
+        fireEvent.click(await screen.findByRole("menuitemradio", {name: "На сайті"}));
+        const table = screen.getByRole("table");
+        expect(await within(table).findByText("Ірина Коваль")).toBeTruthy();
+        expect(within(table).getByText("iryna@example.com")).toBeTruthy();
+        expect(within(table).getByText("solo@example.com")).toBeTruthy();
+        fireEvent.click(screen.getAllByRole("button", {name: "Деталі надсилання: Захід завершено"})[0]);
+        const dialog = screen.getByText("Деталі надсилання", {selector: "h2"}).closest("dialog")!;
+        expect(within(dialog).getAllByText("Ірина Коваль").length).toBeGreaterThan(0);
+        expect(within(dialog).getAllByText("iryna@example.com").length).toBeGreaterThan(0);
+    });
+
+    it("shows the human SMTP error with the raw text under «Технічні деталі»", async () => {
+        mockApi([{Items: [item(1, {Targets: [{Channel: "email", Status: "error", Error: "535 5.7.8 bad credentials", ErrorKind: "smtp_auth", ErrorCode: "535", FallbackError: "554 rejected", FallbackErrorKind: "smtp_other", FallbackErrorCode: "554", Attempts: 1, Transport: "event", Recipient: "user1@example.com", UpdatedAt: "2026-09-29T07:31:00Z"}]})], Total: 1}]);
+        renderJournal();
+        const table = screen.getByRole("table");
+        expect(await within(table).findByText("SMTP-сервер відхилив вхід: перевірте логін і пароль SMTP")).toBeTruthy();
+        expect(within(table).getByText("Резерв після помилки SMTP заходу: Помилка SMTP (554)")).toBeTruthy();
+        expect(within(table).getByText("535 5.7.8 bad credentials")).toBeTruthy();
+        expect(within(table).getAllByText("Технічні деталі")).toHaveLength(2);
+    });
+
+    it("keeps the previous rows on screen while the next page loads", async () => {
+        let release: (() => void) | undefined;
+        let call = 0;
+        globalThis.fetch = vi.fn(async () => {
+            call += 1;
+            if (call === 2) await new Promise<void>(resolve => { release = resolve; });
+            const page = call === 1 ? {Items: [item(1)], Total: 30, NextCursor: "c2"} : {Items: [item(2)], Total: 30};
+            return new Response(JSON.stringify({Status: {Code: 0}, Data: page}), {status: 200});
+        }) as typeof fetch;
+        renderJournal();
+        await screen.findByText("user1@example.com");
+        fireEvent.click(screen.getByRole("button", {name: "Далі"}));
+        await waitFor(() => expect(release).toBeTruthy());
+        expect(screen.getByText("user1@example.com")).toBeTruthy();
+        expect(screen.queryByText("Завантажуємо журнал…")).toBeNull();
+        release?.();
+        await screen.findByText("user2@example.com");
+        expect(screen.queryByText("user1@example.com")).toBeNull();
+    });
 });

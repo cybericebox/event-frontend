@@ -59,9 +59,14 @@ const settingsSchema = z.object({
 const testResultSchema = z.object({
     Sent: z.boolean(), Recipient: z.string().default(""), Transport: z.string().default(""), Error: z.string().default(""),
 });
+const text = z.string().nullish().transform(value => value ?? "");
 const targetSchema = z.object({
     Channel: z.string(), Status: z.string(), Error: z.string().default(""), Attempts: z.number().int().default(0),
     Transport: z.string().default(""), Recipient: z.string().default(""), FallbackError: z.string().default(""),
+    // Machine class of the SMTP failure and its reply code; "" for old rows and non-SMTP errors.
+    ErrorKind: text, ErrorCode: text, FallbackErrorKind: text, FallbackErrorCode: text,
+    // For in-app targets Recipient is the user's email and RecipientName their name.
+    RecipientName: text,
     UpdatedAt: z.string(),
 });
 const journalItemSchema = z.object({
@@ -71,6 +76,7 @@ const journalItemSchema = z.object({
     // Set when the message is one recipient of a custom broadcast («Розсилка»).
     BroadcastID: z.string().nullish(),
     RecipientEmail: z.string().nullable().optional().transform(value => value ?? ""),
+    RecipientName: text,
     Targets: z.array(targetSchema).nullable().optional().transform(value => value ?? []),
 });
 const journalPageSchema = z.object({
@@ -200,6 +206,22 @@ export function mailJournalQueryParams(filters: MailJournalFilters, cursor: stri
 // The target row of the channel shown in the journal; null = not attempted yet.
 export function journalTarget(item: MailJournalItem, channel: string): MailJournalTarget | null {
     return item.Targets.find(target => target.Channel === channel) ?? null;
+}
+
+// The recipient of a journal target: the user's name (may be empty) and email.
+export function targetRecipient(item: MailJournalItem, target: MailJournalTarget | null): {name: string; email: string} {
+    return {name: (target?.RecipientName || item.RecipientName).trim(), email: target?.Recipient || item.RecipientEmail};
+}
+
+export const smtpErrorKinds = ["smtp_auth", "smtp_rcpt", "smtp_rejected", "smtp_connect", "smtp_other"] as const;
+
+// A failure line for people: the mapped text of a known SMTP error kind with
+// the raw server text as technical details. Unknown or empty kind = the raw
+// text as it is, without details.
+export function smtpErrorLine(kind: string, code: string, raw: string): {text: string; technical: string} {
+    if (!(smtpErrorKinds as readonly string[]).includes(kind)) return {text: raw, technical: ""};
+    const key = kind === "smtp_other" ? (code ? "manage.mail.journal.smtpError.otherCode" : "manage.mail.journal.smtpError.other") : `manage.mail.journal.smtpError.${kind.slice(5)}`;
+    return {text: t(key, {code}), technical: raw};
 }
 
 // --- requests ---

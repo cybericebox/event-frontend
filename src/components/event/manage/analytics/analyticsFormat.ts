@@ -18,6 +18,11 @@ export function formatDuration(seconds: number | null): string {
         const rest = total % 60;
         return rest === 0 ? t("manage.analytics.time.minutes", {m: minutes}) : t("manage.analytics.time.minutesSeconds", {m: minutes, s: rest});
     }
+    if (total >= 86400) {
+        const days = Math.floor(total / 86400);
+        const restHours = Math.floor((total % 86400) / 3600);
+        return restHours === 0 ? t("manage.analytics.time.days", {d: days}) : t("manage.analytics.time.daysHours", {d: days, h: restHours});
+    }
     const hours = Math.floor(total / 3600);
     const restMinutes = Math.floor((total % 3600) / 60);
     return restMinutes === 0 ? t("manage.analytics.time.hours", {h: hours}) : t("manage.analytics.time.hoursMinutes", {h: hours, m: restMinutes});

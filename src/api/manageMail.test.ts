@@ -72,8 +72,8 @@ describe("mail journal", () => {
     });
 
     it("picks the target of the shown channel", () => {
-        const target = {Channel: "email", Status: "done", Error: "", Attempts: 2, Transport: "platform", Recipient: "a@b.c", FallbackError: "timeout", UpdatedAt: "2026-09-29T08:00:00Z"};
-        const item: MailJournalItem = {ID: "1", NotificationType: "t", Status: "done", CreatedAt: "", UpdatedAt: "", RecipientEmail: "", Targets: [{...target, Channel: "in_app"}, target]};
+        const target = {Channel: "email", Status: "done", Error: "", Attempts: 2, Transport: "platform", Recipient: "a@b.c", FallbackError: "timeout", ErrorKind: "", ErrorCode: "", FallbackErrorKind: "", FallbackErrorCode: "", RecipientName: "", UpdatedAt: "2026-09-29T08:00:00Z"};
+        const item: MailJournalItem = {ID: "1", NotificationType: "t", Status: "done", CreatedAt: "", UpdatedAt: "", RecipientEmail: "", RecipientName: "", Targets: [{...target, Channel: "in_app"}, target]};
         expect(journalTarget(item, "email")).toBe(target);
         expect(journalTarget({...item, Targets: []}, "email")).toBeNull();
     });

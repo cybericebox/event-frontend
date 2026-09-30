@@ -8,3 +8,7 @@
 .event-journal__result{display:inline-flex;align-items:center;gap:var(--ib-2)}
 .event-journal__flag{display:inline-flex;color:var(--ib-warn,var(--ib-dim))}
 .event-journal__flag:hover{color:var(--ib-ink)}
+.event-mail-note{font-size:var(--ib-fs-12)}
+.event-mail-technical{margin-top:2px;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-mail-technical summary{cursor:pointer}
+.event-mail-technical code{display:block;margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--ib-font-mono,monospace)}

@@ -80,3 +80,49 @@ describe("Пошта заходу: ліміти SMTP", () => {
         expect(puts).toHaveLength(0);
     });
 });
+
+describe("Пошта заходу: збереження без миготіння", () => {
+    afterEach(cleanup);
+
+    function mockPending(mode: "ok" | "error") {
+        const gate: {release?: () => void} = {};
+        globalThis.fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+            if (init?.method === "PUT") {
+                await new Promise<void>(resolve => { gate.release = resolve; });
+                if (mode === "error") return new Response(JSON.stringify({Status: {Code: 1, Message: "fail"}}), {status: 500});
+            }
+            return new Response(JSON.stringify({Status: {Code: 0}, Data: settings()}), {status: 200});
+        }) as typeof fetch;
+        return gate;
+    }
+
+    it("shows the chosen encryption at once and keeps every control enabled during a pending save", async () => {
+        const gate = mockPending("ok");
+        renderPanel();
+        const host = await screen.findByLabelText(/^Хост/) as HTMLInputElement;
+        fireEvent.change(host, {target: {value: "smtp.other.edu"}});
+        fireEvent.submit(host.closest("form")!);
+        await waitFor(() => expect(gate.release).toBeTruthy());
+        const encryption = screen.getByRole("button", {name: "Шифрування"});
+        expect((encryption as HTMLButtonElement).disabled).toBe(false);
+        expect(host.disabled).toBe(false);
+        expect((screen.getByLabelText(/^Користувач/) as HTMLInputElement).disabled).toBe(false);
+        fireEvent.pointerDown(encryption, {button: 0, ctrlKey: false});
+        fireEvent.click(await screen.findByRole("menuitemradio", {name: "TLS (465)"}));
+        expect((screen.getByLabelText(/^Порт/) as HTMLInputElement).value).toBe("465");
+        expect(screen.getByRole("button", {name: "Шифрування"}).textContent).toContain("TLS (465)");
+        gate.release?.();
+    });
+
+    it("keeps the typed values when a save fails", async () => {
+        const gate = mockPending("error");
+        renderPanel();
+        const host = await screen.findByLabelText(/^Хост/) as HTMLInputElement;
+        fireEvent.change(host, {target: {value: "smtp.other.edu"}});
+        fireEvent.submit(host.closest("form")!);
+        await waitFor(() => expect(gate.release).toBeTruthy());
+        gate.release?.();
+        await waitFor(() => expect((screen.getAllByRole("button", {name: "Зберегти"}).at(-1) as HTMLButtonElement).disabled).toBe(false));
+        expect(host.value).toBe("smtp.other.edu");
+    });
+});

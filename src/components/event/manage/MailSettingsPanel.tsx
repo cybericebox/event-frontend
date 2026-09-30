@@ -34,7 +34,10 @@ export function MailSettingsPanel() {
     const query = useQuery({queryKey, queryFn: () => getEventMailSettings(eventID), refetchOnWindowFocus: false});
     const [identityDraft, setIdentityDraft] = useState<IdentityForm | null>(null);
     const [smtpDraft, setSMTPDraft] = useState<SMTPForm | null>(null);
-    const [busy, setBusy] = useState<"identity" | "smtp" | "test" | "reset" | null>(null);
+    // Each action busies only its own button: a pending save never disables a field
+    // or another action, so editing carries on while the server answers.
+    const [busy, setBusyState] = useState({identity: false, smtp: false, test: false, reset: false});
+    const setBusy = (key: keyof typeof busy, value: boolean) => setBusyState(current => ({...current, [key]: value}));
     const [test, setTest] = useState<MailTestResult | null>(null);
     const [confirmReset, setConfirmReset] = useState(false);
     const [resetError, setResetError] = useState("");
@@ -52,7 +55,7 @@ export function MailSettingsPanel() {
     const form = smtpDraft ?? savedSMTP;
     const smtpDirty = JSON.stringify(form) !== JSON.stringify(savedSMTP);
     const smtpValidation = smtpError(form);
-    const disabled = !canManage || busy !== null;
+    const disabled = !canManage;
     const canTest = canManage && ((!smtpDirty && !!settings.SMTP) || !smtpValidation);
 
     function applied(next: EventMailSettings) {
@@ -74,44 +77,47 @@ export function MailSettingsPanel() {
 
     async function saveIdentity(submit: FormEvent<HTMLFormElement>) {
         submit.preventDefault();
-        if (disabled || !identityDirty || identityInvalid) return;
-        setBusy("identity");
+        if (disabled || busy.identity || !identityDirty || identityInvalid) return;
+        const submitted = idForm;
+        setBusy("identity", true);
         try {
-            applied(await putEventMailIdentity(eventID, identityInput(idForm)));
-            setIdentityDraft(null);
+            applied(await putEventMailIdentity(eventID, identityInput(submitted)));
+            // Edits made while the save was pending stay in the form.
+            setIdentityDraft(current => current && JSON.stringify(current) !== JSON.stringify(submitted) ? current : null);
             toast.success(t("manage.mail.settings.saved"));
         } catch (error) {toast.error(errorText(error, t("manage.mail.settings.saveError")));}
-        finally {setBusy(null);}
+        finally {setBusy("identity", false);}
     }
 
     async function saveSMTP(submit: FormEvent<HTMLFormElement>) {
         submit.preventDefault();
-        if (disabled || !smtpDirty || smtpValidation) return;
-        setBusy("smtp");
+        if (disabled || busy.smtp || !smtpDirty || smtpValidation) return;
+        const submitted = form;
+        setBusy("smtp", true);
         try {
-            applied(await putEventMailSMTP(eventID, smtpInput(form)));
-            setSMTPDraft(null);
+            applied(await putEventMailSMTP(eventID, smtpInput(submitted)));
+            setSMTPDraft(current => current && JSON.stringify(current) !== JSON.stringify(submitted) ? current : null);
             toast.success(t("manage.mail.smtp.saved"));
         } catch (error) {toast.error(errorText(error, t("manage.mail.smtp.saveError")));}
-        finally {setBusy(null);}
+        finally {setBusy("smtp", false);}
     }
 
     async function runTest() {
-        if (disabled) return;
+        if (disabled || busy.test) return;
         // Typed values are tested as-is (an empty password means the stored one);
         // an untouched form with a stored SMTP tests the stored settings ({}).
         if (!canTest) return;
         const input = !smtpDirty && settings.SMTP ? null : smtpInput(form);
-        setBusy("test");
+        setBusy("test", true);
         setTest(null);
         try {setTest(await testEventMailSMTP(eventID, input));}
         catch (error) {toast.error(errorText(error, t("manage.mail.smtp.testError")));}
-        finally {setBusy(null);}
+        finally {setBusy("test", false);}
     }
 
     async function resetSMTP() {
-        if (disabled) return;
-        setBusy("reset");
+        if (disabled || busy.reset) return;
+        setBusy("reset", true);
         try {
             applied(await deleteEventMailSMTP(eventID));
             setSMTPDraft(null);
@@ -119,7 +125,7 @@ export function MailSettingsPanel() {
             setConfirmReset(false);
             toast.success(t("manage.mail.smtp.resetDone"));
         } catch (error) {setResetError(errorText(error, t("manage.mail.smtp.resetError")));}
-        finally {setBusy(null);}
+        finally {setBusy("reset", false);}
     }
 
     return <div className="event-manage-mail__panel">
@@ -150,7 +156,7 @@ export function MailSettingsPanel() {
             <small>{t("manage.mail.identity.inheritHint")}</small>
             {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
             {identityDirty && identityInvalid && <p className="event-manage-validation" role="alert">{t(`manage.mail.validation.${identityInvalid}`)}</p>}
-            {canManage && identityDirty && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !!identityInvalid} busy={busy === "identity"}>{t("common.save")}</EventButton></div>}
+            {canManage && identityDirty && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity}>{t("common.save")}</EventButton></div>}
         </form>
 
         <form className="event-manage-section" onSubmit={saveSMTP} aria-labelledby="mail-smtp-title">
@@ -201,12 +207,12 @@ export function MailSettingsPanel() {
             </div>}
             {canManage && <div className="event-manage-section__actions event-manage-mail__actions">
                 {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => {setResetError(""); setConfirmReset(true);}}>{t("manage.mail.smtp.usePlatform")}</button>}
-                <EventButton className="ib-btn" type="button" disabled={disabled || !canTest} onClick={() => void runTest()} busy={busy === "test"}>{t("manage.mail.smtp.test")}</EventButton>
-                <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !smtpDirty || !!smtpValidation} busy={busy === "smtp"}>{t("common.save")}</EventButton>
+                <EventButton className="ib-btn" type="button" disabled={disabled || busy.test || !canTest} onClick={() => void runTest()} busy={busy.test}>{t("manage.mail.smtp.test")}</EventButton>
+                <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.smtp || !smtpDirty || !!smtpValidation} busy={busy.smtp}>{t("common.save")}</EventButton>
             </div>}
         </form>
 
-        <ConfirmDialog open={confirmReset} onCancel={() => setConfirmReset(false)} tone="danger" busy={busy === "reset"} error={resetError}
+        <ConfirmDialog open={confirmReset} onCancel={() => setConfirmReset(false)} tone="danger" busy={busy.reset} error={resetError}
             title={t("manage.mail.smtp.resetTitle")} description={t("manage.mail.smtp.resetDescription")}
             confirmLabel={t("manage.mail.smtp.switch")} onConfirm={() => void resetSMTP()}>
             <p className="event-manage-mail__hint">{t("manage.mail.smtp.resetHint")}</p>

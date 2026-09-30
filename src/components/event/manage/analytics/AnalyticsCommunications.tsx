@@ -8,6 +8,7 @@ import {t} from "@/i18n/t";
 import type {ChartState} from "./analyticsModel";
 import {AnalyticsBlock, AnalyticsTableExport} from "./AnalyticsBlock";
 import {AnalyticsChart} from "./AnalyticsChart";
+import {AnalyticsFunnels} from "./AnalyticsFunnels";
 import {AnalyticsPage} from "./AnalyticsPage";
 import {AnalyticsPeriodFilter} from "./AnalyticsPeriodFilter";
 import {AnalyticsStat, AnalyticsStatGrid} from "./AnalyticsStat";
@@ -45,6 +46,8 @@ export function AnalyticsCommunications() {
             <AnalyticsStat label={t("manage.analytics.comms.stat.inApp")} value={number.format(totals.InAppSent)} note={t("manage.analytics.comms.stat.errorsNote", {count: totals.InAppErrors})} hint={t("manage.analytics.comms.stat.inAppHint")} />
             <AnalyticsStat label={t("manage.analytics.comms.stat.readRate")} value={formatRate(totals.ReadRate)} note={t("manage.analytics.comms.stat.readNote", {read: totals.InAppRead, total: totals.InAppCreated})} hint={t("manage.analytics.comms.stat.readRateHint")} />
         </AnalyticsStatGrid>}
+
+        {data?.Funnels && <AnalyticsFunnels funnels={data.Funnels} />}
 
         <AnalyticsBlock title={t("manage.analytics.comms.chart.title")} subtitle={t("manage.analytics.comms.chart.subtitle")} hint={t("manage.analytics.comms.chart.hint")}>
             <AnalyticsChart event={event} state={chart} option={hasData && data ? commsChartOption(data.Types) : undefined} height={340}
