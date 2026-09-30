@@ -74,7 +74,7 @@ describe("Прогрес", () => {
     it("adds a chosen team to the chart request and removes it again", async () => {
         const calls = mockApi();
         renderProgress();
-        const scoresBlock = await screen.findByRole("region", {name: "Рахунок у часі"});
+        const scoresBlock = await screen.findByRole("region", {name: "Динаміка балів"});
         await waitFor(() => expect(within(scoresBlock).getByRole("button", {name: "Додати команду"}).hasAttribute("disabled")).toBe(false));
         fireEvent.pointerDown(within(scoresBlock).getByRole("button", {name: "Додати команду"}), {button: 0, ctrlKey: false});
         fireEvent.click(await screen.findByRole("menuitemradio", {name: "Red"}));
