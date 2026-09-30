@@ -7,7 +7,7 @@ import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {
     defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityForm, identityInput,
-    mailTransportLabel, maxMailNameLength, withSource, putEventMailIdentity, putEventMailSMTP, smtpError, smtpForm, smtpInput,
+    mailTransportLabel, maxMailNameLength, withLimitSource, withSource, putEventMailIdentity, putEventMailSMTP, smtpError, smtpForm, smtpInput,
     testEventMailSMTP, tlsModeOptions, type EventMailSettings, type IdentityForm, type MailTestResult,
     type MailTLSMode, type SMTPForm,
 } from "@/api/manageMail";
@@ -20,6 +20,7 @@ import {useManager} from "./ManagerShell";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {PasswordInput} from "@/components/ui/PasswordInput";
+import {EventNumberInput} from "@/components/ui/EventNumberInput";
 
 function errorText(error: unknown, fallback: string) {
     return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback);
@@ -180,6 +181,17 @@ export function MailSettingsPanel() {
                         <small>{t(form.clearPassword ? "manage.mail.smtp.passwordWillClear" : "manage.mail.smtp.passwordKeep")}</small>
                         {canManage && <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" disabled={disabled} onClick={() => changeSMTP({clearPassword: !form.clearPassword, password: ""})}>{t(form.clearPassword ? "manage.mail.smtp.keepPassword" : "manage.mail.smtp.clearPassword")}</button>}
                     </div>}
+                </div>
+            </div>
+            <div className="event-manage-fields-two">
+                <div className="event-manage-field">
+                    <ManageFieldLabel htmlFor="mail-smtp-max-per-second" title={t("manage.mail.smtp.maxPerSecond")} help={withLimitSource(t("manage.mail.smtp.maxPerSecondHelp"), settings.Limits.PerSecondSource)} />
+                    <EventNumberInput id="mail-smtp-max-per-second" decimal value={form.maxPerSecond} placeholder={t("manage.mail.smtp.limitPlaceholder")} disabled={disabled} onChange={value => changeSMTP({maxPerSecond: value})} />
+                </div>
+                <div className="event-manage-field">
+                    <ManageFieldLabel htmlFor="mail-smtp-daily-quota" title={t("manage.mail.smtp.dailyQuota")} help={withLimitSource(t("manage.mail.smtp.dailyQuotaHelp"), settings.Limits.DailyQuotaSource)} />
+                    <EventNumberInput id="mail-smtp-daily-quota" value={form.dailyQuota} placeholder={t("manage.mail.smtp.limitPlaceholder")} disabled={disabled} onChange={value => changeSMTP({dailyQuota: value})} />
+                    {settings.Limits.DailyQuota > 0 && <small data-testid="mail-quota-used">{t("manage.mail.smtp.quotaUsed", {used: settings.Limits.Used24h, limit: settings.Limits.DailyQuota})}</small>}
                 </div>
             </div>
             {smtpDirty && smtpValidation && <p className="event-manage-validation" role="alert">{smtpValidation}</p>}

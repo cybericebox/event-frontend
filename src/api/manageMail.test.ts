@@ -33,9 +33,9 @@ describe("event mail identity form", () => {
 
 describe("event SMTP form", () => {
     it("starts from the stored SMTP without the password", () => {
-        expect(smtpForm(null)).toEqual({host: "", port: "587", tlsMode: "starttls", username: "", password: "", clearPassword: false});
-        expect(smtpForm({Host: "smtp.example.com", Port: 465, TLSMode: "tls", Username: "u", PasswordSet: true, UpdatedAt: null}))
-            .toEqual({host: "smtp.example.com", port: "465", tlsMode: "tls", username: "u", password: "", clearPassword: false});
+        expect(smtpForm(null)).toEqual({host: "", port: "587", tlsMode: "starttls", username: "", password: "", clearPassword: false, maxPerSecond: "", dailyQuota: ""});
+        expect(smtpForm({Host: "smtp.example.com", Port: 465, TLSMode: "tls", Username: "u", PasswordSet: true, UpdatedAt: null, MaxPerSecond: 0.5, DailyQuota: 50000}))
+            .toEqual({host: "smtp.example.com", port: "465", tlsMode: "tls", username: "u", password: "", clearPassword: false, maxPerSecond: "0.5", dailyQuota: "50000"});
     });
 
     it("validates host and port", () => {
@@ -46,9 +46,19 @@ describe("event SMTP form", () => {
         expect(smtpError({...form, host: "smtp.example.com", port: "65536"})).not.toBe("");
     });
 
+    it("validates the send limits: empty is no limit, otherwise positive; the rate may be fractional", () => {
+        const form = {...smtpForm(null), host: "smtp.example.com"};
+        expect(smtpError({...form, maxPerSecond: "0.5", dailyQuota: "50000"})).toBe("");
+        expect(smtpError({...form, maxPerSecond: "0"})).not.toBe("");
+        expect(smtpError({...form, maxPerSecond: "."})).not.toBe("");
+        expect(smtpError({...form, dailyQuota: "0"})).not.toBe("");
+        expect(smtpError({...form, dailyQuota: "1.5"})).not.toBe("");
+        expect(smtpInput({...form, maxPerSecond: "14", dailyQuota: "50000"})).toMatchObject({MaxPerSecond: 14, DailyQuota: 50000});
+    });
+
     it("keeps the stored password when empty and drops a typed one on clear", () => {
-        const form = {host: " smtp.example.com ", port: "587", tlsMode: "starttls" as const, username: " u ", password: "", clearPassword: false};
-        expect(smtpInput(form)).toEqual({Host: "smtp.example.com", Port: 587, TLSMode: "starttls", Username: "u", Password: "", ClearPassword: false});
+        const form = {host: " smtp.example.com ", port: "587", tlsMode: "starttls" as const, username: " u ", password: "", clearPassword: false, maxPerSecond: "", dailyQuota: ""};
+        expect(smtpInput(form)).toEqual({Host: "smtp.example.com", Port: 587, TLSMode: "starttls", Username: "u", Password: "", ClearPassword: false, MaxPerSecond: null, DailyQuota: null});
         expect(smtpInput({...form, password: "secret"}).Password).toBe("secret");
         expect(smtpInput({...form, password: "secret", clearPassword: true})).toMatchObject({Password: "", ClearPassword: true});
     });

@@ -5,7 +5,7 @@ import Link from "next/link";
 import {Info} from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {
-    emptyMailJournalFilters, getEventMailJournal, journalTarget, mailDispatchStatuses, mailJournalTypeLabel, mailJournalTypes, mailTestType, mailResultLabels, mailTransportLabel,
+    emptyMailJournalFilters, getEventMailJournal, journalTarget, mailDispatchStatuses, mailJournalTypeLabel, mailJournalTypes, mailTestType, mailResultLabels, targetResult, mailTransportLabel,
     mailTransportLabels, type MailJournalFilters, type MailJournalItem, type MailResult, type MailTransport,
 } from "@/api/manageMail";
 import {signalLabel, signalLabels} from "@/api/manageNotifications";
@@ -51,7 +51,7 @@ export function MailJournal() {
     const typeOptions = [{value: all, label: t("manage.mail.journal.allTypes")}, ...mailJournalTypes(Object.keys(signalLabels)).map(type => ({value: type, label: typeTitle(type)}))];
     const transportOptions = [{value: all, label: t("manage.mail.journal.allTransports")}, ...Object.entries(mailTransportLabels).map(([value, label]) => ({value, label}))];
     const statusOptions = [{value: all, label: t("manage.mail.journal.allStatuses")}, ...mailDispatchStatuses.map(value => ({value, label: t(`manage.mail.journal.status.${value}`)}))];
-    const resultOptions = [{value: all, label: t("manage.mail.journal.allResults")}, ...(["done", "error"] as const).map(value => ({value, label: mailResultLabels[value]}))];
+    const resultOptions = [{value: all, label: t("manage.mail.journal.allResults")}, ...(["done", "error", "deferred"] as const).map(value => ({value, label: mailResultLabels[value]}))];
 
     const toolbar = <>
         <EventSelect ariaLabel={t("manage.mail.journal.typeLabel")} value={filters.type ?? all} options={typeOptions} onValueChange={value => changeFilters({type: value === all ? null : value})} />
@@ -79,14 +79,14 @@ export function MailJournal() {
                 onPrevious={pages.previous} onNext={() => pages.next(query.data?.NextCursor ?? undefined)} onPageSize={pages.setPageSize} />}>
             <tbody>{items.map(item => {
                 const target = journalTarget(item, filters.channel);
-                const status = target?.Status === "done" || target?.Status === "error" ? target.Status : null;
+                const status = targetResult(target);
                 return <tr key={item.ID}>
                     <td className="event-manage-table__nowrap"><time dateTime={target?.UpdatedAt ?? item.CreatedAt}>{timestamp(target?.UpdatedAt ?? item.CreatedAt)}</time></td>
                     <td>{target?.Recipient || item.RecipientEmail || <span className="event-manage-table__dim">—</span>}</td>
                     <td>{item.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${item.BroadcastID}`}>{typeTitle(item.NotificationType)}</Link> : typeTitle(item.NotificationType)}{item.NotificationType === mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}</td>
                     <td><div className="event-participants-table__person">
                         <span className={`event-manage-participants__status ${status === "done" ? "is-2" : status === "error" ? "is-3" : "is-1"}`}>{status ? mailResultLabels[status] : t("manage.mail.journal.pending")}</span>
-                        {target?.Error && <small className="event-manage-mail__error">{target.Error}</small>}
+                        {target?.Error && (status === "deferred" ? <small>{target.Error}</small> : <small className="event-manage-mail__error">{target.Error}</small>)}
                         {target?.FallbackError && <small>{t("manage.mail.journal.fallbackError", {error: target.FallbackError})}</small>}
                     </div></td>
                     {email && <td className="event-manage-table__nowrap">{target?.Transport ? mailTransportLabel(target.Transport) : <span className="event-manage-table__dim">—</span>}</td>}
@@ -108,14 +108,14 @@ export function MailJournal() {
                 {detail.Targets.length === 0 ? <p className="event-manage-table__dim">{t("manage.mail.journal.detail.noTargets")}</p>
                     : <ul>{detail.Targets.map(target => <li key={target.Channel}>
                         <div className="event-mail-detail__head"><strong>{t(target.Channel === "email" ? "manage.mail.channel.email" : "manage.mail.channel.inApp")}</strong>
-                            <span className={`event-manage-participants__status ${target.Status === "done" ? "is-2" : target.Status === "error" ? "is-3" : "is-1"}`}>{target.Status === "done" || target.Status === "error" ? mailResultLabels[target.Status] : t("manage.mail.journal.pending")}</span></div>
+                            <span className={`event-manage-participants__status ${target.Status === "done" ? "is-2" : target.Status === "error" ? "is-3" : "is-1"}`}>{targetResult(target) ? mailResultLabels[targetResult(target)!] : t("manage.mail.journal.pending")}</span></div>
                         <dl className="event-mail-detail__facts">
                             <div><dt>{t("manage.mail.journal.col.recipient")}</dt><dd>{target.Recipient || "—"}</dd></div>
                             <div><dt>{t("manage.mail.journal.col.attempts")}</dt><dd>{target.Attempts}</dd></div>
                             {target.Transport && <div><dt>{t("manage.mail.journal.col.transport")}</dt><dd>{mailTransportLabel(target.Transport)}</dd></div>}
                             <div><dt>{t("manage.mail.journal.detail.updated")}</dt><dd><time dateTime={target.UpdatedAt}>{timestamp(target.UpdatedAt)}</time></dd></div>
                         </dl>
-                        {target.Error && <p className="event-manage-mail__error">{t("manage.mail.journal.detail.error", {error: target.Error})}</p>}
+                        {target.Error && (target.Status === "deferred" ? <p>{t("manage.mail.journal.detail.reason", {reason: target.Error})}</p> : <p className="event-manage-mail__error">{t("manage.mail.journal.detail.error", {error: target.Error})}</p>)}
                         {target.FallbackError && <p>{t("manage.mail.journal.fallbackError", {error: target.FallbackError})}</p>}
                     </li>)}</ul>}
             </div>}

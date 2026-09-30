@@ -50,6 +50,19 @@ describe("Журнал надсилання", () => {
         expect(within(table).getByText("SMTP заходу")).toBeTruthy();
     });
 
+    it("shows a deferred send as deferred with its reason, not as an error", async () => {
+        mockApi([{Items: [item(3, {Targets: [{Channel: "email", Status: "deferred", Error: "Відкладено: вичерпано добовий ліміт", Attempts: 0, Transport: "event", Recipient: "user3@example.com", UpdatedAt: "2026-09-29T07:31:00Z"}]})], Total: 1}]);
+        renderJournal();
+        const table = screen.getByRole("table");
+        await waitFor(() => expect(within(table).getByText("user3@example.com")).toBeTruthy());
+        expect(within(table).getByText("Відкладено")).toBeTruthy();
+        const reason = within(table).getByText("Відкладено: вичерпано добовий ліміт");
+        expect(reason.className).not.toContain("event-manage-mail__error");
+        fireEvent.click(screen.getByRole("button", {name: "Деталі надсилання: Захід завершено"}));
+        const dialog = screen.getByText("Деталі надсилання", {selector: "h2"}).closest("dialog")!;
+        expect(within(dialog).getByText("Причина: Відкладено: вичерпано добовий ліміт")).toBeTruthy();
+    });
+
     it("opens the details of a row: recipient, attempts, transport and errors", async () => {
         mockApi([{Items: [item(2, {Targets: [{Channel: "email", Status: "error", Error: "550 rejected", Attempts: 3, Transport: "event", Recipient: "user2@example.com", FallbackError: "timeout", UpdatedAt: "2026-09-29T07:31:00Z"}]})], Total: 1}]);
         renderJournal();

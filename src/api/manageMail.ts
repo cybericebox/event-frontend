@@ -2,6 +2,7 @@ import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
+import {parseNumberInput} from "@/components/ui/EventNumberInput";
 
 // W7 «Пошта»: event sender and reply-to identity, start reminder,
 // optional event SMTP and the delivery journal (spec 2026-09-29 §6).
@@ -10,7 +11,7 @@ export type MailTLSMode = "starttls" | "tls";
 // An event knows two routes: its own SMTP and the platform. The server-config
 // fallback is not an event concept: the backend reports it as the platform.
 export type MailTransport = "event" | "platform";
-export type MailResult = "done" | "error";
+export type MailResult = "done" | "error" | "deferred";
 
 export const tlsModeOptions: {value: MailTLSMode; label: string}[] = [
     {value: "starttls", label: "STARTTLS (587)"},
@@ -18,7 +19,7 @@ export const tlsModeOptions: {value: MailTLSMode; label: string}[] = [
 ];
 export const defaultPortByTLSMode: Record<MailTLSMode, number> = {starttls: 587, tls: 465};
 export const mailTransportLabels: Record<MailTransport, string> = {event: t("manage.mail.transport.event"), platform: t("manage.mail.transport.platform")};
-export const mailResultLabels: Record<MailResult, string> = {done: t("manage.mail.result.done"), error: t("manage.mail.result.error")};
+export const mailResultLabels: Record<MailResult, string> = {done: t("manage.mail.result.done"), error: t("manage.mail.result.error"), deferred: t("manage.mail.result.deferred")};
 
 export function mailTransportLabel(value: string): string {
     if (value === "env") return mailTransportLabels.platform;
@@ -28,6 +29,16 @@ export function mailTransportLabel(value: string): string {
 const smtpSchema = z.object({
     Host: z.string(), Port: z.number().int(), TLSMode: z.string(), Username: z.string(),
     PasswordSet: z.boolean(), UpdatedAt: z.string().nullable().optional(),
+    // Saved send limits of this SMTP; null = not set.
+    MaxPerSecond: z.number().nullish().transform(value => value ?? null),
+    DailyQuota: z.number().int().nullish().transform(value => value ?? null),
+});
+// The limits in effect for the event's own SMTP (saved, else none) and the
+// messages it delivered in the last 24 hours.
+const limitsSchema = z.object({
+    PerSecond: z.number().default(0), DailyQuota: z.number().int().default(0),
+    PerSecondSource: z.enum(["saved", "env", "none"]).catch("none"), DailyQuotaSource: z.enum(["saved", "env", "none"]).catch("none"),
+    Used24h: z.number().int().default(0),
 });
 const partySchema = z.object({Name: z.string().nullable().transform(value => value ?? ""), Address: z.string().nullable().transform(value => value ?? "")});
 const identitySchema = z.object({Sender: partySchema, ReplyTo: partySchema});
@@ -43,6 +54,7 @@ const settingsSchema = z.object({
     InheritedSources: inheritedSourcesSchema.default({SenderName: "none", SenderAddress: "none", ReplyToName: "none", ReplyToAddress: "none"}),
     SMTP: smtpSchema.nullable(),
     PlatformConfigured: z.boolean(),
+    Limits: limitsSchema.default({PerSecond: 0, DailyQuota: 0, PerSecondSource: "none", DailyQuotaSource: "none", Used24h: 0}),
 });
 const testResultSchema = z.object({
     Sent: z.boolean(), Recipient: z.string().default(""), Transport: z.string().default(""), Error: z.string().default(""),
@@ -66,6 +78,11 @@ const journalPageSchema = z.object({
 });
 
 export type MailParty = z.infer<typeof partySchema>;
+// A send-limit tooltip: what the field is, then whether a limit is saved.
+export function withLimitSource(help: string, source: "saved" | "env" | "none"): string {
+    return `${help} ${t(`manage.mail.limitSource.${source === "env" ? "none" : source}`)}`;
+}
+
 // A field tooltip: what the field is, then where the placeholder value comes from.
 export function withSource(help: string, source: MailFieldSource): string {
     return `${help} ${t(`manage.mail.fieldSource.${source}`)}`;
@@ -112,12 +129,13 @@ export function identityInput(form: IdentityForm): IdentityInput {
     };
 }
 
-export type SMTPForm = {host: string; port: string; tlsMode: MailTLSMode; username: string; password: string; clearPassword: boolean};
-export type SMTPInput = {Host: string; Port: number; TLSMode: MailTLSMode; Username: string; Password: string; ClearPassword: boolean};
+export type SMTPForm = {host: string; port: string; tlsMode: MailTLSMode; username: string; password: string; clearPassword: boolean; maxPerSecond: string; dailyQuota: string};
+export type SMTPInput = {Host: string; Port: number; TLSMode: MailTLSMode; Username: string; Password: string; ClearPassword: boolean; MaxPerSecond: number | null; DailyQuota: number | null};
 
 export function smtpForm(smtp: EventMailSMTP | null): SMTPForm {
     const tlsMode: MailTLSMode = smtp?.TLSMode === "tls" ? "tls" : "starttls";
-    return {host: smtp?.Host ?? "", port: smtp ? String(smtp.Port) : String(defaultPortByTLSMode[tlsMode]), tlsMode, username: smtp?.Username ?? "", password: "", clearPassword: false};
+    return {host: smtp?.Host ?? "", port: smtp ? String(smtp.Port) : String(defaultPortByTLSMode[tlsMode]), tlsMode, username: smtp?.Username ?? "", password: "", clearPassword: false,
+        maxPerSecond: smtp?.MaxPerSecond != null ? String(smtp.MaxPerSecond) : "", dailyQuota: smtp?.DailyQuota != null ? String(smtp.DailyQuota) : ""};
 }
 
 export function smtpError(form: SMTPForm): string {
@@ -125,6 +143,8 @@ export function smtpError(form: SMTPForm): string {
     if (/\s/.test(form.host.trim())) return t("manage.mail.validation.hostSpaces");
     const port = form.port.trim();
     if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) return t("manage.mail.validation.port");
+    if (Number.isNaN(parseNumberInput(form.maxPerSecond))) return t("manage.mail.validation.maxPerSecond");
+    if (Number.isNaN(parseNumberInput(form.dailyQuota, true))) return t("manage.mail.validation.dailyQuota");
     return "";
 }
 
@@ -134,6 +154,7 @@ export function smtpInput(form: SMTPForm): SMTPInput {
     return {
         Host: form.host.trim(), Port: Number(form.port.trim()), TLSMode: form.tlsMode, Username: form.username.trim(),
         Password: form.clearPassword ? "" : form.password, ClearPassword: form.clearPassword,
+        MaxPerSecond: parseNumberInput(form.maxPerSecond), DailyQuota: parseNumberInput(form.dailyQuota, true),
     };
 }
 
@@ -154,6 +175,11 @@ export function mailJournalTypeLabel(type: string, signalTitle: (type: string) =
 export function mailJournalTypes(signalTypes: string[]): string[] {
     const withTest = signalTypes.includes(mailTestType) ? signalTypes : [...signalTypes, mailTestType];
     return withTest.includes(mailBroadcastType) ? withTest : [...withTest, mailBroadcastType];
+}
+
+// Delivery result of a journal target: sent, failed or waiting for a send limit.
+export function targetResult(target: MailJournalTarget | null): MailResult | null {
+    return target?.Status === "done" || target?.Status === "error" || target?.Status === "deferred" ? target.Status : null;
 }
 
 export const mailDispatchStatuses = ["pending", "started", "done", "error"] as const;
