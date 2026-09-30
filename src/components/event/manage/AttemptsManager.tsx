@@ -4,7 +4,8 @@ import {useEffect, useState, type FormEvent, type KeyboardEvent} from "react";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {Download} from "lucide-react";
+import Link from "next/link";
+import {Download, TriangleAlert} from "lucide-react";
 import {annulManageSolve, AttemptsCursorError, attemptsLiveURL, decideManageAttempt, downloadAttemptsCSV, emptyAttemptFilters, getManageAttempts, type AttemptDecision, type AttemptFilters, type ManageAttempt} from "@/api/manageAttempts";
 import {ManageApiError} from "@/api/manage";
 import {ApiErrorCode} from "@/api/apiErrors";
@@ -13,6 +14,9 @@ import {zoneLabel} from "@/components/ui/dateTimePicker";
 import {DialogModal} from "@/components/event/DialogModal";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {useEventStream, type StreamMode} from "@/utils/eventStream";
+import {integrityPageHref} from "@/api/manageAnalyticsIntegrity";
+import {flagOf, flagTooltip} from "./analytics/integrityModel";
+import {useIntegrityFlags} from "./useIntegrityFlags";
 import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
 import {HintUnlocksLog} from "./HintUnlocksLog";
@@ -71,6 +75,15 @@ export function AttemptsManager({initialView = "attempts", initialFilters = {}}:
     </div>;
 }
 
+// The warning icon of a correct attempt whose solve has signals to review; links
+// to the integrity page on that team and task. Nothing without a flag.
+function IntegrityMarker({flag, attempt}: {flag: ReturnType<typeof flagOf>; attempt: ManageAttempt}) {
+    if (!flag) return null;
+    const text = flagTooltip(flag);
+    return <EventTooltip content={text}>{id => <Link className="event-journal__flag" href={integrityPageHref({TeamID: attempt.EventTeamID, ChallengeID: attempt.EventChallengeID})} aria-label={text} aria-describedby={id}
+        onClick={click => click.stopPropagation()} onKeyDown={key => key.stopPropagation()}><TriangleAlert size={16} aria-hidden="true" /></Link>}</EventTooltip>;
+}
+
 const ATTEMPTS_POLL_SECONDS = 10;
 
 // The journal's one live connection, shared by both views.
@@ -83,6 +96,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
     const queryClient = useQueryClient();
     const pages = useCursorPages();
     const options = useJournalOptions();
+    const flags = useIntegrityFlags(eventID);
     const [selectedID, setSelectedID] = useState<string | null>(null);
     const [draft, setDraft] = useState<{id: string; decision: AttemptDecision; reason: string} | null>(null);
     const [showExpected, setShowExpected] = useState(false);
@@ -200,7 +214,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
                 <td className="event-manage-table__nowrap"><time dateTime={attempt.ReceivedAt}>{journalTime.format(new Date(attempt.ReceivedAt))}</time></td>
                 <td><span className="event-manage-table__person"><strong>{who(attempt)}</strong>{teamMode && attempt.ParticipantName && <small>{attempt.ParticipantName}</small>}</span></td>
                 <td>{attempt.ChallengeName || t("manage.attempts.challenge")}</td>
-                <td><ResultTag attempt={attempt} /></td>
+                <td><span className="event-journal__result"><ResultTag attempt={attempt} />{attempt.Correct && <IntegrityMarker flag={flagOf(flags, attempt)} attempt={attempt} />}</span></td>
                 <td className="ib-num">{attempt.Points === null ? <span className="event-manage-table__dim">{t("manage.attempts.noPoints")}</span> : points.format(attempt.Points)}</td>
                 {canManage && <td><EventTooltip content={attempt.Answer} className="event-manage-table__answer-tip" truncated>{() => <code className="event-manage-table__answer event-journal__answer">{attempt.Answer}</code>}</EventTooltip></td>}
             </tr>)}</tbody>

@@ -5,3 +5,6 @@
 .event-journal__period .event-date-picker__trigger{width:230px;min-height:36px}
 .event-journal__actions{display:flex;align-items:center;gap:var(--ib-3);margin-left:auto;font-size:var(--ib-fs-13)}
 .event-journal__answer{display:block;font:var(--ib-fs-12)/var(--ib-lh-ui) var(--ib-mono)}
+.event-journal__result{display:inline-flex;align-items:center;gap:var(--ib-2)}
+.event-journal__flag{display:inline-flex;color:var(--ib-warn,var(--ib-dim))}
+.event-journal__flag:hover{color:var(--ib-ink)}

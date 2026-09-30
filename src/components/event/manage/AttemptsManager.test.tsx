@@ -24,11 +24,15 @@ function attempt(n: number, extra: Record<string, unknown> = {}) {
     };
 }
 
-function mockApi(page: unknown, hints: unknown[] = []) {
+type Integrity = {sensitive: boolean; flags?: unknown; flagsFail?: boolean};
+
+function mockApi(page: unknown, hints: unknown[] = [], integrity: Integrity = {sensitive: false}) {
     const calls: string[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         calls.push(url);
+        if (url.endsWith("/manage/analytics/access")) return new Response(JSON.stringify({Status: {Code: 0}, Data: {Sections: true, Sensitive: integrity.sensitive}}), {status: 200});
+        if (url.endsWith("/manage/analytics/integrity/flags")) return integrity.flagsFail ? new Response("{}", {status: 500}) : new Response(JSON.stringify({Status: {Code: 0}, Data: integrity.flags ?? []}), {status: 200});
         const data = url.includes("/solution-attempts") ? page : url.includes("/hint-unlocks") ? hints : url.includes("/manage/results") ? {Teams: []} : url.includes("/participants") ? {Items: [], Total: 0} : [];
         return new Response(JSON.stringify({Status: {Code: 0}, Data: data}), {status: 200});
     }) as typeof fetch;
@@ -90,5 +94,46 @@ describe("Журнал спроб", () => {
         const table = screen.getByRole("table");
         expect(within(table).getByRole("columnheader", {name: "Вартість"})).toBeTruthy();
         expect(await within(table).findByText("Підказка 1")).toBeTruthy();
+    });
+});
+
+describe("Журнал спроб: позначка доброчесності", () => {
+    afterEach(() => { cleanup(); manager.canManage = true; });
+    const flag = {TeamChallengeID: ids.challenge, TeamID: ids.team, ChallengeID: ids.challenge, Count: 2, Signals: ["too_fast", "burst"]};
+    const page = {Items: [attempt(1, {Correct: true, AutomaticCorrect: true, Points: 100}), attempt(2, {EventChallengeID: "0190c6a4-0000-7000-8000-000000000009", TeamChallengeID: "0190c6a4-0000-7000-8000-00000000000a", Correct: true}), attempt(3)], Total: 3};
+    const flagged = () => screen.queryAllByRole("link", {name: /Є підозрілі сигнали для цього розв'язку/});
+
+    it("marks a flagged correct attempt only, linking to the integrity page on that team and task", async () => {
+        const calls = mockApi(page, [], {sensitive: true, flags: [flag]});
+        renderManager();
+        const table = screen.getByRole("table");
+        await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(4));
+        await waitFor(() => expect(flagged()).toHaveLength(1));
+        const icon = flagged()[0];
+        expect(icon.getAttribute("aria-label")).toBe("Є підозрілі сигнали для цього розв'язку: Надто швидко, Серія розв'язань");
+        const href = new URL(icon.getAttribute("href")!, "https://event.test");
+        expect(href.pathname).toBe("/manage/analytics/integrity");
+        expect(href.searchParams.get("teamId")).toBe(ids.team);
+        expect(href.searchParams.get("challengeId")).toBe(ids.challenge);
+        expect(icon.closest("tr")).toBe(within(table).getAllByRole("row")[1]);
+        expect(calls.filter(url => url.endsWith("/integrity/flags"))).toHaveLength(1);
+    });
+
+    it("asks for nothing and shows nothing without the sensitive access", async () => {
+        const calls = mockApi(page, [], {sensitive: false, flags: [flag]});
+        renderManager();
+        await waitFor(() => expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(4));
+        await waitFor(() => expect(calls.some(url => url.endsWith("/analytics/access"))).toBe(true));
+        expect(calls.some(url => url.endsWith("/integrity/flags"))).toBe(false);
+        expect(flagged()).toHaveLength(0);
+    });
+
+    it("stays silent when the flags call fails", async () => {
+        const calls = mockApi(page, [], {sensitive: true, flagsFail: true});
+        renderManager();
+        await waitFor(() => expect(calls.some(url => url.endsWith("/integrity/flags"))).toBe(true));
+        await waitFor(() => expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(4));
+        expect(flagged()).toHaveLength(0);
+        expect(screen.queryByRole("alert")).toBeNull();
     });
 });
