@@ -6,7 +6,7 @@ import {ApiErrorCode} from "@/api/apiErrors";
 const open = vi.fn();
 vi.mock("@/api/participantChallenges", async importOriginal => ({...await importOriginal<typeof import("@/api/participantChallenges")>(), openLabSession: (...args: unknown[]) => open(...args)}));
 
-const {useLabSession, labSessionErrorMessage} = await import("./useLabSession");
+const {useLabSession, labSessionErrorMessage, resetLabSessionMemo} = await import("./useLabSession");
 const {ParticipantChallengeError} = await import("@/api/participantChallenges");
 
 function Probe({challengeID, active = true, moderators = false}: {challengeID?: string; active?: boolean; moderators?: boolean}) {
@@ -16,7 +16,7 @@ function Probe({challengeID, active = true, moderators = false}: {challengeID?: 
 const flush = () => act(async () => { await Promise.resolve(); });
 const TTL = 60 * 60 * 1000;
 
-beforeEach(() => { vi.useFakeTimers(); open.mockResolvedValue({expiresAt: Date.now() + TTL}); });
+beforeEach(() => { resetLabSessionMemo(); vi.useFakeTimers(); open.mockResolvedValue({expiresAt: Date.now() + TTL}); });
 afterEach(() => { cleanup(); vi.useRealTimers(); open.mockReset(); });
 
 describe("useLabSession", () => {
@@ -40,35 +40,46 @@ describe("useLabSession", () => {
         expect(open).not.toHaveBeenCalled();
     });
 
-    it("renews silently at 80% of the lifetime", async () => {
+    it("does not renew in a loop while the task stays open", async () => {
         render(<Probe challengeID="c1" />);
         await flush();
-        await act(async () => { vi.advanceTimersByTime(TTL * 0.79); });
+        await act(async () => { vi.advanceTimersByTime(TTL * 5); });
         expect(open).toHaveBeenCalledTimes(1);
-        await act(async () => { vi.advanceTimersByTime(TTL * 0.02); });
+    });
+
+    it("does not re-request when another task of the same event opens", async () => {
+        const view = render(<Probe challengeID="c1" />);
+        await flush();
+        view.rerender(<Probe challengeID="c2" />);
+        await flush();
+        expect(open).toHaveBeenCalledTimes(1);
+        expect(screen.getByRole("button").textContent).toBe("ready");
+    });
+
+    it("requests again after the remembered expiry passed", async () => {
+        const view = render(<Probe challengeID="c1" />);
+        await flush();
+        view.rerender(<Probe challengeID={undefined} />);
+        vi.setSystemTime(Date.now() + TTL + 1000);
+        view.rerender(<Probe challengeID="c1" />);
+        await flush();
+        expect(open).toHaveBeenCalledTimes(2);
+    });
+
+    it("retries once on 401", async () => {
+        open.mockRejectedValueOnce(new ParticipantChallengeError(401));
+        render(<Probe challengeID="c1" />);
+        await flush();
         expect(open).toHaveBeenCalledTimes(2);
         expect(screen.getByRole("button").textContent).toBe("ready");
     });
 
-    it("waits for a visible tab before renewing", async () => {
+    it("gives up after a second 401", async () => {
+        open.mockRejectedValue(new ParticipantChallengeError(401));
         render(<Probe challengeID="c1" />);
         await flush();
-        const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
-        await act(async () => { vi.advanceTimersByTime(TTL); });
-        expect(open).toHaveBeenCalledTimes(1);
-        visibility.mockReturnValue("visible");
-        await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
         expect(open).toHaveBeenCalledTimes(2);
-        visibility.mockRestore();
-    });
-
-    it("stops renewing when the modal closes", async () => {
-        const view = render(<Probe challengeID="c1" />);
-        await flush();
-        view.rerender(<Probe challengeID={undefined} />);
-        await act(async () => { vi.advanceTimersByTime(TTL * 2); });
-        expect(open).toHaveBeenCalledTimes(1);
-        expect(screen.getByRole("button").textContent).toBe("idle");
+        expect(screen.getByRole("button").textContent).toBe("error");
     });
 
     it("reports a failure and retries on demand", async () => {

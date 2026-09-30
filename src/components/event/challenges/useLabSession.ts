@@ -7,9 +7,12 @@ import {t} from "@/i18n/t";
 
 export type LabSessionState = {status: "idle" | "pending" | "ready"} | {status: "error"; error: unknown};
 
-// The refresh runs at this share of the session's remaining time, so the cookie never lapses under an open task.
-export const LAB_SESSION_REFRESH_SHARE = 0.8;
-const MIN_DELAY_MS = 5000;
+// A token lasts until the event's effective finish, so the session is requested
+// once per event and again only after the remembered expiry passes.
+const EXPIRY_MARGIN_MS = 60_000;
+const known = new Map<string, number>();
+
+export function resetLabSessionMemo() { known.clear(); }
 
 export function labSessionErrorMessage(error: unknown): string {
     if (error instanceof ParticipantChallengeError) {
@@ -21,9 +24,10 @@ export function labSessionErrorMessage(error: unknown): string {
     return t("challenges.lab.error.failed");
 }
 
-// Keeps the lab proxy cookie alive while `active` (a web task is open): one call
-// on start, then a silent renewal at 80% of the lifetime; a hidden tab waits
-// until it is visible again. The cookie lives on the lab domain, nothing is kept here.
+// Opens the lab proxy cookie while `active` (a web task is open): one request the
+// first time, none while the remembered expiry holds; a 401 is retried once, any
+// other failure is shown with a retry that always asks the server again. The
+// cookie lives on the lab domain, only its expiry is kept here.
 export function useLabSession(eventID: string, challengeID: string | undefined, active: boolean, moderators = false): {state: LabSessionState; retry: () => void} {
     const [state, setState] = useState<LabSessionState>({status: "idle"});
     const [attempt, setAttempt] = useState(0);
@@ -31,38 +35,31 @@ export function useLabSession(eventID: string, challengeID: string | undefined, 
 
     useEffect(() => {
         if (!running || !challengeID) return;
+        const key = `${eventID}:${moderators ? "m" : "p"}`;
         let stopped = false;
-        let timer: number | undefined;
-        let waitingVisible = false;
-
-        const onVisible = () => {
-            if (document.visibilityState === "visible" && waitingVisible) {
-                waitingVisible = false;
-                void run(true);
-            }
-        };
-        async function run(silent: boolean) {
-            if (!silent) setState({status: "pending"});
-            try {
-                const {expiresAt} = await openLabSession(eventID, challengeID!, moderators);
-                if (stopped) return;
+        async function run() {
+            if (attempt === 0 && (known.get(key) ?? 0) - EXPIRY_MARGIN_MS > Date.now()) {
                 setState({status: "ready"});
-                const delay = Math.max(MIN_DELAY_MS, (expiresAt - Date.now()) * LAB_SESSION_REFRESH_SHARE);
-                timer = window.setTimeout(() => {
-                    if (document.visibilityState === "hidden") waitingVisible = true;
-                    else void run(true);
-                }, delay);
+                return;
+            }
+            setState({status: "pending"});
+            try {
+                let session;
+                try {
+                    session = await openLabSession(eventID, challengeID!, moderators);
+                } catch (error) {
+                    if (!(error instanceof ParticipantChallengeError) || error.status !== 401) throw error;
+                    session = await openLabSession(eventID, challengeID!, moderators);
+                }
+                known.set(key, session.expiresAt);
+                if (!stopped) setState({status: "ready"});
             } catch (error) {
+                known.delete(key);
                 if (!stopped) setState({status: "error", error});
             }
         }
-        document.addEventListener("visibilitychange", onVisible);
-        void run(false);
-        return () => {
-            stopped = true;
-            window.clearTimeout(timer);
-            document.removeEventListener("visibilitychange", onVisible);
-        };
+        void run();
+        return () => { stopped = true; };
     }, [eventID, challengeID, running, moderators, attempt]);
 
     return {state: running ? state : {status: "idle"}, retry: () => setAttempt(value => value + 1)};
