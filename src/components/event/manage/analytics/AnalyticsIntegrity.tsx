@@ -5,12 +5,10 @@ import {Fragment, useId, useState} from "react";
 import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {ChevronDown, ChevronRight, Download, RotateCcw, SlidersHorizontal} from "lucide-react";
-import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
-import {ManageApiError} from "@/api/manage";
 import {
     clampThresholds, defaultIntegrityFilters, deleteIntegrityReview, getAnalyticsIntegrity, integrityExportPath, integrityJournalHref, integrityKinds, integrityLevels,
-    maxReviewNoteLength, putIntegrityReview, thresholdLimits, thresholdsEqual,
-    type IntegrityFilters, type IntegrityItem, type IntegrityKind, type IntegrityReviewedFilter, type IntegrityThresholds,
+    isDismissible, maxReviewNoteLength, putIntegrityReview, thresholdLimits, thresholdsEqual,
+    type IntegrityFilters, type IntegrityItem, type IntegrityKind, type IntegritySignal, type IntegrityReviewedFilter, type IntegrityThresholds,
 } from "@/api/manageAnalyticsIntegrity";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -28,7 +26,8 @@ import {t} from "@/i18n/t";
 import {formatCount, formatDateTime} from "./analyticsFormat";
 import {AnalyticsPage} from "./AnalyticsPage";
 import {AnalyticsPeriodFilter} from "./AnalyticsPeriodFilter";
-import {integrityFlagsKey, integrityKey, kindLabel, levelLabel, signalEvidence} from "./integrityModel";
+import {DismissalsPanel, DismissDialog, integrityErrorMessage, type DismissDraft} from "./IntegrityDismissals";
+import {formatClock, integrityFlagsKey, integrityKey, kindLabel, kindReason, levelLabel, signalEvidence} from "./integrityModel";
 import {loadThresholds, saveThresholds} from "./integrityThresholds";
 import {useAnalyticsAccess} from "./useAnalyticsAccess";
 import {useAnalyticsPeriod} from "./useAnalyticsPeriod";
@@ -117,10 +116,29 @@ function ReviewDialog({draft, onChange, onClose, onConfirm}: {draft: ReviewDraft
     </ConfirmDialog>;
 }
 
-function Evidence({item}: {item: IntegrityItem}) {
+function SignalChip({signal}: {signal: IntegritySignal}) {
+    const tone = signal.Kind === "cross_flag" ? "ib-tag--danger" : signal.Info ? "" : "ib-tag--warn";
+    const label = signal.Info ? t("manage.analytics.integrity.infoKind", {kind: kindLabel(signal.Kind)}) : kindLabel(signal.Kind);
+    return <span className={`ib-tag ib-tag--sm ${tone}${signal.Info ? " event-integrity__chip--muted" : ""}`} title={kindReason(signal.Kind)}>{label}</span>;
+}
+
+function Evidence({item, onDismiss}: {item: IntegrityItem; onDismiss: (item: IntegrityItem, kind: IntegrityKind, key: string) => void}) {
     const review = item.Review;
     return <div className="event-integrity__evidence">
-        <ul>{item.Signals.map((signal, index) => <li key={`${signal.Kind}-${index}`}><span className="ib-tag ib-tag--sm ib-tag--warn">{kindLabel(signal.Kind)}</span> <span>{signalEvidence(signal, item.Level)}</span></li>)}</ul>
+        <ul>{item.Signals.map((signal, index) => <li key={`${signal.Kind}-${index}`}>
+            <div className="event-integrity__signal">
+                <SignalChip signal={signal} />
+                <span>{signalEvidence(signal, item.Level)}</span>
+                {isDismissible(signal.Kind) && signal.Kind !== "shared_wrong" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onDismiss(item, signal.Kind, "")}>{t("manage.analytics.integrity.dismiss.action")}</button>}
+            </div>
+            {signal.Answers.length > 0 && <ul className="event-integrity__answers">{signal.Answers.map(answer => <li key={answer.Value}>
+                <div className="event-integrity__signal">
+                    <code className="event-integrity__value">{answer.Value}</code>
+                    <button className="ib-btn ib-btn--sm" type="button" onClick={() => onDismiss(item, signal.Kind, answer.Value)}>{t("manage.analytics.integrity.dismiss.answerAction")}</button>
+                </div>
+                <ol className="event-integrity__order">{answer.Order.map((entry, position) => <li key={`${entry.TeamID}-${entry.At}`}>{t("manage.analytics.integrity.answerOrder", {n: position + 1, team: entry.TeamName, time: formatClock(entry.At)})}</li>)}</ol>
+            </li>)}</ul>}
+        </li>)}</ul>
         {review && <p className="event-integrity__review">
             <strong>{t("manage.analytics.integrity.reviewed")}</strong> {t("manage.analytics.integrity.reviewedBy", {name: review.ReviewedBy || t("manage.analytics.integrity.reviewerUnknown"), date: formatDateTime(review.ReviewedAt)})}
             {review.Note && <span className="event-integrity__note">{review.Note}</span>}
@@ -144,6 +162,8 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
     const [thresholds, setThresholds] = useState<IntegrityThresholds | null>(() => loadThresholds(eventID));
     const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
     const [draft, setDraft] = useState<ReviewDraft | null>(null);
+    const [dismiss, setDismiss] = useState<DismissDraft | null>(null);
+    const [view, setView] = useState<"solves" | "dismissals">("solves");
     const allowed = access.data?.Sensitive === true;
     const query = useQuery({
         queryKey: [...integrityKey(eventID), filter.period.from, filter.period.to, filters, thresholds],
@@ -173,8 +193,7 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
             setDraft(null);
             toast.success(t(current.mode === "review" ? "manage.analytics.integrity.review.done" : "manage.analytics.integrity.unreview.done"));
         } catch (error) {
-            const known = error instanceof ManageApiError && (error.code === ApiErrorCode.EventAnalyticsSolveNotFound || error.code === ApiErrorCode.EventAnalyticsReviewNoteTooLong);
-            const message = known ? apiErrorMessage(error.code) : t(current.mode === "review" ? "manage.analytics.integrity.review.failed" : "manage.analytics.integrity.unreview.failed");
+            const message = integrityErrorMessage(error, t(current.mode === "review" ? "manage.analytics.integrity.review.failed" : "manage.analytics.integrity.unreview.failed"));
             setDraft({...current, busy: false, error: message});
         }
     }
@@ -199,9 +218,13 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
     const applied = data.Thresholds;
 
     return <AnalyticsPage title={title} description={description} actions={actions} filter={<AnalyticsPeriodFilter period={filter} />}>
+        <div className="ib-seg event-integrity__views" role="group" aria-label={t("manage.analytics.integrity.views")}>
+            {(["solves", "dismissals"] as const).map(value => <button key={value} type="button" aria-pressed={view === value} onClick={() => setView(value)}>{t(`manage.analytics.integrity.view.${value}`)}</button>)}
+        </div>
+        {view === "dismissals" ? <DismissalsPanel /> : <>
         <p className="event-integrity__notice">{t("manage.analytics.integrity.notice")}</p>
         <div className="event-integrity__chips" role="group" aria-label={t("manage.analytics.integrity.signalFilter")}>
-            {integrityKinds.map((kind: IntegrityKind) => <button key={kind} type="button" className="event-integrity__chip" aria-pressed={filters.signal === kind}
+            {integrityKinds.map((kind: IntegrityKind) => <button key={kind} type="button" className="event-integrity__chip" aria-pressed={filters.signal === kind} title={kindReason(kind)} data-kind={kind}
                 onClick={() => patchFilters({signal: filters.signal === kind ? null : kind})}>
                 {kindLabel(kind)} <span className="event-integrity__chip-count">{formatCount(data.Counts[kind])}</span>
             </button>)}
@@ -223,7 +246,7 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
                 <th scope="col" className="event-integrity__toggle-col"><span className="sr-only">{t("manage.analytics.integrity.col.evidence")}</span></th>
                 <th scope="col">{t("manage.analytics.integrity.col.team")}</th>
                 <th scope="col">{t("manage.analytics.integrity.col.task")}</th>
-                <th scope="col">{t("manage.analytics.integrity.col.solved")}</th>
+                <th scope="col">{t("manage.analytics.integrity.col.time")}</th>
                 <th scope="col">{t("manage.analytics.integrity.col.signals")}</th>
                 <th scope="col" className="ib-num">{t("manage.analytics.integrity.col.count")}</th>
                 <th scope="col" className="event-manage-table__actions-col"><span className="sr-only">{t("manage.analytics.integrity.col.actions")}</span></th>
@@ -239,9 +262,9 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
                         </td>
                         <td><Link href="/manage/teams">{item.TeamName}</Link></td>
                         <td><span className="event-integrity__task"><strong>{item.ChallengeName}</strong><span className="ib-tag ib-tag--sm">{levelLabel(item.Level)}</span></span></td>
-                        <td className="event-manage-table__nowrap">{formatDateTime(item.SolvedAt)}</td>
+                        <td className="event-manage-table__nowrap">{item.Solved ? formatDateTime(item.At) : <span className="event-manage-table__dim">{t("manage.analytics.integrity.unsolved")}</span>}</td>
                         <td><div className="event-manage-table__tags">
-                            {item.Signals.map((signal, index) => <span className="ib-tag ib-tag--sm ib-tag--warn" key={`${signal.Kind}-${index}`}>{kindLabel(signal.Kind)}</span>)}
+                            {item.Signals.map((signal, index) => <SignalChip key={`${signal.Kind}-${index}`} signal={signal} />)}
                             {item.Review && <span className="ib-tag ib-tag--sm ib-tag--ok">{t("manage.analytics.integrity.reviewed")}</span>}
                         </div></td>
                         <td className="ib-num">{formatCount(item.Signals.length)}</td>
@@ -252,10 +275,12 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
                                 : <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDraft({mode: "review", item, note: "", busy: false, error: null})}>{t("manage.analytics.integrity.review.action")}</button>}
                         </div></td>
                     </tr>
-                    {open && <tr className="event-integrity__detail"><td colSpan={7}><Evidence item={item} /></td></tr>}
+                    {open && <tr className="event-integrity__detail"><td colSpan={7}><Evidence item={item} onDismiss={(target, kind, keyValue) => setDismiss({item: target, kind, keyValue, scope: "event", note: "", busy: false, error: null})} /></td></tr>}
                 </Fragment>;
             })}</tbody>
         </ManageTable>
+        </>}
+        <DismissDialog draft={dismiss} onChange={patch => setDismiss(current => current && {...current, ...patch})} onClose={() => setDismiss(null)} onDone={() => setDismiss(null)} />
         <ReviewDialog draft={draft} onChange={patch => setDraft(current => current && {...current, ...patch})} onClose={() => setDraft(null)} onConfirm={() => void confirm()} />
     </AnalyticsPage>;
 }

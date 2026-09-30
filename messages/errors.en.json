@@ -48,6 +48,8 @@
   "2104": "Check the contact email and reminder hours.",
   "2205": "The solve was not found. Reload the page.",
   "2206": "The note is too long: at most 1000 characters.",
+  "2207": "This integrity pattern cannot be dismissed",
+  "2208": "Only platform admins can dismiss a pattern for the whole catalog exercise",
   "220": "Broadcast not found.",
   "221": "The broadcast is not filled in correctly.",
   "222": "This audience has no recipients.",

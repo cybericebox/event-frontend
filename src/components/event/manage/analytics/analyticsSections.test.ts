@@ -4,7 +4,7 @@ import {clampThresholds, defaultIntegrityFilters, integrityExportPath, integrity
 import type {AnalyticsReport} from "@/api/manageAnalyticsReport";
 import {journalFiltersFromParams} from "../journalViews";
 import {formatBytes, formatCpu, formatDuration, noValue} from "./analyticsFormat";
-import {emptyFlagIndex, flagOf, flagTooltip, indexFlags, kindLabel, levelLabel, signalEvidence} from "./integrityModel";
+import {emptyFlagIndex, attemptMarker, flagOf, indexFlags, kindLabel, kindReason, levelLabel, markerTooltip, signalEvidence} from "./integrityModel";
 import {loadThresholds, saveThresholds} from "./integrityThresholds";
 import {bucketedActivity} from "./reportCharts";
 
@@ -118,15 +118,19 @@ describe("the links from a flagged solve", () => {
 });
 
 describe("signal evidence", () => {
-    const base = {Count: 0, Extra: 0, Seconds: 0, Baseline: 0, Teams: []};
-    const sig = (extra: Partial<IntegritySignal> & {Kind: IntegritySignal["Kind"]}): IntegritySignal => ({...base, ...extra});
+    const base = {Count: 0, Extra: 0, Seconds: 0, Baseline: 0, Teams: [], Info: false, Answers: [], Owner: null, At: null};
+    const sig = (extra: Partial<IntegritySignal> & {Kind: IntegritySignal["Kind"]}): IntegritySignal => ({...base, ...extra} as IntegritySignal);
 
     it("writes one sentence per kind, with formatted durations", () => {
         expect(signalEvidence(sig({Kind: "no_access"}), "easy")).toBe("Команда не відкривала завдання, не завантажувала його файли й не брала підказок до розв'язання.");
-        expect(signalEvidence(sig({Kind: "no_lab"}), "easy")).toBe("Завдання з лабораторією та незмінним прапором розв'язано, але команда жодного разу не підключалася до VPN.");
+        expect(signalEvidence(sig({Kind: "no_lab"}), "easy")).toBe("Розв'язано завдання з лабораторією, але команда жодного разу не підключала VPN.");
         expect(signalEvidence(sig({Kind: "too_fast", Seconds: 3, Baseline: 20}), "easy")).toBe("Здано через 3 с після першого відкриття завдання (поріг для рівня «Легке» — 20 с).");
         expect(signalEvidence(sig({Kind: "first_try_hard", Count: 8, Baseline: 5}), "hard")).toBe("Розв'язано з першої спроби. Медіана спроб серед команд, що розв'язали завдання (8): 5.");
         expect(signalEvidence(sig({Kind: "shared_wrong", Count: 2, Teams: [{ID: "a", Name: "Red"}, {ID: "b", Name: "Green"}]}), "medium")).toBe("Неправильні відповіді цієї команди збігаються з відповідями інших команд (2). Команди: Red, Green.");
+        expect(signalEvidence(sig({Kind: "shared_wrong", Count: 2, Answers: [{Value: "flag{x}", Order: []}]}), "medium")).toBe("Неправильні відповіді цієї команди збігаються з відповідями інших команд: 2.");
+        const owner = {TeamID: "a", TeamName: "Red", ChallengeID: "c", ChallengeName: "Web 2", SameTask: false};
+        expect(signalEvidence(sig({Kind: "cross_flag", Count: 3, Owner: owner, At: "2026-09-29T10:00:00.000Z"}), "medium")).toMatch(/^Надіслала прапор іншої команди «Red» \(завдання «Web 2»\); разів: 3, востаннє .+\.$/);
+        expect(signalEvidence(sig({Kind: "cross_flag", Count: 1, Owner: {...owner, SameTask: true}, At: "2026-09-29T10:00:00.000Z"}), "medium")).toMatch(/^Надіслала прапор іншої команди «Red» того самого завдання; разів: 1, востаннє .+\.$/);
         expect(signalEvidence(sig({Kind: "burst", Count: 4, Seconds: 120, Baseline: 95}), "medium")).toBe("4 розв'язань за 2 хв; типовий проміжок між розв'язаннями цієї команди — 1 хв 35 с.");
         expect(signalEvidence(sig({Kind: "brute_force", Count: 40, Extra: 6, Seconds: 60}), "medium")).toBe("40 спроб за 1 хв, відхилено за частотою: 6.");
         expect(signalEvidence(sig({Kind: "follows_solve", Seconds: 45, Count: 1, Teams: [{ID: "a", Name: "Red"}]}), "medium")).toBe("Здано через 45 с після команди «Red»; власних спроб до цього: 1.");
@@ -140,8 +144,9 @@ describe("signal evidence", () => {
 });
 
 describe("journal flags", () => {
-    const flag = {TeamChallengeID: "tc1", TeamID: team, ChallengeID: challenge, Count: 2, Signals: ["too_fast", "burst"]};
-    const attempt = {EventTeamID: team, EventChallengeID: challenge, TeamChallengeID: "tc1"};
+    const flag = {TeamChallengeID: "tc1", TeamID: team, ChallengeID: challenge, Count: 2, Signals: ["too_fast", "burst"], CrossFlagTimes: ["2026-09-29T10:00:00.500Z"]};
+    const ids = {EventTeamID: team, EventChallengeID: challenge, TeamChallengeID: "tc1"};
+    const attempt = {...ids, Correct: true, ReceivedAt: "2026-09-29T10:05:00.000Z"};
 
     it("finds a flag by solve id or by team and task", () => {
         const index = indexFlags([flag]);
@@ -151,8 +156,21 @@ describe("journal flags", () => {
         expect(flagOf(emptyFlagIndex(), attempt)).toBeNull();
     });
 
-    it("lists the short kind labels in the tooltip", () => {
-        expect(flagTooltip(flag)).toBe("Є підозрілі сигнали для цього розв'язку: Надто швидко, Серія розв'язань");
+    it("marks the correct attempt with every kind of the flag", () => {
+        expect(attemptMarker(indexFlags([flag]), attempt)?.kinds).toEqual(["too_fast", "burst"]);
+    });
+
+    it("marks an incorrect attempt only when it is a submission of another team's flag", () => {
+        const index = indexFlags([flag]);
+        expect(attemptMarker(index, {...attempt, Correct: false})).toBeNull();
+        expect(attemptMarker(index, {...attempt, Correct: false, ReceivedAt: "2026-09-29T10:00:00.500Z"})?.kinds).toEqual(["cross_flag"]);
+        expect(attemptMarker(emptyFlagIndex(), {...attempt, Correct: false, ReceivedAt: "2026-09-29T10:00:00.500Z"})).toBeNull();
+    });
+
+    it("gives the precise reason per kind in the tooltip", () => {
+        expect(markerTooltip(["too_fast", "burst"])).toBe("Є підозрілі сигнали для цього розв'язку: Розв'язано швидше за поріг рівня складності; Кілька розв'язань за дуже короткий час");
+        expect(markerTooltip(["cross_flag"])).toBe("Є підозрілі сигнали для цього розв'язку: Надіслано прапор іншої команди");
+        for (const kind of integrityKinds) expect(kindReason(kind)).not.toContain("manage.analytics.integrity.reason");
     });
 });
 

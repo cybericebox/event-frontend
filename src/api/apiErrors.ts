@@ -48,6 +48,8 @@ export const ApiErrorCode = {
     MailSettingsInvalid: 2104,
     EventAnalyticsSolveNotFound: 2205,
     EventAnalyticsReviewNoteTooLong: 2206,
+    EventAnalyticsPatternNotDismissible: 2207,
+    EventAnalyticsExerciseDismissAdminOnly: 2208,
     BroadcastNotFound: 220,
     BroadcastInvalid: 221,
     BroadcastEmptyAudience: 222,

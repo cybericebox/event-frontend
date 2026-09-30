@@ -95,26 +95,34 @@ describe("Стенди", () => {
 });
 
 const thresholds = {FloorSeconds: {elementary: 0, trivial: 5, easy: 20, medium: 60, hard: 120, insane: 240}, BruteForceAttempts: 15, BruteForceWindowSeconds: 60, FollowGapSeconds: 30};
-const counts = {no_access: 1, no_lab: 0, too_fast: 2, first_try_hard: 0, shared_wrong: 1, burst: 0, brute_force: 0, follows_solve: 0};
+const counts = {cross_flag: 1, no_access: 1, no_lab: 0, too_fast: 2, first_try_hard: 0, shared_wrong: 1, burst: 0, brute_force: 0, follows_solve: 0};
 const tcBlue = "0190c6a4-0000-7000-8000-0000000000b1";
 const tcRed = "0190c6a4-0000-7000-8000-0000000000b2";
+const tcGreen = "0190c6a4-0000-7000-8000-0000000000b3";
+const green = "0190c6a4-0000-7000-8000-000000000003";
+const empty = {Count: 0, Extra: 0, Seconds: 0, Baseline: 0, Teams: [], Info: false, Answers: [], Owner: null, At: null};
 
 function integrity(extra: Record<string, unknown> = {}) {
     return {
         Items: [
-            {TeamChallengeID: tcBlue, TeamID: blue, TeamName: "Blue", ChallengeID: challenge, ChallengeName: "Web 1", Level: "easy", SolvedAt: past, Review: null,
-                Signals: [{Kind: "too_fast", Count: 0, Extra: 0, Seconds: 3, Baseline: 20, Teams: []}, {Kind: "shared_wrong", Count: 2, Extra: 0, Seconds: 0, Baseline: 0, Teams: [{ID: red, Name: "Red"}]}]},
-            {TeamChallengeID: tcRed, TeamID: red, TeamName: "Red", ChallengeID: challenge, ChallengeName: "Web 1", Level: "elementary", SolvedAt: past,
-                Review: {Note: "Same room", ReviewedBy: "Olena", ReviewedAt: past}, Signals: [{Kind: "no_access", Count: 0, Extra: 0, Seconds: 0, Baseline: 0, Teams: []}]},
+            {TeamChallengeID: tcGreen, TeamID: green, TeamName: "Green", ChallengeID: challenge, ChallengeName: "Web 1", Level: "easy", Solved: false, At: past, Review: null,
+                Signals: [{...empty, Kind: "cross_flag", Count: 2, At: past, Owner: {TeamID: red, TeamName: "Red", ChallengeID: challenge, ChallengeName: "Web 1", SameTask: true}}]},
+            {TeamChallengeID: tcBlue, TeamID: blue, TeamName: "Blue", ChallengeID: challenge, ChallengeName: "Web 1", Level: "easy", Solved: true, At: past, Review: null,
+                Signals: [{...empty, Kind: "too_fast", Seconds: 3, Baseline: 20},
+                    {...empty, Kind: "shared_wrong", Count: 2, Info: true, Teams: [{ID: red, Name: "Red"}], Answers: [{Value: "flag{shared}", Order: [{TeamID: red, TeamName: "Red", At: "2026-09-29T10:03:11.000Z"}, {TeamID: blue, TeamName: "Blue", At: "2026-09-29T10:04:00.000Z"}]}]}]},
+            {TeamChallengeID: tcRed, TeamID: red, TeamName: "Red", ChallengeID: challenge, ChallengeName: "Web 1", Level: "elementary", Solved: true, At: past,
+                Review: {Note: "Same room", ReviewedBy: "Olena", ReviewedAt: past}, Signals: [{...empty, Kind: "no_access"}]},
         ],
-        Total: 2, Counts: counts, Thresholds: thresholds, Defaults: thresholds, Period: {From: past, To: past}, ...extra,
+        Total: 3, Counts: counts, Thresholds: thresholds, Defaults: thresholds, Period: {From: past, To: past}, ...extra,
     };
 }
+
+const dismissal = {ID: "0190c6a4-0000-7000-8000-0000000000d1", Scope: "exercise", Kind: "shared_wrong", Key: "flag{shared}", Note: "Common path", ChallengeName: "Web 1", CreatedBy: "Olena", CreatedAt: past};
 
 type Recorded = {url: string; method: string; body: string | null};
 
 // Answers by path after /manage/; the review endpoint answers with `review`.
-function mockIntegrity(options: {access?: unknown; data?: unknown; failList?: boolean; review?: {status: number; code?: number}} = {}) {
+function mockIntegrity(options: {access?: unknown; data?: unknown; failList?: boolean; review?: {status: number; code?: number}; dismissals?: unknown[]; dismiss?: {status: number; code?: number}} = {}) {
     const calls: Recorded[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
@@ -124,6 +132,11 @@ function mockIntegrity(options: {access?: unknown; data?: unknown; failList?: bo
         const ok = (data: unknown) => new Response(JSON.stringify({Status: {Code: 0}, Data: data}), {status: 200});
         if (path === "analytics/access") return ok(options.access ?? {Sections: true, Sensitive: true});
         if (path === "analytics/integrity") return options.failList ? new Response("{}", {status: 500}) : ok(options.data ?? integrity());
+        if (path === "analytics/integrity/dismissals" && method === "GET") return ok(options.dismissals ?? []);
+        if (path.startsWith("analytics/integrity/dismissals")) {
+            const result = options.dismiss ?? {status: 200};
+            return new Response(JSON.stringify({Status: {Code: result.status === 200 ? 0 : result.code ?? 0}}), {status: result.status});
+        }
         if (path.startsWith("analytics/integrity/solves/")) {
             const review = options.review ?? {status: 200};
             return new Response(review.status === 200 ? JSON.stringify({Status: {Code: 0}}) : JSON.stringify({Status: {Code: review.code ?? 0}}), {status: review.status});
@@ -148,11 +161,15 @@ describe("Доброчесність", () => {
         const calls = mockIntegrity();
         renderWith(<AnalyticsIntegrity />);
         const table = await screen.findByRole("table");
+        const rows = within(table).getAllByRole("row");
+        expect(within(rows[1]).getByText("Green")).toBeTruthy();
+        expect(within(rows[1]).getByText("Прапор іншої команди").className).toContain("ib-tag--danger");
+        expect(within(rows[1]).getByText("Не розв'язано")).toBeTruthy();
         const blueRow = within(table).getByText("Blue").closest("tr")!;
         expect(within(blueRow).getByText("Web 1")).toBeTruthy();
+        expect(within(blueRow).getByText("Спільні помилки (інформаційно)")).toBeTruthy();
         expect(within(blueRow).getByText("Легке")).toBeTruthy();
         expect(within(blueRow).getByText("Надто швидко")).toBeTruthy();
-        expect(within(blueRow).getByText("Спільні помилки")).toBeTruthy();
         const redRow = within(table).getByText("Red").closest("tr")!;
         expect(within(redRow).getByText("Елементарне")).toBeTruthy();
         expect(within(redRow).getByText("Перевірено")).toBeTruthy();
@@ -170,7 +187,13 @@ describe("Доброчесність", () => {
         expect(within(table).queryByText(/Здано через 3 с/)).toBeNull();
         fireEvent.click(screen.getByRole("button", {name: "Докази: Blue, Web 1"}));
         expect(within(table).getByText("Здано через 3 с після першого відкриття завдання (поріг для рівня «Легке» — 20 с).")).toBeTruthy();
-        expect(within(table).getByText("Неправильні відповіді цієї команди збігаються з відповідями інших команд (2). Команди: Red.")).toBeTruthy();
+        expect(within(table).getByText("Неправильні відповіді цієї команди збігаються з відповідями інших команд: 2.")).toBeTruthy();
+        expect(within(table).getByText("flag{shared}")).toBeTruthy();
+        expect(within(table).getByText(/^1\. Red — /)).toBeTruthy();
+        expect(within(table).getByText(/^2\. Blue — /)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Green, Web 1"}));
+        expect(within(table).getByText(/Надіслала прапор іншої команди «Red» того самого завдання; разів: 2, востаннє /)).toBeTruthy();
+        expect(within(table).getAllByRole("button", {name: "Не підсвічувати такі випадки"})).toHaveLength(1);
         fireEvent.click(screen.getByRole("button", {name: "Докази: Red, Web 1"}));
         expect(within(table).getByText("Same room")).toBeTruthy();
         expect(within(table).getByText(/Olena, /)).toBeTruthy();
@@ -181,6 +204,7 @@ describe("Доброчесність", () => {
         renderWith(<AnalyticsIntegrity />);
         await screen.findByRole("table");
         const group = screen.getByRole("group", {name: "Тип сигналу"});
+        expect(within(group).getAllByRole("button")[0].textContent).toContain("Прапор іншої команди");
         const fast = within(group).getByRole("button", {name: /Надто швидко/});
         expect(fast.textContent).toContain("2");
         expect(fast.getAttribute("aria-pressed")).toBe("false");
@@ -230,6 +254,75 @@ describe("Доброчесність", () => {
         renderWith(<AnalyticsIntegrity />);
         expect(await screen.findByRole("status", {name: "Завантажуємо розв'язки"})).toBeTruthy();
         expect(screen.queryByRole("table")).toBeNull();
+    });
+
+    it("dismisses a shared wrong answer for the event with a note", async () => {
+        const calls = mockIntegrity();
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Blue, Web 1"}));
+        fireEvent.click(within(table).getByRole("button", {name: "Допустима відповідь"}));
+        const dialog = await screen.findByRole("alertdialog");
+        expect(within(dialog).getByText("flag{shared}")).toBeTruthy();
+        expect(within(dialog).getByRole("radio", {name: /Лише цей захід/})).toHaveProperty("checked", true);
+        expect(within(dialog).getByText("Торкнеться кожного заходу, де використовується це завдання каталогу.")).toBeTruthy();
+        fireEvent.change(within(dialog).getByLabelText("Нотатка"), {target: {value: "Common path"}});
+        const before = listCalls(calls).length;
+        fireEvent.click(within(dialog).getByRole("button", {name: "Виключити"}));
+        await waitFor(() => expect(calls.some(call => call.method === "POST")).toBe(true));
+        const post = calls.find(call => call.method === "POST")!;
+        expect(post.url).toContain("/analytics/integrity/dismissals");
+        expect(JSON.parse(post.body!)).toEqual({TeamChallengeID: tcBlue, Kind: "shared_wrong", Key: "flag{shared}", Scope: "event", Note: "Common path"});
+        await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+        await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    });
+
+    it("dismisses another kind for the whole catalog exercise and shows the admin-only error inline", async () => {
+        const calls = mockIntegrity({dismiss: {status: 403, code: 62208}});
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Red, Web 1"}));
+        fireEvent.click(within(table).getByRole("button", {name: "Не підсвічувати такі випадки"}));
+        const dialog = await screen.findByRole("alertdialog");
+        fireEvent.click(within(dialog).getByRole("radio", {name: /Усі заходи з цим завданням каталогу/}));
+        fireEvent.click(within(dialog).getByRole("button", {name: "Виключити"}));
+        expect(await screen.findByText("Виключення для всіх заходів із цим завданням каталогу можуть додавати лише адміністратори платформи")).toBeTruthy();
+        expect(JSON.parse(calls.find(call => call.method === "POST")!.body!)).toMatchObject({TeamChallengeID: tcRed, Kind: "no_access", Key: "", Scope: "exercise"});
+        expect(screen.getByRole("alertdialog")).toBeTruthy();
+    });
+
+    it("offers no dismissal for a cross_flag or a burst", async () => {
+        mockIntegrity({data: integrity({Items: [integrity().Items[0]], Total: 1})});
+        renderWith(<AnalyticsIntegrity />);
+        await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Green, Web 1"}));
+        expect(screen.queryByRole("button", {name: "Не підсвічувати такі випадки"})).toBeNull();
+    });
+
+    it("lists the dismissals and removes one after a confirmation", async () => {
+        const calls = mockIntegrity({dismissals: [dismissal]});
+        renderWith(<AnalyticsIntegrity />);
+        await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: "Виключення"}));
+        const row = (await screen.findByText("Common path")).closest("tr")!;
+        expect(within(row).getByText("Спільні помилки")).toBeTruthy();
+        expect(within(row).getByText("flag{shared}")).toBeTruthy();
+        expect(within(row).getByText("Усі заходи з цим завданням каталогу")).toBeTruthy();
+        expect(within(row).getByText("Olena")).toBeTruthy();
+        fireEvent.click(within(row).getByRole("button", {name: "Прибрати"}));
+        const dialog = await screen.findByRole("alertdialog");
+        expect(within(dialog).getByRole("button", {name: "Прибрати"}).className).toContain("ib-btn--primary");
+        fireEvent.click(within(dialog).getByRole("button", {name: "Прибрати"}));
+        await waitFor(() => expect(calls.some(call => call.method === "DELETE" && call.url.endsWith(`/dismissals/${dismissal.ID}`))).toBe(true));
+        await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    });
+
+    it("says so when there are no dismissals", async () => {
+        mockIntegrity();
+        renderWith(<AnalyticsIntegrity />);
+        await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: "Виключення"}));
+        expect(await screen.findByText("Виключень немає")).toBeTruthy();
     });
 
     it("says so, inside the block, when nothing is flagged", async () => {

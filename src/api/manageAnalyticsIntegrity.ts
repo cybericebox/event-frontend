@@ -10,7 +10,8 @@ import {requireApiOrigin} from "@/utils/origins";
 
 const count = z.number().int();
 
-export const integrityKinds = ["no_access", "no_lab", "too_fast", "first_try_hard", "shared_wrong", "burst", "brute_force", "follows_solve"] as const;
+// Strongest first: the order of the chips and of the counts.
+export const integrityKinds = ["cross_flag", "no_access", "no_lab", "too_fast", "first_try_hard", "shared_wrong", "burst", "brute_force", "follows_solve"] as const;
 export const IntegrityKindSchema = z.enum(integrityKinds);
 export type IntegrityKind = z.infer<typeof IntegrityKindSchema>;
 
@@ -32,6 +33,18 @@ export type IntegrityThresholds = z.infer<typeof thresholdsSchema>;
 
 const teamRef = z.object({ID: z.string(), Name: z.string()});
 
+// burst and cross_flag cannot be dismissed as a pattern.
+export const dismissibleKinds: readonly IntegrityKind[] = ["shared_wrong", "no_access", "no_lab", "too_fast", "first_try_hard", "brute_force", "follows_solve"];
+export const isDismissible = (kind: IntegrityKind) => dismissibleKinds.includes(kind);
+
+const answerSchema = z.object({
+    Value: z.string(),
+    Order: z.array(z.object({TeamID: z.string(), TeamName: z.string(), At: z.string()})).nullish().transform(value => value ?? []),
+});
+export type IntegrityAnswer = z.infer<typeof answerSchema>;
+
+const ownerSchema = z.object({TeamID: z.string(), TeamName: z.string(), ChallengeID: z.string(), ChallengeName: z.string(), SameTask: z.boolean().default(false)});
+
 const signalSchema = z.object({
     Kind: IntegrityKindSchema,
     Count: count.nullish().transform(value => value ?? 0),
@@ -39,6 +52,13 @@ const signalSchema = z.object({
     Seconds: z.number().nullish().transform(value => value ?? 0),
     Baseline: z.number().nullish().transform(value => value ?? 0),
     Teams: z.array(teamRef).nullish().transform(value => value ?? []),
+    // Low weight: shared_wrong on a task with a static flag.
+    Info: z.boolean().nullish().transform(value => value ?? false),
+    // shared_wrong: each shared wrong value with who sent it first, second, ...
+    Answers: z.array(answerSchema).nullish().transform(value => value ?? []),
+    // cross_flag: whose flag was submitted, and the last such submission.
+    Owner: ownerSchema.nullish().transform(value => value ?? null),
+    At: z.string().nullish().transform(value => value ?? null),
 });
 export type IntegritySignal = z.infer<typeof signalSchema>;
 
@@ -52,7 +72,10 @@ const itemSchema = z.object({
     ChallengeID: z.string(),
     ChallengeName: z.string(),
     Level: z.enum(integrityLevels).catch("medium"),
-    SolvedAt: z.string(),
+    // false: flagged before any solve (cross_flag); At is then the last
+    // suspicious submission, otherwise the solve.
+    Solved: z.boolean().default(true),
+    At: z.string(),
     Signals: z.array(signalSchema).nullish().transform(value => value ?? []),
     Review: reviewSchema.nullish().transform(value => value ?? null),
 });
@@ -165,8 +188,43 @@ const flagSchema = z.object({
     ChallengeID: z.string(),
     Count: count.default(0),
     Signals: z.array(z.string()).nullish().transform(value => value ?? []),
+    // The submissions of another team's flag, to mark those attempts.
+    CrossFlagTimes: z.array(z.string()).nullish().transform(value => value ?? []),
 });
 export type IntegrityFlag = z.infer<typeof flagSchema>;
 
 export const getIntegrityFlags = (eventID: string) =>
     analyticsRequest(eventID, "integrity/flags", z.array(flagSchema).nullish().transform(value => value ?? []));
+
+// Dismissed patterns ("do not highlight such cases"): for this event or for
+// every event using the catalog exercise.
+export type DismissScope = "event" | "exercise";
+const dismissalSchema = z.object({
+    ID: z.string(),
+    Scope: z.enum(["event", "exercise"]),
+    Kind: z.string(),
+    Key: z.string().default(""),
+    Note: z.string().default(""),
+    ChallengeName: z.string().default(""),
+    CreatedBy: z.string().default(""),
+    CreatedAt: z.string(),
+});
+export type IntegrityDismissal = z.infer<typeof dismissalSchema>;
+
+export const getIntegrityDismissals = (eventID: string) =>
+    analyticsRequest(eventID, "integrity/dismissals", z.array(dismissalSchema).nullish().transform(value => value ?? []));
+
+export type DismissInput = {TeamChallengeID: string; Kind: IntegrityKind; Key: string; Scope: DismissScope; Note: string};
+
+async function dismissalRequest(eventID: string, method: "POST" | "DELETE", path: string, payload?: DismissInput): Promise<void> {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/analytics/integrity/dismissals${path}`, {
+        method, credentials: "include", cache: "no-store",
+        headers: {Accept: "application/json", ...(payload ? {"Content-Type": "application/json"} : {})},
+        body: payload ? JSON.stringify(payload) : undefined,
+    });
+    if (!response.ok) throw await manageApiError(response);
+}
+
+export const dismissIntegrityPattern = (eventID: string, input: DismissInput) => dismissalRequest(eventID, "POST", "", input);
+export const removeIntegrityDismissal = (eventID: string, id: string) => dismissalRequest(eventID, "DELETE", `/${encodeURIComponent(id)}`);

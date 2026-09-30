@@ -15,7 +15,7 @@ import {DialogModal} from "@/components/event/DialogModal";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {useEventStream, type StreamMode} from "@/utils/eventStream";
 import {integrityPageHref} from "@/api/manageAnalyticsIntegrity";
-import {flagOf, flagTooltip} from "./analytics/integrityModel";
+import {attemptMarker, markerTooltip} from "./analytics/integrityModel";
 import {useIntegrityFlags} from "./useIntegrityFlags";
 import {useManager} from "./ManagerShell";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
@@ -75,13 +75,18 @@ export function AttemptsManager({initialView = "attempts", initialFilters = {}}:
     </div>;
 }
 
-// The warning icon of a correct attempt whose solve has signals to review; links
-// to the integrity page on that team and task. Nothing without a flag.
-function IntegrityMarker({flag, attempt}: {flag: ReturnType<typeof flagOf>; attempt: ManageAttempt}) {
-    if (!flag) return null;
-    const text = flagTooltip(flag);
+// The warning icon of an attempt with signals to review: the correct attempt of
+// a flagged solve, or a submission of another team's flag. Links to the
+// integrity page on that team and task; the tooltip names the reasons only.
+function IntegrityMarker({kinds, attempt}: {kinds: string[]; attempt: ManageAttempt}) {
+    const text = markerTooltip(kinds);
     return <EventTooltip content={text}>{id => <Link className="event-journal__flag" href={integrityPageHref({TeamID: attempt.EventTeamID, ChallengeID: attempt.EventChallengeID})} aria-label={text} aria-describedby={id}
         onClick={click => click.stopPropagation()} onKeyDown={key => key.stopPropagation()}><TriangleAlert size={16} aria-hidden="true" /></Link>}</EventTooltip>;
+}
+
+function MarkerFor({flags, attempt}: {flags: ReturnType<typeof useIntegrityFlags>; attempt: ManageAttempt}) {
+    const marker = attemptMarker(flags, attempt);
+    return marker ? <IntegrityMarker kinds={marker.kinds} attempt={attempt} /> : null;
 }
 
 const ATTEMPTS_POLL_SECONDS = 10;
@@ -214,7 +219,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
                 <td className="event-manage-table__nowrap"><time dateTime={attempt.ReceivedAt}>{journalTime.format(new Date(attempt.ReceivedAt))}</time></td>
                 <td><span className="event-manage-table__person"><strong>{who(attempt)}</strong>{teamMode && attempt.ParticipantName && <small>{attempt.ParticipantName}</small>}</span></td>
                 <td>{attempt.ChallengeName || t("manage.attempts.challenge")}</td>
-                <td><span className="event-journal__result"><ResultTag attempt={attempt} />{attempt.Correct && <IntegrityMarker flag={flagOf(flags, attempt)} attempt={attempt} />}</span></td>
+                <td><span className="event-journal__result"><ResultTag attempt={attempt} /><MarkerFor flags={flags} attempt={attempt} /></span></td>
                 <td className="ib-num">{attempt.Points === null ? <span className="event-manage-table__dim">{t("manage.attempts.noPoints")}</span> : points.format(attempt.Points)}</td>
                 {canManage && <td><EventTooltip content={attempt.Answer} className="event-manage-table__answer-tip" truncated>{() => <code className="event-manage-table__answer event-journal__answer">{attempt.Answer}</code>}</EventTooltip></td>}
             </tr>)}</tbody>
