@@ -5,6 +5,7 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import type {OwnTeam} from "@/api/clientAuth";
 import type {ParticipantEventInfo} from "@/types/participantEventInfo";
 import {EventNavbar} from "./EventNavigation";
+import {SiteBannerBar} from "./SiteBanners";
 import {EventVpnProvider} from "./vpn/EventVpn";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {t} from "@/i18n/t";
@@ -25,6 +26,7 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
     const vpn = participantInfo.HasInfrastructureChallenges && !!ownTeam && ownTeam.Admitted !== false;
     return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><EventVpnProvider eventID={event.EventID} enabled={vpn}><div className="event-guest-shell">
         <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
+        <SiteBannerBar eventID={event.EventID} />
         <main className="event-guest-main"><div className="event-page-content"><MissingFieldsNotice eventID={event.EventID} ownTeam={ownTeam} />{children}</div></main>
         <EventFooter />
     </div></EventVpnProvider></ParticipantContext.Provider>;
