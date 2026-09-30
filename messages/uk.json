@@ -4231,5 +4231,7 @@
   "auth.noAccess.title": "Немає доступу",
   "auth.noAccess.body": "Ваш обліковий запис {email} не має доступу до цієї сторінки.",
   "auth.noAccess.switch": "Увійти іншим обліковим записом",
-  "auth.noAccess.home": "На головну"
+  "auth.noAccess.home": "На головну",
+  "participation.team.moderatorsSample": "Показники й графіки — приклад даних: команда модераторів не набирає балів.",
+  "participation.preview.unavailable": "Недоступно в режимі перегляду"
 }

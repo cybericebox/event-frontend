@@ -16,9 +16,9 @@ export function memberRows(roster: readonly TeamMember[], stats: readonly Partic
         .sort((a, b) => Number(a.member.Pending) - Number(b.member.Pending) || (b.stats?.Points ?? 0) - (a.stats?.Points ?? 0) || a.member.DisplayName.localeCompare(b.member.DisplayName, "uk"));
 }
 
-export function MembersCard({event, roster, error, onRetry, stats, actions, rosterLine}: {
+export function MembersCard({event, roster, error, onRetry, stats, actions, rosterLine, roleLabels}: {
     event: PublicEventInfo; roster: TeamMember[] | undefined; error?: unknown; onRetry: () => void; stats: readonly ParticipationMember[];
-    actions: (member: TeamMember) => React.ReactNode; rosterLine: string;
+    actions: (member: TeamMember) => React.ReactNode; rosterLine: string; roleLabels?: ReadonlyMap<string, string>;
 }) {
     return <Card title={t("participation.team.members")} note={rosterLine} flush>
         {!roster ? <BlockStates state={error ? "error" : "loading"} event={event} loadingLabel={t("participation.team.membersLoading")} errorMessage={t("participation.team.membersFailed")} emptyMessage="" onRetry={onRetry} error={error} height={200} />
@@ -28,7 +28,7 @@ export function MembersCard({event, roster, error, onRetry, stats, actions, rost
                 <th><span className="ib-sr">{t("participation.team.actions")}</span></th>
             </tr></thead><tbody>{memberRows(roster, stats).map(({member, stats: share}) => <tr key={member.UserID} className={member.Own ? "is-own" : undefined}>
                 <td>{member.DisplayName}{member.Own && <span className="event-part__muted"> · {t("participation.team.you")}</span>}</td>
-                <td>{member.Pending ? <span className="ib-tag ib-tag--warn">{t("participation.team.pending")}</span>
+                <td>{roleLabels?.has(member.UserID) ? <span className="ib-tag ib-tag--role">{roleLabels.get(member.UserID)}</span> : member.Pending ? <span className="ib-tag ib-tag--warn">{t("participation.team.pending")}</span>
                     : member.Role === TeamRole.Captain ? <span className="ib-tag ib-tag--role">{t("participation.team.captain")}</span> : <span className="event-part__muted">{t("participation.team.member")}</span>}</td>
                 <td className="is-num">{share ? formatNumber(share.Points) : "—"}</td>
                 <td className="is-num">{share ? formatNumber(share.Solves) : "—"}</td>

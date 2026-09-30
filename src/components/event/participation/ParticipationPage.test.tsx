@@ -102,13 +102,22 @@ it("tells a participant without a team why the roster is closed instead of offer
 it("shows organizers the real moderators team, read-only", async () => {
     state.guest = event;
     state.staff = true;
-    state.moderators = {TeamID: "00000000-0000-4000-8000-0000000000bb", Members: [{UserID: "00000000-0000-4000-8000-0000000000c1", Name: "Олена Коваль", Role: 1}]};
+    state.moderators = {TeamID: "00000000-0000-4000-8000-0000000000bb", Members: [{UserID: "00000000-0000-4000-8000-0000000000c1", Name: "Богдан Мельник", Role: 1}]};
     view();
     expect(await screen.findByText("Перевірка завдань від імені команди модераторів")).toBeTruthy();
-    expect(screen.getByText("Олена Коваль")).toBeTruthy();
-    expect(screen.getByText("Команда модераторів")).toBeTruthy();
-    expect(screen.queryByLabelText("Посилання для запрошення")).toBeNull();
-    expect(screen.queryByRole("button", {name: "Розпустити команду"})).toBeNull();
+    expect(screen.getByText("Богдан Мельник")).toBeTruthy();
+    expect(screen.getAllByText("Команда модераторів").length).toBeGreaterThan(0);
+    expect(screen.getByText(/приклад даних/)).toBeTruthy();
+    expect(screen.getByLabelText("Показники команди")).toBeTruthy();
+    expect(screen.getByText("Бали команди з часом")).toBeTruthy();
+    expect(screen.getByText("Розв’язано за категоріями")).toBeTruthy();
+    expect(screen.getByText("Розв’язано та хибні спроби")).toBeTruthy();
+    expect(screen.getByText("Розв’язані завдання команди")).toBeTruthy();
+    expect(screen.getByText("Розв’язав")).toBeTruthy();
+    expect(screen.getByLabelText<HTMLInputElement>("Посилання для запрошення")).toBeTruthy();
+    expect((screen.getByRole("button", {name: "Перевипустити"}) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Недоступно в режимі перегляду")).toBeTruthy();
+    expect(screen.getByRole("button", {name: "Розпустити команду"})).toBeTruthy();
 });
 
 it("lets organizers open the page as a captain with sample data when there is no moderators team", async () => {

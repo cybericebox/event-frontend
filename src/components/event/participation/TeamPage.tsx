@@ -77,8 +77,10 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, onRena
     </>;
 }
 
-function TeamSection({event, info, team, participation, rosterOpen, finished, preview, now}: {
+function TeamSection({event, info, team, participation, rosterOpen, finished, preview, now, moderators}: {
     event: PublicEventInfo; info: ParticipantEventInfo; team: OwnTeam; participation: Participation | null; rosterOpen: boolean; finished: boolean; preview: boolean; now: number;
+    // Organizer preview: the real moderators roster in the members table; stats, charts and solves stay sample data.
+    moderators?: {UserID: string; Name: string; Role: number}[];
 }) {
     const queryClient = useQueryClient();
     const accent = useEventAccent();
@@ -92,9 +94,10 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     const leave = participation?.LeaveTeam?.Allowed ?? rosterOpen;
     const manageReason = reasonText(participation?.ManageTeam?.Reason ?? "");
     const leaveReason = reasonText(participation?.LeaveTeam?.Reason ?? "");
-    const roster: TeamMember[] | undefined = preview ? previewMembers() : members.data;
+    const roster: TeamMember[] | undefined = moderators ? moderators.map(item => ({UserID: item.UserID, DisplayName: item.Name, Role: TeamRole.Member, Own: false, Pending: false})) : preview ? previewMembers() : members.data;
+    const roleLabels = moderators ? new Map(moderators.map(item => [item.UserID, eventRoleLabel(item.Role)])) : undefined;
     const teamFieldForm = preview ? undefined : fieldsForm.data;
-    const own = roster?.find(member => member.Own);
+    const own = moderators ? true : roster?.find(member => member.Own);
     const captainName = roster?.find(member => member.Role === TeamRole.Captain)?.DisplayName ?? "";
     const refresh = () => Promise.all([
         queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]}),
@@ -114,7 +117,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
             throw error;
         }
     };
-    const memberActions = (member: TeamMember) => captain && manage && !member.Own && !member.Pending && <>
+    const memberActions = (member: TeamMember) => !moderators && captain && manage && !member.Own && !member.Pending && <>
         <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
         <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>
     </>;
@@ -135,8 +138,8 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         <TeamHeader info={info} team={team} rosterOpen={manage} captain={captain} captainName={captainName} stats={data ? {rank: data.Rank, points: data.Points} : null}
             onRename={name => run(() => renameEventTeam(event.EventID, team.ID, name), t("participation.team.renamed"), t("participation.team.renameFailed"))()} />
         <StatTiles label={t("participation.stats.teamTitle")} tiles={tiles} />
-        <MembersCard event={event} roster={roster} error={members.error} onRetry={() => void members.refetch()} stats={data?.Team.Members ?? []} actions={memberActions} rosterLine={rosterLine(team.MemberCount, max, min)} />
-        <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage} preview={preview} now={now}
+        <MembersCard event={event} roster={roster} error={members.error} onRetry={() => void members.refetch()} stats={data?.Team.Members ?? []} actions={memberActions} rosterLine={rosterLine(team.MemberCount, max, min)} roleLabels={roleLabels} />
+        <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage || !!moderators} preview={preview} now={now}
             onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />
         <div className="event-pp-charts">
             <PointsChartCard event={event} title={t("participation.chart.points.teamTitle")} state={teamState} error={stats.error} onRetry={stats.retry} window={window}
@@ -161,16 +164,6 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     </div>;
 }
 
-// Organizers see the real hidden moderators team, read-only: no link, no roster actions, no results.
-function ModeratorsTeamSection({members}: {members: {UserID: string; Name: string; Role: number}[]}) {
-    return <div className="event-pp">
-        <Card title={t("participation.team.moderatorsName")} note={t("participation.team.moderatorsNote")} flush>
-            <div className="event-pp-table__scroll"><table className="event-pp-table"><thead><tr><th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th></tr></thead>
-                <tbody>{members.map(member => <tr key={member.UserID}><td>{member.Name}</td><td><span className="ib-tag ib-tag--role">{eventRoleLabel(member.Role)}</span></td></tr>)}</tbody></table></div>
-        </Card>
-    </div>;
-}
-
 // The «Команда» tab of «Моя участь»: the roster, the team's results and, for the captain, the join link and the roster management.
 export function TeamTab() {
     const access = useParticipantContext();
@@ -192,12 +185,12 @@ export function TeamTab() {
     if (previewing && moderators.isPending) return <EventLoading event={event} label={t("participation.loading")} />;
     const realModerators = previewing && moderators.data ? moderators.data : null;
     const info = access?.participantInfo;
-    const team = previewing ? previewOwnTeam() : access?.ownTeam ?? null;
+    const team = previewing ? (realModerators ? {...previewOwnTeam(), Name: t("participation.team.moderatorsName"), MemberCount: realModerators.Members.length} : previewOwnTeam()) : access?.ownTeam ?? null;
     return <>
-        {realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} /></div>}
+        {realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("challenges.moderators.bannerTitle")} message={<>{t("challenges.moderators.bannerMessage")}<br />{t("participation.team.moderatorsSample")}</>} /></div>}
         {previewing && !realModerators && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
-        {realModerators ? <ModeratorsTeamSection members={realModerators.Members} /> : team
-            ? <TeamSection event={event} info={info ?? ({MinTeamSize: 2, MaxTeamSize: 4} as ParticipantEventInfo)} team={team} participation={participation} rosterOpen={rosterOpen} finished={finished} preview={previewing} now={now} />
+        {team
+            ? <TeamSection event={event} info={info ?? ({MinTeamSize: 2, MaxTeamSize: 4} as ParticipantEventInfo)} team={team} participation={participation} rosterOpen={rosterOpen} finished={finished} preview={previewing} now={now} moderators={realModerators?.Members} />
             : <div className="event-pp"><p className="event-part__note">{t("participation.noTeam.sectionNote")}</p><NoTeam event={event} rosterOpen={rosterOpen} closedReason={closedReason} createReason={participation && participation.CreateTeam && !participation.CreateTeam.Allowed ? reasonText(participation.CreateTeam.Reason) : ""} joinReason={participation && participation.JoinTeam && !participation.JoinTeam.Allowed ? reasonText(participation.JoinTeam.Reason) : ""} linkCode={linkCode} preview={previewing} /></div>}
     </>;
 }

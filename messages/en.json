@@ -4231,5 +4231,7 @@
   "auth.noAccess.title": "No access",
   "auth.noAccess.body": "Your account {email} does not have access to this page.",
   "auth.noAccess.switch": "Sign in with another account",
-  "auth.noAccess.home": "Home"
+  "auth.noAccess.home": "Home",
+  "participation.team.moderatorsSample": "Stats and charts are sample data: the moderators team does not score points.",
+  "participation.preview.unavailable": "Unavailable in preview mode"
 }

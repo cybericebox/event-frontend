@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import {Copy} from "lucide-react";
 import type {OwnTeam, Participation} from "@/api/clientAuth";
 import {joinLinkExpiries, type JoinLinkExpiry} from "@/api/eventTeams";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
@@ -56,7 +57,9 @@ export function InviteCard({team, captain, captainName, participation, rosterOpe
             <div className="event-pp-invite__row">
                 <input className="ib-input ib-input--mono" readOnly value={link} aria-label={t("participation.team.link.label")} onFocus={event => event.currentTarget.select()} />
                 <button type="button" className="ib-btn" onClick={() => void copy()}><Copy aria-hidden="true" />{t("participation.team.link.copy")}</button>
-                {canManage && <button type="button" className="ib-btn ib-btn--ghost" onClick={() => setRegenerating(true)}>{t("participation.team.link.regenerate")}</button>}
+                {canManage && (preview
+                    ? <EventTooltip content={t("participation.preview.unavailable")}>{id => <span style={{display: "inline-flex"}} tabIndex={0} aria-describedby={id}><button type="button" className="ib-btn ib-btn--ghost" disabled style={{pointerEvents: "none"}}>{t("participation.team.link.regenerate")}</button></span>}</EventTooltip>
+                    : <button type="button" className="ib-btn ib-btn--ghost" onClick={() => setRegenerating(true)}>{t("participation.team.link.regenerate")}</button>)}
             </div>
             <div className="event-pp-invite__meta">
                 <div className={validity.expired ? "is-warn" : undefined}>{validity.text}</div>
