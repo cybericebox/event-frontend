@@ -1678,6 +1678,7 @@
   "manage.nav.newPage": "Нова сторінка",
   "manage.nav.notifications": "Сповіщення на сайті",
   "manage.nav.notificationsOnSite": "Шаблони на сайті",
+  "manage.nav.returnToAdmin": "Повернутися до адміністрування",
   "manage.nav.emailTemplates": "Шаблони листів",
   "manage.nav.page.draftBadge": "чернетка",
   "manage.nav.page.titleWithState": "{title} · {state}",

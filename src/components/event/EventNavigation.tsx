@@ -21,6 +21,7 @@ import {navigationRight} from "./navigationRight";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
+import {withManageOrigin} from "@/utils/returnOrigin";
 import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
 import {ACCOUNT_MENU_ICON_PROPS, ACCOUNT_MENU_ICONS, ACCOUNT_MENU_LABELS, accountMenu} from "@/utils/accountMenu";
 import {openConsentSettings} from "@/utils/consent";
@@ -68,6 +69,13 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
         adminTier, catalog: adminTier || catalog.data === true,
         returnTo: typeof window !== "undefined" ? window.location.href : `${eventOrigin(event.Tag)}/`,
     }, {id: idOrigin, admin: adminOrigin, exercises: exercisesOrigin});
+    // From /manage the admin link carries the page and the event name, so admin can offer the way back.
+    const pathname = usePathname() ?? "";
+    if (/^\/manage(\/|$)/.test(pathname) && typeof window !== "undefined") {
+        entries.forEach((entry, index) => {
+            if (entry.kind === "link" && entry.key === "admin") entries[index] = {...entry, href: withManageOrigin(entry.href, window.location.href, event.Name)};
+        });
+    }
     const contextAt = entries.findIndex(entry => entry.kind === "divider");
     const picture = profilePictureUrl(profile.data?.Picture ?? "");
     const avatarInitials = initials(profile.data?.FirstName, profile.data?.LastName, profile.data?.Email);

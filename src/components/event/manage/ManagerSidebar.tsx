@@ -1,10 +1,20 @@
 "use client";
 
-import {Fragment, useState} from "react";
+import {Fragment, useEffect, useState} from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   Bell,
+  BellRing,
+  Cog,
+  FileDown,
+  Flag,
+  Handshake,
+  LayoutTemplate,
+  ListChecks,
+  Medal,
+  Target,
+  UserSearch,
   CalendarDays,
   ChartNoAxesCombined,
   ClipboardList,
@@ -20,11 +30,11 @@ import {
   Megaphone,
   MonitorPlay,
   Palette,
-  PanelTop,
   Plus,
   ScrollText,
   Send,
   Server,
+  Settings,
   Settings2,
   SlidersHorizontal,
   Trophy,
@@ -43,56 +53,57 @@ import {comparePageOrder} from "../content/pageNavigationOrder";
 import "./managerSidebar.css";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {readAdminReturn} from "@/utils/returnOrigin";
 
 type Item = {dividerBefore?: boolean; href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
-type Group = {id: string; label: string; items: Item[]};
+type Group = {id: string; label: string; icon: LucideIcon; items: Item[]};
 
 // Пауза: повернути до навігації, коли з'явиться механізм призупинення заходу.
 const groups: Group[] = [
-    {id: "event", label: t("manage.nav.group.event"), items: [
+    {id: "event", label: t("manage.nav.group.event"), icon: Flag, items: [
         {href: "/manage/settings", label: t("manage.nav.settings"), icon: Settings2},
         {href: "/manage/appearance", label: t("manage.nav.appearance"), icon: Palette},
         {href: "/manage/participation-settings", label: t("manage.nav.participationSettings"), icon: UsersRound},
         {href: "/manage/schedule", label: t("manage.nav.schedule"), icon: CalendarDays},
     ]},
-    {id: "participation", label: t("manage.nav.group.participation"), items: [
+    {id: "participation", label: t("manage.nav.group.participation"), icon: Handshake, items: [
         {href: "/manage/registration", label: t("manage.nav.registration"), icon: FilePenLine},
         {href: "/manage/participants", label: t("manage.nav.participants"), icon: UserRound},
         {href: "/manage/teams", label: t("manage.nav.teams"), icon: Users, teamsOnly: true},
     ]},
-    {id: "challenges", label: t("manage.nav.group.challenges"), items: [
+    {id: "challenges", label: t("manage.nav.group.challenges"), icon: Target, items: [
         {href: "/manage/challenge-settings", label: t("manage.nav.challengeSettings"), icon: SlidersHorizontal},
         {href: "/manage/exercise-groups", label: t("manage.nav.exerciseGroups"), icon: Layers3},
         {href: "/manage/exercises", label: t("manage.nav.exercises"), icon: Puzzle},
         {href: "/manage/labs", label: t("manage.nav.labs"), icon: Server, infrastructureOnly: true},
-        {href: "/manage/submissions", label: t("manage.nav.submissions"), icon: Send},
+        {href: "/manage/submissions", label: t("manage.nav.submissions"), icon: ListChecks},
     ]},
-    {id: "pages", label: t("manage.nav.pages"), items: [
+    {id: "pages", label: t("manage.nav.pages"), icon: LayoutTemplate, items: [
         {href: "/manage/content/landing", label: t("manage.nav.landing"), icon: FileText},
     ]},
-    {id: "results", label: t("manage.nav.group.results"), items: [
-        {href: "/manage/results-settings", label: t("manage.nav.resultsSettings"), icon: SlidersHorizontal},
+    {id: "results", label: t("manage.nav.group.results"), icon: Medal, items: [
+        {href: "/manage/results-settings", label: t("manage.nav.resultsSettings"), icon: Cog},
         {href: "/manage/results", label: t("manage.nav.results"), icon: Trophy},
         {href: "/manage/live", label: t("manage.nav.live"), icon: MonitorPlay},
     ]},
     // Shown only to the viewers with analytics access (§7); «Стенди» needs infrastructure, «Доброчесність» the sensitive level.
-    {id: "analytics", label: t("manage.nav.group.analytics"), items: [
+    {id: "analytics", label: t("manage.nav.group.analytics"), icon: ChartNoAxesCombined, items: [
         {href: "/manage/analytics", label: t("manage.nav.analyticsOverview"), icon: Gauge},
-        {href: "/manage/analytics/participants", label: t("manage.nav.analytics.participants"), icon: UsersRound},
+        {href: "/manage/analytics/participants", label: t("manage.nav.analytics.participants"), icon: UserSearch},
         {href: "/manage/analytics/tasks", label: t("manage.nav.analytics.tasks"), icon: ClipboardList},
         {href: "/manage/analytics/progress", label: t("manage.nav.analytics.progress"), icon: TrendingUp},
         {href: "/manage/analytics/stands", label: t("manage.nav.analytics.stands"), icon: Server, infrastructureOnly: true},
         {href: "/manage/analytics/integrity", label: t("manage.nav.analytics.integrity"), icon: ShieldCheck, sensitiveOnly: true},
         {href: "/manage/analytics/communications", label: t("manage.nav.analytics.communications"), icon: Mail},
-        {href: "/manage/analytics/report", label: t("manage.nav.analytics.report"), icon: ChartNoAxesCombined},
+        {href: "/manage/analytics/report", label: t("manage.nav.analytics.report"), icon: FileDown},
     ]},
     // Three blocks split by thin dividers: actions, settings (templates + notification settings), log.
-    {id: "notifications", label: t("manage.nav.group.notifications"), items: [
-        {href: "/manage/broadcasts", label: t("manage.nav.broadcasts"), icon: Megaphone},
-        {href: "/manage/banners", label: t("manage.nav.banners"), icon: PanelTop},
-        {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: Bell, dividerBefore: true},
+    {id: "notifications", label: t("manage.nav.group.notifications"), icon: Bell, items: [
+        {href: "/manage/broadcasts", label: t("manage.nav.broadcasts"), icon: Send},
+        {href: "/manage/banners", label: t("manage.nav.banners"), icon: Megaphone},
+        {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: BellRing, dividerBefore: true},
         {href: "/manage/email", label: t("manage.nav.emailTemplates"), icon: Mail},
-        {href: "/manage/mail", label: t("manage.nav.mail"), icon: SlidersHorizontal},
+        {href: "/manage/mail", label: t("manage.nav.mail"), icon: Settings2},
         {href: "/manage/mail-journal", label: t("manage.nav.mailJournal"), icon: ScrollText, dividerBefore: true},
     ]},
 ];
@@ -118,6 +129,14 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
     const teamMode = event.Participation === 1;
     const showItem = (item: Item) => (!item.teamsOnly || teamMode) && (!item.infrastructureOnly || infrastructureAllowed) && (!item.sensitiveOnly || !!analytics?.Sensitive);
     const openGroup = (groupID: string) => setOpenGroupID(groupID);
+    // Set when the user came from the platform admin (a validated `?from=`, kept for the session).
+    const [adminReturn, setAdminReturn] = useState<string | null>(null);
+    useEffect(() => {
+        let storage: Storage | null = null;
+        try {storage = window.sessionStorage;} catch { /* Blocked storage: only the address counts. */ }
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only state, unknown on the server
+        setAdminReturn(readAdminReturn(window.location.search, storage));
+    }, []);
 
     return <aside className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")}>
         <div className="ib-admin-side__head">
@@ -130,8 +149,8 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
                 const isOpen = openGroupID === group.id;
                 const items = group.items.filter(showItem);
                 return <section className="event-manage-sidebar__group" key={group.id} aria-label={group.label}>
-                    <button className="event-manage-sidebar__heading" type="button" aria-expanded={isOpen} aria-controls={`event-manage-group-${group.id}`} onClick={() => setOpenGroupID(current => current === group.id ? null : group.id)}>
-                        <span>{group.label}</span><ChevronDown size={15} aria-hidden="true" />
+                    <button className="ib-admin-side__item event-manage-sidebar__heading" type="button" aria-expanded={isOpen} aria-controls={`event-manage-group-${group.id}`} onClick={() => setOpenGroupID(current => current === group.id ? null : group.id)}>
+                        <group.icon size={16} aria-hidden="true" /><span className="ib-admin-side__label">{group.label}</span><ChevronDown size={15} aria-hidden="true" />
                     </button>
                     <div id={`event-manage-group-${group.id}`} className="event-manage-sidebar__items" hidden={!isOpen}>
                         {items.map(item => <Fragment key={item.href}>
@@ -152,6 +171,8 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
                 </section>;
             })}
         </nav>
-        <div className="ib-admin-side__foot"><Link className="ib-admin-side__item" href="/" onClick={onNavigate}><ArrowLeft size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.shell.toEventSite")}</span></Link></div>
+        <div className="ib-admin-side__foot">
+            {adminReturn && <a className="ib-admin-side__item" href={adminReturn}><Settings size={16} aria-hidden="true" /><SideLabel text={t("manage.nav.returnToAdmin")} /></a>}
+            <Link className="ib-admin-side__item" href="/" onClick={onNavigate}><ArrowLeft size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.shell.toEventSite")}</span></Link></div>
     </aside>;
 }

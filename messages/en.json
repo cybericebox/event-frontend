@@ -1678,6 +1678,7 @@
   "manage.nav.newPage": "New page",
   "manage.nav.notifications": "Site notifications",
   "manage.nav.notificationsOnSite": "On-site templates",
+  "manage.nav.returnToAdmin": "Back to administration",
   "manage.nav.emailTemplates": "Email templates",
   "manage.nav.page.draftBadge": "draft",
   "manage.nav.page.titleWithState": "{title} · {state}",
