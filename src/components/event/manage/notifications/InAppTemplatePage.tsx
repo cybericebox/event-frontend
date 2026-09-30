@@ -3,7 +3,6 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import Link from "next/link";
 import {toast} from "react-hot-toast";
 import {
     channelSignals, customizeManageInAppTemplate, getManageInAppTemplates, getManageNotificationSubscriptions,
@@ -24,6 +23,7 @@ import {TemplateActions} from "./TemplateActions";
 import {TemplateHeader} from "./TemplateHeader";
 import {TemplateStatusTag} from "./TemplateStatusTag";
 import {TemplateVersions} from "./TemplateVersions";
+import {NotFoundScreen} from "@/components/event/NotFoundScreen";
 
 const BASE = "/manage/notifications";
 
@@ -95,7 +95,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
 
     if (subscriptions.isPending || templates.isPending) return <EventLoading event={event} label={t("manage.notifications.loading")} />;
     if (subscriptions.isError || templates.isError) return <EventLoadError message={t("manage.notifications.loadError")} error={subscriptions.error ?? templates.error} onRetry={() => {void subscriptions.refetch(); void templates.refetch();}} />;
-    if (!channelSignals(rows, "in_app").includes(signal)) return <div className="event-manage-settings"><Link className="event-template-header__back" href={BASE}>{t("manage.notifications.title")}</Link><EmptyState message={t("manage.notifications.templateNotFound")} /></div>;
+    if (!channelSignals(rows, "in_app").includes(signal)) return <div className="event-manage-settings"><NotFoundScreen block title={t("manage.notifications.templateNotFoundTitle")} body={t("manage.notifications.templateNotFound")} /></div>;
 
     const label = signalLabel(signal);
     // One orange notice under the header: the untouched platform template, or a read-only copy (published/older version). A draft has none.

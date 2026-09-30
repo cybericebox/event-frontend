@@ -15,8 +15,15 @@ export function resolveEventLogoURL(logoURL: string): string | null {
 
 const EventBrandContext = createContext("");
 
-export function EventBrandProvider({logoURL, children}: {logoURL: string; children: ReactNode}) {
-    return <EventBrandContext.Provider value={logoURL}>{children}</EventBrandContext.Provider>;
+const EventNameContext = createContext("");
+
+// `name` is empty when the event is unknown or unavailable.
+export function EventBrandProvider({logoURL, name = "", children}: {logoURL: string; name?: string; children: ReactNode}) {
+    return <EventBrandContext.Provider value={logoURL}><EventNameContext.Provider value={name}>{children}</EventNameContext.Provider></EventBrandContext.Provider>;
+}
+
+export function useEventBrandName(): string {
+    return useContext(EventNameContext);
 }
 
 export function EventBrandLogo({event, className = "", size = 32}: {

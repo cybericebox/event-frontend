@@ -126,7 +126,7 @@ export default async function RootLayout({
         </head>
         <body className="event-root">
         <Providers>
-            <EventBrandProvider logoURL={event?.LogoURL ?? ""}>
+            <EventBrandProvider logoURL={event?.LogoURL ?? ""} name={event?.Name ?? ""}>
             <AppShell event={event} unavailable={unavailable}>
                 {children}
             </AppShell>
