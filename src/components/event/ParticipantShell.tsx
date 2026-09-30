@@ -8,7 +8,6 @@ import {EventNavbar} from "./EventNavigation";
 import {SiteBannerBar} from "./SiteBanners";
 import {EventVpnProvider} from "./vpn/EventVpn";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
-import {t} from "@/i18n/t";
 import {EventFooter} from "./EventFooter";
 import {MissingFieldsNotice} from "./MissingFieldsNotice";
 

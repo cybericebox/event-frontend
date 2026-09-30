@@ -47,7 +47,7 @@ export function replaceVariables(text: string, variables: Record<string, Value>,
         const rendered = format === "date-time" && typeof value === "string" && !Number.isNaN(Date.parse(value))
             ? formatDateTime(value, dateDisplays?.[name]?.format, dateDisplays?.[name]?.pattern)
             : format === "number" && typeof value === "number" ? numberFormat.format(value) : String(value);
-        return inMarkdown ? rendered.replace(/[\\`*_\[\]{}()#+!>|~]/g, "\\$&") : rendered;
+        return inMarkdown ? rendered.replace(/[\\`*_[\]{}()#+!>|~]/g, "\\$&") : rendered;
     });
 }
 

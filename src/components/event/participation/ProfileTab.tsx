@@ -93,7 +93,7 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
             await queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]});
             toast.success(t("participation.fields.saved"));
         } catch (error) {
-            throw new Error(errorText(error, t("participation.fields.saveFailed")));
+            throw new Error(errorText(error, t("participation.fields.saveFailed")), {cause: error});
         }
     };
     const tiles = statTiles({

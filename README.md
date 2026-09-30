@@ -4,11 +4,11 @@ The event site of the Cyber ICE Box platform, for participants and for event man
 
 ## Stack
 
-Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Radix UI, TanStack Query, Lexical editor, dnd-kit, ECharts. Tests: Vitest with Testing Library. Lint: ESLint 9.
+Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Radix UI, TanStack Query, Lexical editor, dnd-kit, ECharts. Tests: Vitest with Testing Library. Lint: ESLint 10.
 
 ## Prerequisites
 
-Node.js 24 or newer (the container image uses Node 24).
+Node.js 26 or newer (see `.nvmrc`).
 
 ## Commands
 
@@ -16,8 +16,9 @@ Node.js 24 or newer (the container image uses Node 24).
 npm install
 npm run dev      # dev server on http://localhost:3003
 npm run build    # production build (standalone server output)
-npm start        # next start -p 3002
+npm start        # next start -p 3003
 npm run lint
+npm run typecheck
 npm test         # Vitest (time zone pinned to Europe/Kyiv)
 ```
 

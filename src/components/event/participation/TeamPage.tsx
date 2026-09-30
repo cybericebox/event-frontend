@@ -130,7 +130,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
             await refresh();
             toast.success(done);
         } catch (error) {
-            if (inline) throw new Error(errorText(error, fallback));
+            if (inline) throw new Error(errorText(error, fallback), {cause: error});
             toast.error(errorText(error, fallback));
             throw error;
         }
