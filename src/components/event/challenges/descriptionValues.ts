@@ -18,10 +18,6 @@ function relativeIp(cidr: string, lastOctet: number, showMask: boolean): string 
     return `${parsed.network3}.${lastOctet}${showMask ? `/${parsed.mask}` : ""}`;
 }
 
-function subnet(cidr: string, showMask: boolean): string {
-    return showMask ? cidr : cidr.split("/")[0] ?? cidr;
-}
-
 export function linkUrl(scheme: string, ip: string, port?: number, path?: string): string {
     return `${scheme}://${ip}${port ? `:${port}` : ""}${path ?? ""}`;
 }
@@ -31,8 +27,9 @@ function resolveOne(placeholder: SnapshotPlaceholder, lab: LabRuntime | undefine
     const showMask = placeholder.show_mask ?? false;
     const lastOctet = placeholder.last_octet ?? 0;
     switch (placeholder.kind) {
-        case "vpn.subnet": return lab.VPNCIDR ? subnet(lab.VPNCIDR, showMask) : "";
-        case "internet.subnet": return lab.InternetCIDR ? subnet(lab.InternetCIDR, showMask) : "";
+        // A subnet always reads as a CIDR (10.128.1.0/24); a bare network address is not a subnet.
+        case "vpn.subnet": return lab.VPNCIDR ?? "";
+        case "internet.subnet": return lab.InternetCIDR ?? "";
         case "ip": {
             const mask = showMask && !placeholder.as_link;
             switch (placeholder.ip_reference) {

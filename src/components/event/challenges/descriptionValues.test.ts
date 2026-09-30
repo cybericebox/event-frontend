@@ -13,8 +13,16 @@ describe("descriptionValues", () => {
             ip({key: "a"}), ip({key: "b", ip_reference: "internet", last_octet: 12, show_mask: true}),
             ip({key: "c", ip_reference: "static", octets_1to3: "10.0.0", last_octet: 7}),
         ], lab);
-        expect(variables).toEqual({s: "10.128.1.0/24", i: "10.9.4.0", a: "10.128.1.5", b: "10.9.4.12/24", c: "10.0.0.7"});
+        expect(variables).toEqual({s: "10.128.1.0/24", i: "10.9.4.0/24", a: "10.128.1.5", b: "10.9.4.12/24", c: "10.0.0.7"});
         expect(links).toEqual({});
+    });
+
+    it("writes a subnet as a CIDR whatever show_mask says", () => {
+        const {variables} = descriptionValues([
+            {key: "a", kind: "vpn.subnet"}, {key: "b", kind: "vpn.subnet", show_mask: false},
+            {key: "c", kind: "internet.subnet", show_mask: false}, {key: "d", kind: "internet.subnet"},
+        ], lab);
+        expect(variables).toEqual({a: "10.128.1.0/24", b: "10.128.1.0/24", c: "10.9.4.0/24", d: "10.9.4.0/24"});
     });
 
     it("builds scheme://ip[:port][path] for a link-form IP and returns it as a link", () => {
