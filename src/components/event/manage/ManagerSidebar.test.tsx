@@ -104,7 +104,7 @@ describe("participation navigation", () => {
 
         it("adds stands for infrastructure events and integrity for the sensitive level", () => {
             renderAnalytics({Sections: true, Sensitive: true}, true);
-            expect(items().map(([label]) => label)).toEqual(["Огляд", "Учасники", "Завдання", "Прогрес", "Стенди", "Доброчесність", "Комунікації", "Звіт"]);
+            expect(items().map(([label]) => label)).toEqual(["Огляд", "Учасники", "Завдання", "Прогрес", "Стенди", "Використання", "Доброчесність", "Комунікації", "Звіт"]);
         });
     });
 

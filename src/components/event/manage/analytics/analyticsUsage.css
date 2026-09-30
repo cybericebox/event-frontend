@@ -1,0 +1,14 @@
+/* «Використання»: the row toggle and the detail block under a participant. */
+.event-usage__person{display:flex;align-items:center;gap:var(--ib-2)}
+.event-usage__toggle{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-usage__toggle:hover{background:var(--ib-hover);color:var(--ib-ink)}
+.event-usage__toggle:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.event-usage__detail-row>td{background:var(--ib-soft)}
+.event-usage__detail{display:grid;grid-template-columns:minmax(220px,1fr) minmax(320px,2fr);gap:var(--ib-4);padding:var(--ib-2) 0}
+.event-usage__detail h3{margin:0 0 var(--ib-2);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);color:var(--ib-dim)}
+.event-usage__detail ul{margin:0;padding:0;list-style:none;display:grid;gap:var(--ib-1);font-size:var(--ib-fs-13)}
+.event-usage__detail p{margin:0;font-size:var(--ib-fs-12)}
+.event-usage__labs{width:100%;font-size:var(--ib-fs-13)}
+.event-usage__labs th{text-align:left;font-weight:var(--ib-w-medium);color:var(--ib-dim);padding:var(--ib-1) var(--ib-3) var(--ib-1) 0}
+.event-usage__labs td{padding:var(--ib-1) var(--ib-3) var(--ib-1) 0}
+@media (max-width:900px){.event-usage__detail{grid-template-columns:1fr}}

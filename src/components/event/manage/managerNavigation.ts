@@ -5,7 +5,7 @@ import {t} from "@/i18n/t";
 export function managerLocationTitle(pathname: string, pages: ManagePage[]): string {
     if (pathname === "/manage") return t("manage.nav.overview");
     if (pathname === "/manage/analytics") return t("manage.nav.analyticsOverview");
-    for (const section of ["participants", "tasks", "progress", "stands", "integrity", "communications", "report"]) {
+    for (const section of ["participants", "tasks", "progress", "stands", "usage", "integrity", "communications", "report"]) {
         if (pathname === `/manage/analytics/${section}`) return t(`manage.nav.analytics.${section}`);
     }
     if (pathname === "/manage/settings") return t("manage.nav.settings");

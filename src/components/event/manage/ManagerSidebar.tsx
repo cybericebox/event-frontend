@@ -3,6 +3,7 @@
 import {Fragment, useEffect, useState} from "react";
 import Link from "next/link";
 import {
+  Activity,
   ArrowLeft,
   Bell,
   BellRing,
@@ -93,6 +94,7 @@ const groups: Group[] = [
         {href: "/manage/analytics/tasks", label: t("manage.nav.analytics.tasks"), icon: ClipboardList},
         {href: "/manage/analytics/progress", label: t("manage.nav.analytics.progress"), icon: TrendingUp},
         {href: "/manage/analytics/stands", label: t("manage.nav.analytics.stands"), icon: Server, infrastructureOnly: true},
+        {href: "/manage/analytics/usage", label: t("manage.nav.analytics.usage"), icon: Activity, infrastructureOnly: true},
         {href: "/manage/analytics/integrity", label: t("manage.nav.analytics.integrity"), icon: ShieldCheck, sensitiveOnly: true},
         {href: "/manage/analytics/communications", label: t("manage.nav.analytics.communications"), icon: Mail},
         {href: "/manage/analytics/report", label: t("manage.nav.analytics.report"), icon: FileDown},

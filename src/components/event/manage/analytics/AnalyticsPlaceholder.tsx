@@ -4,7 +4,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {t} from "@/i18n/t";
 import {AnalyticsPage} from "./AnalyticsPage";
 
-export type AnalyticsSection = "participants" | "tasks" | "progress" | "stands" | "integrity" | "communications" | "report";
+export type AnalyticsSection = "participants" | "tasks" | "progress" | "stands" | "usage" | "integrity" | "communications" | "report";
 
 // A section that is not built yet: its heading and one EmptyState. The section
 // agent replaces the page that renders this with the real report.
