@@ -1,4 +1,4 @@
-// Theme cookie: `cib_theme` on the parent domain; a pre-rename `ib_theme` is migrated on first read.
+// Theme cookie: `cib_theme` on the parent domain.
 import { afterEach, describe, expect, it, vi } from "vitest"
 import * as theme from "./theme"
 
@@ -25,31 +25,15 @@ function fakeBrowser(initial: Record<string, string>) {
 describe("theme cookie", () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it("readThemeChoice moves the old ib_theme cookie to cib_theme", () => {
-    const { writes, jar } = fakeBrowser({ ib_theme: "dark" })
+  it("readThemeChoice reads cib_theme", () => {
+    fakeBrowser({ cib_theme: "dark" })
     expect(theme.readThemeChoice()).toBe("dark")
-    expect(jar.get("cib_theme")).toBe("dark")
-    expect(jar.has("ib_theme")).toBe(false)
-    expect(writes).toEqual([
-      "cib_theme=dark; path=/; SameSite=Lax; Secure; max-age=31536000",
-      "ib_theme=; path=/; SameSite=Lax; Secure; max-age=0",
-    ])
   })
 
-  it("the boot script migrates before first paint", () => {
-    const { jar, attrs } = fakeBrowser({ ib_theme: "dark" })
+  it("the boot script applies the choice before first paint", () => {
+    const { attrs } = fakeBrowser({ cib_theme: "dark" })
     new Function(theme.THEME_BOOT_SCRIPT)()
     expect(attrs["data-theme"]).toBe("dark")
-    expect(jar.get("cib_theme")).toBe("dark")
-    expect(jar.has("ib_theme")).toBe(false)
-  })
-
-  it("cib_theme wins over a leftover ib_theme and nothing is rewritten", () => {
-    const { writes, attrs } = fakeBrowser({ ib_theme: "dark", cib_theme: "light" })
-    expect(theme.readThemeChoice()).toBe("light")
-    new Function(theme.THEME_BOOT_SCRIPT)()
-    expect(attrs["data-theme"]).toBe("light")
-    expect(writes).toEqual([])
   })
 
   it("setThemeChoice writes cib_theme", () => {
