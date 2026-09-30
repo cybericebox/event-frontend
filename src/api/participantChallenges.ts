@@ -122,17 +122,22 @@ export async function getOwnChallengeLab(eventID: string, challengeID: string): 
     return z.object({Data: LabRuntimeSchema}).parse(await response.json()).Data;
 }
 
-// Starts or renews the caller's lab proxy cookie (set by the server on the lab
-// domain, HttpOnly); only its expiry comes back. Staff testing tasks as the
-// moderators team use the manage route.
-export async function openLabSession(eventID: string, challengeID: string, moderators = false): Promise<{expiresAt: number}> {
+// The link that opens one web device of a task's lab: https://<device>-<labid>.<base>/_auth?t=...
+// It is short-lived and single use, so it is fetched on every click and never kept.
+// The lab proxy turns it into its own cookie on the lab domain; the platform sets none.
+// Staff testing tasks as the moderators team use the manage route.
+export async function openLabLink(eventID: string, challengeID: string, device: string, port: number, moderators = false): Promise<{url: string; expiresAt: number}> {
     const path = moderators
         ? `${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/labs/moderators/challenges/${encodeURIComponent(challengeID)}`
         : `${baseUrl(eventID)}/${encodeURIComponent(challengeID)}`;
-    const response = await fetch(`${path}/lab/session`, {method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
+    const response = await fetch(`${path}/lab/link`, {
+        method: "POST", credentials: "include", cache: "no-store",
+        headers: {Accept: "application/json", "Content-Type": "application/json"},
+        body: JSON.stringify({Device: device, Port: port}),
+    });
     if (!response.ok) throw await failure(response);
-    const data = z.object({Data: z.object({expires_at: z.string()})}).parse(await response.json()).Data;
-    return {expiresAt: new Date(data.expires_at).getTime()};
+    const data = z.object({Data: z.object({url: z.string(), expires_at: z.string()})}).parse(await response.json()).Data;
+    return {url: data.url, expiresAt: new Date(data.expires_at).getTime()};
 }
 
 // Idempotent per team: a repeat returns the first unlock. Cost is 0 once solved or finished.

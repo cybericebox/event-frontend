@@ -28,6 +28,7 @@ export const ApiErrorCode = {
     ParticipantNotApproved: 1306,
     InfrastructureUnavailable: 1401,
     ChallengeNotPublished: 1910,
+    StandLabClientMissing: 2008,
     TeamFieldNotEditable: 1714,
     TeamFieldsLocked: 1715,
     ExerciseAlreadyAttached: 1803,

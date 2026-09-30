@@ -4354,6 +4354,8 @@
   "challenges.lab.error.notPublished": "The task is not published for the team yet.",
   "challenges.lab.error.notApproved": "Only approved participants can access the service.",
   "challenges.lab.error.failed": "Could not open access to the service.",
+  "challenges.lab.error.popupBlocked": "The browser blocked the new window. Allow pop-ups for this site.",
+  "challenges.lab.error.clientMissing": "Your laboratory access is not ready yet. Try again in a moment.",
   "manage.mail.journal.smtpError.auth": "The SMTP server rejected the login: check the SMTP username and password",
   "manage.mail.journal.smtpError.rcpt": "The recipient address was rejected",
   "manage.mail.journal.smtpError.rejected": "The server rejected the message (the address may not be verified in SES)",

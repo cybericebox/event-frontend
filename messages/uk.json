@@ -4354,6 +4354,8 @@
   "challenges.lab.error.notPublished": "Завдання ще не опубліковано для команди.",
   "challenges.lab.error.notApproved": "Доступ до сервісу мають лише схвалені учасники.",
   "challenges.lab.error.failed": "Не вдалося відкрити доступ до сервісу.",
+  "challenges.lab.error.popupBlocked": "Браузер заблокував нове вікно. Дозвольте спливні вікна для цього сайту.",
+  "challenges.lab.error.clientMissing": "Ваш доступ до лабораторії ще не створено. Спробуйте трохи пізніше.",
   "manage.mail.journal.smtpError.auth": "SMTP-сервер відхилив вхід: перевірте логін і пароль SMTP",
   "manage.mail.journal.smtpError.rcpt": "Адресу одержувача відхилено",
   "manage.mail.journal.smtpError.rejected": "Лист відхилено сервером (можливо, адресу не підтверджено в SES)",
