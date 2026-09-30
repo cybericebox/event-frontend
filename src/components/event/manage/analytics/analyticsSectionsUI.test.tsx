@@ -277,8 +277,8 @@ describe("Доброчесність", () => {
         await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     });
 
-    it("dismisses another kind for the whole catalog exercise and shows the admin-only error inline", async () => {
-        const calls = mockIntegrity({dismiss: {status: 403, code: 62208}});
+    it("dismisses another kind for the whole catalog exercise, offered to every viewer of the page", async () => {
+        const calls = mockIntegrity();
         renderWith(<AnalyticsIntegrity />);
         const table = await screen.findByRole("table");
         fireEvent.click(screen.getByRole("button", {name: "Докази: Red, Web 1"}));
@@ -286,8 +286,19 @@ describe("Доброчесність", () => {
         const dialog = await screen.findByRole("alertdialog");
         fireEvent.click(within(dialog).getByRole("radio", {name: /Усі заходи з цим завданням каталогу/}));
         fireEvent.click(within(dialog).getByRole("button", {name: "Виключити"}));
-        expect(await screen.findByText("Виключення для всіх заходів із цим завданням каталогу можуть додавати лише адміністратори платформи")).toBeTruthy();
+        await waitFor(() => expect(calls.some(call => call.method === "POST")).toBe(true));
         expect(JSON.parse(calls.find(call => call.method === "POST")!.body!)).toMatchObject({TeamChallengeID: tcRed, Kind: "no_access", Key: "", Scope: "exercise"});
+        await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    });
+
+    it("keeps the dialog open with the message when the pattern cannot be dismissed", async () => {
+        mockIntegrity({dismiss: {status: 400, code: 22207}});
+        renderWith(<AnalyticsIntegrity />);
+        const table = await screen.findByRole("table");
+        fireEvent.click(screen.getByRole("button", {name: "Докази: Red, Web 1"}));
+        fireEvent.click(within(table).getByRole("button", {name: "Не підсвічувати такі випадки"}));
+        fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", {name: "Виключити"}));
+        expect(await screen.findByText("Такий випадок не можна виключити з підсвічування")).toBeTruthy();
         expect(screen.getByRole("alertdialog")).toBeTruthy();
     });
 

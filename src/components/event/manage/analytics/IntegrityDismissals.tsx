@@ -19,7 +19,7 @@ import {integrityDismissalsKey, integrityFlagsKey, integrityKey, kindLabel} from
 // «Виключення»: patterns the organizers asked not to highlight (docs/ANTI-CHEAT.md).
 // A dismissal is for this event or for every event using the catalog exercise.
 
-const knownErrors: number[] = [ApiErrorCode.EventAnalyticsSolveNotFound, ApiErrorCode.EventAnalyticsReviewNoteTooLong, ApiErrorCode.EventAnalyticsPatternNotDismissible, ApiErrorCode.EventAnalyticsExerciseDismissAdminOnly];
+const knownErrors: number[] = [ApiErrorCode.EventAnalyticsSolveNotFound, ApiErrorCode.EventAnalyticsReviewNoteTooLong, ApiErrorCode.EventAnalyticsPatternNotDismissible];
 
 export function integrityErrorMessage(error: unknown, fallback: string): string {
     return error instanceof ManageApiError && error.code !== undefined && knownErrors.includes(error.code) ? apiErrorMessage(error.code, fallback) : fallback;
