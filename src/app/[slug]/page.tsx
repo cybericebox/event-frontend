@@ -3,13 +3,14 @@ import {getPublicEventInfo} from "@/api/publicEventInfo";
 import {getEventPageContent} from "@/api/eventContent";
 import {LiveContentBlocks} from "@/components/event/content/LiveContentBlocks";
 import {ClientContentPage} from "@/components/event/content/ClientContentPage";
+import {BRAND} from "@/i18n/brand";
 
 export async function generateMetadata({params}: {params: Promise<{slug: string}>}): Promise<Metadata> {
     const {slug} = await params;
     const event = await getPublicEventInfo();
     if (!event) return {robots: {index: false, follow: false}};
     const content = await getEventPageContent(slug);
-    return content ? {title: event.Name, description: `${content.Page.Title} · ${event.Name} · Cyber ICE Box`} : {robots: {index: false, follow: false}};
+    return content ? {title: event.Name, description: `${content.Page.Title} · ${event.Name} · ${BRAND}`} : {robots: {index: false, follow: false}};
 }
 
 export default async function ContentPage({params}: {params: Promise<{slug: string}>}) {

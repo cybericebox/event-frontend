@@ -22,6 +22,7 @@ import {
     bellCount, parseCounts, parseOtherEvents, resolutionKey, resolveDefaultTab, resolverName,
     type InboxCounts, type InboxDefaultTab, type InboxMessage as Message, type InboxTab,
 } from "./inboxModel";
+import { keepBrand } from "@/i18n/brand"
 
 const READ_SYNC_KEY = "cybericebox:inbox-read";
 // A link here with ?inbox opens the dropdown on arrival (the event site's «Ще N в інших заходах»).
@@ -373,7 +374,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                         return <li key={item.ID} ref={index === items.length - 1 ? lastItemRef : undefined} className={resolved ? "is-resolved" : undefined}>
                             <NotificationMessageCard
                                 icon={item.Icon} tone={item.Tone} accentColor={item.AccentColor} title={item.Title}
-                                body={item.Body ? <span dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(item.Body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []})}} /> : undefined}
+                                body={item.Body ? <span dangerouslySetInnerHTML={{__html: keepBrand(DOMPurify.sanitize(item.Body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []}))}} /> : undefined}
                                 unread={unreadItem} compact
                                 timestamp={<span className="event-notifications__meta">
                                     {resolved

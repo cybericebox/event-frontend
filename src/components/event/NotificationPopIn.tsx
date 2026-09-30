@@ -7,6 +7,7 @@ import type {InboxMessage} from "./inboxModel";
 import {NotificationMessageCard} from "./NotificationMessageCard";
 import {notificationAccent} from "./NotificationIcon";
 import {t} from "@/i18n/t";
+import { keepBrand } from "@/i18n/brand";
 
 export function popInDuration(value: number | null | undefined): number {
     return value == null ? 5000 : Math.min(10000, Math.max(3000, value));
@@ -41,7 +42,7 @@ export function NotificationPopIn({message, onClose, onAction}: {
         <button className="event-notification-popin__close" type="button" onClick={onClose} aria-label={t("notifications.close")}><X size={16} /></button>
         <div className="event-notification-popin__content"><NotificationMessageCard
             icon={message.Icon} tone={message.Tone} accentColor={message.AccentColor} title={message.Title}
-            body={message.Body && <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(message.Body)}} />}
+            body={message.Body && <div dangerouslySetInnerHTML={{__html: keepBrand(DOMPurify.sanitize(message.Body))}} />}
             actions={action && <button type="button" onClick={() => onAction(action.href)}>{action.label}</button>}
         />
         </div>

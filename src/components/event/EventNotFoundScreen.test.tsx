@@ -21,7 +21,7 @@ describe("EventNotFoundScreen", () => {
         renderScreen();
         expect(await screen.findByRole("heading", {name: "Захід не знайдено"})).toBeTruthy();
         expect(screen.getByRole("link", {name: "Увійти"}).getAttribute("href")).toContain("/sign-in");
-        expect(screen.getByRole("link", {name: "На головну Cyber ICE Box"})).toBeTruthy();
+        expect(screen.getByRole("link", {name: /^На головну Cyber\sICE\sBox$/})).toBeTruthy();
     });
 
     it("tells a signed-in account it has no access", async () => {
