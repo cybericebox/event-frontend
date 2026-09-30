@@ -148,6 +148,7 @@ export function MailSettingsPanel() {
                 </div>
             </div>
             <small>{t("manage.mail.identity.inheritHint")}</small>
+            <small data-testid="mail-tracking-note">{t(settings.TrackEngagement ? "manage.mail.tracking.on" : "manage.mail.tracking.off")}</small>
             {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
             {identityDirty && identityInvalid && <p className="event-manage-validation" role="alert">{t(`manage.mail.validation.${identityInvalid}`)}</p>}
             {canManage && identityDirty && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !!identityInvalid} busy={busy === "identity"}>{t("common.save")}</EventButton></div>}

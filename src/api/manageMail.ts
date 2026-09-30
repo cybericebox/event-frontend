@@ -55,6 +55,8 @@ const settingsSchema = z.object({
     SMTP: smtpSchema.nullable(),
     PlatformConfigured: z.boolean(),
     Limits: limitsSchema.default({PerSecond: 0, DailyQuota: 0, PerSecondSource: "none", DailyQuotaSource: "none", Used24h: 0}),
+    // The platform switch of open and click tracking, which the event follows (read-only).
+    TrackEngagement: z.boolean().default(false),
 });
 const testResultSchema = z.object({
     Sent: z.boolean(), Recipient: z.string().default(""), Transport: z.string().default(""), Error: z.string().default(""),
@@ -63,6 +65,20 @@ const targetSchema = z.object({
     Channel: z.string(), Status: z.string(), Error: z.string().default(""), Attempts: z.number().int().default(0),
     Transport: z.string().default(""), Recipient: z.string().default(""), FallbackError: z.string().default(""),
     UpdatedAt: z.string(),
+    // Open and click tracking of an email; only meaningful when Tracked.
+    Tracked: z.boolean().default(false),
+    FirstOpenedAt: z.string().nullish().transform(value => value ?? null),
+    LastOpenedAt: z.string().nullish().transform(value => value ?? null),
+    OpenCount: z.number().int().default(0),
+    FirstClickedAt: z.string().nullish().transform(value => value ?? null),
+    LastClickedAt: z.string().nullish().transform(value => value ?? null),
+    ClickCount: z.number().int().default(0),
+});
+// A followed link of a dispatch: host and path only, no query.
+const linkSchema = z.object({
+    Index: z.number().int().default(0), Label: z.string().default(""), ClickCount: z.number().int().default(0),
+    FirstClickedAt: z.string().nullish().transform(value => value ?? null),
+    LastClickedAt: z.string().nullish().transform(value => value ?? null),
 });
 const journalItemSchema = z.object({
     ID: z.string(), NotificationType: z.string(), RecipientUserID: z.string().optional(), Status: z.string(),
@@ -72,6 +88,9 @@ const journalItemSchema = z.object({
     BroadcastID: z.string().nullish(),
     RecipientEmail: z.string().nullable().optional().transform(value => value ?? ""),
     Targets: z.array(targetSchema).nullable().optional().transform(value => value ?? []),
+    // A test send: excluded from the engagement statistics.
+    IsTest: z.boolean().default(false),
+    Links: z.array(linkSchema).nullish().transform(value => value ?? []),
 });
 const journalPageSchema = z.object({
     Total: z.number().int(), Items: z.array(journalItemSchema), NextCursor: z.string().nullable().optional(),
@@ -93,6 +112,7 @@ export type EventMailSettings = z.infer<typeof settingsSchema>;
 export type EventMailSMTP = z.infer<typeof smtpSchema>;
 export type MailTestResult = z.infer<typeof testResultSchema>;
 export type MailJournalTarget = z.infer<typeof targetSchema>;
+export type MailJournalLink = z.infer<typeof linkSchema>;
 export type MailJournalItem = z.infer<typeof journalItemSchema>;
 export type MailJournalPage = z.infer<typeof journalPageSchema>;
 
@@ -200,6 +220,12 @@ export function mailJournalQueryParams(filters: MailJournalFilters, cursor: stri
 // The target row of the channel shown in the journal; null = not attempted yet.
 export function journalTarget(item: MailJournalItem, channel: string): MailJournalTarget | null {
     return item.Targets.find(target => target.Channel === channel) ?? null;
+}
+
+// Engagement of an email target; null = not tracked (shown as a dash, never 0).
+export function targetEngagement(target: MailJournalTarget | null): {opened: boolean; openedAt: string | null; clicks: number} | null {
+    if (!target || target.Channel !== "email" || !target.Tracked) return null;
+    return {opened: target.OpenCount > 0 || target.ClickCount > 0, openedAt: target.FirstOpenedAt ?? target.FirstClickedAt, clicks: target.ClickCount};
 }
 
 // --- requests ---

@@ -6,7 +6,7 @@ import {Info} from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {
     emptyMailJournalFilters, getEventMailJournal, journalTarget, mailDispatchStatuses, mailJournalTypeLabel, mailJournalTypes, mailTestType, mailResultLabels, targetResult, mailTransportLabel,
-    mailTransportLabels, type MailJournalFilters, type MailJournalItem, type MailResult, type MailTransport,
+    mailTransportLabels, targetEngagement, type MailJournalFilters, type MailJournalItem, type MailResult, type MailTransport,
 } from "@/api/manageMail";
 import {signalLabel, signalLabels} from "@/api/manageNotifications";
 import {DialogModal} from "@/components/event/DialogModal";
@@ -70,6 +70,8 @@ export function MailJournal() {
                 <th scope="col">{t("manage.mail.journal.col.status")}</th>
                 {email && <th scope="col">{t("manage.mail.journal.col.transport")}</th>}
                 <th scope="col" className="ib-num">{t("manage.mail.journal.col.attempts")}</th>
+                {email && <th scope="col">{t("manage.mail.journal.col.opened")}</th>}
+                {email && <th scope="col" className="ib-num">{t("manage.mail.journal.col.clicks")}</th>}
                 <th scope="col"><span className="ib-sr">{t("manage.mail.journal.col.details")}</span></th>
             </tr>}
             footer={<ManageTablePagination event={event} page={pages.page} pageSize={pages.pageSize} total={query.data?.Total ?? 0} hasNext={!!query.data?.NextCursor} busy={busy}
@@ -77,10 +79,11 @@ export function MailJournal() {
             <tbody>{items.map(item => {
                 const target = journalTarget(item, filters.channel);
                 const status = targetResult(target);
+                const engagement = email ? targetEngagement(target) : null;
                 return <tr key={item.ID}>
                     <td className="event-manage-table__nowrap"><time dateTime={target?.UpdatedAt ?? item.CreatedAt}>{formatDateTime(target?.UpdatedAt ?? item.CreatedAt)}</time></td>
                     <td>{target?.Recipient || item.RecipientEmail || <span className="event-manage-table__dim">—</span>}</td>
-                    <td>{item.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${item.BroadcastID}`}>{typeTitle(item.NotificationType)}</Link> : typeTitle(item.NotificationType)}{item.NotificationType === mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}</td>
+                    <td>{item.BroadcastID ? <Link className="ib-link" href={`/manage/broadcasts/${item.BroadcastID}`}>{typeTitle(item.NotificationType)}</Link> : typeTitle(item.NotificationType)}{item.NotificationType === mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}{item.IsTest && item.NotificationType !== mailTestType && <> <span className="event-manage-participants__status is-1">{t("manage.mail.journal.testBadge")}</span></>}</td>
                     <td><div className="event-participants-table__person">
                         <span className={`event-manage-participants__status ${status === "done" ? "is-2" : status === "error" ? "is-3" : "is-1"}`}>{status ? mailResultLabels[status] : t("manage.mail.journal.pending")}</span>
                         {target?.Error && (status === "deferred" ? <small>{target.Error}</small> : <small className="event-manage-mail__error">{target.Error}</small>)}
@@ -88,6 +91,8 @@ export function MailJournal() {
                     </div></td>
                     {email && <td className="event-manage-table__nowrap">{target?.Transport ? mailTransportLabel(target.Transport) : <span className="event-manage-table__dim">—</span>}</td>}
                     <td className="ib-num">{target ? target.Attempts : <span className="event-manage-table__dim">—</span>}</td>
+                    {email && <td className="event-manage-table__nowrap">{engagement ? (engagement.opened ? <time dateTime={engagement.openedAt ?? undefined}>{engagement.openedAt ? formatDateTime(engagement.openedAt) : t("manage.mail.journal.opened")}</time> : t("manage.mail.journal.notOpened")) : <span className="event-manage-table__dim">—</span>}</td>}
+                    {email && <td className="ib-num">{engagement ? engagement.clicks : <span className="event-manage-table__dim">—</span>}</td>}
                     <td><button className="ib-icon-btn ib-icon-btn--sm" type="button" aria-label={t("manage.mail.journal.detail.open", {type: typeTitle(item.NotificationType)})} onClick={() => setDetail(item)}><Info size={16} aria-hidden="true" /></button></td>
                 </tr>;
             })}</tbody>
@@ -111,10 +116,16 @@ export function MailJournal() {
                             <div><dt>{t("manage.mail.journal.col.attempts")}</dt><dd>{target.Attempts}</dd></div>
                             {target.Transport && <div><dt>{t("manage.mail.journal.col.transport")}</dt><dd>{mailTransportLabel(target.Transport)}</dd></div>}
                             <div><dt>{t("manage.mail.journal.detail.updated")}</dt><dd><time dateTime={target.UpdatedAt}>{formatDateTime(target.UpdatedAt)}</time></dd></div>
+                            {target.Channel === "email" && <div><dt>{t("manage.mail.journal.col.opened")}</dt><dd>{targetEngagement(target)?.opened ? (targetEngagement(target)?.openedAt ? formatDateTime(targetEngagement(target)!.openedAt!) : t("manage.mail.journal.opened")) : targetEngagement(target) ? t("manage.mail.journal.notOpened") : "—"}</dd></div>}
+                            {target.Channel === "email" && <div><dt>{t("manage.mail.journal.col.clicks")}</dt><dd>{targetEngagement(target) ? target.ClickCount : "—"}</dd></div>}
                         </dl>
                         {target.Error && (target.Status === "deferred" ? <p>{t("manage.mail.journal.detail.reason", {reason: target.Error})}</p> : <p className="event-manage-mail__error">{t("manage.mail.journal.detail.error", {error: target.Error})}</p>)}
                         {target.FallbackError && <p>{t("manage.mail.journal.fallbackError", {error: target.FallbackError})}</p>}
                     </li>)}</ul>}
+                {detail.Links.length > 0 && <>
+                    <h3>{t("manage.mail.journal.detail.links")}</h3>
+                    <ul className="event-mail-detail__links">{detail.Links.map(link => <li key={link.Index}><span>{link.Label || "—"}</span> <strong>{t("manage.mail.journal.detail.linkClicks", {count: link.ClickCount})}</strong></li>)}</ul>
+                </>}
             </div>}
         </DialogModal>
     </div>;

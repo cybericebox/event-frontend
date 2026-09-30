@@ -44,7 +44,7 @@ describe("Журнал надсилання", () => {
         renderJournal();
         expect(screen.getByRole("heading", {name: "Журнал надсилання"})).toBeTruthy();
         const table = screen.getByRole("table");
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (GMT+3)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби", "Деталі"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (GMT+3)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби", "Відкрито (приблизно)", "Переходи", "Деталі"]);
         await waitFor(() => expect(within(table).getByText("user1@example.com")).toBeTruthy());
         expect(within(table).getByText("550 rejected")).toBeTruthy();
         expect(within(table).getByText("SMTP заходу")).toBeTruthy();
@@ -93,6 +93,29 @@ describe("Журнал надсилання", () => {
         const link = await screen.findByRole("link", {name: "Розсилка"});
         expect(link.getAttribute("href")).toBe("/manage/broadcasts/0190c6a4-0000-7000-8000-00000000abcd");
         expect(screen.getAllByRole("link")).toHaveLength(1);
+    });
+
+    it("shows approximate opens and clicks, a dash for untracked mail, a test marker and the followed links", async () => {
+        const target = {Channel: "email", Status: "done", Attempts: 1, Transport: "platform", UpdatedAt: "2026-09-29T07:30:00Z"};
+        mockApi([{Items: [
+            item(1, {Targets: [{...target, Recipient: "user1@example.com", Tracked: true, FirstOpenedAt: "2026-09-29T08:00:00Z", OpenCount: 2, ClickCount: 3}],
+                Links: [{Index: 0, Label: "example.com/join", ClickCount: 3, FirstClickedAt: "2026-09-29T08:01:00Z", LastClickedAt: "2026-09-29T08:05:00Z"}]}),
+            item(2, {Targets: [{...target, Recipient: "user2@example.com", Tracked: true}]}),
+            item(3, {IsTest: true, Targets: [{...target, Recipient: "user3@example.com", Tracked: false}]}),
+        ], Total: 3}]);
+        renderJournal();
+        const table = screen.getByRole("table");
+        await waitFor(() => expect(within(table).getByText("user1@example.com")).toBeTruthy());
+        const rows = within(table).getAllByRole("row");
+        expect(within(rows[1]).getByText("3")).toBeTruthy();
+        expect(within(rows[2]).getByText("Ні")).toBeTruthy();
+        expect(within(rows[3]).getAllByText("—").length).toBeGreaterThanOrEqual(2);
+        expect(within(rows[3]).getByText("Тест")).toBeTruthy();
+        expect(within(rows[1]).queryByText("Тест")).toBeNull();
+        fireEvent.click(within(rows[1]).getByRole("button", {name: /Деталі надсилання/}));
+        expect(await screen.findByText("Посилання, за якими переходили")).toBeTruthy();
+        expect(screen.getByText("example.com/join")).toBeTruthy();
+        expect(screen.getByText("3 пер.")).toBeTruthy();
     });
 
     it("shows the empty state inside the table body", async () => {

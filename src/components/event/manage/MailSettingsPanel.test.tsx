@@ -80,3 +80,17 @@ describe("Пошта заходу: ліміти SMTP", () => {
         expect(puts).toHaveLength(0);
     });
 });
+
+describe("Пошта заходу: відстеження", () => {
+    afterEach(cleanup);
+
+    it("tells whether the platform tracks opens and clicks", async () => {
+        mockApi(settings({TrackEngagement: true}));
+        renderPanel();
+        expect((await screen.findByTestId("mail-tracking-note")).textContent).toContain("відстежуються платформою");
+        cleanup();
+        mockApi(settings());
+        renderPanel();
+        expect((await screen.findByTestId("mail-tracking-note")).textContent).toContain("не відстежуються");
+    });
+});
