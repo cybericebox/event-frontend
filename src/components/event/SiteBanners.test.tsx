@@ -69,7 +69,7 @@ describe("Банери сайту", () => {
         renderBar();
         fireEvent.click(await screen.findByRole("button", {name: "Закрити банер"}));
         expect(screen.queryByText("Сервери недоступні до 18:00")).toBeNull();
-        expect(window.localStorage.getItem("site-banner-dismissed:b1:1")).toBe("1");
+        expect(window.localStorage.getItem("cib_site_banner_dismissed_b1_1")).toBe("1");
         cleanup();
         mockBanners([banner()]);
         renderBar();
@@ -78,14 +78,14 @@ describe("Банери сайту", () => {
     });
 
     it("shows an edited banner again: a new version is not dismissed", async () => {
-        window.localStorage.setItem("site-banner-dismissed:b1:1", "1");
+        window.localStorage.setItem("cib_site_banner_dismissed_b1_1", "1");
         mockBanners([banner({Version: 2, Text: "Оновлений текст"})]);
         renderBar();
         expect(await screen.findByText("Оновлений текст")).toBeTruthy();
     });
 
     it("never hides a banner that cannot be dismissed, even with a stored mark", async () => {
-        window.localStorage.setItem("site-banner-dismissed:b1:1", "1");
+        window.localStorage.setItem("cib_site_banner_dismissed_b1_1", "1");
         mockBanners([banner({Dismissible: false})]);
         renderBar();
         expect(await screen.findByText("Сервери недоступні до 18:00")).toBeTruthy();

@@ -193,7 +193,7 @@ it("asks a visitor with a join link to register first and remembers the code", a
     window.history.replaceState(null, "", "/participation?tab=team&join=abc");
     view();
     expect(await screen.findByText(/спершу зареєструйтеся/)).toBeTruthy();
-    expect(sessionStorage.getItem("event-team-join-code")).toBe("abc");
+    expect(sessionStorage.getItem("cib_team_join_code")).toBe("abc");
 });
 
 const individual = {...event, Participation: 0};

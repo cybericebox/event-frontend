@@ -70,9 +70,7 @@ export function lockedLabel(challenge: OwnChallenge): string {
     return names.length ? t("challenges.locked.after", {names: names.join(", ")}) : t("challenges.locked.later");
 }
 
-export function boardViewKey(userID: string | undefined): string {
-    return `cybericebox.board-view.${userID ?? "guest"}`;
-}
+export {boardViewKey} from "@/utils/storageKeys";
 
 // Storage can be unavailable (private mode, blocked site data): fall back to «Плитки».
 export function readBoardView(storage: Pick<Storage, "getItem"> | undefined, key: string): BoardView {

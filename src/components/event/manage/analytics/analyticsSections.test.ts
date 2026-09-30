@@ -52,7 +52,7 @@ describe("integrity thresholds", () => {
         saveThresholds("e1", null);
         expect(loadThresholds("e1")).toBeNull();
 
-        const key = "event-analytics-integrity-v2:e1";
+        const key = "cib_integrity_thresholds_e1";
         store.set(key, "{not json");
         expect(loadThresholds("e1")).toBeNull();
         store.set(key, JSON.stringify({BruteForceAttempts: "x"}));

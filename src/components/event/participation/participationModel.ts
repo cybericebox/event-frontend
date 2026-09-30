@@ -5,6 +5,7 @@ import {t} from "@/i18n/t";
 import {isFileAnswer} from "@/api/answerFiles";
 import type {Participation} from "@/api/clientAuth";
 import {reasonText} from "./participationRules";
+import {STORAGE_TEAM_JOIN_CODE} from "@/utils/storageKeys";
 
 export function formFields(form: ParticipantForm | null | undefined): FormField[] {
     return form?.Enabled ? form.Document.blocks.filter(isFormField) : [];
@@ -42,7 +43,6 @@ export function rosterLine(memberCount: number, max: number | null | undefined, 
 }
 
 const JOIN_PARAM = "join";
-const JOIN_CODE_KEY = "event-team-join-code";
 
 // The invitation is a link to the event's team page with the code in the query.
 export function joinLink(origin: string, code: string): string {
@@ -68,15 +68,15 @@ export function joinCodeFromSearch(search: string): string {
 
 // A visitor who has to register first keeps the code for the rest of the session.
 export function rememberJoinCode(code: string): void {
-    try { if (code) sessionStorage.setItem(JOIN_CODE_KEY, code); } catch { /* storage may be blocked */ }
+    try { if (code) sessionStorage.setItem(STORAGE_TEAM_JOIN_CODE, code); } catch { /* storage may be blocked */ }
 }
 
 export function recalledJoinCode(): string {
-    try { return sessionStorage.getItem(JOIN_CODE_KEY) ?? ""; } catch { return ""; }
+    try { return sessionStorage.getItem(STORAGE_TEAM_JOIN_CODE) ?? ""; } catch { return ""; }
 }
 
 export function forgetJoinCode(): void {
-    try { sessionStorage.removeItem(JOIN_CODE_KEY); } catch { /* storage may be blocked */ }
+    try { sessionStorage.removeItem(STORAGE_TEAM_JOIN_CODE); } catch { /* storage may be blocked */ }
 }
 
 const expiresFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});

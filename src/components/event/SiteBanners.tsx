@@ -8,6 +8,7 @@ import {getSiteBanners, type VisibleBanner} from "@/api/siteBanners";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import { keepBrand } from "@/i18n/brand";
+import {siteBannerDismissedKey} from "@/utils/storageKeys";
 
 export type SiteBannerData = Pick<VisibleBanner, "Text" | "LinkURL" | "LinkLabel" | "Level" | "Dismissible">;
 
@@ -40,15 +41,14 @@ export function SiteBanner({banner, onDismiss}: {banner: SiteBannerData; onDismi
     </div>;
 }
 
-const STORAGE_PREFIX = "site-banner-dismissed:";
-export const bannerDismissKey = (banner: Pick<VisibleBanner, "ID" | "Version">) => `${banner.ID}:${banner.Version}`;
+export const bannerDismissKey = (banner: Pick<VisibleBanner, "ID" | "Version">) => siteBannerDismissedKey(banner.ID, banner.Version);
 
 function isDismissed(banner: VisibleBanner): boolean {
-    try {return window.localStorage.getItem(STORAGE_PREFIX + bannerDismissKey(banner)) === "1";} catch {return false;}
+    try {return window.localStorage.getItem(bannerDismissKey(banner)) === "1";} catch {return false;}
 }
 
 function rememberDismissal(banner: VisibleBanner) {
-    try {window.localStorage.setItem(STORAGE_PREFIX + bannerDismissKey(banner), "1");} catch {/* storage is unavailable: the banner stays hidden until reload */}
+    try {window.localStorage.setItem(bannerDismissKey(banner), "1");} catch {/* storage is unavailable: the banner stays hidden until reload */}
 }
 
 export const SITE_BANNER_POLL_MS = 60_000;

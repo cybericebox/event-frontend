@@ -23,8 +23,8 @@ import {
     type InboxCounts, type InboxDefaultTab, type InboxMessage as Message, type InboxTab,
 } from "./inboxModel";
 import { keepBrand } from "@/i18n/brand"
+import {STORAGE_INBOX_READ} from "@/utils/storageKeys";
 
-const READ_SYNC_KEY = "cybericebox:inbox-read";
 // A link here with ?inbox opens the dropdown on arrival (the event site's «Ще N в інших заходах»).
 const OPEN_PARAM = "inbox";
 const zeroCursor: InboxCursor = {ID: "00000000-0000-0000-0000-000000000000", CreatedAt: "1970-01-01T00:00:00Z"};
@@ -205,7 +205,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         document.addEventListener("visibilitychange", pollWhenVisible);
         window.addEventListener("focus", pollWhenVisible);
         window.addEventListener("cybericebox:inbox-updated", pollWhenVisible);
-        const onStorage = (storageEvent: StorageEvent) => { if (storageEvent.key === READ_SYNC_KEY) { pollWhenVisible(); if (openRef.current) void refresh(); } };
+        const onStorage = (storageEvent: StorageEvent) => { if (storageEvent.key === STORAGE_INBOX_READ) { pollWhenVisible(); if (openRef.current) void refresh(); } };
         window.addEventListener("storage", onStorage);
         return () => {
             active = false;
@@ -258,8 +258,8 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
 
     function announceRead() {
         try {
-            const previous = window.localStorage.getItem(READ_SYNC_KEY);
-            window.localStorage.setItem(READ_SYNC_KEY, previous === "1" ? "0" : "1");
+            const previous = window.localStorage.getItem(STORAGE_INBOX_READ);
+            window.localStorage.setItem(STORAGE_INBOX_READ, previous === "1" ? "0" : "1");
         } catch { /* Polling still synchronizes read state. */ }
     }
 

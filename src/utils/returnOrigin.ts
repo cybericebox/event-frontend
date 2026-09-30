@@ -1,8 +1,8 @@
 import {adminOrigin} from "@/utils/origins";
+import {STORAGE_RETURN_ADMIN} from "@/utils/storageKeys";
 
 // The place a user came from, for the «return» button at the bottom of the /manage sidebar.
 // Only the platform admin counts, and only its own host, so a crafted `from` cannot become an open redirect.
-const ADMIN_KEY = "cybericebox.return.admin";
 export const FROM_PARAM = "from";
 export const FROM_NAME_PARAM = "from_name";
 
@@ -23,11 +23,11 @@ export function validAdminReturn(value: string | null | undefined, origin: strin
 export function readAdminReturn(search: string, storage: Pick<Storage, "getItem" | "setItem"> | null, origin: string = adminOrigin): string | null {
     const fromAddress = validAdminReturn(new URLSearchParams(search).get(FROM_PARAM), origin);
     if (fromAddress) {
-        try {storage?.setItem(ADMIN_KEY, fromAddress);} catch { /* Session storage may be unavailable; the origin lasts for this page. */ }
+        try {storage?.setItem(STORAGE_RETURN_ADMIN, fromAddress);} catch { /* Session storage may be unavailable; the origin lasts for this page. */ }
         return fromAddress;
     }
     try {
-        return validAdminReturn(storage?.getItem(ADMIN_KEY), origin);
+        return validAdminReturn(storage?.getItem(STORAGE_RETURN_ADMIN), origin);
     } catch {
         return null;
     }

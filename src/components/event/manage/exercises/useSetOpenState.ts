@@ -1,8 +1,9 @@
 "use client";
 
 import {useState} from "react";
+import {manageSetsOpenKey} from "@/utils/storageKeys";
 
-const storageKey = (eventID: string) => `event-manage-sets-open:${eventID}`;
+const storageKey = manageSetsOpenKey;
 
 function read(eventID: string): Record<string, boolean> {
     try {

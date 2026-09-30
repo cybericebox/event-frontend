@@ -1,9 +1,10 @@
 import {clampThresholds, integrityLevels, type IntegrityThresholds} from "@/api/manageAnalyticsIntegrity";
+import {integrityThresholdsKey} from "@/utils/storageKeys";
 
 // The moderator's thresholds are remembered per event in this browser (a
 // convenience only: the server holds no per-event setting, and the defaults
 // are the fallback whenever storage is unavailable or the value is stale).
-const storageKey = (eventID: string) => `event-analytics-integrity-v2:${eventID}`;
+const storageKey = integrityThresholdsKey;
 
 const isNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value);
 

@@ -3,7 +3,7 @@ import {readAdminReturn, validAdminReturn, withManageOrigin} from "./returnOrigi
 
 const ADMIN = "https://admin.example.org";
 const store = (initial?: string) => {
-    const data = new Map<string, string>(initial ? [["cybericebox.return.admin", initial]] : []);
+    const data = new Map<string, string>(initial ? [["cib_return_admin", initial]] : []);
     return {getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => void data.set(key, value)};
 };
 
