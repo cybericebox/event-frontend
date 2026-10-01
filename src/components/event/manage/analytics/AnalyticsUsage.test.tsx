@@ -23,14 +23,14 @@ function usage(extra: Record<string, unknown> = {}) {
         Available: true, At: past, Period: {From: past, To: past},
         Summary: {Users: 3, OnlineNow: 1, VPNUsers: 2, ProxyUsers: 1, Sessions: 3, OnlineSeconds: 600, RxBytes: 1024, TxBytes: 2048, ProxyRequests: 12, ProxyBytes: 4096},
         Users: [
-            {UserID: "u1", UserName: "Ann", TeamID: blue, TeamName: "Blue",
+            {UserID: "u1", UserName: "Ann", TeamID: blue, TeamName: "Blue", LastSeenAt: new Date(Date.now() - 5 * 60_000).toISOString(), LastLabAt: null,
                 VPN: {Online: true, LastHandshakeAt: past, FirstAt: past, Sessions: 2, Seconds: 600, RxBytes: 1024, TxBytes: 2048,
                     Recent: [{StartedAt: past, EndedAt: past, Seconds: 600, RxBytes: 1024, TxBytes: 2048}]},
                 Proxy: {Requests: 12, BytesIn: 3072, BytesOut: 1024, FirstAt: past, LastAt: past},
                 Labs: [{ChallengeID: "c1", Task: "Web login", Surface: "proxy", Attempts: 12, BytesIn: 3072, BytesOut: 1024, FirstAt: past, LastAt: past}]},
             {UserID: "u2", UserName: "Bob", TeamID: red, TeamName: "Red",
                 VPN: {Online: false, LastHandshakeAt: past, FirstAt: past, Sessions: 1, Seconds: 0, RxBytes: 0, TxBytes: 0, Recent: []}, Proxy: noProxy, Labs: []},
-            {UserID: "u3", UserName: "", TeamID: red, TeamName: "Red", VPN: {Online: false, LastHandshakeAt: null, FirstAt: null, ...none}, Proxy: noProxy, Labs: []},
+            {UserID: "u3", UserName: "", TeamID: red, TeamName: "Red", LastSeenAt: null, LastLabAt: null, VPN: {Online: false, LastHandshakeAt: null, FirstAt: null, ...none}, Proxy: noProxy, Labs: []},
         ],
         ...extra,
     };
@@ -45,6 +45,16 @@ function renderUsage() {
 }
 
 describe("Використання", () => {
+    it("shows when each participant was last online and last in a laboratory", async () => {
+        mockApi(usage());
+        renderUsage();
+        const row = (await screen.findByText("Ann")).closest("tr")!;
+        expect(row.textContent).toContain("5 хвилин тому");
+        expect(row.textContent).toContain("ніколи");
+        expect(screen.getByRole("columnheader", {name: "Востаннє онлайн"})).toBeTruthy();
+        expect(screen.getByRole("columnheader", {name: "Востаннє в лабораторії"})).toBeTruthy();
+    });
+
     it("says so, in a block, when the event has no infrastructure", async () => {
         mockApi(usage({Available: false, Users: []}));
         renderUsage();

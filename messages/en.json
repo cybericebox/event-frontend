@@ -3759,6 +3759,8 @@
   "manage.analytics.usage.table.empty": "No participants for these conditions",
   "manage.analytics.usage.col.participant": "Participant",
   "manage.analytics.usage.col.state": "VPN",
+  "manage.analytics.usage.col.seen": "Last online",
+  "manage.analytics.usage.col.lab": "Last in a laboratory",
   "manage.analytics.usage.col.last": "Last connected",
   "manage.analytics.usage.col.sessions": "Sessions",
   "manage.analytics.usage.col.time": "Online time",

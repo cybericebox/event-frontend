@@ -13,6 +13,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {formatBytes, formatCount, formatDateTime, formatDuration, noValue} from "./analyticsFormat";
+import {LastActivity} from "../LastActivity";
 import {AnalyticsExportButton} from "./AnalyticsExportButton";
 import {AnalyticsPage} from "./AnalyticsPage";
 import {AnalyticsPeriodFilter} from "./AnalyticsPeriodFilter";
@@ -93,6 +94,8 @@ function UserRows({users}: {users: UsageUser[]}) {
                     <div className="event-manage-table__person"><strong>{userName(user)}</strong><small>{user.TeamName}</small></div>
                 </div></td>
                 <td><span className={`ib-tag ib-tag--sm ${stateTone[state]}`.trim()}>{t(`manage.analytics.usage.state.${state}`)}</span></td>
+                <td className="event-manage-table__nowrap"><LastActivity at={user.LastSeenAt} /></td>
+                <td className="event-manage-table__nowrap"><LastActivity at={user.LastLabAt} /></td>
                 <td className="event-manage-table__nowrap">{formatDateTime(user.VPN.LastHandshakeAt)}</td>
                 <td>{user.VPN.Sessions === 0 ? noValue : formatCount(user.VPN.Sessions)}</td>
                 <td className="event-manage-table__nowrap">{user.VPN.Sessions === 0 ? noValue : formatDuration(user.VPN.Seconds)}</td>
@@ -101,7 +104,7 @@ function UserRows({users}: {users: UsageUser[]}) {
                 <td className="event-manage-table__nowrap">{user.Proxy.Requests === 0 ? noValue : formatBytes(user.Proxy.BytesIn + user.Proxy.BytesOut)}</td>
                 <td className="event-manage-table__nowrap">{formatDateTime(user.Proxy.LastAt)}</td>
             </tr>
-            {expanded && <tr className="event-usage__detail-row"><td colSpan={9}><Detail user={user} /></td></tr>}
+            {expanded && <tr className="event-usage__detail-row"><td colSpan={11}><Detail user={user} /></td></tr>}
         </Fragment>;
     })}</tbody>;
 }
@@ -158,6 +161,8 @@ export function AnalyticsUsage() {
             head={<tr>
                 <th scope="col">{t("manage.analytics.usage.col.participant")}</th>
                 <th scope="col">{t("manage.analytics.usage.col.state")}</th>
+                <th scope="col">{t("manage.analytics.usage.col.seen")}</th>
+                <th scope="col">{t("manage.analytics.usage.col.lab")}</th>
                 <th scope="col">{t("manage.analytics.usage.col.last")}</th>
                 <th scope="col">{t("manage.analytics.usage.col.sessions")}</th>
                 <th scope="col">{t("manage.analytics.usage.col.time")}</th>

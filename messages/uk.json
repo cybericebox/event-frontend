@@ -3759,6 +3759,8 @@
   "manage.analytics.usage.table.empty": "Немає учасників за цими умовами",
   "manage.analytics.usage.col.participant": "Учасник",
   "manage.analytics.usage.col.state": "VPN",
+  "manage.analytics.usage.col.seen": "Востаннє онлайн",
+  "manage.analytics.usage.col.lab": "Востаннє в лабораторії",
   "manage.analytics.usage.col.last": "Останнє підключення",
   "manage.analytics.usage.col.sessions": "Сесій",
   "manage.analytics.usage.col.time": "Час онлайн",

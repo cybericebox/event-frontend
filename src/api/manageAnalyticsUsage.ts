@@ -26,6 +26,9 @@ export type UsageLab = z.infer<typeof labSchema>;
 const userSchema = z.object({
     UserID: z.string(),
     UserName: z.string().default(""),
+    // The last request on the event and the last lab access (VPN or proxy); null = never.
+    LastSeenAt: optionalTime,
+    LastLabAt: optionalTime,
     TeamID: z.string(),
     TeamName: z.string().default(""),
     VPN: z.object({
