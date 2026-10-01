@@ -3,7 +3,7 @@
 import {eventVpnFileName} from "@/utils/wireguard";
 import {Fragment, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {AlertTriangle, ChevronDown, Download, ListChecks, RotateCcw} from "lucide-react";
+import {AlertTriangle, ChevronDown, Download, Layers, ListChecks, RotateCcw} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
     DEPLOY_LEAD_RANGE, TEARDOWN_DELAY_RANGE, getManageLabs, getModeratorChallengeLab, getModeratorChallenges, getModeratorVPNConfig,
@@ -15,6 +15,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel, standStatusLabel, standStatusTone, standTeamName, type StatusTone} from "@/components/event/manage/standStatus";
+import {StandDetailDialog} from "@/components/event/manage/StandDetailDialog";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {t} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -120,6 +121,7 @@ export default function ManageLabsPage() {
     const [recreating, setRecreating] = useState<string[]>([]);
     const [vpnBusy, setVpnBusy] = useState(false);
     const [challengesOpen, setChallengesOpen] = useState(false);
+    const [detailTeam, setDetailTeam] = useState<string | null>(null);
 
     async function recreate() {
         if (!confirm || recreating.includes(confirm.TeamID) || !canManage) return;
@@ -161,6 +163,10 @@ export default function ManageLabsPage() {
         {!labs.LaboratoriesAvailable && <div className="event-manage-notice" role="status"><AlertTriangle size={18} aria-hidden="true" />{t("manage.labs.unavailable")}</div>}
         <ScheduleSection key={`${labs.DeployLeadMinutes}-${labs.TeardownDelayMinutes}`} eventID={eventID} labs={labs} canManage={canManage} />
         <div className="event-stands__summary" role="status">{summary.map(entry => <div key={entry.label}><span>{entry.label}</span><strong>{entry.value}</strong></div>)}</div>
+        {labs.Prewarm && labs.Prewarm.Total > 0 && <p className="event-stands__prewarm" role="status">
+            {t("manage.labs.prewarm.progress", {done: labs.Prewarm.Done, total: labs.Prewarm.Total})}
+            {labs.Prewarm.Failed > 0 && <span className="event-stands__error"> {t("manage.labs.prewarm.failed", {count: labs.Prewarm.Failed})}</span>}
+        </p>}
         <section className="event-manage-section event-stands__table">
             {items.length === 0 ? <EmptyState message={t("manage.labs.empty")} /> : <div className="event-participants-table"><table>
                 <thead><tr><th>{t("manage.labs.column.team")}</th><th>{t("manage.labs.column.status")}</th><th>{t("manage.labs.column.updated", {zone: zoneOffset()})}</th><th>{t("manage.labs.column.reason")}</th><th><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
@@ -174,6 +180,7 @@ export default function ManageLabsPage() {
                             <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason || t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason || "—"}</span>}</td>
                             <td><div className="event-manage-participants__actions event-stands__actions">
                                 {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={vpnBusy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
+                                {canManage && stand.Status !== "not_deployed" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDetailTeam(stand.TeamID)}><Layers size={14} aria-hidden="true" />{t("manage.labs.detail.open")}</button>}
                                 {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={recreating.includes(stand.TeamID)} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
                             </div></td>
                         </tr>
@@ -185,6 +192,7 @@ export default function ManageLabsPage() {
         <ConfirmDialog open={confirm !== null} onCancel={() => {if (!confirm || !recreating.includes(confirm.TeamID)) setConfirm(null);}} tone="danger" busy={!!confirm && recreating.includes(confirm.TeamID)} error={confirmError}
             title={t("manage.labs.recreate.title")} description={t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}
             confirmLabel={t("manage.labs.recreate.confirm")} onConfirm={() => void recreate()} />
+        <StandDetailDialog eventID={eventID} teamID={detailTeam} canManage={canManage} onClose={() => setDetailTeam(null)} />
         <ModeratorChallengesDialog eventID={eventID} open={challengesOpen} onClose={() => setChallengesOpen(false)} />
     </div>;
 }

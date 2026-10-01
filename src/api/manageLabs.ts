@@ -12,12 +12,48 @@ export type StandStatus = z.infer<typeof StandStatusSchema>;
 export const LabStatusSchema = z.enum(["pending", "ready", "failed", "removed"]);
 export type LabStatus = z.infer<typeof LabStatusSchema>;
 
+const optionalNumber = z.number().int().nullish().transform(value => value ?? 0);
+
+// The launch queue of a lab; Position 0 means every pod is already dispatched.
+export const LabQueueSchema = z.object({
+    Position: optionalNumber, Length: optionalNumber, Reason: optionalText, Message: optionalText, Pods: optionalNumber, Pending: optionalNumber,
+});
+export type LabQueue = z.infer<typeof LabQueueSchema>;
+
+const failureSchema = z.object({Reason: optionalText, Message: optionalText, RestartCount: optionalNumber, At: optionalTime});
+const schedulingSchema = z.object({
+    State: optionalText, QueuedAt: optionalTime, DispatchedAt: optionalTime, StartedAt: optionalTime,
+    Failure: failureSchema.nullish().transform(value => value ?? null),
+});
+const snapshotSchema = z.object({
+    LastSnapshotAt: optionalTime, RestoredAt: optionalTime, SizeBytes: optionalNumber, Warning: optionalText,
+    Rescue: z.boolean().nullish().transform(value => value ?? false),
+});
+export const LiveDeviceSchema = z.object({
+    Name: z.string(), Ready: z.boolean().default(false), Reason: optionalText,
+    Scheduling: schedulingSchema.nullish().transform(value => value ?? null),
+    Snapshot: snapshotSchema.nullish().transform(value => value ?? null),
+});
+export type LiveDevice = z.infer<typeof LiveDeviceSchema>;
+const liveSchema = z.object({
+    Phase: optionalText, Ready: z.boolean().default(false),
+    Queue: LabQueueSchema.nullish().transform(value => value ?? null),
+    ImageWarning: optionalText, GroupImageWarning: optionalText,
+    Devices: z.array(LiveDeviceSchema).nullish().transform(value => value ?? []),
+});
+export type LabLive = z.infer<typeof liveSchema>;
+
 const standLabSchema = z.object({ChallengeID: id, ChallengeName: optionalText, Status: LabStatusSchema, Reason: optionalText});
 const standSchema = z.object({
     TeamID: id, TeamName: optionalText, Moderators: z.boolean().default(false), Status: StandStatusSchema,
     Reason: optionalText, UpdatedAt: optionalTime, Generation: z.number().int().default(0),
     Labs: z.array(standLabSchema).nullish().transform(value => value ?? []),
 });
+const prewarmSchema = z.object({
+    Total: optionalNumber, Done: optionalNumber, Warming: optionalNumber, Queued: optionalNumber, Failed: optionalNumber, Skipped: optionalNumber, UpdatedAt: optionalTime,
+});
+export type Prewarm = z.infer<typeof prewarmSchema>;
+
 const summarySchema = z.object({
     Total: z.number().int(), NotDeployed: z.number().int(), Creating: z.number().int(),
     Ready: z.number().int(), Failed: z.number().int(), Removed: z.number().int(),
@@ -27,8 +63,20 @@ export const ManageLabsSchema = z.object({
     DeployLeadMinutes: z.number().int(), TeardownDelayMinutes: z.number().int(),
     DeployAt: optionalTime, TeardownAt: optionalTime, ChallengesOpened: z.boolean(),
     Summary: summarySchema,
+    Prewarm: prewarmSchema.nullish().transform(value => value ?? null),
     Items: z.array(standSchema).nullish().transform(value => value ?? []),
 });
+const detailLabSchema = standLabSchema.extend({
+    Live: liveSchema.nullish().transform(value => value ?? null),
+    LiveUnavailable: z.boolean().nullish().transform(value => value ?? false),
+});
+export const StandDetailSchema = z.object({
+    TeamID: id, TeamName: optionalText, Moderators: z.boolean().default(false), Status: StandStatusSchema, Reason: optionalText,
+    Generation: z.number().int().default(0), LaboratoriesAvailable: z.boolean().default(false),
+    Labs: z.array(detailLabSchema).nullish().transform(value => value ?? []),
+});
+export type StandDetail = z.infer<typeof StandDetailSchema>;
+export type StandDetailLab = z.infer<typeof detailLabSchema>;
 export type ManageStand = z.infer<typeof standSchema>;
 export type ManageLabs = z.infer<typeof ManageLabsSchema>;
 export type ManageLabsSettings = Pick<ManageLabs, "DeployLeadMinutes" | "TeardownDelayMinutes">;
@@ -41,7 +89,7 @@ export type ModeratorChallenge = z.infer<typeof ModeratorChallengeSchema>;
 
 const labAccessSchema = z.object({Device: optionalText, Port: z.number().int(), Protocol: optionalText, URL: optionalText});
 export const LabRuntimeSchema = z.object({
-    Phase: optionalText, Ready: z.boolean(), VPNCIDR: optionalText, InternetCIDR: optionalText,
+    Phase: optionalText, Ready: z.boolean(), Queue: LabQueueSchema.nullish().transform(value => value ?? null), VPNCIDR: optionalText, InternetCIDR: optionalText,
     Access: z.array(labAccessSchema).nullish().transform(value => value ?? []),
 });
 export type LabRuntime = z.infer<typeof LabRuntimeSchema>;
@@ -61,6 +109,10 @@ export const StandErrorCode = {
     EventFinished: 2005,
     ModeratorsTeamUnavailable: 2006,
     InfrastructureUnavailable: 1401,
+    // Device actions of a running lab (object code 14, shared with the exercise lab).
+    NoPersistence: 1405,
+    DeviceNotFound: 1406,
+    DeviceRestarting: 1407,
 } as const;
 
 // Stand codes have their own messages: manage.labs.error.<code>.
@@ -98,6 +150,24 @@ export async function getManageLabs(eventID: string): Promise<ManageLabs> {
 
 export async function putManageLabsSettings(eventID: string, settings: ManageLabsSettings): Promise<ManageLabs> {
     return request(eventID, "/settings", ManageLabsSchema, "PUT", settings);
+}
+
+export async function getStandDetail(eventID: string, teamID: string): Promise<StandDetail> {
+    return request(eventID, `/${encodeURIComponent(teamID)}/detail`, StandDetailSchema);
+}
+
+function devicePath(teamID: string, challengeID: string, device: string): string {
+    return `/${encodeURIComponent(teamID)}/challenges/${encodeURIComponent(challengeID)}/devices/${encodeURIComponent(device)}`;
+}
+
+// Throws the lab device back to its original image; whatever was changed on it is lost.
+export async function resetStandDevice(eventID: string, teamID: string, challengeID: string, device: string): Promise<void> {
+    await request(eventID, `${devicePath(teamID, challengeID, device)}/reset`, z.unknown(), "POST");
+}
+
+// Rescue mode: the device starts a shell from its latest snapshot instead of its service.
+export async function setStandDeviceRescue(eventID: string, teamID: string, challengeID: string, device: string, enable: boolean): Promise<void> {
+    await request(eventID, `${devicePath(teamID, challengeID, device)}/rescue`, z.unknown(), "POST", {Enable: enable});
 }
 
 export async function recreateStand(eventID: string, teamID: string): Promise<ManageStand> {

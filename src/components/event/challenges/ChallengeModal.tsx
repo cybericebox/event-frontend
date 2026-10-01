@@ -3,6 +3,7 @@
 import {useEffect, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {ChallengeSolvesTab} from "./ChallengeSolvesTab";
 import {descriptionValues} from "./descriptionValues";
+import {queueLine} from "@/components/event/labLive";
 import {labLinkErrorMessage, useLabLink, type LabLinkState} from "./useLabLink";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery} from "@tanstack/react-query";
@@ -76,7 +77,7 @@ function HostBlock({lab, pending, link, busyKey, onOpen, onRetry}: {lab: LabRunt
                 const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
                 return <CopyField key={`${item.Device}-${item.Port}`} value={value} onOpen={item.URL ? () => onOpen(item.Device, item.Port) : undefined} linkPending={busyKey === `${item.Device}:${item.Port}`} />;
             })}</div>
-            : <p className="ib-cmodal__hint">{pending && <BusyMark />}{pending ? t("challenges.host.checking") : t("challenges.host.preparing")}</p>}
+            : <p className="ib-cmodal__hint">{pending && <BusyMark />}{pending ? t("challenges.host.checking") : queueLine(lab?.Queue) ?? t("challenges.host.preparing")}</p>}
         {link.status === "error" && <EventLoadError compact error={link.error} message={labLinkErrorMessage(link.error)} onRetry={onRetry} />}
         <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>
     </section>;
@@ -176,7 +177,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         queryKey: ["event-challenge-lab", mode, eventID, challengeID],
         queryFn: () => moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!),
         enabled: !!challenge?.Infrastructure && !challenge.Locked,
-        retry: false, refetchInterval: 30000, refetchOnWindowFocus: false,
+        retry: false, refetchInterval: query => query.state.data?.Queue ? 8000 : 30000, refetchOnWindowFocus: false,
     });
     // A web device opens through a link fetched on click; the moderators team uses the manage route.
     const labLink = useLabLink(eventID, challengeID, moderators);

@@ -3,7 +3,7 @@ import type {LabRuntime} from "@/api/manageLabs";
 import type {SnapshotPlaceholder} from "@/api/participantChallenges";
 import {descriptionValues} from "./descriptionValues";
 
-const lab: LabRuntime = {Phase: "Ready", Ready: true, VPNCIDR: "10.128.1.0/24", InternetCIDR: "10.9.4.0/24", Access: []};
+const lab: LabRuntime = {Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "10.9.4.0/24", Access: []};
 const ip = (extra: Partial<SnapshotPlaceholder>): SnapshotPlaceholder => ({key: "ph_a", kind: "ip", ip_reference: "vpn", last_octet: 5, ...extra});
 
 describe("descriptionValues", () => {
