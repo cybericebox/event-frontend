@@ -44,10 +44,15 @@ const liveSchema = z.object({
 export type LabLive = z.infer<typeof liveSchema>;
 
 const standLabSchema = z.object({ChallengeID: id, ChallengeName: optionalText, Status: LabStatusSchema, Reason: optionalText});
+// A stand's place in the launch queue (the stands list); Position 0 = everything is dispatched.
+const standQueueSchema = z.object({QueuedLabs: optionalNumber, Position: optionalNumber, Length: optionalNumber, Reason: optionalText});
 const standSchema = z.object({
     TeamID: id, TeamName: optionalText, Moderators: z.boolean().default(false), Status: StandStatusSchema,
     Reason: optionalText, UpdatedAt: optionalTime, Generation: z.number().int().default(0),
     Labs: z.array(standLabSchema).nullish().transform(value => value ?? []),
+    Queue: standQueueSchema.nullish().transform(value => value ?? null),
+    // Some images of the stand are pulled by tag, not by digest.
+    ImageWarning: z.boolean().nullish().transform(value => value ?? false),
 });
 const prewarmSchema = z.object({
     Total: optionalNumber, Done: optionalNumber, Warming: optionalNumber, Queued: optionalNumber, Failed: optionalNumber, Skipped: optionalNumber, UpdatedAt: optionalTime,

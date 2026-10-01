@@ -4538,5 +4538,8 @@
   "manage.labs.prewarm.failed": "Failures: {count}",
   "manage.labs.error.1405": "This device does not keep its state.",
   "manage.labs.error.1406": "The lab or device was not found.",
-  "manage.labs.error.1407": "The device is still restarting. Try again in a moment."
+  "manage.labs.error.1407": "The device is still restarting. Try again in a moment.",
+  "lab.queue.reason.TenantQuota": "The team reached its resource limit; launch starts as soon as it frees up.",
+  "manage.labs.queue.labs": "(labs: {count})",
+  "manage.labs.imageWarning": "Images are pulled by tag"
 }

@@ -21,6 +21,17 @@ describe("labs schemas", () => {
         expect(view.Items[0]).toMatchObject({Reason: "", Labs: [], UpdatedAt: null});
     });
 
+    it("parses a stand's queue and image warning, both absent by default", () => {
+        const base = {InfrastructureAllowed: true, LaboratoriesAvailable: true, DeployLeadMinutes: 30, TeardownDelayMinutes: 60, DeployAt: null, TeardownAt: null, ChallengesOpened: false,
+            Summary: {Total: 2, NotDeployed: 0, Creating: 2, Ready: 0, Failed: 0, Removed: 0}};
+        const view = ManageLabsSchema.parse({...base, Items: [
+            {TeamID: "01900000-0000-7000-8000-000000000022", Status: "creating", Labs: [], Queue: {QueuedLabs: 2, Position: 3, Length: 7, Reason: "TenantQuota"}, ImageWarning: true},
+            {TeamID: "01900000-0000-7000-8000-000000000023", Status: "creating", Labs: [], Queue: null},
+        ]});
+        expect(view.Items[0]).toMatchObject({Queue: {QueuedLabs: 2, Position: 3, Length: 7, Reason: "TenantQuota"}, ImageWarning: true});
+        expect(view.Items[1]).toMatchObject({Queue: null, ImageWarning: false});
+    });
+
     it("rejects an unknown stand status", () => {
         expect(ManageLabsSchema.safeParse({
             InfrastructureAllowed: true, LaboratoriesAvailable: true, DeployLeadMinutes: 30, TeardownDelayMinutes: 60, DeployAt: null, TeardownAt: null, ChallengesOpened: false,

@@ -13,6 +13,10 @@ describe("lab live text", () => {
         expect(queueLine({...queue, Position: 0})).toBeNull();
     });
 
+    it("has a text for the tenant quota reason", () => {
+        expect(queueLine({...queue, Reason: "TenantQuota"})).toContain("ліміту");
+    });
+
     it("never shows a raw reason code", () => {
         expect(queueLine({...queue, Reason: "SomethingNew"})).not.toContain("SomethingNew");
     });

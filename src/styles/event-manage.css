@@ -886,6 +886,7 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-stands__challenge-head{display:flex;justify-content:space-between;gap:var(--ib-3)}
 .event-stands__challenge-head small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-stands__challenge-lab{display:flex;align-items:center;gap:var(--ib-3)}
+.event-stands__queue{display:block;margin-top:var(--ib-1);color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-stands__prewarm{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-stands__detail{min-height:160px}
 .event-stands__lab-block{display:grid;gap:var(--ib-2)}

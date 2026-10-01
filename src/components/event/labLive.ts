@@ -2,12 +2,12 @@ import type {LabQueue, LiveDevice} from "@/api/manageLabs";
 import {t} from "@/i18n/t";
 
 // The backend sends reasons as English codes; the UI never shows them raw.
-const QUEUE_REASONS = new Set(["InFlightLimit", "WaitingForGroup", "WaitingForTurn", "PreparingImages", "InsufficientResources", "NoSchedulableNodes"]);
+const QUEUE_REASONS = new Set(["InFlightLimit", "WaitingForGroup", "WaitingForTurn", "PreparingImages", "InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
 const FAILURE_REASONS = new Set(["ImagePull", "CrashLoop", "Unschedulable", "StartupTimeout", "DoesNotFit"]);
 
 // «Лабораторія в черзі: N із M» + the reason. Null when the lab is not waiting for a turn:
 // no queue, or Position 0 (every pod is already dispatched).
-export function queueLine(queue: LabQueue | null | undefined): string | null {
+export function queueLine(queue: Pick<LabQueue, "Position" | "Length" | "Reason"> | null | undefined): string | null {
     if (!queue || queue.Position <= 0) return null;
     const reason = t(QUEUE_REASONS.has(queue.Reason) ? `lab.queue.reason.${queue.Reason}` : "lab.queue.reason.unknown");
     return t("lab.queue.status", {position: queue.Position, length: queue.Length, reason});

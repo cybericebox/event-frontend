@@ -4538,5 +4538,8 @@
   "manage.labs.prewarm.failed": "Збоїв: {count}",
   "manage.labs.error.1405": "Цей пристрій не зберігає стан.",
   "manage.labs.error.1406": "Лабораторію або пристрій не знайдено.",
-  "manage.labs.error.1407": "Пристрій ще перезапускається. Спробуйте за мить."
+  "manage.labs.error.1407": "Пристрій ще перезапускається. Спробуйте за мить.",
+  "lab.queue.reason.TenantQuota": "Команда досягла ліміту ресурсів, запуск почнеться, щойно вони звільняться.",
+  "manage.labs.queue.labs": "(лабораторій: {count})",
+  "manage.labs.imageWarning": "Образи підтягуються за тегом"
 }
