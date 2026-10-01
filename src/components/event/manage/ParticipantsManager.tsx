@@ -33,6 +33,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {ParticipantFacts} from "./ParticipantFacts";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {formatDateTime, zoneOffset} from "@/utils/dateTime";
+import {LastActivity} from "./LastActivity";
 
 const statusNames: Record<ParticipantStatus, string> = {1: t("manage.participants.status.pending"), 2: t("manage.participants.status.approved"), 3: t("manage.participants.status.rejected")};
 const statusTags: Record<ParticipantStatus, string> = {1: "ib-tag--warn", 2: "ib-tag--ok", 3: "ib-tag--danger"};
@@ -107,12 +108,14 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         {key: "@status", label: t("manage.participants.col.status")},
         ...(teamMode ? [{key: "@team", label: t("manage.participants.col.team")}] : []),
         {key: "@date", label: t("manage.participants.col.registered", {zone: zoneOffset()})},
+        {key: "@lastSeen", label: t("manage.participants.col.lastSeen")},
+        {key: "@lastLab", label: t("manage.participants.col.lastLab")},
         ...(askedEveryone ? [{key: "@missing", label: t("manage.fields.missing.column")}] : []),
         ...fieldColumnDefinitions(fields),
     ], canManage);
     // The invitations tab has no answers, no email and no pseudonym column
     // (the address is the first column); applications have no team yet.
-    const shown = tableColumns.visible.filter(column => tab === "invitations" ? column.key.startsWith("@") && column.key !== "@email" && column.key !== "@pseudonym" && column.key !== "@missing" : tab === "applications" ? column.key !== "@team" && column.key !== "@missing" : true);
+    const shown = tableColumns.visible.filter(column => tab === "invitations" ? column.key.startsWith("@") && column.key !== "@email" && column.key !== "@pseudonym" && column.key !== "@missing" && column.key !== "@lastSeen" && column.key !== "@lastLab" : tab === "applications" ? column.key !== "@team" && column.key !== "@missing" && column.key !== "@lastSeen" && column.key !== "@lastLab" : true);
     const counts = query.data?.Counts;
 
     function changeTab(value: ParticipantTab) {
@@ -208,6 +211,8 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             ? participant.InvitedToTeam ? participant.InvitedTeamName || t("manage.participants.col.team") : <span className="event-manage-table__dim">—</span>
             : participant.TeamID ? <Link href="/manage/teams" onClick={stop}>{participant.TeamName || t("manage.participants.inTeam")}</Link> : <span className="event-manage-table__dim">{t("manage.participants.noTeam")}</span>}</td>;
         case "@date": return <td className="event-manage-table__nowrap event-manage-table__dim">{formatDateTime(participant.CreatedAt)}</td>;
+        case "@lastSeen": return <td className="event-manage-table__nowrap"><LastActivity at={participant.LastSeenAt} /></td>;
+        case "@lastLab": return <td className="event-manage-table__nowrap"><LastActivity at={participant.LastLabAt} /></td>;
         case "@missing": return <td>{participant.FieldsMissing > 0
             ? <EventTooltip content={tPlural("manage.fields.missing.tooltip", participant.FieldsMissing)}>{id => <span className="ib-tag ib-tag--warn" aria-describedby={id}>{participant.FieldsMissing}</span>}</EventTooltip>
             : <span className="event-manage-table__dim">—</span>}</td>;

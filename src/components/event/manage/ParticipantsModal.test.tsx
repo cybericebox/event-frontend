@@ -39,7 +39,7 @@ vi.mock("@/api/manageParticipants", async original => ({
 const person = (id: string, name: string, extra: Partial<ManageParticipantDetail> = {}): ManageParticipantDetail => ({
     UserID: id, Name: name, Email: `${id}@test.test`, Pseudonym: "", DisplayName: name, TeamID: null, TeamName: "", Hidden: false, Invited: false, InvitedToTeam: false,
     InvitedTeamID: null, InvitedTeamName: "", InvitationSentAt: null, InvitationExpired: false, Status: 2, CreatedAt: "2026-09-01T10:00:00Z", DecidedAt: null,
-    Answers: {}, FieldsMissing: 0, TeamRole: null, JoinedVia: "open", Attempts: 0, Solves: 0, ...extra,
+    Answers: {}, FieldsMissing: 0, LastSeenAt: null, LastLabAt: null, TeamRole: null, JoinedVia: "open", Attempts: 0, Solves: 0, ...extra,
 });
 const ID_LIST = "11111111-1111-4111-8111-111111111111";
 const ID_OTHER = "22222222-2222-4222-8222-222222222222";
@@ -59,6 +59,30 @@ afterEach(cleanup);
 function renderManager() {
     render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ParticipantsManager initialTab="participants" /></QueryClientProvider>);
 }
+
+describe("last online and last in a laboratory", () => {
+    it("shows both columns as a relative time with the exact time, and «ніколи» when it never happened", async () => {
+        const seen = new Date(Date.now() - 5 * 60_000).toISOString();
+        rows = [person(ID_LIST, "Олена Коваль", {LastSeenAt: seen, LastLabAt: null}), person(ID_OTHER, "Ігор Мельник")];
+        renderManager();
+        await screen.findByText("Олена Коваль");
+        expect(screen.getByRole("button", {name: /Востаннє онлайн/})).toBeTruthy();
+        expect(screen.getByRole("button", {name: /Востаннє в лабораторії/})).toBeTruthy();
+        const first = screen.getByText("Олена Коваль").closest("tr")!;
+        expect(first.textContent).toContain("5 хвилин тому");
+        expect(first.textContent).toContain("ніколи");
+        expect(screen.getByText("Ігор Мельник").closest("tr")!.textContent?.match(/ніколи/g)).toHaveLength(2);
+    });
+
+    it("sorts by the column through the table sort", async () => {
+        renderManager();
+        await screen.findByText("Олена Коваль");
+        const header = screen.getByRole("button", {name: /Востаннє онлайн/}).closest("th")!;
+        expect(header.getAttribute("aria-sort")).toBe("none");
+        fireEvent.click(screen.getByRole("button", {name: /Востаннє онлайн/}));
+        await waitFor(() => expect(screen.getByRole("button", {name: /Востаннє онлайн/}).closest("th")!.getAttribute("aria-sort")).not.toBe("none"));
+    });
+});
 
 describe("participant modal in the URL", () => {
     it("opens from ?participant= for someone outside the list and shows the rich rows", async () => {

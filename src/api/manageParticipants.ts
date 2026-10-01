@@ -17,6 +17,9 @@ const participantSchema = z.object({
     Answers: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {}),
     // How many required registration fields are unfilled (0 = complete or not asked).
     FieldsMissing: z.number().int().default(0),
+    // The last request on the event and the last laboratory access (VPN or proxy); null = never.
+    LastSeenAt: z.string().nullish().transform(value => value ?? null),
+    LastLabAt: z.string().nullish().transform(value => value ?? null),
 });
 const countsSchema = z.object({Participants: z.number().int(), Applications: z.number().int(), Invitations: z.number().int()});
 const pageSchema = z.object({Items: z.array(participantSchema), Total: z.number().int(), NextCursor: id.optional(), Counts: countsSchema.optional()});
