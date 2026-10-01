@@ -32,13 +32,18 @@ Read at runtime by the server.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_DOMAIN` | yes | Platform apex domain; the other hosts derive from it. |
-| `NEXT_PUBLIC_API_DOMAIN` | no | API host (bare host, no scheme). Defaults to `api.<domain>`. |
-| `NEXT_PUBLIC_ID_DOMAIN` | no | ID app host. Defaults to `id.<domain>`. |
-| `NEXT_PUBLIC_ADMIN_DOMAIN` | no | Admin app host. Defaults to `admin.<domain>`. |
-| `NEXT_PUBLIC_EXERCISES_DOMAIN` | no | Exercises app host. Defaults to `exercises.<domain>`. |
+| `NEXT_PUBLIC_MAIN_HOST` | yes | Platform landing host (bare host, no scheme). |
+| `NEXT_PUBLIC_API_HOST` | yes | API host. |
+| `NEXT_PUBLIC_ID_HOST` | yes | ID app host. |
+| `NEXT_PUBLIC_ADMIN_HOST` | yes | Admin app host. |
+| `NEXT_PUBLIC_EXERCISES_HOST` | yes | Exercises app host. |
+| `NEXT_PUBLIC_EVENT_DOMAIN` | yes | Event sites are `<tag>.<domain>`; also the theme/consent cookie parent domain. |
+| `NEXT_PUBLIC_PARTNER_URL` | yes | Partner department link in the footer credit. |
+| `NEXT_PUBLIC_PARTNER_SITE_URL` | yes | Partner institution link in the footer credit. |
+| `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | yes | WireGuard install link in the VPN dialog. |
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
+| `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
 
 ## i18n
 

@@ -98,7 +98,7 @@ function clearAnalyticsCookies(domain: string | undefined): void {
 
 /** Persist the choice on the parent domain and apply it to a running gtag. */
 export function saveConsent(prefs: ConsentPrefs): void {
-  const domain = process.env.NEXT_PUBLIC_DOMAIN || undefined
+  const domain = process.env.NEXT_PUBLIC_EVENT_DOMAIN || undefined
   document.cookie = consentCookie(prefs, { domain, secure: location.protocol === "https:" })
   ;(window as GtagWindow).gtag?.("consent", "update", consentUpdate(prefs))
   if (!prefs.analytics) clearAnalyticsCookies(domain)

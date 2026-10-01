@@ -1,8 +1,21 @@
 /** @type {import('next').NextConfig} */
+// Every host is required from the env (no fallbacks): a missing one fails the build.
+const REQUIRED = [
+    "NEXT_PUBLIC_MAIN_HOST", "NEXT_PUBLIC_API_HOST", "NEXT_PUBLIC_ID_HOST", "NEXT_PUBLIC_ADMIN_HOST",
+    "NEXT_PUBLIC_EXERCISES_HOST", "NEXT_PUBLIC_EVENT_DOMAIN",
+    "NEXT_PUBLIC_PARTNER_URL", "NEXT_PUBLIC_PARTNER_SITE_URL", "NEXT_PUBLIC_WIREGUARD_INSTALL_URL",
+];
+const missing = REQUIRED.filter((name) => !process.env[name]?.trim());
+if (missing.length) throw new Error(`Missing required env: ${missing.join(", ")}`);
+
 // Dev-only: served through the nginx edge on the real domain (event tags are
 // arbitrary subdomains), so Next's dev resources are cross-origin and blocked
-// by default. Allow the domain + subdomains, derived from NEXT_PUBLIC_DOMAIN.
-const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN;
+// by default. DEV_ALLOWED_ORIGINS (comma list) overrides; otherwise the configured
+// hosts and event subdomains are allowed.
+const devOrigins = process.env.DEV_ALLOWED_ORIGINS?.trim()
+    ? process.env.DEV_ALLOWED_ORIGINS.split(",").map((d) => d.trim()).filter(Boolean)
+    : [process.env.NEXT_PUBLIC_EVENT_DOMAIN, `*.${process.env.NEXT_PUBLIC_EVENT_DOMAIN}`,
+        ...["MAIN", "API", "ID", "ADMIN", "EXERCISES"].map((k) => process.env[`NEXT_PUBLIC_${k}_HOST`])];
 const nextConfig = () => {
     return {
         images: {
@@ -17,7 +30,7 @@ const nextConfig = () => {
             minimumCacheTTL: 24 * 60 * 60,// 24 hours
         },
         output: 'standalone',
-        allowedDevOrigins: [...new Set([...(DOMAIN ? [DOMAIN] : []), "cybericebox.com", "cybericebox-dev.pp.ua", "cybericebox.pp.ua"])].flatMap((d) => [d, `*.${d}`]),
+        allowedDevOrigins: [...new Set(devOrigins)],
     };
 };
 

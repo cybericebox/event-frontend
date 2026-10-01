@@ -4,12 +4,17 @@ metadata:
   name: config
   namespace: cybericebox
 data:
-  DOMAIN: "cybericebox.com"
-  # Optional host overrides (bare host, no scheme). Empty → <service>.<DOMAIN>.
-  API_DOMAIN: ""
-  ID_DOMAIN: ""
-  EXERCISES_DOMAIN: ""
-  ADMIN_DOMAIN: ""
+  # Required: set every host for your deployment (bare host, no scheme).
+  MAIN_HOST: "main.example.com"
+  API_HOST: "api.example.com"
+  ID_HOST: "id.example.com"
+  ADMIN_HOST: "admin.example.com"
+  EXERCISES_HOST: "exercises.example.com"
+  # Event sites are <tag>.<EVENT_DOMAIN>.
+  EVENT_DOMAIN: "example.com"
+  # External links shown in the UI.
+  PARTNER_URL: "https://ice.nure.ua/ua/"
+  PARTNER_SITE_URL: "https://nure.ua"
+  WIREGUARD_INSTALL_URL: "https://www.wireguard.com/install/"
   # Optional Google Analytics 4 measurement id (G-…). Empty → analytics off.
   GOOGLE_ANALYTICS_ID: ""
-

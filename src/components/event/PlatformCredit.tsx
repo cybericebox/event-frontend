@@ -2,6 +2,7 @@
 
 import {useSyncExternalStore} from "react";
 import {t, tSegments} from "@/i18n/t";
+import {partnerSiteUrl, partnerUrl} from "@/utils/origins";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const YEAR = new Date().getFullYear();
@@ -23,7 +24,7 @@ export function PlatformCredit() {
         : <EventTooltip content={full}>{tipId => <a href={href} target="_blank" rel="noopener noreferrer" aria-describedby={tipId}>{label}</a>}</EventTooltip>;
     return <span className="ib-footer__credit">{tSegments("shell.credit", {
         year: YEAR,
-        department: link("https://ice.nure.ua/ua/", t("shell.department"), t("shell.departmentFull")),
-        nure: link("https://nure.ua", t("shell.nure"), t("shell.nureFull")),
+        department: link(partnerUrl, t("shell.department"), t("shell.departmentFull")),
+        nure: link(partnerSiteUrl, t("shell.nure"), t("shell.nureFull")),
     }, {groupFrom: 1})}</span>;
 }

@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
-import {afterEach, describe, expect, it} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
 import {ConsentBanner} from "./ConsentBanner";
 import {openConsentSettings} from "@/utils/consent";
 
+// jsdom (localhost) rejects a parent-domain cookie, so these tests use a host-only one.
+beforeEach(() => vi.stubEnv("NEXT_PUBLIC_EVENT_DOMAIN", ""));
+
 afterEach(() => {
+    vi.unstubAllEnvs();
     cleanup();
     document.cookie = "cib_consent=; path=/; max-age=0";
 });

@@ -1,7 +1,7 @@
 // Cookie consent (Google Consent Mode v2): denied by default; accept all / save choice
 // map to analytics_storage only; the choice is one cookie on the parent domain.
 // @vitest-environment jsdom
-import {afterEach, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import * as consent from "./consent";
 
 function clearCookies() {
@@ -13,6 +13,9 @@ function spyGtag() {
     (window as {gtag?: unknown}).gtag = gtag;
     return gtag;
 }
+
+// jsdom (localhost) rejects a parent-domain cookie, so these tests use a host-only one.
+beforeEach(() => vi.stubEnv("NEXT_PUBLIC_EVENT_DOMAIN", ""));
 
 afterEach(() => {
     clearCookies();
@@ -79,7 +82,7 @@ describe("consent", () => {
     it("writes the choice per category to one cookie on the parent domain", () => {
         expect(consent.consentCookie(consent.ACCEPT_ALL, {domain: "cybericebox.com", secure: true}))
             .toBe("cib_consent=analytics:granted; path=/; max-age=31536000; SameSite=Lax; domain=.cybericebox.com; Secure");
-        vi.stubEnv("NEXT_PUBLIC_DOMAIN", "cybericebox.com");
+        vi.stubEnv("NEXT_PUBLIC_EVENT_DOMAIN", "cybericebox.com");
         const writes: string[] = [];
         const spy = vi.spyOn(document, "cookie", "set").mockImplementation((v: string) => { writes.push(v); });
         consent.saveConsent(consent.ACCEPT_ALL);

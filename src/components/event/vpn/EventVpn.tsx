@@ -10,6 +10,7 @@ import {DialogModal} from "@/components/event/DialogModal";
 import {richMessage} from "@/components/event/challenges/richMessage";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
+import {wireguardInstallUrl} from "@/utils/origins";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type VpnContextValue = {available: boolean; status: StandStatus | null; openVpn: () => void};
@@ -62,7 +63,7 @@ function VpnModal({eventID, eventTag, moderators, status, open, onClose}: {event
             <div><b>{text?.title ?? t("vpn.modal.checkingStand")}</b>{text && <span>{text.note}</span>}</div>
         </div>
         <ol className="event-vpn-steps">
-            <li>{richMessage(t("vpn.steps.install"), {link: <a className="ib-link" href="https://www.wireguard.com/install/" target="_blank" rel="noopener noreferrer">wireguard.com/install</a>})}</li>
+            <li>{richMessage(t("vpn.steps.install"), {link: <a className="ib-link" href={wireguardInstallUrl} target="_blank" rel="noopener noreferrer">{wireguardInstallUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a>})}</li>
             <li>{t("vpn.steps.download")}</li>
             <li>{t("vpn.steps.import")}</li>
             <li>{probe.data ? richMessage(t("vpn.steps.checkProbe"), {
