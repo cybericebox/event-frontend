@@ -4548,5 +4548,12 @@
   "manage.labs.error.1407": "Пристрій ще перезапускається. Спробуйте за мить.",
   "lab.queue.reason.TenantQuota": "Команда досягла ліміту ресурсів, запуск почнеться, щойно вони звільняться.",
   "manage.labs.queue.labs": "(лабораторій: {count})",
-  "manage.labs.imageWarning": "Образи підтягуються за тегом"
+  "manage.labs.imageWarning": "Образи підтягуються за тегом",
+  "manage.challenges.reveal.title": "Показ завдань",
+  "manage.challenges.reveal.subtitle": "Коли завдання з лабораторіями стають видимими командам.",
+  "manage.challenges.reveal.allReady": "Одночасно для всіх",
+  "manage.challenges.reveal.allReadyNote": "Завдання зʼявляється, коли воно готове для всіх команд. Підходить для змагань.",
+  "manage.challenges.reveal.asReady": "Для кожної команди окремо",
+  "manage.challenges.reveal.asReadyNote": "Команда бачить завдання, щойно її лабораторія готова. Підходить для тренувань.",
+  "manage.challenges.reveal.locked": "Після початку заходу режим показу змінити не можна."
 }

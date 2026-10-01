@@ -38,6 +38,11 @@ const chargeModes = () => ([
     {value: "balance", label: t("manage.board.charge.balance"), note: t("manage.board.charge.balanceNote")},
 ] as const);
 
+const revealModes = () => ([
+    {value: "all_ready", label: t("manage.challenges.reveal.allReady"), note: t("manage.challenges.reveal.allReadyNote")},
+    {value: "as_ready", label: t("manage.challenges.reveal.asReady"), note: t("manage.challenges.reveal.asReadyNote")},
+] as const);
+
 // «Налаштування» of the challenges group: event scoring («Оцінювання»),
 // hints and what the board shows.
 export function ChallengeSettings() {
@@ -63,6 +68,8 @@ export function ChallengeSettings() {
     const valid = dynamic ? dynamicValid(value) : staticPointsValid(value.StaticPoints, true);
     const errors = dynamic ? dynamicErrors(value) : {max: "", min: "", floor: ""};
     const disabled = !canManage || saving;
+    // The mode cannot change once the event has started (the backend answers 400 then).
+    const revealLocked = lifecycle.data.Status === "started" || lifecycle.data.Status === "finished" || lifecycle.data.Status === "withdrawn";
     const update = (patch: Partial<ScoringDraft>) => setEdit({eventID, value: {...value, ...patch}});
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
@@ -77,7 +84,7 @@ export function ChallengeSettings() {
         finally {setSaving(false);}
     }
 
-    function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode">>) {
+    function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode" | "TaskRevealMode">>) {
         if (!config.data || !canManage) return;
         const key = ["event-management-config", eventID];
         // Optimistic: every control reacts at once and nothing else on the page is disabled or reloaded.
@@ -135,6 +142,14 @@ export function ChallengeSettings() {
             </div>
             {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>}
         </form>
+        <section className="event-manage-section" aria-labelledby="reveal-title">
+            <div className="event-manage-section__head"><h2 id="reveal-title">{t("manage.challenges.reveal.title")}</h2><p>{t("manage.challenges.reveal.subtitle")}</p></div>
+            <fieldset className="event-hint-charge" disabled={!canManage || revealLocked}>
+                <legend className="event-manage-visually-hidden">{t("manage.challenges.reveal.title")}</legend>
+                <div className="event-manage-choice-group">{revealModes().map(mode => <label key={mode.value}><input type="radio" name="task-reveal-mode" value={mode.value} checked={config.data.TaskRevealMode === mode.value} onChange={() => void saveConfig({TaskRevealMode: mode.value})} /><span><strong>{mode.label}</strong><small>{mode.note}</small></span></label>)}</div>
+            </fieldset>
+            {revealLocked && <p className="event-manage-feedback" role="status">{t("manage.challenges.reveal.locked")}</p>}
+        </section>
         <section className="event-manage-section" aria-labelledby="hints-title">
             <div className="event-manage-section__head"><h2 id="hints-title">{t("manage.challenges.hints.title")}</h2><p>{t("manage.challenges.hints.subtitle")}</p></div>
             <div className="event-challenge-settings__switch">

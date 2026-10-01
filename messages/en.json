@@ -4548,5 +4548,12 @@
   "manage.labs.error.1407": "The device is still restarting. Try again in a moment.",
   "lab.queue.reason.TenantQuota": "The team reached its resource limit; launch starts as soon as it frees up.",
   "manage.labs.queue.labs": "(labs: {count})",
-  "manage.labs.imageWarning": "Images are pulled by tag"
+  "manage.labs.imageWarning": "Images are pulled by tag",
+  "manage.challenges.reveal.title": "Task reveal",
+  "manage.challenges.reveal.subtitle": "When tasks with labs become visible to teams.",
+  "manage.challenges.reveal.allReady": "For everyone at once",
+  "manage.challenges.reveal.allReadyNote": "A task appears when it is ready for every team. Fits competitions.",
+  "manage.challenges.reveal.asReady": "For each team separately",
+  "manage.challenges.reveal.asReadyNote": "A team sees a task as soon as its lab is ready. Fits training.",
+  "manage.challenges.reveal.locked": "The reveal mode cannot be changed after the event has started."
 }
