@@ -12,6 +12,8 @@ data:
   EXERCISES_HOST: "exercises.example.com"
   # Event sites are <tag>.<EVENT_DOMAIN>.
   EVENT_DOMAIN: "example.com"
+  # Parent domain of the theme/consent cookies (shared by all apps).
+  COOKIE_DOMAIN: "example.com"
   # External links shown in the UI.
   PARTNER_URL: "https://ice.nure.ua/ua/"
   PARTNER_SITE_URL: "https://nure.ua"

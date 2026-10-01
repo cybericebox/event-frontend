@@ -4,7 +4,7 @@
  * COPY-TO-RP-APPS: app-agnostic, static-export-safe.
  *
  * The choice (light | dark | system) lives in the `cib_theme` cookie on the
- * parent domain (.NEXT_PUBLIC_EVENT_DOMAIN), so landing, ID, admin and event open in
+ * parent domain (.NEXT_PUBLIC_COOKIE_DOMAIN), so landing, ID, admin and event open in
  * the same theme. `system` follows the OS setting. The resolved theme is put on
  * <html data-theme="…"> — ds-v2 tokens switch on that attribute.
  *
@@ -16,8 +16,7 @@ export type ThemeChoice = "light" | "dark" | "system"
 export const THEME_COOKIE = "cib_theme"
 const MAX_AGE = 60 * 60 * 24 * 365
 const DARK_QUERY = "(prefers-color-scheme: dark)"
-const DOMAIN = process.env.NEXT_PUBLIC_EVENT_DOMAIN
-const DOMAIN_ATTR = DOMAIN ? `; domain=.${DOMAIN}` : ""
+const DOMAIN_ATTR = `; domain=.${process.env.NEXT_PUBLIC_COOKIE_DOMAIN}`
 
 // Keep in sync with readThemeChoice/resolveTheme/applyTheme below.
 export const THEME_BOOT_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|; )${THEME_COOKIE}=(light|dark|system)/);var c=m?m[1]:"system";var d=c==="dark"||(c==="system"&&window.matchMedia("${DARK_QUERY}").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")}catch(e){}})()`
