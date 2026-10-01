@@ -6,9 +6,9 @@ import type {PublishedExerciseChoice} from "@/api/manageChallenges";
 import {ManageApiError} from "@/api/manage";
 import {AttachExerciseDialog} from "./AttachExerciseDialog";
 
-const api = vi.hoisted(() => ({choices: vi.fn(), preview: vi.fn(), attach: vi.fn()}));
+const api = vi.hoisted(() => ({choices: vi.fn(), preview: vi.fn(), attach: vi.fn(), tags: vi.fn()}));
 vi.mock("@/api/manageChallenges", () => ({
-    getPublishedExerciseChoices: api.choices, getPublishedExercisePreview: api.preview, attachEventExercise: api.attach,
+    getPublishedExerciseChoices: api.choices, getPublishedExercisePreview: api.preview, attachEventExercise: api.attach, getPublishedExerciseTags: api.tags,
 }));
 
 beforeAll(() => {
@@ -28,7 +28,7 @@ describe("AttachExerciseDialog", () => {
     it("starts at «Немає» and disables sets that need infrastructure when the event has none", async () => {
         api.choices.mockResolvedValue([choice("11111111-1111-4111-8111-111111111111", "Test", true)]);
         renderDialog(false);
-        expect(api.choices).toHaveBeenCalledWith("e", "", "no");
+        expect(api.choices).toHaveBeenCalledWith("e", "", "no", []);
         const item = await screen.findByRole("button", {name: /Test/});
         expect((item as HTMLButtonElement).disabled).toBe(true);
         expect(item.textContent).toContain("Потрібна інфраструктура — у заходу її вимкнено");
@@ -39,7 +39,7 @@ describe("AttachExerciseDialog", () => {
         api.preview.mockResolvedValue({ID: "22222222-2222-4222-8222-222222222222", Name: "Web", Description: "", VersionID: "v", VariantCount: 1, Variant: 0, Tasks: []});
         api.attach.mockRejectedValue(new ManageApiError(409, 1808));
         renderDialog(true);
-        expect(api.choices).toHaveBeenCalledWith("e", "", "all");
+        expect(api.choices).toHaveBeenCalledWith("e", "", "all", []);
         fireEvent.click(await screen.findByRole("button", {name: /Web/}));
         fireEvent.click(await screen.findByRole("button", {name: "Додати"}));
         await waitFor(() => expect(screen.getByText("Набір потребує інфраструктури, а в заходу її вимкнено.")).toBeTruthy());
@@ -68,5 +68,17 @@ describe("AttachExerciseDialog", () => {
         fireEvent.click(screen.getByRole("button", {name: "Усі"}));
         await screen.findByText("Stands");
         expect(screen.getByRole("status", {name: ""}).textContent).toMatch(/У заходу немає інфраструктури/);
+    });
+
+    it("refetches at once with the picked tags and lists each set's tags", async () => {
+        api.tags.mockResolvedValue([{Tag: "web", ExerciseCount: 2}]);
+        api.choices.mockResolvedValue([{...choice("c", "Tagged", false), Tags: ["web", "crypto"]}]);
+        renderDialog(true);
+        expect((await screen.findByRole("button", {name: /Tagged/})).textContent).toContain("crypto");
+        fireEvent.focus(screen.getByRole("combobox"));
+        fireEvent.pointerDown(await screen.findByRole("option", {name: /web/}));
+        await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", "", "all", ["web"]));
+        // The previous list stays on screen while the filtered one loads.
+        expect(screen.getByRole("button", {name: /Tagged/})).toBeTruthy();
     });
 });

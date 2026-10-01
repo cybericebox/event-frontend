@@ -52,6 +52,7 @@ const catalogChoiceSchema = z.object({
     Infrastructure: z.boolean().default(false),
     Attached: z.boolean().default(false),
 });
+const catalogTagSchema = z.object({Tag: z.string(), ExerciseCount: z.number().int()});
 const catalogPreviewSchema = z.object({
     ID: id, Name: z.string(), Description: z.string(), VersionID: id, VariantCount: z.number().int(), Variant: z.number().int().default(0),
     Tasks: z.array(z.object({Name: z.string(), Difficulty: z.string(), HintCount: z.number().int().default(0)})),
@@ -66,6 +67,7 @@ export type EventBoardChallenge = z.infer<typeof challengeSchema>;
 export type EventChallengeHint = z.infer<typeof challengeHintSchema>;
 export type EventChallengeGroup = z.infer<typeof groupSchema>;
 export type PublishedExerciseChoice = z.infer<typeof catalogChoiceSchema>;
+export type CatalogTag = z.infer<typeof catalogTagSchema>;
 export type PublishedExercisePreview = z.infer<typeof catalogPreviewSchema>;
 export type ChallengeScoringOverride = z.infer<typeof scoringOverrideSchema>;
 export type HintUnlock = z.infer<typeof hintUnlockSchema>;
@@ -84,9 +86,11 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
-const catalogQuery = (search: string, infrastructure: InfrastructureFilter) => {
+const catalogQuery = (search: string, infrastructure: InfrastructureFilter, tags: string[]) => {
     const query = new URLSearchParams({search});
     if (infrastructure !== "all") query.set("infrastructure", infrastructure);
+    // Repeated `tags`: the server keeps exercises with any of them.
+    for (const tag of tags) query.append("tags", tag);
     return query.toString();
 };
 
@@ -104,8 +108,10 @@ export const reorderGroupChallenges = (eventID: string, groupID: string | null, 
 // Shows or hides a whole set (its tasks share one infrastructure).
 export const setEventExerciseVisibility = (eventID: string, attachmentID: string, published: boolean) => request(eventID, `exercises/${attachmentID}/visibility`, z.unknown(), "PUT", {Published: published}).then(() => undefined);
 export const reorderEventBoardChallenges = (eventID: string, attachmentID: string, challengeIDs: string[]) => request(eventID, `exercises/${attachmentID}/challenges/order`, z.null(), "PUT", {ChallengeIDs: challengeIDs});
-// Own event exercises first, then the catalog ones available to the event.
-export const getPublishedExerciseChoices = (eventID: string, search: string, infrastructure: InfrastructureFilter = "all") => request(eventID, `exercise-catalog?${catalogQuery(search, infrastructure)}`, z.array(catalogChoiceSchema));
+// Own event exercises first, then the catalog ones available to the event; tags match any.
+export const getPublishedExerciseChoices = (eventID: string, search: string, infrastructure: InfrastructureFilter = "all", tags: string[] = []) => request(eventID, `exercise-catalog?${catalogQuery(search, infrastructure, tags)}`, z.array(catalogChoiceSchema));
+// Tags of the exercises this event may attach, most used first; an empty prefix returns the most used.
+export const getPublishedExerciseTags = (eventID: string, prefix: string, limit = 50) => request(eventID, `exercise-catalog/tags?${new URLSearchParams({prefix, limit: String(limit)})}`, z.array(catalogTagSchema).nullish().transform(value => value ?? []));
 export const getPublishedExercisePreview = (eventID: string, versionID: string, variant = 0) => request(eventID, `exercise-catalog/${encodeURIComponent(versionID)}?variant=${variant}`, catalogPreviewSchema);
 export const attachEventExercise = (eventID: string, versionID: string, variantMode: 0 | 1, fixedVariantIndex: number | null) => request(eventID, "exercises", attachmentSchema, "POST", {ExerciseVersionID: versionID, VariantMode: variantMode, FixedVariantIndex: fixedVariantIndex});
 // «Оновити»: the latest published version; event settings carry over (409 1809 when a removed task has attempts).

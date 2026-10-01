@@ -17,6 +17,7 @@ import {InfrastructureIcon} from "./InfrastructureIcon";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventButton} from "@/components/ui/EventButton";
+import {CatalogTagFilter} from "./CatalogTagFilter";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
@@ -35,12 +36,13 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
     const [infrastructure, setInfrastructure] = useState<InfrastructureFilter>(infrastructureAllowed ? "all" : "no");
+    const [tags, setTags] = useState<string[]>([]);
     const [attachError, setAttachError] = useState("");
     const [selected, setSelected] = useState<PublishedExerciseChoice | null>(null);
     const [variant, setVariant] = useState(0);
     const [variantMode, setVariantMode] = useState<0 | 1>(0);
     const [busy, setBusy] = useState(false);
-    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure], queryFn: () => getPublishedExerciseChoices(eventID, search, infrastructure), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
+    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags], queryFn: () => getPublishedExerciseChoices(eventID, search, infrastructure, tags), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
     const preview = useQuery({
         queryKey: ["event-exercise-preview", eventID, selected?.PublishedVersionID, variant],
         queryFn: () => getPublishedExercisePreview(eventID, selected!.PublishedVersionID, variant),
@@ -87,6 +89,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                 <label className="event-manage-field" htmlFor="exercise-search">{t("manage.exercises.attachDialog.search")}<input id="exercise-search" className="event-manage-input" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder={t("manage.exercises.attachDialog.searchPlaceholder")} maxLength={100} /></label>
                 <button className="ib-btn" type="submit"><Search aria-hidden="true" />{t("manage.exercises.attachDialog.find")}</button>
             </form>
+            <CatalogTagFilter eventID={eventID} value={tags} onChange={setTags} enabled={open} />
             <div className="event-exercise-picker__filter" role="group" aria-label={t("manage.exercises.attachDialog.infrastructure")}>
                 <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
                 <div className="ib-seg ib-seg--sm">{infrastructureFilters.map(option => <button key={option} type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
@@ -102,6 +105,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                         <span className="event-exercise-picker__name"><strong>{choice.Name}</strong>{choice.Infrastructure && <InfrastructureIcon interactive={false} />}</span>
                         {choice.Description && <span className="event-exercise-picker__desc">{choice.Description}</span>}
                         <span className="event-exercise-picker__tags">
+                            {choice.Tags.map(tag => <span key={tag} className="ib-tag ib-tag--sm ib-tag--category">{tag}</span>)}
                             <span className="ib-tag ib-tag--sm">{t(choice.Scope === "event" ? "manage.exercises.scope.own" : "manage.exercises.scope.catalog")}</span>
                             {choice.Attached && <span className="ib-tag ib-tag--sm ib-tag--ok">{t("manage.exercises.attachDialog.attached")}</span>}
                         </span>

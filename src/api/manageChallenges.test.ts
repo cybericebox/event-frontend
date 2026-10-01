@@ -60,6 +60,20 @@ describe("catalog preview", () => {
         await api.getPublishedExerciseChoices(eventID, "");
         expect(fetchMock.mock.calls[1][0]).toBe(`${base}/exercise-catalog?search=`);
     });
+
+    it("repeats the tags parameter next to the other filters", async () => {
+        const fetchMock = stubFetch({Data: []});
+        await api.getPublishedExerciseChoices(eventID, "web", "no", ["web", "криптографія"]);
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercise-catalog?search=web&infrastructure=no&tags=web&tags=${encodeURIComponent("криптографія")}`);
+    });
+
+    it("loads tag suggestions with the prefix and the limit, null as empty", async () => {
+        const fetchMock = stubFetch({Data: [{Tag: "web", ExerciseCount: 3}]});
+        expect(await api.getPublishedExerciseTags(eventID, "we", 20)).toEqual([{Tag: "web", ExerciseCount: 3}]);
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercise-catalog/tags?prefix=we&limit=20`);
+        stubFetch({Data: null});
+        expect(await api.getPublishedExerciseTags(eventID, "")).toEqual([]);
+    });
 });
 
 describe("attachments", () => {
