@@ -65,6 +65,11 @@ export const ApiErrorCode = {
     TemplateLinkInvalid: 225,
     InvitationRateLimited: 1327,
     AuthTooManyRequests: 428,
+    NameInvalidCharacters: 304,
+    AnswerTooLong: 1937,
+    ImageTooManyPixels: 1004,
+    ImageUnreadable: 1005,
+    PresetNested: 226,
 } as const;
 
 export type ApiErrorCodeValue = typeof ApiErrorCode[keyof typeof ApiErrorCode];
@@ -85,4 +90,11 @@ export async function readApiErrorCode(response: Response): Promise<number | und
 }
 
 // Messages live in messages/errors.{uk,en}.json, keyed by detail code.
+import {apiErrorMessage} from "@/i18n/apiError";
 export {apiErrorMessage, waitText} from "@/i18n/apiError";
+
+// Picture upload failures that have their own message (too many pixels, unreadable); anything else keeps the caller's text.
+export function imageUploadMessage(error: unknown, fallback: string): string {
+    const code = typeof error === "object" && error !== null && "code" in error ? (error as {code?: number}).code : undefined;
+    return code === ApiErrorCode.ImageTooManyPixels || code === ApiErrorCode.ImageUnreadable ? apiErrorMessage(code, fallback) : fallback;
+}

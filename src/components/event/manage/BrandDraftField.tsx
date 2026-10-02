@@ -4,6 +4,7 @@ import {useEffect, useRef, useState, type ChangeEvent, type DragEvent} from "rea
 import {CircleHelp, ImagePlus, Pencil, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {uploadManageBrandDraft, type BrandAssetChange} from "@/api/manage";
+import {imageUploadMessage} from "@/api/apiErrors";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
@@ -30,8 +31,8 @@ export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, m
             const fileID = await uploadManageBrandDraft(eventID, kind, file);
             setDraft({action: "replace", fileID, previewURL: URL.createObjectURL(file)});
             return true;
-        } catch {
-            toast.error(t("manage.appearance.brand.uploadFailed"));
+        } catch (error) {
+            toast.error(imageUploadMessage(error, t("manage.appearance.brand.uploadFailed")));
             return false;
         } finally {
             setUploading(false);

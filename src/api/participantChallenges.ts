@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {readApiErrorCode} from "@/api/apiErrors";
 import {LabRuntimeSchema, type LabRuntime} from "@/api/manageLabs";
+import {t} from "@/i18n/t";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
@@ -67,7 +68,8 @@ export const challengeSchema = z.object({
     BoardPublished: z.boolean().optional(),
 });
 const submissionSchema = z.object({Correct: z.boolean(), FirstSolve: z.boolean().default(false)});
-const solveSchema = z.object({TeamName: z.string(), SolvedAt: z.string(), Own: z.boolean(), FirstBlood: z.boolean().default(false)});
+const solveSchema = z.object({TeamName: z.string(), NameHidden: z.boolean().optional(), SolvedAt: z.string(), Own: z.boolean(), FirstBlood: z.boolean().default(false)})
+    .transform(row => row.NameHidden ? {...row, TeamName: t("scoreboard.nameHidden")} : row);
 const solvesPageSchema = z.object({
     Total: z.number().int().default(0),
     Items: z.array(solveSchema).nullish().transform(value => value ?? []),

@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ManageApiError} from "./manage";
+import {ManageApiError, manageApiError} from "./manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {resultsSnapshotSchema} from "./manageResults";
 import {PublicEventInfoSchema} from "@/types/publicEventInfo";
@@ -85,7 +85,7 @@ export async function uploadLiveLogo(eventID: string, file: File): Promise<strin
     const body = new FormData();
     body.append("file", file);
     const response = await fetch(`${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/content/live/logos`, {method: "POST", credentials: "include", cache: "no-store", body});
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
     return z.object({Data: z.object({ImageURL: z.string()})}).parse(await response.json()).Data.ImageURL;
 }
 

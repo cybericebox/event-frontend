@@ -8,7 +8,7 @@ import {labLinkErrorMessage, useLabLink, type LabLinkState} from "./useLabLink";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery} from "@tanstack/react-query";
 import {Network} from "lucide-react";
-import {ApiErrorCode} from "@/api/apiErrors";
+import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {
     challengeAttachmentUrl, challengeFiles, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
     type ChallengeHint, type OwnChallenge,
@@ -43,6 +43,7 @@ const ICON = {
 function submitMessage(error: unknown): Message {
     if (error instanceof ParticipantChallengeError) {
         if (error.code === ApiErrorCode.TeamNotAdmitted) return {text: t("challenges.hint.error.notAdmitted"), tone: "warn"};
+        if (error.code === ApiErrorCode.AnswerTooLong) return {text: apiErrorMessage(error.code, t("challenges.submit.failed")), tone: "error"};
         if (error.status === 409 || error.status === 403) return {text: t("challenges.submit.notAccepting"), tone: "warn"};
     }
     return {text: t("challenges.submit.failed"), tone: "warn"};

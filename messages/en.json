@@ -2559,6 +2559,7 @@
   "scoreboard.chartTitleOwn": "Score dynamics · top {top} and you",
   "scoreboard.chartTitleOwnTeam": "Score dynamics · top {top} and your team",
   "scoreboard.col.last": "Last",
+  "scoreboard.nameHidden": "Participant",
   "scoreboard.col.participant": "Participant",
   "scoreboard.col.place": "Rank",
   "scoreboard.col.points": "Points",

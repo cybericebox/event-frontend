@@ -59,5 +59,10 @@
   "1722": "The team does not have enough members to confirm the roster.",
   "1723": "The captain has not confirmed the team roster yet.",
   "225": "The link must be an app path or an https address.",
-  "1327": "Too many invitations. Try again later."
+  "1327": "Too many invitations. Try again later.",
+  "304": "The name contains characters that are not allowed.",
+  "1937": "The answer is too long.",
+  "1004": "The image has too many pixels. Use a smaller one.",
+  "1005": "The image cannot be read. Choose another file.",
+  "226": "A block preset cannot contain another preset."
 }

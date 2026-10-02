@@ -2,12 +2,13 @@ import {z} from "zod";
 import {ManageApiError, manageApiError} from "@/api/manage";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import type {ResultsAvailability} from "@/types/resultsAvailability";
+import {t} from "@/i18n/t";
 import {apiOrigin, requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const scoreboardEntrySchema = z.object({
-    Rank: z.number().int(), TeamID: id, TeamName: z.string(), Points: z.number().int(), Solved: z.number().int().default(0), LastSolveAt: z.string().nullable(),
-});
+    Rank: z.number().int(), TeamID: id, TeamName: z.string(), NameHidden: z.boolean().optional(), Points: z.number().int(), Solved: z.number().int().default(0), LastSolveAt: z.string().nullable(),
+}).transform(entry => entry.NameHidden ? {...entry, TeamName: t("scoreboard.nameHidden")} : entry);
 const timelineEntrySchema = z.object({EventTeamID: id, EventChallengeID: id, ChallengeName: z.string(), Points: z.number().int(), SolvedAt: z.string()});
 export const freezeSchema = z.object({
     Enabled: z.boolean(), FrozenAt: z.string().nullable(), FinishAt: z.string().nullable(), OpenedAt: z.string().nullable(),

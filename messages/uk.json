@@ -2559,6 +2559,7 @@
   "scoreboard.chartTitleOwn": "Динаміка балів · топ-{top} і ви",
   "scoreboard.chartTitleOwnTeam": "Динаміка балів · топ-{top} і ваша команда",
   "scoreboard.col.last": "Останнє",
+  "scoreboard.nameHidden": "Учасник",
   "scoreboard.col.participant": "Учасник",
   "scoreboard.col.place": "Місце",
   "scoreboard.col.points": "Бали",

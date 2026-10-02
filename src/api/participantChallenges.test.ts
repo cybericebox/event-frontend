@@ -18,6 +18,12 @@ describe("getChallengeSolves", () => {
         expect(page.NextCursor).toBe("11111111-1111-4111-8111-111111111111");
     });
 
+    it("shows a placeholder instead of a blank when the name is hidden", async () => {
+        fetchMock.mockResolvedValue(reply({Data: {Total: 1, Items: [{TeamName: "", NameHidden: true, SolvedAt: "2026-01-01T10:00:00Z", Own: false}]}}));
+        const page = await getChallengeSolves("e1", "c1");
+        expect(page.Items[0].TeamName).not.toBe("");
+    });
+
     it("sends the cursor and treats a missing NextCursor and null Items as the last, empty page", async () => {
         fetchMock.mockResolvedValue(reply({Data: {Total: 0, Items: null}}));
         const page = await getChallengeSolves("e1", "c1", "22222222-2222-4222-8222-222222222222");

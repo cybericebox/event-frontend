@@ -3,6 +3,7 @@
 import {useId, useRef, useState} from "react";
 import {toast} from "react-hot-toast";
 import {GripVertical, Moon, X} from "lucide-react";
+import {imageUploadMessage} from "@/api/apiErrors";
 import {liveLogoAccept, liveLogoMaxBytes, uploadLiveLogo} from "@/api/manageLive";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {t} from "@/i18n/t";
@@ -57,7 +58,7 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
         setBusy(true);
         setError(null);
         try {return await uploadLiveLogo(eventID, file);}
-        catch {setError(t("manage.live.logos.uploadError")); toast.error(t("manage.live.logos.uploadError")); return null;}
+        catch (failure) {const text = imageUploadMessage(failure, t("manage.live.logos.uploadError")); setError(text); toast.error(text); return null;}
         finally {setBusy(false);}
     }
     async function add(file: File | null) {

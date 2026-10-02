@@ -14,6 +14,7 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {blockPalette} from "./blockPalette";
 import {uploadManageBannerImage} from "@/api/manage";
+import {imageUploadMessage} from "@/api/apiErrors";
 import {FieldLabel} from "./FieldLabel";
 import {EventRichTextField} from "./EventRichTextField";
 import {blockValidationField} from "./validatePageBlocks";
@@ -340,8 +341,8 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
         try {
             const imageURL = await uploadManageBannerImage(eventID, file);
             onUpdate(current => ({...current, imageSource: "custom", imageURL}));
-        } catch {
-            setImageError(t("manage.blocks.image.uploadFailed"));
+        } catch (error) {
+            setImageError(imageUploadMessage(error, t("manage.blocks.image.uploadFailed")));
         } finally { setUploadingImage(false); }
     }
 
@@ -558,7 +559,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
                                 const name = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 120);
                                 updateGroup(current => ({...current, items: [...current.items, {name, imageURL}]}));
                                 setLogoUpload(null);
-                            }, () => setLogoUpload({group: groupIndex, error: t("manage.blocks.partners.logoUploadFailed"), busy: false}));
+                            }, error => setLogoUpload({group: groupIndex, error: imageUploadMessage(error, t("manage.blocks.partners.logoUploadFailed")), busy: false}));
                         }} /></label>}
                         {logoUpload?.group === groupIndex && logoUpload.error && <p className="event-manage-validation" role="alert">{logoUpload.error}</p>}
                     </div>;
