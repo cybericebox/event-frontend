@@ -4,10 +4,10 @@ import {hintLevelSchema} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
-// What a set of tasks reserves: the sum of its container devices; Min–Max over its variants (planning reserves the largest).
-const resourcesSchema = z.object({CPUMillicores: z.number().default(0), MemoryBytes: z.number().default(0), Devices: z.number().int().default(0)});
+// What a set of tasks reserves: the sum of its container devices in fixed blocks (the server's totals, never recomputed here); Min–Max over its variants (planning reserves the largest).
+const resourcesSchema = z.object({Blocks: z.number().int().default(0), CPUMillicores: z.number().default(0), MemoryBytes: z.number().default(0), Devices: z.number().int().default(0)});
 const taskResourcesSchema = z.object({Min: resourcesSchema, Max: resourcesSchema});
-const amountSchema = z.object({CPUMillicores: z.number().default(0), MemoryBytes: z.number().default(0)});
+const amountSchema = z.object({Blocks: z.number().int().default(0), CPUMillicores: z.number().default(0), MemoryBytes: z.number().default(0)});
 // What the event reserves: per team the tasks' devices plus the lab group's own pods (VPN, gateway) as a separate line.
 const resourcePlanSchema = z.object({
     Tasks: z.array(z.object({

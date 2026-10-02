@@ -1,5 +1,5 @@
 import type {ResourceAmount, TaskResources} from "@/api/manageChallenges";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 
 const MIB = 1024 ** 2;
 
@@ -16,6 +16,11 @@ function range(min: number, max: number, format: (value: number) => string): str
     return min === max ? format(max) : `${format(min)}–${format(max)}`;
 }
 
+// «3 блоки»: the server's block count; the plural follows the larger end of a range.
+export function blocksText(min: number, max = min): string {
+    return tPlural("manage.resources.blocks", max, {value: range(min, max, String)});
+}
+
 // A set without devices reserves nothing: no line.
 export function hasResources(resources: TaskResources | null): resources is TaskResources {
     return resources !== null && resources.Max.Devices > 0;
@@ -27,10 +32,11 @@ export function resourcesText(resources: TaskResources): string {
     return t("manage.resources.summary", {
         cpu: range(min.CPUMillicores, max.CPUMillicores, formatCpu),
         memory: range(min.MemoryBytes, max.MemoryBytes, formatMemory),
+        blocks: blocksText(min.Blocks, max.Blocks),
         devices: range(min.Devices, max.Devices, String),
     });
 }
 
 export function amountText(resources: ResourceAmount): string {
-    return t("manage.resources.overheadValue", {cpu: formatCpu(resources.CPUMillicores), memory: formatMemory(resources.MemoryBytes)});
+    return t("manage.resources.overheadValue", {cpu: formatCpu(resources.CPUMillicores), memory: formatMemory(resources.MemoryBytes), blocks: blocksText(resources.Blocks)});
 }

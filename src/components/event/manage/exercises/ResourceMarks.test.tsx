@@ -19,12 +19,12 @@ describe("resource marks", () => {
     });
 
     it("shows the total of a set and nothing without devices", () => {
-        const one = {CPUMillicores: 125, MemoryBytes: 512 * 1024 ** 2, Devices: 2};
-        expect(render(<ResourcesLine resources={{Min: one, Max: one}} />).container.textContent).toBe("CPU 125m · памʼять 512Mi · пристроїв 2");
+        const one = {Blocks: 8, CPUMillicores: 125, MemoryBytes: 512 * 1024 ** 2, Devices: 2};
+        expect(render(<ResourcesLine resources={{Min: one, Max: one}} />).container.textContent).toBe("CPU 125m · памʼять 512Mi · 8 блоків · пристроїв 2");
         cleanup();
         expect(render(<ResourcesLine resources={null} />).container.firstChild).toBeNull();
         cleanup();
-        const none = {CPUMillicores: 0, MemoryBytes: 0, Devices: 0};
+        const none = {Blocks: 0, CPUMillicores: 0, MemoryBytes: 0, Devices: 0};
         expect(render(<ResourcesLine resources={{Min: none, Max: none}} />).container.firstChild).toBeNull();
     });
 });

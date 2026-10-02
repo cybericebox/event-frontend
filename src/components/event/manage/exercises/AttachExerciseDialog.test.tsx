@@ -35,7 +35,7 @@ describe("AttachExerciseDialog", () => {
     });
 
     it("marks resource-heavy sets and shows each set's total resources", async () => {
-        const res = (cpu: number, memory: number, devices: number) => ({CPUMillicores: cpu, MemoryBytes: memory * 1024 ** 2, Devices: devices});
+        const res = (cpu: number, memory: number, devices: number, blocks = devices * 4) => ({Blocks: blocks, CPUMillicores: cpu, MemoryBytes: memory * 1024 ** 2, Devices: devices});
         api.choices.mockResolvedValue([
             {...choice("33333333-3333-4333-8333-333333333333", "Heavy", false), ResourceHeavy: true, Resources: {Min: res(500, 2048, 2), Max: res(500, 2048, 2)}},
             {...choice("44444444-4444-4444-8444-444444444444", "Light", false), Resources: {Min: res(50, 128, 1), Max: res(250, 1024, 3)}},
@@ -44,10 +44,10 @@ describe("AttachExerciseDialog", () => {
         renderDialog(true);
         const heavy = await screen.findByRole("button", {name: /Heavy/});
         expect(heavy.querySelector("[data-resource-heavy]")?.textContent).toBe("Ресурсоємне");
-        expect(heavy.querySelector("[data-resources-total]")?.textContent).toBe("CPU 500m · памʼять 2Gi · пристроїв 2");
+        expect(heavy.querySelector("[data-resources-total]")?.textContent).toBe("CPU 500m · памʼять 2Gi · 8 блоків · пристроїв 2");
         const light = screen.getByRole("button", {name: /Light/});
         expect(light.querySelector("[data-resource-heavy]")).toBeNull();
-        expect(light.querySelector("[data-resources-total]")?.textContent).toBe("CPU 50m–250m · памʼять 128Mi–1Gi · пристроїв 1–3");
+        expect(light.querySelector("[data-resources-total]")?.textContent).toBe("CPU 50m–250m · памʼять 128Mi–1Gi · 4–12 блоків · пристроїв 1–3");
         expect(screen.getByRole("button", {name: /Plain/}).querySelector("[data-resources-total]")).toBeNull();
     });
 
