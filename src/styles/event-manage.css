@@ -1012,3 +1012,18 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-mail-detail__facts>div{display:grid;grid-template-columns:130px minmax(0,1fr);gap:var(--ib-3)}
 .event-mail-detail__facts dt{color:var(--ib-dim)}
 .event-mail-detail__facts dd{margin:0;overflow-wrap:anywhere}
+
+/* Resources: the picker line, the set line and the team plan (flat: no shadows, no accents on the edge) */
+.event-resources-line{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-exercise-picker__resources{display:block;margin-top:var(--ib-1)}
+.event-resource-plan{display:grid;gap:var(--ib-2);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r)}
+.event-resource-plan h3,.event-resource-plan p{margin:0}
+.event-resource-plan h3{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-resource-plan__note{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-resource-plan__table{width:100%;border-collapse:collapse;font-size:var(--ib-fs-13)}
+.event-resource-plan__table th,.event-resource-plan__table td{padding:var(--ib-1) var(--ib-2);text-align:left;font-weight:var(--ib-w-regular)}
+.event-resource-plan__table thead th{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-resource-plan__table tbody th,.event-resource-plan__table tfoot th{font-weight:var(--ib-w-medium)}
+.event-resource-plan__table tbody tr+tr th,.event-resource-plan__table tbody tr+tr td{border-top:1px solid var(--ib-line)}
+.event-resource-plan__table tfoot th,.event-resource-plan__table tfoot td{border-top:1px solid var(--ib-control);font-weight:var(--ib-w-semibold)}
+.event-resource-plan__overhead td span{margin-left:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-12)}

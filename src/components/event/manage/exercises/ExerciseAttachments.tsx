@@ -24,6 +24,8 @@ import {SetActions} from "./SetActions";
 import {HintMark, TaskRow} from "./TaskRow";
 import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRowModel";
 import {SetStatusIcon} from "./SetStatusIcon";
+import {ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
+import {ResourcePlanSummary} from "./ResourcePlanSummary";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
 import {useBoardSets} from "./useBoardSets";
@@ -101,6 +103,7 @@ export function ExerciseAttachments() {
     const published = lifecycleQuery.data.Status !== "not_published";
     return <>
         {scoringQuery.data.ForceEventScoring && <p className="event-manage-notice">{t("manage.challenges.task.scoringForcedNotice")}</p>}
+        <ResourcePlanSummary eventID={eventID} attachments={sets.map(set => set.attachment)} />
         <section className="event-manage-section event-sets" aria-label={t("manage.exercises.sets")}>
             {sets.length === 0 && detached.length === 0 && <EmptyState message={t("manage.exercises.empty")} />}
             {sets.map(({attachment, challenges}) => {
@@ -129,6 +132,7 @@ export function ExerciseAttachments() {
                             <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
                             <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
                             {attachment.Infrastructure && <InfrastructureIcon />}
+                            <ResourceHeavyTag show={attachment.ResourceHeavy} />
                         </div>
                         <div className="event-exercise-set__side">
                             <span className="event-task__badges">
@@ -148,6 +152,7 @@ export function ExerciseAttachments() {
                                 attachment.Fork ? t("manage.exercises.meta.forkOf", {number: attachment.Fork.SourceVersionNumber}) : "",
                             ].filter(Boolean).join(" · ")}
                         </p>
+                        <ResourcesLine resources={attachment.Resources} className="event-exercise-set__meta" />
                         {mismatch && <div className="event-exercise-set__warning" role="alert">
                             <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t(published ? "manage.challenges.set.infraMissingAfter" : "manage.challenges.set.infraMissingBefore")}</span>
                         </div>}

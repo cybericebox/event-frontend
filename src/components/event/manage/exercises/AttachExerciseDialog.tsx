@@ -18,6 +18,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventButton} from "@/components/ui/EventButton";
 import {CatalogTagFilter} from "./CatalogTagFilter";
+import {ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
@@ -108,7 +109,9 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                             {choice.Tags.map(tag => <span key={tag} className="ib-tag ib-tag--sm ib-tag--category">{tag}</span>)}
                             <span className="ib-tag ib-tag--sm">{t(choice.Scope === "event" ? "manage.exercises.scope.own" : "manage.exercises.scope.catalog")}</span>
                             {choice.Attached && <span className="ib-tag ib-tag--sm ib-tag--ok">{t("manage.exercises.attachDialog.attached")}</span>}
+                            <ResourceHeavyTag show={choice.ResourceHeavy} />
                         </span>
+                        <ResourcesLine resources={choice.Resources} className="event-exercise-picker__resources" />
                         {unavailable(choice) && !choice.Attached && <span className="event-exercise-picker__reason">{t(published ? "manage.exercises.attachDialog.needsInfrastructureAfter" : "manage.exercises.attachDialog.needsInfrastructure")}</span>}
                     </button>
                 </li>)}</ul>}

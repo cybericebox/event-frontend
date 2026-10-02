@@ -4,6 +4,11 @@ import {hintLevelSchema} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
+// What a set of tasks reserves: the sum of its devices; Min–Max over its variants (planning reserves the largest).
+const resourcesSchema = z.object({CPUMillicores: z.number().default(0), MemoryBytes: z.number().default(0), Devices: z.number().int().default(0)});
+const taskResourcesSchema = z.object({Min: resourcesSchema, Max: resourcesSchema});
+// The lab group's own pods (VPN, gateway), planned at their maximum size.
+const resourcePlanSchema = z.object({Overhead: z.object({VPN: resourcesSchema, Gateway: resourcesSchema})});
 const scoringOverrideSchema = z.object({
     Mode: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
     MinPoints: z.number().int(), MaxPoints: z.number().int(), FloorAtPercent: z.number().int(),
@@ -33,6 +38,8 @@ const attachmentSchema = z.object({
     ChallengeCount: z.number().int().default(0),
     PublishedCount: z.number().int().default(0),
     HasAttempts: z.boolean().default(false),
+    ResourceHeavy: z.boolean().default(false),
+    Resources: taskResourcesSchema.nullish().transform(value => value ?? null),
 });
 // Cost is the event's price (0 until set); Overridden says a price is set.
 const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int(), Overridden: z.boolean()});
@@ -51,6 +58,8 @@ const catalogChoiceSchema = z.object({
     Scope: z.enum(["catalog", "event"]).catch("catalog"),
     Infrastructure: z.boolean().default(false),
     Attached: z.boolean().default(false),
+    ResourceHeavy: z.boolean().default(false),
+    Resources: taskResourcesSchema.nullish().transform(value => value ?? null),
 });
 const catalogTagSchema = z.object({Tag: z.string(), ExerciseCount: z.number().int()});
 const catalogPreviewSchema = z.object({
@@ -71,6 +80,9 @@ export type CatalogTag = z.infer<typeof catalogTagSchema>;
 export type PublishedExercisePreview = z.infer<typeof catalogPreviewSchema>;
 export type ChallengeScoringOverride = z.infer<typeof scoringOverrideSchema>;
 export type HintUnlock = z.infer<typeof hintUnlockSchema>;
+export type Resources = z.infer<typeof resourcesSchema>;
+export type TaskResources = z.infer<typeof taskResourcesSchema>;
+export type ResourcePlan = z.infer<typeof resourcePlanSchema>;
 export type InfrastructureFilter = "all" | "yes" | "no";
 export type HintCostInput = {HintID: string; Cost: number | null};
 export {attachmentSchema as EventExerciseAttachmentSchema, catalogChoiceSchema as PublishedExerciseChoiceSchema, hintUnlockSchema as HintUnlockSchema};
@@ -94,6 +106,8 @@ const catalogQuery = (search: string, infrastructure: InfrastructureFilter, tags
     return query.toString();
 };
 
+// Group overhead of the event plan: the VPN and the gateway pods of one team's lab group.
+export const getEventResourcePlan = (eventID: string) => request(eventID, "resource-plan", resourcePlanSchema);
 export const getEventChallengeGroups = (eventID: string) => request(eventID, "challenge-groups", z.array(groupSchema));
 export const createEventChallengeGroup = (eventID: string, Name: string, Order: number) => request(eventID, "challenge-groups", groupSchema, "POST", {Name, Order});
 export const updateEventChallengeGroup = (eventID: string, groupID: string, Name: string, Order: number) => request(eventID, `challenge-groups/${groupID}`, groupSchema, "PUT", {Name, Order});
