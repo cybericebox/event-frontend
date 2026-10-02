@@ -74,5 +74,5 @@ export async function detachWithConfirm(detach: (confirm: boolean) => Promise<vo
 }
 
 export function attachmentActionError(error: unknown, fallback: string): string {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback);
+    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
 }

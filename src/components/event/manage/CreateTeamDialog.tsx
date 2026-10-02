@@ -41,7 +41,7 @@ function csvIssueText(issue: BatchTeamIssue, teams: TeamDraft[]): string {
 }
 
 function failure(error: unknown, fallback: string): string {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback);
+    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
 }
 
 function doneText(result: BatchTeamsResult): string {

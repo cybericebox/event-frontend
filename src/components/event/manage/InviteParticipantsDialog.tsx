@@ -3,6 +3,8 @@
 import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {apiErrorMessage} from "@/api/apiErrors";
+import {ManageApiError} from "@/api/manage";
 import {sendInvitations, type InvitationResult} from "@/api/manageInvites";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
 import {EventButton} from "@/components/ui/EventButton";
@@ -109,7 +111,9 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
                 try {await onSent();} catch {toast.error(t("manage.participants.refreshFailed"));}
             }
             if (!failed.length) {reset(); onOpenChange(false);}
-        } catch {toast.error(t("manage.participants.invite.sendFailed"));}
+        } catch (error) {
+            toast.error(apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, t("manage.participants.invite.sendFailed"), error instanceof ManageApiError ? error.retryAfter : undefined));
+        }
         finally {setBusy(false);}
     }
 

@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {readApiErrorCode} from "@/api/apiErrors";
+import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
 import {EventThemeSchema} from "@/types/eventTheme";
 import {ContentDocumentSchema, ContentValueSchema, type ContentDocument} from "@/types/eventContent";
 import {ContentVariableCatalogSchema} from "@/components/event/content/variableCatalog";
@@ -118,13 +118,13 @@ export function editablePage(page: ManagePage): ManagePageInput {
 }
 
 export class ManageApiError extends Error {
-    constructor(readonly status: number, readonly code?: number) {
+    constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number) {
         super(`Event management request failed: ${status}`);
     }
 }
 
 export async function manageApiError(response: Response): Promise<ManageApiError> {
-    return new ManageApiError(response.status, await readApiErrorCode(response));
+    return new ManageApiError(response.status, await readApiErrorCode(response), readRetryAfter(response));
 }
 
 // InfrastructureAllowed is the admin's creation-time decision; it gates «Стенди».

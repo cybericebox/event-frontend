@@ -5,7 +5,8 @@ import {POP_IN_MAX_SECONDS, POP_IN_MIN_SECONDS} from "./editor/inAppOptions";
 // Only these addresses may open from a button; a variable in it is not allowed.
 export function validActionHref(href: string): boolean {
     const value = href.trim();
-    return /^(https?:\/\/|mailto:|\/(?!\/)|#)/i.test(value) && !value.includes("{{");
+    // The server accepts an app path or an https address only (no http, mailto or anchors).
+    return /^(https:\/\/\S+|\/(?![/\\]).*)$/i.test(value) && !/\s/.test(value) && !value.includes("{{");
 }
 
 // The first reason an in-app draft cannot be saved; empty when it can.

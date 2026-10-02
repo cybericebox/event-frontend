@@ -23,7 +23,7 @@ import {PasswordInput} from "@/components/ui/PasswordInput";
 import {EventNumberInput} from "@/components/ui/EventNumberInput";
 
 function errorText(error: unknown, fallback: string) {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback);
+    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
 }
 
 export function MailSettingsPanel() {

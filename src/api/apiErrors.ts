@@ -62,6 +62,9 @@ export const ApiErrorCode = {
     BroadcastEmptyAudience: 222,
     BannerNotFound: 223,
     BannerInvalid: 224,
+    TemplateLinkInvalid: 225,
+    InvitationRateLimited: 1327,
+    AuthTooManyRequests: 428,
 } as const;
 
 export type ApiErrorCodeValue = typeof ApiErrorCode[keyof typeof ApiErrorCode];
@@ -70,10 +73,16 @@ export function errorDetailCode(code: number | undefined): number | undefined {
     return code === undefined ? undefined : code % 10000;
 }
 
+// Seconds to wait from the Retry-After header of a 429 (the header is exposed by CORS); undefined without it.
+export function readRetryAfter(response: Response): number | undefined {
+    const seconds = Number(response.headers?.get("Retry-After"));
+    return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : undefined;
+}
+
 export async function readApiErrorCode(response: Response): Promise<number | undefined> {
     const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
     return body.success ? errorDetailCode(body.data.Status.Code) : undefined;
 }
 
 // Messages live in messages/errors.{uk,en}.json, keyed by detail code.
-export {apiErrorMessage} from "@/i18n/apiError";
+export {apiErrorMessage, waitText} from "@/i18n/apiError";

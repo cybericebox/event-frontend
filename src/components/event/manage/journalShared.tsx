@@ -34,7 +34,7 @@ export function useJournalOptions() {
     const challenges = useQuery({queryKey: ["event-manage-attempt-challenges", eventID], queryFn: () => listChallengeOptions(eventID), refetchOnWindowFocus: false});
     return {
         teams: [{value: all, label: teamMode ? t("manage.attempts.filter.allTeams") : t("manage.attempts.filter.allParticipants")}, ...(teams.data?.Teams ?? []).map(team => ({value: team.TeamID, label: team.RealName && team.RealName !== team.Name ? t("manage.attempts.teamWithRealName", {name: team.Name, realName: team.RealName}) : team.Name}))],
-        participants: [{value: all, label: t("manage.attempts.filter.allParticipants")}, ...(participants.data?.Items ?? []).map(item => ({value: item.UserID, label: item.Name || item.Email}))],
+        participants: [{value: all, label: t("manage.attempts.filter.allParticipants")}, ...(participants.data?.Items ?? []).map(item => ({value: item.UserID, label: item.Name || item.Email || t("manage.participants.fallbackName", {id: item.UserID.slice(0, 8)})}))],
         challenges: [{value: all, label: t("manage.attempts.filter.allChallenges")}, ...(challenges.data ?? [])],
     };
 }

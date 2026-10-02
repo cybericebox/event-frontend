@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ManageApiError} from "@/api/manage";
+import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
@@ -100,7 +100,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         headers: {Accept: "application/json", ...(body === undefined ? {} : {"Content-Type": "application/json"})},
         ...(body === undefined ? {} : {body: JSON.stringify(body)}),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw await manageApiError(response);
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 

@@ -27,7 +27,7 @@ describe("in-app template validation", () => {
     });
 
     it("allows only safe button addresses without variables", () => {
-        for (const href of ["https://a.b", "mailto:a@b.c", "/path", "#top"]) expect(validActionHref(href)).toBe(true);
-        for (const href of ["//evil.com", "javascript:alert(1)", "data:text/html,x", "/x/{{.id}}", ""]) expect(validActionHref(href)).toBe(false);
+        for (const href of ["https://a.b", "/path"]) expect(validActionHref(href)).toBe(true);
+        for (const href of ["http://a.b", "mailto:a@b.c", "#top", "/\\evil.com", "https://a b.c", "//evil.com", "javascript:alert(1)", "data:text/html,x", "/x/{{.id}}", ""]) expect(validActionHref(href)).toBe(false);
     });
 });

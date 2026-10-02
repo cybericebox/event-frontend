@@ -57,5 +57,7 @@
   "1720": "The team roster is fixed: its members cannot move to another team.",
   "1721": "The team roster is fixed.",
   "1722": "The team does not have enough members to confirm the roster.",
-  "1723": "The captain has not confirmed the team roster yet."
+  "1723": "The captain has not confirmed the team roster yet.",
+  "225": "The link must be an app path or an https address.",
+  "1327": "Too many invitations. Try again later."
 }

@@ -13,6 +13,8 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
+import {ManageApiError} from "@/api/manage";
 import {useSubscriptionToggle} from "./useSubscriptionToggle";
 import {t} from "@/i18n/t";
 import {useManager} from "../ManagerShell";
@@ -76,8 +78,9 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
             ]);
             toast.success(success);
             return true;
-        } catch {
-            toast.error(failure);
+        } catch (error) {
+            // A refused link or button address has its own message; every other error keeps the generic one.
+            toast.error(error instanceof ManageApiError && error.code === ApiErrorCode.TemplateLinkInvalid ? apiErrorMessage(error.code, failure) : failure);
             return false;
         } finally {setBusy(false);}
     }

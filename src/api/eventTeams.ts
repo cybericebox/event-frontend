@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {t} from "@/i18n/t";
 import {participantFormSchema, type ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {readApiErrorCode} from "@/api/apiErrors";
@@ -26,7 +27,9 @@ async function send(eventID: string, path: string, body: Record<string, unknown>
 // Role follows the backend TeamRole: 0 = captain, 1 = member.
 export const TeamRole = {Captain: 0, Member: 1} as const;
 // Pending marks an invitee who has not accepted the team invitation yet.
-const memberSchema = z.object({UserID: z.string().uuid(), DisplayName: z.string(), Role: z.number().int(), Own: z.boolean(), Pending: z.boolean().default(false)});
+// A pending invitee has no name yet (the server sends it empty): show «Запрошено», never a blank.
+const memberSchema = z.object({UserID: z.string().uuid(), DisplayName: z.string(), Role: z.number().int(), Own: z.boolean(), Pending: z.boolean().default(false)})
+    .transform(member => ({...member, DisplayName: member.DisplayName.trim() || t(member.Pending ? "participation.team.invitedName" : "participation.team.unnamed")}));
 export type TeamMember = z.infer<typeof memberSchema>;
 
 export async function getOwnTeamMembers(eventID: string): Promise<TeamMember[]> {
