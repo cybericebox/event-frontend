@@ -39,6 +39,7 @@ describe("error pages", () => {
         expect(html).toContain("<title>Не вдалося завантажити сторінку</title>");
         expect(html).toContain(">Оновити<");
         expect(html).toContain("crest-128");
+        expect(html).toContain('href="mailto:')
         expect(html).not.toContain("secret stack detail");
     });
 

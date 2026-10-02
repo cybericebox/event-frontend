@@ -11,6 +11,7 @@ import {GeistMono} from "geist/font/mono";
 import {EventErrorScreen} from "@/components/event/EventErrorScreen";
 import {applyTheme, readThemeChoice, resolveTheme} from "@/utils/theme";
 import {t} from "@/i18n/t";
+import {FeedbackLink} from "@/components/FeedbackLink";
 
 // Root layout failed: this replaces the whole document, so the event data and its brand
 // are gone. It shows the platform style (crest, default tokens) with the saved theme.
@@ -35,6 +36,8 @@ export default function GlobalError({error, retry}: {
         </head>
         <body className="event-root" suppressHydrationWarning>
         <EventErrorScreen onRetry={retry} page />
+        {/* plain mailto link; the root layout (and its FeedbackLink) is gone here */}
+        <FeedbackLink />
         </body>
         </html>
     );
