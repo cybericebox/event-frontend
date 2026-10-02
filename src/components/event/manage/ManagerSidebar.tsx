@@ -77,6 +77,7 @@ const groups: Group[] = [
         {href: "/manage/exercise-groups", label: t("manage.nav.exerciseGroups"), icon: Layers3},
         {href: "/manage/exercises", label: t("manage.nav.exercises"), icon: Puzzle},
         {href: "/manage/labs", label: t("manage.nav.labs"), icon: Server, infrastructureOnly: true},
+        {href: "/manage/resources", label: t("manage.nav.resources"), icon: Gauge, infrastructureOnly: true},
         {href: "/manage/submissions", label: t("manage.nav.submissions"), icon: ListChecks},
     ]},
     {id: "pages", label: t("manage.nav.pages"), icon: LayoutTemplate, items: [

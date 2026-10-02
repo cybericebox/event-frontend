@@ -18,6 +18,7 @@ export function managerLocationTitle(pathname: string, pages: ManagePage[]): str
     if (pathname === "/manage/exercise-groups") return t("manage.nav.exerciseGroups");
     if (pathname === "/manage/exercises") return t("manage.nav.exercises");
     if (pathname === "/manage/labs") return t("manage.nav.labs");
+    if (pathname === "/manage/resources") return t("manage.nav.resources");
     if (pathname === "/manage/challenge-settings") return t("manage.nav.challengeSettings");
     if (pathname === "/manage/submissions") return t("manage.nav.submissions");
     if (pathname === "/manage/results") return t("manage.nav.results");

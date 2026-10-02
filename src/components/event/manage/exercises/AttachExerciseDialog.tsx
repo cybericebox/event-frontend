@@ -1,6 +1,7 @@
 "use client";
 
 import {useState, type FormEvent} from "react";
+import Link from "next/link";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery} from "@tanstack/react-query";
 import {Search} from "lucide-react";
@@ -13,6 +14,7 @@ import {DialogModal} from "@/components/event/DialogModal";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t, tPlural} from "@/i18n/t";
 import {attachmentActionError} from "./attachmentModel";
+import {isNotEnoughReserved} from "../resources/resourcesModel";
 import {InfrastructureIcon} from "./InfrastructureIcon";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -39,6 +41,8 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const [infrastructure, setInfrastructure] = useState<InfrastructureFilter>(infrastructureAllowed ? "all" : "no");
     const [tags, setTags] = useState<string[]>([]);
     const [attachError, setAttachError] = useState("");
+    // 72508: the reservation cannot hold the set for all teams; the organizer can ask for an extension.
+    const [needsExtension, setNeedsExtension] = useState(false);
     const [selected, setSelected] = useState<PublishedExerciseChoice | null>(null);
     const [variant, setVariant] = useState(0);
     const [variantMode, setVariantMode] = useState<0 | 1>(0);
@@ -55,6 +59,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
 
     function select(choice: PublishedExerciseChoice) {
         setAttachError("");
+        setNeedsExtension(false);
         setSelected(current => current?.ID === choice.ID ? null : choice);
         setVariant(0);
         setVariantMode(0);
@@ -64,6 +69,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
         if (busy) return;
         setSelected(null);
         setAttachError("");
+        setNeedsExtension(false);
         onClose();
     }
 
@@ -79,6 +85,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
         } catch (error) {
             // Shown in the dialog: the organizer picks another set.
             setAttachError(attachmentActionError(error, t("manage.exercises.attachDialog.failed")));
+            setNeedsExtension(isNotEnoughReserved(error));
         } finally {setBusy(false);}
     }
 
@@ -116,6 +123,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                     </button>
                 </li>)}</ul>}
             {attachError && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{attachError}</p>}
+            {needsExtension && <Link className="ib-btn" href="/manage/resources?request=1" onClick={close}>{t("manage.exercises.attachDialog.requestExtension")}</Link>}
             {selected && <div className="event-exercise-editor__preview" aria-live="polite">
                 {preview.isPending ? <EventLoading compact /> : preview.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.previewFailed")} error={preview.error} onRetry={() => void preview.refetch()} /> : <>
                     <div className="event-exercise-editor__preview-head"><h3>{preview.data.Name}</h3>

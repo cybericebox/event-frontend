@@ -63,5 +63,10 @@
   "1937": "The answer is too long.",
   "1004": "The image has too many pixels. Use a smaller one.",
   "1005": "The image cannot be read. Choose another file.",
-  "226": "A block preset cannot contain another preset."
+  "226": "A block preset cannot contain another preset.",
+  "2504": "There are not enough resources for this time.",
+  "2507": "Check the request: a change and a reason are required.",
+  "2508": "The event reservation cannot hold this for all teams. Request an extension.",
+  "2513": "No resources have been reserved for this event yet.",
+  "2514": "The previous request is still pending."
 }

@@ -63,6 +63,7 @@ describe("participation navigation", () => {
             ["Групи й порядок", "/manage/exercise-groups"],
             ["Завдання", "/manage/exercises"],
             ["Стенди", "/manage/labs"],
+            ["Ресурси", "/manage/resources"],
             ["Журнал спроб", "/manage/submissions"],
         ]);
     });

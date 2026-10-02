@@ -62,6 +62,17 @@ describe("AttachExerciseDialog", () => {
         await waitFor(() => expect(screen.getByText("Набір потребує інфраструктури, а в заходу її вимкнено.")).toBeTruthy());
     });
 
+    it("offers a change request when the reservation cannot hold the set (72508)", async () => {
+        api.choices.mockResolvedValue([choice("22222222-2222-4222-8222-222222222222", "Web", false)]);
+        api.preview.mockResolvedValue({ID: "22222222-2222-4222-8222-222222222222", Name: "Web", Description: "", VersionID: "v", VariantCount: 1, Variant: 0, Tasks: []});
+        api.attach.mockRejectedValue(new ManageApiError(409, 2508));
+        renderDialog(true);
+        fireEvent.click(await screen.findByRole("button", {name: /Web/}));
+        fireEvent.click(await screen.findByRole("button", {name: "Додати"}));
+        const link = await screen.findByRole("link", {name: "Запросити розширення"});
+        expect(link.getAttribute("href")).toBe("/manage/resources?request=1");
+    });
+
     it("warns under the filter when sets with stands are listed but the event has no infrastructure", async () => {
         api.choices.mockResolvedValue([]);
         renderDialog(false);
