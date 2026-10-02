@@ -39,6 +39,7 @@ Read at runtime by the server.
 | `NEXT_PUBLIC_EXERCISES_HOST` | yes | Exercises app host. |
 | `NEXT_PUBLIC_EVENT_DOMAIN` | yes | Event sites are `<tag>.<domain>`. |
 | `NEXT_PUBLIC_COOKIE_DOMAIN` | yes | Parent domain of the theme/consent cookies (e.g. `example.com`); no implicit parent. |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | yes | Support mailbox of the «Send feedback» `mailto:` link shown on every page (the subject carries the app and page path only). |
 | `NEXT_PUBLIC_PARTNER_URL` | yes | Partner department link in the footer credit. |
 | `NEXT_PUBLIC_PARTNER_SITE_URL` | yes | Partner institution link in the footer credit. |
 | `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | yes | WireGuard install link in the VPN dialog. |

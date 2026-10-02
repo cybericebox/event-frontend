@@ -61,6 +61,11 @@ spec:
                 configMapKeyRef:
                   name: config
                   key: COOKIE_DOMAIN
+            - name: NEXT_PUBLIC_SUPPORT_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: SUPPORT_EMAIL
             - name: NEXT_PUBLIC_PARTNER_URL
               valueFrom:
                 configMapKeyRef:

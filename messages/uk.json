@@ -4570,5 +4570,9 @@
   "manage.challenges.reveal.allReadyNote": "Завдання зʼявляється, коли воно готове для всіх команд. Підходить для змагань.",
   "manage.challenges.reveal.asReady": "Для кожної команди окремо",
   "manage.challenges.reveal.asReadyNote": "Команда бачить завдання, щойно її лабораторія готова. Підходить для тренувань.",
-  "manage.challenges.reveal.locked": "Після початку заходу режим показу змінити не можна."
+  "manage.challenges.reveal.locked": "Після початку заходу режим показу змінити не можна.",
+  "feedback.link": "Надіслати відгук",
+  "feedback.subject": "Відгук: {app} {page}",
+  "feedback.app": "Cyber ICE Box Event",
+  "feedback.appEvent": "Cyber ICE Box Event «{name}»"
 }

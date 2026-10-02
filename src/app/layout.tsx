@@ -66,6 +66,7 @@ import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 import {EventBrandProvider} from "@/components/event/EventBrandLogo";
 import {apiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
+import {FeedbackLink} from "@/components/FeedbackLink";
 
 const FALLBACK_TITLE = t("meta.brand");
 
@@ -134,6 +135,8 @@ export default async function RootLayout({
             </EventBrandProvider>
             <EventActionToaster />
         </Providers>
+        {/* plain mailto link in the server-rendered HTML of every page; the subject names the event */}
+        <FeedbackLink app={event?.Name ? t("feedback.appEvent", {name: event.Name}) : undefined} />
         {/* the consent panel is always mounted («Налаштування файлів cookie»); GA loads only when configured */}
         <Analytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} nonce={nonce} />
         </body>

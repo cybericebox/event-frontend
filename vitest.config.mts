@@ -12,6 +12,7 @@ export default defineConfig({
         NEXT_PUBLIC_EXERCISES_HOST: "exercises.example.test",
         NEXT_PUBLIC_EVENT_DOMAIN: "example.test",
         NEXT_PUBLIC_COOKIE_DOMAIN: "example.test",
+        NEXT_PUBLIC_SUPPORT_EMAIL: "support@example.test",
         NEXT_PUBLIC_PARTNER_URL: "https://partner.example.test/dept/",
         NEXT_PUBLIC_PARTNER_SITE_URL: "https://partner.example.test",
         NEXT_PUBLIC_WIREGUARD_INSTALL_URL: "https://wireguard.example.test/install/",

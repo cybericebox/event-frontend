@@ -14,6 +14,8 @@ data:
   EVENT_DOMAIN: "example.com"
   # Parent domain of the theme/consent cookies (shared by all apps).
   COOKIE_DOMAIN: "example.com"
+  # REQUIRED: support mailbox of the «Надіслати відгук» (send feedback) link on every page.
+  SUPPORT_EMAIL: "support@example.com"
   # External links shown in the UI.
   PARTNER_URL: "https://ice.nure.ua/ua/"
   PARTNER_SITE_URL: "https://nure.ua"
