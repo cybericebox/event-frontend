@@ -3,7 +3,9 @@
 import {useState, useSyncExternalStore} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ChevronRight} from "lucide-react";
+import Link from "next/link";
 import {toast} from "react-hot-toast";
+import {isNotEnoughReserved} from "../resources/resourcesModel";
 import {
     detachEventExercise, forkEventExercise, revertEventExercise, updateEventExercise,
     type EventExerciseAttachment,
@@ -36,7 +38,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type Action =
-    {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string};
+    {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string; extension?: boolean};
 
 const noSubscribe = () => () => {};
 
@@ -90,7 +92,9 @@ export function ExerciseAttachments() {
         } catch (error) {
             const fallback = t(`manage.exercises.action.${action.kind}.failed`);
             // Attempts conflicts stay in the dialog: the organizer has to read why.
-            if (error instanceof ManageApiError && error.code === ApiErrorCode.ExerciseTaskHasAttempts) setAction({...action, error: attachmentActionError(error, fallback)});
+            // 72508: the reservation cannot hold the change for all teams; the dialog offers a change request.
+            if (isNotEnoughReserved(error)) setAction({...action, error: attachmentActionError(error, fallback), extension: true});
+            else if (error instanceof ManageApiError && error.code === ApiErrorCode.ExerciseTaskHasAttempts) setAction({...action, error: attachmentActionError(error, fallback)});
             else {setAction(null); toast.error(attachmentActionError(error, fallback));}
         } finally {setBusy(false);}
     }
@@ -186,6 +190,8 @@ export function ExerciseAttachments() {
         </section>
         <ConfirmDialog open={!!action} onCancel={() => setAction(null)} tone={copy?.danger ? "danger" : "default"} busy={busy} disabled={!!action?.error} error={action?.error}
             title={copy?.title ?? ""} description={copy?.description} subject={action?.attachment.ExerciseName}
-            cancelLabel={action?.error ? t("common.close") : undefined} confirmLabel={copy?.confirm ?? ""} onConfirm={() => void runAction()} />
+            cancelLabel={action?.error ? t("common.close") : undefined} confirmLabel={copy?.confirm ?? ""} onConfirm={() => void runAction()}>
+            {action?.extension && <Link className="ib-btn" href="/manage/resources?request=1" onClick={() => setAction(null)}>{t("manage.exercises.attachDialog.requestExtension")}</Link>}
+        </ConfirmDialog>
     </>;
 }
