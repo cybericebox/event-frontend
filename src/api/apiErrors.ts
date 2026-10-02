@@ -63,7 +63,6 @@ export const ApiErrorCode = {
     BannerNotFound: 223,
     BannerInvalid: 224,
     TemplateLinkInvalid: 225,
-    InvitationRateLimited: 1327,
     AuthTooManyRequests: 428,
     NameInvalidCharacters: 304,
     AnswerTooLong: 1937,
@@ -86,7 +85,9 @@ export function readRetryAfter(response: Response): number | undefined {
 
 export async function readApiErrorCode(response: Response): Promise<number | undefined> {
     const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
-    return body.success ? errorDetailCode(body.data.Status.Code) : undefined;
+    if (body.success) return errorDetailCode(body.data.Status.Code);
+    // The token-bucket limiter answers a bare 429 without a body.
+    return response.status === 429 ? ApiErrorCode.AuthTooManyRequests : undefined;
 }
 
 // Messages live in messages/errors.{uk,en}.json, keyed by detail code.

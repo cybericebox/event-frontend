@@ -7,7 +7,7 @@ const nilUUID = "00000000-0000-0000-0000-000000000000";
 
 // Fields prefill the person's participant form answers (CSV import).
 export type InvitationEntry = {Email: string; FirstName?: string; LastName?: string; Fields?: ParticipantAnswers};
-export type InvitationCode = "email_invalid" | "already_participant" | "account_unavailable" | "staff_cannot_participate" | "fields_invalid" | "rate_limited" | "failed";
+export type InvitationCode = "email_invalid" | "already_participant" | "account_unavailable" | "staff_cannot_participate" | "fields_invalid" | "failed";
 export type InvitationResult = {Email: string; UserID: string | null; Code: InvitationCode | null};
 
 const invitationResultSchema = z.object({Email: z.string(), UserID: z.string(), Error: z.string(), Code: z.string().optional()});
@@ -15,7 +15,7 @@ const invitationResultSchema = z.object({Email: z.string(), UserID: z.string(), 
 function invitationCode(result: z.infer<typeof invitationResultSchema>): InvitationCode | null {
     if (!result.Error && !result.Code) return null;
     const code = result.Code as InvitationCode | undefined;
-    return code && ["email_invalid", "already_participant", "account_unavailable", "staff_cannot_participate", "fields_invalid", "rate_limited", "failed"].includes(code) ? code : "failed";
+    return code && ["email_invalid", "already_participant", "account_unavailable", "staff_cannot_participate", "fields_invalid", "failed"].includes(code) ? code : "failed";
 }
 
 async function post(eventID: string, path: string, payload: unknown): Promise<unknown> {

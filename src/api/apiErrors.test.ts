@@ -15,15 +15,20 @@ describe("rate-limit errors", () => {
     });
 
     it("carries the wait and the detail code on a manage error", async () => {
-        const error = await manageApiError(reply(40000 + 1327, "90"));
-        expect(error.code).toBe(ApiErrorCode.InvitationRateLimited);
+        const error = await manageApiError(reply(40000 + 428, "90"));
+        expect(error.code).toBe(ApiErrorCode.AuthTooManyRequests);
         expect(error.retryAfter).toBe(90);
     });
 
+    it("treats a bare 429 as a rate limit", async () => {
+        const error = await manageApiError(new Response(null, {status: 429, headers: {"Retry-After": "12"}}));
+        expect(error.code).toBe(ApiErrorCode.AuthTooManyRequests);
+        expect(error.retryAfter).toBe(12);
+    });
+
     it("shows the wait time in the message", () => {
-        expect(apiErrorMessage(ApiErrorCode.InvitationRateLimited, "x", 90)).toContain(waitText(90));
         expect(apiErrorMessage(ApiErrorCode.AuthTooManyRequests, "x", 20)).toContain(waitText(20));
-        expect(apiErrorMessage(ApiErrorCode.InvitationRateLimited, "x")).not.toContain("{");
+        expect(apiErrorMessage(ApiErrorCode.AuthTooManyRequests, "x")).not.toContain("{");
     });
 
     it("rounds the wait up to a unit", () => {

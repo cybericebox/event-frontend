@@ -10,7 +10,7 @@ const uk = errorsUk as Record<string, string>
 const en = errorsEn as Record<string, string>
 
 // Codes whose message carries the wait from Retry-After (HTTP 429).
-const waitCodes = new Set([428, 1327])
+const waitCodes = new Set([428])
 
 // «45 с», «3 хв», «2 год»: the wait rounded up to the unit.
 export function waitText(seconds: number): string {
