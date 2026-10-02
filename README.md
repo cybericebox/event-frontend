@@ -46,6 +46,19 @@ Read at runtime by the server.
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
 | `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
 
+## Content-Security-Policy
+
+`src/proxy.ts` sets a strict CSP on every page request with a fresh nonce per request (policy built in `src/utils/csp.ts`, tested in `csp.test.ts`). The nonce reaches the render through the `x-nonce` request header; Next stamps its own scripts, the layout stamps the theme boot script and the Google Analytics scripts. Pages are rendered per request, so nonces work.
+
+- `script-src 'self' 'nonce-…'`: no `unsafe-inline`, no `strict-dynamic`. Google Analytics hosts are added only when `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` is set.
+- `connect-src 'self'` plus the API origin from `NEXT_PUBLIC_API_HOST` (fetch and SSE). No other origin is contacted from the browser; sign-in is a redirect to the ID app.
+- `img-src 'self' data: blob: https:`: organizer logos, banners and Markdown images come from any https host; QR codes and previews use data/blob.
+- `style-src 'self' 'nonce-…'` with `style-src-attr 'unsafe-inline'` (React renders `style=""` attributes for theme variables and text alignment).
+- `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, `frame-src 'none'`.
+- Development only: `unsafe-eval`, `ws:`/`wss:` for HMR and `unsafe-inline` styles.
+
+Organizer Markdown is rendered by `react-markdown` without `rehype-raw`, so raw HTML is escaped and unsafe URL schemes are dropped. Notification HTML goes through DOMPurify. A new third-party host must be added through env in `csp.ts` and covered by a test. Check the browser console for CSP violations after adding any script, font or remote resource.
+
 ## i18n
 
 All user-facing text lives in `messages/uk.json` and `messages/en.json` and is rendered through the translate function `t("key", { vars })`. Ukrainian is the default language. Every key must exist in both files.

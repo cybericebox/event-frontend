@@ -105,6 +105,7 @@ export default async function RootLayout({
                                    }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const nonce = (await headers()).get("x-nonce") ?? undefined;
     let event: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
     let unavailable = false;
     try {
@@ -122,7 +123,7 @@ export default async function RootLayout({
     return (
         <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} suppressHydrationWarning>
         <head>
-            <script dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} />
+            <script nonce={nonce} dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} />
         </head>
         <body className="event-root">
         <Providers>
@@ -134,7 +135,7 @@ export default async function RootLayout({
             <EventActionToaster />
         </Providers>
         {/* the consent panel is always mounted («Налаштування файлів cookie»); GA loads only when configured */}
-        <Analytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+        <Analytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} nonce={nonce} />
         </body>
         </html>
     );
