@@ -24,7 +24,7 @@ import {SetActions} from "./SetActions";
 import {HintMark, TaskRow} from "./TaskRow";
 import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRowModel";
 import {SetStatusIcon} from "./SetStatusIcon";
-import {ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
+import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 import {ResourcePlanSummary} from "./ResourcePlanSummary";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
@@ -133,6 +133,7 @@ export function ExerciseAttachments() {
                             <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
                             {attachment.Infrastructure && <InfrastructureIcon />}
                             <ResourceHeavyTag show={attachment.ResourceHeavy} />
+                            <NoAgentFitsTag show={attachment.NoAgentFits} />
                         </div>
                         <div className="event-exercise-set__side">
                             <span className="event-task__badges">

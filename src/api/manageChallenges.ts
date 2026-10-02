@@ -4,11 +4,22 @@ import {hintLevelSchema} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
-// What a set of tasks reserves: the sum of its devices; Min–Max over its variants (planning reserves the largest).
+// What a set of tasks reserves: the sum of its container devices; Min–Max over its variants (planning reserves the largest).
 const resourcesSchema = z.object({CPUMillicores: z.number().default(0), MemoryBytes: z.number().default(0), Devices: z.number().int().default(0)});
 const taskResourcesSchema = z.object({Min: resourcesSchema, Max: resourcesSchema});
-// The lab group's own pods (VPN, gateway), planned at their maximum size.
-const resourcePlanSchema = z.object({Overhead: z.object({VPN: resourcesSchema, Gateway: resourcesSchema})});
+const amountSchema = z.object({CPUMillicores: z.number().default(0), MemoryBytes: z.number().default(0)});
+// What the event reserves: per team the tasks' devices plus the lab group's own pods (VPN, gateway) as a separate line.
+const resourcePlanSchema = z.object({
+    Tasks: z.array(z.object({
+        EventExerciseID: id, ExerciseID: id, ExerciseName: z.string(), Range: taskResourcesSchema, Reserved: resourcesSchema,
+        ResourceHeavy: z.boolean().default(false), InternetLab: z.boolean().default(false), NoAgentFits: z.boolean().default(false),
+    })).nullish().transform(value => value ?? []),
+    TeamTasks: resourcesSchema,
+    // Known is false while no laboratory has reported the pods' sizing; TooLarge: the team size or internet labs exceed what a laboratory sizes for.
+    Group: z.object({MaxUsers: z.number().int().default(0), InternetLabs: z.number().int().default(0), VPN: amountSchema, Gateway: amountSchema, Known: z.boolean().default(false), TooLarge: z.boolean().default(false)}),
+    PerTeam: resourcesSchema, Teams: z.number().int().default(1), TeamsBasis: z.enum(["max_teams", "current"]).catch("current"),
+    Total: resourcesSchema, NoAgentFits: z.boolean().default(false),
+});
 const scoringOverrideSchema = z.object({
     Mode: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
     MinPoints: z.number().int(), MaxPoints: z.number().int(), FloorAtPercent: z.number().int(),
@@ -40,6 +51,8 @@ const attachmentSchema = z.object({
     HasAttempts: z.boolean().default(false),
     ResourceHeavy: z.boolean().default(false),
     Resources: taskResourcesSchema.nullish().transform(value => value ?? null),
+    // No laboratory that is used can run this set.
+    NoAgentFits: z.boolean().default(false),
 });
 // Cost is the event's price (0 until set); Overridden says a price is set.
 const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int(), Overridden: z.boolean()});
@@ -81,6 +94,7 @@ export type PublishedExercisePreview = z.infer<typeof catalogPreviewSchema>;
 export type ChallengeScoringOverride = z.infer<typeof scoringOverrideSchema>;
 export type HintUnlock = z.infer<typeof hintUnlockSchema>;
 export type Resources = z.infer<typeof resourcesSchema>;
+export type ResourceAmount = z.infer<typeof amountSchema>;
 export type TaskResources = z.infer<typeof taskResourcesSchema>;
 export type ResourcePlan = z.infer<typeof resourcePlanSchema>;
 export type InfrastructureFilter = "all" | "yes" | "no";

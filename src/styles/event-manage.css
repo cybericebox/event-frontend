@@ -1027,3 +1027,4 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-resource-plan__table tbody tr+tr th,.event-resource-plan__table tbody tr+tr td{border-top:1px solid var(--ib-line)}
 .event-resource-plan__table tfoot th,.event-resource-plan__table tfoot td{border-top:1px solid var(--ib-control);font-weight:var(--ib-w-semibold)}
 .event-resource-plan__overhead td span{margin-left:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-resource-plan__basis{margin-left:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-regular)}
