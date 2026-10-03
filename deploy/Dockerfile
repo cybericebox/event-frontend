@@ -40,10 +40,16 @@ ENV NEXT_PUBLIC_PARTNER_SITE_URL="NEXT_PUBLIC_PARTNER_SITE_URL"
 ENV NEXT_PUBLIC_WIREGUARD_INSTALL_URL="NEXT_PUBLIC_WIREGUARD_INSTALL_URL"
 ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="NEXT_PUBLIC_GOOGLE_ANALYTICS_ID"
 
-RUN npm run build
+# images.unoptimized is set in next.config.mjs, so the image optimizer never loads sharp: its native libvips
+# (~45 MB, traced into standalone) is dead weight.
+RUN npm run build && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Production image, copy all the files and run next. It is plain alpine plus the node binary of the base image:
+# the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
+# laboratory Dockerfile pins.
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runner
+RUN apk add --no-cache libstdc++
+COPY --from=base /usr/local/bin/node /usr/local/bin/node
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -64,9 +70,7 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-COPY ../deploy/entrypoint.sh /usr/bin/
-RUN chmod +x /usr/bin/entrypoint.sh
-RUN chown nextjs:nodejs /usr/bin/entrypoint.sh
+COPY --chown=nextjs:nodejs --chmod=0755 ../deploy/entrypoint.sh /usr/bin/
 
 USER nextjs
 

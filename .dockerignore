@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.github
+.env*
+.impeccable
+.superpowers
+.vitest
+.DS_Store
+docs
+test-results
+tsconfig.tsbuildinfo
+*.md
