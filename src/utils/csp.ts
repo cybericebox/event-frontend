@@ -5,6 +5,8 @@
 export type CspEnv = {
     NEXT_PUBLIC_API_HOST?: string;
     NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?: string;
+    NEXT_PUBLIC_CAPTCHA_PROVIDER?: string;
+    NEXT_PUBLIC_DOS_PROTECTION?: string;
     NODE_ENV?: string;
 };
 
@@ -15,6 +17,29 @@ const GA_CONNECT = [
     "https://*.analytics.google.com",
     "https://*.googletagmanager.com",
 ];
+
+// Bot-check hosts, by provider. This app has no form: the check runs only for the invisible client token,
+// so the hosts are allowed only when the provider is set and DOS protection is on.
+type Hosts = {script: string[]; frame: string[]; connect: string[]};
+const CAPTCHA_HOSTS: Record<string, Hosts> = {
+    turnstile: {
+        script: ["https://challenges.cloudflare.com"],
+        frame: ["https://challenges.cloudflare.com"],
+        connect: ["https://challenges.cloudflare.com"],
+    },
+    recaptcha: {
+        script: ["https://www.google.com/recaptcha/", "https://www.gstatic.com/recaptcha/"],
+        frame: ["https://www.google.com/recaptcha/", "https://recaptcha.google.com/recaptcha/"],
+        connect: ["https://www.google.com/recaptcha/"],
+    },
+};
+const NO_HOSTS: Hosts = {script: [], frame: [], connect: []};
+
+function captchaHosts(env: CspEnv): Hosts {
+    const dos = ["on"].includes(env.NEXT_PUBLIC_DOS_PROTECTION?.trim() ?? "");
+    const provider = env.NEXT_PUBLIC_CAPTCHA_PROVIDER?.trim() ?? "";
+    return dos && Object.hasOwn(CAPTCHA_HOSTS, provider) ? CAPTCHA_HOSTS[provider] : NO_HOSTS;
+}
 
 export function generateNonce(): string {
     const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -31,10 +56,12 @@ export function buildCsp(nonce: string, env: CspEnv): string {
     const api = hostOrigin(env.NEXT_PUBLIC_API_HOST);
     const ga = Boolean(env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim());
 
-    const scriptSrc = ["'self'", `'nonce-${nonce}'`, ...(ga ? GA_SCRIPT : []), ...(dev ? ["'unsafe-eval'"] : [])];
+    const captcha = captchaHosts(env);
+
+    const scriptSrc = ["'self'", `'nonce-${nonce}'`, ...captcha.script, ...(ga ? GA_SCRIPT : []), ...(dev ? ["'unsafe-eval'"] : [])];
     // Next's dev server injects <style> tags without a nonce; production uses nonce + files only.
     const styleSrc = dev ? ["'self'", "'unsafe-inline'"] : ["'self'", `'nonce-${nonce}'`];
-    const connectSrc = ["'self'", ...(api ? [api] : []), ...(ga ? GA_CONNECT : []), ...(dev ? ["ws:", "wss:"] : [])];
+    const connectSrc = ["'self'", ...(api ? [api] : []), ...captcha.connect, ...(ga ? GA_CONNECT : []), ...(dev ? ["ws:", "wss:"] : [])];
 
     const directives: Record<string, string[]> = {
         "default-src": ["'self'"],
@@ -51,7 +78,7 @@ export function buildCsp(nonce: string, env: CspEnv): string {
         "base-uri": ["'self'"],
         "form-action": ["'self'"],
         "frame-ancestors": ["'none'"],
-        "frame-src": ["'none'"],
+        "frame-src": captcha.frame.length ? captcha.frame : ["'none'"],
         "worker-src": ["'self'", "blob:"],
         "manifest-src": ["'self'"],
     };

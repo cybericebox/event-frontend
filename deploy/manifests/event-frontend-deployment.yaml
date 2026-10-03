@@ -87,6 +87,30 @@ spec:
                 configMapKeyRef:
                   name: config
                   key: GOOGLE_ANALYTICS_ID
+            - name: NEXT_PUBLIC_CAPTCHA_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: CAPTCHA_PROVIDER
+                  optional: true
+            - name: NEXT_PUBLIC_CAPTCHA_SITE_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: CAPTCHA_SITE_KEY
+                  optional: true
+            - name: NEXT_PUBLIC_RECAPTCHA_ENTERPRISE
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: RECAPTCHA_ENTERPRISE
+                  optional: true
+            - name: NEXT_PUBLIC_DOS_PROTECTION
+              valueFrom:
+                configMapKeyRef:
+                  name: config
+                  key: DOS_PROTECTION
+                  optional: true
           ports:
             - containerPort: 3000
               protocol:  TCP
