@@ -44,10 +44,6 @@ Read at runtime by the server.
 | `NEXT_PUBLIC_PARTNER_SITE_URL` | yes | Partner institution link in the footer credit. |
 | `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | yes | WireGuard install link in the VPN dialog. |
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
-| `NEXT_PUBLIC_CAPTCHA_PROVIDER` | no | `turnstile`, `recaptcha` or `none` (default `none`). One provider for the whole platform. |
-| `NEXT_PUBLIC_CAPTCHA_SITE_KEY` | when the provider is not `none` | Site key of the provider. The container refuses to start without it. |
-| `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE` | no | `true` or `false` (default `false`); only for `recaptcha`: use reCAPTCHA Enterprise. |
-| `NEXT_PUBLIC_DOS_PROTECTION` | no | `on` or `off` (default `off`). On: the first visit passes an invisible check and gets the client cookie from `POST /api/client-token`; every browser call to the API waits for it, and an `X-Client-Token: required` 429 refreshes it and retries once. Needs a provider other than `none`. |
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
 | `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
 
@@ -60,7 +56,6 @@ Read at runtime by the server.
 - `img-src 'self' data: blob: https:`: organizer logos, banners and Markdown images come from any https host; QR codes and previews use data/blob.
 - `style-src 'self' 'nonce-…'` with `style-src-attr 'unsafe-inline'` (React renders `style=""` attributes for theme variables and text alignment).
 - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, `frame-src 'none'`.
-- Bot-check hosts only when `NEXT_PUBLIC_DOS_PROTECTION=on` and the provider is set (this app has no form, only the invisible client token): `turnstile` adds `https://challenges.cloudflare.com` to `script-src`, `frame-src` and `connect-src`; `recaptcha` adds the Google reCAPTCHA hosts; `none` or protection off adds nothing.
 - Development only: `unsafe-eval`, `ws:`/`wss:` for HMR and `unsafe-inline` styles.
 
 Organizer Markdown is rendered by `react-markdown` without `rehype-raw`, so raw HTML is escaped and unsafe URL schemes are dropped. Notification HTML goes through DOMPurify. A new third-party host must be added through env in `csp.ts` and covered by a test. Check the browser console for CSP violations after adding any script, font or remote resource.
