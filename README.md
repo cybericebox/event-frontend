@@ -47,6 +47,23 @@ Read at runtime by the server.
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
 | `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
 
+## Container listeners and TLS
+
+The image runs tini, nginx and Next.js. nginx is the only listener; Next.js is internal on `127.0.0.1:3001`. The nginx config is in `deploy/nginx/` (`nginx.conf`, `server.conf` with the proxy to Next, and the snippets `listen-http.conf`, `listen-https.conf`, `client-auth.conf`, `health.conf`). `entrypoint.sh` only picks the active snippets from the env (an inactive one becomes an empty file) and fills the values with `envsubst` over a fixed variable list into `/tmp/nginx`, then runs `nginx -t`, so a bad combination fails the start. Plain HTTP on port 3000 with no TLS is the default.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `HTTP_PORT` | `3000` | Plain HTTP listener. Empty = off. |
+| `HTTPS_PORT` | `8443` | TLS listener, on only when the certificate and key are set. |
+| `TLS_CERT_FILE`, `TLS_KEY_FILE` | empty | PEM server certificate chain and key. Both set = TLS on; exactly one = start error. |
+| `TLS_MIN_VERSION` | `1.2` | `1.2` or `1.3`. |
+| `TLS_CLIENT_CA_FILE` | empty | PEM bundle of the CAs that signed the client certificates. |
+| `TLS_CLIENT_AUTH` | `off` | `off`, `optional` (verify if presented; a presented invalid certificate is refused) or `require`. `optional` and `require` need TLS and the CA file, else start error. |
+| `HEALTH_PORT` | empty | If set, an extra plain listener that serves only `/api/health` (kubelet probes), bound to `HEALTH_BIND` (default `0.0.0.0`). If empty, probes use `HTTP_PORT`. |
+| `TLS_RELOAD_INTERVAL` | `60` | Seconds between checks of the cert, key and CA files; a change runs `nginx -t` and then reloads nginx (a config that does not load keeps the old one). `0` = off. Polling, not inotify, because Kubernetes swaps Secret mounts by symlink. |
+
+With both `HTTP_PORT` empty and no certificate there is nothing to listen on: start error. With client auth on, nginx passes the verification result to Next in `X-SSL-Client-Verify` (`SUCCESS`, `FAILED:<reason>`, `NONE`); a missing or invalid certificate closes the connection (444). Tests: `tests/docker/nginx.sh` (needs docker; runs in CI).
+
 ## Content-Security-Policy
 
 `src/proxy.ts` sets a strict CSP on every page request with a fresh nonce per request (policy built in `src/utils/csp.ts`, tested in `csp.test.ts`). The nonce reaches the render through the `x-nonce` request header; Next stamps its own scripts, the layout stamps the theme boot script and the Google Analytics scripts. Pages are rendered per request, so nonces work.

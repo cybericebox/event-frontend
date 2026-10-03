@@ -7,32 +7,68 @@
 set -e
 
 # One container, two processes: nginx (the only listener) in front of Next.js on 127.0.0.1:3001.
-#   ORIGIN_TLS=false (default)  nginx serves plain HTTP on 3000
-#   ORIGIN_TLS=true             nginx serves TLS (http2) on 8443 with /tls/tls.crt + /tls/tls.key, and a plain
-#                               health listener on $HEALTH_BIND:8081 that serves only /api/health
-#   ORIGIN_MTLS=true            with ORIGIN_TLS: a client certificate signed by /aop/ca.crt is required
+# nginx config lives in /etc/cybericebox/nginx (nginx.conf, server.conf and the snippets); this script only
+# picks which snippets are active from the env and fills the values (envsubst, fixed variable list). Env:
+#   HTTP_PORT           plain HTTP listener (default 3000; empty = off)
+#   HTTPS_PORT          TLS listener (default 8443), on only when TLS_CERT_FILE and TLS_KEY_FILE are set
+#   TLS_CERT_FILE, TLS_KEY_FILE      PEM server certificate chain and key; set both or neither
+#   TLS_MIN_VERSION     1.2 (default) or 1.3
+#   TLS_CLIENT_CA_FILE  PEM bundle that signed the client certificates
+#   TLS_CLIENT_AUTH     off (default) | optional | require; optional and require need TLS_CLIENT_CA_FILE
+#   HEALTH_PORT         if set: extra plain listener on HEALTH_BIND (default 0.0.0.0) that serves only /api/health
+#   TLS_RELOAD_INTERVAL seconds between certificate file checks (default 60; 0 = off)
 # tini is PID 1 (reaps zombies, forwards signals); this script supervises: when either process exits, the other
 # one is stopped and the container exits, so Kubernetes restarts it.
-ORIGIN_TLS=${ORIGIN_TLS:-false}
-ORIGIN_MTLS=${ORIGIN_MTLS:-false}
+HTTP_PORT=${HTTP_PORT-3000}
+HTTPS_PORT=${HTTPS_PORT:-8443}
+HEALTH_PORT=${HEALTH_PORT:-}
 HEALTH_BIND=${HEALTH_BIND:-0.0.0.0}
-for flag in ORIGIN_TLS ORIGIN_MTLS; do
-  eval "value=\$$flag"
-  case "$value" in true | false) ;; *)
-    echo "$flag must be true or false." >&2
-    exit 1
-    ;;
-  esac
-done
-if [ "$ORIGIN_TLS" = true ]; then
-  for f in /tls/tls.crt /tls/tls.key; do
-    [ -r "$f" ] || { echo "$f is required when ORIGIN_TLS=true." >&2; exit 1; }
-  done
-  if [ "$ORIGIN_MTLS" = true ] && [ ! -r /aop/ca.crt ]; then
-    echo "/aop/ca.crt is required when ORIGIN_MTLS=true." >&2
-    exit 1
-  fi
+TLS_CERT_FILE=${TLS_CERT_FILE:-}
+TLS_KEY_FILE=${TLS_KEY_FILE:-}
+TLS_MIN_VERSION=${TLS_MIN_VERSION:-1.2}
+TLS_CLIENT_CA_FILE=${TLS_CLIENT_CA_FILE:-}
+TLS_CLIENT_AUTH=${TLS_CLIENT_AUTH:-off}
+TLS_RELOAD_INTERVAL=${TLS_RELOAD_INTERVAL:-60}
+
+fail() {
+  echo "$1" >&2
+  exit 1
+}
+is_port() {
+  case "$1" in '' | *[!0-9]*) return 1 ;; esac
+  [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
+}
+
+tls=false
+if [ -n "$TLS_CERT_FILE" ] || [ -n "$TLS_KEY_FILE" ]; then
+  { [ -n "$TLS_CERT_FILE" ] && [ -n "$TLS_KEY_FILE" ]; } || fail "TLS_CERT_FILE and TLS_KEY_FILE must be set together."
+  tls=true
 fi
+case "$TLS_MIN_VERSION" in
+  1.2) TLS_PROTOCOLS="TLSv1.2 TLSv1.3" ;;
+  1.3) TLS_PROTOCOLS="TLSv1.3" ;;
+  *) fail "TLS_MIN_VERSION must be 1.2 or 1.3." ;;
+esac
+case "$TLS_CLIENT_AUTH" in
+  off) TLS_CLIENT_VERIFY= ;;
+  optional) TLS_CLIENT_VERIFY=optional ;;
+  require) TLS_CLIENT_VERIFY=on ;;
+  *) fail "TLS_CLIENT_AUTH must be off, optional or require." ;;
+esac
+if [ "$TLS_CLIENT_AUTH" != off ]; then
+  [ "$tls" = true ] || fail "TLS_CLIENT_AUTH=$TLS_CLIENT_AUTH needs TLS_CERT_FILE and TLS_KEY_FILE."
+  [ -n "$TLS_CLIENT_CA_FILE" ] || fail "TLS_CLIENT_AUTH=$TLS_CLIENT_AUTH needs TLS_CLIENT_CA_FILE."
+fi
+for f in "$TLS_CERT_FILE" "$TLS_KEY_FILE"; do
+  [ "$tls" = false ] || [ -r "$f" ] || fail "$f is not readable."
+done
+[ "$TLS_CLIENT_AUTH" = off ] || [ -r "$TLS_CLIENT_CA_FILE" ] || fail "$TLS_CLIENT_CA_FILE is not readable."
+[ -z "$HTTP_PORT" ] || is_port "$HTTP_PORT" || fail "HTTP_PORT must be a port number or empty."
+[ "$tls" = false ] || is_port "$HTTPS_PORT" || fail "HTTPS_PORT must be a port number."
+[ -z "$HEALTH_PORT" ] || is_port "$HEALTH_PORT" || fail "HEALTH_PORT must be a port number or empty."
+case "$TLS_RELOAD_INTERVAL" in '' | *[!0-9]*) fail "TLS_RELOAD_INTERVAL must be a number of seconds." ;; esac
+[ -n "$HTTP_PORT" ] || [ "$tls" = true ] || fail "Nothing to listen on: set HTTP_PORT or TLS_CERT_FILE and TLS_KEY_FILE."
+export HTTP_PORT HTTPS_PORT HEALTH_PORT HEALTH_BIND TLS_CERT_FILE TLS_KEY_FILE TLS_PROTOCOLS TLS_CLIENT_CA_FILE TLS_CLIENT_VERIFY
 
 # Every host is required from the deployment env (no fallbacks); analytics is optional.
 for name in NEXT_PUBLIC_MAIN_HOST NEXT_PUBLIC_API_HOST NEXT_PUBLIC_ID_HOST NEXT_PUBLIC_ADMIN_HOST \
@@ -74,131 +110,28 @@ fi
 
 rm -f "$script"
 
-# nginx: config generated into /tmp (the root filesystem is read-only), static files from the same on-disk
+# nginx: the config files of /etc/cybericebox/nginx rendered into /tmp/nginx (the root filesystem is read-only).
+# A snippet that is not active becomes an empty file. Static files are served from the same on-disk
 # .next/static and public/ that the placeholder pass above just rewrote.
+src=/etc/cybericebox/nginx
 run=/tmp/nginx
-mkdir -p "$run"
 conf=$run/nginx.conf
-mtls_lines=
-if [ "$ORIGIN_MTLS" = true ]; then
-  # A missing or invalid client certificate: the connection is closed without any response (444).
-  mtls_lines="ssl_client_certificate /aop/ca.crt;
-    ssl_verify_client on;
-    error_page 495 496 497 = @drop;"
-fi
-if [ "$ORIGIN_TLS" = true ]; then
-  main_listen="listen 8443 ssl;
-    http2 on;
-    ssl_certificate /tls/tls.crt;
-    ssl_certificate_key /tls/tls.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_session_cache shared:SSL:5m;
-    ssl_session_timeout 1h;
-    ssl_session_tickets off;
-    $mtls_lines"
-  health_server="server {
-    listen $HEALTH_BIND:8081;
-    access_log off;
-    location = /api/health {
-      proxy_pass http://next;
-      proxy_set_header Host \$http_host;
-    }
-    location / {
-      return 404;
-    }
-  }"
-else
-  main_listen="listen 3000;"
-  health_server=
-fi
-cat > "$conf" <<NGINX
-daemon off;
-pid $run/nginx.pid;
-error_log /dev/stderr warn;
-worker_processes 2;
-events {
-  worker_connections 4096;
+mkdir -p "$run"
+vars='${HTTP_PORT} ${HTTPS_PORT} ${HEALTH_PORT} ${HEALTH_BIND} ${TLS_CERT_FILE} ${TLS_KEY_FILE} ${TLS_PROTOCOLS} ${TLS_CLIENT_CA_FILE} ${TLS_CLIENT_VERIFY}'
+render() {
+  envsubst "$vars" < "$src/$1" > "$run/$1"
 }
-http {
-  include /etc/nginx/mime.types;
-  default_type application/octet-stream;
-  access_log off;
-  client_body_temp_path $run/client_body;
-  proxy_temp_path $run/proxy;
-  fastcgi_temp_path $run/fastcgi;
-  uwsgi_temp_path $run/uwsgi;
-  scgi_temp_path $run/scgi;
-  server_tokens off;
-  sendfile on;
-  client_max_body_size 64m;
-  keepalive_timeout 75s;
-
-  gzip on;
-  gzip_comp_level 5;
-  gzip_min_length 256;
-  gzip_vary on;
-  gzip_proxied any;
-  gzip_types text/plain text/css text/xml text/javascript application/javascript application/json
-    application/xml application/manifest+json image/svg+xml;
-
-  map \$http_upgrade \$connection_upgrade {
-    default upgrade;
-    '' close;
-  }
-  map \$http_x_forwarded_proto \$forwarded_proto {
-    default \$http_x_forwarded_proto;
-    '' \$scheme;
-  }
-
-  upstream next {
-    server 127.0.0.1:3001;
-    keepalive 32;
-  }
-
-  server {
-    $main_listen
-    server_name _;
-
-    location /_next/static/ {
-      alias /app/.next/static/;
-      access_log off;
-      add_header Cache-Control "public, max-age=31536000, immutable" always;
-    }
-
-    # Files of public/ (anything with an extension) from disk; everything else, and a missing file, goes to Next.
-    location ~* \.[a-z0-9]+\$ {
-      root /app/public;
-      try_files \$uri @next;
-    }
-
-    location / {
-      try_files /dev/null @next;
-    }
-
-    location @next {
-      proxy_pass http://next;
-      proxy_http_version 1.1;
-      proxy_set_header Host \$http_host;
-      proxy_set_header X-Real-IP \$remote_addr;
-      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto \$forwarded_proto;
-      proxy_set_header X-Forwarded-Host \$http_host;
-      proxy_set_header Upgrade \$http_upgrade;
-      proxy_set_header Connection \$connection_upgrade;
-      proxy_set_header Accept-Encoding "";
-      proxy_buffering off;
-      proxy_request_buffering off;
-      proxy_read_timeout 1h;
-      proxy_send_timeout 1h;
-    }
-
-    location @drop {
-      return 444;
-    }
-  }
-  $health_server
+skip() {
+  : > "$run/$1"
 }
-NGINX
+render nginx.conf
+render server.conf
+if [ -n "$HTTP_PORT" ]; then render listen-http.conf; else skip listen-http.conf; fi
+if [ "$tls" = true ]; then render listen-https.conf; else skip listen-https.conf; fi
+if [ "$TLS_CLIENT_AUTH" != off ]; then render client-auth.conf; else skip client-auth.conf; fi
+if [ -n "$HEALTH_PORT" ]; then render health.conf; else skip health.conf; fi
+# A bad combination fails here, not at the first request.
+nginx -e /dev/stderr -p "$run/" -c "$conf" -t
 
 # Next.js stays internal. HOSTNAME is forced because Kubernetes sets it to the pod name.
 export PORT=3001
@@ -215,16 +148,23 @@ stop() {
 }
 trap 'stop; exit 0' TERM INT
 
-# Cert reload without a restart: the Secret volumes swap their files by symlink; check every 60s.
-if [ "$ORIGIN_TLS" = true ]; then
+# Cert reload without a restart: poll a checksum of the TLS files (Kubernetes swaps Secret mounts by symlink,
+# which inotify does not see). On a change nginx -t decides: a config that does not load keeps the old one running.
+# The loop is a child of this script: it ends when this script (the container's main process) ends.
+reload_pid=
+if [ "$tls" = true ] && [ "$TLS_RELOAD_INTERVAL" -gt 0 ]; then
   (
-    sum() { cat /tls/* /aop/* 2>/dev/null | cksum; }
+    sum() { cat "$TLS_CERT_FILE" "$TLS_KEY_FILE" ${TLS_CLIENT_CA_FILE:+"$TLS_CLIENT_CA_FILE"} 2>/dev/null | cksum; }
     last=$(sum)
-    while sleep 60; do
+    while sleep "$TLS_RELOAD_INTERVAL"; do
+      kill -0 "$$" 2>/dev/null || exit 0
       now=$(sum)
-      if [ "$now" != "$last" ]; then
-        last=$now
-        nginx -e /dev/stderr -p "$run/" -c "$conf" -s reload || true
+      [ "$now" != "$last" ] || continue
+      last=$now
+      if nginx -e /dev/stderr -p "$run/" -c "$conf" -t; then
+        nginx -e /dev/stderr -p "$run/" -c "$conf" -s reload && echo "TLS files changed: nginx reloaded." >&2
+      else
+        echo "TLS files changed but nginx -t failed: keeping the running config." >&2
       fi
     done
   ) &
@@ -237,6 +177,6 @@ while kill -0 "$node_pid" 2>/dev/null && kill -0 "$nginx_pid" 2>/dev/null; do
   wait $! || true
 done
 echo "A process exited (next: $(kill -0 "$node_pid" 2>/dev/null && echo up || echo down), nginx: $(kill -0 "$nginx_pid" 2>/dev/null && echo up || echo down)); stopping." >&2
-[ -z "${reload_pid:-}" ] || kill "$reload_pid" 2>/dev/null || true
+[ -z "$reload_pid" ] || kill "$reload_pid" 2>/dev/null || true
 stop
 exit 1

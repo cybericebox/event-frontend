@@ -55,7 +55,7 @@ RUN strip --strip-all /node && /node -e "process.exit(0)"
 # the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
 # laboratory Dockerfile pins.
 FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runner
-RUN apk add --no-cache libstdc++ nginx tini
+RUN apk add --no-cache libstdc++ nginx tini gettext-envsubst
 COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
 
@@ -78,16 +78,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 COPY --chown=nextjs:nodejs --chmod=0755 ../deploy/entrypoint.sh /usr/bin/
+COPY ../deploy/nginx /etc/cybericebox/nginx
 
 USER nextjs
 
-# nginx listens on 3000 (plain) or 8443 (ORIGIN_TLS=true, plus 8081 for health); Next.js itself is internal on
-# 127.0.0.1:3001 (entrypoint.sh sets PORT and HOSTNAME for it). tini is PID 1.
-EXPOSE 3000 8443 8081
+# nginx listens on HTTP_PORT (default 3000, plain) and, when TLS_CERT_FILE and TLS_KEY_FILE are set, on HTTPS_PORT
+# (default 8443); HEALTH_PORT adds a plain health-only listener. Next.js itself is internal on 127.0.0.1:3001
+# (entrypoint.sh sets PORT and HOSTNAME for it). tini is PID 1. The variables are documented in README.md.
+EXPOSE 3000 8443
 
-ENV ORIGIN_TLS=false
-ENV ORIGIN_MTLS=false
-ENV HEALTH_BIND=0.0.0.0
 ENV PORT=3001
 ENV HOSTNAME="127.0.0.1"
 
