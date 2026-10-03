@@ -55,7 +55,7 @@ RUN strip --strip-all /node && /node -e "process.exit(0)"
 # the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
 # laboratory Dockerfile pins.
 FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runner
-RUN apk add --no-cache libstdc++
+RUN apk add --no-cache libstdc++ nginx tini
 COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
 
@@ -81,10 +81,14 @@ COPY --chown=nextjs:nodejs --chmod=0755 ../deploy/entrypoint.sh /usr/bin/
 
 USER nextjs
 
-EXPOSE 3000
+# nginx listens on 3000 (plain) or 8443 (ORIGIN_TLS=true, plus 8081 for health); Next.js itself is internal on
+# 127.0.0.1:3001 (entrypoint.sh sets PORT and HOSTNAME for it). tini is PID 1.
+EXPOSE 3000 8443 8081
 
-ENV PORT=3000
-# set hostname to localhost
-ENV HOSTNAME="0.0.0.0"
+ENV ORIGIN_TLS=false
+ENV ORIGIN_MTLS=false
+ENV HEALTH_BIND=0.0.0.0
+ENV PORT=3001
+ENV HOSTNAME="127.0.0.1"
 
-ENTRYPOINT [ "entrypoint.sh" ]
+ENTRYPOINT [ "/sbin/tini", "--", "entrypoint.sh" ]
