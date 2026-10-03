@@ -9,6 +9,8 @@ export function proxy(request: NextRequest) {
     const csp = buildCsp(nonce, {
         NEXT_PUBLIC_API_HOST: process.env.NEXT_PUBLIC_API_HOST,
         NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
+        NEXT_PUBLIC_CAPTCHA_PROVIDER: process.env.NEXT_PUBLIC_CAPTCHA_PROVIDER,
+        NEXT_PUBLIC_DOS_PROTECTION: process.env.NEXT_PUBLIC_DOS_PROTECTION,
         NODE_ENV: process.env.NODE_ENV,
     });
     const headers = new Headers(request.headers);
