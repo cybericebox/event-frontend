@@ -25,25 +25,38 @@ COPY .. .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Placeholders substituted at container start by entrypoint.sh.
+# Placeholders substituted at container start by entrypoint.sh. Each value is the variable name wrapped in double
+# underscores: the bare name also appears as an object key in the compiled server code, and only the value may be replaced.
 # Run with every key set (see .env.example); [-e NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=…] is optional.
-ENV NEXT_PUBLIC_MAIN_HOST="NEXT_PUBLIC_MAIN_HOST"
-ENV NEXT_PUBLIC_API_HOST="NEXT_PUBLIC_API_HOST"
-ENV NEXT_PUBLIC_ID_HOST="NEXT_PUBLIC_ID_HOST"
-ENV NEXT_PUBLIC_ADMIN_HOST="NEXT_PUBLIC_ADMIN_HOST"
-ENV NEXT_PUBLIC_EXERCISES_HOST="NEXT_PUBLIC_EXERCISES_HOST"
-ENV NEXT_PUBLIC_EVENT_DOMAIN="NEXT_PUBLIC_EVENT_DOMAIN"
-ENV NEXT_PUBLIC_COOKIE_DOMAIN="NEXT_PUBLIC_COOKIE_DOMAIN"
-ENV NEXT_PUBLIC_SUPPORT_EMAIL="NEXT_PUBLIC_SUPPORT_EMAIL"
-ENV NEXT_PUBLIC_PARTNER_URL="NEXT_PUBLIC_PARTNER_URL"
-ENV NEXT_PUBLIC_PARTNER_SITE_URL="NEXT_PUBLIC_PARTNER_SITE_URL"
-ENV NEXT_PUBLIC_WIREGUARD_INSTALL_URL="NEXT_PUBLIC_WIREGUARD_INSTALL_URL"
-ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="NEXT_PUBLIC_GOOGLE_ANALYTICS_ID"
+ENV NEXT_PUBLIC_MAIN_HOST="__NEXT_PUBLIC_MAIN_HOST__"
+ENV NEXT_PUBLIC_API_HOST="__NEXT_PUBLIC_API_HOST__"
+ENV NEXT_PUBLIC_ID_HOST="__NEXT_PUBLIC_ID_HOST__"
+ENV NEXT_PUBLIC_ADMIN_HOST="__NEXT_PUBLIC_ADMIN_HOST__"
+ENV NEXT_PUBLIC_EXERCISES_HOST="__NEXT_PUBLIC_EXERCISES_HOST__"
+ENV NEXT_PUBLIC_EVENT_DOMAIN="__NEXT_PUBLIC_EVENT_DOMAIN__"
+ENV NEXT_PUBLIC_COOKIE_DOMAIN="__NEXT_PUBLIC_COOKIE_DOMAIN__"
+ENV NEXT_PUBLIC_SUPPORT_EMAIL="__NEXT_PUBLIC_SUPPORT_EMAIL__"
+ENV NEXT_PUBLIC_PARTNER_URL="__NEXT_PUBLIC_PARTNER_URL__"
+ENV NEXT_PUBLIC_PARTNER_SITE_URL="__NEXT_PUBLIC_PARTNER_SITE_URL__"
+ENV NEXT_PUBLIC_WIREGUARD_INSTALL_URL="__NEXT_PUBLIC_WIREGUARD_INSTALL_URL__"
+ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="__NEXT_PUBLIC_GOOGLE_ANALYTICS_ID__"
 
-RUN npm run build
+# images.unoptimized is set in next.config.mjs, so the image optimizer never loads sharp: its native libvips
+# (~45 MB, traced into standalone) is dead weight.
+RUN npm run build && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# The node binary of the base image, without its symbol table and DWARF (about 22 MB); the runtime needs neither.
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS node-bin
+RUN apk add --no-cache binutils
+COPY --from=base /usr/local/bin/node /node
+RUN strip --strip-all /node && /node -e "process.exit(0)"
+
+# Production image, copy all the files and run next. It is plain alpine plus the node binary of the base image:
+# the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
+# laboratory Dockerfile pins.
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runner
+RUN apk add --no-cache libstdc++
+COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -64,9 +77,7 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-COPY ../deploy/entrypoint.sh /usr/bin/
-RUN chmod +x /usr/bin/entrypoint.sh
-RUN chown nextjs:nodejs /usr/bin/entrypoint.sh
+COPY --chown=nextjs:nodejs --chmod=0755 ../deploy/entrypoint.sh /usr/bin/
 
 USER nextjs
 

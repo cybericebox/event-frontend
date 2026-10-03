@@ -1,6 +1,7 @@
 #!/bin/sh
 # Runtime env substitution for the standalone build. The build baked each
-# NEXT_PUBLIC_* value as a placeholder equal to its variable name; here we
+# NEXT_PUBLIC_* value as a placeholder equal to its variable name wrapped in double
+# underscores (__NEXT_PUBLIC_X__; the bare name is also an object key in the server code); here we
 # replace those placeholders with the actual runtime env values so the same
 # image works across environments without a rebuild.
 set -e
@@ -22,8 +23,8 @@ printenv | grep '^NEXT_PUBLIC_' | while IFS='=' read -r key value; do
   # Escape sed-special chars in the replacement (| delimiter, & match-ref, \).
   esc=$(printf '%s' "$value" | sed -e 's/[\\&|]/\\&/g')
   # Only .next is writable by the runtime user; server.js carries nothing but dev origins.
-  grep -rlF "$key" /app/.next 2>/dev/null | while read -r file; do
-    sed -i "s|${key}|${esc}|g" "$file"
+  grep -rlF "__${key}__" /app/.next 2>/dev/null | while read -r file; do
+    sed -i "s|__${key}__|${esc}|g" "$file"
   done || true
 done
 
