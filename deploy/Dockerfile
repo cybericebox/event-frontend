@@ -44,12 +44,18 @@ ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="NEXT_PUBLIC_GOOGLE_ANALYTICS_ID"
 # (~45 MB, traced into standalone) is dead weight.
 RUN npm run build && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
 
+# The node binary of the base image, without its symbol table and DWARF (about 22 MB); the runtime needs neither.
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS node-bin
+RUN apk add --no-cache binutils
+COPY --from=base /usr/local/bin/node /node
+RUN strip --strip-all /node && /node -e "process.exit(0)"
+
 # Production image, copy all the files and run next. It is plain alpine plus the node binary of the base image:
 # the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
 # laboratory Dockerfile pins.
 FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runner
 RUN apk add --no-cache libstdc++
-COPY --from=base /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
 
 ENV NODE_ENV=production
