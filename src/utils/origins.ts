@@ -1,7 +1,7 @@
-// Every host comes from the deployment env, with no fallbacks and no derivation.
-// NEXT_PUBLIC_{MAIN,API,ID,ADMIN,EXERCISES}_HOST are bare hosts (no scheme);
-// NEXT_PUBLIC_EVENT_DOMAIN is the parent of the event sites (<tag>.<domain>).
-// Next inlines the literal process.env accesses below, so each is read by name.
+// Every host derives from the one base domain NEXT_PUBLIC_DOMAIN (src/utils/hosts.ts), with no per-host settings and no fallbacks.
+// Next inlines the literal process.env accesses, so each is read by name.
+import {hosts} from "@/utils/hosts";
+
 function required(value: string | undefined, name: string): string {
     const v = value?.trim();
     if (!v) throw new Error(`${name} is required`);
@@ -9,23 +9,25 @@ function required(value: string | undefined, name: string): string {
 }
 const origin = (host: string) => `https://${host}`;
 
-export const publicDomain = required(process.env.NEXT_PUBLIC_EVENT_DOMAIN, "NEXT_PUBLIC_EVENT_DOMAIN");
+const h = hosts();
+// The parent of the event sites (<tag>.<domain>) and of the shared cookies.
+export const publicDomain = h.eventDomain;
 
 // Bare API host: server-side fetches send it as Host when going through INTERNAL_API_ORIGIN.
-export const apiHost = required(process.env.NEXT_PUBLIC_API_HOST, "NEXT_PUBLIC_API_HOST");
+export const apiHost = h.api;
 export const apiOrigin = origin(apiHost);
-export const idOrigin = origin(required(process.env.NEXT_PUBLIC_ID_HOST, "NEXT_PUBLIC_ID_HOST"));
-export const exercisesOrigin = origin(required(process.env.NEXT_PUBLIC_EXERCISES_HOST, "NEXT_PUBLIC_EXERCISES_HOST"));
-export const adminOrigin = origin(required(process.env.NEXT_PUBLIC_ADMIN_HOST, "NEXT_PUBLIC_ADMIN_HOST"));
+export const idOrigin = origin(h.id);
+export const exercisesOrigin = origin(h.exercises);
+export const adminOrigin = origin(h.admin);
 // The platform landing.
-export const mainOrigin = origin(required(process.env.NEXT_PUBLIC_MAIN_HOST, "NEXT_PUBLIC_MAIN_HOST"));
+export const mainOrigin = origin(h.main);
 
 // Kept for call sites that need an API origin; the host is always configured.
 export function requireApiOrigin(): string {
     return apiOrigin;
 }
 
-// The public site of an event: <tag>.<NEXT_PUBLIC_EVENT_DOMAIN>.
+// The public site of an event: <tag>.<base domain>.
 export function eventOrigin(tag: string): string {
     return `https://${tag}.${publicDomain}`;
 }

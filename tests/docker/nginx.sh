@@ -51,9 +51,7 @@ docker run --rm -v "$certs:/c" -w /c "$tools" sh -ec '
   chmod -R a+rX /c; chmod a+r /c/*.key /c/live/*
 ' >/dev/null 2>&1 || { echo "certificate generation failed"; exit 1; }
 
-envs="-e NEXT_PUBLIC_MAIN_HOST=m.test -e NEXT_PUBLIC_API_HOST=a.test -e NEXT_PUBLIC_ID_HOST=i.test
- -e NEXT_PUBLIC_ADMIN_HOST=ad.test -e NEXT_PUBLIC_EXERCISES_HOST=e.test -e NEXT_PUBLIC_EVENT_DOMAIN=ev.test
- -e NEXT_PUBLIC_COOKIE_DOMAIN=test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_ICE_NURE_URL=https://p.test
+envs="-e NEXT_PUBLIC_DOMAIN=base.test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_ICE_NURE_URL=https://p.test
  -e NEXT_PUBLIC_PARTNER_NURE_URL=https://p.test -e NEXT_PUBLIC_WIREGUARD_INSTALL_URL=https://w.test"
 
 # start <name> [docker run args...]: a container with dropped capabilities and the cert directory.
@@ -146,17 +144,17 @@ echo "info  optional: cert of another CA presented -> http code $(code ef-opt --
 check "optional: invalid cert refused" 000 "$(code ef-opt --cacert /pki/ca1.crt --cert /pki/client2.crt --key /pki/client2.key https://localhost:8443/api/health)"
 docker rm -f ef-opt >/dev/null
 
-echo "== hosts from NEXT_PUBLIC_DOMAIN"
-# Only the domain, one host set explicitly (it wins) and the per-site values: the other hosts are derived at start and substituted like the rest.
-site="-e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_ICE_NURE_URL=https://p.test -e NEXT_PUBLIC_PARTNER_NURE_URL=https://p.test -e NEXT_PUBLIC_WIREGUARD_INSTALL_URL=https://w.test"
+echo "== hosts derive from NEXT_PUBLIC_DOMAIN"
+# The domain is the only host input: the derived hosts are in the substituted files and no placeholder is left.
 saved_envs=$envs
-envs="$site -e NEXT_PUBLIC_DOMAIN=derived.test -e NEXT_PUBLIC_API_HOST=backend.other.test"
+site="-e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_ICE_NURE_URL=https://p.test -e NEXT_PUBLIC_PARTNER_NURE_URL=https://p.test -e NEXT_PUBLIC_WIREGUARD_INSTALL_URL=https://w.test"
+envs="$site -e NEXT_PUBLIC_DOMAIN=derived.test"
 start ef-dom
 wait_up ef-dom http://localhost:3000/api/health && ok "domain only: starts" || bad "domain only: starts"
 found() { docker exec ef-dom sh -c "grep -rlF '$1' /app/.next | head -1"; }
 check "domain only: derived id host substituted" "yes" "$([ -n "$(found id.derived.test)" ] && echo yes || echo no)"
-check "domain only: explicit API host wins" "yes" "$([ -n "$(found backend.other.test)" ] && echo yes || echo no)"
-check "domain only: no derived API host" "no" "$([ -n "$(found api.derived.test)" ] && echo yes || echo no)"
+check "domain only: derived api host substituted" "yes" "$([ -n "$(found api.derived.test)" ] && echo yes || echo no)"
+check "domain only: no placeholder left" "no" "$([ -n "$(found __NEXT_PUBLIC_)" ] && echo yes || echo no)"
 docker rm -f ef-dom >/dev/null
 envs=$saved_envs
 
@@ -169,8 +167,8 @@ fails_to_start "no listener" "Nothing to listen on" -e HTTP_PORT=
 fails_to_start "bad TLS_MIN_VERSION" "TLS_MIN_VERSION must be" -e TLS_MIN_VERSION=1.1
 fails_to_start "bad TLS_CLIENT_AUTH" "TLS_CLIENT_AUTH must be" -e TLS_CLIENT_AUTH=yes
 fails_to_start "unreadable cert file" "is not readable" -e TLS_CERT_FILE=/tls/nope.crt -e TLS_KEY_FILE=/tls/tls.key
-envs="$site -e NEXT_PUBLIC_MAIN_HOST=m.test"
-fails_to_start "no domain and a host missing" "NEXT_PUBLIC_API_HOST is required"
+envs="$site"
+fails_to_start "no domain" "NEXT_PUBLIC_DOMAIN is required"
 envs="$site -e NEXT_PUBLIC_DOMAIN=https://derived.test"
 fails_to_start "domain with a scheme" "NEXT_PUBLIC_DOMAIN must be a bare lowercase host name"
 envs=$saved_envs
