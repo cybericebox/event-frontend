@@ -56,11 +56,11 @@ COPY deploy/nginx /etc/cybericebox/nginx
 
 USER nextjs
 
-# nginx listens on HTTP_PORT (default 3000, plain) and, when /tls/tls.crt and /tls/tls.key exist (or TLS_CERT_FILE and
+# nginx listens on HTTP_PORT (default 8080, plain) and, when /tls/tls.crt and /tls/tls.key exist (or TLS_CERT_FILE and
 # TLS_KEY_FILE are set), on HTTPS_PORT (default 8443), requiring client certificates when /aop/ca.crt exists;
 # HEALTH_PORT (default 8081) is a plain health-only listener. Next.js itself is internal on 127.0.0.1:3001
 # (entrypoint.sh sets PORT and HOSTNAME for it). tini is PID 1. The variables are documented in README.md.
-EXPOSE 3000 8443 8081
+EXPOSE 8080 8443 8081
 
 ENV PORT=3001
 ENV HOSTNAME="127.0.0.1"

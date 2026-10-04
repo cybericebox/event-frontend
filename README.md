@@ -42,16 +42,16 @@ Read at runtime by the server.
 
 ## Container listeners and TLS
 
-The image runs tini, nginx and Next.js. nginx is the only listener; Next.js is internal on `127.0.0.1:3001`. The nginx config is in `deploy/nginx/` (`nginx.conf`, `server.conf` with the proxy to Next, and the snippets `listen-http.conf`, `listen-https.conf`, `client-auth.conf`, `health.conf`). `entrypoint.sh` only picks the active snippets from the env (an inactive one becomes an empty file) and fills the values with `envsubst` over a fixed variable list into `/tmp/nginx`, then runs `nginx -t`, so a bad combination fails the start. The defaults are baked in, so the deploy passes none of the variables below: TLS is on when `/tls/tls.crt` and `/tls/tls.key` exist, client certificates are required when `/aop/ca.crt` exists, the health listener is on 8081; without those files it is plain HTTP on port 3000.
+The image runs tini, nginx and Next.js. nginx is the only listener; Next.js is internal on `127.0.0.1:3001`, a constant of the image (not configurable). The nginx config is in `deploy/nginx/` (`nginx.conf`, `server.conf` with the proxy to Next, and the snippets `listen-http.conf`, `listen-https.conf`, `client-auth.conf`, `health.conf`). `entrypoint.sh` only picks the active snippets from the env (an inactive one becomes an empty file) and fills the values with `envsubst` over a fixed variable list into `/tmp/nginx`, then runs `nginx -t`, so a bad combination fails the start. The defaults are baked in, so the deploy passes none of the variables below: TLS is on when `/tls/tls.crt` and `/tls/tls.key` exist, client certificates are required when `/aop/ca.crt` exists, the health listener is on 8081; without those files it is plain HTTP on port 8080.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `HTTP_PORT` | `3000` | Plain HTTP listener. Empty = off. |
+| `HTTP_PORT` | `8080` | Plain HTTP listener. Empty = off. |
 | `HTTPS_PORT` | `8443` | TLS listener, on only when the certificate and key are set. |
-| `TLS_CERT_FILE`, `TLS_KEY_FILE` | `/tls/tls.crt`, `/tls/tls.key` | PEM server certificate chain and key. TLS is on when both default files exist. Set explicitly: both must be set and readable (exactly one = start error); set empty: TLS off. |
+| `TLS_CERT_FILE`, `TLS_KEY_FILE` | `/tls/tls.crt`, `/tls/tls.key` | PEM server certificate chain and key. TLS is on when both default files exist. A path set in the env (non-empty) that does not exist or is not readable = start error; with no files it is plain HTTP. |
 | `TLS_MIN_VERSION` | `1.2` | `1.2` or `1.3`. |
-| `TLS_CLIENT_CA_FILE` | `/aop/ca.crt` if that file exists | PEM bundle of the CAs that signed the client certificates. |
-| `TLS_CLIENT_AUTH` | `require` when TLS is on and `/aop/ca.crt` exists, else `off` | `off`, `optional` (verify if presented; a presented invalid certificate is refused) or `require`. `optional` and `require` need TLS and the CA file, else start error. |
+| `TLS_CLIENT_CA_FILE` | `/aop/ca.crt` | PEM bundle of the CAs that signed the client certificates. |
+| `TLS_CLIENT_AUTH` | `require` when TLS is on and `/aop/ca.crt` exists, else `off` | `off`, `optional` (verify if presented; a presented invalid certificate is refused) or `require`. `optional` and `require` need TLS and the CA file at its path, else start error. One line `mode: http`, `mode: https`, `mode: https+client-auth` (plus `+http` when the plain listener is also on) is logged at start. |
 | `HEALTH_PORT` | `8081` | An extra plain listener that serves only `/api/health` (kubelet probes), bound to `HEALTH_BIND` (default `0.0.0.0`). Empty = off, probes then use `HTTP_PORT`. |
 | `TLS_RELOAD_INTERVAL` | `60` | Seconds between checks of the cert, key and CA files; a change runs `nginx -t` and then reloads nginx (a config that does not load keeps the old one). `0` = off. Polling, not inotify, because Kubernetes swaps Secret mounts by symlink. |
 
