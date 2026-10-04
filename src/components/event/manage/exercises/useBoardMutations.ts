@@ -13,7 +13,7 @@ const waiting = new Map<string, number>();
 
 const boardsKey = (eventID: string) => ["event-exercise-boards", eventID];
 
-// Instant board controls (a set's visibility, a task's hints switch): the board
+// Instant board controls (a set's visibility, a task's hints switch, its attempt limit): the board
 // cache changes before the server answers, nothing is disabled or reloaded, the
 // server answer is applied only when it differs and no newer save waits, and a
 // failure refetches the board and shows a toast.
@@ -44,21 +44,28 @@ export function useBoardMutations(eventID: string) {
         enqueue(async () => {await setEventExerciseVisibility(eventID, attachmentID, published);}, t("manage.challenges.set.visibilityFailed"));
     }
 
-    function setHintsEnabled(attachmentID: string, challengeID: string, enabled: boolean) {
+    // One task's PUT: the board cache already shows the change; the PUT carries the task's current board fields
+    // (null clears the attempt override), and the answer is applied only when no newer save waits and it differs.
+    function saveChallenge(attachmentID: string, challengeID: string, patch: Partial<EventBoardChallenge>, fallback: string) {
         const find = () => queryClient.getQueriesData<BoardSet[]>({queryKey: boardsKey(eventID)})
             .flatMap(([, sets]) => sets ?? []).find(set => set.attachment.ID === attachmentID)?.challenges.find(challenge => challenge.ID === challengeID);
-        patchSets(set => set.attachment.ID === attachmentID ? {...set, challenges: set.challenges.map(challenge => challenge.ID === challengeID ? {...challenge, HintsEnabled: enabled} : challenge)} : set);
+        patchSets(set => set.attachment.ID === attachmentID ? {...set, challenges: set.challenges.map(challenge => challenge.ID === challengeID ? {...challenge, ...patch} : challenge)} : set);
         enqueue(async () => {
             const current = find();
             if (!current) return;
-            const saved = await updateEventBoardChallenge(eventID, attachmentID, challengeID, {Points: current.Points, HintsEnabled: current.HintsEnabled});
+            const saved = await updateEventBoardChallenge(eventID, attachmentID, challengeID, {Points: current.Points, HintsEnabled: current.HintsEnabled, MaxFlagAttempts: current.MaxFlagAttempts});
             const shown = find();
             // Apply the answer only when no newer save waits and it differs from what is shown.
             if ((waiting.get(eventID) ?? 0) <= 1 && shown && JSON.stringify(saved) !== JSON.stringify(shown as EventBoardChallenge)) {
                 patchSets(set => set.attachment.ID === attachmentID ? {...set, challenges: set.challenges.map(challenge => challenge.ID === challengeID ? saved : challenge)} : set);
             }
-        }, t("manage.exercises.challenge.saveFailed"));
+        }, fallback);
     }
 
-    return {setPublished, setHintsEnabled};
+    const setHintsEnabled = (attachmentID: string, challengeID: string, enabled: boolean) =>
+        saveChallenge(attachmentID, challengeID, {HintsEnabled: enabled}, t("manage.exercises.challenge.saveFailed"));
+    const setMaxFlagAttempts = (attachmentID: string, challengeID: string, limit: number | null) =>
+        saveChallenge(attachmentID, challengeID, {MaxFlagAttempts: limit}, t("manage.exercises.challenge.saveFailed"));
+
+    return {setPublished, setHintsEnabled, setMaxFlagAttempts};
 }

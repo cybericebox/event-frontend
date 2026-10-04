@@ -176,7 +176,8 @@ export function ExerciseAttachments() {
                         {challenges.length === 0 ? <EmptyState compact message={t("manage.exercises.setEmpty")} /> : <ul className="event-task-list">
                             {challenges.map(challenge => <TaskRow key={challenge.ID} eventID={eventID} attachment={attachment} challenge={challenge}
                                 scoring={scoringQuery.data} lifecycle={lifecycleQuery.data} hintsDisabled={configQuery.data.HintsDisabled} stand={attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null}
-                                canManage={canManage} onSaved={board.refreshSets} onHintsEnabled={(challengeID, enabled) => mutations.setHintsEnabled(attachment.ID, challengeID, enabled)} />)}
+                                canManage={canManage} eventAttempts={configQuery.data.MaxFlagAttempts} onSaved={board.refreshSets} onHintsEnabled={(challengeID, enabled) => mutations.setHintsEnabled(attachment.ID, challengeID, enabled)}
+                                onMaxAttempts={(challengeID, limit) => mutations.setMaxFlagAttempts(attachment.ID, challengeID, limit)} />)}
                         </ul>}
                     </div>}
                 </article>;

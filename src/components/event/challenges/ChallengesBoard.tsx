@@ -91,6 +91,7 @@ function Board({eventID, mode, challenges, teamMode, finished, showDifficulty, s
             showDifficulty={showDifficulty} showHints={showHints} hintChargeMode={hintChargeMode}
             onClose={() => setSelectedID(null)}
             onAccepted={challengeID => { setAcceptedID(challengeID); onRefresh(); }}
+            onRejected={onRefresh}
             onHintUnlocked={onRefresh} />
     </Page>;
 }

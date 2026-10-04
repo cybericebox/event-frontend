@@ -64,6 +64,9 @@ export const challengeSchema = z.object({
     SolveCount: z.number().int().nullish().transform(value => value ?? null),
     Hints: z.array(hintSchema).nullish().transform(value => value ?? []),
     HintCostTotal: z.number().int().default(0),
+    // The team's wrong submissions allowed on the task and what remains; null when unlimited or already solved.
+    MaxAttempts: z.number().int().nullish().transform(value => value ?? null),
+    AttemptsLeft: z.number().int().nullish().transform(value => value ?? null),
     // Moderators board only: the challenge is (not yet) on the participants' board.
     BoardPublished: z.boolean().optional(),
 });

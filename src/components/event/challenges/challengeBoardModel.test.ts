@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {challengeSchema, type OwnChallenge} from "@/api/participantChallenges";
 import {
-    boardViewKey, buildCategories, formatFileSize, formatPoints, lockedLabel, matchesBoard, missingMembers,
+    attemptsLeft, boardViewKey, NO_SPEND, spendAttempt, buildCategories, formatFileSize, formatPoints, lockedLabel, matchesBoard, missingMembers,
     readBoardView, restPoints, solvedCount, solvesLabel, writeBoardView,
 } from "./challengeBoardModel";
 
@@ -74,5 +74,36 @@ describe("challenge board model", () => {
         expect(missingMembers(1, 3)).toBe(2);
         expect(missingMembers(4, 3)).toBe(0);
         expect(missingMembers(1, null)).toBe(0);
+    });
+});
+
+describe("attempts left", () => {
+    const task = (left: number | null) => challenge(1, 1, {AttemptsLeft: left, MaxAttempts: left === null ? null : 5});
+
+    it("is null when the task is unlimited or solved", () => {
+        expect(attemptsLeft(task(null), spendAttempt(task(null), NO_SPEND))).toBeNull();
+    });
+
+    it("counts wrong answers made since the board was loaded and never drops below zero", () => {
+        let spend = NO_SPEND;
+        expect(attemptsLeft(task(2), spend)).toBe(2);
+        spend = spendAttempt(task(2), spend);
+        expect(attemptsLeft(task(2), spend)).toBe(1);
+        spend = spendAttempt(task(2), spend);
+        spend = spendAttempt(task(2), spend);
+        expect(attemptsLeft(task(2), spend)).toBe(0);
+    });
+
+    it("drops the local count once the board already includes the attempts", () => {
+        const spend = spendAttempt(task(2), NO_SPEND);
+        expect(attemptsLeft(task(1), spend)).toBe(1);
+    });
+
+    it("keeps counts of different tasks apart and zeroes everything on a server refusal", () => {
+        const first = task(2);
+        const other = challenge(2, 1, {AttemptsLeft: 2, MaxAttempts: 5});
+        const spend = spendAttempt(first, NO_SPEND);
+        expect(attemptsLeft(other, spend)).toBe(2);
+        expect(attemptsLeft(first, spendAttempt(first, NO_SPEND, true))).toBe(0);
     });
 });

@@ -9,6 +9,7 @@ import {
 } from "@/api/manage";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
+import {AttemptLimitField} from "@/components/event/manage/AttemptLimitField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
@@ -84,7 +85,7 @@ export function ChallengeSettings() {
         finally {setSaving(false);}
     }
 
-    function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode" | "TaskRevealMode">>) {
+    function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode" | "TaskRevealMode" | "MaxFlagAttempts">>) {
         if (!config.data || !canManage) return;
         const key = ["event-management-config", eventID];
         // Optimistic: every control reacts at once and nothing else on the page is disabled or reloaded.
@@ -142,6 +143,11 @@ export function ChallengeSettings() {
             </div>
             {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>}
         </form>
+        <section className="event-manage-section" aria-labelledby="attempts-title">
+            <div className="event-manage-section__head"><h2 id="attempts-title">{t("manage.challenges.attempts.title")}</h2><p>{t("manage.challenges.attempts.subtitle")}</p></div>
+            <AttemptLimitField id="max-flag-attempts" title={t("manage.challenges.attempts.label")} help={t("manage.challenges.attempts.help")} value={config.data.MaxFlagAttempts}
+                placeholder={t("manage.challenges.attempts.placeholder")} disabled={!canManage} onCommit={limit => saveConfig({MaxFlagAttempts: limit})} />
+        </section>
         <section className="event-manage-section" aria-labelledby="reveal-title">
             <div className="event-manage-section__head"><h2 id="reveal-title">{t("manage.challenges.reveal.title")}</h2><p>{t("manage.challenges.reveal.subtitle")}</p></div>
             <fieldset className="event-hint-charge" disabled={!canManage || revealLocked}>
