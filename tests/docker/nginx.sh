@@ -53,8 +53,8 @@ docker run --rm -v "$certs:/c" -w /c "$tools" sh -ec '
 
 envs="-e NEXT_PUBLIC_MAIN_HOST=m.test -e NEXT_PUBLIC_API_HOST=a.test -e NEXT_PUBLIC_ID_HOST=i.test
  -e NEXT_PUBLIC_ADMIN_HOST=ad.test -e NEXT_PUBLIC_EXERCISES_HOST=e.test -e NEXT_PUBLIC_EVENT_DOMAIN=ev.test
- -e NEXT_PUBLIC_COOKIE_DOMAIN=test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_URL=https://p.test
- -e NEXT_PUBLIC_PARTNER_SITE_URL=https://p.test -e NEXT_PUBLIC_WIREGUARD_INSTALL_URL=https://w.test"
+ -e NEXT_PUBLIC_COOKIE_DOMAIN=test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_ICE_NURE_URL=https://p.test
+ -e NEXT_PUBLIC_PARTNER_NURE_URL=https://p.test -e NEXT_PUBLIC_WIREGUARD_INSTALL_URL=https://w.test"
 
 # start <name> [docker run args...]: a container with dropped capabilities and the cert directory.
 start() {

@@ -31,6 +31,6 @@ export function eventOrigin(tag: string): string {
 }
 
 // External links, from env (no fallbacks).
-export const partnerUrl = required(process.env.NEXT_PUBLIC_PARTNER_URL, "NEXT_PUBLIC_PARTNER_URL");
-export const partnerSiteUrl = required(process.env.NEXT_PUBLIC_PARTNER_SITE_URL, "NEXT_PUBLIC_PARTNER_SITE_URL");
+export const partnerIceNureUrl = required(process.env.NEXT_PUBLIC_PARTNER_ICE_NURE_URL, "NEXT_PUBLIC_PARTNER_ICE_NURE_URL");
+export const partnerNureUrl = required(process.env.NEXT_PUBLIC_PARTNER_NURE_URL, "NEXT_PUBLIC_PARTNER_NURE_URL");
 export const wireguardInstallUrl = required(process.env.NEXT_PUBLIC_WIREGUARD_INSTALL_URL, "NEXT_PUBLIC_WIREGUARD_INSTALL_URL");
