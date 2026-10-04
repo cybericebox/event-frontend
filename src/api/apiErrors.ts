@@ -66,6 +66,8 @@ export const ApiErrorCode = {
     AuthTooManyRequests: 428,
     NameInvalidCharacters: 304,
     AnswerTooLong: 1937,
+    AttemptLimitInvalid: 1938,
+    AttemptLimitReached: 1939,
     ImageTooManyPixels: 1004,
     ImageUnreadable: 1005,
     PresetNested: 226,

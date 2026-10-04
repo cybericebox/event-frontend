@@ -19,7 +19,7 @@ import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
-import {difficultyLabel, formatClock, formatFileSize, solvesLabel} from "./challengeBoardModel";
+import {attemptsLeft, difficultyLabel, formatClock, formatFileSize, NO_SPEND, solvesLabel, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
 import {t} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
@@ -44,6 +44,7 @@ function submitMessage(error: unknown): Message {
     if (error instanceof ParticipantChallengeError) {
         if (error.code === ApiErrorCode.TeamNotAdmitted) return {text: t("challenges.hint.error.notAdmitted"), tone: "warn"};
         if (error.code === ApiErrorCode.AnswerTooLong) return {text: apiErrorMessage(error.code, t("challenges.submit.failed")), tone: "error"};
+        if (error.code === ApiErrorCode.AttemptLimitReached) return {text: t("challenges.modal.attemptsExhausted"), tone: "warn"};
         if (error.status === 409 || error.status === 403) return {text: t("challenges.submit.notAccepting"), tone: "warn"};
     }
     return {text: t("challenges.submit.failed"), tone: "warn"};
@@ -145,7 +146,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
 }
 
 // React port of ds-v2 IB.ChallengeModal on a native <dialog>.
-export function ChallengeModal({challenge, eventID, mode, teamMode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onHintUnlocked}: {
+export function ChallengeModal({challenge, eventID, mode, teamMode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onRejected, onHintUnlocked}: {
     challenge: OwnChallenge | null;
     eventID: string;
     mode: BoardMode;
@@ -156,6 +157,8 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     hintChargeMode?: HintChargeMode;
     onClose: () => void;
     onAccepted: (challengeID: string) => void;
+    // A wrong answer was counted: the board refetches the attempts left.
+    onRejected?: () => void;
     onHintUnlocked?: () => void;
 }) {
     const ref = useRef<HTMLDialogElement>(null);
@@ -169,6 +172,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     const [message, setMessage] = useState<Message>(null);
     const [busy, setBusy] = useState(false);
     const [accepted, setAccepted] = useState(false);
+    const [spend, setSpend] = useState<AttemptSpend>(NO_SPEND);
     const [waitUntil, setWaitUntil] = useState(0);
     const [now, setNow] = useState(() => Date.now());
     const challengeID = challenge?.EventChallengeID;
@@ -247,9 +251,17 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
             } else {
                 setMessage({text: t("challenges.modal.flagRejected"), tone: "error"});
                 flagRef.current?.focus();
+                if (!moderators) {
+                    setSpend(current => spendAttempt(challenge, current));
+                    onRejected?.();
+                }
             }
         } catch (error) {
-            if (error instanceof ParticipantChallengeError && error.status === 429) {
+            if (error instanceof ParticipantChallengeError && error.code === ApiErrorCode.AttemptLimitReached) {
+                setSpend(current => spendAttempt(challenge, current, true));
+                setMessage(null);
+                onRejected?.();
+            } else if (error instanceof ParticipantChallengeError && error.status === 429) {
                 const seconds = error.retryAfter ?? 30;
                 setWaitUntil(Date.now() + seconds * 1000);
                 setNow(Date.now());
@@ -265,6 +277,8 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], lab.data), [challenge?.Snapshot.placeholders, lab.data]);
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
+    const left = challenge && !moderators ? attemptsLeft(challenge, spend) : null;
+    const exhausted = left === 0;
     const category = challenge?.GroupName || t("challenges.otherCategory");
     const hints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
     const fileUrl = (fileID: string) => moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
@@ -319,13 +333,14 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                     <label htmlFor={`${id}-flag`}>{t("challenges.modal.flag")}</label>
                     <div className="ib-cmodal__row">
                         <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
-                            aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer}
+                            aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer} disabled={exhausted}
                             onChange={event => { setAnswer(event.target.value); if (message?.tone === "error") setMessage(null); if (moderators) setAccepted(false); }} />
-                        <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting} busy={busy}>{t("challenges.modal.submit")}</EventButton>
+                        <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy}>{t("challenges.modal.submit")}</EventButton>
                     </div>
                     <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role="alert">
-                        {waiting ? t("challenges.modal.rateLimited", {seconds: waitSeconds}) : message?.text}
+                        {waiting ? t("challenges.modal.rateLimited", {seconds: waitSeconds}) : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
                     </p>
+                    {left !== null && left > 0 && <p className="ib-cmodal__hint" id={`${id}-left`}>{t("challenges.modal.attemptsLeft", {count: left})}</p>}
                 </form>}
             </div>
             {solvesVisible && <div className="ib-cmodal__body ib-cmodal__body--solves" id={`${id}-p2`} role="tabpanel" aria-labelledby={`${id}-tab2`} hidden={tab !== "solves"}>

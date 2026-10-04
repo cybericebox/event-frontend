@@ -8,6 +8,7 @@ import {
     type EventBoardChallenge, type EventExerciseAttachment,
 } from "@/api/manageChallenges";
 import type {ManageLifecycle, ManageScoring} from "@/api/manage";
+import {AttemptLimitField} from "@/components/event/manage/AttemptLimitField";
 import {hintLevelLabel, hintPlainText} from "@/components/event/challenges/hintModel";
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
@@ -162,6 +163,19 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
     </section>;
 }
 
+// «Спроби»: the task's own limit of wrong flag submissions; empty = the event's value. Saves like the hints switch:
+// at once, queued, nothing disabled while it runs.
+function TaskAttempts({challenge, eventAttempts, disabled, onMaxAttempts}: {
+    challenge: EventBoardChallenge; eventAttempts: number | null; disabled: boolean; onMaxAttempts: (limit: number | null) => void;
+}) {
+    const placeholder = eventAttempts === null ? t("manage.challenges.task.attemptsPlaceholderNone") : t("manage.challenges.task.attemptsPlaceholderLimit", {limit: eventAttempts});
+    return <section className="event-task__section" aria-labelledby={`task-attempts-${challenge.ID}`}>
+        <h4 id={`task-attempts-${challenge.ID}`}>{t("manage.challenges.task.attemptsTitle")}</h4>
+        <AttemptLimitField id={`task-${challenge.ID}-attempts`} title={t("manage.challenges.task.attemptsLabel")} help={t("manage.challenges.task.attemptsHelp")}
+            value={challenge.MaxFlagAttempts} placeholder={placeholder} disabled={disabled} onCommit={onMaxAttempts} />
+    </section>;
+}
+
 // Lightbulb + count with an explaining tooltip; muted and struck when
 // participants do not see the hints.
 export function HintMark({hints}: {hints: HintIndicator}) {
@@ -172,11 +186,12 @@ export function HintMark({hints}: {hints: HintIndicator}) {
 }
 
 // One task of a set: a thin row (name, first description line, badges) that
-// expands into «Оцінювання» and «Підказки». A task has no actions of its own:
+// expands into «Оцінювання», «Підказки» and «Спроби». A task has no actions of its own:
 // a set is edited, shown and removed as a whole.
-export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, onSaved, onHintsEnabled}: {
+export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hintsDisabled, stand, canManage, eventAttempts, onSaved, onHintsEnabled, onMaxAttempts}: {
     eventID: string; attachment: EventExerciseAttachment; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;
-    hintsDisabled: boolean; stand: StandReadiness | null; canManage: boolean; onSaved: () => Promise<unknown>; onHintsEnabled: (challengeID: string, enabled: boolean) => void;
+    hintsDisabled: boolean; stand: StandReadiness | null; canManage: boolean; eventAttempts: number | null; onSaved: () => Promise<unknown>;
+    onHintsEnabled: (challengeID: string, enabled: boolean) => void; onMaxAttempts: (challengeID: string, limit: number | null) => void;
 }) {
     const [open, setOpen] = useState(false);
     const toggle = () => setOpen(current => !current);
@@ -199,6 +214,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
         {open && <div className="event-task__panel" id={panelID}>
             <TaskScoring key={`${challenge.Points}:${JSON.stringify(challenge.ScoringOverride)}`} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} scoring={scoring} lifecycle={lifecycle} disabled={!canManage} onSaved={onSaved} />
             <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} onHintsEnabled={enabled => onHintsEnabled(challenge.ID, enabled)} />
+            <TaskAttempts challenge={challenge} eventAttempts={eventAttempts} disabled={!canManage} onMaxAttempts={limit => onMaxAttempts(challenge.ID, limit)} />
         </div>}
     </li>;
 }

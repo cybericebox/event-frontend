@@ -14,6 +14,9 @@ const attemptSchema = z.object({
     Correct: z.boolean(), ReceivedAt: z.string(),
     // Points the attempt brought: only the attempt that solved the task has them.
     Points: z.number().int().nullable().optional().transform(value => value ?? null),
+    // The task's flag attempt limit for the team (null = unlimited) and the team's wrong submissions counted against it.
+    AttemptsAllowed: z.number().int().nullish().transform(value => value ?? null),
+    AttemptsUsed: z.number().int().default(0),
 });
 const pageSchema = z.object({Items: z.array(attemptSchema), Total: z.number().int(), NextCursor: id.optional()});
 const decisionSchema = z.object({AttemptID: id, Decision: z.enum(["automatic", "accepted", "rejected"]), Reason: z.string(), DecidedBy: id, DecidedAt: z.string(), Correct: z.boolean()});

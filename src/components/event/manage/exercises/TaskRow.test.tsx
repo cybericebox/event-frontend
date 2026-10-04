@@ -9,7 +9,7 @@ afterEach(cleanup);
 
 const challenge = {
     ID: "01900000-0000-7000-8000-0000000000c1", TaskID: "01900000-0000-7000-8000-0000000000t1", GroupID: null, PrerequisiteIDs: [],
-    Order: 0, BoardOrder: null, Points: 150, ScoringOverride: null, HintsEnabled: true, Published: true,
+    Order: 0, BoardOrder: null, Points: 150, ScoringOverride: null, HintsEnabled: true, MaxFlagAttempts: null, Published: true,
     Snapshot: {name: "SQL injection", description: {root: {type: "root", children: [{type: "paragraph", children: [{type: "text", text: "Знайдіть прапор у формі входу"}]}]}}},
     Hints: [{ID: "01900000-0000-7000-8000-0000000000h1", Text: "Подивіться на запит", Level: "nudge", Cost: 20, Overridden: true}],
 } as EventBoardChallenge;
@@ -17,9 +17,9 @@ const attachment = {ID: "01900000-0000-7000-8000-0000000000a1", Infrastructure: 
 const scoring = {Mode: 0, MinPoints: 100, MaxPoints: 500, FloorAtPercent: 50, ForceEventScoring: false, StaticPoints: 100, UpdatedAt: ""} as ManageScoring;
 const lifecycle = {JoinPolicy: 0, FinishAt: null} as unknown as ManageLifecycle;
 
-function renderRow(patch: Partial<ManageScoring> = {}, hintsDisabled = false) {
-    render(<ul><TaskRow eventID="e" attachment={attachment} challenge={challenge} scoring={{...scoring, ...patch}} lifecycle={lifecycle} hintsDisabled={hintsDisabled} stand="notReady"
-        canManage onSaved={vi.fn(async () => undefined)} onHintsEnabled={vi.fn()} /></ul>);
+function renderRow(patch: Partial<ManageScoring> = {}, hintsDisabled = false, extra: {eventAttempts?: number | null; onMaxAttempts?: (challengeID: string, limit: number | null) => void; maxFlagAttempts?: number | null} = {}) {
+    render(<ul><TaskRow eventID="e" attachment={attachment} challenge={{...challenge, MaxFlagAttempts: extra.maxFlagAttempts ?? null}} scoring={{...scoring, ...patch}} lifecycle={lifecycle} hintsDisabled={hintsDisabled} stand="notReady"
+        canManage eventAttempts={extra.eventAttempts ?? null} onSaved={vi.fn(async () => undefined)} onHintsEnabled={vi.fn()} onMaxAttempts={extra.onMaxAttempts ?? vi.fn()} /></ul>);
 }
 
 describe("TaskRow", () => {
@@ -36,10 +36,10 @@ describe("TaskRow", () => {
         expect(within(row as HTMLElement).getAllByRole("button").map(button => button.getAttribute("aria-label"))).toEqual(["Розгорнути завдання SQL injection"]);
     });
 
-    it("expands into scoring and hints only", () => {
+    it("expands into scoring, hints and attempts only", () => {
         renderRow();
         fireEvent.click(screen.getByRole("button", {expanded: false}));
-        expect(screen.getAllByRole("heading", {level: 4}).map(heading => heading.textContent)).toEqual(["Оцінювання", "Підказки"]);
+        expect(screen.getAllByRole("heading", {level: 4}).map(heading => heading.textContent)).toEqual(["Оцінювання", "Підказки", "Спроби"]);
         expect(screen.getByText("Статичне · 100 балів")).toBeTruthy();
         expect(screen.getByText("Підказка 1")).toBeTruthy();
         expect((screen.getByLabelText(/Вартість підказки 1/) as HTMLInputElement).value).toBe("20");
@@ -76,5 +76,49 @@ describe("TaskRow", () => {
         fireEvent.change(points, {target: {value: ""}});
         expect(screen.getByText("Укажіть бали за завдання: ціле число більше за нуль.")).toBeTruthy();
         expect((screen.getByRole("button", {name: "Зберегти"}) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    describe("attempt limit of the task", () => {
+        const field = () => screen.getByRole("spinbutton", {name: "Максимум невдалих спроб для цього завдання"}) as HTMLInputElement;
+
+        it("shows the event value as the placeholder and the own value when set", () => {
+            renderRow({}, false, {eventAttempts: 5});
+            fireEvent.click(screen.getByRole("button", {expanded: false}));
+            expect(field().value).toBe("");
+            expect(field().placeholder).toBe("Як у заході: 5");
+        });
+
+        it("saves a typed value on blur at once and never disables the field", () => {
+            const save = vi.fn();
+            renderRow({}, false, {onMaxAttempts: save});
+            fireEvent.click(screen.getByRole("button", {expanded: false}));
+            fireEvent.change(field(), {target: {value: "3"}});
+            fireEvent.blur(field());
+            expect(save).toHaveBeenCalledWith(challenge.ID, 3);
+            expect(field().disabled).toBe(false);
+        });
+
+        it("clears the override with an empty field and refuses invalid numbers", () => {
+            const save = vi.fn();
+            renderRow({}, false, {onMaxAttempts: save, maxFlagAttempts: 4});
+            fireEvent.click(screen.getByRole("button", {expanded: false}));
+            expect(field().value).toBe("4");
+            fireEvent.change(field(), {target: {value: "0"}});
+            fireEvent.blur(field());
+            expect(save).not.toHaveBeenCalled();
+            expect(screen.getByRole("alert").textContent).toContain("від 1 до 1000");
+            fireEvent.change(field(), {target: {value: ""}});
+            fireEvent.keyDown(field(), {key: "Enter"});
+            expect(save).toHaveBeenCalledWith(challenge.ID, null);
+        });
+
+        it("does not save an unchanged value", () => {
+            const save = vi.fn();
+            renderRow({}, false, {onMaxAttempts: save, maxFlagAttempts: 4});
+            fireEvent.click(screen.getByRole("button", {expanded: false}));
+            fireEvent.change(field(), {target: {value: "4"}});
+            fireEvent.blur(field());
+            expect(save).not.toHaveBeenCalled();
+        });
     });
 });

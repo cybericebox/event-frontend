@@ -212,6 +212,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
                 <th scope="col">{t("manage.attempts.col.challenge")}</th>
                 <th scope="col">{t("manage.attempts.col.result")}</th>
                 <th scope="col" className="ib-num">{t("manage.attempts.col.points")}</th>
+                <th scope="col" className="ib-num">{t("manage.attempts.col.attempts")}</th>
                 {canManage && <th scope="col">{t("manage.attempts.col.answer")}</th>}
             </tr>}
             footer={<ManageTablePagination event={event} page={pages.page} pageSize={pages.pageSize} total={pageQuery.data?.Total ?? 0} hasNext={!!pageQuery.data?.NextCursor} busy={busy} onPrevious={pages.previous} onNext={() => pages.next(pageQuery.data?.NextCursor)} onPageSize={pages.setPageSize} />}>
@@ -221,6 +222,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
                 <td>{attempt.ChallengeName || t("manage.attempts.challenge")}</td>
                 <td><span className="event-journal__result"><ResultTag attempt={attempt} /><MarkerFor flags={flags} attempt={attempt} /></span></td>
                 <td className="ib-num">{attempt.Points === null ? <span className="event-manage-table__dim">{t("manage.attempts.noPoints")}</span> : points.format(attempt.Points)}</td>
+                <td className="ib-num">{attempt.AttemptsAllowed === null ? <span className="event-manage-table__dim">{t("manage.attempts.unlimited")}</span> : t("manage.attempts.usedOf", {used: attempt.AttemptsUsed, allowed: attempt.AttemptsAllowed})}</td>
                 {canManage && <td><EventTooltip content={attempt.Answer} className="event-manage-table__answer-tip" truncated>{() => <code className="event-manage-table__answer event-journal__answer">{attempt.Answer}</code>}</EventTooltip></td>}
             </tr>)}</tbody>
         </ManageTable>
@@ -232,6 +234,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
                     <div><dt>{t("manage.attempts.automaticCheck")}</dt><dd>{selected.AutomaticCorrect ? t("manage.attempts.right") : t("manage.attempts.wrong")}</dd></div>
                     <div><dt>{t("manage.attempts.currentResult")}</dt><dd><ResultTag attempt={selected} /></dd></div>
                     <div><dt>{t("manage.attempts.col.points")}</dt><dd>{selected.Points === null ? t("manage.attempts.noPoints") : points.format(selected.Points)}</dd></div>
+                    <div><dt>{t("manage.attempts.col.attempts")}</dt><dd>{selected.AttemptsAllowed === null ? t("manage.attempts.unlimited") : t("manage.attempts.usedOf", {used: selected.AttemptsUsed, allowed: selected.AttemptsAllowed})}</dd></div>
                 </dl>
                 {selected.ExpectedFlag !== null && <div className="event-attempts-manager__expected"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setShowExpected(value => !value)}>{showExpected ? t("manage.attempts.hideExpected") : t("manage.attempts.showExpected")}</button>{showExpected && <code>{selected.ExpectedFlag}</code>}</div>}
                 {selected.DecisionReason && <p className="event-attempts-manager__reason"><strong>{t("manage.attempts.previousReason")}</strong> {selected.DecisionReason}</p>}

@@ -1,3 +1,4 @@
+import {attemptLimit} from "@/api/attemptLimit";
 import {z} from "zod";
 import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
 import {EventThemeSchema} from "@/types/eventTheme";
@@ -27,6 +28,8 @@ export const ManageConfigSchema = z.object({
     HintsDisabled: z.boolean().default(false),
     // reward (default): unlocked hints reduce the solve's reward; balance: charged at unlock.
     HintChargeMode: z.enum(["reward", "balance"]).catch("reward"),
+    // Wrong flag submissions allowed per team and task; null = unlimited. A task can override it.
+    MaxFlagAttempts: attemptLimit,
     // all_ready (competition): a task shows once ready for every team; as_ready (training): per team. Locked after the start.
     TaskRevealMode: z.enum(["all_ready", "as_ready"]).catch("all_ready"),
     // Participant countdown to the start, and to the finish during its last N minutes.
@@ -50,7 +53,7 @@ export function manageConfigInput(config: ManageConfig): ManageConfigInput {
         PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture,
         MaxTeamSize: config.MaxTeamSize, MinTeamSize: config.MinTeamSize, MaxTeams: config.MaxTeams,
         AllowPseudonyms: config.AllowPseudonyms,
-        ShowDifficulty: config.ShowDifficulty, HintsDisabled: config.HintsDisabled, HintChargeMode: config.HintChargeMode, TaskRevealMode: config.TaskRevealMode,
+        ShowDifficulty: config.ShowDifficulty, HintsDisabled: config.HintsDisabled, HintChargeMode: config.HintChargeMode, MaxFlagAttempts: config.MaxFlagAttempts, TaskRevealMode: config.TaskRevealMode,
     };
 }
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;

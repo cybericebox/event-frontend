@@ -15,7 +15,7 @@ import {useBoardMutations} from "./useBoardMutations";
 
 afterEach(() => {cleanup(); vi.clearAllMocks();});
 
-const challenge = (ID: string) => ({ID, Points: 100, HintsEnabled: true, Published: false, Hints: []}) as unknown as EventBoardChallenge;
+const challenge = (ID: string) => ({ID, Points: 100, HintsEnabled: true, MaxFlagAttempts: null, Published: false, Hints: []}) as unknown as EventBoardChallenge;
 const sets = (): BoardSet[] => [{attachment: {ID: "s1"} as EventExerciseAttachment, challenges: [challenge("c1"), challenge("c2")]}];
 
 function Harness() {
@@ -25,6 +25,7 @@ function Harness() {
     return <>
         <EventSwitch checked={first.some(item => item.Published)} ariaLabel="shown" onCheckedChange={value => mutations.setPublished("s1", value)} />
         {first.map(item => <EventSwitch key={item.ID} checked={item.HintsEnabled} ariaLabel={`hints-${item.ID}`} onCheckedChange={value => mutations.setHintsEnabled("s1", item.ID, value)} />)}
+        {first.map(item => <button key={`limit-${item.ID}`} type="button" onClick={() => mutations.setMaxFlagAttempts("s1", item.ID, item.MaxFlagAttempts === null ? 3 : null)}>{`limit-${item.ID}:${item.MaxFlagAttempts ?? "none"}`}</button>)}
     </>;
 }
 const setup = () => {
@@ -73,5 +74,32 @@ describe("useBoardMutations", () => {
         await act(async () => {fail(new Error("boom"));});
         await waitFor(() => expect(toast.error).toHaveBeenCalled());
         await waitFor(() => expect(box("shown").checked).toBe(false));
+    });
+
+    it("sets a task's attempt limit at once, queues the save and sends the other board fields with it", async () => {
+        const pending: Array<(value: EventBoardChallenge) => void> = [];
+        api.update.mockImplementation(() => new Promise(resolve => {pending.push(resolve);}));
+        setup();
+        await waitFor(() => expect(screen.getByRole("button", {name: "limit-c1:none"})).toBeTruthy());
+        fireEvent.click(screen.getByRole("button", {name: "limit-c1:none"}));
+        await waitFor(() => expect(screen.getByRole("button", {name: "limit-c1:3"})).toBeTruthy());
+        // A second control stays usable while the first save is pending.
+        expect(box("hints-c2").disabled).toBe(false);
+        fireEvent.click(box("hints-c2"));
+        expect(api.update).toHaveBeenCalledTimes(1);
+        expect(api.update).toHaveBeenCalledWith("e1", "s1", "c1", {Points: 100, HintsEnabled: true, MaxFlagAttempts: 3});
+        await act(async () => {pending[0]({...challenge("c1"), MaxFlagAttempts: 3});});
+        await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
+        await act(async () => {pending[1]({...challenge("c2"), HintsEnabled: false});});
+        expect(screen.getByRole("button", {name: "limit-c1:3"})).toBeTruthy();
+    });
+
+    it("rolls the attempt limit back with a toast when the save fails", async () => {
+        api.update.mockRejectedValue(new Error("boom"));
+        setup();
+        await waitFor(() => expect(screen.getByRole("button", {name: "limit-c1:none"})).toBeTruthy());
+        fireEvent.click(screen.getByRole("button", {name: "limit-c1:none"}));
+        await waitFor(() => expect(toast.error).toHaveBeenCalled());
+        await waitFor(() => expect(screen.getByRole("button", {name: "limit-c1:none"})).toBeTruthy());
     });
 });

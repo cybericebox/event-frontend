@@ -57,6 +57,17 @@ describe("Журнал спроб", () => {
         expect(screen.getByRole("button", {name: "Зараховані"}).closest(".ib-seg")).toBeTruthy();
     });
 
+    it("shows how many attempts the team used out of the allowed ones", async () => {
+        mockApi({Items: [attempt(1, {AttemptsAllowed: 5, AttemptsUsed: 3}), attempt(2, {AttemptsAllowed: null, AttemptsUsed: 7})], Total: 2});
+        renderManager();
+        const table = screen.getByRole("table");
+        await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(3));
+        expect(within(table).getByRole("columnheader", {name: "Спроби"})).toBeTruthy();
+        const rows = within(table).getAllByRole("row");
+        expect(within(rows[1]).getByText("3 з 5")).toBeTruthy();
+        expect(within(rows[2]).getByText("Без ліміту")).toBeTruthy();
+    });
+
     it("lists attempts with result, points and answers for managers", async () => {
         const calls = mockApi({Items: [attempt(1, {Correct: true, AutomaticCorrect: true, Points: 250}), attempt(2)], Total: 2});
         renderManager();

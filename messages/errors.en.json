@@ -205,6 +205,8 @@
   "1934": "Too many flag submissions, try again later",
   "1935": "The order must list every task of the group once. Reload the page.",
   "1937": "The answer is too long.",
+  "1938": "The maximum number of attempts must be a whole number from 1 to 1000.",
+  "1939": "No attempts left for this task.",
   "2001": "Infrastructure challenges are not allowed for this event",
   "2002": "Laboratory deploy lead must be 5-1440 minutes and teardown delay 0-10080 minutes",
   "2003": "Laboratory team not found",

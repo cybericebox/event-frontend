@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {attemptLimit} from "@/api/attemptLimit";
 import {manageApiError} from "@/api/manage";
 import {hintLevelSchema} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
@@ -59,6 +60,8 @@ const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevel
 const challengeSchema = z.object({
     ID: id, TaskID: id, GroupID: id.nullable(), PrerequisiteIDs: z.array(id).nullable().transform(value => value ?? []),
     Order: z.number().int(), Points: z.number().int(), ScoringOverride: scoringOverrideSchema.nullable(), HintsEnabled: z.boolean(), Published: z.boolean(),
+    // The task's own limit of wrong flag submissions per team; null = the event's value.
+    MaxFlagAttempts: attemptLimit,
     // Place inside the group across the event's sets; null sorts after the ordered ones.
     BoardOrder: z.number().int().nullish().transform(value => value ?? null),
     Snapshot: z.object({name: z.string(), description: z.unknown().optional()}),
@@ -151,7 +154,7 @@ export const revertEventExercise = (eventID: string, attachmentID: string) => re
 // With attempts the server wants confirm=true (409 1810) and keeps the attachment as detached.
 export const detachEventExercise = (eventID: string, attachmentID: string, confirm = false) => request(eventID, `exercises/${attachmentID}${confirm ? "?confirm=true" : ""}`, z.unknown(), "DELETE").then(() => undefined);
 // Visibility is per set: see setEventExerciseVisibility.
-export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
+export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean; MaxFlagAttempts?: number | null}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
 export const updateEventChallengeScoring = (eventID: string, attachmentID: string, challengeID: string, override: ChallengeScoringOverride | null) => request(eventID, `exercises/${attachmentID}/challenges/scoring`, z.object({updated: z.number().int()}), "PUT", {ChallengeIDs: [challengeID], Override: override});
 // Cost null clears the event's price (the hint becomes free).
 export const updateEventChallengeHintCosts = (eventID: string, attachmentID: string, challengeID: string, costs: HintCostInput[]) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}/hints`, challengeSchema, "PUT", {Costs: costs});

@@ -93,3 +93,22 @@ export function writeBoardView(storage: Pick<Storage, "setItem"> | undefined, ke
 export function missingMembers(memberCount: number, minTeamSize: number | null | undefined): number {
     return Math.max(0, (minTeamSize ?? 0) - memberCount);
 }
+
+// Wrong answers sent in this modal that the board data does not include yet: keyed by the task and the server's
+// count they were made against, so a refetch (which already counts them) discards them.
+export type AttemptSpend = {key: string; count: number};
+export const NO_SPEND: AttemptSpend = {key: "", count: 0};
+const spendKey = (challenge: Pick<OwnChallenge, "EventChallengeID" | "AttemptsLeft">) => `${challenge.EventChallengeID}:${challenge.AttemptsLeft}`;
+
+// Attempts the team has left on a task; null when unlimited or solved.
+export function attemptsLeft(challenge: Pick<OwnChallenge, "EventChallengeID" | "AttemptsLeft">, spend: AttemptSpend): number | null {
+    if (challenge.AttemptsLeft === null) return null;
+    return Math.max(0, challenge.AttemptsLeft - (spend.key === spendKey(challenge) ? spend.count : 0));
+}
+
+// Counts one more wrong answer; `all` marks every remaining attempt as gone (the server refused the limit).
+export function spendAttempt(challenge: Pick<OwnChallenge, "EventChallengeID" | "AttemptsLeft">, spend: AttemptSpend, all = false): AttemptSpend {
+    if (challenge.AttemptsLeft === null) return spend;
+    const key = spendKey(challenge);
+    return {key, count: all ? challenge.AttemptsLeft : (spend.key === key ? spend.count : 0) + 1};
+}
