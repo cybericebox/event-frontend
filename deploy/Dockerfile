@@ -14,12 +14,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Placeholders substituted at container start by entrypoint.sh. Each value is the variable name wrapped in double
 # underscores: the bare name also appears as an object key in the compiled server code, and only the value may be replaced.
-# Run with every key set (see .env.example); NEXT_PUBLIC_DOMAIN is the only host input (every host derives from it).
-# [-e NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=…] is optional.
+# Required at start: NEXT_PUBLIC_DOMAIN (the only host input, every host derives from it) and NEXT_PUBLIC_SUPPORT_EMAIL.
+# Optional, defaulted by entrypoint.sh: NEXT_PUBLIC_GOOGLE_ANALYTICS_ID, NEXT_PUBLIC_SHOW_PARTNERS, NEXT_PUBLIC_WIREGUARD_INSTALL_URL.
 ENV NEXT_PUBLIC_DOMAIN="__NEXT_PUBLIC_DOMAIN__"
 ENV NEXT_PUBLIC_SUPPORT_EMAIL="__NEXT_PUBLIC_SUPPORT_EMAIL__"
-ENV NEXT_PUBLIC_PARTNER_ICE_NURE_URL="__NEXT_PUBLIC_PARTNER_ICE_NURE_URL__"
-ENV NEXT_PUBLIC_PARTNER_NURE_URL="__NEXT_PUBLIC_PARTNER_NURE_URL__"
+ENV NEXT_PUBLIC_SHOW_PARTNERS="__NEXT_PUBLIC_SHOW_PARTNERS__"
 ENV NEXT_PUBLIC_WIREGUARD_INSTALL_URL="__NEXT_PUBLIC_WIREGUARD_INSTALL_URL__"
 ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="__NEXT_PUBLIC_GOOGLE_ANALYTICS_ID__"
 
@@ -57,10 +56,11 @@ COPY deploy/nginx /etc/cybericebox/nginx
 
 USER nextjs
 
-# nginx listens on HTTP_PORT (default 3000, plain) and, when TLS_CERT_FILE and TLS_KEY_FILE are set, on HTTPS_PORT
-# (default 8443); HEALTH_PORT adds a plain health-only listener. Next.js itself is internal on 127.0.0.1:3001
+# nginx listens on HTTP_PORT (default 3000, plain) and, when /tls/tls.crt and /tls/tls.key exist (or TLS_CERT_FILE and
+# TLS_KEY_FILE are set), on HTTPS_PORT (default 8443), requiring client certificates when /aop/ca.crt exists;
+# HEALTH_PORT (default 8081) is a plain health-only listener. Next.js itself is internal on 127.0.0.1:3001
 # (entrypoint.sh sets PORT and HOSTNAME for it). tini is PID 1. The variables are documented in README.md.
-EXPOSE 3000 8443
+EXPOSE 3000 8443 8081
 
 ENV PORT=3001
 ENV HOSTNAME="127.0.0.1"

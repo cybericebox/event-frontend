@@ -34,26 +34,25 @@ Read at runtime by the server.
 | --- | --- | --- |
 | `NEXT_PUBLIC_DOMAIN` | yes | The one base domain, a bare lowercase host name (no scheme, port or path). Every host derives from it: `<DOMAIN>` (landing), `api.`, `id.`, `admin.`, `exercises.<DOMAIN>`, event sites `<tag>.<DOMAIN>`, the shared theme and consent cookies on `.<DOMAIN>`. There are no per-host settings. |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | yes | Support mailbox of the «Send feedback» `mailto:` link shown on every page (the subject carries the app and page path only). |
-| `NEXT_PUBLIC_PARTNER_ICE_NURE_URL` | yes | Partner department link in the footer credit. |
-| `NEXT_PUBLIC_PARTNER_NURE_URL` | yes | Partner institution link in the footer credit. |
-| `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | yes | WireGuard install link in the VPN dialog. |
+| `NEXT_PUBLIC_SHOW_PARTNERS` | no | Default `true`. The string `false` hides the partner names in the footer credit. |
+| `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | no | WireGuard install link in the VPN dialog. Default `https://www.wireguard.com/install/`. |
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
 | `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
 
 ## Container listeners and TLS
 
-The image runs tini, nginx and Next.js. nginx is the only listener; Next.js is internal on `127.0.0.1:3001`. The nginx config is in `deploy/nginx/` (`nginx.conf`, `server.conf` with the proxy to Next, and the snippets `listen-http.conf`, `listen-https.conf`, `client-auth.conf`, `health.conf`). `entrypoint.sh` only picks the active snippets from the env (an inactive one becomes an empty file) and fills the values with `envsubst` over a fixed variable list into `/tmp/nginx`, then runs `nginx -t`, so a bad combination fails the start. Plain HTTP on port 3000 with no TLS is the default.
+The image runs tini, nginx and Next.js. nginx is the only listener; Next.js is internal on `127.0.0.1:3001`. The nginx config is in `deploy/nginx/` (`nginx.conf`, `server.conf` with the proxy to Next, and the snippets `listen-http.conf`, `listen-https.conf`, `client-auth.conf`, `health.conf`). `entrypoint.sh` only picks the active snippets from the env (an inactive one becomes an empty file) and fills the values with `envsubst` over a fixed variable list into `/tmp/nginx`, then runs `nginx -t`, so a bad combination fails the start. The defaults are baked in, so the deploy passes none of the variables below: TLS is on when `/tls/tls.crt` and `/tls/tls.key` exist, client certificates are required when `/aop/ca.crt` exists, the health listener is on 8081; without those files it is plain HTTP on port 3000.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `HTTP_PORT` | `3000` | Plain HTTP listener. Empty = off. |
 | `HTTPS_PORT` | `8443` | TLS listener, on only when the certificate and key are set. |
-| `TLS_CERT_FILE`, `TLS_KEY_FILE` | empty | PEM server certificate chain and key. Both set = TLS on; exactly one = start error. |
+| `TLS_CERT_FILE`, `TLS_KEY_FILE` | `/tls/tls.crt`, `/tls/tls.key` | PEM server certificate chain and key. TLS is on when both default files exist. Set explicitly: both must be set and readable (exactly one = start error); set empty: TLS off. |
 | `TLS_MIN_VERSION` | `1.2` | `1.2` or `1.3`. |
-| `TLS_CLIENT_CA_FILE` | empty | PEM bundle of the CAs that signed the client certificates. |
-| `TLS_CLIENT_AUTH` | `off` | `off`, `optional` (verify if presented; a presented invalid certificate is refused) or `require`. `optional` and `require` need TLS and the CA file, else start error. |
-| `HEALTH_PORT` | empty | If set, an extra plain listener that serves only `/api/health` (kubelet probes), bound to `HEALTH_BIND` (default `0.0.0.0`). If empty, probes use `HTTP_PORT`. |
+| `TLS_CLIENT_CA_FILE` | `/aop/ca.crt` if that file exists | PEM bundle of the CAs that signed the client certificates. |
+| `TLS_CLIENT_AUTH` | `require` when TLS is on and `/aop/ca.crt` exists, else `off` | `off`, `optional` (verify if presented; a presented invalid certificate is refused) or `require`. `optional` and `require` need TLS and the CA file, else start error. |
+| `HEALTH_PORT` | `8081` | An extra plain listener that serves only `/api/health` (kubelet probes), bound to `HEALTH_BIND` (default `0.0.0.0`). Empty = off, probes then use `HTTP_PORT`. |
 | `TLS_RELOAD_INTERVAL` | `60` | Seconds between checks of the cert, key and CA files; a change runs `nginx -t` and then reloads nginx (a config that does not load keeps the old one). `0` = off. Polling, not inotify, because Kubernetes swaps Secret mounts by symlink. |
 
 With both `HTTP_PORT` empty and no certificate there is nothing to listen on: start error. With client auth on, nginx passes the verification result to Next in `X-SSL-Client-Verify` (`SUCCESS`, `FAILED:<reason>`, `NONE`); a missing or invalid certificate closes the connection (444). Tests: `tests/docker/nginx.sh` (needs docker; runs in CI).

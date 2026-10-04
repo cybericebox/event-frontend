@@ -7,8 +7,5 @@ export default defineConfig({
         TZ: "Europe/Kyiv",
         NEXT_PUBLIC_DOMAIN: "example.test",
         NEXT_PUBLIC_SUPPORT_EMAIL: "support@example.test",
-        NEXT_PUBLIC_PARTNER_ICE_NURE_URL: "https://partner.example.test/dept/",
-        NEXT_PUBLIC_PARTNER_NURE_URL: "https://partner.example.test",
-        NEXT_PUBLIC_WIREGUARD_INSTALL_URL: "https://wireguard.example.test/install/",
     }},
 });

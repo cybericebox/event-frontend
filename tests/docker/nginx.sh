@@ -51,8 +51,10 @@ docker run --rm -v "$certs:/c" -w /c "$tools" sh -ec '
   chmod -R a+rX /c; chmod a+r /c/*.key /c/live/*
 ' >/dev/null 2>&1 || { echo "certificate generation failed"; exit 1; }
 
-envs="-e NEXT_PUBLIC_DOMAIN=base.test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_ICE_NURE_URL=https://p.test
- -e NEXT_PUBLIC_PARTNER_NURE_URL=https://p.test -e NEXT_PUBLIC_WIREGUARD_INSTALL_URL=https://w.test"
+# The domain and the support e-mail are the only inputs a container needs. The certificates are mounted at /tls (where the image
+# looks for them by default) unless $mounts is emptied for a test of the plain default.
+envs="-e NEXT_PUBLIC_DOMAIN=base.test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test"
+mounts="-v $certs/live:/tls:ro"
 
 # start <name> [docker run args...]: a container with dropped capabilities and the cert directory.
 start() {
@@ -60,7 +62,7 @@ start() {
   names="$names $n"
   # shellcheck disable=SC2086
   docker run -d --name "$n" --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp \
-    -v "$certs/live:/tls:ro" -v "$certs:/pki:ro" $envs "$@" "$IMAGE" >/dev/null
+    $mounts -v "$certs:/pki:ro" $envs "$@" "$IMAGE" >/dev/null
 }
 # c <name> <curl args...>: curl from inside the container's network namespace.
 c() {
@@ -85,7 +87,7 @@ fails_to_start() {
   n=ef-fail-$$-$pass-$failed
   names="$names $n"
   # shellcheck disable=SC2086
-  out=$(docker run --name "$n" --cap-drop ALL --tmpfs /tmp -v "$certs/live:/tls:ro" $envs "$@" "$IMAGE" 2>&1)
+  out=$(docker run --name "$n" --cap-drop ALL --tmpfs /tmp $mounts $envs "$@" "$IMAGE" 2>&1)
   rc=$?
   if [ $rc -ne 0 ] && printf '%s' "$out" | grep -q "$want"; then ok "$t"; else bad "$t" "(rc=$rc: $(printf '%s' "$out" | tail -2))"; fi
 }
@@ -94,20 +96,38 @@ subject() { # name, curl args: CN of the served server certificate
   docker run --rm --network "container:$n" "$tools" sh -c "echo | openssl s_client -connect localhost:8443 -servername localhost $* 2>/dev/null | openssl x509 -noout -subject" 2>/dev/null
 }
 
-echo "== plain only (default)"
+echo "== plain only (default, no certificate files)"
+mounts=
 start ef-plain
 wait_up ef-plain http://localhost:3000/api/health && ok "plain: health on 3000" || bad "plain: health on 3000"
+check "plain: default health port 8081" 200 "$(code ef-plain http://localhost:8081/api/health)"
 check "plain: 8443 closed" 000 "$(code ef-plain -k https://localhost:8443/api/health)"
 check "plain: root page served" 200 "$(code ef-plain http://localhost:3000/)"
 check "plain: static asset cache header" "public, max-age=31536000, immutable" \
   "$(docker exec ef-plain sh -c 'f=$(ls /app/.next/static/chunks/*.js | head -1); echo ${f#/app/.next/static/}' | xargs -I{} docker run --rm --network container:ef-plain "$tools" sh -c "curl -sI http://localhost:3000/_next/static/{} | tr -d '\r' | sed -n 's/^[Cc]ache-[Cc]ontrol: //p'")"
 docker rm -f ef-plain >/dev/null
+mounts="-v $certs/live:/tls:ro"
+
+echo "== defaults: certificate files at /tls turn TLS on, /aop/ca.crt turns client auth on"
+start ef-auto
+wait_up ef-auto https://localhost:8443/api/health --cacert /pki/ca1.crt && ok "default TLS: https up with no TLS variables" || bad "default TLS: https up with no TLS variables"
+check "default TLS: no client cert needed without /aop/ca.crt" 200 "$(code ef-auto --cacert /pki/ca1.crt https://localhost:8443/api/health)"
+check "default TLS: plain port still open" 200 "$(code ef-auto http://localhost:3000/api/health)"
+docker rm -f ef-auto >/dev/null
+start ef-aop -v "$certs/live/ca.crt:/aop/ca.crt:ro"
+wait_up ef-aop http://localhost:8081/api/health && ok "default client auth: health port up" || bad "default client auth: health port up"
+check "default client auth: no client cert refused" 000 "$(code ef-aop --cacert /pki/ca1.crt https://localhost:8443/api/health)"
+check "default client auth: cert of another CA refused" 000 "$(code ef-aop --cacert /pki/ca1.crt --cert /pki/client2.crt --key /pki/client2.key https://localhost:8443/api/health)"
+check "default client auth: valid cert accepted" 200 "$(code ef-aop --cacert /pki/ca1.crt --cert /pki/client1.crt --key /pki/client1.key https://localhost:8443/api/health)"
+docker rm -f ef-aop >/dev/null
 
 echo "== plain on a custom port, HTTP off"
+mounts=
 start ef-port -e HTTP_PORT=8080
 wait_up ef-port http://localhost:8080/api/health && ok "custom HTTP_PORT" || bad "custom HTTP_PORT"
 check "custom HTTP_PORT: 3000 closed" 000 "$(code ef-port http://localhost:3000/)"
 docker rm -f ef-port >/dev/null
+mounts="-v $certs/live:/tls:ro"
 
 echo "== TLS only"
 start ef-tls -e HTTP_PORT= -e TLS_CERT_FILE=/tls/tls.crt -e TLS_KEY_FILE=/tls/tls.key
@@ -147,23 +167,30 @@ docker rm -f ef-opt >/dev/null
 echo "== hosts derive from NEXT_PUBLIC_DOMAIN"
 # The domain is the only host input: the derived hosts are in the substituted files and no placeholder is left.
 saved_envs=$envs
-site="-e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e NEXT_PUBLIC_PARTNER_ICE_NURE_URL=https://p.test -e NEXT_PUBLIC_PARTNER_NURE_URL=https://p.test -e NEXT_PUBLIC_WIREGUARD_INSTALL_URL=https://w.test"
+site="-e NEXT_PUBLIC_SUPPORT_EMAIL=s@test"
 envs="$site -e NEXT_PUBLIC_DOMAIN=derived.test"
+mounts=
 start ef-dom
 wait_up ef-dom http://localhost:3000/api/health && ok "domain only: starts" || bad "domain only: starts"
 found() { docker exec ef-dom sh -c "grep -rlF '$1' /app/.next | head -1"; }
 check "domain only: derived id host substituted" "yes" "$([ -n "$(found id.derived.test)" ] && echo yes || echo no)"
 check "domain only: derived api host substituted" "yes" "$([ -n "$(found api.derived.test)" ] && echo yes || echo no)"
 check "domain only: no placeholder left" "no" "$([ -n "$(found __NEXT_PUBLIC_)" ] && echo yes || echo no)"
+check "domain only: default WireGuard link baked" "yes" "$([ -n "$(found www.wireguard.com/install)" ] && echo yes || echo no)"
 docker rm -f ef-dom >/dev/null
+mounts="-v $certs/live:/tls:ro"
 envs=$saved_envs
 
 echo "== start errors"
 fails_to_start "cert without key" "must be set together" -e TLS_CERT_FILE=/tls/tls.crt
 fails_to_start "key without cert" "must be set together" -e TLS_KEY_FILE=/tls/tls.key
 fails_to_start "client auth without CA file" "needs TLS_CLIENT_CA_FILE" -e TLS_CERT_FILE=/tls/tls.crt -e TLS_KEY_FILE=/tls/tls.key -e TLS_CLIENT_AUTH=require
+mounts=
 fails_to_start "client auth without TLS" "needs TLS_CERT_FILE" -e TLS_CLIENT_CA_FILE=/tls/ca.crt -e TLS_CLIENT_AUTH=optional
+mounts="-v $certs/live:/tls:ro"
+mounts=
 fails_to_start "no listener" "Nothing to listen on" -e HTTP_PORT=
+mounts="-v $certs/live:/tls:ro"
 fails_to_start "bad TLS_MIN_VERSION" "TLS_MIN_VERSION must be" -e TLS_MIN_VERSION=1.1
 fails_to_start "bad TLS_CLIENT_AUTH" "TLS_CLIENT_AUTH must be" -e TLS_CLIENT_AUTH=yes
 fails_to_start "unreadable cert file" "is not readable" -e TLS_CERT_FILE=/tls/nope.crt -e TLS_KEY_FILE=/tls/tls.key

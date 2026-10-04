@@ -2607,6 +2607,7 @@
   "shell.departmentFull": "V. V. Popovskyi Department of Infocommunication Engineering",
   "shell.eventFailed": "Couldn't check the event",
   "shell.credit": "© {year} Cyber ICE Box · Supported by {department} · {nure}",
+  "shell.creditPlain": "© {year} Cyber ICE Box",
   "shell.footerLinks": "Event links",
   "shell.freeze.since": "since {time}",
   "shell.freeze.title": "Leaderboard frozen",
