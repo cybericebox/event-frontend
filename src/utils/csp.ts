@@ -1,9 +1,11 @@
 // Content-Security-Policy builder. Pure: the proxy passes the nonce and the env in.
-// Every origin comes from NEXT_PUBLIC_* env; the only literals are Google Analytics'
+// Every origin derives from NEXT_PUBLIC_DOMAIN; the only literals are Google Analytics'
 // own endpoints, added only when NEXT_PUBLIC_GOOGLE_ANALYTICS_ID is set.
 
+import {deriveHosts} from "@/utils/hosts";
+
 export type CspEnv = {
-    NEXT_PUBLIC_API_HOST?: string;
+    NEXT_PUBLIC_DOMAIN?: string;
     NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?: string;
     NODE_ENV?: string;
 };
@@ -28,7 +30,8 @@ function hostOrigin(host: string | undefined): string | null {
 
 export function buildCsp(nonce: string, env: CspEnv): string {
     const dev = env.NODE_ENV === "development";
-    const api = hostOrigin(env.NEXT_PUBLIC_API_HOST);
+    const domain = env.NEXT_PUBLIC_DOMAIN?.trim();
+    const api = hostOrigin(domain ? deriveHosts(domain).api : undefined);
     const ga = Boolean(env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim());
 
     const scriptSrc = ["'self'", `'nonce-${nonce}'`, ...(ga ? GA_SCRIPT : []), ...(dev ? ["'unsafe-eval'"] : [])];

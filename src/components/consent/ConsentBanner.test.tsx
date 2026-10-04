@@ -5,7 +5,7 @@ import {ConsentBanner} from "./ConsentBanner";
 import {openConsentSettings} from "@/utils/consent";
 
 // jsdom (localhost) rejects a parent-domain cookie, so these tests use a host-only one.
-beforeEach(() => vi.stubEnv("NEXT_PUBLIC_COOKIE_DOMAIN", ""));
+beforeEach(() => vi.stubEnv("NEXT_PUBLIC_DOMAIN", "localhost"));
 
 afterEach(() => {
     vi.unstubAllEnvs();

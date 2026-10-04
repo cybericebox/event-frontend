@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {buildCsp, generateNonce} from "@/utils/csp";
 
-const prod = {NEXT_PUBLIC_API_HOST: "api.example.test", NODE_ENV: "production"};
+const prod = {NEXT_PUBLIC_DOMAIN: "example.test", NODE_ENV: "production"};
 const directive = (csp: string, name: string) => csp.split("; ").find(d => d.startsWith(`${name} `)) ?? "";
 
 describe("buildCsp", () => {

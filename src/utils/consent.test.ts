@@ -14,8 +14,8 @@ function spyGtag() {
     return gtag;
 }
 
-// jsdom (localhost) rejects a parent-domain cookie, so these tests use a host-only one.
-beforeEach(() => vi.stubEnv("NEXT_PUBLIC_COOKIE_DOMAIN", ""));
+// the base domain is localhost: jsdom accepts its parent-domain cookie.
+beforeEach(() => vi.stubEnv("NEXT_PUBLIC_DOMAIN", "localhost"));
 
 afterEach(() => {
     clearCookies();
@@ -82,7 +82,7 @@ describe("consent", () => {
     it("writes the choice per category to one cookie on the parent domain", () => {
         expect(consent.consentCookie(consent.ACCEPT_ALL, {domain: "cybericebox.com", secure: true}))
             .toBe("cib_consent=analytics:granted; path=/; max-age=31536000; SameSite=Lax; domain=.cybericebox.com; Secure");
-        vi.stubEnv("NEXT_PUBLIC_COOKIE_DOMAIN", "cybericebox.com");
+        vi.stubEnv("NEXT_PUBLIC_DOMAIN", "cybericebox.com");
         const writes: string[] = [];
         const spy = vi.spyOn(document, "cookie", "set").mockImplementation((v: string) => { writes.push(v); });
         consent.saveConsent(consent.ACCEPT_ALL);

@@ -9,25 +9,23 @@ set -e
 # One container, two processes: nginx (the only listener) in front of Next.js on 127.0.0.1:3001.
 # nginx config lives in /etc/cybericebox/nginx (nginx.conf, server.conf and the snippets); this script only
 # picks which snippets are active from the env and fills the values (envsubst, fixed variable list). Env:
-#   HTTP_PORT           plain HTTP listener (default 3000; empty = off)
-#   HTTPS_PORT          TLS listener (default 8443), on only when TLS_CERT_FILE and TLS_KEY_FILE are set
-#   TLS_CERT_FILE, TLS_KEY_FILE      PEM server certificate chain and key; set both or neither
+#   HTTP_PORT           plain HTTP listener (default 8080; empty = off)
+#   HTTPS_PORT          TLS listener (default 8443), on only when TLS is on
+#   TLS_CERT_FILE, TLS_KEY_FILE      PEM server certificate chain and key (defaults /tls/tls.crt, /tls/tls.key). TLS is on when both
+#                       files exist; without them it is plain HTTP; a path set in the env that does not exist is a start error
 #   TLS_MIN_VERSION     1.2 (default) or 1.3
-#   TLS_CLIENT_CA_FILE  PEM bundle that signed the client certificates
-#   TLS_CLIENT_AUTH     off (default) | optional | require; optional and require need TLS_CLIENT_CA_FILE
-#   HEALTH_PORT         if set: extra plain listener on HEALTH_BIND (default 0.0.0.0) that serves only /api/health
+#   TLS_CLIENT_CA_FILE  PEM bundle that signed the client certificates (default /aop/ca.crt)
+#   TLS_CLIENT_AUTH     off | optional | require; default: require when TLS is on and /aop/ca.crt exists, else off;
+#                       optional and require need TLS_CLIENT_CA_FILE
+#   HEALTH_PORT         extra plain listener on HEALTH_BIND (default 0.0.0.0) that serves only /api/health (default 8081; empty = off)
 #   TLS_RELOAD_INTERVAL seconds between certificate file checks (default 60; 0 = off)
 # tini is PID 1 (reaps zombies, forwards signals); this script supervises: when either process exits, the other
 # one is stopped and the container exits, so Kubernetes restarts it.
-HTTP_PORT=${HTTP_PORT-3000}
+HTTP_PORT=${HTTP_PORT-8080}
 HTTPS_PORT=${HTTPS_PORT:-8443}
-HEALTH_PORT=${HEALTH_PORT:-}
+HEALTH_PORT=${HEALTH_PORT-8081}
 HEALTH_BIND=${HEALTH_BIND:-0.0.0.0}
-TLS_CERT_FILE=${TLS_CERT_FILE:-}
-TLS_KEY_FILE=${TLS_KEY_FILE:-}
 TLS_MIN_VERSION=${TLS_MIN_VERSION:-1.2}
-TLS_CLIENT_CA_FILE=${TLS_CLIENT_CA_FILE:-}
-TLS_CLIENT_AUTH=${TLS_CLIENT_AUTH:-off}
 TLS_RELOAD_INTERVAL=${TLS_RELOAD_INTERVAL:-60}
 
 fail() {
@@ -39,10 +37,33 @@ is_port() {
   [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
 }
 
+# TLS is on when the certificate and the key exist at their paths (defaults /tls/tls.crt, /tls/tls.key). A path given in the env
+# (non-empty) that does not exist is a start error. Client auth needs the CA file (default /aop/ca.crt).
+default_cert=/tls/tls.crt
+default_key=/tls/tls.key
+default_ca=/aop/ca.crt
+explicit_tls=false
+{ [ -z "${TLS_CERT_FILE:-}" ] && [ -z "${TLS_KEY_FILE:-}" ]; } || explicit_tls=true
+explicit_ca=false
+[ -z "${TLS_CLIENT_CA_FILE:-}" ] || explicit_ca=true
+TLS_CERT_FILE=${TLS_CERT_FILE:-$default_cert}
+TLS_KEY_FILE=${TLS_KEY_FILE:-$default_key}
+TLS_CLIENT_CA_FILE=${TLS_CLIENT_CA_FILE:-$default_ca}
 tls=false
-if [ -n "$TLS_CERT_FILE" ] || [ -n "$TLS_KEY_FILE" ]; then
-  { [ -n "$TLS_CERT_FILE" ] && [ -n "$TLS_KEY_FILE" ]; } || fail "TLS_CERT_FILE and TLS_KEY_FILE must be set together."
+if [ -r "$TLS_CERT_FILE" ] && [ -r "$TLS_KEY_FILE" ]; then
   tls=true
+elif [ "$explicit_tls" = true ]; then
+  for f in "$TLS_CERT_FILE" "$TLS_KEY_FILE"; do
+    [ -r "$f" ] || fail "TLS file $f does not exist or is not readable."
+  done
+fi
+if [ -z "${TLS_CLIENT_AUTH:-}" ]; then
+  TLS_CLIENT_AUTH=off
+  if [ "$tls" = true ] && [ -r "$TLS_CLIENT_CA_FILE" ]; then
+    TLS_CLIENT_AUTH=require
+  elif [ "$tls" = true ] && [ "$explicit_ca" = true ]; then
+    fail "TLS_CLIENT_CA_FILE $TLS_CLIENT_CA_FILE does not exist or is not readable."
+  fi
 fi
 case "$TLS_MIN_VERSION" in
   1.2) TLS_PROTOCOLS="TLSv1.2 TLSv1.3" ;;
@@ -56,32 +77,39 @@ case "$TLS_CLIENT_AUTH" in
   *) fail "TLS_CLIENT_AUTH must be off, optional or require." ;;
 esac
 if [ "$TLS_CLIENT_AUTH" != off ]; then
-  [ "$tls" = true ] || fail "TLS_CLIENT_AUTH=$TLS_CLIENT_AUTH needs TLS_CERT_FILE and TLS_KEY_FILE."
-  [ -n "$TLS_CLIENT_CA_FILE" ] || fail "TLS_CLIENT_AUTH=$TLS_CLIENT_AUTH needs TLS_CLIENT_CA_FILE."
+  [ "$tls" = true ] || fail "TLS_CLIENT_AUTH=$TLS_CLIENT_AUTH needs TLS_CERT_FILE and TLS_KEY_FILE (no certificate files found)."
+  [ -r "$TLS_CLIENT_CA_FILE" ] || fail "TLS_CLIENT_AUTH=$TLS_CLIENT_AUTH needs TLS_CLIENT_CA_FILE: $TLS_CLIENT_CA_FILE does not exist or is not readable."
 fi
-for f in "$TLS_CERT_FILE" "$TLS_KEY_FILE"; do
-  [ "$tls" = false ] || [ -r "$f" ] || fail "$f is not readable."
-done
-[ "$TLS_CLIENT_AUTH" = off ] || [ -r "$TLS_CLIENT_CA_FILE" ] || fail "$TLS_CLIENT_CA_FILE is not readable."
 [ -z "$HTTP_PORT" ] || is_port "$HTTP_PORT" || fail "HTTP_PORT must be a port number or empty."
 [ "$tls" = false ] || is_port "$HTTPS_PORT" || fail "HTTPS_PORT must be a port number."
 [ -z "$HEALTH_PORT" ] || is_port "$HEALTH_PORT" || fail "HEALTH_PORT must be a port number or empty."
 case "$TLS_RELOAD_INTERVAL" in '' | *[!0-9]*) fail "TLS_RELOAD_INTERVAL must be a number of seconds." ;; esac
 [ -n "$HTTP_PORT" ] || [ "$tls" = true ] || fail "Nothing to listen on: set HTTP_PORT or TLS_CERT_FILE and TLS_KEY_FILE."
 export HTTP_PORT HTTPS_PORT HEALTH_PORT HEALTH_BIND TLS_CERT_FILE TLS_KEY_FILE TLS_PROTOCOLS TLS_CLIENT_CA_FILE TLS_CLIENT_VERIFY
+mode=http
+if [ "$tls" = true ]; then
+  mode=https
+  [ "$TLS_CLIENT_AUTH" = off ] || mode=https+client-auth
+  [ -z "$HTTP_PORT" ] || mode="$mode+http"
+fi
+echo "mode: $mode" >&2
 
-# Every host is required from the deployment env (no fallbacks); analytics is optional.
-for name in NEXT_PUBLIC_MAIN_HOST NEXT_PUBLIC_API_HOST NEXT_PUBLIC_ID_HOST NEXT_PUBLIC_ADMIN_HOST \
-  NEXT_PUBLIC_EXERCISES_HOST NEXT_PUBLIC_EVENT_DOMAIN NEXT_PUBLIC_COOKIE_DOMAIN NEXT_PUBLIC_SUPPORT_EMAIL \
-  NEXT_PUBLIC_PARTNER_URL NEXT_PUBLIC_PARTNER_SITE_URL NEXT_PUBLIC_WIREGUARD_INSTALL_URL; do
+# NEXT_PUBLIC_DOMAIN is the only host input (deploy/base-domain.sh, the same file in every frontend): every host derives from it in the
+# code. The other operator values are required (no fallbacks); analytics is optional.
+. /usr/local/lib/base-domain.sh
+base_domain_check || exit 1
+for name in NEXT_PUBLIC_SUPPORT_EMAIL; do
   eval "value=\${$name:-}"
   if [ -z "$value" ]; then
     echo "$name is required." >&2
     exit 1
   fi
 done
+# Optional, with baked defaults.
 : "${NEXT_PUBLIC_GOOGLE_ANALYTICS_ID:=}"
-export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+: "${NEXT_PUBLIC_SHOW_PARTNERS:=true}"
+: "${NEXT_PUBLIC_WIREGUARD_INSTALL_URL:=https://www.wireguard.com/install/}"
+export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID NEXT_PUBLIC_SHOW_PARTNERS NEXT_PUBLIC_WIREGUARD_INSTALL_URL
 
 # One pass: a single sed script with an expression per NEXT_PUBLIC_* variable, run once over each
 # file that holds a placeholder (in parallel: busybox sed is slow on the minified bundles). Only the
@@ -95,13 +123,13 @@ printenv | grep '^NEXT_PUBLIC_' | while IFS='=' read -r key value; do
   printf 's|__%s__|%s|g\n' "$key" "$esc"
 done > "$script"
 
-grep -rlIE '__NEXT_PUBLIC_[A-Z0-9_]+__' /app/.next | xargs -r -n 1 -P "$(nproc)" sed -i -f "$script"
+grep -rlIiE '__NEXT_PUBLIC_[A-Z0-9_]+__' /app/.next | xargs -r -n 1 -P "$(nproc)" sed -i -f "$script"
 
 # A placeholder that is still there means its variable is missing: fail the start, not the page.
 left=
 # The cheap fixed-string scan first; the token names are only collected when something is left.
-if grep -rqIF '__NEXT_PUBLIC_' /app/.next; then
-  left=$(grep -rhoIE '__NEXT_PUBLIC_[A-Z0-9_]+__' /app/.next | sort -u | tr '\n' ' ')
+if grep -rqIiF '__NEXT_PUBLIC_' /app/.next; then
+  left=$(grep -rhoIiE '__NEXT_PUBLIC_[A-Z0-9_]+__' /app/.next | sort -u | tr '\n' ' ')
 fi
 if [ -n "$left" ]; then
   echo "No value for: $left(set the variable, an empty one is fine for an optional value)." >&2
@@ -134,6 +162,7 @@ if [ -n "$HEALTH_PORT" ]; then render health.conf; else skip health.conf; fi
 nginx -e /dev/stderr -p "$run/" -c "$conf" -t
 
 # Next.js stays internal. HOSTNAME is forced because Kubernetes sets it to the pod name.
+# The internal port is a constant (the same 3001 as the nginx upstream in nginx.conf), not an input.
 export PORT=3001
 export HOSTNAME=127.0.0.1
 
