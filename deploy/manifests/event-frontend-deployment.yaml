@@ -37,21 +37,6 @@ spec:
                 configMapKeyRef:
                   name: config
                   key: SUPPORT_EMAIL
-            - name: NEXT_PUBLIC_PARTNER_ICE_NURE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: config
-                  key: PARTNER_ICE_NURE_URL
-            - name: NEXT_PUBLIC_PARTNER_NURE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: config
-                  key: PARTNER_NURE_URL
-            - name: NEXT_PUBLIC_WIREGUARD_INSTALL_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: config
-                  key: WIREGUARD_INSTALL_URL
             - name: NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
               valueFrom:
                 configMapKeyRef:

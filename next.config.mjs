@@ -8,9 +8,7 @@ if (DOMAIN !== "__NEXT_PUBLIC_DOMAIN__" && (DOMAIN.length > 253 || !/^[a-z0-9]([
 const PLATFORM_HOSTS = [DOMAIN, `api.${DOMAIN}`, `id.${DOMAIN}`, `admin.${DOMAIN}`, `exercises.${DOMAIN}`]
 
 // Every other operator value is required from the env (no fallbacks): a missing one fails the build.
-const REQUIRED = [
-    "NEXT_PUBLIC_SUPPORT_EMAIL", "NEXT_PUBLIC_PARTNER_ICE_NURE_URL", "NEXT_PUBLIC_PARTNER_NURE_URL", "NEXT_PUBLIC_WIREGUARD_INSTALL_URL",
-];
+const REQUIRED = ["NEXT_PUBLIC_SUPPORT_EMAIL"];
 const missing = REQUIRED.filter((name) => !process.env[name]?.trim());
 if (missing.length) throw new Error(`Missing required env: ${missing.join(", ")}`);
 

@@ -12,9 +12,5 @@ data:
   # Parent domain of the theme/consent cookies (shared by all apps).
   # REQUIRED: support mailbox of the «Надіслати відгук» (send feedback) link on every page.
   SUPPORT_EMAIL: "support@example.com"
-  # External links shown in the UI.
-  PARTNER_ICE_NURE_URL: "https://ice.nure.ua/ua/"
-  PARTNER_NURE_URL: "https://nure.ua"
-  WIREGUARD_INSTALL_URL: "https://www.wireguard.com/install/"
   # Optional Google Analytics 4 measurement id (G-…). Empty → analytics off.
   GOOGLE_ANALYTICS_ID: ""

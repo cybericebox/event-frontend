@@ -10,24 +10,22 @@ set -e
 # nginx config lives in /etc/cybericebox/nginx (nginx.conf, server.conf and the snippets); this script only
 # picks which snippets are active from the env and fills the values (envsubst, fixed variable list). Env:
 #   HTTP_PORT           plain HTTP listener (default 3000; empty = off)
-#   HTTPS_PORT          TLS listener (default 8443), on only when TLS_CERT_FILE and TLS_KEY_FILE are set
-#   TLS_CERT_FILE, TLS_KEY_FILE      PEM server certificate chain and key; set both or neither
+#   HTTPS_PORT          TLS listener (default 8443), on only when TLS is on
+#   TLS_CERT_FILE, TLS_KEY_FILE      PEM server certificate chain and key (defaults /tls/tls.crt, /tls/tls.key). TLS is on when both default
+#                       files exist; set explicitly, both must be set and readable; set to empty, TLS is off
 #   TLS_MIN_VERSION     1.2 (default) or 1.3
-#   TLS_CLIENT_CA_FILE  PEM bundle that signed the client certificates
-#   TLS_CLIENT_AUTH     off (default) | optional | require; optional and require need TLS_CLIENT_CA_FILE
-#   HEALTH_PORT         if set: extra plain listener on HEALTH_BIND (default 0.0.0.0) that serves only /api/health
+#   TLS_CLIENT_CA_FILE  PEM bundle that signed the client certificates (default /aop/ca.crt when that file exists)
+#   TLS_CLIENT_AUTH     off | optional | require; default: require when TLS is on and /aop/ca.crt exists, else off;
+#                       optional and require need TLS_CLIENT_CA_FILE
+#   HEALTH_PORT         extra plain listener on HEALTH_BIND (default 0.0.0.0) that serves only /api/health (default 8081; empty = off)
 #   TLS_RELOAD_INTERVAL seconds between certificate file checks (default 60; 0 = off)
 # tini is PID 1 (reaps zombies, forwards signals); this script supervises: when either process exits, the other
 # one is stopped and the container exits, so Kubernetes restarts it.
 HTTP_PORT=${HTTP_PORT-3000}
 HTTPS_PORT=${HTTPS_PORT:-8443}
-HEALTH_PORT=${HEALTH_PORT:-}
+HEALTH_PORT=${HEALTH_PORT-8081}
 HEALTH_BIND=${HEALTH_BIND:-0.0.0.0}
-TLS_CERT_FILE=${TLS_CERT_FILE:-}
-TLS_KEY_FILE=${TLS_KEY_FILE:-}
 TLS_MIN_VERSION=${TLS_MIN_VERSION:-1.2}
-TLS_CLIENT_CA_FILE=${TLS_CLIENT_CA_FILE:-}
-TLS_CLIENT_AUTH=${TLS_CLIENT_AUTH:-off}
 TLS_RELOAD_INTERVAL=${TLS_RELOAD_INTERVAL:-60}
 
 fail() {
@@ -39,7 +37,27 @@ is_port() {
   [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
 }
 
+# Defaults: TLS from /tls/tls.crt and /tls/tls.key when both exist; client certificates required when /aop/ca.crt exists.
 tls=false
+if [ -z "${TLS_CERT_FILE+x}" ] && [ -z "${TLS_KEY_FILE+x}" ]; then
+  TLS_CERT_FILE=
+  TLS_KEY_FILE=
+  if [ -r /tls/tls.crt ] && [ -r /tls/tls.key ]; then
+    TLS_CERT_FILE=/tls/tls.crt
+    TLS_KEY_FILE=/tls/tls.key
+  fi
+fi
+TLS_CERT_FILE=${TLS_CERT_FILE:-}
+TLS_KEY_FILE=${TLS_KEY_FILE:-}
+if [ -z "${TLS_CLIENT_CA_FILE+x}" ]; then
+  TLS_CLIENT_CA_FILE=
+  [ ! -r /aop/ca.crt ] || TLS_CLIENT_CA_FILE=/aop/ca.crt
+fi
+if [ -z "${TLS_CLIENT_AUTH+x}" ]; then
+  TLS_CLIENT_AUTH=off
+  if [ -n "$TLS_CERT_FILE" ] && [ -n "$TLS_CLIENT_CA_FILE" ] && [ -r "$TLS_CLIENT_CA_FILE" ]; then TLS_CLIENT_AUTH=require; fi
+fi
+TLS_CLIENT_AUTH=${TLS_CLIENT_AUTH:-off}
 if [ -n "$TLS_CERT_FILE" ] || [ -n "$TLS_KEY_FILE" ]; then
   { [ -n "$TLS_CERT_FILE" ] && [ -n "$TLS_KEY_FILE" ]; } || fail "TLS_CERT_FILE and TLS_KEY_FILE must be set together."
   tls=true
@@ -74,15 +92,18 @@ export HTTP_PORT HTTPS_PORT HEALTH_PORT HEALTH_BIND TLS_CERT_FILE TLS_KEY_FILE T
 # code. The other operator values are required (no fallbacks); analytics is optional.
 . /usr/local/lib/base-domain.sh
 base_domain_check || exit 1
-for name in NEXT_PUBLIC_SUPPORT_EMAIL NEXT_PUBLIC_PARTNER_ICE_NURE_URL NEXT_PUBLIC_PARTNER_NURE_URL NEXT_PUBLIC_WIREGUARD_INSTALL_URL; do
+for name in NEXT_PUBLIC_SUPPORT_EMAIL; do
   eval "value=\${$name:-}"
   if [ -z "$value" ]; then
     echo "$name is required." >&2
     exit 1
   fi
 done
+# Optional, with baked defaults.
 : "${NEXT_PUBLIC_GOOGLE_ANALYTICS_ID:=}"
-export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+: "${NEXT_PUBLIC_SHOW_PARTNERS:=true}"
+: "${NEXT_PUBLIC_WIREGUARD_INSTALL_URL:=https://www.wireguard.com/install/}"
+export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID NEXT_PUBLIC_SHOW_PARTNERS NEXT_PUBLIC_WIREGUARD_INSTALL_URL
 
 # One pass: a single sed script with an expression per NEXT_PUBLIC_* variable, run once over each
 # file that holds a placeholder (in parallel: busybox sed is slow on the minified bundles). Only the

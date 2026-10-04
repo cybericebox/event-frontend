@@ -2,11 +2,6 @@
 // Next inlines the literal process.env accesses, so each is read by name.
 import {hosts} from "@/utils/hosts";
 
-function required(value: string | undefined, name: string): string {
-    const v = value?.trim();
-    if (!v) throw new Error(`${name} is required`);
-    return v;
-}
 const origin = (host: string) => `https://${host}`;
 
 const h = hosts();
@@ -32,7 +27,9 @@ export function eventOrigin(tag: string): string {
     return `https://${tag}.${publicDomain}`;
 }
 
-// External links, from env (no fallbacks).
-export const partnerIceNureUrl = required(process.env.NEXT_PUBLIC_PARTNER_ICE_NURE_URL, "NEXT_PUBLIC_PARTNER_ICE_NURE_URL");
-export const partnerNureUrl = required(process.env.NEXT_PUBLIC_PARTNER_NURE_URL, "NEXT_PUBLIC_PARTNER_NURE_URL");
-export const wireguardInstallUrl = required(process.env.NEXT_PUBLIC_WIREGUARD_INSTALL_URL, "NEXT_PUBLIC_WIREGUARD_INSTALL_URL");
+// External links. The partner links are fixed; the WireGuard link has a default and can be overridden.
+export const partnerIceNureUrl = "https://ice.nure.ua/ua/";
+export const partnerNureUrl = "https://nure.ua";
+// NEXT_PUBLIC_SHOW_PARTNERS: the string "false" hides the partner credit in the footer.
+export const showPartners = process.env.NEXT_PUBLIC_SHOW_PARTNERS?.trim() !== "false";
+export const wireguardInstallUrl = process.env.NEXT_PUBLIC_WIREGUARD_INSTALL_URL?.trim() || "https://www.wireguard.com/install/";

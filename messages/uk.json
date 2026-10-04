@@ -2607,6 +2607,7 @@
   "shell.departmentFull": "Кафедра інфокомунікаційної інженерії імені В. В. Поповського",
   "shell.eventFailed": "Не вдалося перевірити захід",
   "shell.credit": "© {year} Cyber ICE Box · За підтримки {department} · {nure}",
+  "shell.creditPlain": "© {year} Cyber ICE Box",
   "shell.footerLinks": "Посилання заходу",
   "shell.freeze.since": "з {time}",
   "shell.freeze.title": "Рейтинг заморожено",
