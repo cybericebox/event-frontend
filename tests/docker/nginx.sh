@@ -99,12 +99,13 @@ subject() { # name, curl args: CN of the served server certificate
 echo "== plain only (default, no certificate files)"
 mounts=
 start ef-plain
-wait_up ef-plain http://localhost:3000/api/health && ok "plain: health on 3000" || bad "plain: health on 3000"
+wait_up ef-plain http://localhost:8080/api/health && ok "plain: health on 8080" || bad "plain: health on 8080"
 check "plain: default health port 8081" 200 "$(code ef-plain http://localhost:8081/api/health)"
 check "plain: 8443 closed" 000 "$(code ef-plain -k https://localhost:8443/api/health)"
-check "plain: root page served" 200 "$(code ef-plain http://localhost:3000/)"
+check "plain: root page served" 200 "$(code ef-plain http://localhost:8080/)"
 check "plain: static asset cache header" "public, max-age=31536000, immutable" \
-  "$(docker exec ef-plain sh -c 'f=$(ls /app/.next/static/chunks/*.js | head -1); echo ${f#/app/.next/static/}' | xargs -I{} docker run --rm --network container:ef-plain "$tools" sh -c "curl -sI http://localhost:3000/_next/static/{} | tr -d '\r' | sed -n 's/^[Cc]ache-[Cc]ontrol: //p'")"
+  "$(docker exec ef-plain sh -c 'f=$(ls /app/.next/static/chunks/*.js | head -1); echo ${f#/app/.next/static/}' | xargs -I{} docker run --rm --network container:ef-plain "$tools" sh -c "curl -sI http://localhost:8080/_next/static/{} | tr -d '\r' | sed -n 's/^[Cc]ache-[Cc]ontrol: //p'")"
+check "plain: mode logged" "mode: http" "$(docker logs ef-plain 2>&1 | grep -m1 '^mode:')"
 docker rm -f ef-plain >/dev/null
 mounts="-v $certs/live:/tls:ro"
 
@@ -112,27 +113,29 @@ echo "== defaults: certificate files at /tls turn TLS on, /aop/ca.crt turns clie
 start ef-auto
 wait_up ef-auto https://localhost:8443/api/health --cacert /pki/ca1.crt && ok "default TLS: https up with no TLS variables" || bad "default TLS: https up with no TLS variables"
 check "default TLS: no client cert needed without /aop/ca.crt" 200 "$(code ef-auto --cacert /pki/ca1.crt https://localhost:8443/api/health)"
-check "default TLS: plain port still open" 200 "$(code ef-auto http://localhost:3000/api/health)"
+check "default TLS: plain port still open" 200 "$(code ef-auto http://localhost:8080/api/health)"
+check "default TLS: mode logged" "mode: https+http" "$(docker logs ef-auto 2>&1 | grep -m1 '^mode:')"
 docker rm -f ef-auto >/dev/null
 start ef-aop -v "$certs/live/ca.crt:/aop/ca.crt:ro"
 wait_up ef-aop http://localhost:8081/api/health && ok "default client auth: health port up" || bad "default client auth: health port up"
 check "default client auth: no client cert refused" 000 "$(code ef-aop --cacert /pki/ca1.crt https://localhost:8443/api/health)"
 check "default client auth: cert of another CA refused" 000 "$(code ef-aop --cacert /pki/ca1.crt --cert /pki/client2.crt --key /pki/client2.key https://localhost:8443/api/health)"
 check "default client auth: valid cert accepted" 200 "$(code ef-aop --cacert /pki/ca1.crt --cert /pki/client1.crt --key /pki/client1.key https://localhost:8443/api/health)"
+check "default client auth: mode logged" "mode: https+client-auth+http" "$(docker logs ef-aop 2>&1 | grep -m1 '^mode:')"
 docker rm -f ef-aop >/dev/null
 
 echo "== plain on a custom port, HTTP off"
 mounts=
-start ef-port -e HTTP_PORT=8080
-wait_up ef-port http://localhost:8080/api/health && ok "custom HTTP_PORT" || bad "custom HTTP_PORT"
-check "custom HTTP_PORT: 3000 closed" 000 "$(code ef-port http://localhost:3000/)"
+start ef-port -e HTTP_PORT=8090
+wait_up ef-port http://localhost:8090/api/health && ok "custom HTTP_PORT" || bad "custom HTTP_PORT"
+check "custom HTTP_PORT: 8080 closed" 000 "$(code ef-port http://localhost:8080/)"
 docker rm -f ef-port >/dev/null
 mounts="-v $certs/live:/tls:ro"
 
 echo "== TLS only"
 start ef-tls -e HTTP_PORT= -e TLS_CERT_FILE=/tls/tls.crt -e TLS_KEY_FILE=/tls/tls.key
 wait_up ef-tls https://localhost:8443/api/health --cacert /pki/ca1.crt && ok "tls: health over https with the CA" || bad "tls: health over https"
-check "tls: plain port off" 000 "$(code ef-tls http://localhost:3000/)"
+check "tls: plain port off" 000 "$(code ef-tls http://localhost:8080/)"
 check "tls: unknown CA refused" 000 "$(code ef-tls https://localhost:8443/api/health)"
 check "tls: http2" 2 "$(c ef-tls --cacert /pki/ca1.crt -o /dev/null -w '%{http_version}' https://localhost:8443/api/health)"
 check "tls: TLS 1.2 accepted" 200 "$(code ef-tls --cacert /pki/ca1.crt --tlsv1.2 --tls-max 1.2 https://localhost:8443/api/health)"
@@ -152,7 +155,7 @@ check "health port: other paths 404" 404 "$(code ef-req http://localhost:8081/)"
 check "require: no client cert refused" 000 "$(code ef-req --cacert /pki/ca1.crt https://localhost:8443/api/health)"
 check "require: cert of another CA refused" 000 "$(code ef-req --cacert /pki/ca1.crt --cert /pki/client2.crt --key /pki/client2.key https://localhost:8443/api/health)"
 check "require: valid cert accepted" 200 "$(code ef-req --cacert /pki/ca1.crt --cert /pki/client1.crt --key /pki/client1.key https://localhost:8443/api/health)"
-check "require: plain port still open" 200 "$(code ef-req http://localhost:3000/api/health)"
+check "require: plain port still open" 200 "$(code ef-req http://localhost:8080/api/health)"
 docker rm -f ef-req >/dev/null
 
 echo "== client auth optional"
@@ -171,7 +174,7 @@ site="-e NEXT_PUBLIC_SUPPORT_EMAIL=s@test"
 envs="$site -e NEXT_PUBLIC_DOMAIN=derived.test"
 mounts=
 start ef-dom
-wait_up ef-dom http://localhost:3000/api/health && ok "domain only: starts" || bad "domain only: starts"
+wait_up ef-dom http://localhost:8080/api/health && ok "domain only: starts" || bad "domain only: starts"
 found() { docker exec ef-dom sh -c "grep -rlF '$1' /app/.next | head -1"; }
 check "domain only: derived id host substituted" "yes" "$([ -n "$(found id.derived.test)" ] && echo yes || echo no)"
 check "domain only: derived api host substituted" "yes" "$([ -n "$(found api.derived.test)" ] && echo yes || echo no)"
@@ -182,8 +185,12 @@ mounts="-v $certs/live:/tls:ro"
 envs=$saved_envs
 
 echo "== start errors"
-fails_to_start "cert without key" "must be set together" -e TLS_CERT_FILE=/tls/tls.crt
-fails_to_start "key without cert" "must be set together" -e TLS_KEY_FILE=/tls/tls.key
+fails_to_start "explicit cert path missing" "does not exist" -e TLS_CERT_FILE=/tls/nope.crt
+fails_to_start "explicit key path missing" "does not exist" -e TLS_KEY_FILE=/tls/nope.key
+fails_to_start "explicit cert and key paths missing" "does not exist" -e TLS_CERT_FILE=/nope/a.crt -e TLS_KEY_FILE=/nope/a.key
+fails_to_start "client auth without the default CA" "needs TLS_CLIENT_CA_FILE" -e TLS_CLIENT_AUTH=optional
+fails_to_start "explicit client CA path missing" "needs TLS_CLIENT_CA_FILE" -e TLS_CLIENT_AUTH=require -e TLS_CLIENT_CA_FILE=/nope/ca.crt
+fails_to_start "explicit client CA missing, auth unset" "TLS_CLIENT_CA_FILE" -e TLS_CLIENT_CA_FILE=/nope/ca.crt
 fails_to_start "client auth without CA file" "needs TLS_CLIENT_CA_FILE" -e TLS_CERT_FILE=/tls/tls.crt -e TLS_KEY_FILE=/tls/tls.key -e TLS_CLIENT_AUTH=require
 mounts=
 fails_to_start "client auth without TLS" "needs TLS_CERT_FILE" -e TLS_CLIENT_CA_FILE=/tls/ca.crt -e TLS_CLIENT_AUTH=optional
@@ -193,7 +200,6 @@ fails_to_start "no listener" "Nothing to listen on" -e HTTP_PORT=
 mounts="-v $certs/live:/tls:ro"
 fails_to_start "bad TLS_MIN_VERSION" "TLS_MIN_VERSION must be" -e TLS_MIN_VERSION=1.1
 fails_to_start "bad TLS_CLIENT_AUTH" "TLS_CLIENT_AUTH must be" -e TLS_CLIENT_AUTH=yes
-fails_to_start "unreadable cert file" "is not readable" -e TLS_CERT_FILE=/tls/nope.crt -e TLS_KEY_FILE=/tls/tls.key
 envs="$site"
 fails_to_start "no domain" "NEXT_PUBLIC_DOMAIN is required"
 envs="$site -e NEXT_PUBLIC_DOMAIN=https://derived.test"
