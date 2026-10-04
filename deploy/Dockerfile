@@ -14,7 +14,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Placeholders substituted at container start by entrypoint.sh. Each value is the variable name wrapped in double
 # underscores: the bare name also appears as an object key in the compiled server code, and only the value may be replaced.
-# Run with every key set (see .env.example); [-e NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=…] is optional.
+# Run with every key set (see .env.example); NEXT_PUBLIC_DOMAIN derives every host that is not set (MAIN_HOST=DOMAIN, API_HOST=api.DOMAIN,
+# ID_HOST=id.DOMAIN, ADMIN_HOST=admin.DOMAIN, EXERCISES_HOST=exercises.DOMAIN, EVENT_DOMAIN=DOMAIN, COOKIE_DOMAIN=DOMAIN); a host that is set wins.
+# [-e NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=…] is optional.
 ENV NEXT_PUBLIC_MAIN_HOST="__NEXT_PUBLIC_MAIN_HOST__"
 ENV NEXT_PUBLIC_API_HOST="__NEXT_PUBLIC_API_HOST__"
 ENV NEXT_PUBLIC_ID_HOST="__NEXT_PUBLIC_ID_HOST__"
@@ -56,6 +58,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 COPY --chown=nextjs:nodejs --chmod=0755 deploy/entrypoint.sh /usr/bin/
+# The base-domain derivation (NEXT_PUBLIC_DOMAIN -> the hosts that are not set), sourced by entrypoint.sh.
+COPY deploy/base-domain.sh /usr/local/lib/base-domain.sh
 COPY deploy/nginx /etc/cybericebox/nginx
 
 USER nextjs
