@@ -75,7 +75,7 @@ With both `HTTP_PORT` empty and no certificate there is nothing to listen on: st
 - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, `frame-src 'none'`.
 - Development only: `unsafe-eval`, `ws:`/`wss:` for HMR and `unsafe-inline` styles.
 
-Organizer Markdown is rendered by `react-markdown` without `rehype-raw`, so raw HTML is escaped and unsafe URL schemes are dropped. Notification HTML goes through DOMPurify. A new third-party host must be added through env in `csp.ts` and covered by a test. Check the browser console for CSP violations after adding any script, font or remote resource.
+Notification HTML goes through DOMPurify. A new third-party host must be added through env in `csp.ts` and covered by a test. Check the browser console for CSP violations after adding any script, font or remote resource.
 
 ## i18n
 
