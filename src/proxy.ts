@@ -7,7 +7,7 @@ import {buildCsp, generateNonce} from "@/utils/csp";
 export function proxy(request: NextRequest) {
     const nonce = generateNonce();
     const csp = buildCsp(nonce, {
-        NEXT_PUBLIC_API_HOST: process.env.NEXT_PUBLIC_API_HOST,
+        NEXT_PUBLIC_DOMAIN: process.env.NEXT_PUBLIC_DOMAIN,
         NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
         NODE_ENV: process.env.NODE_ENV,
     });

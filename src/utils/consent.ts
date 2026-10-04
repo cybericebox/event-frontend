@@ -1,3 +1,5 @@
+import { hosts } from "@/utils/hosts"
+
 /**
  * src/utils/consent.ts — cookie consent shared by all CyberICEBox frontends.
  *
@@ -98,7 +100,7 @@ function clearAnalyticsCookies(domain: string | undefined): void {
 
 /** Persist the choice on the parent domain and apply it to a running gtag. */
 export function saveConsent(prefs: ConsentPrefs): void {
-  const domain = process.env.NEXT_PUBLIC_COOKIE_DOMAIN
+  const domain = hosts().cookieDomain
   document.cookie = consentCookie(prefs, { domain, secure: location.protocol === "https:" })
   ;(window as GtagWindow).gtag?.("consent", "update", consentUpdate(prefs))
   if (!prefs.analytics) clearAnalyticsCookies(domain)

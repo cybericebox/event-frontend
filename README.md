@@ -32,14 +32,7 @@ Read at runtime by the server.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_DOMAIN` | yes, unless every host below is set | Base domain: a bare lower case host name (no scheme, port or path). Every host below that is not set is derived from it (`deploy/base-domain.sh` at container start, `next.config` in dev and local builds, the Pages workflow). |
-| `NEXT_PUBLIC_MAIN_HOST` | no | Platform landing host (bare host, no scheme). Default: `<DOMAIN>`; a value that is set wins. |
-| `NEXT_PUBLIC_API_HOST` | no | API host. Default: `api.<DOMAIN>`; a value that is set wins. |
-| `NEXT_PUBLIC_ID_HOST` | no | ID app host. Default: `id.<DOMAIN>`; a value that is set wins. |
-| `NEXT_PUBLIC_ADMIN_HOST` | no | Admin app host. Default: `admin.<DOMAIN>`; a value that is set wins. |
-| `NEXT_PUBLIC_EXERCISES_HOST` | no | Exercises app host. Default: `exercises.<DOMAIN>`; a value that is set wins. |
-| `NEXT_PUBLIC_EVENT_DOMAIN` | no | Event sites are `<tag>.<domain>`. Default: `<DOMAIN>`; a value that is set wins. |
-| `NEXT_PUBLIC_COOKIE_DOMAIN` | no | Parent domain of the theme/consent cookies (e.g. `example.com`). Default: `<DOMAIN>`; a value that is set wins. |
+| `NEXT_PUBLIC_DOMAIN` | yes | The one base domain, a bare lowercase host name (no scheme, port or path). Every host derives from it: `<DOMAIN>` (landing), `api.`, `id.`, `admin.`, `exercises.<DOMAIN>`, event sites `<tag>.<DOMAIN>`, the shared theme and consent cookies on `.<DOMAIN>`. There are no per-host settings. |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | yes | Support mailbox of the «Send feedback» `mailto:` link shown on every page (the subject carries the app and page path only). |
 | `NEXT_PUBLIC_PARTNER_ICE_NURE_URL` | yes | Partner department link in the footer credit. |
 | `NEXT_PUBLIC_PARTNER_NURE_URL` | yes | Partner institution link in the footer credit. |
@@ -70,7 +63,7 @@ With both `HTTP_PORT` empty and no certificate there is nothing to listen on: st
 `src/proxy.ts` sets a strict CSP on every page request with a fresh nonce per request (policy built in `src/utils/csp.ts`, tested in `csp.test.ts`). The nonce reaches the render through the `x-nonce` request header; Next stamps its own scripts, the layout stamps the theme boot script and the Google Analytics scripts. Pages are rendered per request, so nonces work.
 
 - `script-src 'self' 'nonce-…'`: no `unsafe-inline`, no `strict-dynamic`. Google Analytics hosts are added only when `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` is set.
-- `connect-src 'self'` plus the API origin from `NEXT_PUBLIC_API_HOST` (fetch and SSE). No other origin is contacted from the browser; sign-in is a redirect to the ID app.
+- `connect-src 'self'` plus the API origin from `api.<NEXT_PUBLIC_DOMAIN>` (fetch and SSE). No other origin is contacted from the browser; sign-in is a redirect to the ID app.
 - `img-src 'self' data: blob: https:`: organizer logos, banners and Markdown images come from any https host; QR codes and previews use data/blob.
 - `style-src 'self' 'nonce-…'` with `style-src-attr 'unsafe-inline'` (React renders `style=""` attributes for theme variables and text alignment).
 - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, `frame-src 'none'`.
@@ -94,4 +87,4 @@ Copyright 2024-2026 CyberICEBox
 
 ### One base domain
 
-`deploy/base-domain.sh` (sourced by the container entrypoint) and the host block of `next.config` implement one rule: `NEXT_PUBLIC_DOMAIN` is a bare lower case host name and every host that is empty or unset becomes `MAIN_HOST=DOMAIN`, `API_HOST=api.DOMAIN`, `ID_HOST=id.DOMAIN`, `ADMIN_HOST=admin.DOMAIN`, `EXERCISES_HOST=exercises.DOMAIN`, `EVENT_DOMAIN=DOMAIN`, `COOKIE_DOMAIN=DOMAIN`; a value that is set always wins; neither `DOMAIN` nor an explicit host is a start error. `tests/base-domain-vectors.json` holds the shared test vectors that `tests/base-domain.test.ts` runs against both; `deploy/base-domain.sh` and the vector file are copies kept identical in every frontend repository (the daemon and infrastructure have the same rule and the same vector file).
+`NEXT_PUBLIC_DOMAIN` is the only host input and every host derives from it: main = `DOMAIN`, `api.DOMAIN`, `id.DOMAIN`, `admin.DOMAIN`, `exercises.DOMAIN`, event sites `<tag>.DOMAIN`, the cookie domain = `DOMAIN`. The code reads the derived hosts through one helper (`src/**/hosts.ts`); `deploy/base-domain.sh` (sourced by the container entrypoint) and the domain check in `next.config` reject an unset or malformed domain. `tests/base-domain-vectors.json` holds the shared test vectors that `tests/base-domain.test.ts` runs against all three; `deploy/base-domain.sh` and the vector file are copies kept identical in every frontend repository (the daemon and infrastructure have the same rule and the same vector file).

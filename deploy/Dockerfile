@@ -14,16 +14,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Placeholders substituted at container start by entrypoint.sh. Each value is the variable name wrapped in double
 # underscores: the bare name also appears as an object key in the compiled server code, and only the value may be replaced.
-# Run with every key set (see .env.example); NEXT_PUBLIC_DOMAIN derives every host that is not set (MAIN_HOST=DOMAIN, API_HOST=api.DOMAIN,
-# ID_HOST=id.DOMAIN, ADMIN_HOST=admin.DOMAIN, EXERCISES_HOST=exercises.DOMAIN, EVENT_DOMAIN=DOMAIN, COOKIE_DOMAIN=DOMAIN); a host that is set wins.
+# Run with every key set (see .env.example); NEXT_PUBLIC_DOMAIN is the only host input (every host derives from it).
 # [-e NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=…] is optional.
-ENV NEXT_PUBLIC_MAIN_HOST="__NEXT_PUBLIC_MAIN_HOST__"
-ENV NEXT_PUBLIC_API_HOST="__NEXT_PUBLIC_API_HOST__"
-ENV NEXT_PUBLIC_ID_HOST="__NEXT_PUBLIC_ID_HOST__"
-ENV NEXT_PUBLIC_ADMIN_HOST="__NEXT_PUBLIC_ADMIN_HOST__"
-ENV NEXT_PUBLIC_EXERCISES_HOST="__NEXT_PUBLIC_EXERCISES_HOST__"
-ENV NEXT_PUBLIC_EVENT_DOMAIN="__NEXT_PUBLIC_EVENT_DOMAIN__"
-ENV NEXT_PUBLIC_COOKIE_DOMAIN="__NEXT_PUBLIC_COOKIE_DOMAIN__"
+ENV NEXT_PUBLIC_DOMAIN="__NEXT_PUBLIC_DOMAIN__"
 ENV NEXT_PUBLIC_SUPPORT_EMAIL="__NEXT_PUBLIC_SUPPORT_EMAIL__"
 ENV NEXT_PUBLIC_PARTNER_ICE_NURE_URL="__NEXT_PUBLIC_PARTNER_ICE_NURE_URL__"
 ENV NEXT_PUBLIC_PARTNER_NURE_URL="__NEXT_PUBLIC_PARTNER_NURE_URL__"
@@ -58,7 +51,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 COPY --chown=nextjs:nodejs --chmod=0755 deploy/entrypoint.sh /usr/bin/
-# The base-domain derivation (NEXT_PUBLIC_DOMAIN -> the hosts that are not set), sourced by entrypoint.sh.
+# The base-domain derivation (the NEXT_PUBLIC_DOMAIN check), sourced by entrypoint.sh.
 COPY deploy/base-domain.sh /usr/local/lib/base-domain.sh
 COPY deploy/nginx /etc/cybericebox/nginx
 

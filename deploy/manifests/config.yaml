@@ -5,15 +5,11 @@ metadata:
   namespace: cybericebox
 data:
   # Required: set every host for your deployment (bare host, no scheme).
-  MAIN_HOST: "main.example.com"
-  API_HOST: "api.example.com"
-  ID_HOST: "id.example.com"
-  ADMIN_HOST: "admin.example.com"
-  EXERCISES_HOST: "exercises.example.com"
+  # REQUIRED: the one base domain, a bare lowercase host name. Every host derives from it: DOMAIN, api./id./admin./exercises.DOMAIN,
+  # event sites <tag>.DOMAIN, the cookie domain DOMAIN. There are no per-host settings.
+  DOMAIN: ""
   # Event sites are <tag>.<EVENT_DOMAIN>.
-  EVENT_DOMAIN: "example.com"
   # Parent domain of the theme/consent cookies (shared by all apps).
-  COOKIE_DOMAIN: "example.com"
   # REQUIRED: support mailbox of the «Надіслати відгук» (send feedback) link on every page.
   SUPPORT_EMAIL: "support@example.com"
   # External links shown in the UI.

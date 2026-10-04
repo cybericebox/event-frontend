@@ -70,11 +70,10 @@ case "$TLS_RELOAD_INTERVAL" in '' | *[!0-9]*) fail "TLS_RELOAD_INTERVAL must be 
 [ -n "$HTTP_PORT" ] || [ "$tls" = true ] || fail "Nothing to listen on: set HTTP_PORT or TLS_CERT_FILE and TLS_KEY_FILE."
 export HTTP_PORT HTTPS_PORT HEALTH_PORT HEALTH_BIND TLS_CERT_FILE TLS_KEY_FILE TLS_PROTOCOLS TLS_CLIENT_CA_FILE TLS_CLIENT_VERIFY
 
-# The hosts are derived from NEXT_PUBLIC_DOMAIN when they are not set (deploy/base-domain.sh, the same file in every frontend); the derived
-# values are exported, so they reach the substitution below and the Node process like the others. The other operator values are required
-# (no fallbacks); analytics is optional.
+# NEXT_PUBLIC_DOMAIN is the only host input (deploy/base-domain.sh, the same file in every frontend): every host derives from it in the
+# code. The other operator values are required (no fallbacks); analytics is optional.
 . /usr/local/lib/base-domain.sh
-base_domain_derive || exit 1
+base_domain_check || exit 1
 for name in NEXT_PUBLIC_SUPPORT_EMAIL NEXT_PUBLIC_PARTNER_ICE_NURE_URL NEXT_PUBLIC_PARTNER_NURE_URL NEXT_PUBLIC_WIREGUARD_INSTALL_URL; do
   eval "value=\${$name:-}"
   if [ -z "$value" ]; then
