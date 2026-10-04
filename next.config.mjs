@@ -30,6 +30,9 @@ const nextConfig = () => {
             minimumCacheTTL: 24 * 60 * 60,// 24 hours
         },
         output: 'standalone',
+        // images.unoptimized is set, so the image optimizer never loads sharp: keep its native libvips
+        // (~45 MB, an optional dependency of next) out of the standalone trace.
+        outputFileTracingExcludes: {'*': ['node_modules/sharp/**', 'node_modules/@img/**']},
         allowedDevOrigins: [...new Set(devOrigins)],
     };
 };
