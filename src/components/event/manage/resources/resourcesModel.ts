@@ -3,19 +3,27 @@ import {ResourceErrorCode, type Amount, type ChangeRequestInput} from "@/api/man
 import {apiErrorMessage} from "@/api/apiErrors";
 import {localToISO} from "@/components/ui/dateTimePicker";
 import {t} from "@/i18n/t";
+import {formatBytes} from "../analytics/analyticsFormat";
 
 const MIB = 1024 ** 2;
 
+const cpuNumber = new Intl.NumberFormat("uk-UA", {maximumFractionDigits: 2});
+const plural = new Intl.PluralRules("uk");
+
+// Below one core it reads in milli-cores with Ukrainian plural forms, from one core in vCPU.
 export function formatCpu(millicores: number): string {
-    return millicores >= 1000 && millicores % 100 === 0 ? `${millicores / 1000}` : `${millicores}m`;
+    if (millicores > 0 && millicores < 1000) {
+        const category = plural.select(Math.round(millicores));
+        const form = category === "one" || category === "few" ? category : "many";
+        return t(`manage.resources.unit.mcpu.${form}`, {value: cpuNumber.format(millicores)});
+    }
+    return t("manage.resources.unit.vcpu", {value: cpuNumber.format(millicores / 1000)});
 }
 
-export function formatMemory(bytes: number): string {
-    const mebibytes = Math.round(bytes / MIB);
-    return mebibytes >= 1024 && mebibytes % 128 === 0 ? `${mebibytes / 1024}Gi` : `${mebibytes}Mi`;
-}
+// Memory in the same units the analytics use (МіБ, ГіБ with a decimal comma).
+export const formatMemory = formatBytes;
 
-// «2 · 4Gi»: CPU cores and memory.
+// «456 мілі-ядер · 1,9 ГіБ»: CPU and memory.
 export function amountText(amount: Amount): string {
     return t("manage.resources.amount", {cpu: formatCpu(amount.CPUMillicores), memory: formatMemory(amount.MemoryBytes)});
 }

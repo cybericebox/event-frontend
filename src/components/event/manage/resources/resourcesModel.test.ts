@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {buildChangeRequest, emptyDraft, formatCpu, formatMemory} from "./resourcesModel";
+import {buildChangeRequest, emptyDraft, amountText, formatCpu, formatMemory} from "./resourcesModel";
 
 const MIB = 1024 ** 2;
 
@@ -33,10 +33,23 @@ describe("change request draft", () => {
 });
 
 describe("amount format", () => {
-    it("shows cores and Gi when round", () => {
-        expect(formatCpu(2000)).toBe("2");
-        expect(formatCpu(250)).toBe("250m");
-        expect(formatMemory(4096 * MIB)).toBe("4Gi");
-        expect(formatMemory(512 * MIB)).toBe("512Mi");
+    it("reads CPU in milli-cores with uk plurals below one core, vCPU from one", () => {
+        expect(formatCpu(0)).toBe("0 vCPU");
+        expect(formatCpu(1)).toBe("1 мілі-ядро");
+        expect(formatCpu(250)).toBe("250 мілі-ядер");
+        expect(formatCpu(522)).toBe("522 мілі-ядра");
+        expect(formatCpu(1500)).toBe("1,5 vCPU");
+        expect(formatCpu(2000)).toBe("2 vCPU");
+    });
+
+    it("reads memory in МіБ and ГіБ with a decimal comma", () => {
+        expect(formatMemory(512 * MIB)).toBe("512 МіБ");
+        expect(formatMemory(3.375 * 1024 * MIB)).toBe("3,4 ГіБ");
+        expect(formatMemory(0)).toBe("0 Б");
+    });
+
+    it("joins both for people, never raw Kubernetes strings", () => {
+        expect(amountText({CPUMillicores: 828, MemoryBytes: 3.375 * 1024 * MIB})).toBe("828 мілі-ядер · 3,4 ГіБ");
+        expect(amountText({CPUMillicores: 0, MemoryBytes: 0})).not.toMatch(/\d(m|Mi|Gi)\b/);
     });
 });
