@@ -105,3 +105,9 @@ button.event-sortable__main{cursor:pointer}
 .event-exercise-set.is-open>.event-exercise-set__head .event-row-actions{opacity:1}
 @media (hover:none),(pointer:coarse){.event-sortable__actions,.event-exercise-set__head .event-row-actions{opacity:1}}
 @media (prefers-reduced-motion:reduce){.event-sortable__actions,.event-exercise-set__head .event-row-actions{transition:none}}
+
+/* The stage of one set (an instant select next to the board switch). */
+.event-exercise-set__stage{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2) var(--ib-3)}
+.event-exercise-set__stage-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-exercise-set__stage .event-select{min-width:200px}
+.event-exercise-set__stage-note{flex-basis:100%;margin:0}

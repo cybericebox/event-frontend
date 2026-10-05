@@ -65,7 +65,8 @@ const summarySchema = z.object({
 });
 export const ManageLabsSchema = z.object({
     InfrastructureAllowed: z.boolean(), LaboratoriesAvailable: z.boolean(),
-    DeployLeadMinutes: z.number().int(), TeardownDelayMinutes: z.number().int(),
+    TeardownDelayMinutes: z.number().int(),
+    // When the first labs start deploying: the start minus the lead the platform computes from the workload.
     DeployAt: optionalTime, TeardownAt: optionalTime, ChallengesOpened: z.boolean(),
     Summary: summarySchema,
     Prewarm: prewarmSchema.nullish().transform(value => value ?? null),
@@ -84,7 +85,7 @@ export type StandDetail = z.infer<typeof StandDetailSchema>;
 export type StandDetailLab = z.infer<typeof detailLabSchema>;
 export type ManageStand = z.infer<typeof standSchema>;
 export type ManageLabs = z.infer<typeof ManageLabsSchema>;
-export type ManageLabsSettings = Pick<ManageLabs, "DeployLeadMinutes" | "TeardownDelayMinutes">;
+export type ManageLabsSettings = Pick<ManageLabs, "TeardownDelayMinutes">;
 
 export const ModeratorChallengeSchema = z.object({
     ChallengeID: id, Name: optionalText, Readiness: z.enum(["preparing", "ready", "available"]),
@@ -102,7 +103,6 @@ export type LabRuntime = z.infer<typeof LabRuntimeSchema>;
 const vpnSchema = z.object({Config: z.string().min(1)});
 const ownStandSchema = z.object({Status: StandStatusSchema});
 
-export const DEPLOY_LEAD_RANGE = {min: 5, max: 1440} as const;
 export const TEARDOWN_DELAY_RANGE = {min: 0, max: 10080} as const;
 
 // Object code 20 (eventStand); detail codes follow the spec's error order.

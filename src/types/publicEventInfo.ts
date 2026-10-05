@@ -24,6 +24,8 @@ export const PublicEventInfoSchema = z.object({
     ShowStartCountdown: z.boolean().default(true),
     ShowFinishCountdown: z.boolean().default(true),
     FinishCountdownMinutes: z.number().int().min(1).max(1440).default(10),
+    // before_end: the finish countdown shows during the last minutes; from_start: from the start of the current stage (of the event without stages).
+    FinishCountdownMode: z.enum(["before_end", "from_start"]).catch("before_end").optional(),
 });
 
 export type PublicEventInfo = z.infer<typeof PublicEventInfoSchema>;

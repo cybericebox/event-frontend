@@ -71,6 +71,15 @@ export const ApiErrorCode = {
     ImageTooManyPixels: 1004,
     ImageUnreadable: 1005,
     PresetNested: 226,
+    // Event stages: opened/closed stages refuse the change (what the stage allows depends on its state).
+    StageOverlap: 1145,
+    StageNameExists: 1146,
+    StageAnchor: 1147,
+    StageClosedLocked: 1148,
+    StageOpenedLocked: 1149,
+    StageNotDeletable: 1150,
+    StageNeedsFinish: 1151,
+    StageClosed: 1940,
 } as const;
 
 export type ApiErrorCodeValue = typeof ApiErrorCode[keyof typeof ApiErrorCode];

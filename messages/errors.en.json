@@ -245,5 +245,16 @@
   "2511": "Readiness alarm not found",
   "2512": "The booking is invalid",
   "2513": "No resources have been reserved for this event yet.",
-  "2514": "The previous request is still pending."
+  "2514": "The previous request is still pending.",
+  "1143": "Event stage not found",
+  "1144": "Event stage name or times are invalid",
+  "1145": "Event stage overlaps another stage",
+  "1146": "Event stage with this name already exists",
+  "1147": "The first stage opens at the event start and the last closes at the event finish",
+  "1148": "The stage is closed and cannot be changed",
+  "1149": "The stage has opened: nothing can be removed from it or moved out of it",
+  "1150": "Only an upcoming stage without sets can be deleted",
+  "1151": "Stages need a scheduled event start and finish",
+  "1152": "Only an open stage can be closed now",
+  "1940": "The stage of this task is closed"
 }

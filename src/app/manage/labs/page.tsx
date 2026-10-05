@@ -6,7 +6,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {AlertTriangle, ChevronDown, Download, Layers, ListChecks, RotateCcw} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
-    DEPLOY_LEAD_RANGE, TEARDOWN_DELAY_RANGE, getManageLabs, getModeratorChallengeLab, getModeratorChallenges, getModeratorVPNConfig,
+    TEARDOWN_DELAY_RANGE, getManageLabs, getModeratorChallengeLab, getModeratorChallenges, getModeratorVPNConfig,
     isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage,
     type LabRuntime, type ManageLabs, type ManageStand,
 } from "@/api/manageLabs";
@@ -46,19 +46,18 @@ function inRange(value: number, range: {min: number; max: number}): boolean {
 
 function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: ManageLabs; canManage: boolean}) {
     const queryClient = useQueryClient();
-    const [edit, setEdit] = useState<{lead: number; delay: number} | null>(null);
+    const [edit, setEdit] = useState<{delay: number} | null>(null);
     const [saving, setSaving] = useState(false);
-    const lead = edit?.lead ?? labs.DeployLeadMinutes;
     const delay = edit?.delay ?? labs.TeardownDelayMinutes;
-    const dirty = lead !== labs.DeployLeadMinutes || delay !== labs.TeardownDelayMinutes;
-    const valid = inRange(lead, DEPLOY_LEAD_RANGE) && inRange(delay, TEARDOWN_DELAY_RANGE);
+    const dirty = delay !== labs.TeardownDelayMinutes;
+    const valid = inRange(delay, TEARDOWN_DELAY_RANGE);
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
         if (!canManage || !dirty || !valid || saving) return;
         setSaving(true);
         try {
-            queryClient.setQueryData(["event-management-labs", eventID], await putManageLabsSettings(eventID, {DeployLeadMinutes: lead, TeardownDelayMinutes: delay}));
+            queryClient.setQueryData(["event-management-labs", eventID], await putManageLabsSettings(eventID, {TeardownDelayMinutes: delay}));
             setEdit(null);
             toast.success(t("manage.labs.schedule.saved"));
         } catch (failure) {toast.error(standErrorMessage(failure, t("manage.labs.schedule.saveFailed")));}
@@ -71,11 +70,9 @@ function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: Man
             <div><dt>{t("manage.labs.schedule.teardown")}</dt><dd>{formatTime(labs.TeardownAt) ?? t("manage.labs.schedule.teardownPending")}</dd></div>
             <div><dt>{t("manage.labs.schedule.challenges")}</dt><dd>{labs.ChallengesOpened ? t("manage.labs.schedule.challengesOpen") : t("manage.labs.schedule.challengesWaiting")}</dd></div>
         </dl>
-        <div className="event-manage-fields-two">
-            <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-lead" title={t("manage.labs.schedule.lead")} help={t("manage.labs.schedule.leadHelp", DEPLOY_LEAD_RANGE)} /><input id="stand-lead" className="event-manage-input" type="number" min={DEPLOY_LEAD_RANGE.min} max={DEPLOY_LEAD_RANGE.max} value={Number.isNaN(lead) ? "" : lead} onChange={change => setEdit({lead: change.target.valueAsNumber, delay})} disabled={!canManage || saving} /></div>
-            <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-delay" title={t("manage.labs.schedule.delay")} help={t("manage.labs.schedule.delayHelp", TEARDOWN_DELAY_RANGE)} /><input id="stand-delay" className="event-manage-input" type="number" min={TEARDOWN_DELAY_RANGE.min} max={TEARDOWN_DELAY_RANGE.max} value={Number.isNaN(delay) ? "" : delay} onChange={change => setEdit({lead, delay: change.target.valueAsNumber})} disabled={!canManage || saving} /></div>
-        </div>
-        {dirty && !valid && <p className="event-manage-validation" role="alert">{t("manage.labs.schedule.invalid", {leadMin: DEPLOY_LEAD_RANGE.min, leadMax: DEPLOY_LEAD_RANGE.max, delayMin: TEARDOWN_DELAY_RANGE.min, delayMax: TEARDOWN_DELAY_RANGE.max})}</p>}
+        <p className="event-stands__note">{t("manage.labs.schedule.deployComputed")}</p>
+        <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-delay" title={t("manage.labs.schedule.delay")} help={t("manage.labs.schedule.delayHelp", TEARDOWN_DELAY_RANGE)} /><input id="stand-delay" className="event-manage-input" type="number" min={TEARDOWN_DELAY_RANGE.min} max={TEARDOWN_DELAY_RANGE.max} value={Number.isNaN(delay) ? "" : delay} onChange={change => setEdit({delay: change.target.valueAsNumber})} disabled={!canManage || saving} /></div>
+        {dirty && !valid && <p className="event-manage-validation" role="alert">{t("manage.labs.schedule.invalid", {delayMin: TEARDOWN_DELAY_RANGE.min, delayMax: TEARDOWN_DELAY_RANGE.max})}</p>}
         {canManage && dirty && <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={saving} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }
@@ -162,7 +159,7 @@ export default function ManageLabsPage() {
     return <div className="event-manage-settings event-stands">
         {heading}
         {!labs.LaboratoriesAvailable && <div className="event-manage-notice" role="status"><AlertTriangle size={18} aria-hidden="true" />{t("manage.labs.unavailable")}</div>}
-        <ScheduleSection key={`${labs.DeployLeadMinutes}-${labs.TeardownDelayMinutes}`} eventID={eventID} labs={labs} canManage={canManage} />
+        <ScheduleSection key={labs.TeardownDelayMinutes} eventID={eventID} labs={labs} canManage={canManage} />
         <div className="event-stands__summary" role="status">{summary.map(entry => <div key={entry.label}><span>{entry.label}</span><strong>{entry.value}</strong></div>)}</div>
         {labs.Prewarm && labs.Prewarm.Total > 0 && <p className="event-stands__prewarm" role="status">
             {t("manage.labs.prewarm.progress", {done: labs.Prewarm.Done, total: labs.Prewarm.Total})}

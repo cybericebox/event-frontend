@@ -57,3 +57,28 @@ describe("nextPhaseChange", () => {
         expect(nextPhaseChange(schedule, finish)).toBeNull();
     });
 });
+
+describe("the finish countdown mode and the stages", () => {
+    it("from_start shows it from the start of the event (no stages)", () => {
+        const fromStart = {...schedule, FinishCountdownMode: "from_start" as const};
+        expect(countdownPhase(fromStart, start)).toEqual({kind: "finish", target: finish});
+        expect(countdownPhase(fromStart, start + 60 * minute)).toEqual({kind: "finish", target: finish});
+        expect(nextPhaseChange(fromStart, start - minute)).toBe(start);
+    });
+
+    it("before_end is the default and unchanged", () => {
+        expect(countdownPhase({...schedule, FinishCountdownMode: "before_end"}, start + minute)).toBeNull();
+    });
+
+    it("on an event with stages the event end is the last stage's countdown: held back until it opens", () => {
+        const lastOpens = finish - 90 * minute;
+        expect(countdownPhase(schedule, finish - 5 * minute, Infinity)).toBeNull();
+        expect(countdownPhase(schedule, finish - 5 * minute, lastOpens)).toEqual({kind: "finish", target: finish});
+        const fromStart = {...schedule, FinishCountdownMode: "from_start" as const};
+        expect(countdownPhase(fromStart, lastOpens - minute, lastOpens)).toBeNull();
+        expect(countdownPhase(fromStart, lastOpens, lastOpens)).toEqual({kind: "finish", target: finish});
+        // the last N minutes before the last stage opens never show it early
+        expect(countdownPhase({...schedule, FinishCountdownMinutes: 120}, finish - 100 * minute, lastOpens)).toBeNull();
+        expect(nextPhaseChange(fromStart, start + minute, lastOpens)).toBe(lastOpens);
+    });
+});
