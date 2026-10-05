@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, expect, it, vi} from "vitest";
-import {cleanup, render, screen} from "@testing-library/react";
+import {act, cleanup, render, screen} from "@testing-library/react";
 import {renderToString} from "react-dom/server";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {AppShell} from "./AppShell";
@@ -31,4 +31,15 @@ it.each(["/challenges", "/scoreboard", "/participation", "/join", "/invite", "/f
     render(<QueryClientProvider client={client}><AppShell event={null} unavailable={false}><h1>Сторінка</h1></AppShell></QueryClientProvider>);
     expect(screen.getByTestId("private-bootstrap")).toBeTruthy();
     expect(screen.getByRole("heading", {name: "Сторінка"})).toBeTruthy();
+});
+
+it("switches an open site to the not-found screen once the event is gone", async () => {
+    const {reportEventNotFound, resetEventGone} = await import("@/utils/eventGone");
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    render(<QueryClientProvider client={client}><AppShell event={{EventID: "event-1"} as never} unavailable={false}><h1>Публічна сторінка</h1></AppShell></QueryClientProvider>);
+    expect(screen.getByRole("heading", {name: "Публічна сторінка"})).toBeTruthy();
+    await act(() => reportEventNotFound("https://api.example.com", vi.fn().mockResolvedValue(new Response(null, {status: 404}))));
+    expect(screen.getByRole("heading", {name: "Такого заходу не існує"})).toBeTruthy();
+    expect(screen.queryByRole("heading", {name: "Публічна сторінка"})).toBeNull();
+    resetEventGone();
 });

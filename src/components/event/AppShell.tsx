@@ -1,6 +1,6 @@
 "use client";
 
-import {type ReactNode} from "react";
+import {type ReactNode, useSyncExternalStore} from "react";
 import {EventErrorScreen} from "@/components/event/EventErrorScreen";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getJoinStatus, getOwnTeam} from "@/api/clientAuth";
@@ -17,6 +17,8 @@ import {EventLoading} from "./EventLoading";
 import {EventServiceStatusGate} from "./EventServiceStatusGate";
 import {OutageShell} from "./OutageShell";
 import {reservedPageSlugs} from "./content/pageSlugs";
+import {EventNotFoundScreen} from "./EventNotFoundScreen";
+import {isEventGone, subscribeEventGone} from "@/utils/eventGone";
 import {t} from "@/i18n/t";
 
 type Props = {
@@ -27,6 +29,9 @@ type Props = {
 
 // The outage modal is mounted once over every shell state; the page stays underneath.
 export function AppShell(props: Props) {
+    // The event was deleted while the site was open: the same screen as for an event that never existed.
+    const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
+    if (gone && props.event) return <EventNotFoundScreen />;
     return <>
         <ShellContent {...props} />
         <EventServiceStatusGate serverUnavailable={props.unavailable} />
