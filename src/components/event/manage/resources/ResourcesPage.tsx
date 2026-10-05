@@ -38,7 +38,9 @@ export function ResourcesPage() {
         if (new URLSearchParams(window.location.search).get("request") === "1") setRequesting(true);
     }, []);
 
-    const heading = <header className="event-manage-heading"><div><h1>{t("manage.resources.title")}</h1><p>{t("manage.resources.subtitle")}</p></div></header>;
+    const heading = <header className="event-manage-heading"><div><h1>{t("manage.resources.title")}</h1><p>{t("manage.resources.subtitle")}</p></div>
+        {canManage && query.data?.Reserved && <div className="event-manage-heading__actions"><button className="ib-btn ib-btn--primary" type="button" onClick={() => setRequesting(true)}>{t("manage.resources.requestChange")}</button></div>}
+    </header>;
     if (query.isPending) return <EventLoading event={event} label={t("manage.resources.loading")} />;
     if (query.isError) return <EventLoadError message={t("manage.resources.loadFailed")} error={query.error} onRetry={() => void query.refetch()} />;
     const resources = query.data;
@@ -56,7 +58,6 @@ export function ResourcesPage() {
                 <div><dt>{t("manage.resources.buffer")}</dt><dd>{t("manage.resources.bufferValue", {percent: resources.BufferPercent})}</dd></div>
                 <div><dt>{t("manage.resources.dynamic")}</dt><dd>{resources.Dynamic ? amountText(resources.Dynamic) : "—"}</dd></div>
             </dl>
-            {canManage && <div className="event-resources__bar"><button className="ib-btn ib-btn--primary" type="button" onClick={() => setRequesting(true)}>{t("manage.resources.requestChange")}</button></div>}
             <section className="event-manage-section">
                 <h2>{t("manage.resources.history.title")}</h2>
                 {resources.Changes.length === 0 ? <EmptyState compact message={t("manage.resources.history.empty")} /> : <div className="event-participants-table"><table>
