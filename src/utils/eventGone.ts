@@ -43,6 +43,21 @@ export async function reportEventNotFound(origin = apiOrigin, fetchImpl: typeof 
     }
 }
 
+// The page already knows the event is missing (the server read answered 404 and the browser
+// cannot reach the API for that address either): the shell shows the not-found screen alone,
+// without the outage modal over it.
+export function markEventGone(): void {
+    if (gone) return;
+    gone = true;
+    listeners.forEach(listener => listener());
+}
+
+// A browser read that failed with a network error (not an HTTP answer). The API refuses an
+// unknown event's origin without CORS headers, which the browser reports this way.
+export function isNetworkFailure(error: unknown): boolean {
+    return error instanceof TypeError;
+}
+
 export function resetEventGone(): void {
     gone = false;
     checking = false;

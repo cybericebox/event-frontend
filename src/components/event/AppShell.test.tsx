@@ -43,3 +43,13 @@ it("switches an open site to the not-found screen once the event is gone", async
     expect(screen.queryByRole("heading", {name: "Публічна сторінка"})).toBeNull();
     resetEventGone();
 });
+
+it("shows the not-found screen alone when the server had no event and the page marks it missing", async () => {
+    const {markEventGone, resetEventGone} = await import("@/utils/eventGone");
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    render(<QueryClientProvider client={client}><AppShell event={null} unavailable={false}><h1>Сторінка</h1></AppShell></QueryClientProvider>);
+    act(() => markEventGone());
+    expect(screen.getByRole("heading", {name: "Такого заходу не існує"})).toBeTruthy();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    resetEventGone();
+});

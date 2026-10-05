@@ -11,6 +11,7 @@ import {LiveLinkClosed, LiveScreen} from "./LiveScreen";
 import "./live.css";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
+import {isNetworkFailure} from "@/utils/eventGone";
 import {EventNotFoundScreen} from "@/components/event/EventNotFoundScreen";
 import {NoAccessScreen} from "@/components/event/NoAccessScreen";
 import {SignInRequired} from "@/components/event/SignInRequired";
@@ -64,7 +65,7 @@ function LiveStaffBootstrap() {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
         if (status === 401) return <SignInRequired />;
         if (status === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;
-        if (status === 404 && event.isError) return <EventNotFoundScreen />;
+        if (event.isError && (status === 404 || isNetworkFailure(event.error))) return <EventNotFoundScreen />;
         return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} error={event.error ?? access.error} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} /></main>;
     }
     if (!event.data || !access.data) return <main className="live-fullscreen"><EventLoading event={event.data} label={t("live.checkingAccess")} /></main>;

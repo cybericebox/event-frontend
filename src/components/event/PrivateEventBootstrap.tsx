@@ -15,6 +15,7 @@ import {EventBrandProvider} from "./EventBrandLogo";
 import {OutageShell} from "./OutageShell";
 import {NoAccessScreen} from "./NoAccessScreen";
 import {SignInRequired} from "./SignInRequired";
+import {isNetworkFailure} from "@/utils/eventGone";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
@@ -55,6 +56,9 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
             : access.error instanceof ManageApiError ? access.error.status : 0;
         // An outage keeps the guest frame under the outage modal; the queries
         // refetch once the API answers.
+        // The server read of this page answered 404, so a browser read that cannot even reach the
+        // API (it refuses an unknown address without CORS headers) is the same missing event.
+        if (status === 404 || isNetworkFailure(identity.error)) return <EventNotFoundScreen />;
         if (isOutageError(identity.error ?? access.error, status)) return <OutageShell />;
         // 401: straight to the sign-in and back. 403: signed in without rights. 404 does not
         // say whether the event is missing or closed: a visitor goes to the sign-in, a signed-in

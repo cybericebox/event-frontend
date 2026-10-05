@@ -6,6 +6,7 @@ import {SearchX} from "lucide-react";
 import crest from "@/styles/assets/crest-128.png";
 import {BRAND_HEAD, BRAND_TAIL} from "@/i18n/brand";
 import {mainOrigin} from "@/utils/origins";
+import {markEventGone} from "@/utils/eventGone";
 import {t} from "@/i18n/t";
 import "@/styles/error-screen.css";
 
@@ -15,7 +16,10 @@ import "@/styles/error-screen.css";
 // branding: the platform crest and wordmark, whatever the layout context holds. Same frame
 // as EventErrorScreen.
 export function EventNotFoundScreen() {
-    useEffect(() => {document.title = t("shell.missing.title");}, []);
+    useEffect(() => {
+        document.title = t("shell.missing.title");
+        markEventGone();
+    }, []);
     return <MissingEvent />;
 }
 
