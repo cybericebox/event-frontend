@@ -9,7 +9,7 @@
 .event-setup__body span{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
 .event-setup__status{flex:none;padding:2px var(--ib-2);border-radius:var(--ib-r-pill);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-setup__status.is-done{color:var(--ib-action)}
-.event-setup__status.is-todo{background:var(--ib-warn-bg);color:var(--ib-warn)}
+.event-setup__status.is-todo,.event-setup__status.is-review{background:var(--ib-warn-bg);color:var(--ib-warn)}
 .event-setup__status.is-blocked{background:var(--ib-danger);color:var(--ib-btn-on-danger)}
 @media(max-width:640px){.event-setup__row{flex-wrap:wrap}.event-setup__body{flex-basis:calc(100% - 100px)}.event-setup__status{margin-left:auto}}
 

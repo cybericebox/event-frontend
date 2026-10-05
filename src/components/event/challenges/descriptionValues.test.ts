@@ -35,6 +35,13 @@ describe("descriptionValues", () => {
         expect(variables.l2).toBe("https://10.9.4.12:8443/admin");
     });
 
+    it("resolves an external link from the lab's access entry of the named device", () => {
+        const {variables, links} = descriptionValues([{key: "w", kind: "external.link", device_name: "web"}, {key: "x", kind: "external.link", device_name: "db"}],
+            {...lab, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://web.example.com"}]});
+        expect(variables).toEqual({w: "https://web.example.com", x: "—"});
+        expect(links).toEqual({w: "https://web.example.com"});
+    });
+
     it("shows a dash until the lab supplies the address, and never a link", () => {
         for (const state of [undefined, {...lab, VPNCIDR: ""}]) {
             const {variables, links} = descriptionValues([ip({as_link: true, scheme: "http"}), {key: "ph_x", kind: "external.link", device_name: "web"}], state);

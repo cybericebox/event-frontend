@@ -1,16 +1,9 @@
 import type {ResourceAmount, TaskResources} from "@/api/manageChallenges";
 import {t, tPlural} from "@/i18n/t";
+import {formatCpu, formatMemory} from "../resources/resourcesModel";
 
-const MIB = 1024 ** 2;
+export {formatCpu, formatMemory};
 
-export function formatCpu(millicores: number): string {
-    return millicores >= 1000 && millicores % 100 === 0 ? `${millicores / 1000}` : `${millicores}m`;
-}
-
-export function formatMemory(bytes: number): string {
-    const mebibytes = Math.round(bytes / MIB);
-    return mebibytes >= 1024 && mebibytes % 128 === 0 ? `${mebibytes / 1024}Gi` : `${mebibytes}Mi`;
-}
 
 function range(min: number, max: number, format: (value: number) => string): string {
     return min === max ? format(max) : `${format(min)}–${format(max)}`;

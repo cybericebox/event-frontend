@@ -196,7 +196,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
     const [open, setOpen] = useState(false);
     const toggle = () => setOpen(current => !current);
     const hints = hintIndicator(challenge, hintsDisabled);
-    const line = descriptionFirstLine(challenge.Snapshot.description);
+    const line = descriptionFirstLine(challenge.Snapshot.description, challenge.Snapshot.placeholders);
     const panelID = `task-panel-${challenge.ID}`;
     return <li className={`event-task${open ? " is-open" : ""}`}>
         {/* The row toggles the task; its buttons and links keep their own action. */}

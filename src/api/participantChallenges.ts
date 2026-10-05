@@ -21,7 +21,7 @@ export const hintSchema = z.object({
     UnlockedByName: z.string().nullish().transform(value => value ?? ""),
 });
 // A description placeholder as the exercise stores it (snake_case, like the rest of the snapshot).
-const placeholderSchema = z.object({
+export const placeholderSchema = z.object({
     key: z.string().default(""),
     kind: z.string(),
     ip_reference: z.string().optional(),

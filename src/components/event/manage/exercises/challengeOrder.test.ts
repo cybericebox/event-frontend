@@ -36,4 +36,15 @@ describe("challenge order", () => {
         expect(descriptionFirstLine("  \nold text\nmore")).toBe("old text");
         expect(descriptionFirstLine(undefined)).toBe("");
     });
+
+    it("shows placeholders as readable chips, never raw keys", () => {
+        const doc = {root: {type: "root", children: [{type: "paragraph", children: [
+            {type: "text", text: "Відкрийте "}, {type: "variable", varName: "web_link"}, {type: "text", text: " і "}, {type: "variable", varName: "lnk"},
+        ]}]}};
+        const line = descriptionFirstLine(doc, [
+            {key: "web_link", kind: "external.link", device_name: "both"},
+            {key: "lnk", kind: "ip", ip_reference: "vpn", last_octet: 5, as_link: true, scheme: "http", port: 5000},
+        ]);
+        expect(line).toBe("Відкрийте [вебпосилання both] і [посилання http://…:5000]");
+    });
 });

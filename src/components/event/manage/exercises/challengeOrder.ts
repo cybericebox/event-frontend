@@ -1,4 +1,6 @@
 import type {EventBoardChallenge, EventChallengeGroup, EventExerciseAttachment} from "@/api/manageChallenges";
+import type {SnapshotPlaceholder} from "@/api/participantChallenges";
+import {placeholderChips} from "@/components/event/challenges/placeholderLabel";
 import {richTextPlainText} from "@/components/event/content/richTextState";
 
 export type BoardSet = {attachment: EventExerciseAttachment; challenges: EventBoardChallenge[]};
@@ -37,7 +39,8 @@ export function groupBuckets(groups: EventChallengeGroup[], sets: BoardSet[]): G
 }
 
 // The first non-empty line of a task description as plain text.
-export function descriptionFirstLine(description: unknown): string {
-    const text = typeof description === "string" ? description : richTextPlainText(description);
+// Inline placeholders read as «[label]» chips instead of their raw keys.
+export function descriptionFirstLine(description: unknown, placeholders: SnapshotPlaceholder[] = []): string {
+    const text = typeof description === "string" ? description : richTextPlainText(description, placeholderChips(placeholders));
     return text.split("\n").map(line => line.trim()).find(Boolean) ?? "";
 }
