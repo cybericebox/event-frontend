@@ -11,6 +11,7 @@ import {OutageShell} from "../OutageShell";
 import {EventNotFoundScreen} from "../EventNotFoundScreen";
 import {NoAccessScreen} from "../NoAccessScreen";
 import {SignInRequired} from "../SignInRequired";
+import {isNetworkFailure} from "@/utils/eventGone";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
@@ -50,6 +51,8 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         const status = event.error instanceof ClientEventInfoError ? event.error.status : 0;
         // An outage keeps the /manage frame; the outage modal covers it and the
         // query refetches once the API answers.
+        // The server read answered 404; a browser read that cannot reach the API is the same missing event.
+        if (isNetworkFailure(event.error)) return <EventNotFoundScreen />;
         if (isOutageError(event.error, status)) return <OutageShell manage />;
         if (status === 401) return <SignInRequired />;
         if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} />;

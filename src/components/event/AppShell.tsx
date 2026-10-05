@@ -31,7 +31,7 @@ type Props = {
 export function AppShell(props: Props) {
     // The event was deleted while the site was open: the same screen as for an event that never existed.
     const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
-    if (gone && props.event) return <EventNotFoundScreen />;
+    if (gone) return <EventNotFoundScreen />;
     return <>
         <ShellContent {...props} />
         <EventServiceStatusGate serverUnavailable={props.unavailable} />

@@ -43,3 +43,22 @@ describe("PrivateEventBootstrap without a session", () => {
         expect(await screen.findByRole("link", {name: "Увійти"})).toBeTruthy();
     });
 });
+
+describe("PrivateEventBootstrap when the browser read fails", () => {
+    function renderBootstrap() {
+        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        render(<QueryClientProvider client={client}><PrivateEventBootstrap><p>Сторінка</p></PrivateEventBootstrap></QueryClientProvider>);
+    }
+
+    it("shows the not-found screen when the server saw 404 and the browser cannot reach the API (CORS)", async () => {
+        clientEvent.getClientEventInfo.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+        renderBootstrap();
+        expect(await screen.findByRole("heading", {name: "Такого заходу не існує"})).toBeTruthy();
+    });
+
+    it("shows the error screen with a retry, never a blank page, on a server error", async () => {
+        clientEvent.getClientEventInfo.mockRejectedValueOnce(new clientEvent.ClientEventInfoError(500));
+        renderBootstrap();
+        expect(await screen.findByRole("button", {name: "Оновити"})).toBeTruthy();
+    });
+});
