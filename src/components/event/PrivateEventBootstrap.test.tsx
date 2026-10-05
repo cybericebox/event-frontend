@@ -34,3 +34,12 @@ describe("PrivateEventBootstrap", () => {
         expect(screen.queryByText("Сторінка")).toBeNull();
     });
 });
+
+describe("PrivateEventBootstrap without a session", () => {
+    it("asks for the sign-in with a button on 401", async () => {
+        clientEvent.getClientEventInfo.mockRejectedValueOnce(new clientEvent.ClientEventInfoError(401));
+        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        render(<QueryClientProvider client={client}><PrivateEventBootstrap><p>Сторінка</p></PrivateEventBootstrap></QueryClientProvider>);
+        expect(await screen.findByRole("link", {name: "Увійти"})).toBeTruthy();
+    });
+});

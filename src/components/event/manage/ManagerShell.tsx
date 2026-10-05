@@ -11,7 +11,7 @@ import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavigation";
 import {OutageShell} from "../OutageShell";
 import {NoAccessScreen} from "../NoAccessScreen";
-import {SignInRedirect} from "../SignInRedirect";
+import {SignInRequired} from "../SignInRequired";
 import {useAnalyticsAccess} from "./analytics/useAnalyticsAccess";
 import {SetupChip} from "./setup/SetupChip";
 import {ManagerSidebar} from "./ManagerSidebar";
@@ -53,7 +53,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         // An outage keeps the frame under the outage modal; access refetches on recovery.
         if (isOutageError(access.error, status)) return <OutageShell manage event={event} />;
         // 401: no session, straight to the sign-in and back here. 403: signed in without rights.
-        if (status === 401) return <SignInRedirect event={event} />;
+        if (status === 401) return <SignInRequired event={event} />;
         if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} homeHref="/" />;
         return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} onRetry={() => void access.refetch()} page />;
     }

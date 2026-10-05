@@ -10,7 +10,7 @@ import {signInRedirectTarget} from "@/utils/signInRedirect";
 import {t} from "@/i18n/t";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {EventLoading} from "./EventLoading";
-import {SignInRedirect} from "./SignInRedirect";
+import {SignInRequired} from "./SignInRequired";
 import {EventButton} from "@/components/ui/EventButton";
 import "@/styles/error-screen.css";
 
@@ -37,7 +37,7 @@ export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mai
 
     if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;
     // The session ended meanwhile: that is a 401 after all.
-    if (!user.data) return <SignInRedirect />;
+    if (!user.data) return <SignInRequired />;
     return <main className="event-error event-error--page" role="alert">
         <EventBrandLogo className="event-error__logo" size={64} />
         <Lock className="event-error__mark event-error__mark--muted" aria-hidden="true" />

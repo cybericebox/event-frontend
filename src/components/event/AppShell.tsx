@@ -75,7 +75,7 @@ function ShellContent({children, event, unavailable}: Props) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
         if (isLive) return children;
         // Server reads are anonymous, so an unpublished event is absent here. Every other route
-        // retries in the browser with the session; the bootstrap shows the sign-in redirect, the
+        // retries in the browser with the session; the bootstrap shows the sign-in prompt, the
         // no-access screen or the not-found screen from the browser answer.
         return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
     }
