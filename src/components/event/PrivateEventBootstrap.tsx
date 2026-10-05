@@ -62,7 +62,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // failure with a retry.
         if (status === 401) return <SignInRedirect />;
         if (status === 403) return <NoAccessScreen />;
-        if (status === 404) return <EventNotFoundScreen redirectVisitor />;
+        if (status === 404) return <EventNotFoundScreen />;
         return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
     }
     const event = identity.data!;

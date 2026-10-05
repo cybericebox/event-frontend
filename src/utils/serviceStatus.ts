@@ -1,3 +1,4 @@
+import {isEventSelfRequest, reportEventNotFound} from "./eventGone";
 import {apiOrigin} from "./origins";
 
 // Backend reachability, shared by every browser API call. A network failure or a
@@ -81,7 +82,8 @@ export function isNetworkOutage(error: unknown, signal?: AbortSignal | null): bo
 }
 
 // Wraps fetch so every call to the API feeds the status store. Only normal API
-// calls count: streams, aborted requests and 4xx answers are not outages.
+// calls count: streams, aborted requests and 4xx answers are not outages. A 404 of an event
+// call is passed on to the event-gone check.
 export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): typeof fetch {
     return async (input, init) => {
         if (!origin || !requestURL(input).startsWith(origin) || isStreamRequest(input, init)) return fetchImpl(input, init);
@@ -89,6 +91,7 @@ export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): type
             const response = await fetchImpl(input, init);
             const stream = response.headers.get("Content-Type")?.includes("text/event-stream") ?? false;
             if (!stream && isUnavailableStatus(response.status)) reportServiceUnavailable();
+            if (response.status === 404 && isEventSelfRequest(requestURL(input), origin)) void reportEventNotFound(origin, fetchImpl);
             return response;
         } catch (error) {
             if (isNetworkOutage(error, init?.signal ?? (input instanceof Request ? input.signal : null))) reportServiceUnavailable();
