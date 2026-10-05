@@ -30,8 +30,20 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         root.style.setProperty("--ev-accent-light", event.data.Theme.AccentLight);
         root.style.setProperty("--ev-accent-dark", event.data.Theme.AccentDark);
         root.style.setProperty("--ev-accent-live", event.data.Theme.AccentLive);
-        document.title = t("manage.shell.documentTitle", {name: event.data.Name});
     }, [event.data]);
+
+    // Every /manage page carries «Event | Cyber ICE Box»; the route's own metadata
+    // (a bare brand title) rewrites the tab on navigation, so the title is re-asserted.
+    const eventName = event.data?.Name;
+    useEffect(() => {
+        if (!eventName) return;
+        const title = t("manage.shell.documentTitle", {name: eventName});
+        const apply = () => { if (document.title !== title) document.title = title; };
+        apply();
+        const observer = new MutationObserver(apply);
+        observer.observe(document.head, {subtree: true, childList: true, characterData: true});
+        return () => observer.disconnect();
+    }, [eventName]);
 
     if (event.isPending) return <EventLoading full label={t("manage.shell.loadingEvent")} />;
     if (event.isError) {

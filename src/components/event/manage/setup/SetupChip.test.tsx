@@ -8,7 +8,7 @@ vi.mock("@/api/manage", async original => ({
     ...(await original() as object),
     getManageConfig: async () => ({Participation: 1, Registration: 2, MaxTeamSize: 4, InfrastructureAllowed: state.infra}),
     getManageLifecycle: async () => ({Configured: true, Status: "published", Infrastructure: {HasDynamicLabs: state.infra, CanStart: !state.infra}}),
-    getManageContent: async () => ({LandingDraft: null}),
+    getManageContent: async () => ({Landing: {blocks: [{}]}, LandingDraft: null}),
 }));
 vi.mock("@/api/manageChallenges", async original => ({...(await original() as object), getEventExerciseAttachments: async () => [{Status: 0, Infrastructure: false}]}));
 vi.mock("@/api/manageMail", async original => ({

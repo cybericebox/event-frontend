@@ -59,6 +59,11 @@ function actionCopy(action: Action): {title: string; description: string; confir
 }
 
 // «Завдання»: the event's sets, each collapsible, with its tasks as thin rows.
+// The count comes from the board (it follows the toggle at once); before the start nothing is on the participants' board yet.
+function publishedLabel(count: number, status: string): string {
+    return t(count > 0 && (status === "not_published" || status === "published") ? "manage.exercises.meta.publishedUpcoming" : "manage.exercises.meta.published", {count});
+}
+
 export function ExerciseAttachments() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
@@ -156,7 +161,7 @@ export function ExerciseAttachments() {
                         <p className="event-exercise-set__meta">
                             {[
                                 tPlural("manage.exercises.meta.challenges", attachment.ChallengeCount),
-                                t("manage.exercises.meta.published", {count: attachment.PublishedCount}),
+                                publishedLabel(challenges.filter(challenge => challenge.Published).length, lifecycleQuery.data.Status),
                                 attachment.VariantMode === 1 && attachment.FixedVariantIndex !== null ? t("manage.exercises.meta.fixedVariant", {number: attachment.FixedVariantIndex + 1})
                                     : attachment.VariantCount > 1 ? tPlural("manage.exercises.meta.variants", attachment.VariantCount) : "",
                                 attachment.Fork ? t("manage.exercises.meta.forkOf", {number: attachment.Fork.SourceVersionNumber}) : "",

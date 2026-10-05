@@ -50,6 +50,13 @@ export function descriptionValues(placeholders: SnapshotPlaceholder[], lab: LabR
     const links: Record<string, string> = {};
     for (const placeholder of placeholders) {
         if (!placeholder.key) continue;
+        if (placeholder.kind === "external.link") {
+            // The proxy access URL of the named device, from the team's lab.
+            const url = lab?.Access.find(entry => entry.Device === placeholder.device_name && entry.URL)?.URL ?? "";
+            variables[placeholder.key] = url || UNRESOLVED;
+            if (url) links[placeholder.key] = url;
+            continue;
+        }
         const ip = resolveOne(placeholder, lab);
         if (placeholder.kind === "ip" && placeholder.as_link && ip) {
             const url = linkUrl(placeholder.scheme || "http", ip, placeholder.port, placeholder.path);

@@ -44,10 +44,10 @@ describe("AttachExerciseDialog", () => {
         renderDialog(true);
         const heavy = await screen.findByRole("button", {name: /Heavy/});
         expect(heavy.querySelector("[data-resource-heavy]")?.textContent).toBe("Ресурсоємне");
-        expect(heavy.querySelector("[data-resources-total]")?.textContent).toBe("CPU 500m · памʼять 2Gi · 8 блоків · пристроїв 2");
+        expect(heavy.querySelector("[data-resources-total]")?.textContent).toBe("CPU 500 мілі-ядер · памʼять 2 ГіБ · 8 блоків · пристроїв 2");
         const light = screen.getByRole("button", {name: /Light/});
         expect(light.querySelector("[data-resource-heavy]")).toBeNull();
-        expect(light.querySelector("[data-resources-total]")?.textContent).toBe("CPU 50m–250m · памʼять 128Mi–1Gi · 4–12 блоків · пристроїв 1–3");
+        expect(light.querySelector("[data-resources-total]")?.textContent).toBe("CPU 50 мілі-ядер–250 мілі-ядер · памʼять 128 МіБ–1 ГіБ · 4–12 блоків · пристроїв 1–3");
         expect(screen.getByRole("button", {name: /Plain/}).querySelector("[data-resources-total]")).toBeNull();
     });
 

@@ -49,7 +49,7 @@ export function SetupWizard() {
                     <Icon className="event-setup__icon" size={18} aria-hidden="true" />
                     <div className="event-setup__body"><strong>{t(`manage.setup.step.${step.id}`)}</strong><span>{t(`manage.setup.detail.${step.detail}`, step.vars)}</span></div>
                     <span className={`event-setup__status is-${step.status}`}>{t(`manage.setup.status.${step.status}`)}</span>
-                    <Link className="ib-btn" href={step.href}>{t(step.status === "done" || step.status === "optional" ? "manage.setup.open" : "manage.setup.fix")}</Link>
+                    <Link className="ib-btn" href={step.href}>{t(step.status === "done" || step.status === "optional" || step.status === "review" ? "manage.setup.open" : "manage.setup.fix")}</Link>
                 </li>;
             })}
         </ol>

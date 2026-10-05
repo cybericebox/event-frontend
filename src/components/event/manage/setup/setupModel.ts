@@ -4,9 +4,10 @@ import type {EventMailSettings} from "@/api/manageMail";
 import {infrastructureMismatch} from "../exercises/attachmentModel";
 
 // done: nothing left to do. todo: a required step that is still open.
+// review: nothing is wrong, but the organizer has not looked at it yet (still open).
 // blocked: a required step that cannot finish until something is fixed.
 // optional: nothing is required; the default is fine, the page is there to tune it.
-export type SetupStatus = "done" | "todo" | "blocked" | "optional";
+export type SetupStatus = "done" | "todo" | "review" | "blocked" | "optional";
 export type SetupStepID = "participation" | "registration" | "schedule" | "challenges" | "scoring" | "pages" | "mail" | "results" | "stands" | "publish";
 export type SetupStep = {id: SetupStepID; status: SetupStatus; href: string; detail: string; vars?: Record<string, string | number>};
 
@@ -49,9 +50,12 @@ export function buildSetupSteps({config, lifecycle, attachments, content, mail}:
     steps.push({id: "scoring", status: "optional", href: "/manage/challenge-settings", detail: "scoringDefault"});
 
     if (content) {
+        // A new event has an empty home page nobody has built yet: only a saved draft or published blocks mean the organizer prepared it.
         steps.push(content.LandingDraft
             ? {id: "pages", status: "todo", href: "/manage/content/landing", detail: "pagesDraft"}
-            : {id: "pages", status: "done", href: "/manage/content/landing", detail: "pagesPublished"});
+            : content.Landing.blocks.length === 0
+                ? {id: "pages", status: "review", href: "/manage/content/landing", detail: "pagesUntouched"}
+                : {id: "pages", status: "done", href: "/manage/content/landing", detail: "pagesPublished"});
     }
 
     if (mail) {
@@ -73,7 +77,7 @@ export function buildSetupSteps({config, lifecycle, attachments, content, mail}:
     }
 
     // Publishing waits for every required step before it.
-    const open = steps.filter(step => step.status === "todo" || step.status === "blocked");
+    const open = steps.filter(step => step.status === "todo" || step.status === "review" || step.status === "blocked");
     steps.push(published
         ? {id: "publish", status: "done", href: "/manage/schedule", detail: "publishDone"}
         : open.length > 0

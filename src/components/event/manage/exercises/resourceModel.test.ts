@@ -5,22 +5,20 @@ import {amountText, formatCpu, formatMemory, hasResources, resourcesText} from "
 const res = (cpu: number, mib: number, devices: number, blocks = devices * 4) => ({Blocks: blocks, CPUMillicores: cpu, MemoryBytes: mib * 1024 ** 2, Devices: devices});
 
 describe("resource formatting", () => {
-    it("formats CPU and memory", () => {
-        expect(formatCpu(250)).toBe("250m");
-        expect(formatCpu(1000)).toBe("1");
-        expect(formatCpu(1500)).toBe("1.5");
-        expect(formatMemory(64 * 1024 ** 2)).toBe("64Mi");
-        expect(formatMemory(1024 ** 3)).toBe("1Gi");
-        expect(formatMemory(1536 * 1024 ** 2)).toBe("1.5Gi");
+    it("formats CPU and memory with the shared resources formatter", () => {
+        expect(formatCpu(250)).toBe("250 мілі-ядер");
+        expect(formatCpu(1500)).toBe("1,5 vCPU");
+        expect(formatMemory(64 * 1024 ** 2)).toBe("64 МіБ");
+        expect(formatMemory(1024 ** 3)).toBe("1 ГіБ");
     });
 
     it("shows a range only when the variants differ", () => {
-        expect(resourcesText({Min: res(250, 1024, 2), Max: res(250, 1024, 2)})).toBe("CPU 250m · памʼять 1Gi · 8 блоків · пристроїв 2");
-        expect(resourcesText({Min: res(50, 128, 1), Max: res(250, 1024, 3)})).toBe("CPU 50m–250m · памʼять 128Mi–1Gi · 4–12 блоків · пристроїв 1–3");
+        expect(resourcesText({Min: res(250, 1024, 2), Max: res(250, 1024, 2)})).toBe("CPU 250 мілі-ядер · памʼять 1 ГіБ · 8 блоків · пристроїв 2");
+        expect(resourcesText({Min: res(50, 128, 1), Max: res(250, 1024, 3)})).toBe("CPU 50 мілі-ядер–250 мілі-ядер · памʼять 128 МіБ–1 ГіБ · 4–12 блоків · пристроїв 1–3");
     });
 
     it("formats a group pod amount", () => {
-        expect(amountText({Blocks: 2, CPUMillicores: 100, MemoryBytes: 128 * 1024 ** 2})).toBe("CPU 100m · памʼять 128Mi · 2 блоки");
+        expect(amountText({Blocks: 2, CPUMillicores: 100, MemoryBytes: 128 * 1024 ** 2})).toBe("CPU 100 мілі-ядер · памʼять 128 МіБ · 2 блоки");
     });
 
     it("counts a set without devices as having no resources", () => {

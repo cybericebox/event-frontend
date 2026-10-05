@@ -6,7 +6,7 @@ const config = {Participation: 1, Registration: 2, MaxTeamSize: 4, Infrastructur
 const lifecycle = {Configured: true, Status: "published", Infrastructure: {HasDynamicLabs: false, LaboratoriesAvailable: false, RequiresVPN: false, CanStart: true}} as ManageLifecycle;
 const mail = {Identity: {Sender: {Name: "", Address: "a@b.c"}, ReplyTo: {Name: "", Address: ""}}, Inherited: {Sender: {Name: "", Address: ""}, ReplyTo: {Name: "", Address: ""}}} as SetupInput["mail"];
 const set = (extra: Record<string, unknown> = {}) => ({Status: 0, Scope: "catalog", ...extra}) as never;
-const base = (extra: Partial<SetupInput> = {}): SetupInput => ({config, lifecycle, attachments: [set()], content: {LandingDraft: null} as never, mail, ...extra});
+const base = (extra: Partial<SetupInput> = {}): SetupInput => ({config, lifecycle, attachments: [set()], content: {Landing: {blocks: [{}]}, LandingDraft: null} as never, mail, ...extra});
 const status = (input: SetupInput, id: string) => buildSetupSteps(input).find(step => step.id === id)?.status;
 
 describe("event setup steps", () => {
@@ -57,6 +57,12 @@ describe("event setup steps", () => {
         const inherited = {Identity: {Sender: {Name: "", Address: ""}}, Inherited: {Sender: {Name: "", Address: "x@y.z"}}} as never;
         expect(status(base({mail: inherited}), "mail")).toBe("done");
         expect(status(base({mail: {Identity: {Sender: {Name: "", Address: ""}}, Inherited: {Sender: {Name: "", Address: ""}}} as never}), "mail")).toBe("optional");
+    });
+
+    it("asks to review a home page nobody has built yet", () => {
+        const untouched = base({content: {Landing: {blocks: []}, LandingDraft: null} as never});
+        expect(status(untouched, "pages")).toBe("review");
+        expect(summarizeSetup(buildSetupSteps(untouched)).complete).toBe(false);
     });
 
     it("flags an unpublished landing draft", () => {

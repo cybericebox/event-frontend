@@ -10,7 +10,7 @@ afterEach(cleanup);
 const challenge = {
     ID: "01900000-0000-7000-8000-0000000000c1", TaskID: "01900000-0000-7000-8000-0000000000t1", GroupID: null, PrerequisiteIDs: [],
     Order: 0, BoardOrder: null, Points: 150, ScoringOverride: null, HintsEnabled: true, MaxFlagAttempts: null, Published: true,
-    Snapshot: {name: "SQL injection", description: {root: {type: "root", children: [{type: "paragraph", children: [{type: "text", text: "Знайдіть прапор у формі входу"}]}]}}},
+    Snapshot: {name: "SQL injection", description: {root: {type: "root", children: [{type: "paragraph", children: [{type: "text", text: "Знайдіть прапор у формі входу"}]}]}}, placeholders: []},
     Hints: [{ID: "01900000-0000-7000-8000-0000000000h1", Text: "Подивіться на запит", Level: "nudge", Cost: 20, Overridden: true}],
 } as EventBoardChallenge;
 const attachment = {ID: "01900000-0000-7000-8000-0000000000a1", Infrastructure: false} as EventExerciseAttachment;
