@@ -84,6 +84,9 @@ export const fixtureChallenge: OwnChallenge = {
     ],
     HintCostTotal: 75,
     BoardPublished: true,
+    StageID: null,
+    Closed: false,
+    Practice: false,
 };
 
 export const fixtureTiles: OwnChallenge[] = Array.from({length: 24}, (_, index) => ({

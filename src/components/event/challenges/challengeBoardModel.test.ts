@@ -3,6 +3,7 @@ import {challengeSchema, type OwnChallenge} from "@/api/participantChallenges";
 import {
     attemptsLeft, boardViewKey, NO_SPEND, spendAttempt, buildCategories, formatFileSize, formatPoints, lockedLabel, matchesBoard, missingMembers,
     readBoardView, restPoints, solvedCount, solvesLabel, writeBoardView,
+    applyBoardFilters, boardFilterSearch, boardStatus, DEFAULT_BOARD_FILTERS, isActiveChallenge, parseBoardFilters, UNSTAGED,
 } from "./challengeBoardModel";
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -37,12 +38,12 @@ describe("challenge board model", () => {
         expect(categories[0].challenges.map(item => item.Snapshot.name)).toEqual(["Task 3", "Task 2"]);
     });
 
-    it("filters unsolved and searches names and categories", () => {
+    it("searches names and categories", () => {
         const solved = challenge(1, 1, {SolvedAt: "2026-09-26T10:00:00Z"});
-        expect(matchesBoard(solved, "open", "")).toBe(false);
-        expect(matchesBoard(solved, "all", "task 1")).toBe(true);
-        expect(matchesBoard(challenge(2, 1), "all", "web", "Web")).toBe(true);
-        expect(matchesBoard(challenge(2, 1), "all", "crypto", "Web")).toBe(false);
+        expect(matchesBoard(solved, "nothing like it")).toBe(false);
+        expect(matchesBoard(solved, "task 1")).toBe(true);
+        expect(matchesBoard(challenge(2, 1), "web", "Web")).toBe(true);
+        expect(matchesBoard(challenge(2, 1), "crypto", "Web")).toBe(false);
     });
 
     it("counts solved tasks and the points left", () => {
@@ -105,5 +106,63 @@ describe("attempts left", () => {
         const spend = spendAttempt(first, NO_SPEND);
         expect(attemptsLeft(other, spend)).toBe(2);
         expect(attemptsLeft(first, spendAttempt(first, NO_SPEND, true))).toBe(0);
+    });
+});
+
+describe("board filters", () => {
+    const open = {ID: uuid(1), Name: "Open", OpensAt: "2026-10-01T10:00:00Z", ClosesAt: "2026-10-01T12:00:00Z", Returnable: false, State: "open" as const};
+    const closed = {ID: uuid(2), Name: "Closed", OpensAt: "2026-10-01T08:00:00Z", ClosesAt: "2026-10-01T10:00:00Z", Returnable: true, State: "closed" as const};
+    const stages = [closed, open];
+    const unstaged = challenge(1, 1);
+    const inOpen = challenge(2, 1, {StageID: open.ID});
+    const inClosed = challenge(3, 1, {StageID: closed.ID, Closed: true});
+    const solvedInClosed = challenge(4, 1, {StageID: closed.ID, Closed: true, SolvedAt: "2026-10-01T09:00:00Z"});
+    const practice = challenge(5, 1, {StageID: closed.ID, Practice: true});
+    const all = [unstaged, inOpen, inClosed, solvedInClosed, practice];
+
+    it("«Активні» is the open stage's tasks plus the sets without a stage", () => {
+        expect(isActiveChallenge(unstaged, stages)).toBe(true);
+        expect(isActiveChallenge(inOpen, stages)).toBe(true);
+        expect(isActiveChallenge(inClosed, stages)).toBe(false);
+        expect(applyBoardFilters(all, DEFAULT_BOARD_FILTERS, stages)).toEqual([unstaged, inOpen]);
+        expect(applyBoardFilters(all, {...DEFAULT_BOARD_FILTERS, scope: "all"}, stages)).toEqual(all);
+    });
+
+    it("a newly opened stage shows up in the default view by itself", () => {
+        const later = {...closed, State: "open" as const};
+        expect(applyBoardFilters(all, DEFAULT_BOARD_FILTERS, [later, open])).toContain(inClosed);
+    });
+
+    it("narrows by stage, including the sets without one", () => {
+        const wide = {...DEFAULT_BOARD_FILTERS, scope: "all" as const};
+        expect(applyBoardFilters(all, {...wide, stage: closed.ID}, stages)).toEqual([inClosed, solvedInClosed, practice]);
+        expect(applyBoardFilters(all, {...wide, stage: UNSTAGED}, stages)).toEqual([unstaged]);
+    });
+
+    it("status: solved is the team's (any lock, a practice solve too), closed is locked and unsolved, open is the rest", () => {
+        expect(boardStatus(unstaged)).toBe("open");
+        expect(boardStatus(inClosed)).toBe("closed");
+        expect(boardStatus(solvedInClosed)).toBe("solved");
+        expect(boardStatus(practice)).toBe("solved");
+        const wide = {...DEFAULT_BOARD_FILTERS, scope: "all" as const};
+        expect(applyBoardFilters(all, {...wide, status: "solved"}, stages)).toEqual([solvedInClosed, practice]);
+        expect(applyBoardFilters(all, {...wide, status: "closed"}, stages)).toEqual([inClosed]);
+        expect(applyBoardFilters(all, {...wide, status: "open"}, stages)).toEqual([unstaged, inOpen]);
+    });
+
+    it("groups with no visible task vanish: categories are built from the filtered tasks", () => {
+        const other = challenge(6, 2, {StageID: closed.ID, Closed: true});
+        const shown = buildCategories(applyBoardFilters([unstaged, other], DEFAULT_BOARD_FILTERS, stages));
+        expect(shown.map(group => group.name)).toEqual(["G1"]);
+    });
+
+    it("keeps the filters in the URL and leaves the defaults and other parameters alone", () => {
+        expect(parseBoardFilters("")).toEqual(DEFAULT_BOARD_FILTERS);
+        const filters = {scope: "all" as const, stage: closed.ID, status: "closed" as const, category: uuid(7)};
+        const search = boardFilterSearch("?x=1", filters);
+        expect(parseBoardFilters(search)).toEqual(filters);
+        expect(search).toContain("x=1");
+        expect(boardFilterSearch("?x=1&scope=all&status=open", DEFAULT_BOARD_FILTERS)).toBe("?x=1");
+        expect(parseBoardFilters("?status=bogus&scope=nope")).toEqual(DEFAULT_BOARD_FILTERS);
     });
 });

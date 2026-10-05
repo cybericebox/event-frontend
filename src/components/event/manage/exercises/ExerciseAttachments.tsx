@@ -23,6 +23,8 @@ import {
 } from "./attachmentModel";
 import {InfrastructureIcon, TipTag} from "./InfrastructureIcon";
 import {SetActions} from "./SetActions";
+import {SetStageField} from "./SetStageField";
+import {getManageStages} from "@/api/manageStages";
 import {HintMark, TaskRow} from "./TaskRow";
 import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRowModel";
 import {SetStatusIcon} from "./SetStatusIcon";
@@ -74,6 +76,9 @@ export function ExerciseAttachments() {
     // Stand readiness is optional: a failure only hides the stand badges.
     const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), enabled: infrastructure, refetchInterval: 30_000, refetchOnWindowFocus: false, retry: false});
     const detached = (board.attachments.data ?? []).filter(isDetached);
+    // The stages are optional context for the per-set selector: a failed read only hides it.
+    const stagesQuery = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false, retry: false});
+    const stages = stagesQuery.data ?? [];
 
     async function runAction() {
         if (!action || busy) return;
@@ -166,6 +171,7 @@ export function ExerciseAttachments() {
                         {/* Visibility is per set: its tasks share one infrastructure. */}
                         <EventSwitch className="event-manage-form__switch" checked={shown} disabled={!canManage || challenges.length === 0}
                             onCheckedChange={checked => mutations.setPublished(attachment.ID, checked)} label={t("manage.exercises.challenge.showOnBoard")} />
+                        {stages.length > 0 && <SetStageField eventID={eventID} attachment={attachment} stages={stages} canManage={canManage} />}
                         {attachment.UpdateAvailable && <div className="event-exercise-set__notice">
                             <span><strong>{t("manage.exercises.updateAvailable", {number: attachment.LatestVersionNumber})}</strong> {t("manage.exercises.settingsKept")}</span>
                             {canManage && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy} onClick={() => setAction({kind: "update", attachment})}>{t("manage.exercises.action.update.confirm")}</button>}

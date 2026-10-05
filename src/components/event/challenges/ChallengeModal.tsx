@@ -11,7 +11,7 @@ import {Network} from "lucide-react";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {
     challengeAttachmentUrl, challengeFiles, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
-    type ChallengeHint, type OwnChallenge,
+    type BoardStage, type ChallengeHint, type OwnChallenge,
 } from "@/api/participantChallenges";
 import {reportTaskOpened} from "@/api/taskOpenedBeacon";
 import {moderatorFileUrl, submitModeratorFlag} from "@/api/moderatorsBoard";
@@ -45,6 +45,7 @@ function submitMessage(error: unknown): Message {
         if (error.code === ApiErrorCode.TeamNotAdmitted) return {text: t("challenges.hint.error.notAdmitted"), tone: "warn"};
         if (error.code === ApiErrorCode.AnswerTooLong) return {text: apiErrorMessage(error.code, t("challenges.submit.failed")), tone: "error"};
         if (error.code === ApiErrorCode.AttemptLimitReached) return {text: t("challenges.modal.attemptsExhausted"), tone: "warn"};
+        if (error.code === ApiErrorCode.StageClosed) return {text: t("challenges.submit.stageClosed"), tone: "warn"};
         if (error.status === 409 || error.status === 403) return {text: t("challenges.submit.notAccepting"), tone: "warn"};
     }
     return {text: t("challenges.submit.failed"), tone: "warn"};
@@ -95,8 +96,10 @@ function HintText({text}: {text: string}) {
 // Hints: participants see each hint's price, never its level (moderators do);
 // participants unlock one by one (paid ones after a confirm); the
 // moderators board shows every text and never unlocks.
-export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlocked}: {
+export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlocked, closed = false}: {
     challenge: OwnChallenge; eventID: string; moderators: boolean; chargeMode: HintChargeMode; onUnlocked: () => void;
+    // The stage is closed: unlocked texts stay readable, nothing new opens.
+    closed?: boolean;
 }) {
     const [confirm, setConfirm] = useState<{hint: ChallengeHint; index: number} | null>(null);
     const [busyID, setBusyID] = useState<string | null>(null);
@@ -129,12 +132,13 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         <ul className="event-cmodal__hints">{challenge.Hints.map((hint, index) => <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
                 <span className="event-cmodal__hint-title">{moderators ? t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)}) : t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
-                {!moderators && !hint.Unlocked && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
+                {!moderators && !hint.Unlocked && !closed && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
                     onClick={() => {if (hintNeedsConfirm(hint)) {setConfirmError(""); setConfirm({hint, index});} else void unlock(hint);}}>{t("challenges.hints.unlock")}</EventButton>}
             </div>
             {hint.Content && <HintText text={hint.Content} />}
             {hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">{t("challenges.hints.unlockedBy", {name: hint.UnlockedByName})}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
         </li>)}</ul>
+        {closed && !moderators && <p className="ib-cmodal__hint">{t("challenges.hint.error.stageClosed")}</p>}
         {error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
         <ConfirmDialog open={!!confirm} onCancel={() => setConfirm(null)} busy={!!busyID} error={confirmError}
             title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
@@ -146,8 +150,10 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
 }
 
 // React port of ds-v2 IB.ChallengeModal on a native <dialog>.
-export function ChallengeModal({challenge, eventID, mode, teamMode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onRejected, onHintUnlocked}: {
+export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onRejected, onHintUnlocked}: {
     challenge: OwnChallenge | null;
+    // The stage of the task's set, when it has one (only opened stages are known to the board).
+    stage?: BoardStage | null;
     eventID: string;
     mode: BoardMode;
     teamMode: boolean;
@@ -172,6 +178,8 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     const [message, setMessage] = useState<Message>(null);
     const [busy, setBusy] = useState(false);
     const [accepted, setAccepted] = useState(false);
+    // The accepted answer was a practice one (the stage had already closed): no points are shown for it.
+    const [practiceAnswer, setPracticeAnswer] = useState(false);
     const [spend, setSpend] = useState<AttemptSpend>(NO_SPEND);
     const [waitUntil, setWaitUntil] = useState(0);
     const [now, setNow] = useState(() => Date.now());
@@ -216,6 +224,7 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         setAnswer("");
         setMessage(null);
         setAccepted(false);
+        setPracticeAnswer(false);
     }
 
     const waiting = waitUntil > now;
@@ -238,10 +247,21 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
         setBusy(true);
         setMessage(null);
         try {
-            const correct = moderators
-                ? (await submitModeratorFlag(eventID, challenge.EventChallengeID, value)).Correct
-                : (await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID())).Correct;
-            if (correct) {
+            const result = moderators
+                ? await submitModeratorFlag(eventID, challenge.EventChallengeID, value)
+                : await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID());
+            const correct = result.Correct;
+            // The server says whether it was rated: a stage that closed while the modal was open turns it into practice.
+            const practiced = !moderators && "Practice" in result && result.Practice === true;
+            if (correct && practiced) {
+                // Verified after a returnable stage closed: shown to the team, never rated.
+                setPracticeAnswer(true);
+                setAccepted(true);
+                setAnswer("");
+                titleRef.current?.focus();
+                onRejected?.();
+            } else if (correct) {
+                setPracticeAnswer(false);
                 setAccepted(true);
                 setAnswer("");
                 if (!moderators) {
@@ -257,7 +277,10 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                 }
             }
         } catch (error) {
-            if (error instanceof ParticipantChallengeError && error.code === ApiErrorCode.AttemptLimitReached) {
+            if (error instanceof ParticipantChallengeError && error.code === ApiErrorCode.StageClosed) {
+                setMessage(submitMessage(error));
+                onRejected?.();
+            } else if (error instanceof ParticipantChallengeError && error.code === ApiErrorCode.AttemptLimitReached) {
                 setSpend(current => spendAttempt(challenge, current, true));
                 setMessage(null);
                 onRejected?.();
@@ -277,10 +300,16 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
     const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], lab.data), [challenge?.Snapshot.placeholders, lab.data]);
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
+    // A closed stage that is not returnable refuses answers and hints; one that is returnable and has ended takes them
+    // as practice (checked and shown, never rated, hints free).
+    const stageClosed = !moderators && !!challenge?.Closed;
+    const practice = !moderators && !stageClosed && !!stage && stage.State === "closed" && stage.Returnable;
+    const practiceSolved = !!challenge?.Practice && !solved;
     const left = challenge && !moderators ? attemptsLeft(challenge, spend) : null;
     const exhausted = left === 0;
     const category = challenge?.GroupName || t("challenges.otherCategory");
-    const hints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
+    const shownHints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
+    const hints = practice ? shownHints.map(hint => hint.Unlocked ? hint : {...hint, Cost: 0}) : shownHints;
     const fileUrl = (fileID: string) => moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
 
     return <dialog ref={ref} className="ib-cmodal" aria-labelledby={`${id}-t`}
@@ -302,6 +331,8 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                     <span className="ib-num">{pointsLabel(challenge.Points)}</span>
                     {showDifficulty && <span className="ib-tag">{difficultyLabel(challenge.Snapshot.difficulty)}</span>}
                     {solved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.modal.solved")}</span>}
+                    {practiceSolved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.tile.practice")}</span>}
+                    {stageClosed && <span className="ib-tag">{t("challenges.modal.closedTag")}</span>}
                     {challenge.ContentUpdatedAt && <span className="ib-tag">{t("challenges.modal.updatedAt", {time: formatClock(challenge.ContentUpdatedAt)})}</span>}
                     {moderators && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">{t("challenges.modal.unpublished")}</span>}
                     {challenge.Infrastructure && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />{t("challenges.modal.vpnRequired")}</button>}
@@ -324,12 +355,16 @@ export function ChallengeModal({challenge, eventID, mode, teamMode, finished, sh
                     </li>)}</ul>
                 </section>}
                 {challenge.Infrastructure && <HostBlock lab={lab.data} pending={lab.isPending} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
-                {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={challenge} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} onUnlocked={() => onHintUnlocked?.()} />}
+                {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
                 {moderators && <p className="ib-cmodal__hint event-cmodal__note">{t("challenges.modal.moderatorsNote")}</p>}
-                {accepted && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? t("challenges.modal.flagCorrect") : t("challenges.modal.flagAccepted")}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}
+                {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
+                {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}
+                {accepted && practiceAnswer && <div className="ib-cmodal__ok" role="status">{ICON.check}{t("challenges.modal.practiceAccepted")}</div>}
+                {accepted && !practiceAnswer && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? t("challenges.modal.flagCorrect") : t("challenges.modal.flagAccepted")}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}
+                {!accepted && practiceSolved && <div className="ib-cmodal__ok" role="status">{ICON.check}{t("challenges.tile.practice")}</div>}
                 {!accepted && solved && !moderators && <div className="ib-cmodal__ok" role="status">{ICON.check}{teamMode ? t("challenges.modal.solvedByTeam") : t("challenges.modal.solved")}<span className="ib-num">{formatClock(challenge.SolvedAt!, true)}</span></div>}
                 {!solved && finished && !moderators && <p className="event-cmodal__closed" role="status">{richMessage(t("challenges.modal.finished"), {strong: <b>{t("challenges.modal.finishedStrong")}</b>})}</p>}
-                {(moderators || (!solved && !finished && !accepted)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
+                {(moderators || (!solved && !finished && !accepted && !stageClosed && !practiceSolved)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
                     <label htmlFor={`${id}-flag`}>{t("challenges.modal.flag")}</label>
                     <div className="ib-cmodal__row">
                         <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}

@@ -84,6 +84,7 @@ export function hintUnlockError(error: unknown): string {
         if (error.code === ApiErrorCode.ChallengeNotFound) return t("challenges.hint.error.challengeGone");
         if (error.code === ApiErrorCode.ChallengePrerequisites) return t("challenges.hint.error.prerequisites");
         if (error.code === ApiErrorCode.TeamNotAdmitted) return t("challenges.hint.error.notAdmitted");
+        if (error.code === ApiErrorCode.StageClosed) return t("challenges.hint.error.stageClosed");
         if (error.status === 409 || error.status === 403) return t("challenges.hint.error.unavailable");
     }
     return t("challenges.hint.error.failed");

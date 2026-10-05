@@ -1,8 +1,13 @@
-import type {OwnChallenge} from "@/api/participantChallenges";
+import type {BoardStage, OwnChallenge} from "@/api/participantChallenges";
 import {t, tPlural} from "@/i18n/t";
 
 export type BoardView = "tiles" | "rail";
-export type BoardFilter = "all" | "open";
+// «Активні» (the open stage's tasks and the sets without a stage) or «Всі»; the stage and status filters narrow either.
+export type BoardScope = "active" | "all";
+export type BoardStatus = "" | "open" | "solved" | "closed";
+export type BoardFilters = {scope: BoardScope; stage: string; status: BoardStatus; category: string};
+export const UNSTAGED = "none";
+export const DEFAULT_BOARD_FILTERS: BoardFilters = {scope: "active", stage: "", status: "", category: ""};
 export type BoardCategory = {key: string; name: string; order: number; challenges: OwnChallenge[]};
 
 // «1 250» — a narrow no-break space groups thousands like the DS boards.
@@ -51,10 +56,57 @@ export function buildCategories(challenges: OwnChallenge[]): BoardCategory[] {
         .map(group => ({...group, challenges: [...group.challenges].sort((a, b) => a.Order - b.Order || a.Snapshot.name.localeCompare(b.Snapshot.name, "uk"))}));
 }
 
-export function matchesBoard(challenge: OwnChallenge, filter: BoardFilter, query: string, categoryName = ""): boolean {
-    if (filter === "open" && challenge.SolvedAt) return false;
+export function matchesBoard(challenge: OwnChallenge, query: string, categoryName = ""): boolean {
     const q = query.trim().toLocaleLowerCase("uk");
     return !q || challenge.Snapshot.name.toLocaleLowerCase("uk").includes(q) || categoryName.toLocaleLowerCase("uk").includes(q);
+}
+
+// What the team has done with a task, whatever its stage says: solved counts a practice solve too (it is shown as
+// solved, only the rating ignores it); closed is a task of a closed stage that is not solved; the rest is open.
+export function boardStatus(challenge: OwnChallenge): Exclude<BoardStatus, ""> {
+    if (challenge.SolvedAt || challenge.Practice) return "solved";
+    return challenge.Closed ? "closed" : "open";
+}
+
+// A task is active when its set has no stage or its stage is open now.
+export function isActiveChallenge(challenge: OwnChallenge, stages: BoardStage[]): boolean {
+    if (!challenge.StageID) return true;
+    return stages.find(stage => stage.ID === challenge.StageID)?.State === "open";
+}
+
+// Applies the scope, stage and status filters (the category and the search narrow further inside a board).
+export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilters, stages: BoardStage[]): OwnChallenge[] {
+    return challenges.filter(challenge => {
+        if (filters.scope === "active" && !isActiveChallenge(challenge, stages)) return false;
+        if (filters.stage && (filters.stage === UNSTAGED ? challenge.StageID !== null : challenge.StageID !== filters.stage)) return false;
+        return !filters.status || boardStatus(challenge) === filters.status;
+    });
+}
+
+const STATUSES: BoardStatus[] = ["open", "solved", "closed"];
+
+// The filters live in the URL: ?scope=all&stage=…&status=…&category=… (defaults are left out).
+export function parseBoardFilters(search: string): BoardFilters {
+    const params = new URLSearchParams(search);
+    const status = params.get("status") as BoardStatus | null;
+    return {
+        scope: params.get("scope") === "all" ? "all" : "active",
+        stage: params.get("stage") ?? "",
+        status: status && STATUSES.includes(status) ? status : "",
+        category: params.get("category") ?? "",
+    };
+}
+
+// Rewrites only the filter parameters of a query string, keeping any other.
+export function boardFilterSearch(search: string, filters: BoardFilters): string {
+    const params = new URLSearchParams(search);
+    for (const key of ["scope", "stage", "status", "category"]) params.delete(key);
+    if (filters.scope !== "active") params.set("scope", filters.scope);
+    if (filters.stage) params.set("stage", filters.stage);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.category) params.set("category", filters.category);
+    const query = params.toString();
+    return query ? `?${query}` : "";
 }
 
 export function solvedCount(challenges: OwnChallenge[]): string {

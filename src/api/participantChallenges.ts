@@ -69,8 +69,35 @@ export const challengeSchema = z.object({
     AttemptsLeft: z.number().int().nullish().transform(value => value ?? null),
     // Moderators board only: the challenge is (not yet) on the participants' board.
     BoardPublished: z.boolean().optional(),
+    // The stage of the task's set (null: the whole event). Closed: the stage closed and is not returnable (visible, no
+    // submissions or hints). Practice: solved after a returnable stage closed, which the rating does not count.
+    StageID: id.nullish().transform(value => value ?? null),
+    Closed: z.boolean().default(false),
+    Practice: z.boolean().default(false),
 });
-const submissionSchema = z.object({Correct: z.boolean(), FirstSolve: z.boolean().default(false)});
+// Only opened stages are sent; an upcoming one never is.
+const boardStageSchema = z.object({
+    ID: id, Name: z.string(), OpensAt: z.string(), ClosesAt: z.string(), Returnable: z.boolean().default(false),
+    State: z.enum(["open", "closed"]).catch("closed"),
+});
+// The stage that is open now. EndsAt is sent only while its countdown is visible (never for the last stage, which ends
+// with the event); Last: the stage ends with the event.
+const currentStageSchema = z.object({
+    ID: id, Name: z.string(), OpensAt: z.string(),
+    EndsAt: z.string().nullish().transform(value => value ?? null), Last: z.boolean().default(false),
+});
+const optionalTime = z.string().nullish().transform(value => value ?? null);
+// The participant board: tasks plus the stage context. The clocks count against ServerNow; the board is refetched at NextChangeAt.
+export const ownBoardSchema = z.object({
+    Challenges: z.array(challengeSchema).nullish().transform(value => value ?? []),
+    Stages: z.array(boardStageSchema).nullish().transform(value => value ?? []),
+    ServerNow: z.string(),
+    CurrentStage: currentStageSchema.nullish().transform(value => value ?? null),
+    // The start of the next stage, only during a break.
+    NextOpensAt: optionalTime,
+    NextChangeAt: optionalTime,
+});
+const submissionSchema = z.object({Correct: z.boolean(), FirstSolve: z.boolean().default(false), Practice: z.boolean().default(false)});
 const solveSchema = z.object({TeamName: z.string(), NameHidden: z.boolean().optional(), SolvedAt: z.string(), Own: z.boolean(), FirstBlood: z.boolean().default(false)})
     .transform(row => row.NameHidden ? {...row, TeamName: t("scoreboard.nameHidden")} : row);
 const solvesPageSchema = z.object({
@@ -80,6 +107,9 @@ const solvesPageSchema = z.object({
 });
 export const SOLVES_PAGE_SIZE = 30;
 export type OwnChallenge = z.infer<typeof challengeSchema>;
+export type OwnBoard = z.infer<typeof ownBoardSchema>;
+export type BoardStage = z.infer<typeof boardStageSchema>;
+export type CurrentStage = z.infer<typeof currentStageSchema>;
 export type ChallengeSubmission = z.infer<typeof submissionSchema>;
 export type ChallengeSolve = z.infer<typeof solveSchema>;
 export type ChallengeSolvesPage = z.infer<typeof solvesPageSchema>;
@@ -107,10 +137,10 @@ async function failure(response: Response): Promise<ParticipantChallengeError> {
     return new ParticipantChallengeError(response.status, await readApiErrorCode(response), Number.isFinite(retry) && retry > 0 ? retry : undefined);
 }
 
-export async function getOwnChallenges(eventID: string): Promise<OwnChallenge[]> {
+export async function getOwnBoard(eventID: string): Promise<OwnBoard> {
     const response = await fetch(`${baseUrl(eventID)}/mine`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
     if (!response.ok) throw await failure(response);
-    return z.object({Data: challengeSchema.array().nullish().transform(value => value ?? [])}).parse(await response.json()).Data;
+    return z.object({Data: ownBoardSchema}).parse(await response.json()).Data;
 }
 
 // Who solved a challenge, oldest first (first blood on top), one cursor page at a

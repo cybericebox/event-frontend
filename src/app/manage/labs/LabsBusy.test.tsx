@@ -12,7 +12,7 @@ vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({ev
 vi.mock("@/api/manageLabs", async original => ({
     ...await original() as object,
     getManageLabs: async () => ({
-        InfrastructureAllowed: true, LaboratoriesAvailable: true, DeployLeadMinutes: 30, TeardownDelayMinutes: 30, DeployAt: null, TeardownAt: null, ChallengesOpened: true,
+        InfrastructureAllowed: true, LaboratoriesAvailable: true, TeardownDelayMinutes: 30, DeployAt: null, TeardownAt: null, ChallengesOpened: true,
         Summary: {Total: 2, NotDeployed: 0, Creating: 0, Ready: 2, Failed: 0, Removed: 0}, Items: [stand(BLUE, "Blue Team"), stand(MODS, "Moderators", true)],
     }),
     getModeratorVPNConfig: (...args: unknown[]) => vpn(...args),

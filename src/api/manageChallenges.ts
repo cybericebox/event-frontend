@@ -38,6 +38,8 @@ const attachmentSchema = z.object({
     Status: z.number().int(), ReplacesID: id.nullish().transform(value => value ?? null),
     SupersededAt: z.string().nullish().transform(value => value ?? null),
     DetachedAt: z.string().nullish().transform(value => value ?? null), CreatedAt: z.string(),
+    // The stage the set belongs to; null lives for the whole event.
+    StageID: id.nullish().transform(value => value ?? null),
     Scope: z.enum(["catalog", "event"]).catch("catalog"),
     // Catalog version ordinal: the «версія N» label (Revision is the event's own counter).
     VersionNumber: z.number().int().default(0),

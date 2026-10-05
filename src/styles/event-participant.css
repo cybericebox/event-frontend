@@ -138,3 +138,10 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
   .event-countdown__clock{justify-content:center;gap:var(--ib-4)}
 }
 .event-participation__tabs{margin-bottom:var(--ib-5)}
+
+/* Stage timers sit beside the event timer; the board filters stay in one row with the category chips. */
+.event-challenges__timers{display:grid;gap:var(--ib-3);margin-bottom:var(--ib-5)}
+.event-challenges__timers>.event-countdown{margin-bottom:0}
+.event-board-filters{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
+.event-board-filters__select{min-width:150px}
+.event-challenges__timers:empty{display:none}

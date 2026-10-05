@@ -36,6 +36,16 @@
 /* solved + updated: keep the check, move the word to screen readers so the row fits */
 .ib-tile.is-solved .ib-tile__upd~.ib-tile__solved .ib-tile__solved-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
+/* closed stage: the task stays on the board with the team's state, but nothing can be sent */
+.ib-tile.is-closed,.ib-tile.is-practice{background:var(--ib-solved);border-color:var(--ib-solved-line);color:var(--ib-tile-solved-name)}
+.ib-tile.is-closed:hover,.ib-tile.is-practice:hover{background:var(--ib-solved);border-color:var(--ib-control)}
+.ib-tile.is-closed .ib-tile__name,.ib-tile.is-practice .ib-tile__name{font-weight:var(--ib-w-medium)}
+.ib-tile.is-closed .ib-tile__pts,.ib-tile.is-practice .ib-tile__pts{color:var(--ib-faint)}
+.ib-tile__closed{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);
+  font-size:var(--ib-fs-11);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-dim);white-space:nowrap}
+.ib-tile__practice{display:inline-flex;align-items:center;gap:var(--ib-1);min-width:0;font-size:var(--ib-fs-11);font-weight:var(--ib-w-medium);color:var(--ib-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib-tile__practice svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
 /* just accepted: one ok ring that fades (outline, not a shadow) */
 .ib-tile.is-accepted{animation:ib-tile-ok 1.6s ease-out}
 @keyframes ib-tile-ok{0%{outline:3px solid var(--ib-ok);outline-offset:2px}100%{outline:3px solid transparent;outline-offset:2px}}

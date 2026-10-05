@@ -36,12 +36,14 @@ export const ManageConfigSchema = z.object({
     ShowStartCountdown: z.boolean().default(true),
     ShowFinishCountdown: z.boolean().default(true),
     FinishCountdownMinutes: z.number().int().min(1).max(1440).default(10),
+    // before_end: the time-left countdown shows during the last N minutes; from_start: from the start of the current stage (of the event without stages).
+    FinishCountdownMode: z.enum(["before_end", "from_start"]).catch("before_end"),
     Theme: themeSchema,
     UpdatedAt: z.string(),
 });
 
 export type ManageConfig = z.infer<typeof ManageConfigSchema>;
-type CountdownKey = "ShowStartCountdown" | "ShowFinishCountdown" | "FinishCountdownMinutes";
+type CountdownKey = "ShowStartCountdown" | "ShowFinishCountdown" | "FinishCountdownMinutes" | "FinishCountdownMode";
 // The countdown fields are optional: a PUT without them keeps the saved values.
 export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt" | "InfrastructureAllowed" | CountdownKey> & Partial<Pick<ManageConfig, CountdownKey>>;
 
