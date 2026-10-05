@@ -5,14 +5,16 @@ import {renderToString} from "react-dom/server";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {AppShell} from "./AppShell";
 
-vi.mock("next/navigation", () => ({usePathname: () => "/", useRouter: () => ({refresh: () => {}})}));
+const path = vi.hoisted(() => ({value: "/"}));
+vi.mock("next/navigation", () => ({usePathname: () => path.value, useRouter: () => ({refresh: () => {}})}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: () => new Promise(() => {}), getJoinStatus: () => new Promise(() => {}), getOwnTeam: () => new Promise(() => {})}));
 vi.mock("@/api/participantEventInfo", () => ({getParticipantEventInfo: () => new Promise(() => {})}));
 vi.mock("./GuestShell", () => ({GuestShell: ({children}: {children: React.ReactNode}) => <main>{children}</main>}));
 vi.mock("./ParticipantShell", () => ({ParticipantShell: ({children}: {children: React.ReactNode}) => <main>{children}</main>}));
+vi.mock("./PrivateEventBootstrap", () => ({PrivateEventBootstrap: ({children}: {children: React.ReactNode}) => <section data-testid="private-bootstrap">{children}</section>}));
 vi.mock("./EventLoading", () => ({EventLoading: () => <div>Завантаження події</div>}));
 
-afterEach(cleanup);
+afterEach(() => {cleanup(); path.value = "/";});
 
 it("keeps server-rendered public content visible during browser-only auth checks", () => {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -21,4 +23,12 @@ it("keeps server-rendered public content visible during browser-only auth checks
     render(page);
     expect(screen.getByRole("heading", {name: "Публічна сторінка"})).toBeTruthy();
     expect(screen.queryByText("Завантаження події")).toBeNull();
+});
+
+it.each(["/challenges", "/scoreboard", "/participation", "/join", "/invite", "/forms", "/p/rules", "/team"])("retries %s in the browser when the server had no event", route => {
+    path.value = route;
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    render(<QueryClientProvider client={client}><AppShell event={null} unavailable={false}><h1>Сторінка</h1></AppShell></QueryClientProvider>);
+    expect(screen.getByTestId("private-bootstrap")).toBeTruthy();
+    expect(screen.getByRole("heading", {name: "Сторінка"})).toBeTruthy();
 });

@@ -14,7 +14,6 @@ import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 import {EventLoading} from "./EventLoading";
-import {EventNotFoundScreen} from "./EventNotFoundScreen";
 import {EventServiceStatusGate} from "./EventServiceStatusGate";
 import {OutageShell} from "./OutageShell";
 import {reservedPageSlugs} from "./content/pageSlugs";
@@ -70,8 +69,10 @@ function ShellContent({children, event, unavailable}: Props) {
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
         if (isLive) return children;
-        if (isContentPage) return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
-        return <EventNotFoundScreen />;
+        // Server reads are anonymous, so an unpublished event is absent here. Every other route
+        // retries in the browser with the session; the bootstrap shows the sign-in redirect, the
+        // no-access screen or the not-found screen from the browser answer.
+        return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
     }
     if (isLive) return children;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
