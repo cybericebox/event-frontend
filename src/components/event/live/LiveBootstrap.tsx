@@ -13,7 +13,7 @@ import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventNotFoundScreen} from "@/components/event/EventNotFoundScreen";
 import {NoAccessScreen} from "@/components/event/NoAccessScreen";
-import {SignInRedirect} from "@/components/event/SignInRedirect";
+import {SignInRequired} from "@/components/event/SignInRequired";
 
 function applyEventTheme(event: PublicEventInfo) {
     const root = document.documentElement;
@@ -62,7 +62,7 @@ function LiveStaffBootstrap() {
     const failed = event.error ?? access.error;
     if (failed) {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
-        if (status === 401) return <SignInRedirect />;
+        if (status === 401) return <SignInRequired />;
         if (status === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;
         if (status === 404 && event.isError) return <EventNotFoundScreen />;
         return <main className="live-fullscreen"><EventLoadError message={t("live.openFailed.title")} error={event.error ?? access.error} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} /></main>;

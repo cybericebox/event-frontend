@@ -14,7 +14,7 @@ import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
-import {SignInRedirect} from "@/components/event/SignInRedirect";
+import {SignInRequired} from "@/components/event/SignInRequired";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 
@@ -90,7 +90,7 @@ export default function InvitePage() {
         <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>
         {!event || identity.isPending || (identity.data && (info.isPending || (actionable && form.isPending))) ? <><h1>{t("invite.title")}</h1><EventLoading event={event} label={t("invite.loading")} /></>
             : identity.isError || info.isError || (actionable && form.isError) ? <><h1>{t("invite.title")}</h1><EventLoadError message={t("invite.loadFailed")} error={identity.error ?? info.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : info.isError ? info.refetch() : form.refetch())} /></>
-            : !identity.data ? <SignInRedirect event={event} full={false} />
+            : !identity.data ? <SignInRequired event={event} full={false} />
             : invitation?.Status === ParticipationStatusEnum.ApprovedParticipationStatus ? <><h1>{t("invite.alreadyTitle")}</h1><p>{t("invite.already")}</p>{home}</>
             : !invitation?.Invited || invitation.Status !== ParticipationStatusEnum.PendingParticipationStatus ? <><h1>{t("invite.notFoundTitle")}</h1><p>{t("invite.notFound")}</p>{home}</>
             : invitation.InvitationExpired || expired ? <><h1>{title}</h1><p role="status">{t("shell.invite.expired")}</p>{home}</>

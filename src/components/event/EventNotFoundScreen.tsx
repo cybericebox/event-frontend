@@ -6,29 +6,17 @@ import {SearchX} from "lucide-react";
 import crest from "@/styles/assets/crest-128.png";
 import {BRAND_HEAD, BRAND_TAIL} from "@/i18n/brand";
 import {mainOrigin} from "@/utils/origins";
-import {getCurrentUser} from "@/api/clientAuth";
-import {useQuery} from "@tanstack/react-query";
 import {t} from "@/i18n/t";
-import {EventLoading} from "./EventLoading";
-import {SignInRedirect} from "./SignInRedirect";
 import "@/styles/error-screen.css";
 
 // The event of this address does not exist: deleted, never created, a wrong subdomain. The
 // API answers 404 for an unpublished event to everyone without rights too, so the text says
 // only that there is no such event. The event is unknown, so the screen carries no event
 // branding: the platform crest and wordmark, whatever the layout context holds. Same frame
-// as EventErrorScreen. `redirectVisitor` is for pages that need a session (/manage, /live):
-// a visitor goes straight to the sign-in and back, and only a signed-in account sees this.
-export function EventNotFoundScreen({redirectVisitor = false}: {redirectVisitor?: boolean}) {
+// as EventErrorScreen.
+export function EventNotFoundScreen() {
     useEffect(() => {document.title = t("shell.missing.title");}, []);
-    if (redirectVisitor) return <VisitorGate />;
     return <MissingEvent />;
-}
-
-function VisitorGate() {
-    const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
-    if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;
-    return user.data ? <MissingEvent /> : <SignInRedirect />;
 }
 
 function MissingEvent() {

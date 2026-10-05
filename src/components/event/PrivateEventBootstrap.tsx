@@ -14,7 +14,7 @@ import {EventNotFoundScreen} from "./EventNotFoundScreen";
 import {EventBrandProvider} from "./EventBrandLogo";
 import {OutageShell} from "./OutageShell";
 import {NoAccessScreen} from "./NoAccessScreen";
-import {SignInRedirect} from "./SignInRedirect";
+import {SignInRequired} from "./SignInRequired";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 
@@ -60,7 +60,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // say whether the event is missing or closed: a visitor goes to the sign-in, a signed-in
         // account sees the neutral screen. Any other failure (server error, network) is a load
         // failure with a retry.
-        if (status === 401) return <SignInRedirect />;
+        if (status === 401) return <SignInRequired />;
         if (status === 403) return <NoAccessScreen />;
         if (status === 404) return <EventNotFoundScreen />;
         return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;

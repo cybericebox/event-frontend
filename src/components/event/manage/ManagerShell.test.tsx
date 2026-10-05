@@ -36,14 +36,12 @@ afterEach(() => {
 });
 
 describe("ManagerShell access errors", () => {
-    it("redirects a 401 to the sign-in with the current page as return_to, with no card", async () => {
+    it("asks for the sign-in with a button on 401 and never redirects by itself", async () => {
         getManageAccess.mockRejectedValue(new ManageApiError(401));
         renderShell();
-        await vi.waitFor(() => expect(replace).toHaveBeenCalledWith(`https://id.example.test/sign-in?return_to=${encodeURIComponent("https://ev.example.test/manage/tasks?x=1")}`));
-        expect(screen.getByRole("status")).toBeTruthy();
-        expect(screen.queryByRole("button")).toBeNull();
-        expect(screen.queryByRole("link")).toBeNull();
-        expect(screen.queryByText("Потрібно увійти")).toBeNull();
+        expect(await screen.findByRole("heading", {name: "Потрібен вхід"})).toBeTruthy();
+        expect(screen.getByRole("link", {name: "Увійти"})).toBeTruthy();
+        expect(replace).not.toHaveBeenCalled();
     });
 
     it("shows the no-access screen with the account email for a 403 and does not redirect", async () => {
