@@ -7,7 +7,7 @@
      </details>
    </div>
    Hairlines between items, no boxes, no chevrons in circles. The plus turns into × when open.
-   --lg = landing size (17px questions, 20px padding); default = in-app size (14px). */
+   --lg = landing size (16px questions, 20px padding); default = in-app size (14px). */
 
 .ib-accordion{border-top:1px solid var(--ib-line)}
 .ib-accordion__item{border-bottom:1px solid var(--ib-line)}

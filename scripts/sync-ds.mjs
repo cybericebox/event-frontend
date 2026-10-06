@@ -31,6 +31,7 @@ const copy = {
     "navbar.css": "patterns/navbar/navbar.css",
     "modal.css": "components/modal/modal.css",
     "tooltip.css": "components/tooltip/tooltip.css",
+    "accordion.css": "components/accordion/accordion.css",
     "toc.css": "components/toc/toc.css",
     "field.css": "components/field/field.css",
     "tabs.css": "components/tabs/tabs.css",
@@ -46,7 +47,6 @@ const copy = {
     "block-doc.css": "patterns/blocks/doc/doc.css",
 }
 const extended = {
-    "accordion.css": "components/accordion/accordion.css",
     "tokens.css": "tokens.css",
     "button.css": "components/button/button.css",
     "category-rail.css": "components/category-rail/category-rail.css",

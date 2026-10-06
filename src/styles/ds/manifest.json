@@ -24,6 +24,11 @@
     "source": "b0e2c34642c8e9ab9705e803a9121dc398245e4e42ba5669672d2661ce7ae09e",
     "sha": "b0e2c34642c8e9ab9705e803a9121dc398245e4e42ba5669672d2661ce7ae09e"
   },
+  "accordion.css": {
+    "kind": "copy",
+    "source": "5898cb4f4709c8b3b5dc0ce7e5c9dc6055930c5153607cd22cdbb97059676c97",
+    "sha": "5898cb4f4709c8b3b5dc0ce7e5c9dc6055930c5153607cd22cdbb97059676c97"
+  },
   "toc.css": {
     "kind": "copy",
     "source": "03d8b047a1684ae74a1ec2d47bbbe809fa156500d7e64ca24f2ba3af3925f235",
@@ -89,11 +94,6 @@
     "source": "6e1cd5b529ead29522e10bdfad8a7f7bb59fc16f71221b1a25b8d47d11a70645",
     "sha": "6e1cd5b529ead29522e10bdfad8a7f7bb59fc16f71221b1a25b8d47d11a70645"
   },
-  "accordion.css": {
-    "kind": "extended",
-    "source": "d89318252231ac61c26c82fa07b9e4ef1e4fd450cbda84eff590e6f1af05c337",
-    "sha": "db4945ad0816ebb88a77d2139513f8461a153ab3213bd0402952668083c712b3"
-  },
   "tokens.css": {
     "kind": "extended",
     "source": "78020bef7de916a752bd8fd85fe70d9f1e0690afae37dc9cfa6101d19fdc9a7d",
@@ -121,7 +121,7 @@
   },
   "challenge-tile.css": {
     "kind": "extended",
-    "source": "40dc01b5cc078663dbe9f14611c9613544d3692449f27b0f2798d298ccd31c59",
+    "source": "8132fa72259886e395e64513f984c45364ff00e9b6fb24372a99e92b3850d12a",
     "sha": "8d04ee36f2722fe5b96d31984d6e4c3c13ee1d8127b5399be41ad4ff6e347431"
   },
   "copy-field.css": {
