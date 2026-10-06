@@ -21,7 +21,9 @@ function safeHref(value: string): boolean {
 export function NotificationPopIn({message, onClose, onAction}: {
     message: InboxMessage; onClose: () => void; onAction: (href: string) => void;
 }) {
-    const duration = popInDuration(message.AutoDismissMs);
+    const action = message.Actions?.find(item => item.label && safeHref(item.href));
+    // A pop-in with an action stays until it is used or closed: the reader needs time to decide.
+    const duration = action ? 0 : popInDuration(message.AutoDismissMs);
     const [paused, setPaused] = useState(false);
     const remaining = useRef(duration);
     const close = useRef(onClose);
@@ -34,15 +36,14 @@ export function NotificationPopIn({message, onClose, onAction}: {
         return () => { window.clearTimeout(timer); remaining.current = Math.max(0, remaining.current - (Date.now() - started)); };
     }, [duration, paused, message.ID]);
     const accent = notificationAccent(message.Tone, message.AccentColor);
-    const action = message.Actions?.find(item => item.label && safeHref(item.href));
 
-    return <div className="event-notification-popin" role="status" aria-label={t("notifications.new")}
+    return <div className="event-notification-popin" onTouchStart={() => setPaused(true)}
         onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)} onBlurCapture={event => {if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);}}>
         <button className="event-notification-popin__close" type="button" onClick={onClose} aria-label={t("notifications.close")}><X size={16} /></button>
         <div className="event-notification-popin__content"><NotificationMessageCard
             icon={message.Icon} tone={message.Tone} accentColor={message.AccentColor} title={message.Title}
-            body={message.Body && <div dangerouslySetInnerHTML={{__html: keepBrand(DOMPurify.sanitize(message.Body))}} />}
+            body={message.Body && <div dangerouslySetInnerHTML={{__html: keepBrand(DOMPurify.sanitize(message.Body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []}))}} />}
             actions={action && <button type="button" onClick={() => onAction(action.href)}>{action.label}</button>}
         />
         </div>

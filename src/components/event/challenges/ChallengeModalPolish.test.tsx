@@ -69,3 +69,22 @@ describe("moderators block", () => {
         expect(screen.getByRole("heading", {name: /Сервіс|Підключення/})).toBeTruthy();
     });
 });
+
+describe("challenge modal keyboard", () => {
+    it("opens with the focus on the title, not in the flag input", () => {
+        renderModal("participant");
+        expect(document.activeElement).toBe(screen.getByRole("heading", {name: fixtureChallenge.Snapshot.name}));
+    });
+
+    it("moves the focus with the arrow keys between the tabs", () => {
+        renderModal("participant");
+        const task = screen.getByRole("tab", {name: "Завдання"});
+        fireEvent.keyDown(task, {key: "ArrowRight"});
+        const solves = screen.getByRole("tab", {name: "Розвʼязання (7)"});
+        expect(solves.getAttribute("aria-selected")).toBe("true");
+        expect(document.activeElement).toBe(solves);
+        fireEvent.keyDown(solves, {key: "Home"});
+        expect(document.activeElement).toBe(task);
+    });
+});
+

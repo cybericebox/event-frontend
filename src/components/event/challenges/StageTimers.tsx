@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import type {OwnBoard} from "@/api/participantChallenges";
 import {CountdownClock} from "@/components/event/EventCountdown";
 import {t} from "@/i18n/t";
@@ -15,12 +15,14 @@ export function StageTimers({board, offset, onZero}: {board: Pick<OwnBoard, "Cur
     const targetMs = target ? Date.parse(target) : NaN;
     const [now, setNow] = useState(() => Date.now() + offset);
     const ticking = Number.isFinite(targetMs);
+    // onZero fires once per target: the refetch it triggers moves the target on.
+    const firedFor = useRef<number | null>(null);
     useEffect(() => {
         if (!ticking) return;
         const tick = () => {
             const current = Date.now() + offset;
             setNow(current);
-            if (current >= targetMs) onZero();
+            if (current >= targetMs && firedFor.current !== targetMs) { firedFor.current = targetMs; onZero(); }
         };
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);

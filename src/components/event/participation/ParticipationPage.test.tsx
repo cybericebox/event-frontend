@@ -73,7 +73,7 @@ it("gives the captain the join link with copy and reissue", async () => {
     expect(screen.getByRole("button", {name: "Копіювати"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Перевипустити"})).toBeTruthy();
     expect(await screen.findByText("Очікує підтвердження")).toBeTruthy();
-    expect(screen.getAllByRole("button", {name: "Виключити"})).toHaveLength(1);
+    expect(screen.getAllByRole("button", {name: /^Виключити /})).toHaveLength(1);
 });
 
 it("shows a regular member the team and its roster but no join link", async () => {
@@ -83,7 +83,7 @@ it("shows a regular member the team and its roster but no join link", async () =
     expect(await screen.findByText("Олена")).toBeTruthy();
     expect(screen.queryByLabelText("Посилання для запрошення")).toBeNull();
     expect(screen.queryByRole("button", {name: "Перевипустити"})).toBeNull();
-    expect(screen.queryByRole("button", {name: "Виключити"})).toBeNull();
+    expect(screen.queryByRole("button", {name: /^Виключити /})).toBeNull();
     expect(screen.getByRole("button", {name: "Вийти з команди"})).toBeTruthy();
 });
 
@@ -94,7 +94,7 @@ it("hides the roster management once the roster is closed", async () => {
     view();
     expect(await screen.findByLabelText("Посилання для запрошення")).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Перевипустити"})).toBeNull();
-    expect(screen.queryByRole("button", {name: "Виключити"})).toBeNull();
+    expect(screen.queryByRole("button", {name: /^Виключити /})).toBeNull();
     expect(screen.queryByRole("button", {name: "Розпустити команду"})).toBeNull();
     // The server's reason is what the section says, not a generic «closed».
     expect(screen.getByText(/Склад команд заморожено зі стартом заходу/)).toBeTruthy();

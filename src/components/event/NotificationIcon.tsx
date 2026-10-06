@@ -6,8 +6,8 @@ const icons: Record<string, LucideIcon> = {
     shield: ShieldCheck, trophy: Trophy, help: CircleHelp,
 };
 const tones: Record<string, string> = {
-    neutral: "#64748B", info: "#0091EA", success: "#16A34A",
-    warning: "#D97706", danger: "#DC2626",
+    neutral: "var(--ib-dim)", info: "var(--ib-action)", success: "var(--ib-ok)",
+    warning: "var(--ib-warn)", danger: "var(--ib-danger)",
 };
 
 export function notificationAccent(tone = "neutral", accentColor = ""): string {

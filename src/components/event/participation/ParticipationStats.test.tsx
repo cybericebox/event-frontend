@@ -139,7 +139,7 @@ it("gives the captain the roster with contributions, pending invitees, the link 
     const roster = await screen.findByRole("region", {name: "Учасники"});
     expect(within(roster).getByText("Очікує підтвердження")).toBeTruthy();
     expect(within(roster).getByText("300")).toBeTruthy();
-    expect(within(roster).getAllByRole("button", {name: "Виключити"})).toHaveLength(1);
+    expect(within(roster).getAllByRole("button", {name: /^Виключити /})).toHaveLength(1);
     expect((screen.getByLabelText("Посилання для запрошення") as HTMLInputElement).value).toContain("join=secret");
     expect(screen.getByRole("button", {name: "Перевипустити"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Розпустити команду"})).toBeTruthy();
@@ -154,6 +154,6 @@ it("tells a member how to ask the captain and offers only leaving", async () => 
     view();
     expect(await screen.findByText(/Запросити людей у команду може капітан \(Олена\)/)).toBeTruthy();
     expect(screen.queryByLabelText("Посилання для запрошення")).toBeNull();
-    expect(screen.queryByRole("button", {name: "Виключити"})).toBeNull();
+    expect(screen.queryByRole("button", {name: /^Виключити /})).toBeNull();
     expect(screen.getByRole("button", {name: "Вийти з команди"})).toBeTruthy();
 });
