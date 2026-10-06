@@ -13,6 +13,7 @@ import {collectFormAnswers, ParticipantFormFields} from "@/components/event/Part
 import {ParticipationStatusEnum} from "@/types/event";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
+import {consumeJoinIntent} from "@/utils/joinIntent";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
@@ -45,19 +46,20 @@ export default function JoinPage() {
 
     useEffect(() => {if (invited) router.replace("/invite");}, [invited, router]);
 
-    // Back from the sign-in that registration asked for (?continue=1): with no form to fill the
+    // Back from the sign-in that registration asked for (?continue=<nonce>): with no form to fill the
     // application is sent at once; with a form the visitor fills it and presses the button.
     const resumed = useRef(false);
     const resume = useEffectEvent(() => void submit());
     useEffect(() => {
         if (resumed.current || !canJoin || form.isPending || form.isError || form.data?.Enabled) return;
         const params = new URLSearchParams(window.location.search);
-        if (params.get("continue") !== "1") return;
+        const nonce = params.get("continue");
+        if (!nonce || !event) return;
         resumed.current = true;
         params.delete("continue");
         window.history.replaceState(null, "", params.size ? `/join?${params}` : "/join");
-        resume();
-    }, [canJoin, form.isPending, form.isError, form.data]);
+        if (consumeJoinIntent(event.EventID, nonce)) resume();
+    }, [canJoin, event, form.isPending, form.isError, form.data]);
 
     async function submit() {
         if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;

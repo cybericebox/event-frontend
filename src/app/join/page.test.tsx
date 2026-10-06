@@ -4,6 +4,7 @@ import {cleanup, render, screen} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {ReactNode} from "react";
 import JoinPage from "./page";
+import {consumeJoinIntent, createJoinIntent} from "@/utils/joinIntent";
 
 const api = vi.hoisted(() => ({join: vi.fn(async () => 2), push: vi.fn()}));
 const state = vi.hoisted(() => ({
@@ -39,7 +40,7 @@ function view() {
     return render(<QueryClientProvider client={client}><JoinPage /></QueryClientProvider>);
 }
 
-beforeEach(() => { state.status = 0; state.participation = null; state.staff = false; state.form = false; api.join.mockClear(); window.history.replaceState(null, "", "/join"); });
+beforeEach(() => { state.status = 0; state.participation = null; state.staff = false; state.form = false; api.join.mockClear(); window.history.replaceState(null, "", "/join"); sessionStorage.clear(); });
 afterEach(cleanup);
 
 describe("join page", () => {
@@ -76,25 +77,70 @@ describe("join page", () => {
         expect(screen.queryByRole("button", {name: "Приєднатися"})).toBeNull();
     });
 
-    it("sends the application by itself after the sign-in that registration asked for", async () => {
+    it("sends the application by itself after the sign-in this browser started", async () => {
         state.participation = block({Allowed: true, Reason: ""});
-        window.history.replaceState(null, "", "/join?continue=1");
+        const nonce = createJoinIntent("event-1");
+        window.history.replaceState(null, "", `/join?continue=${nonce}`);
         view();
         await vi.waitFor(() => expect(api.join).toHaveBeenCalledTimes(1));
         expect(window.location.search).toBe("");
     });
 
-    it("does not send anything by itself without continue", async () => {
+    it("does not send anything for a forged link (no flow started here)", async () => {
         state.participation = block({Allowed: true, Reason: ""});
+        window.history.replaceState(null, "", "/join?continue=1");
+        view();
+        await screen.findByRole("button", {name: "Приєднатися"});
+        expect(api.join).not.toHaveBeenCalled();
+        expect(window.location.search).toBe("");
+    });
+
+    it("does not send anything for a wrong nonce, and drops the stored one", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        createJoinIntent("event-1");
+        window.history.replaceState(null, "", `/join?continue=${"0".repeat(32)}`);
+        view();
+        await screen.findByRole("button", {name: "Приєднатися"});
+        expect(api.join).not.toHaveBeenCalled();
+        expect(consumeJoinIntent("event-1", "0".repeat(32))).toBe(false);
+    });
+
+    it("does not send anything for an expired nonce", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        const nonce = createJoinIntent("event-1", Date.now() - 60 * 60 * 1000);
+        window.history.replaceState(null, "", `/join?continue=${nonce}`);
         view();
         await screen.findByRole("button", {name: "Приєднатися"});
         expect(api.join).not.toHaveBeenCalled();
     });
 
-    it("waits for the visitor when the registration has a form", async () => {
+    it("does not send anything for a nonce of another event", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        const nonce = createJoinIntent("event-2");
+        window.history.replaceState(null, "", `/join?continue=${nonce}`);
+        view();
+        await screen.findByRole("button", {name: "Приєднатися"});
+        expect(api.join).not.toHaveBeenCalled();
+    });
+
+    it("does not send again on a replay of the same link", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        const nonce = createJoinIntent("event-1");
+        window.history.replaceState(null, "", `/join?continue=${nonce}`);
+        view();
+        await vi.waitFor(() => expect(api.join).toHaveBeenCalledTimes(1));
+        cleanup();
+        window.history.replaceState(null, "", `/join?continue=${nonce}`);
+        view();
+        await screen.findByRole("button", {name: "Приєднатися"});
+        expect(api.join).toHaveBeenCalledTimes(1);
+    });
+
+    it("waits for the visitor when the registration has a form, even with a valid nonce", async () => {
         state.participation = block({Allowed: true, Reason: ""});
         state.form = true;
-        window.history.replaceState(null, "", "/join?continue=1");
+        const nonce = createJoinIntent("event-1");
+        window.history.replaceState(null, "", `/join?continue=${nonce}`);
         view();
         await screen.findByRole("button", {name: "Приєднатися"});
         expect(api.join).not.toHaveBeenCalled();

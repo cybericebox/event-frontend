@@ -4,6 +4,7 @@ import {act, cleanup, render, screen} from "@testing-library/react";
 import {renderToString} from "react-dom/server";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {AppShell} from "./AppShell";
+import {consumeJoinIntent} from "@/utils/joinIntent";
 
 const path = vi.hoisted(() => ({value: "/"}));
 vi.mock("next/navigation", () => ({usePathname: () => path.value, useRouter: () => ({refresh: () => {}})}));
@@ -81,12 +82,16 @@ describe("session pages of a visible event", () => {
         expect(screen.queryByRole("heading", {name: "Сторінка"})).toBeNull();
     });
 
-    it("sends an anonymous visitor of /join to the sign-in and back to registration with continue=1", async () => {
+    it("sends an anonymous visitor of /join to the sign-in and back to registration with a one-time nonce", async () => {
         user.current = async () => null;
         mount("/join");
         await vi.waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
         const target = new URL(replace.mock.calls[0][0] as string);
-        expect(target.searchParams.get("return_to")).toBe("https://ev.example.test/join?continue=1");
+        const returnTo = new URL(target.searchParams.get("return_to")!);
+        expect(returnTo.pathname).toBe("/join");
+        const nonce = returnTo.searchParams.get("continue");
+        expect(nonce).toMatch(/^[0-9a-f]{32}$/);
+        expect(consumeJoinIntent("event-1", nonce)).toBe(true);
     });
 
     it("renders the public landing of the same event without sign-in or redirect", async () => {

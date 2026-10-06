@@ -30,9 +30,9 @@ describe("registration action", () => {
 
     it("shows a login route for guests and promotes the remaining link when registration closes", async () => {
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-        const props = {id: "cta", title: "", text: "", registrationOpen: true, joinPolicy: "rolling", startAt: "2026-09-28T10:00:00Z", finishAt: "", eventID: "event-1", eventTag: "games", actions: [{label: "Приєднатися", kind: "join_event" as const}, {label: "Правила", href: "/rules"}]};
+        const props = {id: "cta", title: "", text: "", registrationOpen: true, joinPolicy: "rolling", startAt: "2026-09-28T10:00:00Z", finishAt: "", eventID: "event-1", actions: [{label: "Приєднатися", kind: "join_event" as const}, {label: "Правила", href: "/rules"}]};
         const {rerender} = render(<QueryClientProvider client={client}><ActionBlock {...props} /></QueryClientProvider>);
-        await waitFor(() => expect(screen.getByRole("link", {name: "Приєднатися"}).getAttribute("href")).toContain("/sign-in?return_to="));
+        await waitFor(() => expect(screen.getByRole("link", {name: "Приєднатися"}).getAttribute("href")).toBe("/join"));
         rerender(<QueryClientProvider client={client}><ActionBlock {...props} registrationOpen={false} /></QueryClientProvider>);
         expect(screen.queryByRole("link", {name: "Приєднатися"})).toBeNull();
         expect(screen.getByRole("link", {name: "Правила"}).className).toContain("ib-btn--primary");
@@ -73,7 +73,7 @@ describe("join action states", () => {
         vi.mocked(getJoinStatus).mockResolvedValueOnce(0);
         vi.mocked(getParticipation).mockResolvedValueOnce({Staff: true, Register: {Allowed: false, Reason: "staff_cannot_participate"}} as never);
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-        render(<QueryClientProvider client={client}><ActionBlock id="cta" title="" text="" registrationOpen joinPolicy="rolling" startAt="" finishAt="" eventID="event-3" eventTag="games" actions={[{label: "Зареєструватися", kind: "join_event"}, {label: "Правила", href: "/rules"}]} /></QueryClientProvider>);
+        render(<QueryClientProvider client={client}><ActionBlock id="cta" title="" text="" registrationOpen joinPolicy="rolling" startAt="" finishAt="" eventID="event-3" actions={[{label: "Зареєструватися", kind: "join_event"}, {label: "Правила", href: "/rules"}]} /></QueryClientProvider>);
         await waitFor(() => expect(screen.queryByText("Зареєструватися")).toBeNull());
         expect(screen.getByRole("link", {name: "Правила"})).toBeTruthy();
     });
@@ -90,7 +90,7 @@ describe("join action states", () => {
         vi.mocked(getJoinStatus).mockResolvedValueOnce(1);
         vi.mocked(getInvitationInfo).mockResolvedValueOnce({Status: 1, Invited: false} as never);
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-        render(<QueryClientProvider client={client}><ActionBlock id="cta" title="" text="" registrationOpen joinPolicy="rolling" startAt="" finishAt="" eventID="event-2" eventTag="games" actions={[{label: "Зареєструватися", kind: "join_event"}]} /></QueryClientProvider>);
+        render(<QueryClientProvider client={client}><ActionBlock id="cta" title="" text="" registrationOpen joinPolicy="rolling" startAt="" finishAt="" eventID="event-2" actions={[{label: "Зареєструватися", kind: "join_event"}]} /></QueryClientProvider>);
         await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Заявка на розгляді"));
         expect(screen.queryByRole("link")).toBeNull();
     });
