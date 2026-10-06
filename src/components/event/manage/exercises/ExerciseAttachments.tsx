@@ -19,7 +19,7 @@ import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {
     attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentScopeTip, attachmentVersionLabel, detachWithConfirm, exercisesAppURL,
-    infrastructureMismatch, isDetached,
+    infrastructureMismatch, isDetached, runningStandTeams, type StandTeam,
 } from "./attachmentModel";
 import {InfrastructureIcon, TipTag} from "./InfrastructureIcon";
 import {SetActions} from "./SetActions";
@@ -40,7 +40,9 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type Action =
-    {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string; extension?: boolean};
+    {kind: "update" | "fork" | "revert" | "detach"; attachment: EventExerciseAttachment; attempts?: boolean; error?: string; extension?: boolean;
+        // Set by 409 1813: the teams whose running stands the change recreates; confirming sends RecreateStands=true.
+        stands?: StandTeam[]};
 
 const noSubscribe = () => () => {};
 
@@ -51,6 +53,7 @@ export function useReturnURL(): string {
 
 function actionCopy(action: Action): {title: string; description: string; confirm: string; danger?: boolean} {
     const {attachment} = action;
+    if (action.stands) return {title: t("manage.exercises.action.stands.title"), description: t("manage.exercises.action.stands.description"), confirm: t("manage.exercises.action.stands.confirm"), danger: true};
     if (action.kind === "update") return {title: t("manage.exercises.action.update.title", {number: attachment.LatestVersionNumber}), description: t("manage.exercises.action.update.description"), confirm: t("manage.exercises.action.update.confirm")};
     if (action.kind === "fork") return {title: t("manage.exercises.action.fork.title"), description: t("manage.exercises.action.fork.description"), confirm: t("manage.exercises.action.fork.confirm")};
     if (action.kind === "revert") return {title: t("manage.exercises.action.revert.title"), description: t("manage.exercises.action.revert.description", {number: attachment.Fork?.SourceVersionNumber ?? ""}), confirm: t("manage.exercises.action.revert.confirm")};
@@ -89,9 +92,10 @@ export function ExerciseAttachments() {
         if (!action || busy) return;
         setBusy(true);
         try {
-            if (action.kind === "update") await updateEventExercise(eventID, action.attachment.ID);
-            if (action.kind === "fork") await forkEventExercise(eventID, action.attachment.ID);
-            if (action.kind === "revert") await revertEventExercise(eventID, action.attachment.ID);
+            const recreateStands = !!action.stands;
+            if (action.kind === "update") await updateEventExercise(eventID, action.attachment.ID, undefined, recreateStands);
+            if (action.kind === "fork") await forkEventExercise(eventID, action.attachment.ID, recreateStands);
+            if (action.kind === "revert") await revertEventExercise(eventID, action.attachment.ID, recreateStands);
             if (action.kind === "detach") {
                 const result = await detachWithConfirm(confirm => detachEventExercise(eventID, action.attachment.ID, confirm), !!action.attempts);
                 if (result === "needs-confirm") {setAction({...action, attempts: true}); return;}
@@ -101,6 +105,9 @@ export function ExerciseAttachments() {
             toast.success(t(`manage.exercises.action.${action.kind}.done`));
         } catch (error) {
             const fallback = t(`manage.exercises.action.${action.kind}.failed`);
+            // A running stage: nothing was changed; the dialog turns into the stand confirmation and retries with RecreateStands.
+            const standTeams = runningStandTeams(error);
+            if (standTeams && !action.stands) {setAction({...action, stands: standTeams}); return;}
             // Attempts conflicts stay in the dialog: the organizer has to read why.
             // 72508: the reservation cannot hold the change for all teams; the dialog offers a change request.
             if (isNotEnoughReserved(error)) setAction({...action, error: attachmentActionError(error, fallback), extension: true});
@@ -203,6 +210,7 @@ export function ExerciseAttachments() {
         <ConfirmDialog open={!!action} onCancel={() => setAction(null)} tone={copy?.danger ? "danger" : "default"} busy={busy} disabled={!!action?.error} error={action?.error}
             title={copy?.title ?? ""} description={copy?.description} subject={action?.attachment.ExerciseName}
             cancelLabel={action?.error ? t("common.close") : undefined} confirmLabel={copy?.confirm ?? ""} onConfirm={() => void runAction()}>
+            {action?.stands && action.stands.length > 0 && <p className="event-manage-notice">{t("manage.exercises.action.stands.teams", {names: action.stands.map(team => team.Name || t("manage.exercises.action.stands.moderators")).join(", ")})}</p>}
             {action?.extension && <Link className="ib-btn" href="/manage/resources?request=1" onClick={() => setAction(null)}>{t("manage.exercises.attachDialog.requestExtension")}</Link>}
         </ConfirmDialog>
     </>;

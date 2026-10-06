@@ -62,7 +62,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
     const problem = draft.kind === "dynamic" ? decayProblem(draft.profile.Mode, lifecycle) : "";
     const valid = draft.kind === "static" ? staticPointsValid(draft.points, true) : draft.kind === "dynamic" ? dynamicValid(draft.profile) : true;
     const locked = disabled || saving || forced;
-    const eventPoints = scoring.StaticPoints ?? challenge.Points;
+    const eventPoints = challenge.EffectivePoints;
     const updateProfile = (patch: Partial<DynamicProfile>) => setDraft({...draft, profile: {...draft.profile, ...patch}});
     const errors = draft.kind === "dynamic" ? dynamicErrors(draft.profile) : {max: "", min: "", floor: ""};
     const fieldID = `task-${challenge.ID}`;
@@ -92,6 +92,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
     return <section className="event-task__section" aria-labelledby={`task-scoring-${challenge.ID}`}>
         <h4 id={`task-scoring-${challenge.ID}`}>{t("manage.challenges.scoring.title")}</h4>
         {forced && <p className="event-task__note">{t("manage.challenges.task.scoringForced")}</p>}
+        {challenge.EffectivePoints !== challenge.Points && <p className="event-task__note">{t("manage.challenges.task.pointsSetByEvent", {points: challenge.EffectivePoints})}</p>}
         <div className="event-task__fields">
             <div className="event-manage-field event-task__kind">{t("manage.challenges.task.scoringKind")}
                 <EventSelect ariaLabel={t("manage.challenges.task.scoringKindFor", {name: challenge.Snapshot.name})} value={draft.kind} options={kinds} onValueChange={kind => setDraft({...draft, kind: kind as ScoringKind})} disabled={locked} /></div>

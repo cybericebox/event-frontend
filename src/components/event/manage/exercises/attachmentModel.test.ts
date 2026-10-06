@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from "vitest";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
-import {attachmentActionError, infrastructureMismatch, attachmentKind, attachmentScopeLabel, attachmentVersionLabel, detachWithConfirm, exercisesAppURL, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
+import {attachmentActionError, infrastructureMismatch, attachmentKind, attachmentScopeLabel, attachmentVersionLabel, detachWithConfirm, exercisesAppURL, hintCostChanges, hintCostDraftValid, runningStandTeams} from "./attachmentModel";
 
 const hint = (patch: Partial<{ID: string; Cost: number; Overridden: boolean}>) => ({ID: "h", Text: "", Level: "nudge" as const, Cost: 10, Overridden: false, ...patch});
 
@@ -50,6 +50,14 @@ describe("detach flow", () => {
 
     it("passes other failures through", async () => {
         await expect(detachWithConfirm(async () => { throw new ManageApiError(500); }, false)).rejects.toBeInstanceOf(ManageApiError);
+    });
+
+    it("reads the teams of a running-stage conflict", () => {
+        const teams = [{ID: "t1", Name: "Red"}];
+        expect(runningStandTeams(new ManageApiError(409, ApiErrorCode.ExerciseStandsRunning, undefined, {teams}))).toEqual(teams);
+        expect(runningStandTeams(new ManageApiError(409, ApiErrorCode.ExerciseStandsRunning))).toEqual([]);
+        expect(runningStandTeams(new ManageApiError(409, ApiErrorCode.ExerciseTaskHasAttempts))).toBeNull();
+        expect(runningStandTeams(new Error("boom"))).toBeNull();
     });
 
     it("explains a refused update", () => {

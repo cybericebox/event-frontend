@@ -61,7 +61,9 @@ const attachmentSchema = z.object({
 const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int(), Overridden: z.boolean()});
 const challengeSchema = z.object({
     ID: id, TaskID: id, GroupID: id.nullable(), PrerequisiteIDs: z.array(id).nullable().transform(value => value ?? []),
-    Order: z.number().int(), Points: z.number().int(), ScoringOverride: scoringOverrideSchema.nullable(), HintsEnabled: z.boolean(), Published: z.boolean(),
+    Order: z.number().int(), Points: z.number().int(),
+    // What teams see and score: the event's static value when the task follows a static event, else Points.
+    EffectivePoints: z.number().int(), ScoringOverride: scoringOverrideSchema.nullable(), HintsEnabled: z.boolean(), Published: z.boolean(),
     // The task's own limit of wrong flag submissions per team; null = the event's value.
     MaxFlagAttempts: attemptLimit,
     // Place inside the group across the event's sets; null sorts after the ordered ones.
@@ -148,11 +150,12 @@ export const getPublishedExerciseTags = (eventID: string, prefix: string, limit 
 export const getPublishedExercisePreview = (eventID: string, versionID: string, variant = 0) => request(eventID, `exercise-catalog/${encodeURIComponent(versionID)}?variant=${variant}`, catalogPreviewSchema);
 export const attachEventExercise = (eventID: string, versionID: string, variantMode: 0 | 1, fixedVariantIndex: number | null) => request(eventID, "exercises", attachmentSchema, "POST", {ExerciseVersionID: versionID, VariantMode: variantMode, FixedVariantIndex: fixedVariantIndex});
 // «Оновити»: the latest published version; event settings carry over (409 1809 when a removed task has attempts).
-export const updateEventExercise = (eventID: string, attachmentID: string, versionID?: string) => request(eventID, `exercises/${attachmentID}/update`, attachmentSchema, "POST", versionID ? {ExerciseVersionID: versionID} : {});
+// While the set's stage runs the server answers 409 1813 with the affected teams; recreateStands=true confirms recreating their stands.
+export const updateEventExercise = (eventID: string, attachmentID: string, versionID?: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/update`, attachmentSchema, "POST", {...(versionID ? {ExerciseVersionID: versionID} : {}), ...(recreateStands ? {RecreateStands: true} : {})});
 // «Налаштувати під захід»: the attachment switches to the event's own copy.
-export const forkEventExercise = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/fork`, attachmentSchema, "POST");
+export const forkEventExercise = (eventID: string, attachmentID: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/fork`, attachmentSchema, "POST", recreateStands ? {RecreateStands: true} : undefined);
 // «Повернути оригінал»: back to the catalog version the copy was made from.
-export const revertEventExercise = (eventID: string, attachmentID: string) => request(eventID, `exercises/${attachmentID}/revert`, attachmentSchema, "POST");
+export const revertEventExercise = (eventID: string, attachmentID: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/revert`, attachmentSchema, "POST", recreateStands ? {RecreateStands: true} : undefined);
 // With attempts the server wants confirm=true (409 1810) and keeps the attachment as detached.
 export const detachEventExercise = (eventID: string, attachmentID: string, confirm = false) => request(eventID, `exercises/${attachmentID}${confirm ? "?confirm=true" : ""}`, z.unknown(), "DELETE").then(() => undefined);
 // Visibility is per set: see setEventExerciseVisibility.

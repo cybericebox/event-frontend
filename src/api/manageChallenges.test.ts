@@ -24,7 +24,7 @@ const attachment = (n: number, extra: Record<string, unknown> = {}) => ({
     Revision: 2, Status: 0, ReplacesID: null, SupersededAt: null, CreatedAt: "2026-09-26T00:00:00Z", ...extra,
 });
 const challenge = {
-    ID: uid(11), TaskID: uid(12), GroupID: null, PrerequisiteIDs: null, Order: 0, Points: 100, ScoringOverride: null, HintsEnabled: true, Published: true,
+    ID: uid(11), TaskID: uid(12), GroupID: null, PrerequisiteIDs: null, Order: 0, Points: 100, EffectivePoints: 100, ScoringOverride: null, HintsEnabled: true, Published: true,
     Snapshot: {name: "Перший крок"},
     Hints: [{ID: uid(111), Text: "Заголовки", Level: "steps", Cost: 15, Overridden: true}, {ID: uid(112), Text: "Cookie", Cost: 0, Overridden: false}],
 };
@@ -112,6 +112,22 @@ describe("attachments", () => {
             [`${base}/exercises/${uid(10)}/fork`, "POST", undefined],
             [`${base}/exercises/${uid(10)}/revert`, "POST", undefined],
         ]);
+    });
+
+    it("confirms recreating running stands with RecreateStands", async () => {
+        const fetchMock = stubFetch({Data: attachment(10)});
+        await api.updateEventExercise(eventID, uid(10), undefined, true);
+        await api.forkEventExercise(eventID, uid(10), true);
+        await api.revertEventExercise(eventID, uid(10), true);
+        expect(fetchMock.mock.calls.map(([, init]) => init.body)).toEqual([JSON.stringify({RecreateStands: true}), JSON.stringify({RecreateStands: true}), JSON.stringify({RecreateStands: true})]);
+    });
+
+    it("keeps the teams of a running-stage conflict", async () => {
+        const teams = [{ID: uid(1), Name: "Red"}];
+        stubFetch({Status: {Code: 40000 + ApiErrorCode.ExerciseStandsRunning, Context: {teams}}}, 409);
+        const error = await api.updateEventExercise(eventID, uid(10)).catch((value: unknown) => value);
+        expect(error).toBeInstanceOf(ManageApiError);
+        expect(error).toMatchObject({status: 409, code: ApiErrorCode.ExerciseStandsRunning, context: {teams}});
     });
 
     it("maps the detach confirmation conflict and confirms with a query flag", async () => {
