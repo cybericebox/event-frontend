@@ -51,6 +51,7 @@ export function LiveContentBlocks({eventID, document, initialVariables, coverIma
         schedule();
         return () => { if (timer !== undefined) window.clearTimeout(timer); };
     }, [liveValues, refetch, initialVariables, now]);
-    const currentValues = applyLifecycleBoundaries(values.isError ? {...(values.data ?? initialVariables), "event.registrationOpen": false} : values.data ?? initialVariables, now);
+    // A failed refresh keeps the last good values: one missed poll must not hide «Приєднатися».
+    const currentValues = applyLifecycleBoundaries(values.data ?? initialVariables, now);
     return <ContentBlocks document={document} variables={currentValues} coverImage={coverImage} title={title} eventID={eventID} />;
 }

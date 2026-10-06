@@ -19,6 +19,8 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
 import {JoinResultCard} from "@/components/event/join/JoinResultCard";
 import {EventButton} from "@/components/ui/EventButton";
+import {EmptyState} from "@/components/ui/EmptyState";
+import {focusFirstInvalid} from "@/components/event/FormQuestion";
 import {JoinPreview} from "@/components/event/join/JoinPreview";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
 
@@ -43,6 +45,8 @@ export default function JoinPage() {
     const [answers, setAnswers] = useState<ParticipantAnswers>({});
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
 
     useEffect(() => {if (invited) router.replace("/invite");}, [invited, router]);
 
@@ -64,9 +68,13 @@ export default function JoinPage() {
     async function submit() {
         if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;
         setError("");
+        setFieldErrors({});
         const collected = collectFormAnswers(form.data, answers);
         if (collected.error) {
-            setError(collected.error);
+            if (collected.errorKey) {
+                setFieldErrors({[collected.errorKey]: collected.error});
+                requestAnimationFrame(() => focusFirstInvalid(formRef.current));
+            } else setError(collected.error);
             return;
         }
         setWorking(true);
@@ -96,11 +104,11 @@ export default function JoinPage() {
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <JoinResultCard outcome="approved" title={t("joinPreview.result.approved.title")} text={t("invite.already")} />
             : status === ParticipationStatusEnum.PendingParticipationStatus ? <JoinResultCard outcome="pending" title={t("joinPreview.result.pending.title")} text={t("join.pending")} />
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <JoinResultCard outcome="rejected" title={t("joinPreview.result.rejected.title")} text={t("shell.join.rejected")} />
-            : !register?.Allowed ? <p>{reasonText(register?.Reason ?? "") || t("join.closed")}</p>
-            : <>
-                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} />}
-                {error && <p className="event-join-error" role="alert">{error}</p>}
-                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void submit()} busy={working}>{t("shell.join.action")}</EventButton>
-            </>}
+            : !register?.Allowed ? <EmptyState message={reasonText(register?.Reason ?? "") || t("join.closed")} />
+            : <form ref={formRef} className="ib-form" noValidate onSubmit={event => {event.preventDefault(); void submit();}}>
+                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} />}
+                {error && <p className="ib-form__error" role="alert">{error}</p>}
+                <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working}>{t("shell.join.action")}</EventButton>
+            </form>}
     </div></div>;
 }

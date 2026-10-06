@@ -128,8 +128,8 @@ export function ScoreboardView() {
             {readable && <div className="event-results__actions"><LiveStatus freshness={{kind: "polling", seconds: RESULTS_POLL_SECONDS, failing: polls.isError}} updatedAt={Math.max(results.dataUpdatedAt, polls.dataUpdatedAt)} hint={pollHint} /></div>}
         </div>
         <EventCountdown event={event} hint={t("countdown.start.results")} />
-        {data && data.Display.ChartEnabled && <div className="event-results__chart rounded-lg border border-border bg-card p-4" data-testid="score-chart">
-            <p className="mb-2 text-sm font-semibold text-foreground">{chartIDs.length === 0 ? t("scoreboard.chartTitlePlain") : t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
+        {data && data.Display.ChartEnabled && <div className="event-results__chart" data-testid="score-chart">
+            <p className="event-results__chart-title">{chartIDs.length === 0 ? t("scoreboard.chartTitlePlain") : t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
             <ScoreChart snapshot={data} teamIDs={chartIDs} ownTeamID={ownTeamID} startTime={new Date(startAt)} finishTime={new Date(chartEnd)} note={chartNote} />
         </div>}
         <ScoreTable event={event} state={state} ownTeamID={ownTeamID} teamMode={teamMode} search={search} onSearch={setSearch} />

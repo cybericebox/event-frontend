@@ -17,5 +17,6 @@ describe("registration form answers", () => {
         expect(collectFormAnswers(form, {role: "Студент", other: "x"})).toEqual({send: true, answers: {role: "Студент"}});
         expect(collectFormAnswers(form, {role: "Інше", other: "Викладач"}).answers).toEqual({role: "Інше", other: "Викладач"});
         expect(collectFormAnswers({...form, Required: true}, {}).error).toBe("Заповніть обовʼязкове питання «Роль».");
+        expect(collectFormAnswers({...form, Required: true}, {}).errorKey).toBe("role");
     });
 });

@@ -264,6 +264,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
                                 <Link className="event-navbar__panel-pin" href="/participation" aria-current={path === "/participation" ? "page" : undefined} onClick={() => setOpen(false)}><UserRound aria-hidden="true" />{t("nav.participation")}</Link>
             </>}
             {authenticated && <ManagerEntry eventID={event.EventID} variant="panel" />}
+            {!authenticated && !pending && <a className="event-navbar__panel-signin" href={identityHref("/sign-in", event)}>{t("account.signIn")}</a>}
         </nav>
     </header>;
 }

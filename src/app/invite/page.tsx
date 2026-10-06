@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo, useState} from "react";
+import {useMemo, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
@@ -16,6 +16,9 @@ import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
 import {EventButton} from "@/components/ui/EventButton";
+import {EmptyState} from "@/components/ui/EmptyState";
+import {JoinResultCard} from "@/components/event/join/JoinResultCard";
+import {focusFirstInvalid} from "@/components/event/FormQuestion";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 
 export default function InvitePage() {
@@ -36,6 +39,8 @@ export default function InvitePage() {
     const answers = useMemo(() => ({...stored, ...edits}), [stored, edits]);
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
     const [expired, setExpired] = useState(false);
     const [declining, setDeclining] = useState(false);
     const [declineError, setDeclineError] = useState("");
@@ -53,9 +58,13 @@ export default function InvitePage() {
     async function accept() {
         if (!event || working || !actionable || form.isPending || form.isError) return;
         setError("");
+        setFieldErrors({});
         const collected = collectFormAnswers(form.data, answers);
         if (collected.error) {
-            setError(collected.error);
+            if (collected.errorKey) {
+                setFieldErrors({[collected.errorKey]: collected.error});
+                requestAnimationFrame(() => focusFirstInvalid(formRef.current));
+            } else setError(collected.error);
             return;
         }
         setWorking(true);
@@ -91,18 +100,18 @@ export default function InvitePage() {
         {!event || identity.isPending || (identity.data && (info.isPending || (actionable && form.isPending))) ? <><h1>{t("invite.title")}</h1><EventLoading event={event} label={t("invite.loading")} /></>
             : identity.isError || info.isError || (actionable && form.isError) ? <><h1>{t("invite.title")}</h1><EventLoadError message={t("invite.loadFailed")} error={identity.error ?? info.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : info.isError ? info.refetch() : form.refetch())} /></>
             : !identity.data ? <SignInRedirect event={event} />
-            : invitation?.Status === ParticipationStatusEnum.ApprovedParticipationStatus ? <><h1>{t("invite.alreadyTitle")}</h1><p>{t("invite.already")}</p>{home}</>
-            : !invitation?.Invited || invitation.Status !== ParticipationStatusEnum.PendingParticipationStatus ? <><h1>{t("invite.notFoundTitle")}</h1><p>{t("invite.notFound")}</p>{home}</>
-            : invitation.InvitationExpired || expired ? <><h1>{title}</h1><p role="status">{t("shell.invite.expired")}</p>{home}</>
-            : invitation.TeamUnavailable ? <><h1>{t("invite.title")}</h1><p role="status">{t("invite.teamUnavailable")}</p>{home}</>
-            : <>
+            : invitation?.Status === ParticipationStatusEnum.ApprovedParticipationStatus ? <><h1>{t("invite.title")}</h1><JoinResultCard outcome="approved" title={t("invite.alreadyTitle")} text={t("invite.already")} action={home} /></>
+            : !invitation?.Invited || invitation.Status !== ParticipationStatusEnum.PendingParticipationStatus ? <><h1>{t("invite.title")}</h1><EmptyState message={t("invite.notFound")} action={home} /></>
+            : invitation.InvitationExpired || expired ? <><h1>{t("invite.title")}</h1><EmptyState message={t("shell.invite.expired")} action={home} /></>
+            : invitation.TeamUnavailable ? <><h1>{t("invite.title")}</h1><EmptyState message={t("invite.teamUnavailable")} action={home} /></>
+            : <form ref={formRef} className="ib-form" noValidate onSubmit={event => {event.preventDefault(); void accept();}}>
                 <h1>{title}</h1>
                 <p>{invitation.InvitedTeamName ? t("invite.acceptHintTeam") : t("invite.acceptHint")}</p>
-                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" locked={locked} />}
-                {error && <p className="event-join-error" role="alert">{error}</p>}
-                <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} onClick={() => void accept()} busy={working}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => {setDeclineError(""); setDeclining(true);}}>{t("invite.decline")}</button></div>
+                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" locked={locked} errors={fieldErrors} />}
+                {error && <p className="ib-form__error" role="alert">{error}</p>}
+                <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="submit" busy={working}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => {setDeclineError(""); setDeclining(true);}}>{t("invite.decline")}</button></div>
                 <ConfirmDialog open={declining} onCancel={() => setDeclining(false)} tone="danger" busy={working} error={declineError}
                     title={t("invite.declineTitle")} description={t("invite.declineBody")} confirmLabel={t("invite.decline")} onConfirm={() => void decline()} />
-            </>}
+            </form>}
     </div></div>;
 }

@@ -8,6 +8,7 @@ import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
 import {EventPageContentSchema, type EventPageContent} from "@/types/eventContent";
 import {ContentBlocks} from "./ContentBlocks";
 import {EventLoading} from "../EventLoading";
+import {NotFoundScreen} from "../NotFoundScreen";
 import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
@@ -46,9 +47,7 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
     if (page.isError) {
         const missing = page.error instanceof ManageApiError && [403, 404].includes(page.error.status);
         if (!missing) return <EventLoadError message={t("content.page.failed")} error={page.error} onRetry={() => void page.refetch()} />;
-        return <div className="event-shell-state" role="alert">
-            <h1>{t("content.page.missing")}</h1>
-        </div>;
+        return <NotFoundScreen block title={t("content.page.missing")} />;
     }
     return <ContentBlocks document={page.data.Page.Document} variables={page.data.Variables} title={page.data.Page.Title} coverImage={privateEvent?.PreviewPicture} eventID={eventID} />;
 }
