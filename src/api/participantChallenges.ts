@@ -50,6 +50,10 @@ export const challengeSchema = z.object({
     Snapshot: snapshotSchema,
     Readiness: z.number().int(),
     SolvedAt: z.string().nullable(),
+    // Null while unsolved. AwardedPoints is what the solve earned after the hint penalty (0 for practice), SolvedBy who sent the answer.
+    AwardedPoints: z.number().nullish().transform(value => value ?? null),
+    HintPenalty: z.number().nullish().transform(value => value ?? null),
+    SolvedBy: z.object({UserID: z.string(), Name: z.string()}).nullish().transform(value => value ?? null),
     Points: z.number().int(),
     Order: z.number().int(),
     GroupID: id.nullable(),

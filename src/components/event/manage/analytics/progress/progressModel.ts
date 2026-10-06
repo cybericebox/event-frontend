@@ -4,10 +4,10 @@ import {t} from "@/i18n/t";
 // Pure helpers of «Прогрес» (§6.4): the score chart, the matrix cells, the
 // heatmap and the inactive teams. Chart colours and axes follow the results
 // chart (scoreboard/ScoreChart).
-const axisText = "#64748b";
-const gridLine = "#e2e8f0";
-const axisLine = "#cbd5e1";
-export const scorePalette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "#64748B"];
+const axisText = "var(--ib-dim)";
+const gridLine = "var(--ib-line)";
+const axisLine = "var(--ib-control)";
+export const scorePalette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "var(--ib-dim)"];
 
 export const TOP_OPTIONS = [5, 10, 20] as const;
 export const DEFAULT_TOP = 10;
@@ -17,7 +17,7 @@ export const DEFAULT_INACTIVE_MINUTES = 30;
 
 export const scoresHaveData = (scores: AnalyticsScores) => scores.Series.some(series => series.Points.length > 1 || (series.Points[0]?.Score ?? 0) > 0);
 
-// Every team's running score as a step line (a score changes at a solve or a
+// Every team's running score as a smooth monotone line (a score changes at a solve or a
 // hint), in the ranking order, with the wheel / slider zoom.
 export function scoreChartOption(scores: AnalyticsScores) {
     const from = Date.parse(scores.Period.From);
@@ -31,7 +31,7 @@ export function scoreChartOption(scores: AnalyticsScores) {
         yAxis: {type: "value", axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},
         dataZoom: [{type: "inside", filterMode: "none"}, {type: "slider", height: 18, bottom: 8, filterMode: "none"}],
         series: scores.Series.map(series => ({
-            name: series.Name, type: "line", step: "end", showSymbol: false, lineStyle: {width: 2}, emphasis: {focus: "series"},
+            name: series.Name, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, lineStyle: {width: 2}, emphasis: {focus: "series"},
             data: series.Points.map(point => [Date.parse(point.At), point.Score]),
         })),
     };

@@ -29,5 +29,5 @@ it("lists teams, marks the freeze for participants and expands the solves", asyn
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByText("Web 1")).toBeTruthy();
-    expect(screen.getByText("Перша кров", {selector: ".ib-tag"})).toBeTruthy();
+    expect(screen.getByText("Криголам", {selector: ".ib-tag"})).toBeTruthy();
 });

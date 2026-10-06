@@ -3,10 +3,10 @@ import {t} from "@/i18n/t";
 
 // Pure helpers of «Завдання» (§6.3): formatting, filters, totals and the chart
 // options. Chart colours and axes follow the results chart.
-const axisText = "#64748b";
-const gridLine = "#e2e8f0";
-const axisLine = "#cbd5e1";
-const palette = {ok: "#22C55E", tooEasy: "#F59E0B", tooHard: "#EF4444", neutral: "#94a3b8", band: "#0091EA", solves: "#22C55E", attempts: "#0091EA"};
+const axisText = "var(--ib-dim)";
+const gridLine = "var(--ib-line)";
+const axisLine = "var(--ib-control)";
+const palette = {ok: "#22C55E", tooEasy: "#F59E0B", tooHard: "#EF4444", neutral: "var(--ib-faint)", band: "#0091EA", solves: "#22C55E", attempts: "#0091EA"};
 
 export const difficultyOrder = ["elementary", "trivial", "easy", "medium", "hard", "insane"] as const;
 

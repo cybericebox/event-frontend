@@ -2,12 +2,11 @@ import type {BoardStage, OwnChallenge} from "@/api/participantChallenges";
 import {t, tPlural} from "@/i18n/t";
 
 export type BoardView = "tiles" | "rail";
-// «Активні» (the open stage's tasks and the sets without a stage) or «Всі»; the stage and status filters narrow either.
-export type BoardScope = "active" | "all";
+// "" is «Усі» and the default, so a task that was just solved stays on the board; «Відкриті» narrows it. Tasks of closed stages are reached through «Закриті».
 export type BoardStatus = "" | "open" | "solved" | "closed";
-export type BoardFilters = {scope: BoardScope; stage: string; status: BoardStatus; category: string};
+export type BoardFilters = {stage: string; status: BoardStatus; category: string};
 export const UNSTAGED = "none";
-export const DEFAULT_BOARD_FILTERS: BoardFilters = {scope: "active", stage: "", status: "", category: ""};
+export const DEFAULT_BOARD_FILTERS: BoardFilters = {stage: "", status: "", category: ""};
 export type BoardCategory = {key: string; name: string; order: number; challenges: OwnChallenge[]};
 
 // «1 250» — a narrow no-break space groups thousands like the DS boards.
@@ -63,36 +62,38 @@ export function matchesBoard(challenge: OwnChallenge, query: string, categoryNam
 
 // What the team has done with a task, whatever its stage says: solved counts a practice solve too (it is shown as
 // solved, only the rating ignores it); closed is a task of a closed stage that is not solved; the rest is open.
-export function boardStatus(challenge: OwnChallenge): Exclude<BoardStatus, ""> {
+export function boardStatus(challenge: OwnChallenge, stages: BoardStage[] = []): Exclude<BoardStatus, ""> {
     if (challenge.SolvedAt || challenge.Practice) return "solved";
-    return challenge.Closed ? "closed" : "open";
+    return challenge.Closed || stageOf(challenge, stages)?.State === "closed" ? "closed" : "open";
 }
 
-// A task is active when its set has no stage or its stage is open now.
-export function isActiveChallenge(challenge: OwnChallenge, stages: BoardStage[]): boolean {
-    if (!challenge.StageID) return true;
-    return stages.find(stage => stage.ID === challenge.StageID)?.State === "open";
+const stageOf = (challenge: OwnChallenge, stages: BoardStage[]) => challenge.StageID ? stages.find(stage => stage.ID === challenge.StageID) : undefined;
+
+// «Відкриті» = can be solved now: not solved, not locked by an unmet prerequisite, and its stage (if any) is open. A stage the
+// board does not list yet has not opened.
+export function isSolvableNow(challenge: OwnChallenge, stages: BoardStage[]): boolean {
+    if (challenge.SolvedAt || challenge.Practice || challenge.Closed || challenge.Locked) return false;
+    return !challenge.StageID || stageOf(challenge, stages)?.State === "open";
 }
 
-// Applies the scope, stage and status filters (the category and the search narrow further inside a board).
-export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilters, stages: BoardStage[]): OwnChallenge[] {
+// Applies the stage and status filters (the category and the search narrow further inside a board).
+export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilters, stages: BoardStage[] = []): OwnChallenge[] {
     return challenges.filter(challenge => {
-        if (filters.scope === "active" && !isActiveChallenge(challenge, stages)) return false;
         if (filters.stage && (filters.stage === UNSTAGED ? challenge.StageID !== null : challenge.StageID !== filters.stage)) return false;
-        return !filters.status || boardStatus(challenge) === filters.status;
+        if (filters.status === "open") return isSolvableNow(challenge, stages);
+        return !filters.status || boardStatus(challenge, stages) === filters.status;
     });
 }
 
 const STATUSES: BoardStatus[] = ["open", "solved", "closed"];
 
-// The filters live in the URL: ?scope=all&stage=…&status=…&category=… (defaults are left out).
+// The filters live in the URL: ?stage=…&status=…&category=… (the default «Усі» is left out).
 export function parseBoardFilters(search: string): BoardFilters {
     const params = new URLSearchParams(search);
-    const status = params.get("status") as BoardStatus | null;
+    const status = params.get("status");
     return {
-        scope: params.get("scope") === "all" ? "all" : "active",
         stage: params.get("stage") ?? "",
-        status: status && STATUSES.includes(status) ? status : "",
+        status: STATUSES.includes(status as BoardStatus) ? status as BoardStatus : "",
         category: params.get("category") ?? "",
     };
 }
@@ -101,12 +102,20 @@ export function parseBoardFilters(search: string): BoardFilters {
 export function boardFilterSearch(search: string, filters: BoardFilters): string {
     const params = new URLSearchParams(search);
     for (const key of ["scope", "stage", "status", "category"]) params.delete(key);
-    if (filters.scope !== "active") params.set("scope", filters.scope);
     if (filters.stage) params.set("stage", filters.stage);
-    if (filters.status) params.set("status", filters.status);
+    if (filters.status !== DEFAULT_BOARD_FILTERS.status) params.set("status", filters.status);
     if (filters.category) params.set("category", filters.category);
     const query = params.toString();
     return query ? `?${query}` : "";
+}
+
+// A correct answer turns the task solved on the cached board at once; the refetch that follows reconciles with the server.
+export function markSolved(challenges: OwnChallenge[], id: string, at: string): OwnChallenge[] {
+    return challenges.map(item => item.EventChallengeID === id && !item.SolvedAt ? {...item, SolvedAt: at, AttemptsLeft: null} : item);
+}
+
+export function awardedPoints(challenge: Pick<OwnChallenge, "Points" | "AwardedPoints">): number {
+    return challenge.AwardedPoints ?? challenge.Points;
 }
 
 export function solvedCount(challenges: OwnChallenge[]): string {

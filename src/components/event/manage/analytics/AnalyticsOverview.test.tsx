@@ -67,7 +67,7 @@ describe("Огляд", () => {
         expect(within(stats).getByText("Стенди готові")).toBeTruthy();
         expect(screen.getByTestId("chart").getAttribute("data-series")).toBe("5");
         const feed = screen.getByRole("region", {name: "Стрічка подій"});
-        expect(within(feed).getByText("«Blue» — перша кров у «Web 1»")).toBeTruthy();
+        expect(within(feed).getByText("«Blue» — криголам у «Web 1»")).toBeTruthy();
         expect(within(feed).getByText("Стенд команди «Red» не запустився")).toBeTruthy();
         expect(within(feed).getByText("no capacity")).toBeTruthy();
         expect(screen.getByText("Автооновлення")).toBeTruthy();

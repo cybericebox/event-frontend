@@ -1,5 +1,6 @@
 "use client";
 
+import {FirstSolveBadge} from "@/components/event/challenges/FirstSolveBadge";
 import {Fragment, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -56,7 +57,7 @@ function SolveDetails({team}: {team: ModeratorResultsTeam}) {
             <td>{solve.ChallengeName || t("manage.attempts.challenge")}</td>
             <td className="event-manage-table__nowrap"><time dateTime={solve.SolvedAt}>{journalTime.format(new Date(solve.SolvedAt))}</time></td>
             <td className="ib-num">{number.format(solve.Points)}</td>
-            <td>{solve.FirstBlood && <span className="ib-tag ib-tag--sm ib-tag--danger">{t("manage.results.detail.firstBlood")}</span>}</td>
+            <td>{solve.FirstBlood && <FirstSolveBadge />}</td>
         </tr>)}</tbody>
     </table>;
 }

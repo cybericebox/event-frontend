@@ -50,6 +50,10 @@
 .event-cmodal__hint-text{margin-top:var(--ib-1)}
 .event-cmodal__hint-mode{margin:0 0 var(--ib-2)}
 .event-cmodal__note{margin-top:18px}
+.event-cmodal__mods{margin-top:18px;padding:12px 14px;border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink);font-size:var(--ib-fs-13);line-height:1.5}
+.event-cmodal__mods p{margin:0}
+.event-cmodal__mods p+p{margin-top:4px}
+.event-cmodal__mods .event-cmodal__mods-caption{margin-bottom:6px;color:var(--ib-warn);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-cmodal__closed{margin-top:18px;padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);background:var(--ib-soft);color:var(--ib-body)}
 .event-cmodal__closed b{color:var(--ib-ink)}
 
@@ -145,3 +149,9 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-board-filters{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
 .event-board-filters__select{min-width:150px}
 .event-challenges__timers:empty{display:none}
+
+.event-score-chart{position:relative}
+.event-score-chart__reset{position:absolute;top:4px;right:16px}
+.event-cmodal__solved{align-items:flex-start}
+.event-cmodal__solved-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-width:0}
+.event-cmodal__solved-main small{flex-basis:100%;color:var(--ib-dim);font-size:var(--ib-fs-12)}

@@ -23,6 +23,7 @@ dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal__title:focus{outline:none}
 .ib-cmodal__close{position:absolute;top:14px;right:14px}
 .ib-cmodal__tabs{margin-top:var(--ib-3);padding:0 24px}
+.ib-cmodal__tabs[data-pointer]>[role="tab"]:focus{outline:none}
 
 .ib-cmodal__body{min-height:0;overflow:auto;padding:20px 24px 24px}
 .ib-cmodal__body[hidden]{display:none}

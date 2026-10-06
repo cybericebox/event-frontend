@@ -1,7 +1,7 @@
 "use client";
 
 import {useState, type ReactNode} from "react";
-import {Trophy} from "lucide-react";
+import {FirstSolveBadge} from "@/components/event/challenges/FirstSolveBadge";
 import type {ParticipationSolve} from "@/api/participationStats";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -111,7 +111,7 @@ export function SolvesTable({event, state, solves, now, showSolver, error, onRet
                 <th>{t("participation.solves.task")}</th><th>{t("participation.solves.category")}</th><th className="is-num">{t("participation.solves.points")}</th>
                 {showSolver && <th>{t("participation.solves.solver")}</th>}<th className="is-nowrap">{t("participation.solves.time")}</th>
             </tr></thead><tbody>{rows.slice(0, shown).map(solve => <tr key={`${solve.EventChallengeID}-${solve.SolvedAt}`}>
-                <td><span className="event-pp-table__name">{solve.ChallengeName}{solve.FirstBlood && <span className="ib-tag ib-tag--sm ib-tag--warn"><Trophy size={12} aria-hidden="true" />{t("participation.solves.firstBlood")}</span>}</span></td>
+                <td><span className="event-pp-table__name">{solve.ChallengeName}{solve.FirstBlood && <FirstSolveBadge />}</span></td>
                 <td><span className="ib-tag ib-tag--category">{solve.Category}</span></td>
                 <td className="is-num">{formatNumber(solve.Points)}</td>
                 {showSolver && <td>{solve.SolvedByName || "—"}</td>}

@@ -4,7 +4,7 @@ import {useEffect, useMemo, useState, type ReactNode} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import Link from "next/link";
-import {useQuery} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {getOwnBoard, type BoardStage, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
 import {getModeratorsBoard} from "@/api/moderatorsBoard";
 import {getManageAccess} from "@/api/manage";
@@ -26,7 +26,7 @@ import {t, tPlural} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {
     applyBoardFilters, boardFilterSearch, boardViewKey, buildCategories, DEFAULT_BOARD_FILTERS, formatClock, formatPoints, missingMembers,
-    parseBoardFilters, readBoardView, writeBoardView, type BoardFilters, type BoardView,
+    markSolved, parseBoardFilters, readBoardView, writeBoardView, type BoardFilters, type BoardView,
 } from "./challengeBoardModel";
 
 function useClock(event: PublicEventInfo | null) {
@@ -43,7 +43,7 @@ function useClock(event: PublicEventInfo | null) {
     return {started, finished};
 }
 
-// The scope, stage, status and category filters live in the URL (?scope=all&stage=…&status=…&category=…), so a reload or a link keeps them.
+// The stage, status and category filters live in the URL (?stage=…&status=…&category=…), so a reload or a link keeps them.
 function useBoardFilters(): [BoardFilters, (next: BoardFilters) => void] {
     const [filters, setFilters] = useState<BoardFilters>(() => parseBoardFilters(typeof window === "undefined" ? "" : window.location.search));
     const update = (next: BoardFilters) => {
@@ -71,9 +71,9 @@ function Page({banners, sub, view, onView, countdown, children}: {banners?: Reac
     </div>;
 }
 
-export function Board({eventID, mode, challenges, stages = [], nextOpensAt = null, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, banners, countdown}: {
+export function Board({eventID, mode, challenges, stages = [], nextOpensAt = null, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, onSolved, banners, countdown}: {
     eventID: string; mode: BoardMode; challenges: OwnChallenge[]; stages?: BoardStage[]; nextOpensAt?: string | null; teamMode: boolean; finished: boolean;
-    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; banners?: ReactNode; countdown?: ReactNode;
+    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; onSolved?: (challengeID: string) => void; banners?: ReactNode; countdown?: ReactNode;
 }) {
     const key = boardViewKey(userID);
     // The board renders only after client-side queries, so reading storage here never races hydration.
@@ -93,7 +93,7 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
     const category = categories.some(item => item.key === filters.category) ? filters.category : "";
     const selected = challenges.find(item => item.EventChallengeID === selectedID) ?? null;
     const toolbar = <BoardFilterBar filters={filters} stages={stages} hasUnstaged={challenges.some(item => !item.StageID)} onChange={setFilters} />;
-    const emptyMessage = nextOpensAt && filters.scope === "active" && !filters.stage && !filters.status
+    const emptyMessage = nextOpensAt && (filters.status === "" || filters.status === "open") && !filters.stage
         ? t("challenges.stage.emptyBreak", {time: formatClock(nextOpensAt)})
         : t("challenges.filter.empty");
     const solved = challenges.filter(item => item.SolvedAt);
@@ -114,13 +114,14 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
         <ChallengeModal challenge={selected} stage={stages.find(item => item.ID === selected?.StageID) ?? null} eventID={eventID} mode={mode} teamMode={teamMode} finished={finished}
             showDifficulty={showDifficulty} showHints={showHints} hintChargeMode={hintChargeMode}
             onClose={() => setSelectedID(null)}
-            onAccepted={challengeID => { setAcceptedID(challengeID); onRefresh(); }}
+            onAccepted={challengeID => { setAcceptedID(challengeID); onSolved?.(challengeID); onRefresh(); }}
             onRejected={onRefresh}
             onHintUnlocked={onRefresh} />
     </Page>;
 }
 
 function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: boolean}) {
+    const queryClient = useQueryClient();
     const access = useQuery({queryKey: ["event-management-access", event.EventID], queryFn: () => getManageAccess(event.EventID), retry: false, refetchOnWindowFocus: false});
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
     const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: () => getModeratorsBoard(event.EventID), enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
@@ -131,11 +132,13 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     if (board.isError) return <Page banners={banner}><EventLoadError message={t("challenges.moderators.unavailableTitle")} error={board.error} onRetry={() => void board.refetch()} /></Page>;
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
         <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode finished={finished} showDifficulty showHints
-            userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner} />
+            userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner}
+            onSolved={id => queryClient.setQueryData<OwnChallenge[]>(["event-moderators-board", event.EventID], old => old && markSolved(old, id, new Date().toISOString()))} />
     </EventVpnProvider>;
 }
 
 export function ChallengesBoard() {
+    const queryClient = useQueryClient();
     const participant = useParticipantContext();
     const guestEvent = useGuestEvent();
     const privateEvent = usePrivateEvent();
@@ -193,5 +196,6 @@ export function ChallengesBoard() {
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data.Challenges} stages={challenges.data.Stages} nextOpensAt={challenges.data.NextOpensAt} teamMode={teamMode} finished={finished}
         showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}
-        onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} countdown={countdown} />;
+        onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} countdown={countdown}
+        onSolved={id => queryClient.setQueryData<OwnBoard>(["event-own-challenges", event.EventID], old => old && {...old, Challenges: markSolved(old.Challenges, id, new Date().toISOString())})} />;
 }

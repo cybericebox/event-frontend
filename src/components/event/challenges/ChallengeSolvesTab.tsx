@@ -2,7 +2,6 @@
 
 import {useEffect, useRef, useState} from "react";
 import {useInfiniteQuery} from "@tanstack/react-query";
-import {Trophy} from "lucide-react";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {getChallengeSolves, ParticipantChallengeError, type ChallengeSolve} from "@/api/participantChallenges";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -10,6 +9,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {exactTime, relativeTime} from "@/components/event/participation/participationStatsModel";
+import {FirstSolveBadge} from "./FirstSolveBadge";
 import {t} from "@/i18n/t";
 
 // Fixed row and viewport height: the list is windowed, so a long list renders a
@@ -40,7 +40,7 @@ function SolveRow({row, index, now}: {row: ChallengeSolve; index: number; now: n
         <span className="ib-solvers__n">{index + 1}</span>
         <span className="ib-solvers__name">
             <EventTooltip content={row.TeamName} truncated className="ib-solvers__tip">{() => <span>{row.TeamName}</span>}</EventTooltip>
-            {row.FirstBlood && <span className="ib-tag ib-tag--sm ib-tag--warn"><Trophy size={12} aria-hidden="true" />{t("participation.solves.firstBlood")}</span>}
+            {row.FirstBlood && <FirstSolveBadge />}
             {row.Own && <span className="ib-tag ib-tag--sm">{t("challenges.solves.own")}</span>}
         </span>
         <SolveTime iso={row.SolvedAt} now={now} />

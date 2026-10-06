@@ -34,32 +34,39 @@ function renderBoard(challenges: OwnChallenge[], stages: BoardStage[], nextOpens
     </QueryClientProvider>);
 }
 const names = () => screen.queryAllByRole("button").map(button => button.getAttribute("data-challenge-id") ? button.querySelector(".ib-tile__name")?.textContent : null).filter(Boolean);
-const scope = (label: string) => within(screen.getByRole("group", {name: "Показати"})).getByRole("button", {name: label});
+const status = (label: string) => within(screen.getByRole("group", {name: "Статус"})).getByRole("button", {name: label});
 
 describe("the board filters", () => {
     const tasks = [task(1, 1), task(2, 1, {StageID: open.ID}), task(3, 2, {StageID: closed.ID, Closed: true}), task(4, 2, {StageID: closed.ID, Closed: true, SolvedAt: "2026-10-01T09:00:00Z"})];
 
-    it("defaults to «Активні»: the open stage's tasks and the sets without a stage", () => {
+    it("defaults to «Усі»; «Відкриті» narrows to open tasks. One row of status segments, no «Активні» toggle", () => {
         renderBoard(tasks, [closed, open]);
-        expect(scope("Активні").getAttribute("aria-pressed")).toBe("true");
+        expect(status("Усі").getAttribute("aria-pressed")).toBe("true");
+        expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
+        fireEvent.click(status("Відкриті"));
+        expect(within(screen.getByRole("group", {name: "Статус"})).getAllByRole("button").map(b => b.textContent)).toEqual(["Відкриті", "Розвʼязані", "Закриті", "Усі"]);
+        expect(screen.queryByRole("group", {name: "Показати"})).toBeNull();
         expect(names()).toEqual(["Завдання 1", "Завдання 2"]);
         // the group with nothing to show vanishes
         expect(screen.queryByRole("region", {name: "Група 2"})).toBeNull();
         expect(screen.getByRole("region", {name: "Група 1"})).toBeTruthy();
     });
 
-    it("«Всі» brings the closed stage back, marked «закрито», and keeps the choice in the URL", () => {
+    it("«Закриті» shows the closed stage's tasks, «Усі» everything, and the choice lives in the URL", () => {
         renderBoard(tasks, [closed, open]);
-        fireEvent.click(scope("Всі"));
+        fireEvent.click(status("Закриті"));
+        expect(names()).toEqual(["Завдання 3"]);
+        expect(window.location.search).toContain("status=closed");
+        fireEvent.click(status("Усі"));
         expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
         expect(screen.getAllByText("закрито").length).toBe(2);
-        expect(window.location.search).toContain("scope=all");
-        fireEvent.click(scope("Активні"));
-        expect(window.location.search).not.toContain("scope");
+        expect(window.location.search).not.toContain("status");
+        fireEvent.click(status("Відкриті"));
+        expect(window.location.search).toContain("status=open");
     });
 
     it("starts from the URL: a stored link opens the same view", () => {
-        window.history.replaceState(null, "", "/challenges?scope=all&status=closed");
+        window.history.replaceState(null, "", "/challenges?status=closed");
         renderBoard(tasks, [closed, open]);
         expect(names()).toEqual(["Завдання 3"]);
     });
@@ -67,25 +74,26 @@ describe("the board filters", () => {
     it("hides the stage filter on an event without stages", () => {
         renderBoard([task(1, 1), task(2, 1)], []);
         expect(screen.queryByRole("button", {name: "Етап"})).toBeNull();
-        expect(screen.getByRole("button", {name: "Статус"})).toBeTruthy();
+        expect(status("Усі")).toBeTruthy();
         expect(names()).toEqual(["Завдання 1", "Завдання 2"]);
     });
 
-    it("during a break with nothing active shows the break message in the centered empty state, and «Всі» still works", () => {
+    it("during a break with nothing active shows the break message in the centered empty state, and «Усі» still works", () => {
         renderBoard([task(3, 2, {StageID: closed.ID, Closed: true})], [closed], "2026-10-01T10:30:00Z");
+        fireEvent.click(status("Відкриті"));
         expect(screen.getByText(/^Перерва до \d{2}:\d{2}\. Завдання наступного етапу зʼявляться після її завершення\.$/)).toBeTruthy();
         expect(document.querySelector("[data-empty-state]")).toBeTruthy();
-        fireEvent.click(scope("Всі"));
+        fireEvent.click(status("Усі"));
         expect(names()).toEqual(["Завдання 3"]);
     });
 
     it("an empty filter result says so and offers a reset", () => {
         renderBoard(tasks, [closed, open]);
-        window.history.replaceState(null, "", "/challenges?status=solved");
+        window.history.replaceState(null, "", "/challenges?status=solved&stage=" + open.ID);
         cleanup();
         renderBoard(tasks, [closed, open]);
         expect(screen.getByText("За цими фільтрами завдань немає")).toBeTruthy();
         fireEvent.click(screen.getByRole("button", {name: "Скинути фільтри"}));
-        expect(names()).toEqual(["Завдання 1", "Завдання 2"]);
+        expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
     });
 });

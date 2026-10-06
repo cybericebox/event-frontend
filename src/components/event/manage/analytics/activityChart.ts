@@ -5,7 +5,7 @@ import {t} from "@/i18n/t";
 // Same look as the results chart (ScoreChart): the slate axes and grid, the
 // event palette. Lines are smooth, the tooltip follows the axis, and the plot
 // zooms with the wheel or the slider.
-const axisText = "#64748b";
+const axisText = "var(--ib-dim)";
 const palette = {attempts: "#0091EA", correct: "#1E2A6B", solves: "#22C55E", wrong: "#EF4444", opens: "#F59E0B"};
 
 export function lifecycleMarkers(markers: AnalyticsOverview["Markers"]): ChartMarker[] {
@@ -45,8 +45,8 @@ export function activityChartOption(overview: AnalyticsOverview, now?: number) {
         grid: {left: 44, right: 16, top: 36, bottom: 64},
         legend: {type: "scroll", top: 0, textStyle: {color: axisText}, selected: {[attemptsName]: false, [correctName]: false, [opensName]: false}},
         tooltip: {trigger: "axis"},
-        xAxis: {type: "time", min: from, max: Math.max(to, from + 1), axisLine: {lineStyle: {color: "#cbd5e1"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
-        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "#e2e8f0"}}},
+        xAxis: {type: "time", min: from, max: Math.max(to, from + 1), axisLine: {lineStyle: {color: "var(--ib-control)"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
+        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "var(--ib-line)"}}},
         dataZoom: [{type: "inside", filterMode: "none"}, {type: "slider", height: 18, bottom: 8, filterMode: "none"}],
         series: [
             line(t("manage.analytics.series.solves"), palette.solves, point => point.Solves, {
