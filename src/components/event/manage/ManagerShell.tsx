@@ -1,6 +1,6 @@
 "use client";
 
-import {createContext, useContext, useState, type ReactNode} from "react";
+import {createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode} from "react";
 import {EventErrorScreen} from "@/components/event/EventErrorScreen";
 import {usePathname} from "next/navigation";
 import {useQuery} from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import {SignInRedirect} from "../SignInRedirect";
 import {useAnalyticsAccess} from "./analytics/useAnalyticsAccess";
 import {SetupChip} from "./setup/SetupChip";
 import {ManagerSidebar} from "./ManagerSidebar";
+import {useDrawerContract} from "./useDrawerContract";
 import {managerLocationTitle} from "./managerNavigation";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
@@ -29,9 +30,14 @@ export function useManager() {
     return context;
 }
 
-export function ManagerShell({event, children}: {event: PublicEventInfo; children: ReactNode}) {
+export function ManagerShell({event, children, onSection}: {event: PublicEventInfo; children: ReactNode; onSection?: (title: string | null) => void}) {
     const pathname = usePathname();
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const sidebarRef = useRef<HTMLElement>(null);
+    const menuRef = useRef<HTMLButtonElement>(null);
+    const mainRef = useRef<HTMLDivElement>(null);
+    const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+    useDrawerContract({open: drawerOpen, onClose: closeDrawer, drawer: sidebarRef, opener: menuRef, behind: mainRef});
     const access = useQuery({
         queryKey: ["event-management-access", event.EventID],
         queryFn: () => getManageAccess(event.EventID),
@@ -47,6 +53,11 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
     });
 
     const analytics = useAnalyticsAccess(event.EventID, !!access.data);
+    const section = access.data ? managerLocationTitle(pathname, pages.data ?? []) : null;
+    useEffect(() => {
+        onSection?.(section);
+        return () => onSection?.(null);
+    }, [section, onSection]);
 
     if (access.isPending) return <EventLoading event={event} full label={t("manage.shell.checkingAccess")} />;
     if (access.isError) {
@@ -63,17 +74,17 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <SkipLink />
         <div className="ib-admin-shell__layout">
-            <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} analytics={analytics.data} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
-            <div className="ib-admin-shell__main">
+            <ManagerSidebar asideRef={sidebarRef} drawerOpen={drawerOpen} event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} analytics={analytics.data} onRetryPages={() => void pages.refetch()} onNavigate={closeDrawer} />
+            <div ref={mainRef} className="ib-admin-shell__main">
                 <header className="ib-topbar">
-                    <EventTooltip content={t("manage.shell.openMenu")} silent>{() => <button className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>}</EventTooltip>
-                    <ol className="ib-topbar__crumbs"><li aria-current="page">{managerLocationTitle(pathname, pages.data ?? [])}</li></ol>
+                    <EventTooltip content={t("manage.shell.openMenu")} silent>{() => <button ref={menuRef} className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>}</EventTooltip>
+                    <ol className="ib-topbar__crumbs"><li aria-current="page">{section}</li></ol>
                     <div className="ib-topbar__actions"><SetupChip eventID={event.EventID} />{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
                 <main id="main" tabIndex={-1} className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
             </div>
         </div>
-        <button className="ib-admin-shell__backdrop" type="button" aria-label={t("manage.shell.closeMenu")} onClick={() => setDrawerOpen(false)} />
+        <button className="ib-admin-shell__backdrop" type="button" aria-label={t("manage.shell.closeMenu")} onClick={closeDrawer} />
         </div>
     </div>;
 }

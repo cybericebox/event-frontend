@@ -1,10 +1,9 @@
 "use client";
 
-import {useMemo, useState, type CSSProperties, type FormEvent} from "react";
-import {useRouter} from "next/navigation";
+import {useId, useMemo, useState, type CSSProperties, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
-import {CircleHelp, RotateCcw} from "lucide-react";
+import {RotateCcw} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {getManageConfig, ManageApiError, putManageAppearance} from "@/api/manage";
 import {BrandDraftField, useBrandDraft} from "@/components/event/manage/BrandDraftField";
@@ -14,6 +13,7 @@ import {useManager} from "@/components/event/manage/ManagerShell";
 import {resolveEventLogoURL} from "@/components/event/EventBrandLogo";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
+import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {t} from "@/i18n/t";
@@ -25,16 +25,16 @@ const colorPattern = /^#[0-9a-fA-F]{6}$/;
 function ColorField({title, help, value, fallback, onChange, disabled, optional = false}: {
     title: string; help: string; value: string; fallback: string; onChange: (value: string) => void; disabled: boolean; optional?: boolean;
 }) {
+    const inputID = useId();
     return <div className="event-manage-field">
-        <div className="event-brand-field__head"><span>{title}{!optional && <span className="event-field-required" aria-label={t("common.required")}>*</span>}</span><EventTooltip content={<span className="event-brand-tooltip-copy">{help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.appearance.about", {title})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip></div>
-        <div className="event-manage-color"><label className="event-color-picker"><span className="event-color-swatch" style={{backgroundColor: colorPattern.test(value) ? value : fallback}} /><input type="color" aria-label={t("manage.appearance.pick", {title: title.toLowerCase()})} value={colorPattern.test(value) ? value : fallback} onChange={event => onChange(event.target.value)} disabled={disabled} /></label><input className="event-manage-input" aria-label={title} value={value} onChange={event => onChange(event.target.value)} placeholder={fallback} maxLength={7} disabled={disabled} />{value !== (optional ? "" : defaultBrand) && !disabled && <EventTooltip content={t("manage.appearance.reset", {title: title.toLowerCase()})}>{id => <button className="event-brand-reset-icon" type="button" aria-label={t("manage.appearance.reset", {title: title.toLowerCase()})} aria-describedby={id} onClick={() => onChange(optional ? "" : defaultBrand)}><RotateCcw size={15} /></button>}</EventTooltip>}</div>
+        <ManageFieldLabel htmlFor={`${inputID}`} title={title} help={help} required={!optional} />
+        <div className="event-manage-color"><label className="event-color-picker"><span className="event-color-swatch" style={{backgroundColor: colorPattern.test(value) ? value : fallback}} /><input type="color" aria-label={t("manage.appearance.pick", {title: title.toLowerCase()})} value={colorPattern.test(value) ? value : fallback} onChange={event => onChange(event.target.value)} disabled={disabled} /></label><input id={inputID} className="event-manage-input" value={value} onChange={event => onChange(event.target.value)} placeholder={fallback} maxLength={7} disabled={disabled} />{value !== (optional ? "" : defaultBrand) && !disabled && <EventTooltip content={t("manage.appearance.reset", {title: title.toLowerCase()})}>{id => <button className="event-brand-reset-icon" type="button" aria-label={t("manage.appearance.reset", {title: title.toLowerCase()})} aria-describedby={id} onClick={() => onChange(optional ? "" : defaultBrand)}><RotateCcw size={15} /></button>}</EventTooltip>}</div>
     </div>;
 }
 
 export default function ManageAppearancePage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
-    const router = useRouter();
     const queryClient = useQueryClient();
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const [edit, setEdit] = useState<{eventID: string; brand: string; accent: string} | null>(null);
@@ -48,7 +48,7 @@ export default function ManageAppearancePage() {
     const invalidFormat = !colorPattern.test(brand.trim()) || (accent.trim() !== "" && !colorPattern.test(accent.trim()));
     const lowContrast = !invalidFormat && (whiteTextContrast(brand) ?? 0) < 4.5;
     const dirty = !!configQuery.data && (brand.toUpperCase() !== configQuery.data.Theme.Brand || accent.toUpperCase() !== configQuery.data.Theme.Accent || logo.dirty || favicon.dirty);
-    const disabled = !canManage || saving;
+    const disabled = !canManage;
     const previewStyle = theme ? {"--ev-brand": theme.Brand, "--ev-accent-light": theme.AccentLight, "--ev-accent-dark": theme.AccentDark, "--ev-accent-live": theme.AccentLive} as CSSProperties : undefined;
     const changeBrand = (value: string) => setEdit({eventID, brand: value, accent});
     const changeAccent = (value: string) => setEdit({eventID, brand, accent: value});
@@ -60,7 +60,7 @@ export default function ManageAppearancePage() {
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
-        if (!theme || logo.uploading || favicon.uploading) return;
+        if (!theme || logo.uploading || favicon.uploading || saving || !canManage) return;
         setSaving(true);
         try {
             const result = await putManageAppearance(eventID, {Brand: brand.trim(), Accent: accent.trim(), Logo: logo.change, Favicon: favicon.change});
@@ -68,14 +68,13 @@ export default function ManageAppearancePage() {
             queryClient.setQueryData<PublicEventInfo>(["event-manager-public-info"], current =>
                 current?.EventID === eventID ? {...current, LogoURL: result.LogoURL, FaviconURL: result.FaviconURL, Theme: result.Config.Theme} : current
             );
-            setEdit(null); logo.saved(resolveEventLogoURL(result.LogoURL) ?? ""); favicon.saved(resolveEventLogoURL(result.FaviconURL) ?? ""); setSuggestion(null);
+            const sent = edit; setEdit(current => current === sent ? null : current); logo.saved(resolveEventLogoURL(result.LogoURL) ?? ""); favicon.saved(resolveEventLogoURL(result.FaviconURL) ?? ""); setSuggestion(null);
             const root = document.documentElement;
             root.style.setProperty("--ev-brand", result.Config.Theme.Brand);
             root.style.setProperty("--ev-accent-light", result.Config.Theme.AccentLight);
             root.style.setProperty("--ev-accent-dark", result.Config.Theme.AccentDark);
             root.style.setProperty("--ev-accent-live", result.Config.Theme.AccentLive);
             toast.success(t("manage.appearance.saved"));
-            router.refresh();
         } catch (error) {
             toast.error(error instanceof ManageApiError && error.status === 409 ? t("manage.appearance.conflict") : t("manage.appearance.saveFailed"));
         } finally {setSaving(false);}
@@ -106,7 +105,7 @@ export default function ManageAppearancePage() {
                 <div className="event-manage-preview__sample" style={previewStyle} data-theme="dark"><div className="event-manage-preview__body"><strong>{t("manage.appearance.darkTheme")}</strong><span className="event-manage-preview__accent">{t("manage.appearance.accentElement")}</span></div></div>
             </aside>
         </div>
-        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !theme || logo.uploading || favicon.uploading} busy={saving}>{t("common.save")}</EventButton></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !theme || logo.uploading || favicon.uploading} busy={saving}>{t("common.save")}</EventButton></div>}
         <ManageDialog open={suggestion !== null} onOpenChange={open => {if (!open) setSuggestion(null);}} title={t("manage.appearance.paletteTitle")} description={t("manage.appearance.paletteBody")}
             footer={<><button className="ib-btn" type="button" onClick={() => setSuggestion(null)}>{t("manage.appearance.keepCurrent")}</button><button className="ib-btn ib-btn--primary" type="button" disabled={disabled} onClick={() => {if (suggestion && (whiteTextContrast(suggestion.brand) ?? 0) >= 4.5) setEdit({eventID, brand: suggestion.brand, accent: suggestion.accent}); setSuggestion(null);}}>{t("manage.appearance.applyColors")}</button></>}>
             {suggestion && <div className="event-brand-palette-dialog__colors"><div><span>{t("manage.appearance.brand")}</span><strong><i style={{backgroundColor: suggestion.brand}} />{suggestion.brand}</strong></div><div><span>{t("manage.appearance.accent")}</span><strong><i style={{backgroundColor: suggestion.accent || "#FFFFFF"}} />{suggestion.accent || t("manage.appearance.undefined")}</strong></div></div>}

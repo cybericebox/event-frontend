@@ -1,5 +1,6 @@
 "use client";
 
+import { useRovingToolbar } from "../../useRovingToolbar";
 import {
   createContext,
   useCallback,
@@ -585,6 +586,8 @@ function ToolbarPlugin({
     { value: "right", Icon: AlignRight, label: t("manage.tpl.editor.alignRightTitle") },
     { value: "justify", Icon: AlignJustify, label: t("manage.tpl.editor.alignJustifyTitle") },
   ] as const;
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  useRovingToolbar(toolbarRef);
   const isHeading = headings.some((item) => item.tag === blockType);
   const HeadingIcon = headings.find((item) => item.tag === blockType)?.Icon ?? Heading1;
   const AlignIcon = alignments.find((item) => item.value === alignment)?.Icon ?? AlignLeft;
@@ -593,7 +596,7 @@ function ToolbarPlugin({
 
   return (
     <div className="rounded-t-lg border-b border-(--ib-control)">
-      <div role="toolbar" aria-label={t("manage.tpl.editor.toolbar")} className="exercise-editor-toolbar flex flex-wrap items-center gap-0.5 p-1.5">
+      <div role="toolbar" aria-label={t("manage.tpl.editor.toolbar")} className="exercise-editor-toolbar flex flex-wrap items-center gap-0.5 p-1.5" ref={toolbarRef}>
         <div className={group}>
           {toolButton(t("manage.tpl.editor.bold"), formats.has("bold"), () => formatText("bold"), <Bold size={16} aria-hidden />)}
           {toolButton(t("manage.tpl.editor.italic"), formats.has("italic"), () => formatText("italic"), <Italic size={16} aria-hidden />)}

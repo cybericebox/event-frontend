@@ -127,7 +127,7 @@ export function DismissalsPanel() {
                 <td className="event-manage-table__actions-col">{canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setRemoving({item, busy: false, error: null})}>{t("manage.analytics.integrity.dismissals.remove")}</button>}</td>
             </tr>)}</tbody>
         </ManageTable>
-        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} busy={removing?.busy ?? false} error={removing?.error}
+        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={removing?.busy ?? false} error={removing?.error}
             title={t("manage.analytics.integrity.dismissals.removeTitle")} description={t("manage.analytics.integrity.dismissals.removeDescription")}
             subject={removing ? removing.item.ChallengeName : undefined} confirmLabel={t("manage.analytics.integrity.dismissals.remove")} onConfirm={() => void remove()} />
     </>;

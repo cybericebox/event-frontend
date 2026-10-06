@@ -42,6 +42,7 @@ export function RegistrationSettings() {
         submitEvent.preventDefault();
         if (!config || !lifecycle || registration === undefined || allowPseudonyms === undefined || joinPolicy === undefined || maxTeams === undefined || (maxTeams !== null && (!Number.isInteger(maxTeams) || maxTeams < 1)) || !canManage || saving || !dirty || (joinDirty && !lifecycle.Configured)) return;
         setSaving(true);
+        const sent = edit;
         try {
             if (registrationDirty) {
                 const updated = await putManageConfig(eventID, {...manageConfigInput(config), Registration: registration, MaxTeams: maxTeams, AllowPseudonyms: allowPseudonyms});
@@ -55,7 +56,7 @@ export function RegistrationSettings() {
                 });
                 queryClient.setQueryData(["event-management-lifecycle", eventID], updated);
             }
-            setEdit(null);
+            setEdit(current => current === sent ? null : current);
             toast.success(t("manage.registration.saved"));
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
@@ -69,16 +70,16 @@ export function RegistrationSettings() {
 
     return <form className="event-manage-settings event-manage-general" onSubmit={save}>
         <section className="event-manage-section">
-            <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.type")} help={t("manage.registration.typeHelp")} helpPlacement="bottom" required /><EventSelect ariaLabel={t("manage.registration.type")} value={String(registration)} options={[{value: "0", label: t("manage.registration.closed")}, {value: "1", label: t("manage.registration.approval")}, {value: "2", label: t("manage.registration.open")}]} onValueChange={value => update({registration: Number(value) as 0 | 1 | 2})} disabled={!canManage || saving} /></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.type")} help={t("manage.registration.typeHelp")} helpPlacement="bottom" required /><EventSelect ariaLabel={t("manage.registration.type")} value={String(registration)} options={[{value: "0", label: t("manage.registration.closed")}, {value: "1", label: t("manage.registration.approval")}, {value: "2", label: t("manage.registration.open")}]} onValueChange={value => update({registration: Number(value) as 0 | 1 | 2})} disabled={!canManage} /></div>
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.joinPeriod")} help={t("manage.registration.joinPeriodHelp")} helpPlacement="bottom" required />
                 <div className="event-manage-choice-group" role="radiogroup" aria-label={t("manage.registration.joinPeriod")}>
-                    <label><input type="radio" name="join-policy" checked={joinPolicy === 0} onChange={() => update({joinPolicy: 0})} disabled={!canManage || saving || !lifecycle.Configured} /><span><strong>{t("manage.registration.beforeStart")}</strong><small>{t("manage.registration.beforeStartNote")}</small></span></label>
-                    <label><input type="radio" name="join-policy" checked={joinPolicy === 1} onChange={() => update({joinPolicy: 1})} disabled={!canManage || saving || !lifecycle.Configured} /><span><strong>{t("manage.registration.duringEvent")}</strong><small>{t("manage.registration.duringEventNote")}</small></span></label>
+                    <label><input type="radio" name="join-policy" checked={joinPolicy === 0} onChange={() => update({joinPolicy: 0})} disabled={!canManage || !lifecycle.Configured} /><span><strong>{t("manage.registration.beforeStart")}</strong><small>{t("manage.registration.beforeStartNote")}</small></span></label>
+                    <label><input type="radio" name="join-policy" checked={joinPolicy === 1} onChange={() => update({joinPolicy: 1})} disabled={!canManage || !lifecycle.Configured} /><span><strong>{t("manage.registration.duringEvent")}</strong><small>{t("manage.registration.duringEventNote")}</small></span></label>
                 </div>
                 {!lifecycle.Configured && <small>{scheduleHint[0]}<Link href="/manage/schedule">{t("manage.registration.scheduleLink")}</Link>{scheduleHint[1]}</small>}
             </div>
-            {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title={t("manage.registration.maxTeams")} help={t("manage.registration.maxTeamsHelp")} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage || saving} placeholder={t("manage.registration.noLimit")} /></div>}
-            <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.pseudonyms")} help={t("manage.registration.pseudonymsHelp")} /><EventSwitch className="event-manage-form__switch" checked={!!allowPseudonyms} onCheckedChange={checked => update({allowPseudonyms: checked})} disabled={!canManage || saving} label={t("manage.registration.allowPseudonyms")} /></div>
+            {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title={t("manage.registration.maxTeams")} help={t("manage.registration.maxTeamsHelp")} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage} placeholder={t("manage.registration.noLimit")} /></div>}
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.pseudonyms")} help={t("manage.registration.pseudonymsHelp")} /><EventSwitch className="event-manage-form__switch" checked={!!allowPseudonyms} onCheckedChange={checked => update({allowPseudonyms: checked})} disabled={!canManage} label={t("manage.registration.allowPseudonyms")} /></div>
         </section>
         {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;

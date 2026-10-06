@@ -26,17 +26,17 @@ export default function ParticipationSettingsPage() {
     const dirty = !!config && !!configQuery.data && JSON.stringify(config) !== JSON.stringify(manageConfigInput(configQuery.data));
     const locked = !!lifecycleQuery.data?.Configured && lifecycleQuery.data.Status !== "not_published";
     const valid = !!config && config.Participation !== null && (config.Participation !== 1 || (config.MaxTeamSize >= 1 && (!config.MinTeamSize || config.MinTeamSize <= config.MaxTeamSize)));
-    const disabled = !canManage || saving;
+    const disabled = !canManage;
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
-        if (!config || !valid || disabled || !dirty) return;
+        if (!config || !valid || disabled || saving || !dirty) return;
         setSaving(true);
         try {
             const updated = await putManageConfig(eventID, config);
             queryClient.setQueryData(["event-management-config", eventID], updated);
             queryClient.setQueryData<typeof event>(["event-manager-public-info"], current => current ? {...current, Participation: updated.Participation} : current);
-            setEdit(null);
+            setEdit(current => current?.value === config ? null : current);
             toast.success(t("manage.participation.saved"));
         } catch (failure) {toast.error(failure instanceof ManageApiError && failure.status === 409 ? t("manage.participation.locked") : t("manage.participation.saveFailed"));}
         finally {setSaving(false);}
@@ -62,6 +62,6 @@ export default function ParticipationSettingsPage() {
         {!locked && <section className="event-manage-section">
             <p className="event-manage-readonly-note" data-testid="infrastructure-note">{configQuery.data?.InfrastructureAllowed ? t("manage.participation.infrastructureOn") : t("manage.participation.infrastructureHint")}</p>
         </section>}
-        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
+        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }

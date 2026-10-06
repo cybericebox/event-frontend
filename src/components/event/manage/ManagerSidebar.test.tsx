@@ -138,6 +138,26 @@ describe("participation navigation", () => {
         expect(items.querySelector("a")!.className).toBe("ib-admin-side__item");
     });
 
+    describe("current item", () => {
+        const current = (pathname: string) => {
+            render(<ManagerSidebar event={event} pathname={pathname} pages={[]} pagesError={false} canManage infrastructureAllowed={false} analytics={{Sections: true, Sensitive: false}} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
+            return Array.from(document.querySelectorAll("a[aria-current=page]")).map(link => link.getAttribute("href"));
+        };
+        it("marks only the best matching item on a sub-page", () => {
+            expect(current("/manage/analytics/participants")).toEqual(["/manage/analytics/participants"]);
+        });
+        it("marks the analytics overview only on its own address", () => {
+            expect(current("/manage/analytics")).toEqual(["/manage/analytics"]);
+        });
+        it("marks the overview only on /manage", () => {
+            expect(current("/manage/schedule")).toEqual(["/manage/schedule"]);
+        });
+        it("does not repeat a group name as a region", () => {
+            current("/manage/schedule");
+            expect(screen.queryByRole("region")).toBeNull();
+        });
+    });
+
     describe("return to administration", () => {
         const back = () => screen.queryByRole("link", {name: "Повернутися до панелі платформи"});
         it("is hidden without an origin", () => {

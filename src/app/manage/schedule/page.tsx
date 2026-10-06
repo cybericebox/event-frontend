@@ -105,7 +105,7 @@ export default function ManageSchedulePage() {
             queryClient.setQueryData(["event-management-lifecycle", eventID], updated);
             // The first stage opens and the last closes with the event: they moved with it.
             void queryClient.invalidateQueries({queryKey: ["event-management-stages", eventID]});
-            setEdited(null);
+            setEdited(current => current?.value === draft ? null : current);
             toast.success(t("manage.schedule.saved"));
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
@@ -129,7 +129,7 @@ export default function ManageSchedulePage() {
                 ShowStartCountdown: countdown.ShowStart, ShowFinishCountdown: countdown.ShowFinish, FinishCountdownMinutes: countdown.Minutes, FinishCountdownMode: countdown.Mode,
             });
             queryClient.setQueryData(["event-management-config", eventID], updated);
-            setCountdownEdited(null);
+            setCountdownEdited(current => current?.value === countdown ? null : current);
             toast.success(t("manage.schedule.countdown.saved"));
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
@@ -150,13 +150,13 @@ export default function ManageSchedulePage() {
         <form className="event-manage-section" onSubmit={save}>
             <div className="event-manage-section__head"><h2>{t("manage.schedule.keyDates")}</h2><p>{t("manage.schedule.keyDatesHelp")}</p></div>
             <div className="event-manage-fields-two">
-                <ManageDateField id="publish-at" title={t("manage.schedule.publish")} help={lifecycle.data.Status === "not_published" ? t("manage.schedule.publishHelp") : t("manage.schedule.publishedHelp")} value={draft.PublishAt} onChange={value => setDraft({...draft, PublishAt: value})} disabled={!canManage || saving || lifecycle.data.Status !== "not_published"} required />
-                <ManageDateField id="start-at" title={t("manage.schedule.start")} help={t("manage.schedule.startHelp")} value={draft.StartAt} onChange={value => setDraft({...draft, StartAt: value})} disabled={!canManage || saving} required />
+                <ManageDateField id="publish-at" title={t("manage.schedule.publish")} help={lifecycle.data.Status === "not_published" ? t("manage.schedule.publishHelp") : t("manage.schedule.publishedHelp")} value={draft.PublishAt} onChange={value => setDraft({...draft, PublishAt: value})} disabled={!canManage || lifecycle.data.Status !== "not_published"} required />
+                <ManageDateField id="start-at" title={t("manage.schedule.start")} help={t("manage.schedule.startHelp")} value={draft.StartAt} onChange={value => setDraft({...draft, StartAt: value})} disabled={!canManage} required />
             </div>
-            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.scheduledEnd")} help={t("manage.schedule.scheduledEndHelp")} /><EventSwitch className="event-manage-form__switch" checked={draft.ScheduledEnd} onCheckedChange={checked => setDraft({...draft, ScheduledEnd: checked})} disabled={!canManage || saving} label={t("manage.schedule.scheduleEnd")} /></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.scheduledEnd")} help={t("manage.schedule.scheduledEndHelp")} /><EventSwitch className="event-manage-form__switch" checked={draft.ScheduledEnd} onCheckedChange={checked => setDraft({...draft, ScheduledEnd: checked})} disabled={!canManage} label={t("manage.schedule.scheduleEnd")} /></div>
             {draft.ScheduledEnd && <div className="event-manage-fields-two">
-                <ManageDateField id="finish-at" title={t("manage.schedule.finish")} help={t("manage.schedule.finishHelp")} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
-                <ManageDateField id="withdraw-at" title={t("manage.schedule.withdraw")} help={t("manage.schedule.withdrawHelp")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || saving || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
+                <ManageDateField id="finish-at" title={t("manage.schedule.finish")} help={t("manage.schedule.finishHelp")} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
+                <ManageDateField id="withdraw-at" title={t("manage.schedule.withdraw")} help={t("manage.schedule.withdrawHelp")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
             </div>}
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving}>{t("manage.schedule.save")}</EventButton></div>
@@ -164,16 +164,16 @@ export default function ManageSchedulePage() {
         <StagesManager eventID={eventID} lifecycle={lifecycle.data} canManage={canManage} />
         {countdown && <form className="event-manage-section" onSubmit={saveCountdown}>
             <div className="event-manage-section__head"><h2>{t("manage.schedule.countdown.title")}</h2><p>{t("manage.schedule.countdown.help")}</p></div>
-            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showStart")} help={t("manage.schedule.countdown.showStartHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowStart} onCheckedChange={checked => setCountdown({...countdown, ShowStart: checked})} disabled={!canManage || countdownSaving} label={t("manage.schedule.countdown.startSwitch")} /></div>
-            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showFinish")} help={t("manage.schedule.countdown.showFinishHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowFinish} onCheckedChange={checked => setCountdown({...countdown, ShowFinish: checked})} disabled={!canManage || countdownSaving} label={t("manage.schedule.countdown.finishSwitch")} /></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showStart")} help={t("manage.schedule.countdown.showStartHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowStart} onCheckedChange={checked => setCountdown({...countdown, ShowStart: checked})} disabled={!canManage} label={t("manage.schedule.countdown.startSwitch")} /></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showFinish")} help={t("manage.schedule.countdown.showFinishHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowFinish} onCheckedChange={checked => setCountdown({...countdown, ShowFinish: checked})} disabled={!canManage} label={t("manage.schedule.countdown.finishSwitch")} /></div>
             {countdown.ShowFinish && <div className="event-manage-field">
                 <ManageFieldLabel htmlFor="countdown-finish-minutes" title={t("manage.schedule.countdown.minutes")} help={t("manage.schedule.countdown.minutesHelp")} required />
-                <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage || countdownSaving} aria-invalid={!validMinutes(countdown.Minutes)} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
+                <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage} aria-invalid={!validMinutes(countdown.Minutes)} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
                 {!validMinutes(countdown.Minutes) && <small className="event-manage-validation" role="alert">{t("manage.schedule.countdown.minutesRange")}</small>}
             </div>}
             {countdown.ShowFinish && <div className="event-manage-field">
                 <ManageFieldLabel title={t("manage.schedule.countdown.mode")} help={t("manage.schedule.countdown.modeHelp")} />
-                <EventSelect ariaLabel={t("manage.schedule.countdown.mode")} value={countdown.Mode} disabled={!canManage || countdownSaving}
+                <EventSelect ariaLabel={t("manage.schedule.countdown.mode")} value={countdown.Mode} disabled={!canManage}
                     options={[{value: "before_end", label: t("manage.schedule.countdown.mode.beforeEnd")}, {value: "from_start", label: t("manage.schedule.countdown.mode.fromStart")}]}
                     onValueChange={mode => setCountdown({...countdown, Mode: mode as CountdownDraft["Mode"]})} />
             </div>}

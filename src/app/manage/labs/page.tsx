@@ -23,6 +23,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {zoneOffset} from "@/utils/dateTime";
+import {TableEmptyBody} from "@/components/event/manage/TableEmptyBody";
 
 const timeFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 const formatTime = (value: string | null) => value ? timeFormat.format(new Date(value)) : null;
@@ -166,9 +167,9 @@ export default function ManageLabsPage() {
             {labs.Prewarm.Failed > 0 && <span className="event-stands__error"> {t("manage.labs.prewarm.failed", {count: labs.Prewarm.Failed})}</span>}
         </p>}
         <section className="event-manage-section event-stands__table">
-            {items.length === 0 ? <EmptyState message={t("manage.labs.empty")} /> : <div className="event-participants-table"><table>
-                <thead><tr><th>{t("manage.labs.column.team")}</th><th>{t("manage.labs.column.status")}</th><th>{t("manage.labs.column.updated", {zone: zoneOffset()})}</th><th>{t("manage.labs.column.reason")}</th><th><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
-                <tbody>{items.map(stand => {
+            <div className="event-participants-table" role="region" tabIndex={0} aria-label={t("manage.labs.title")}><table>
+                <thead><tr><th scope="col">{t("manage.labs.column.team")}</th><th scope="col">{t("manage.labs.column.status")}</th><th scope="col">{t("manage.labs.column.updated", {zone: zoneOffset()})}</th><th scope="col">{t("manage.labs.column.reason")}</th><th scope="col"><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
+                {items.length === 0 ? <TableEmptyBody colSpan={5} message={t("manage.labs.empty")} /> : <tbody>{items.map(stand => {
                     const open = expanded === stand.TeamID;
                     return <Fragment key={stand.TeamID}>
                         <tr>
@@ -184,8 +185,8 @@ export default function ManageLabsPage() {
                         </tr>
                         {open && <tr className="event-stands__labs"><td colSpan={5}><ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{lab.Reason}</small>}</li>)}</ul></td></tr>}
                     </Fragment>;
-                })}</tbody>
-            </table></div>}
+                })}</tbody>}
+            </table></div>
         </section>
         <ConfirmDialog open={confirm !== null} onCancel={() => {if (!confirm || !recreating.includes(confirm.TeamID)) setConfirm(null);}} tone="danger" busy={!!confirm && recreating.includes(confirm.TeamID)} error={confirmError}
             title={t("manage.labs.recreate.title")} description={t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}

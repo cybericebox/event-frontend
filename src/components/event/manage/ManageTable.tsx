@@ -46,7 +46,7 @@ export type ManageTableState = "loading" | "error" | "empty" | "ready";
 
 // The table, its header row and the footer always render; loading, error and
 // empty states fill the body area under the header, centered.
-export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, error, busy = false, toolbar, footer, head, children}: {
+export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, error, busy = false, label, toolbar, footer, head, children}: {
     event: PublicEventInfo;
     state: ManageTableState;
     loadingLabel: string;
@@ -55,6 +55,8 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
     onRetry: () => void;
     error?: unknown;
     busy?: boolean;
+    // Names the scroll region; the loading line stands in until a page gives its own.
+    label?: string;
     toolbar?: ReactNode;
     footer?: ReactNode;
     head: ReactNode;
@@ -99,7 +101,7 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
     }, []);
     return <section ref={sectionRef} className="event-manage-table">
         {toolbar && <div className="event-manage-table__toolbar">{toolbar}</div>}
-        <div ref={scrollRef} className="event-manage-table__scroll" aria-busy={state === "loading" || busy}>
+        <div ref={scrollRef} className="event-manage-table__scroll" role="region" tabIndex={0} aria-label={label ?? loadingLabel} aria-busy={state === "loading" || busy}>
             <table className={ready ? busy ? "is-busy" : undefined : "is-state"}>
                 <thead>{head}</thead>
                 {ready ? children : <tbody><tr><td className="event-manage-table__state" colSpan={1000}><div className="event-manage-table__state-view">

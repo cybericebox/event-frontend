@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, type ReactNode} from "react";
+import {useEffect, useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {ManagerShell} from "./ManagerShell";
@@ -33,16 +33,18 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
 
     // Every /manage page carries «Event | Cyber ICE Box»; the route's own metadata
     // (a bare brand title) rewrites the tab on navigation, so the title is re-asserted.
+    // The shell reports the open section: «{Вкладка} · Панель заходу · {Захід}».
+    const [section, setSection] = useState<string | null>(null);
     const eventName = event.data?.Name;
     useEffect(() => {
         if (!eventName) return;
-        const title = t("manage.shell.documentTitle", {name: eventName});
+        const title = section ? t("manage.shell.tabTitle", {tab: section, name: eventName}) : t("manage.shell.documentTitle", {name: eventName});
         const apply = () => { if (document.title !== title) document.title = title; };
         apply();
         const observer = new MutationObserver(apply);
         observer.observe(document.head, {subtree: true, childList: true, characterData: true});
         return () => observer.disconnect();
-    }, [eventName]);
+    }, [eventName, section]);
 
     if (event.isPending) return <EventLoading full label={t("manage.shell.loadingEvent")} />;
     if (event.isError) {
@@ -57,5 +59,5 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         if (status === 401 || status === 403 || status === 404) return <EventUnavailableScreen />;
         return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => void event.refetch()} />;
     }
-    return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data}>{children}</ManagerShell></EventBrandProvider>;
+    return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data} onSection={setSection}>{children}</ManagerShell></EventBrandProvider>;
 }

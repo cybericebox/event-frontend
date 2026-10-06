@@ -294,12 +294,14 @@ textarea.event-join-input{min-height:calc(attr(rows type(<number>),2)*1lh + 2*va
 .event-manage-form__head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);margin-bottom:var(--ib-4);color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-manage-form__head p{margin:0}
 .event-participants-table{overflow-x:auto}
+.event-participants-table:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
 .event-participants-table table{width:100%;min-width:640px;border-collapse:collapse;font-size:var(--ib-fs-13)}
-.event-participants-table th{padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);text-align:left;white-space:nowrap}
-.event-participants-table td{padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);vertical-align:middle}
+.event-participants-table th{padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);text-align:left;white-space:nowrap}
+.event-participants-table td{height:var(--ib-row-h);padding:var(--ib-2) var(--ib-4);border-bottom:1px solid var(--ib-line);vertical-align:middle}
 .event-participants-table tbody tr:last-child td{border-bottom:0}
 .event-participants-table tr.is-clickable{cursor:pointer}
-.event-participants-table tr.is-clickable:hover,.event-participants-table tr.is-clickable:focus-visible{background:var(--ib-soft);outline:none}
+.event-participants-table tr.is-clickable:hover,.event-participants-table tr.is-clickable:focus-visible{background:var(--ib-hover)}
+.event-participants-table tr.is-clickable:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
 .event-participants-table__person{display:grid;gap:var(--ib-1);min-width:160px}
 .event-participants-table__person strong{font-size:var(--ib-fs-14)}
 .event-participants-table__person small,.event-participants-table__dim{color:var(--ib-dim);font-size:var(--ib-fs-12);overflow-wrap:anywhere}
@@ -457,7 +459,7 @@ button.event-content-editor__block-title{padding:0;border:0;background:none;colo
 @media (prefers-reduced-motion:reduce){.event-content-editor__block-head>.event-content-editor__block-actions{transition:none}}
 .event-rich-markdown__toolbar .event-rich-markdown__heading-trigger{position:relative;display:grid;place-items:center;width:45px}
 .event-rich-markdown__heading-trigger>svg:last-child{position:absolute;right:2px;top:50%;transform:translateY(-50%)}
-.event-rich-markdown__variable-token{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid #dfbd52;border-radius:6px;background:#f7db75;color:#3f330c;line-height:1.3;white-space:nowrap;vertical-align:baseline}
+.event-rich-markdown__variable-token{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid var(--ib-warn);border-radius:6px;background:var(--ib-warn-bg);color:var(--ib-ink);line-height:1.3;white-space:nowrap;vertical-align:baseline}
 .event-rich-markdown__inline{display:flex;flex-wrap:wrap;gap:var(--ib-2);padding:var(--ib-2);border-bottom:1px solid var(--ib-line)}
 .event-rich-markdown__inline>.event-select,.event-rich-markdown__inline>input{flex:1 1 180px;min-width:0}
 .event-rich-markdown__inline>button{flex:none}
@@ -466,9 +468,9 @@ button.event-content-editor__block-title{padding:0;border:0;background:none;colo
 .event-content-editor__badge-input{min-height:var(--ib-control-h-lg);padding-top:9px!important;padding-bottom:9px!important;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text}
 .event-content-editor__badge-input:not(.event-content-editor__textarea):not(.event-content-editor__textarea--compact){white-space:nowrap;overflow-x:auto;scrollbar-width:thin}
 .event-content-editor__badge-input:empty::before{content:attr(data-placeholder);color:var(--ib-dim);pointer-events:none}
-.event-content-editor__badge-input:focus-visible{border-color:var(--ib-action);box-shadow:0 0 0 2px color-mix(in srgb,var(--ib-action) 18%,transparent)}
+.event-content-editor__badge-input:focus-visible{border-color:var(--ib-action);outline:2px solid var(--ib-action);outline-offset:2px}
 .event-content-editor__badge-input[aria-readonly="true"]{opacity:.65;cursor:not-allowed}
-.event-content-editor__variable-token{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid #dfbd52;border-radius:6px;background:#f7db75;color:#3f330c;line-height:1.3;white-space:nowrap;vertical-align:baseline;user-select:all}
+.event-content-editor__variable-token{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid var(--ib-warn);border-radius:6px;background:var(--ib-warn-bg);color:var(--ib-ink);line-height:1.3;white-space:nowrap;vertical-align:baseline;user-select:all}
 .event-rich-markdown__editor::selection,.event-rich-markdown__editor *::selection{background:#b5b0d1;color:#1f1b3a}
 [data-theme="dark"] .event-rich-markdown__editor::selection,[data-theme="dark"] .event-rich-markdown__editor *::selection{background:#766d99;color:#fff}
 .event-content-editor__block-body{display:grid;gap:var(--ib-3);padding:var(--ib-4)}
@@ -722,7 +724,7 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 
 /* Locally owned Lexical editor, shared with the event's read-only rich text view. */
 .event-lexical{position:relative;min-width:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-body)}
-.event-lexical:focus-within{border-color:var(--ib-action)}
+.event-lexical:focus-within{border-color:var(--ib-action);outline:2px solid var(--ib-action);outline-offset:2px}
 .event-lexical.is-invalid{border-color:var(--ib-danger);outline:1px solid var(--ib-danger)}
 .event-lexical__toolbar-wrap{position:relative;border-bottom:1px solid var(--ib-line)}
 .event-lexical__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:6px}
@@ -755,7 +757,7 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-lexical__code{display:block;margin:.7em 0;padding:12px;border-radius:var(--ib-r-sm);background:var(--ib-soft);font-family:monospace;white-space:pre-wrap}
 .event-lexical__ul{margin:.4em 0;padding-left:1.5em;list-style:disc}.event-lexical__ol{margin:.4em 0;padding-left:1.5em;list-style:decimal}.event-lexical__li{margin:.2em 0}
 .event-lexical__link{color:var(--ib-action);text-decoration:underline}
-.event-lexical__variable{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid #dfbd52;border-radius:6px;background:#f7db75;color:#3f330c;line-height:1.3;white-space:nowrap;vertical-align:baseline}
+.event-lexical__variable{display:inline-block;margin-inline:2px;padding:1px 6px;border:1px solid var(--ib-warn);border-radius:6px;background:var(--ib-warn-bg);color:var(--ib-ink);line-height:1.3;white-space:nowrap;vertical-align:baseline}
 .event-lexical__variable.is-selected{outline:2px solid var(--ib-brand);outline-offset:1px}
 .event-lexical__picker{position:absolute;right:6px;top:100%;z-index:1000;display:grid;gap:2px;width:min(340px,calc(100vw - 24px));max-height:300px;overflow:auto;padding:8px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-raised)}
 .event-lexical__picker input,.event-lexical__link-input input{min-height:36px;padding:0 10px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-body)}
@@ -889,7 +891,8 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-template-list__status a{color:var(--ib-action);font-size:var(--ib-fs-12)}
 .event-email-styling__advanced{grid-column:1/-1;padding-top:var(--ib-3)}
 @media(max-width:1100px){.event-template-grid{grid-template-columns:minmax(0,1fr)}.event-template-grid__preview{position:static}}
-.exercise-editor-toolbar button:not([aria-pressed="true"]):hover,.exercise-editor-toolbar button:not([aria-pressed="true"]):focus-visible{background:var(--ib-hover);outline:1px solid var(--ib-line);outline-offset:-1px}
+.exercise-editor-toolbar button:not([aria-pressed="true"]):hover,.exercise-editor-toolbar button:not([aria-pressed="true"]):focus-visible{background:var(--ib-hover)}
+.exercise-editor-toolbar button:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
 .exercise-editor-toolbar button[aria-pressed="true"]:hover{filter:brightness(.94)}
 .editor-scroll{display:flex;flex-direction:column;height:0;resize:vertical;overflow-x:hidden;overflow-y:auto;max-height:80vh}
 .editor-scroll>*{flex:1 0 auto}

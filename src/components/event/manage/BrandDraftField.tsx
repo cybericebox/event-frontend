@@ -1,11 +1,12 @@
 "use client";
 
 import {useEffect, useRef, useState, type ChangeEvent, type DragEvent} from "react";
-import {CircleHelp, ImagePlus, Pencil, Trash2} from "lucide-react";
+import {ImagePlus, Pencil, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {uploadManageBrandDraft, type BrandAssetChange} from "@/api/manage";
 import {imageUploadMessage} from "@/api/apiErrors";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {ManageFieldLabel} from "./ManageFieldLabel";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 
@@ -63,7 +64,7 @@ export function BrandDraftField({id, title, help, hint, kind, draft, disabled, o
         if (!disabled && !draft.uploading && file) void draft.select(file).then(accepted => {if (accepted) onFileSelected?.(file);});
     }
     return <div className="event-brand-field">
-        <div className="event-brand-field__head"><span id={`${id}-label`}>{title}</span><EventTooltip content={<span className="event-brand-tooltip-copy">{help}{"\n\n"}{hint.replace(" · ", "\n")}</span>}>{tooltipID => <button className="event-brand-help" type="button" aria-label={t("manage.appearance.brand.about", {title})} aria-describedby={tooltipID}><CircleHelp size={15} /></button>}</EventTooltip></div>
+        <ManageFieldLabel title={title} help={[help, hint.replace(" · ", "\n")].join("\n\n")} />
         <input ref={inputRef} id={id} type="file" hidden accept={kind === "favicon" ? "image/png" : "image/png,image/jpeg,image/webp"} onChange={handleChange} disabled={disabled || draft.uploading} />
         {draft.source ? <div className={`event-brand-current event-brand-current--${kind}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- Local blob and event media proxy need immediate draft preview. */}

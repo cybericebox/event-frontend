@@ -68,18 +68,18 @@ export function ChallengeSettings() {
     const problem = dynamic ? decayProblem(value.Mode, lifecycle.data) : "";
     const valid = dynamic ? dynamicValid(value) : staticPointsValid(value.StaticPoints, true);
     const errors = dynamic ? dynamicErrors(value) : {max: "", min: "", floor: ""};
-    const disabled = !canManage || saving;
+    const disabled = !canManage;
     // The mode cannot change once the event has started (the backend answers 400 then).
     const revealLocked = lifecycle.data.Status === "started" || lifecycle.data.Status === "finished" || lifecycle.data.Status === "withdrawn";
     const update = (patch: Partial<ScoringDraft>) => setEdit({eventID, value: {...value, ...patch}});
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
-        if (!dirty || !valid || problem || disabled) return;
+        if (!dirty || !valid || problem || disabled || saving) return;
         setSaving(true);
         try {
             queryClient.setQueryData(["event-management-scoring", eventID], await putManageScoring(eventID, inputOf(value)));
-            setEdit(null);
+            setEdit(current => current?.value === value ? null : current);
             toast.success(t("manage.challenges.scoring.saved"));
         } catch {toast.error(t("manage.challenges.scoring.saveFailed"));}
         finally {setSaving(false);}
@@ -141,7 +141,7 @@ export function ChallengeSettings() {
                 <EventSwitch className="event-manage-form__switch" checked={value.ForceEventScoring} onCheckedChange={checked => update({ForceEventScoring: checked})} disabled={disabled} label={t("manage.challenges.scoring.force")} />
                 <p>{t("manage.challenges.scoring.forceNote")}</p>
             </div>
-            {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>}
+            {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>}
         </form>
         <section className="event-manage-section" aria-labelledby="attempts-title">
             <div className="event-manage-section__head"><h2 id="attempts-title">{t("manage.challenges.attempts.title")}</h2><p>{t("manage.challenges.attempts.subtitle")}</p></div>

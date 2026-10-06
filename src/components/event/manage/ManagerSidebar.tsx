@@ -1,6 +1,6 @@
 "use client";
 
-import {Fragment, useEffect, useState} from "react";
+import {Fragment, useEffect, useState, type RefObject} from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -45,6 +45,10 @@ import {
   X,
   type LucideIcon,
   Puzzle,
+  Cpu,
+  Container,
+  MessagesSquare,
+  MailCheck,
 } from "lucide-react";
 import type {ManagePage} from "@/api/manage";
 import type {AnalyticsAccess} from "@/api/manageAnalytics";
@@ -76,7 +80,7 @@ const groups: Group[] = [
         {href: "/manage/exercise-groups", label: t("manage.nav.exerciseGroups"), icon: Layers3},
         {href: "/manage/exercises", label: t("manage.nav.exercises"), icon: Puzzle},
         {href: "/manage/labs", label: t("manage.nav.labs"), icon: Server, infrastructureOnly: true},
-        {href: "/manage/resources", label: t("manage.nav.resources"), icon: Gauge, infrastructureOnly: true},
+        {href: "/manage/resources", label: t("manage.nav.resources"), icon: Cpu, infrastructureOnly: true},
         {href: "/manage/submissions", label: t("manage.nav.submissions"), icon: ListChecks},
     ]},
     {id: "pages", label: t("manage.nav.pages"), icon: LayoutTemplate, items: [
@@ -93,10 +97,10 @@ const groups: Group[] = [
         {href: "/manage/analytics/participants", label: t("manage.nav.analytics.participants"), icon: UserSearch},
         {href: "/manage/analytics/tasks", label: t("manage.nav.analytics.tasks"), icon: ClipboardList},
         {href: "/manage/analytics/progress", label: t("manage.nav.analytics.progress"), icon: TrendingUp},
-        {href: "/manage/analytics/stands", label: t("manage.nav.analytics.stands"), icon: Server, infrastructureOnly: true},
+        {href: "/manage/analytics/stands", label: t("manage.nav.analytics.stands"), icon: Container, infrastructureOnly: true},
         {href: "/manage/analytics/usage", label: t("manage.nav.analytics.usage"), icon: Activity, infrastructureOnly: true},
         {href: "/manage/analytics/integrity", label: t("manage.nav.analytics.integrity"), icon: ShieldCheck, sensitiveOnly: true},
-        {href: "/manage/analytics/communications", label: t("manage.nav.analytics.communications"), icon: Mail},
+        {href: "/manage/analytics/communications", label: t("manage.nav.analytics.communications"), icon: MessagesSquare},
         {href: "/manage/analytics/report", label: t("manage.nav.analytics.report"), icon: FileDown},
     ]},
     // Three blocks split by thin dividers: actions, settings (templates + notification settings), log.
@@ -105,17 +109,29 @@ const groups: Group[] = [
         {href: "/manage/banners", label: t("manage.nav.banners"), icon: Megaphone},
         {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: BellRing, dividerBefore: true},
         {href: "/manage/email", label: t("manage.nav.emailTemplates"), icon: Mail},
-        {href: "/manage/mail", label: t("manage.nav.mail"), icon: Settings2},
+        {href: "/manage/mail", label: t("manage.nav.mail"), icon: MailCheck},
         {href: "/manage/mail-journal", label: t("manage.nav.mailJournal"), icon: ScrollText, dividerBefore: true},
     ]},
 ];
+
+const itemHrefs = groups.flatMap(group => group.items.map(item => item.href));
+const within = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+// An item is current on its own address and below it, unless a longer item address matches better
+// («Огляд» analytics is not current on «Учасники» analytics).
+function isCurrent(pathname: string, href: string) {
+    return within(pathname, href) && !itemHrefs.some(other => other.length > href.length && within(pathname, other));
+}
 
 // A cut-off label shows its full text (and page state) in our tooltip on hover.
 function SideLabel({text, hint = text}: {text: string; hint?: string}) {
     return <EventTooltip content={hint} className="event-manage-sidebar__tip" truncated>{() => <span className="ib-admin-side__label">{text}</span>}</EventTooltip>;
 }
 
-export function ManagerSidebar({event, pathname, pages, pagesError, canManage, infrastructureAllowed, analytics, onRetryPages, onNavigate}: {
+export function ManagerSidebar({asideRef, drawerOpen = false, event, pathname, pages, pagesError, canManage, infrastructureAllowed, analytics, onRetryPages, onNavigate}: {
+    asideRef?: RefObject<HTMLElement | null>;
+    // Narrow screens show the sidebar as a modal drawer.
+    drawerOpen?: boolean;
     event: PublicEventInfo;
     pathname: string;
     pages?: ManagePage[];
@@ -141,7 +157,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
         setAdminReturn(readAdminReturn(window.location.search, storage));
     }, []);
 
-    return <aside className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")}>
+    return <aside ref={asideRef} className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")} role={drawerOpen ? "dialog" : undefined} aria-modal={drawerOpen ? true : undefined}>
         <div className="ib-admin-side__head">
             <Link href="/" className="event-manage-brand" aria-label={t("manage.shell.toEventSiteHint")}><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>{t("manage.nav.eventManagement")}</small></div></Link>
             <EventTooltip content={t("manage.shell.closeMenu")} silent>{() => <button className="ib-admin-side__close" type="button" aria-label={t("manage.shell.closeMenu")} onClick={onNavigate}><X size={18} /></button>}</EventTooltip>
@@ -151,14 +167,14 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
             {groups.filter(group => group.id !== "analytics" || analytics?.Sections).map(group => {
                 const isOpen = openGroupID === group.id;
                 const items = group.items.filter(showItem);
-                return <section className="ib-admin-side__section" key={group.id} aria-label={group.label}>
+                return <section className="ib-admin-side__section" key={group.id}>
                     <button className="ib-admin-side__item ib-admin-side__heading" type="button" aria-expanded={isOpen} aria-controls={`event-manage-group-${group.id}`} onClick={() => setOpenGroupID(current => current === group.id ? null : group.id)}>
                         <group.icon size={16} aria-hidden="true" /><span className="ib-admin-side__label">{group.label}</span><ChevronDown size={15} aria-hidden="true" />
                     </button>
                     <div id={`event-manage-group-${group.id}`} className="ib-admin-side__items" hidden={!isOpen}>
                         {items.map(item => <Fragment key={item.href}>
                             {item.dividerBefore && <hr className="ib-admin-side__divider" />}
-                            <Link className="ib-admin-side__item" href={item.href} aria-current={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}}><item.icon size={16} aria-hidden="true" /><SideLabel text={item.label} /></Link>
+                            <Link className="ib-admin-side__item" href={item.href} aria-current={isCurrent(pathname, item.href) ? "page" : undefined} onClick={() => {openGroup(group.id); onNavigate();}}><item.icon size={16} aria-hidden="true" /><SideLabel text={item.label} /></Link>
                         </Fragment>)}
                         {group.id === "pages" && <>
                             {[...(pages ?? [])].sort(comparePageOrder).map(page => {
