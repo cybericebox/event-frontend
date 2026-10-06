@@ -67,7 +67,7 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
                         {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm" onClick={() => { setName(team.Name); setRenaming(true); }}>{t("participation.team.rename")}</button>}</div>}
                 <div className="event-pp-hero__tags">
                     {!preview && (admitted ? <span className="ib-tag ib-tag--ok">{t("participation.team.admitted")}</span> : <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>)}
-                    <span className="event-pp-hero__sub">{t("participation.team.roster")}: {rosterLine(team.MemberCount, max, min)}</span>
+                    <span className="event-pp-hero__sub">{t("participation.team.rosterLine", {line: rosterLine(team.MemberCount, max, min)})}</span>
                 </div>
                 {captainName && <span className="event-pp-hero__sub">{t("participation.team.captainLine", {name: captainName})}</span>}
             </div>

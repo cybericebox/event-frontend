@@ -31,7 +31,7 @@ describe("task row", () => {
     it("shows the hint count and whether participants see the hints", () => {
         expect(hintIndicator({HintsEnabled: true, Hints: []}, false)).toBeNull();
         expect(hintIndicator({HintsEnabled: true, Hints: [hint, hint]}, false)).toMatchObject({count: 2, shown: true});
-        expect(hintIndicator({HintsEnabled: false, Hints: [hint]}, false)).toMatchObject({count: 1, shown: false, tooltip: expect.stringContaining("у завданні вимкнено")});
+        expect(hintIndicator({HintsEnabled: false, Hints: [hint]}, false)).toMatchObject({count: 1, shown: false, tooltip: expect.stringContaining("у підзавданні вимкнено")});
         // The event kill switch hides hints even when the task shows them.
         expect(hintIndicator({HintsEnabled: true, Hints: [hint]}, true)).toMatchObject({shown: false, tooltip: expect.stringContaining("для всіх завдань")});
     });

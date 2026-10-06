@@ -44,7 +44,7 @@ describe("the stage of a set", () => {
     it("is locked once the set's stage has opened: nothing leaves an opened stage", () => {
         renderField(attachment({StageID: id(1)}), [stage(1, {State: "open"})]);
         expect((trigger() as HTMLButtonElement).disabled).toBe(true);
-        expect(screen.getByText("Набір в етапі, що вже почався: прибрати його звідти не можна.")).toBeTruthy();
+        expect(screen.getByText("Завдання в етапі, що вже почався: прибрати його звідти не можна.")).toBeTruthy();
         // the open stage's note: the labs deploy now
         expect(screen.getByText("Лаби розгорнуться зараз; завдання зʼявляться за правилом показу заходу.")).toBeTruthy();
     });

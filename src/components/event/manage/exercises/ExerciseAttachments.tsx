@@ -196,7 +196,7 @@ export function ExerciseAttachments() {
             {detached.map(attachment => <article className="event-exercise-set is-detached" key={attachment.ID} aria-label={t("manage.exercises.detachedLabel", {name: attachment.ExerciseName})}>
                 <header className="event-exercise-set__head">
                     <div className="event-exercise-set__title"><h3>{attachment.ExerciseName || t("manage.exercises.set")}</h3><span className="ib-tag ib-tag--sm">{t("manage.exercises.detached")}</span></div>
-                    <p className="event-exercise-set__meta">{attachment.DetachedAt ? t("manage.exercises.detachedAt", {date: new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium"}).format(new Date(attachment.DetachedAt))}) + " " : ""}{t("manage.exercises.detachedNote")}</p>
+                    <p className="event-exercise-set__meta">{attachment.DetachedAt ? t("manage.exercises.detachedAtNote", {date: new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium"}).format(new Date(attachment.DetachedAt))}) : t("manage.exercises.detachedNote")}</p>
                 </header>
             </article>)}
         </section>

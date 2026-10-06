@@ -7,7 +7,7 @@ import {SetActions} from "./SetActions";
 afterEach(cleanup);
 
 const attachment = {ID: "a", UpdateAvailable: true} as EventExerciseAttachment;
-const group = () => screen.getByRole("group", {name: "Дії з набором Test"});
+const group = () => screen.getByRole("group", {name: "Дії із завданням Test"});
 const names = () => Array.from(group().querySelectorAll("button, a")).map(item => item.getAttribute("aria-label"));
 const tip = (element: Element) => document.getElementById(element.getAttribute("aria-describedby")!)?.textContent;
 
@@ -29,8 +29,8 @@ describe("SetActions", () => {
 
     it("offers edit and the catalog version for an event copy", () => {
         render(<SetActions attachment={{...attachment, UpdateAvailable: false}} kind="fork" name="Test" editURL="https://x/detail" busy={false} onAction={vi.fn()} />);
-        expect(names()).toEqual(["Редагувати набір", "Повернути версію з каталогу", "Прибрати із заходу"]);
-        expect(screen.getByRole("link", {name: "Редагувати набір"}).getAttribute("href")).toBe("https://x/detail");
+        expect(names()).toEqual(["Редагувати завдання", "Повернути версію з каталогу", "Прибрати із заходу"]);
+        expect(screen.getByRole("link", {name: "Редагувати завдання"}).getAttribute("href")).toBe("https://x/detail");
     });
 
     it("keeps the copy off and explains why in its tooltip", () => {

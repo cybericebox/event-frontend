@@ -276,7 +276,7 @@ function VariablePreview({ name, formats }: { name: string; formats: TextFormatT
   const cleanStyle = marked ? undefined : { background: "transparent", border: 0, padding: 0, color: "inherit", fontSize: "inherit", lineHeight: "inherit" };
   const hint = definition?.description ?? (missing ? content : unknown ? t("manage.tpl.editor.unknownVariable", { name }) : name);
   if (onEdit) return <EventTooltip content={hint} className="inline">{(id) => <button type="button" contentEditable={false} aria-describedby={id} className={cn(style, "cursor-pointer hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--ib-action)")}
-    style={cleanStyle} aria-label={`${t("manage.tpl.exPh.edit")}: ${content}`}
+    style={cleanStyle} aria-label={t("manage.tpl.exPh.editNamed", {name: content})}
     onClick={(event) => { event.preventDefault(); onEdit(name) }}>{content}</button>}</EventTooltip>;
   return (
     <EventTooltip content={hint} className="inline">{(id) => (

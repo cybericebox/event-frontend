@@ -72,7 +72,7 @@ export function SetStageField({eventID, attachment: shownAttachment, stages, can
 
     return <div className="event-exercise-set__stage">
         <label className="event-exercise-set__stage-label" id={`set-stage-${attachment.ID}`}>{t("manage.stages.set.label")}</label>
-        <EventSelect ariaLabel={`${t("manage.stages.set.label")}: ${attachment.ExerciseName}`} value={attachment.StageID ?? WHOLE_EVENT} options={options} onValueChange={choose} disabled={!canManage || locked} />
+        <EventSelect ariaLabel={t("manage.stages.set.labelOf", {name: attachment.ExerciseName})} value={attachment.StageID ?? WHOLE_EVENT} options={options} onValueChange={choose} disabled={!canManage || locked} />
         {locked && <p className="ib-cmodal__hint event-exercise-set__stage-note">{t("manage.stages.set.openedLocked")}</p>}
         {current?.State === "open" && <p className="ib-cmodal__hint event-exercise-set__stage-note" role="status">{t("manage.stages.set.openNote")}</p>}
     </div>;

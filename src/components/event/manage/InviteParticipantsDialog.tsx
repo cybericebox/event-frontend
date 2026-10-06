@@ -130,14 +130,14 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
         {mode === "manual" ? <div className="ib-field">
             <label className="ib-field__label" htmlFor={`${id}-emails`}>{t("manage.participants.invite.emails")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></label>
             <EmailChipsInput id={`${id}-emails`} chips={chips} onChange={next => {setChips(next); setFailures([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-hint ${id}-error`} />
-            <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.chips.hint")} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>
+            <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.chips.hintCounter", {count: valid.length, limit: invitationLimit})}</p>
             <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
         </div> : <>
             <CsvField label={t("manage.invites.csv.label")} columns={inviteColumns} required={["email"]} header={templateHeader(schema, "invite")} fieldLines={fieldHelp(schema)}
                 examples={[[t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), ...exampleRow(schema.participant, true)]]}
                 templateName={t("manage.invites.template.inviteFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy || formQuery.isError} templateDisabled={formQuery.isPending} />
             {formQuery.isError && <EventLoadError compact message={t("manage.invites.csv.formsFailed")} error={formQuery.error} onRetry={() => void formQuery.refetch()} />}
-            {fileName && csvChips.length > 0 && <p className="event-modal__summary" role="status">{tPlural("manage.invites.csv.summary", valid.length, {named})} {t("manage.invites.counter", {count: valid.length, limit: invitationLimit})}</p>}
+            {fileName && csvChips.length > 0 && <p className="event-modal__summary" role="status">{tPlural("manage.invites.csv.summary", valid.length, {named, counter: t("manage.invites.counter", {count: valid.length, limit: invitationLimit})})}</p>}
             {fileName && csvIssues.length === 0 && <MissingFieldsSummary rows={valid.map(chip => ({name: chip.email, missing: chip.missing ?? []}))} />}
             {valid.length > invitationLimit && <p className="ib-field__error" role="alert">{t("manage.participants.invite.limit")}</p>}
         </>}
