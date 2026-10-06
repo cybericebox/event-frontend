@@ -103,13 +103,13 @@ function ModeratorsBlock({lab, infrastructure}: {lab: LabRuntime | undefined; in
 // The solved state replaces the answer form: the points the team got (with the hint price), when and by whom. A practice solve earns nothing.
 function SolvedPanel({challenge, practice, at}: {challenge: OwnChallenge; practice: boolean; at: string}) {
     const awarded = awardedPoints(challenge);
-    const penalty = Math.max(0, challenge.Points - awarded);
-    const when = [challenge.SolvedBy, formatClock(at)].filter(Boolean).join(", ");
+    const penalty = challenge.HintPenalty ?? 0;
+    const when = [challenge.SolvedBy?.Name, formatClock(at)].filter(Boolean).join(", ");
     return <div className="ib-cmodal__ok event-cmodal__solved" role="status">
         {ICON.check}
         <span className="event-cmodal__solved-main">
             <b>{practice ? t("challenges.modal.solvedPractice") : t("challenges.modal.solved")}</b>
-            {!practice && <span className="ib-num">{penalty > 0 ? t("challenges.modal.solvedPenalty", {awarded, total: challenge.Points, penalty}) : `+${awarded}`}</span>}
+            {!practice && <span className="ib-num">{penalty > 0 ? t("challenges.modal.solvedPenalty", {awarded, total: awarded + penalty, penalty}) : `+${awarded}`}</span>}
             {when && <small>{when}</small>}
         </span>
     </div>;

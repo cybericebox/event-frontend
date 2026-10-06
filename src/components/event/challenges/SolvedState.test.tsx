@@ -53,7 +53,7 @@ describe("solved task card", () => {
 
 describe("solved task dialog", () => {
     it("shows the solved panel with points, hint penalty, who and when, and no answer form", () => {
-        renderModal({...base, SolvedAt: "2026-10-01T11:52:00Z", AwardedPoints: 80, SolvedBy: "Тест Учасник01"});
+        renderModal({...base, SolvedAt: "2026-10-01T11:52:00Z", AwardedPoints: 80, HintPenalty: 20, SolvedBy: {UserID: uuid(7), Name: "Тест Учасник01"}});
         const panel = screen.getByText("Розвʼязано", {selector: "b"}).closest("[role=status]") as HTMLElement;
         expect(within(panel).getByText("80 з 100 · −20 за підказку")).toBeTruthy();
         expect(panel.textContent).toContain("Тест Учасник01, ");

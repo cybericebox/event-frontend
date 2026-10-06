@@ -69,6 +69,7 @@ export const fixtureChallenge: OwnChallenge = {
     GroupOrder: 1,
     ContentUpdatedAt: "2026-09-29T09:00:00Z",
     AwardedPoints: null,
+    HintPenalty: null,
     SolvedBy: null,
     MaxAttempts: null,
     AttemptsLeft: null,
