@@ -5,8 +5,8 @@ import {t} from "@/i18n/t";
 // Same look as the results chart (ScoreChart): the slate axes and grid, the
 // event palette. Lines are smooth, the tooltip follows the axis, and the plot
 // zooms with the wheel or the slider.
-const axisText = "var(--ib-dim)";
-const palette = {attempts: "#0091EA", correct: "#1E2A6B", solves: "#22C55E", wrong: "#EF4444", opens: "#F59E0B"};
+const axisText = "var(--ib-chart-axis)";
+const palette = {attempts: "var(--ib-s1)", correct: "var(--ib-s4)", solves: "var(--ib-ok)", wrong: "var(--ib-danger)", opens: "var(--ib-warn)"};
 
 export function lifecycleMarkers(markers: AnalyticsOverview["Markers"]): ChartMarker[] {
     return [
@@ -43,10 +43,10 @@ export function activityChartOption(overview: AnalyticsOverview, now?: number) {
     const opensName = t("manage.analytics.series.opens");
     return {
         grid: {left: 44, right: 16, top: 36, bottom: 64},
-        legend: {type: "scroll", top: 0, textStyle: {color: axisText}, selected: {[attemptsName]: false, [correctName]: false, [opensName]: false}},
+        legend: {type: "scroll", top: 0, textStyle: {color: "var(--ib-chart-legend)"}, selected: {[attemptsName]: false, [correctName]: false, [opensName]: false}},
         tooltip: {trigger: "axis"},
-        xAxis: {type: "time", min: from, max: Math.max(to, from + 1), axisLine: {lineStyle: {color: "var(--ib-control)"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
-        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "var(--ib-line)"}}},
+        xAxis: {type: "time", min: from, max: Math.max(to, from + 1), axisLine: {lineStyle: {color: "var(--ib-chart-line)"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
+        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "var(--ib-chart-grid)"}}},
         dataZoom: [{type: "inside", filterMode: "none"}, {type: "slider", height: 18, bottom: 8, filterMode: "none"}],
         series: [
             line(t("manage.analytics.series.solves"), palette.solves, point => point.Solves, {

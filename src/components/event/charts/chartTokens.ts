@@ -1,6 +1,7 @@
 "use client";
 
 import {useMemo, useSyncExternalStore} from "react";
+import {withChartTheme} from "./chartTheme";
 
 // Chart options name colours as DS tokens («var(--ib-dim)»); the canvas cannot read CSS variables, so the chart
 // components resolve them to real colours when they render and again whenever the theme or the event brand changes.
@@ -81,5 +82,5 @@ export function resolveChartTokens<T>(option: T): T {
 export function useChartTokens<T>(option: T): T {
     const current = useSyncExternalStore(subscribe, () => version, () => 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `current` is the theme version that invalidates the colours
-    return useMemo(() => resolveChartTokens(option), [option, current]);
+    return useMemo(() => resolveChartTokens(withChartTheme(option)), [option, current]);
 }

@@ -1,14 +1,15 @@
 import type {AnalyticsHeatmap, AnalyticsInactive, AnalyticsMatrix, AnalyticsScores} from "@/api/manageAnalyticsTasks";
 import {t} from "@/i18n/t";
 import {holdPoints} from "@/components/event/charts/holdPoints";
+import {chartSeries} from "@/components/event/charts/chartTheme";
 
 // Pure helpers of «Прогрес» (§6.4): the score chart, the matrix cells, the
 // heatmap and the inactive teams. Chart colours and axes follow the results
 // chart (scoreboard/ScoreChart).
-const axisText = "var(--ib-dim)";
-const gridLine = "var(--ib-line)";
-const axisLine = "var(--ib-control)";
-export const scorePalette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "var(--ib-dim)"];
+const axisText = "var(--ib-chart-axis)";
+const gridLine = "var(--ib-chart-grid)";
+const axisLine = "var(--ib-chart-line)";
+export const scorePalette = chartSeries;
 
 export const TOP_OPTIONS = [5, 10, 20] as const;
 export const DEFAULT_TOP = 10;
@@ -26,7 +27,7 @@ export function scoreChartOption(scores: AnalyticsScores) {
     return {
         color: scorePalette,
         grid: {left: 44, right: 16, top: 36, bottom: 64},
-        legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
+        legend: {type: "scroll", top: 0, textStyle: {color: "var(--ib-chart-legend)"}},
         tooltip: {trigger: "axis"},
         xAxis: {type: "time", min: from, max: Math.max(to, from + 1), axisLine: {lineStyle: {color: axisLine}}, axisLabel: {color: axisText}, splitLine: {show: false}},
         yAxis: {type: "value", axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},
@@ -92,12 +93,12 @@ export function heatmapOption(heatmap: AnalyticsHeatmap, visibleTeams = 14) {
         xAxis: {type: "category", data: hours, splitArea: {show: false}, axisLine: {lineStyle: {color: axisLine}}, axisLabel: {color: axisText, hideOverlap: true}},
         // Best team on top.
         yAxis: {type: "category", data: heatmap.Teams.map(team => team.Name), inverse: true, axisLine: {lineStyle: {color: axisLine}}, axisLabel: {color: axisText, width: 100, overflow: "truncate"}},
-        visualMap: {min: 0, max: Math.max(heatmap.MaxActivity, 1), calculable: false, orient: "horizontal", left: "center", bottom: 30, itemHeight: 140, textStyle: {color: axisText}, inRange: {color: ["#E6F4FE", "#0091EA", "#1E2A6B"]}},
+        visualMap: {min: 0, max: Math.max(heatmap.MaxActivity, 1), calculable: false, orient: "horizontal", left: "center", bottom: 30, itemHeight: 140, textStyle: {color: axisText}, inRange: {color: ["var(--ib-soft)", "var(--ib-s1)", "var(--ib-s4)"]}},
         dataZoom: zoomed ? [
             {type: "slider", yAxisIndex: 0, right: 8, width: 16, startValue: 0, endValue: visibleTeams - 1, filterMode: "none"},
             {type: "inside", yAxisIndex: 0, filterMode: "none", zoomOnMouseWheel: false, moveOnMouseWheel: true},
         ] : [],
-        series: [{type: "heatmap", data, emphasis: {itemStyle: {borderColor: "#1E2A6B", borderWidth: 1}}}],
+        series: [{type: "heatmap", data, emphasis: {itemStyle: {borderColor: "var(--ib-s4)", borderWidth: 1}}}],
     };
 }
 

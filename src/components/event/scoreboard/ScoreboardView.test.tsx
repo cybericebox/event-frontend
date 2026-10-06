@@ -81,7 +81,7 @@ it("lets the staff read results shown to participants only, with no Live action 
     state.getResults.mockResolvedValue(snapshot(300, false));
     renderView();
     expect(await screen.findByText("Альфа")).toBeTruthy();
-    expect(screen.queryByRole("link", {name: "Відкрити Live"})).toBeNull();
+    expect(screen.queryByRole("link", {name: "Відкрити результати наживо"})).toBeNull();
 });
 
 it("polls without a stream and explains «Автооновлення»", async () => {
@@ -172,7 +172,7 @@ describe("results page matrix: audience × visibility × phase × freeze × char
                 if (plot) expect(plot.textContent).toBe(phase === "before" ? "Графік зʼявиться після початку" : "");
             }
             // Live is a staff screen opened from /manage: never on this page.
-            expect(screen.queryByRole("link", {name: "Відкрити Live"})).toBeNull();
+            expect(screen.queryByRole("link", {name: "Відкрити результати наживо"})).toBeNull();
         });
     }
 });

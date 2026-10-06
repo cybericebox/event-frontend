@@ -23,7 +23,9 @@ export function EventErrorScreen({onRetry, title = t("error.page.title"), body =
     body?: string;
     page?: boolean;
 }) {
-    return <main className={page ? "event-error event-error--page" : "event-error"} role="alert">
+    // Standalone (page) it is the document's main; inside a shell it sits in the shell's own <main>.
+    const Frame = page ? "main" : "div";
+    return <Frame className={page ? "event-error event-error--page" : "event-error"} role="alert">
         <EventBrandLogo className="event-error__logo" size={64} />
         <TriangleAlert className="event-error__mark" aria-hidden="true" />
         <h1>{title}</h1>
@@ -32,5 +34,5 @@ export function EventErrorScreen({onRetry, title = t("error.page.title"), body =
             <button type="button" className="ib-btn ib-btn--primary" onClick={onRetry}>{t("error.page.reload")}</button>
             <button type="button" className="ib-btn" onClick={goBack}>{t("error.page.back")}</button>
         </div>
-    </main>;
+    </Frame>;
 }

@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start -p 3003",
     "lint": "eslint .",
+    "sync:ds": "node scripts/sync-ds.mjs",
+    "check:ds": "node scripts/sync-ds.mjs --check",
     "sync:errors": "node scripts/sync-error-catalog.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

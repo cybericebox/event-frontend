@@ -1,12 +1,12 @@
 /* Challenge modal — the only way to open a challenge. Centered, 640px, native <dialog>.
-   Header: category · points (+ «Розв’язано» / «Оновлено» tags), name, close.
+   Header: category · points (+ «Розвʼязано» / «Оновлено» tags), name, close.
    Tabs «Завдання» / «N рішень». Body: description with code, files with size,
    host copy-field, flag field (wrong / checking / accepted), solves list.
    Needs: button, icon-button, input, tag, tabs, copy-field. */
 
 .ib-cmodal{width:min(var(--ib-modal-w),calc(100vw - 32px));max-height:calc(100vh - 112px);margin:56px auto auto;padding:0;
   display:flex;flex-direction:column;overflow:hidden;
-  border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-body)}
+  border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-body);box-shadow:var(--ib-shadow-overlay)}
 dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal::backdrop{background:var(--ib-backdrop)}
 .ib-cmodal[open]{animation:ib-cmodal-in var(--ib-dur-move) var(--ib-ease)}
@@ -19,7 +19,7 @@ dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal__meta .ib-num{color:var(--ib-ink)}
 .ib-cmodal__cat{min-width:0;max-width:100%}
 .ib-cmodal__cat>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ib-cmodal__title{margin-top:5px;padding-right:44px;overflow-wrap:anywhere;font-size:21px;letter-spacing:-.02em;color:var(--ib-ink)}
+.ib-cmodal__title{margin-top:5px;padding-right:44px;overflow-wrap:anywhere;font-size:var(--ib-fs-20);letter-spacing:-.02em;color:var(--ib-ink)}
 .ib-cmodal__title:focus{outline:none}
 .ib-cmodal__close{position:absolute;top:14px;right:14px}
 .ib-cmodal__tabs{margin-top:var(--ib-3);padding:0 24px}

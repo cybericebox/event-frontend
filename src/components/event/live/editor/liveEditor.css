@@ -110,7 +110,7 @@
 .event-live-logo-row__preview.is-dark{background:var(--ev-brand,#211a52)}
 .event-live-logo-row__preview img{max-width:90%;max-height:80%;object-fit:contain}
 .event-live-logo-row__name{display:grid;min-width:0;overflow:hidden;color:var(--ib-ink);font-size:var(--ib-fs-12);text-overflow:ellipsis;white-space:nowrap}
-.event-live-logo-row__name small{color:var(--ib-dim);font-size:var(--ib-fs-11,11px)}
+.event-live-logo-row__name small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 
 .event-live-themes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ib-2)}
 .event-live-theme{display:grid;gap:6px;justify-items:start;padding:6px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-ink);font:inherit;font-size:var(--ib-fs-12);text-align:left;cursor:pointer}

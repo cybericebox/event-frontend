@@ -18,7 +18,7 @@
 .ib-copy__btn.is-copied .ib-copy__idle{display:none}
 .ib-copy__btn.is-copied .ib-copy__done{display:inline-flex}
 .ib-copy.is-disabled .ib-copy__value{color:var(--ib-faint)}
-.ib-copy__note{font-size:var(--ib-fs-12);color:var(--ib-dim);margin-top:6px}
+.ib-copy__note{font-size:var(--ib-fs-13);color:var(--ib-dim);margin-top:6px}
 
 /* invite code: shows the whole value, no truncation */
 .ib-copy--code{display:inline-flex;border:0;background:none;padding:0;gap:var(--ib-3)}

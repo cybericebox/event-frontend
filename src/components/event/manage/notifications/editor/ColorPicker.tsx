@@ -263,7 +263,7 @@ export function ColorPicker({ value, onChange, label, help, brand = DEFAULT_BRAN
             onClick={() => onChange(token)}
             aria-pressed={value === token}
             className={cn(
-              "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors",
+              "flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium border transition-colors",
               value === token
                 ? "border-(--ib-action) bg-(--ib-soft) text-(--ib-action)"
                 : "border-(--ib-line) bg-(--ib-soft) text-(--ib-dim) hover:bg-(--ib-soft)"
@@ -324,7 +324,7 @@ export function ColorPicker({ value, onChange, label, help, brand = DEFAULT_BRAN
           <div className="mt-3 grid grid-cols-3 gap-2">
             {(["r", "g", "b"] as const).map((ch) => (
               <label key={ch} className="flex flex-col items-center">
-                <span className="text-[10px] font-semibold uppercase text-(--ib-dim)">
+                <span className="text-[12px] font-semibold uppercase text-(--ib-dim)">
                   {ch}
                 </span>
                 <input

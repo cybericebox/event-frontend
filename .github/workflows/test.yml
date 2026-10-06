@@ -23,6 +23,8 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Design system drift
+        run: npm run check:ds
       - name: Typecheck
         run: npm run typecheck
       - name: Test

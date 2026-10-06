@@ -19,6 +19,7 @@ import {managerLocationTitle} from "./managerNavigation";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
+import {SkipLink} from "@/components/ui/SkipLink";
 
 const ManagerContext = createContext<{event: PublicEventInfo; canManage: boolean} | null>(null);
 
@@ -60,6 +61,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
 
     return <div className="event-manage-frame">
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
+        <SkipLink />
         <div className="ib-admin-shell__layout">
             <ManagerSidebar event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} analytics={analytics.data} onRetryPages={() => void pages.refetch()} onNavigate={() => setDrawerOpen(false)} />
             <div className="ib-admin-shell__main">
@@ -68,7 +70,7 @@ export function ManagerShell({event, children}: {event: PublicEventInfo; childre
                     <ol className="ib-topbar__crumbs"><li aria-current="page">{managerLocationTitle(pathname, pages.data ?? [])}</li></ol>
                     <div className="ib-topbar__actions"><SetupChip eventID={event.EventID} />{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
-                <main className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
+                <main id="main" tabIndex={-1} className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
             </div>
         </div>
         <button className="ib-admin-shell__backdrop" type="button" aria-label={t("manage.shell.closeMenu")} onClick={() => setDrawerOpen(false)} />

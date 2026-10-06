@@ -1,0 +1,21 @@
+/* TOC — table of contents for long custom pages (event rules, FAQ, lab guide). Sticky, left of the text.
+   The current section is marked by a soft FILL + ink semibold text (aria-current="true"), never by a left bar.
+   JS: toc.js — [data-ib-toc] watches the targets of its links and updates aria-current while scrolling;
+   IB.Toc.build(nav, container, 'h2') fills the list from headings (ids are generated if missing).
+   <nav class="ib-toc" aria-label="Зміст" data-ib-toc>
+     <p class="ib-toc__title">Зміст</p>
+     <ol class="ib-toc__list"><li><a class="ib-toc__link" href="#format">Формат</a></li>
+       <li><a class="ib-toc__link ib-toc__link--sub" href="#flags">Прапори</a></li></ol>
+   </nav>
+   Below 860px the TOC is static (not sticky) — put it above the text. */
+
+.ib-toc{position:sticky;top:var(--ib-toc-top,var(--ib-6));align-self:start;min-width:0;font-size:var(--ib-fs-13)}
+.ib-toc__title{margin:0 0 var(--ib-2);padding:0 var(--ib-3);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-dim)}
+.ib-toc__list{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
+.ib-toc__link{display:block;padding:6px var(--ib-3);border-radius:var(--ib-r);color:var(--ib-dim);font-weight:var(--ib-w-regular);line-height:var(--ib-lh-ui);text-decoration:none;
+  transition:background-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease)}
+.ib-toc__link:hover,.ib-toc__link.is-hover{background:var(--ib-hover);color:var(--ib-ink);text-decoration:none}
+.ib-toc__link:focus-visible,.ib-toc__link.is-focus{outline:2px solid var(--ib-action);outline-offset:0}
+.ib-toc__link[aria-current="true"],.ib-toc__link[aria-current="location"]{background:var(--ib-soft);color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.ib-toc__link--sub{padding-left:var(--ib-6)}
+@media (max-width:860px){.ib-toc{position:static}}

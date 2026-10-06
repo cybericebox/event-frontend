@@ -278,7 +278,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
 
       {!disabled && (
         <div className="mt-4 rounded-xl border border-dashed border-(--ib-line) p-4">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.08em] text-(--ib-dim)">{t("manage.tpl.editor.addBlock")}</div>
+          <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.08em] text-(--ib-dim)">{t("manage.tpl.editor.addBlock")}</div>
           <div className="mb-4 flex flex-wrap gap-2">
             {ADD_BLOCK_TYPES.filter((type) => !hiddenBlocks.includes(type)).map((type) => (
               <button key={type} type="button" aria-label={t(ADD_BLOCK_ARIA_KEYS[type])} onClick={() => addBlock(type)}

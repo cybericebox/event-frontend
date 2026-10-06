@@ -1,21 +1,21 @@
-/* Tag — short static label, 22px high, radius 4 (not a pill).
+/* Tag — short static label, 24px high / 13px, radius 4 (not a pill). --sm 22px / 12px.
    .ib-tag            neutral: well fill + hairline, dim text («Оновлено», «Чернетка»)
    .ib-tag--category  challenge category (Web, Pwn, Crypto…): soft fill, ink text, medium
    .ib-tag--role      role (Капітан, Організатор, Учасник): outline control border, ink text
-   .ib-tag--ok        state «Розв’язано» (ok on ok-bg); --danger «Заблоковано»; --info «Криголам»; --warn «Не підтверджено»
+   .ib-tag--ok        state «Розвʼязано» (ok on ok-bg); --danger «Заблоковано»; --warn «Не підтверджено»
    .ib-tag--mass      on brand mass (on-brand-2 text, brand-line border)
-   Optional leading svg 13px. --sm = 20px high for dense tables.
+   Optional leading svg 14px. --sm = 22px high for dense tables. Tag-as-button keeps the 24px minimum target.
    As a button (<button type="button" class="ib-tag ib-tag--mono">{{team}}</button>) — e.g. template variables
    that insert text: ink text, control border on hover, focus ring. Not a filter chip, not a toggle. */
 
 :root,[data-theme="light"]{--ib-tag-bg:var(--ib-paper)}   /* #F7F7F9, dim text 6.27:1 */
 [data-theme="dark"]{--ib-tag-bg:var(--ib-surface)}         /* #413F4E, dim text 5.34:1 */
 
-.ib-tag{display:inline-flex;align-items:center;gap:var(--ib-1);height:22px;padding:0 var(--ib-2);max-width:100%;
+.ib-tag{display:inline-flex;align-items:center;gap:var(--ib-1);height:24px;padding:0 var(--ib-2);max-width:100%;
   border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-tag-bg);color:var(--ib-dim);
-  font:var(--ib-w-medium) var(--ib-fs-12)/1 var(--ib-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
-.ib-tag>svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ib-tag--sm{height:20px;padding:0 6px;font-size:var(--ib-fs-11)}
+  font:var(--ib-w-medium) var(--ib-fs-13)/1 var(--ib-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.ib-tag>svg{width:14px;height:14px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ib-tag--sm{height:22px;padding:0 6px;font-size:var(--ib-fs-12)}
 
 .ib-tag--category{background:var(--ib-soft);border-color:transparent;color:var(--ib-ink)}
 .ib-tag--role{background:transparent;border-color:var(--ib-control);color:var(--ib-ink)}

@@ -1,6 +1,6 @@
 /* Base layer: reset, typography, focus, utilities. Depends on tokens.css. */
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(var(--ib-topbar-h) + var(--ib-2))}   /* focus and #anchors are never hidden under a sticky bar */
 body{margin:0;background:var(--ib-paper);color:var(--ib-body);font:var(--ib-w-regular) var(--ib-fs-14)/var(--ib-lh-body) var(--ib-font);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
 [data-theme]{background:var(--ib-paper);color:var(--ib-body)}
 h1,h2,h3,h4{color:var(--ib-ink);margin:0;line-height:var(--ib-lh-tight);font-weight:var(--ib-w-semibold);letter-spacing:-.01em;text-wrap:balance}
@@ -12,8 +12,17 @@ code,kbd,.ib-mono{font-family:var(--ib-mono)}
 code{font-size:.92em;background:var(--ib-soft);padding:1px 5px;border-radius:var(--ib-r-sm);color:var(--ib-ink)}
 .ib-num{font-family:var(--ib-mono);font-variant-numeric:tabular-nums}
 .ib-dim{color:var(--ib-dim)}
+/* running text: task descriptions, rich text, help paragraphs, empty-state messages. 15px / 1.6 */
+.ib-text{font-size:var(--ib-fs-15);line-height:var(--ib-lh-text);color:var(--ib-body)}
 .ib-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 :focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+/* skip link — first focusable element of every shell: <a class="ib-skip" href="#main">Перейти до вмісту</a>;
+   the target is <main id="main" tabindex="-1">. Hidden until focused; no shadow (hairline only). */
+.ib-skip:not(:focus){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ib-skip{position:fixed;top:var(--ib-2);left:var(--ib-2);z-index:2000;display:inline-flex;align-items:center;height:var(--ib-control-h-lg);padding:0 var(--ib-4);
+  border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-raised);color:var(--ib-ink);
+  font:var(--ib-w-medium) var(--ib-fs-14)/1 var(--ib-font);text-decoration:none}
+[tabindex="-1"]:focus{outline:none}   /* #main and dialog panels take programmatic focus only */
 [hidden]{display:none!important}
 ::selection{background:var(--ib-soft);color:var(--ib-ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

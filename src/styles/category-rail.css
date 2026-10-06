@@ -23,7 +23,7 @@
 .ib-rail__item:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
 .ib-rail__item[aria-current="true"]{background:var(--ib-rail-current);border-color:var(--ib-line)}
 [data-theme="dark"] .ib-rail__item[aria-current="true"]{border-color:var(--ib-control)}
-.ib-rail__key{font:var(--ib-w-medium) 11.5px var(--ib-mono);color:var(--ib-faint)}
+.ib-rail__key{font:var(--ib-w-medium) var(--ib-fs-12) var(--ib-mono);color:var(--ib-faint)}
 .ib-rail__name{min-width:0}
 .ib-rail__name b{display:block;min-width:0;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ib-rail__name small{display:block;font-size:var(--ib-fs-12);color:var(--ib-dim);line-height:1.3}

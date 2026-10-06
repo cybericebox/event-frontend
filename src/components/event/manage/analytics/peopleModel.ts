@@ -6,11 +6,11 @@ import {percent} from "./analyticsModel";
 
 // Chart look shared with the results chart (see activityChart.ts): slate axes
 // and grid, the event palette, tooltip on the axis.
-const axisText = "var(--ib-dim)";
-const gridLine = "var(--ib-line)";
-const palette = {main: "#0091EA", navy: "#1E2A6B", green: "#22C55E", amber: "#F59E0B", red: "#EF4444"};
+const axisText = "var(--ib-chart-axis)";
+const gridLine = "var(--ib-chart-grid)";
+const palette = {main: "var(--ib-s1)", navy: "var(--ib-s4)", green: "var(--ib-ok)", amber: "var(--ib-warn)", red: "var(--ib-danger)"};
 
-const axisLine = {lineStyle: {color: "var(--ib-control)"}};
+const axisLine = {lineStyle: {color: "var(--ib-chart-line)"}};
 const baseGrid = {left: 44, right: 16, top: 24, bottom: 32, containLabel: true};
 
 export const stageLabel = (stage: FunnelStage) => t(`manage.analytics.people.stage.${stage}`);
@@ -62,7 +62,7 @@ export function registrationsChartOption(registrations: AnalyticsParticipants["R
     return {
         useUTC: true,
         grid: {...baseGrid, bottom: 64},
-        legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
+        legend: {type: "scroll", top: 0, textStyle: {color: "var(--ib-chart-legend)"}},
         tooltip: {trigger: "axis", axisPointer: {type: "line"}},
         xAxis: {type: "time", axisLine, axisLabel: {color: axisText}, splitLine: {show: false}},
         yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},
@@ -155,7 +155,7 @@ export function commsChartOption(types: AnalyticsCommsType[]) {
     });
     return {
         grid: {...baseGrid, bottom: 40},
-        legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
+        legend: {type: "scroll", top: 0, textStyle: {color: "var(--ib-chart-legend)"}},
         tooltip: {trigger: "axis", axisPointer: {type: "line"}},
         xAxis: {type: "category", data: names, axisLine, axisLabel: {color: axisText, interval: 0, width: 96, overflow: "truncate"}},
         yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},

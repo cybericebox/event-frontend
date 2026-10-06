@@ -1,5 +1,5 @@
 /* Modal — generic dialog: header (title + one line + close), body (any form), footer (actions right).
-   Overlay: raised fill + hairline, no shadow. Sizes: --sm 480px (short forms: «Запросити користувачів»), default 640px (--ib-modal-w).
+   Overlay → the one allowed shadow. Sizes: --sm 480px (short forms: «Запросити користувачів»), default 640px (--ib-modal-w).
    Behaviour (modal.js, IB.Modal): open(el) / close(el); focus goes to [data-ib-modal-focus] or the first field,
    Tab is trapped, Esc and a click on the backdrop close, focus returns to the opener. [data-ib-modal-close] closes.
    IB.ConfirmDialog is built on the same base (IB.Modal.trap).
@@ -12,7 +12,15 @@
        <footer class="ib-modal__foot"><button class="ib-btn" data-ib-modal-close>Скасувати</button><button class="ib-btn ib-btn--primary">Надіслати</button></footer>
      </div>
    </div>
-   --static on the backdrop = in-flow preview for cards. */
+   --static on the backdrop = in-flow preview for cards.
+
+   Base rules for every dialog in every app (T21):
+   - never taller than the viewport: max-height calc(100dvh - 2 × 16px); the BODY scrolls, head and foot stay put
+   - a dialog with fields is a real form: <form class="ib-modal" role="dialog" …> so Enter submits; the footer stays inside it
+   - overlay uses --ib-backdrop (never black/80); title is snug (line-height 1.35), footer gap 8px, stacks on narrow screens
+   - motion = opacity + 4px translate only (no scale, no slide-in), under prefers-reduced-motion it appears with no animation (base.css)
+   - focus starts on the safe control (Скасувати for confirmations), Esc cancels, focus returns to the opener, background inert
+   - a busy action shows the crest loader inside its button (components/empty-state: .ib-btn__crest), the dialog stays open on error and shows it inline */
 
 .ib-modal-backdrop{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:var(--ib-4);
   background:var(--ib-backdrop);animation:ib-modal-fade var(--ib-dur) var(--ib-ease)}
@@ -20,24 +28,25 @@
 .ib-modal-backdrop--static{position:relative;inset:auto;z-index:auto;min-height:360px;border-radius:var(--ib-r-lg);animation:none}
 @keyframes ib-modal-fade{from{opacity:0}to{opacity:1}}
 
-.ib-modal{width:var(--ib-modal-w);max-width:100%;max-height:100%;display:flex;flex-direction:column;
+.ib-modal{width:var(--ib-modal-w);max-width:100%;max-height:calc(100dvh - 2 * var(--ib-4));display:flex;flex-direction:column;
   background:var(--ib-raised);color:var(--ib-body);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);
-  animation:ib-modal-in var(--ib-dur-move) var(--ib-ease)}
+  box-shadow:var(--ib-shadow-overlay);animation:ib-modal-in var(--ib-dur-move) var(--ib-ease)}
 .ib-modal--sm{width:480px}
 .ib-modal-backdrop--static .ib-modal{animation:none}
-@keyframes ib-modal-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ib-modal-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 .ib-modal__head{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-5) var(--ib-6) 0;flex:none}
 .ib-modal__head>div{flex:1;min-width:0}
-.ib-modal__title{font-size:var(--ib-fs-16);line-height:var(--ib-lh-ui);color:var(--ib-ink)}
-.ib-modal__desc{margin-top:var(--ib-1);font-size:var(--ib-fs-14);color:var(--ib-dim)}
+.ib-modal__title{font-size:var(--ib-fs-16);line-height:var(--ib-lh-ui);color:var(--ib-ink);overflow-wrap:anywhere}
+.ib-modal__desc{margin-top:var(--ib-1);font-size:var(--ib-fs-15);line-height:var(--ib-lh-ui);color:var(--ib-dim)}
 .ib-modal__close{margin:-4px -8px 0 0;flex:none}
 .ib-modal__body{display:flex;flex-direction:column;gap:var(--ib-4);padding:var(--ib-5) var(--ib-6);overflow:auto;min-height:0}
-.ib-modal__foot{display:flex;justify-content:flex-end;align-items:center;gap:var(--ib-2);padding:var(--ib-4) var(--ib-6) var(--ib-5);flex:none}
-.ib-modal__foot-start{margin-right:auto;font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-modal__foot{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:var(--ib-2);padding:var(--ib-4) var(--ib-6) var(--ib-5);border-top:1px solid var(--ib-line);flex:none}
+.ib-modal__foot-start{margin-right:auto;font-size:var(--ib-fs-14);color:var(--ib-dim)}
 
 @media (max-width:480px){
   .ib-modal-backdrop:not(.ib-modal-backdrop--static){align-items:flex-end;padding:var(--ib-2)}
+  .ib-modal{max-height:calc(100dvh - 2 * var(--ib-2))}
   .ib-modal__head{padding:var(--ib-4) var(--ib-4) 0}
   .ib-modal__body{padding:var(--ib-4)}
   .ib-modal__foot{flex-direction:column-reverse;align-items:stretch;padding:var(--ib-3) var(--ib-4) var(--ib-4)}

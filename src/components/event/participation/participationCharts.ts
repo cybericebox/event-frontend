@@ -4,10 +4,10 @@ import type {CategoryShare, PointsPoint} from "./participationStatsModel";
 
 // Same look as the analytics charts: slate axes and grid, the tooltip follows
 // the axis. The lines take the event accent.
-const axisText = "var(--ib-dim)";
-const axisLine = "var(--ib-control)";
-const gridLine = "var(--ib-line)";
-const secondary = "var(--ib-faint)";
+const axisText = "var(--ib-chart-axis)";
+const axisLine = "var(--ib-chart-line)";
+const gridLine = "var(--ib-chart-grid)";
+const secondary = "var(--ib-chart-axis)";
 
 export type PointsSeries = {name: string; points: PointsPoint[]; color: string; dashed?: boolean};
 
@@ -15,7 +15,7 @@ export type PointsSeries = {name: string; points: PointsPoint[]; color: string; 
 export function pointsChartOption(series: readonly PointsSeries[], window: {from: number; to: number}) {
     return {
         grid: {left: 44, right: 16, top: series.length > 1 ? 36 : 16, bottom: 28},
-        legend: series.length > 1 ? {type: "scroll", top: 0, textStyle: {color: axisText}} : undefined,
+        legend: series.length > 1 ? {type: "scroll", top: 0, textStyle: {color: "var(--ib-chart-legend)"}} : undefined,
         tooltip: {trigger: "axis"},
         xAxis: {type: "time", min: window.from, max: window.to, axisLine: {lineStyle: {color: axisLine}}, axisLabel: {color: axisText, hideOverlap: true}, splitLine: {show: false}},
         yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},
