@@ -17,14 +17,14 @@ describe("NotFoundScreen", () => {
         expect(html).toContain('href="/"');
         expect(html).toContain(">На головну<");
         expect(html).toContain(">Назад<");
-        expect(html).toContain("event-error--page");
+        expect(html).toContain("ib-error--page");
+        expect(html).toContain(">404<");
     });
 
     it("falls back to the crest and the wordmark when the event is unknown", () => {
         const html = renderToStaticMarkup(<NotFoundScreen />);
         expect(html).toContain("crest-128");
-        expect(html).toContain("Cyber <span");
-        expect(html).toContain("ICE</span> Box");
+        expect(html).toContain("Cyber\u00A0ICE\u00A0Box");
         expect(html).toContain(">Назад<");
     });
 
@@ -32,7 +32,8 @@ describe("NotFoundScreen", () => {
         const html = renderToStaticMarkup(<NotFoundScreen block title="Шаблон не знайдено" body="Такого шаблону немає." />);
         expect(html).toContain("Шаблон не знайдено");
         expect(html).toContain("Такого шаблону немає.");
-        expect(html).not.toContain("event-error--page");
+        expect(html).toContain("ib-error--block");
+        expect(html).not.toContain("ib-error__footer");
     });
 
     it("has the texts in both catalogs", () => {

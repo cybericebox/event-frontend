@@ -62,7 +62,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // visitor, and a redirect would reveal that it exists: one neutral screen for all three.
         // Any other failure (server error, network) is a load failure with a retry.
         if (status === 401 || status === 403 || status === 404) return <EventUnavailableScreen />;
-        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
+        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} error={identity.error ?? access.error} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
     }
     const event = identity.data!;
     return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>

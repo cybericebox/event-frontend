@@ -45,6 +45,8 @@ const copy = {
     "block-facts.css": "patterns/blocks/facts/facts.css",
     "block-faq.css": "patterns/blocks/faq/faq.css",
     "block-doc.css": "patterns/blocks/doc/doc.css",
+    "error-page.css": "patterns/error-page/error-page.css",
+    "service-down.css": "patterns/service-down/service-down.css",
 }
 const extended = {
     "tokens.css": "tokens.css",

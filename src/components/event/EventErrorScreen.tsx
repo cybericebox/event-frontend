@@ -1,10 +1,7 @@
 "use client";
 
-import {TriangleAlert} from "lucide-react";
-import {EventBrandLogo} from "./EventBrandLogo";
 import {t} from "@/i18n/t";
-import {ErrorPageCard} from "./ErrorPageCard";
-import "@/styles/error-screen.css";
+import {ErrorPage, platformErrorCode} from "./ErrorPage";
 
 // Browser history back; a tab opened straight on the failing page goes home instead.
 export function goBack() {
@@ -14,28 +11,19 @@ export function goBack() {
     else window.location.assign("/");
 }
 
-// Error boundary screen in the event branding: the event logo (crest fallback when the
-// event is unknown), warning mark, «Оновити» and «Назад». Never shows error details.
-// `page` fills the viewport (global error, unavailable event); otherwise it centers in
-// the shell's content area.
-export function EventErrorScreen({onRetry, title = t("error.page.title"), body = t("error.page.body"), page = false}: {
+// Error boundary screen, the error page with code 500: «Оновити» and «Назад». Never shows error
+// details; `error` only supplies the platform code for the «Код помилки» line. `page` is the
+// full-screen mode with the footer (global error, the shell could not render); otherwise it is the
+// block inside the shell's content area.
+export function EventErrorScreen({onRetry, title = t("error.page.title"), body = t("error.page.body"), page = false, error}: {
     onRetry: () => void;
     title?: string;
     body?: string;
     page?: boolean;
+    error?: unknown;
 }) {
-    const actions = <>
+    return <ErrorPage mode={page ? "page" : "block"} role="alert" code={500} title={title} text={body} refCode={platformErrorCode(error)}>
         <button type="button" className="ib-btn ib-btn--primary" onClick={onRetry}>{t("error.page.reload")}</button>
-        <button type="button" className="ib-btn" onClick={goBack}>{t("error.page.back")}</button>
-    </>;
-    // Standalone (page) it is the card page, the document's main; inside a shell it centers in the shell's own <main>.
-    if (page) return <ErrorPageCard role="alert" head={<EventBrandLogo className="event-error__logo" size={32} />}
-        mark={<TriangleAlert className="event-error__mark" aria-hidden="true" />} title={title} body={body}>{actions}</ErrorPageCard>;
-    return <div className="event-error" role="alert">
-        <EventBrandLogo className="event-error__logo" size={64} />
-        <TriangleAlert className="event-error__mark" aria-hidden="true" />
-        <h1>{title}</h1>
-        <p>{body}</p>
-        <div className="event-error__actions">{actions}</div>
-    </div>;
+        <button type="button" className="ib-link" onClick={goBack}>{t("error.page.back")}</button>
+    </ErrorPage>;
 }

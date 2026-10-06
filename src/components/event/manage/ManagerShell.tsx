@@ -74,7 +74,7 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
         // 401: no session, straight to the sign-in and back here (no screen in between). 403: signed in without rights.
         if (status === 401) return <SignInRedirect event={event} />;
         if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} homeHref="/" />;
-        return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} onRetry={() => void access.refetch()} page />;
+        return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} error={access.error} onRetry={() => void access.refetch()} page />;
     }
 
     return <div className="event-manage-frame">

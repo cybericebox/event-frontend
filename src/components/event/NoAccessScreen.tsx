@@ -2,21 +2,19 @@
 
 import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {Lock} from "lucide-react";
 import {signOut} from "@/api/authAPI";
 import {getCurrentUser} from "@/api/clientAuth";
 import {mainOrigin} from "@/utils/origins";
 import {signInRedirectTarget} from "@/utils/signInRedirect";
 import {t} from "@/i18n/t";
-import {EventBrandLogo} from "./EventBrandLogo";
 import {EventLoading} from "./EventLoading";
 import {SignInRedirect} from "./SignInRedirect";
 import {EventButton} from "@/components/ui/EventButton";
-import {ErrorPageCard} from "./ErrorPageCard";
+import {ErrorPage} from "./ErrorPage";
 
 // A feature of a visible event the signed-in account has no rights for (403: /manage, /live).
-// An event the account cannot see at all is EventUnavailableScreen. Same frame:
-// event logo, Lock mark, title, one line with the account, and two ways out: another
+// An event the account cannot see at all is EventUnavailableScreen.
+// The error page with code 403, title, one line with the account, and two ways out: another
 // account (sign out, then sign in back to this page) or home. `homeHref` defaults to the
 // platform home, for pages where the event home is the page itself.
 export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mainOrigin || "/"}: {title?: string; homeHref?: string}) {
@@ -39,14 +37,12 @@ export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mai
     if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;
     // The session ended meanwhile: that is a 401 after all.
     if (!user.data) return <SignInRedirect />;
-    return <ErrorPageCard role="alert" head={<EventBrandLogo className="event-error__logo" size={32} />}
-        mark={<Lock className="event-error__mark event-error__mark--muted" aria-hidden="true" />}
-        title={title}
-        body={<>
-            <p>{t("auth.noAccess.body", {email: user.data?.Email ?? ""})}</p>
-            {failed && <p role="alert">{t("account.signOutFailed")}</p>}
+    return <ErrorPage mode="page" role="alert" code={403} title={title} homeHref={homeHref}
+        text={<>
+            {t("auth.noAccess.body", {email: user.data?.Email ?? ""})}
+            {failed && <><br />{t("account.signOutFailed")}</>}
         </>}>
         <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} busy={working} onClick={() => void switchAccount()}>{t("auth.noAccess.switch")}</EventButton>
-        <a className="ib-btn" href={homeHref}>{t("auth.noAccess.home")}</a>
-    </ErrorPageCard>;
+        <a className="ib-link" href={homeHref}>{t("auth.noAccess.home")}</a>
+    </ErrorPage>;
 }

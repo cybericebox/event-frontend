@@ -5,7 +5,7 @@ import {renderToStaticMarkup} from "react-dom/server";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import uk from "../../../messages/uk.json";
 import {getServiceStatus, reportServiceAvailable, reportServiceUnavailable, trackApiFetch} from "@/utils/serviceStatus";
-import {EventServiceStatusGate} from "./EventServiceStatusGate";
+import {APP_ROOT_ID, EventServiceStatusGate} from "./EventServiceStatusGate";
 import {AppShell} from "./AppShell";
 
 const navigation = vi.hoisted(() => ({pathname: "/", refresh: () => {}}));
@@ -77,7 +77,7 @@ describe("EventServiceStatusGate", () => {
         vi.stubGlobal("fetch", fetch);
         const client = new QueryClient();
         const invalidate = vi.spyOn(client, "invalidateQueries");
-        render(withQuery(<><h1>Сторінка</h1><EventServiceStatusGate /></>, client));
+        render(withQuery(<><div id={APP_ROOT_ID}><h1>Сторінка</h1></div><EventServiceStatusGate /></>, client));
 
         act(() => { reportServiceUnavailable(); });
         expect(screen.queryByRole("alertdialog")).toBeNull();
@@ -90,12 +90,19 @@ describe("EventServiceStatusGate", () => {
         expect(fetch).toHaveBeenCalledTimes(2);
         expect(screen.getByRole("alertdialog")).toBeTruthy();
         expect(screen.getByText(uk["shell.unavailable.title"])).toBeTruthy();
-        // The page underneath stays rendered.
+        // The page underneath stays rendered, dimmed and inert, and comes back with the page on recovery.
         expect(screen.getByText("Сторінка")).toBeTruthy();
+        const root = document.getElementById(APP_ROOT_ID)!;
+        expect(root.className).toContain("ib-service-down-behind");
+        expect(root.hasAttribute("inert")).toBe(true);
+        expect(screen.getByRole("status").textContent).toBe(uk["shell.unavailable.nextTry"].replace("{seconds}", "3"));
+        expect(screen.getByRole("button", {name: uk["shell.unavailable.retryNow"]})).toBeTruthy();
 
         fetch.mockResolvedValue(new Response("{}", {status: 200}));
         await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
         expect(screen.queryByRole("alertdialog")).toBeNull();
+        expect(root.hasAttribute("inert")).toBe(false);
+        expect(root.className).not.toContain("ib-service-down-behind");
         expect(getServiceStatus()).toBe("up");
         expect(invalidate).toHaveBeenCalled();
     });

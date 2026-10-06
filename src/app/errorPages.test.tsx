@@ -27,9 +27,12 @@ describe("error pages", () => {
         expect(html).not.toContain("secret stack detail");
     });
 
-    it("error boundary shows the event logo from the brand provider", () => {
-        const html = renderToStaticMarkup(<EventBrandProvider logoURL="https://cdn.example/logo.png"><ErrorPage error={error} retry={noop} /></EventBrandProvider>);
-        expect(html).toContain('src="https://cdn.example/logo.png"');
+    it("error boundary is the block inside the shell: code, no footer, no brand", () => {
+        const html = renderToStaticMarkup(<EventBrandProvider logoURL="https://cdn.example/logo.png" name="Кубок CTF"><ErrorPage error={error} retry={noop} /></EventBrandProvider>);
+        expect(html).toContain("ib-error--block");
+        expect(html).toContain(">500<");
+        expect(html).not.toContain("ib-error__footer");
+        expect(html).not.toContain("logo.png");
         expect(html).toContain("ib-btn ib-btn--primary");
     });
 
@@ -38,6 +41,8 @@ describe("error pages", () => {
         expect(html).toMatch(/^<html lang="uk"/);
         expect(html).toContain("<title>Не вдалося завантажити сторінку</title>");
         expect(html).toContain(">Оновити<");
+        expect(html).toContain("ib-error--page");
+        expect(html).toContain("ib-error__footer");
         expect(html).toContain("crest-128");
         expect(html).toContain('href="mailto:')
         expect(html).not.toContain("secret stack detail");
