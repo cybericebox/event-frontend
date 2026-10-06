@@ -63,14 +63,14 @@ describe("a returnable stage after it ended", () => {
         const onRejected = renderModal(base, ended);
         expect(screen.getByText("Етап завершено. Відповіді перевіряються, але в рейтинг не йдуть.")).toBeTruthy();
         await send("ICE{ok}");
-        expect(screen.getByText("Правильно. Розв’язано · не враховується в рейтингу")).toBeTruthy();
+        expect(screen.getByText("Правильно. Розвʼязано · не враховується в рейтингу")).toBeTruthy();
         expect(screen.queryByText(/^\+/)).toBeNull();
         expect(onRejected).toHaveBeenCalledTimes(1);
     });
 
     it("shows the practice solve with its own wording", () => {
         renderModal({...base, Practice: true}, ended);
-        expect(screen.getAllByText("Розв’язано · не враховується в рейтингу").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Розвʼязано · не враховується в рейтингу").length).toBeGreaterThan(0);
         expect(screen.queryByLabelText("Прапор")).toBeNull();
     });
 });
@@ -93,8 +93,8 @@ describe("the tile of a stage task", () => {
         expect(screen.getByText("закрито")).toBeTruthy();
         cleanup();
         render(<ChallengeTile challenge={{...base, Practice: true}} onOpen={open} />);
-        expect(screen.getAllByText("Розв’язано · не враховується в рейтингу").length).toBeGreaterThan(0);
-        expect(screen.getByRole("button").getAttribute("aria-label")).toContain("Розв’язано · не враховується в рейтингу");
+        expect(screen.getAllByText("Розвʼязано · не враховується в рейтингу").length).toBeGreaterThan(0);
+        expect(screen.getByRole("button").getAttribute("aria-label")).toContain("Розвʼязано · не враховується в рейтингу");
     });
 
     it("keeps the solved state of a closed task", () => {

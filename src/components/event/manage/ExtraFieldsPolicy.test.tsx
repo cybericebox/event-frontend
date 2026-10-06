@@ -39,7 +39,7 @@ function addRequiredClub() {
     fireEvent.click(screen.getByRole("button", {name: /^Поле$/}));
     const added = screen.getByRole("region", {name: "Питання 2"});
     fireEvent.change(within(added).getByPlaceholderText(t("manage.fields.editor.questionPlaceholder")), {target: {value: "Клуб"}});
-    fireEvent.click(within(added).getByRole("switch", {name: "Відповідь обов’язкова"}));
+    fireEvent.click(within(added).getByRole("switch", {name: "Відповідь обовʼязкова"}));
     return added;
 }
 
@@ -49,8 +49,8 @@ describe.each(["participant", "team"] as const)("a new required field while answ
         addRequiredClub();
         fireEvent.click(screen.getByRole("button", {name: "Зберегти додаткові поля"}));
         const dialog = await screen.findByRole("alertdialog");
-        expect(within(dialog).getByText("Нове обов’язкове поле")).toBeTruthy();
-        expect(within(dialog).getByText("Нові обов’язкові поля: Клуб")).toBeTruthy();
+        expect(within(dialog).getByText("Нове обовʼязкове поле")).toBeTruthy();
+        expect(within(dialog).getByText("Нові обовʼязкові поля: Клуб")).toBeTruthy();
         expect((within(dialog).getByRole("radio", {name: /Лише для нових реєстрацій/}) as HTMLInputElement).checked).toBe(true);
         expect(within(dialog).queryByRole("switch")).toBeNull();
         expect(put).not.toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe.each(["participant", "team"] as const)("a new required field while answ
     it("tells when everyone is already asked for the new fields", async () => {
         form = {...form, RequireExisting: true, BlockSubmissions: true};
         await renderEditor(scope);
-        const notice = screen.getByText(/Нові обов’язкові поля вимагаються від усіх/);
+        const notice = screen.getByText(/Нові обовʼязкові поля вимагаються від усіх/);
         expect(notice.textContent).toContain(scope === "team" ? "від усіх команд" : "від усіх учасників");
         expect(notice.textContent).toContain("надсилати відповіді на завдання не можна");
     });
@@ -116,9 +116,9 @@ describe("a staff-only field", () => {
         await renderEditor("participant");
         const first = screen.getByRole("region", {name: "Питання 1"});
         fireEvent.click(within(first).getByText("Курс"));
-        expect(within(first).getByRole("switch", {name: "Відповідь обов’язкова"})).toBeTruthy();
+        expect(within(first).getByRole("switch", {name: "Відповідь обовʼязкова"})).toBeTruthy();
         fireEvent.click(within(first).getByRole("switch", {name: /Службове поле/}));
-        expect(within(first).queryByRole("switch", {name: "Відповідь обов’язкова"})).toBeNull();
+        expect(within(first).queryByRole("switch", {name: "Відповідь обовʼязкова"})).toBeNull();
         expect(within(first).queryByRole("switch", {name: /Учасник може змінити/})).toBeNull();
         expect(within(first).getByRole("img", {name: "Службове поле: бачать лише організатори"})).toBeTruthy();
         fireEvent.click(screen.getByRole("button", {name: "Зберегти додаткові поля"}));

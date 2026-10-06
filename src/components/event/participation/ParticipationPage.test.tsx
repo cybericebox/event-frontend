@@ -148,7 +148,7 @@ it("shows the empty state in each block of the moderators team without solves, n
     state.staff = true;
     state.stats = moderatorsStats();
     view();
-    expect((await screen.findAllByText("Розв’язаних завдань поки немає.")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Розвʼязаних завдань поки немає.")).length).toBeGreaterThan(0);
     expect(document.querySelectorAll("[data-empty-state]").length).toBeGreaterThan(1);
     expect(screen.queryByText("Веб-вхід")).toBeNull();
 });

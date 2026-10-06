@@ -73,7 +73,7 @@ describe("the board filters", () => {
 
     it("during a break with nothing active shows the break message in the centered empty state, and «Всі» still works", () => {
         renderBoard([task(3, 2, {StageID: closed.ID, Closed: true})], [closed], "2026-10-01T10:30:00Z");
-        expect(screen.getByText(/^Перерва до \d{2}:\d{2}\. Завдання наступного етапу з’являться після її завершення\.$/)).toBeTruthy();
+        expect(screen.getByText(/^Перерва до \d{2}:\d{2}\. Завдання наступного етапу зʼявляться після її завершення\.$/)).toBeTruthy();
         expect(document.querySelector("[data-empty-state]")).toBeTruthy();
         fireEvent.click(scope("Всі"));
         expect(names()).toEqual(["Завдання 3"]);

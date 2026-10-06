@@ -99,7 +99,7 @@ describe("Завдання", () => {
         renderTasks();
         fireEvent.click((await screen.findAllByRole("button", {name: /Web 1/}))[0]);
         const drawer = await screen.findByRole("dialog");
-        expect(await within(drawer).findByText("Пробували, але не розв'язали")).toBeTruthy();
+        expect(await within(drawer).findByText("Пробували, але не розвʼязали")).toBeTruthy();
         expect(within(drawer).getByText("Red")).toBeTruthy();
         expect(within(drawer).getByText("З підказкою")).toBeTruthy();
         expect(within(drawer).getByText("25 хв")).toBeTruthy();

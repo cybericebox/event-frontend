@@ -96,7 +96,7 @@ describe("ChallengeSolvesTab", () => {
     it("says why the list is closed when the results are hidden", async () => {
         load.mockRejectedValue(new ParticipantChallengeError(403, 1213));
         view();
-        expect(await screen.findByText("Список розв’язань приховано організатором")).toBeTruthy();
+        expect(await screen.findByText("Список розвʼязань приховано організатором")).toBeTruthy();
         expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
         expect(document.querySelector("[data-empty-state]")).toBeTruthy();
     });

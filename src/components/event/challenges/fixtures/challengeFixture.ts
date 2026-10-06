@@ -24,7 +24,7 @@ export const fixtureDescription = document(
     heading("h2", "Заголовок другого рівня"),
     heading("h3", "Заголовок третього рівня"),
     heading("h4", "Заголовок четвертого рівня"),
-    heading("h5", "Заголовок п'ятого рівня"),
+    heading("h5", "Заголовок пʼятого рівня"),
     heading("h6", "Заголовок шостого рівня"),
     paragraph(text("Жирний ", 1), text("курсив ", 2), text("підкреслений ", 8), text("закреслений ", 4), text("код", 16), text(" і "), text("жирний курсив підкреслений", 1 | 2 | 8)),
     paragraph(text("Посилання: "), link("https://example.com/docs", "зовнішнє"), text(", "), link("/rules", "внутрішнє"), text(", "), link("javascript:alert(1)", "небезпечне"), text(", довге: "), link(LONG_URL, LONG_URL)),

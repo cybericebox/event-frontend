@@ -61,8 +61,8 @@ describe("Прогрес", () => {
         expect(await within(matrixBlock).findByText("Blue")).toBeTruthy();
         const rows = within(matrixBlock).getAllByRole("row");
         // Blue solved Web 1 and never touched Pwn 1; Red tried Web 1 three times.
-        expect(within(rows[1]).getByTitle(/Розв'язано .*спроб: 2/)).toBeTruthy();
-        expect(within(rows[2]).getByTitle("Спроб: 3, без розв'язання")).toBeTruthy();
+        expect(within(rows[1]).getByTitle(/Розвʼязано .*спроб: 2/)).toBeTruthy();
+        expect(within(rows[2]).getByTitle("Спроб: 3, без розвʼязання")).toBeTruthy();
         expect(screen.getAllByTestId("chart")).toHaveLength(2);
         const idle = screen.getByRole("region", {name: "Неактивні команди"});
         expect(await within(idle).findByText("1 год 30 хв")).toBeTruthy();
@@ -89,7 +89,7 @@ describe("Прогрес", () => {
             inactive: {...inactive, Running: false, Teams: []},
         });
         renderProgress();
-        expect(await screen.findByText("Ще немає розв'язань, щоб побудувати рахунок.")).toBeTruthy();
+        expect(await screen.findByText("Ще немає розвʼязань, щоб побудувати рахунок.")).toBeTruthy();
         expect(screen.getByText("За цей період активності ще немає.")).toBeTruthy();
         expect(screen.getByText("Ще немає команд або завдань.")).toBeTruthy();
         expect(screen.getByText("Захід ще не почався.")).toBeTruthy();

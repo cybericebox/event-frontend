@@ -59,7 +59,7 @@ import {readAdminReturn} from "@/utils/returnOrigin";
 type Item = {dividerBefore?: boolean; href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
 type Group = {id: string; label: string; icon: LucideIcon; items: Item[]};
 
-// Пауза: повернути до навігації, коли з'явиться механізм призупинення заходу.
+// Пауза: повернути до навігації, коли зʼявиться механізм призупинення заходу.
 const groups: Group[] = [
     {id: "event", label: t("manage.nav.group.event"), icon: Flag, items: [
         {href: "/manage/settings", label: t("manage.nav.settings"), icon: Settings2},

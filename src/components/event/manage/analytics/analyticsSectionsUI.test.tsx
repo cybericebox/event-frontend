@@ -165,7 +165,7 @@ describe("Доброчесність", () => {
         const rows = within(table).getAllByRole("row");
         expect(within(rows[1]).getByText("Green")).toBeTruthy();
         expect(within(rows[1]).getByText("Прапор іншої команди").className).toContain("ib-tag--danger");
-        expect(within(rows[1]).getByText("Не розв'язано")).toBeTruthy();
+        expect(within(rows[1]).getByText("Не розвʼязано")).toBeTruthy();
         const blueRow = within(table).getByText("Blue").closest("tr")!;
         expect(within(blueRow).getByText("Web 1")).toBeTruthy();
         expect(within(blueRow).getByText("Спільні помилки (інформаційно)")).toBeTruthy();
@@ -253,7 +253,7 @@ describe("Доброчесність", () => {
         const answer = globalThis.fetch;
         globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => String(input).endsWith("/analytics/integrity?reviewed=no") ? new Promise<Response>(() => undefined) : answer(input, init)) as typeof fetch;
         renderWith(<AnalyticsIntegrity />);
-        expect(await screen.findByRole("status", {name: "Завантажуємо розв'язки"})).toBeTruthy();
+        expect(await screen.findByRole("status", {name: "Завантажуємо розвʼязки"})).toBeTruthy();
         expect(screen.queryByRole("table")).toBeNull();
     });
 
@@ -357,14 +357,14 @@ describe("Доброчесність", () => {
     it("says so, inside the block, when nothing is flagged", async () => {
         mockIntegrity({data: integrity({Items: [], Total: 0})});
         renderWith(<AnalyticsIntegrity />);
-        expect(await screen.findByText("Розв'язків для перевірки немає")).toBeTruthy();
+        expect(await screen.findByText("Розвʼязків для перевірки немає")).toBeTruthy();
         expect(screen.getByRole("table")).toBeTruthy();
     });
 
     it("shows the load error with a retry", async () => {
         mockIntegrity({failList: true});
         renderWith(<AnalyticsIntegrity />);
-        expect(await screen.findByText("Не вдалося завантажити розв'язки для перевірки")).toBeTruthy();
+        expect(await screen.findByText("Не вдалося завантажити розвʼязки для перевірки")).toBeTruthy();
         expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
     });
 
@@ -392,7 +392,7 @@ describe("Доброчесність", () => {
         const table = await screen.findByRole("table");
         fireEvent.click(within(within(table).getByText("Blue").closest("tr")!).getByRole("button", {name: "Позначити як перевірене"}));
         fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", {name: "Позначити"}));
-        expect(await screen.findByText("Розв'язок не знайдено в цьому заході")).toBeTruthy();
+        expect(await screen.findByText("Розвʼязок не знайдено в цьому заході")).toBeTruthy();
         expect(screen.getByRole("alertdialog")).toBeTruthy();
     });
 

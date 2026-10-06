@@ -4,7 +4,7 @@ import {fieldFilterSpecs, filterChips, nextSort, toTableFilters, withoutFilter, 
 const field = (key: string, input: string, options?: string[]) => ({id: key, type: "field" as const, key, label: key, input: input as "text", options});
 
 const specs: FilterSpec[] = [
-    {key: "@name", label: "Ім’я", kind: "contains"},
+    {key: "@name", label: "Імʼя", kind: "contains"},
     {key: "@status", label: "Статус", kind: "any", options: [{value: "1", label: "Очікує"}, {value: "3", label: "Відхилено"}]},
     {key: "@members", label: "Учасники", kind: "number"},
     {key: "@date", label: "Дата", kind: "date"},
@@ -75,7 +75,7 @@ describe("table filter specs", () => {
     it("describes active filters as chips and removes one", () => {
         const drafts = {"@name": {text: "ol"}, "@status": {values: ["1", "3"]}, "@members": {op: "between", from: "2", to: "5"}, "@pending": {flag: false}, cv: {flag: false}};
         expect(filterChips(specs, drafts).map(chip => chip.text)).toEqual([
-            "Ім’я: містить «ol»", "Статус: Очікує, Відхилено", "Учасники: 2 – 5", "Очікують: Ні", "cv: Немає файлу",
+            "Імʼя: містить «ol»", "Статус: Очікує, Відхилено", "Учасники: 2 – 5", "Очікують: Ні", "cv: Немає файлу",
         ]);
         expect(Object.keys(withoutFilter(drafts, "@status"))).toEqual(["@name", "@members", "@pending", "cv"]);
     });

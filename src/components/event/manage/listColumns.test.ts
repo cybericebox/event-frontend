@@ -5,7 +5,7 @@ import {participantTabFromParams, participantTabHref} from "./participantTabs";
 const fields = [{key: "city", label: "Місто"}, {key: "age", label: "Вік"}, {key: "role", label: ""}];
 
 describe("table columns", () => {
-    const defaults = [{key: "@name", label: "Ім’я", locked: true}, {key: "@email", label: "Пошта"}, {key: "@date", label: "Дата"}, ...fieldColumnDefinitions(fields.map(field => ({...field, id: field.key, type: "field" as const, input: "text" as const})))];
+    const defaults = [{key: "@name", label: "Імʼя", locked: true}, {key: "@email", label: "Пошта"}, {key: "@date", label: "Дата"}, ...fieldColumnDefinitions(fields.map(field => ({...field, id: field.key, type: "field" as const, input: "text" as const})))];
     const keys = (columns: TableColumn[]) => columns.map(column => [column.key, column.visible]);
 
     it("shows every column in default order without a saved layout", () => {
