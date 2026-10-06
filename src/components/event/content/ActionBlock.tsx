@@ -5,7 +5,6 @@ import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {useParticipation} from "@/components/event/participation/participationRules";
-import {eventOrigin, idOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
 type Action = {label: string; kind?: "link" | "join_event"; href?: string};
@@ -76,7 +75,7 @@ export function joinState({preview, staff, windowOpen, timeWindowOpen, registerA
 
 const joinLabel = (kind: "invite" | "pending" | "approved" | "rejected") => t(`content.join.${kind}`);
 
-export function ActionBlock({id, title, text, variant, alignment, selected, primaryHeading, preview, previewViewer, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID, eventTag}: {
+export function ActionBlock({id, title, text, variant, alignment, selected, primaryHeading, preview, previewViewer, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID}: {
     id: string;
     title: string;
     text: string;
@@ -92,7 +91,6 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     startAt: string;
     finishAt: string;
     eventID: string;
-    eventTag: string;
 }) {
     const hasJoin = actions.some(action => action.kind === "join_event");
     const viewer = preview ? previewViewer ?? "guest" : undefined;
@@ -111,10 +109,9 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !!eventID && !!identity.data, retry: false, refetchInterval: false});
     const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !viewer && join.data === 1, retry: false, refetchInterval: false});
     const participation = useParticipation(eventID, hasJoin && !viewer && join.data === 0);
-    const eventSite = eventTag ? eventOrigin(eventTag) : "";
-    const signInHref = idOrigin && eventSite
-        ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${eventSite}/join?continue=1`)}`
-        : "/join";
+    // A guest goes to /join like everyone else: the session page sends them to the sign-in and
+    // remembers, in this browser, that the registration was asked for (joinIntent.ts).
+    const signInHref = "/join";
     const state = hasJoin ? joinState({
         preview: viewer, staff: staff.staff, windowOpen, timeWindowOpen, signInHref,
         registerAllowed: participation.isPending ? "loading" : participation.data ? participation.data.Register.Allowed : undefined,

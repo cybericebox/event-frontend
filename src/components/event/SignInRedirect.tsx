@@ -3,6 +3,7 @@
 import {useEffect} from "react";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {signInRedirectTarget} from "@/utils/signInRedirect";
+import {createJoinIntent} from "@/utils/joinIntent";
 import {t} from "@/i18n/t";
 import {EventLoading} from "./EventLoading";
 
@@ -12,9 +13,11 @@ import {EventLoading} from "./EventLoading";
 // configured, or already on the sign-in page) it does nothing, so two redirects never bounce.
 export function SignInRedirect({event}: {event?: PublicEventInfo | null}) {
     useEffect(() => {
-        // Registration continues by itself after the sign-in: the join page reads «continue».
+        // Registration continues by itself after the sign-in, but only for this browser's own flow:
+        // the join page needs the nonce kept here (joinIntent.ts).
         const here = new URL(window.location.href);
-        if (here.pathname === "/join") here.searchParams.set("continue", "1");
+        here.searchParams.delete("continue");
+        if (here.pathname === "/join" && event) here.searchParams.set("continue", createJoinIntent(event.EventID));
         const target = signInRedirectTarget(here.toString());
         if (target !== "/") window.location.replace(target);
     }, []);
