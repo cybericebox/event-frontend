@@ -11,3 +11,11 @@ it("carries the three-way theme switch", () => {
     expect(group.closest("footer")).toBeTruthy();
     expect(screen.getAllByRole("radio")).toHaveLength(3);
 });
+
+it("carries «Надіслати відгук» next to the cookie settings, naming the event", () => {
+    render(<EventFooter eventName="Test" />);
+    const link = screen.getByRole("link", {name: "Надіслати відгук"});
+    expect(link.closest("footer")).toBeTruthy();
+    expect(link.getAttribute("href")).toContain(encodeURIComponent("«Test»"));
+    expect(link.closest("nav")).toBe(screen.getByRole("link", {name: /cookie/}).closest("nav"));
+});

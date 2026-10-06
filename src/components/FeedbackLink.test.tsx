@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
 
@@ -12,7 +14,14 @@ describe("FeedbackLink", () => {
     expect(html).toContain('href="mailto:')
     expect(html).toContain("subject=")
     expect(html).toContain("%2Fsign-in")
-    expect(html).toContain('class="feedback-link"')
+  })
+
+  it("takes a class name and custom content, and is never fixed-position", () => {
+    const html = renderToStaticMarkup(<FeedbackLink className="x"><b>y</b></FeedbackLink>)
+    expect(html).toContain('class="x"')
+    expect(html).toContain("<b>y</b>")
+    const css = readFileSync(join(__dirname, "feedback-link.css"), "utf8")
+    expect(css).not.toMatch(/position\s*:\s*fixed/)
   })
 
   it("names the app in the subject, with no no-break spaces", () => {

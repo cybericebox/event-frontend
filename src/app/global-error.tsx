@@ -37,7 +37,7 @@ export default function GlobalError({error, retry}: {
         <body className="event-root" suppressHydrationWarning>
         <EventErrorScreen onRetry={retry} page />
         {/* plain mailto link; the root layout (and its FeedbackLink) is gone here */}
-        <FeedbackLink />
+        <FeedbackLink className="feedback-link--standalone" />
         </body>
         </html>
     );
