@@ -21,7 +21,7 @@ export function pointsChartOption(series: readonly PointsSeries[], window: {from
         series: series.map(item => {
             const last = item.points[item.points.length - 1]?.[1] ?? 0;
             return {
-                name: item.name, type: "line", smooth: true, showSymbol: false, color: item.color,
+                name: item.name, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, color: item.color,
                 lineStyle: {width: item.dashed ? 2 : 3, type: item.dashed ? "dashed" : "solid"}, emphasis: {focus: "series"},
                 data: [[window.from, 0], ...item.points, [window.to, last]],
             };

@@ -1,6 +1,6 @@
 /* Challenge tile — a <button> that opens the challenge modal.
    Unsolved = brand mass (#211A52 in both themes), white name, mono points.
-   Solved   = --ib-solved with hairline, dim name, «Розв’язано» + check in ok colour.
+   Solved   = --ib-ok-bg tint, ink name, check + awarded «+80» in ok colour.
    Updated  = small «Оновлено» label. No difficulty, no author, no first blood. */
 
 :root,[data-theme="light"]{
@@ -27,10 +27,10 @@
 .ib-tile__solved svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* solved */
-.ib-tile.is-solved{background:var(--ib-solved);border-color:var(--ib-solved-line);color:var(--ib-tile-solved-name)}
-.ib-tile.is-solved:hover,.ib-tile.is-solved.is-hover{background:var(--ib-solved);border-color:var(--ib-control)}
+.ib-tile.is-solved{background:var(--ib-ok-bg);border-color:transparent;color:var(--ib-ink)}
+.ib-tile.is-solved:hover,.ib-tile.is-solved.is-hover{background:var(--ib-ok-bg);border-color:var(--ib-ok)}
 .ib-tile.is-solved .ib-tile__name{font-weight:var(--ib-w-medium)}
-.ib-tile.is-solved .ib-tile__pts{color:var(--ib-faint)}
+.ib-tile.is-solved .ib-tile__pts{color:var(--ib-ok);font-weight:var(--ib-w-semibold)}
 .ib-tile.is-solved .ib-tile__solved{display:inline-flex}
 .ib-tile.is-solved .ib-tile__upd{border-color:var(--ib-line);color:var(--ib-dim)}
 /* solved + updated: keep the check, move the word to screen readers so the row fits */

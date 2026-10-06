@@ -17,7 +17,7 @@ export const DEFAULT_INACTIVE_MINUTES = 30;
 
 export const scoresHaveData = (scores: AnalyticsScores) => scores.Series.some(series => series.Points.length > 1 || (series.Points[0]?.Score ?? 0) > 0);
 
-// Every team's running score as a step line (a score changes at a solve or a
+// Every team's running score as a smooth monotone line (a score changes at a solve or a
 // hint), in the ranking order, with the wheel / slider zoom.
 export function scoreChartOption(scores: AnalyticsScores) {
     const from = Date.parse(scores.Period.From);
@@ -31,7 +31,7 @@ export function scoreChartOption(scores: AnalyticsScores) {
         yAxis: {type: "value", axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},
         dataZoom: [{type: "inside", filterMode: "none"}, {type: "slider", height: 18, bottom: 8, filterMode: "none"}],
         series: scores.Series.map(series => ({
-            name: series.Name, type: "line", step: "end", showSymbol: false, lineStyle: {width: 2}, emphasis: {focus: "series"},
+            name: series.Name, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, lineStyle: {width: 2}, emphasis: {focus: "series"},
             data: series.Points.map(point => [Date.parse(point.At), point.Score]),
         })),
     };

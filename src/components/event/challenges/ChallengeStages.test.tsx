@@ -63,15 +63,16 @@ describe("a returnable stage after it ended", () => {
         const onRejected = renderModal(base, ended);
         expect(screen.getByText("Етап завершено. Відповіді перевіряються, але в рейтинг не йдуть.")).toBeTruthy();
         await send("ICE{ok}");
-        expect(screen.getByText("Правильно. Розвʼязано · не враховується в рейтингу")).toBeTruthy();
+        expect(screen.getByText("Розвʼязано (практика, без балів)")).toBeTruthy();
         expect(screen.queryByText(/^\+/)).toBeNull();
         expect(onRejected).toHaveBeenCalledTimes(1);
     });
 
     it("shows the practice solve with its own wording", () => {
         renderModal({...base, Practice: true}, ended);
-        expect(screen.getAllByText("Розвʼязано · не враховується в рейтингу").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Розвʼязано (практика, без балів)").length).toBeGreaterThan(0);
         expect(screen.queryByLabelText("Прапор")).toBeNull();
+        expect(screen.queryByRole("button", {name: "Надіслати"})).toBeNull();
     });
 });
 

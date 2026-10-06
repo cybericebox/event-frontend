@@ -19,7 +19,7 @@ import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
-import {attemptsLeft, difficultyLabel, formatClock, formatFileSize, NO_SPEND, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
+import {attemptsLeft, awardedPoints, difficultyLabel, formatClock, formatFileSize, NO_SPEND, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
 import {t} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
@@ -98,6 +98,21 @@ function ModeratorsBlock({lab, infrastructure}: {lab: LabRuntime | undefined; in
         {infrastructure && methods.length > 0 && <p>{t("challenges.moderators.access", {method: methods.join(", ")})}</p>}
         <p>{t("challenges.modal.moderatorsNote")}</p>
     </section>;
+}
+
+// The solved state replaces the answer form: the points the team got (with the hint price), when and by whom. A practice solve earns nothing.
+function SolvedPanel({challenge, practice, at}: {challenge: OwnChallenge; practice: boolean; at: string}) {
+    const awarded = awardedPoints(challenge);
+    const penalty = Math.max(0, challenge.Points - awarded);
+    const when = [challenge.SolvedBy, formatClock(at)].filter(Boolean).join(", ");
+    return <div className="ib-cmodal__ok event-cmodal__solved" role="status">
+        {ICON.check}
+        <span className="event-cmodal__solved-main">
+            <b>{practice ? t("challenges.modal.solvedPractice") : t("challenges.modal.solved")}</b>
+            {!practice && <span className="ib-num">{penalty > 0 ? t("challenges.modal.solvedPenalty", {awarded, total: challenge.Points, penalty}) : `+${awarded}`}</span>}
+            {when && <small>{when}</small>}
+        </span>
+    </div>;
 }
 
 // A hint text renders formatted like the description; plain text from older
@@ -280,10 +295,8 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
                 setPracticeAnswer(false);
                 setAccepted(true);
                 setAnswer("");
-                if (!moderators) {
-                    onAccepted(challenge.EventChallengeID);
-                    titleRef.current?.focus();
-                }
+                onAccepted(challenge.EventChallengeID);
+                titleRef.current?.focus();
             } else {
                 setMessage({text: t("challenges.modal.flagRejected"), tone: "error"});
                 flagRef.current?.focus();
@@ -376,12 +389,9 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}
-                {accepted && practiceAnswer && <div className="ib-cmodal__ok" role="status">{ICON.check}{t("challenges.modal.practiceAccepted")}</div>}
-                {accepted && !practiceAnswer && <div className="ib-cmodal__ok" role="status">{ICON.check}{moderators ? t("challenges.modal.flagCorrect") : t("challenges.modal.flagAccepted")}{!moderators && <span className="ib-num">+{challenge.Points}</span>}</div>}
-                {!accepted && practiceSolved && <div className="ib-cmodal__ok" role="status">{ICON.check}{t("challenges.tile.practice")}</div>}
-                {!accepted && solved && !moderators && <div className="ib-cmodal__ok" role="status">{ICON.check}{teamMode ? t("challenges.modal.solvedByTeam") : t("challenges.modal.solved")}<span className="ib-num">{formatClock(challenge.SolvedAt!, true)}</span></div>}
+                {(solved || practiceSolved || accepted) && <SolvedPanel challenge={challenge} practice={practiceSolved || (accepted && practiceAnswer)} at={challenge.SolvedAt ?? new Date().toISOString()} />}
                 {!solved && finished && !moderators && <p className="event-cmodal__closed" role="status">{richMessage(t("challenges.modal.finished"), {strong: <b>{t("challenges.modal.finishedStrong")}</b>})}</p>}
-                {(moderators || (!solved && !finished && !accepted && !stageClosed && !practiceSolved)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
+                {!solved && !accepted && !practiceSolved && (moderators || (!finished && !stageClosed)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
                     <label htmlFor={`${id}-flag`}>{t("challenges.modal.flag")}</label>
                     <div className="ib-cmodal__row">
                         <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}

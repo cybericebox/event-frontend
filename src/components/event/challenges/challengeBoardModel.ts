@@ -99,6 +99,15 @@ export function boardFilterSearch(search: string, filters: BoardFilters): string
     return query ? `?${query}` : "";
 }
 
+// A correct answer turns the task solved on the cached board at once; the refetch that follows reconciles with the server.
+export function markSolved(challenges: OwnChallenge[], id: string, at: string): OwnChallenge[] {
+    return challenges.map(item => item.EventChallengeID === id && !item.SolvedAt ? {...item, SolvedAt: at, AttemptsLeft: null} : item);
+}
+
+export function awardedPoints(challenge: Pick<OwnChallenge, "Points" | "AwardedPoints">): number {
+    return challenge.AwardedPoints ?? challenge.Points;
+}
+
 export function solvedCount(challenges: OwnChallenge[]): string {
     return `${challenges.filter(item => item.SolvedAt).length} / ${challenges.length}`;
 }

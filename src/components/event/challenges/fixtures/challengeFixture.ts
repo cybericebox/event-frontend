@@ -68,6 +68,8 @@ export const fixtureChallenge: OwnChallenge = {
     GroupName: LONG_CATEGORY,
     GroupOrder: 1,
     ContentUpdatedAt: "2026-09-29T09:00:00Z",
+    AwardedPoints: null,
+    SolvedBy: null,
     MaxAttempts: null,
     AttemptsLeft: null,
     Infrastructure: true,

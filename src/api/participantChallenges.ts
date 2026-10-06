@@ -50,6 +50,9 @@ export const challengeSchema = z.object({
     Snapshot: snapshotSchema,
     Readiness: z.number().int(),
     SolvedAt: z.string().nullable(),
+    // What the solve earned after the hint prices, and who sent the answer; null while the server does not say.
+    AwardedPoints: z.number().int().nullish().transform(value => value ?? null),
+    SolvedBy: z.string().nullish().transform(value => value ?? null),
     Points: z.number().int(),
     Order: z.number().int(),
     GroupID: id.nullable(),

@@ -13,10 +13,10 @@ describe("score chart", () => {
         Series: [{TeamID: "a", Name: "Blue", Points: [{At: "2026-09-29T10:00:00Z", Score: 0}, {At: "2026-09-29T10:30:00Z", Score: 100}, {At: "2026-09-29T12:00:00Z", Score: 100}]}],
         Period: period,
     });
-    it("draws a step line per selected team", () => {
-        const option = scoreChartOption(scores) as {series: {name: string; step: string; data: number[][]}[]};
+    it("draws a smooth monotone line per selected team", () => {
+        const option = scoreChartOption(scores) as {series: {name: string; data: number[][]}[]};
         expect(option.series).toHaveLength(1);
-        expect(option.series[0]).toMatchObject({name: "Blue", step: "end"});
+        expect(option.series[0]).toMatchObject({name: "Blue", smooth: true, smoothMonotone: "x"});
         expect(option.series[0].data.map(point => point[1])).toEqual([0, 100, 100]);
         expect(scoresHaveData(scores)).toBe(true);
     });

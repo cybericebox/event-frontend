@@ -26,7 +26,7 @@ export function scoresOverviewOption(scores: AnalyticsScores, now?: number) {
     return {
         ...option,
         series: option.series.map((series, index) => ({
-            ...series, step: undefined, smooth: true,
+            ...series, step: undefined, smooth: true, smoothMonotone: "x",
             ...(index === 0 && marks.length > 0 ? {markLine: {silent: true, symbol: "none", lineStyle: {type: "dashed", color: axisText}, label: {formatter: "{b}", color: axisText}, data: marks.map(mark => ({name: mark.label, xAxis: mark.at}))}} : {}),
         })),
     };
