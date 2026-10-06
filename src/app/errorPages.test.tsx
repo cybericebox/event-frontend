@@ -22,7 +22,7 @@ describe("error pages", () => {
         const html = renderToStaticMarkup(<ErrorPage error={error} retry={noop} />);
         expect(html).toContain("Не вдалося завантажити сторінку");
         expect(html).toContain(uk["error.page.body"]);
-        expect(html).toContain(">Оновити<");
+        expect(html).toContain(">Спробувати ще раз<");
         expect(html).toContain(">Назад<");
         expect(html).not.toContain("secret stack detail");
     });
@@ -40,7 +40,7 @@ describe("error pages", () => {
         const html = renderToStaticMarkup(<GlobalError error={error} retry={noop} />);
         expect(html).toMatch(/^<html lang="uk"/);
         expect(html).toContain("<title>Не вдалося завантажити сторінку</title>");
-        expect(html).toContain(">Оновити<");
+        expect(html).toContain(">Спробувати ще раз<");
         expect(html).toContain("ib-error--page");
         expect(html).toContain("ib-error__footer");
         expect(html).toContain("crest-128");
@@ -58,7 +58,7 @@ describe("error pages", () => {
         expect(html).toContain(uk["shell.unavailable.body"]);
         expect(html).toContain(uk["shell.unavailable.retryNow"]);
         expect(html).not.toContain(">page<");
-        expect(html).not.toContain(uk["error.page.reload"]);
+        expect(html).not.toContain(uk["error.load.retry"]);
     });
 
     it("the texts exist in both catalogs", () => {
