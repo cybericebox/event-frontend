@@ -1,0 +1,10 @@
+/* Shared sortable list: the dragged item's slot is the drop indicator, the
+   overlay copy follows the pointer lifted a little with a stronger border
+   (no shadow), the other items slide aside (inline transitions). */
+[data-sortable-source]{position:relative;border-color:var(--ib-action)!important;border-style:dashed!important;background:var(--ib-soft)!important}
+[data-sortable-source] > *{opacity:.35}
+.ib-sortable-overlay{z-index:1000;cursor:grabbing}
+.ib-sortable-overlay__frame{display:block!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;list-style:none}
+.ib-sortable-overlay__frame > *{margin:0;border:2px solid var(--ib-action)!important;background:var(--ib-surface)!important;transform:scale(1.02);transform-origin:center;animation:ib-sortable-lift .15s ease}
+@keyframes ib-sortable-lift{from{transform:scale(1)}to{transform:scale(1.02)}}
+@media(prefers-reduced-motion:reduce){.ib-sortable-overlay__frame > *{transform:none;animation:none}}

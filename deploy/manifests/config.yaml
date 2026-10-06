@@ -4,5 +4,13 @@ metadata:
   name: config
   namespace: cybericebox
 data:
-  DOMAIN: "cybericebox.com"
-
+  # Required: set every host for your deployment (bare host, no scheme).
+  # REQUIRED: the one base domain, a bare lowercase host name. Every host derives from it: DOMAIN, api./id./admin./exercises.DOMAIN,
+  # event sites <tag>.DOMAIN, the cookie domain DOMAIN. There are no per-host settings.
+  DOMAIN: ""
+  # Event sites are <tag>.<EVENT_DOMAIN>.
+  # Parent domain of the theme/consent cookies (shared by all apps).
+  # REQUIRED: support mailbox of the «Надіслати відгук» (send feedback) link on every page.
+  SUPPORT_EMAIL: "support@example.com"
+  # Optional Google Analytics 4 measurement id (G-…). Empty → analytics off.
+  GOOGLE_ANALYTICS_ID: ""

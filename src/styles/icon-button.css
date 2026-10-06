@@ -1,0 +1,27 @@
+/* Icon button — .ib-icon-btn. Always carries aria-label (or .ib-sr text).
+   Default: ghost square 40 · --sm 32 · --outline (control border) · --mass (on brand mass, e.g. bell in the tower)
+   States: :hover/.is-hover · :focus-visible · [aria-pressed=true]/[aria-expanded=true] (active) · [disabled]
+   An .ib-counter placed inside is positioned at the top-right corner. */
+
+.ib-icon-btn{
+  --_fg:var(--ib-dim);--_fg-h:var(--ib-ink);--_bd:transparent;--_hover:color-mix(in srgb,var(--ib-ink) 6%,transparent);--_on:var(--ib-soft);
+  position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;
+  width:var(--ib-control-h-lg);height:var(--ib-control-h-lg);padding:0;
+  border:1px solid var(--_bd);border-radius:var(--ib-r);background:transparent;color:var(--_fg);cursor:pointer;
+  transition:background-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease);
+}
+.ib-icon-btn>svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-icon-btn:hover,.ib-icon-btn.is-hover{background:var(--_hover);color:var(--_fg-h)}
+.ib-icon-btn:focus-visible,.ib-icon-btn.is-focus{outline:2px solid var(--ib-action);outline-offset:2px}
+.ib-icon-btn[aria-pressed="true"],.ib-icon-btn[aria-expanded="true"],.ib-icon-btn.is-active{background:var(--_on);color:var(--_fg-h)}
+.ib-icon-btn:disabled,.ib-icon-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;background:transparent}
+
+.ib-icon-btn--sm{width:var(--ib-control-h);height:var(--ib-control-h)}
+.ib-icon-btn--sm>svg{width:16px;height:16px}
+.ib-icon-btn--outline{--_bd:var(--ib-control);--_fg:var(--ib-ink)}
+
+/* on brand mass (tower / band): white icon, brand-hover fill */
+.ib-icon-btn--mass{--_fg:var(--ib-on-brand);--_fg-h:var(--ib-on-brand);--_hover:var(--ib-brand-hover);--_on:color-mix(in srgb,var(--ib-on-brand) 13%,transparent)}
+.ib-icon-btn--mass:focus-visible,.ib-icon-btn--mass.is-focus{outline-color:var(--ib-on-brand)}
+
+.ib-icon-btn>.ib-counter{position:absolute;top:1px;right:1px;transform:translate(35%,-25%)}

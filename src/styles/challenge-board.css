@@ -1,0 +1,37 @@
+/* Challenge board — «Плитки»: all challenges as a grid grouped by category.
+   Toolbar: filter (.ib-seg «Усі / Нерозвʼязані») + category chips + search (.ib-input-wrap--search).
+   Category headers «Web  4 / 10 … лишилось 1 250 балів» stick while scrolling.
+   Needs: challenge-tile, segmented, input. */
+
+.ib-board{--ib-board-bg:var(--ib-paper);display:flex;flex-direction:column;min-height:0;background:var(--ib-board-bg)}
+.ib-board--surface{--ib-board-bg:var(--ib-surface)}   /* board inside a card/panel on --ib-surface (landing demo, admin preview): sticky headers match the panel */
+.ib-board__bar{display:flex;align-items:center;gap:var(--ib-3);flex-wrap:wrap;padding:0 0 var(--ib-3);border-bottom:1px solid var(--ib-line)}
+.ib-board__search{width:240px;margin-left:auto}
+.ib-board__search .ib-input{height:var(--ib-control-h-lg)}
+
+/* category chips: 30px filter buttons, radius 6 (not pills) */
+.ib-board__chips{display:flex;flex-wrap:wrap;gap:6px}
+.ib-board__chip{display:inline-flex;max-width:100%;align-items:center;gap:7px;height:30px;padding:0 11px;border:1px solid var(--ib-line);border-radius:var(--ib-r);
+  background:transparent;color:var(--ib-ink);font:var(--ib-w-medium) var(--ib-fs-13)/1 var(--ib-font);white-space:nowrap;cursor:pointer;
+  transition:border-color var(--ib-dur-fast) var(--ib-ease),background-color var(--ib-dur-fast) var(--ib-ease)}
+.ib-board__chip-name{display:block;max-width:22ch;overflow:hidden;text-overflow:ellipsis}
+.ib-board__chip .ib-tip{min-width:0}
+.ib-board__chip .ib-num{font-size:var(--ib-fs-12);color:var(--ib-faint)}
+.ib-board__chip:hover,.ib-board__chip.is-hover{border-color:var(--ib-control)}
+.ib-board__chip[aria-pressed="true"]{background:var(--ib-action);border-color:var(--ib-action);color:var(--ib-on-action)}
+.ib-board__chip[aria-pressed="true"] .ib-num{color:inherit}
+
+.ib-board__body{min-height:0;overflow:auto;padding-bottom:var(--ib-6)}
+.ib-board__cat{position:sticky;top:0;z-index:2;display:flex;align-items:baseline;gap:10px;padding:var(--ib-3) 0 var(--ib-2);background:var(--ib-board-bg)}
+.ib-board__cat .ib-tip{min-width:6ch}
+.ib-board__cat h3{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:var(--ib-w-semibold)}
+.ib-board__count{flex:none}
+.ib-board__count{font:var(--ib-fs-12) var(--ib-mono);color:var(--ib-dim)}
+.ib-board__rest{flex:0 1 auto;min-width:0;margin-left:auto;text-align:right;font-size:var(--ib-fs-12);color:var(--ib-faint)}
+.ib-board__rest .ib-num{color:var(--ib-dim)}
+
+.ib-board__empty{padding:56px 0;text-align:center;color:var(--ib-dim)}
+.ib-board__empty b{display:block;color:var(--ib-ink);font-size:15px;font-weight:var(--ib-w-semibold);margin-bottom:var(--ib-1)}
+.ib-board__empty .ib-btn{margin-top:14px}
+/* Empty search/filter result: EmptyState centered in the board, action below it. */
+.ib-board__state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:var(--ib-6)}

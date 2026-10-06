@@ -1,0 +1,10 @@
+/* Slider — a value on a range (text scale 80–150 %). Hairline track, action fill, round 14 px thumb, no shadow.
+   <div class="ib-slider"><span class="ib-slider__track"><span class="ib-slider__fill"></span></span><span class="ib-slider__thumb" role="slider"></span></div> */
+.ib-slider{position:relative;display:flex;align-items:center;flex:1;min-width:96px;height:24px;cursor:pointer;touch-action:none}
+.ib-slider__track{position:relative;flex:1;height:4px;border-radius:var(--ib-r-pill);background:var(--ib-line)}
+.ib-slider__fill{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:var(--ib-action)}
+.ib-slider__thumb{position:absolute;top:50%;width:14px;height:14px;border:2px solid var(--ib-action);border-radius:50%;background:var(--ib-paper);transform:translate(-50%,-50%);
+  transition:border-color var(--ib-dur-fast) var(--ib-ease)}
+.ib-slider:hover .ib-slider__thumb{border-color:var(--ib-ink)}
+.ib-slider__thumb:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.ib-slider.is-disabled{cursor:not-allowed;opacity:.5}

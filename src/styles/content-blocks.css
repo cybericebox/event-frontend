@@ -1,0 +1,87 @@
+/* Blocks — the page constructor. Event landing and every custom page (Правила, Питання, Новини, …) are built by
+   organizers from these blocks; only «Завдання» and «Результати» are fixed pages.
+
+   Stack:  <div class="ib-blocks"> <section class="ib-block ib-block-<type>" data-block="<type>">…</section> … </div>
+   - every block is a full-width section, self-contained, stackable in any order;
+   - .ib-blocks is the size container: blocks adapt to the width of the stack (tower main, guest main, card), not the viewport;
+   - plain blocks sit on --ib-paper; add .ib-mass (+ .ib-mass-waves) for the brand-mass variant where the block allows it;
+   - adjacent blocks have no automatic separator; the divider block adds space or an optional line;
+   - inner width ≤ --ib-block-max (1200px), centred.
+   Common fields (IB.Blocks.render, blocks.js): title, sub, level (1 = page title h1, default 2 = section h2),
+   split (true = heading column on the left, 280px), id. Text fields are HTML from the CMS — sanitize server-side.
+   Shared parts here: .ib-block__in / __head / __title / __sub, and .ib-block-prose (rich text, used by text, doc, post). */
+
+.ib-blocks{display:flex;flex-direction:column;min-width:0;container:ib-blocks/inline-size}
+.ib-block{--ib-block-px:var(--ib-12);--ib-block-py:var(--ib-12);--ib-block-max:1200px;--ib-block-gap:56px;
+  position:relative;min-width:0;padding:var(--ib-block-py) var(--ib-block-px);background:var(--ib-paper);color:var(--ib-body)}
+.ib-block.ib-mass{background:var(--ib-brand);color:var(--ib-on-brand-2)}
+.ib-block__in{max-width:var(--ib-block-max);margin:0 auto;min-width:0}
+.ib-visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.ib-block-section--center{text-align:center}
+.ib-block-section--right{text-align:right}
+.ib-block-section--justify{text-align:justify}
+.ib-block-text .ib-block-prose{max-width:60ch}
+.ib-block-text--wide .ib-block-prose{max-width:none}
+.ib-block-text--center .ib-block-prose{text-align:center}
+.ib-block-text--right .ib-block-prose{text-align:right}
+.ib-block-text--justify .ib-block-prose{text-align:justify}
+.ib-block-banner{padding:0;overflow:hidden}
+.ib-block-banner__inner{position:relative;width:var(--ib-banner-width,100%);max-width:1600px;margin-inline:auto;overflow:hidden}
+.ib-block-banner--frame{padding:var(--ib-block-py) var(--ib-block-px)}
+.ib-block-banner--frame .ib-block-banner__inner{max-width:var(--ib-block-max);border-radius:var(--ib-r-lg)}
+.ib-block-banner__media{position:relative;width:100%;overflow:hidden}
+.ib-block-banner__image{display:block;width:100%;height:auto;max-height:70vh;object-fit:contain}
+.ib-block-banner__placeholder{display:grid;place-items:center;box-sizing:border-box;width:100%;min-width:0;aspect-ratio:2/1;min-height:200px;padding:var(--ib-6);background:var(--ib-brand);color:var(--ib-on-brand);text-align:center}
+.ib-block-banner__placeholder strong{max-width:20ch;font-size:clamp(24px,5cqi,54px);line-height:1.05;letter-spacing:-.03em}
+.ib-block-banner__caption{position:absolute;inset:auto 0 0;z-index:1;padding:var(--ib-12);background:linear-gradient(transparent,rgba(14,12,38,.72));color:#fff}
+.ib-block-banner__caption :is(h1,h2){margin:0;max-width:900px;font-size:clamp(28px,5cqi,58px);line-height:1.04;letter-spacing:-.035em}
+.ib-block-banner--caption-center .ib-block-banner__caption{text-align:center}
+.ib-block-banner--caption-center .ib-block-banner__caption :is(h1,h2){margin-inline:auto}
+.ib-block-banner--caption-right .ib-block-banner__caption{text-align:right}
+.ib-block-banner--caption-right .ib-block-banner__caption :is(h1,h2){margin-left:auto}
+@container ib-blocks (max-width:700px){.ib-block-banner__inner{width:100%}.ib-block-banner__caption{padding:var(--ib-5)}}
+
+/* heading: above the content, or on the left (--split) */
+.ib-block__head{margin-bottom:var(--ib-6);min-width:0}
+.ib-block__title{margin:0;font-size:26px;font-weight:var(--ib-w-semibold);letter-spacing:-.025em;line-height:1.15;color:var(--ib-ink)}
+.ib-block__sub{margin-top:var(--ib-2);color:var(--ib-dim);max-width:62ch}
+.ib-mass .ib-block__title{color:var(--ib-on-brand)}
+.ib-mass .ib-block__sub{color:var(--ib-on-brand-2)}
+.ib-block--split>.ib-block__in{display:grid;grid-template-columns:280px minmax(0,1fr);gap:var(--ib-block-gap);align-items:start}
+.ib-block--split .ib-block__head{margin-bottom:0}
+
+/* rich text (CMS html): headings, paragraphs, lists, code, images, quotes, tables */
+.ib-block-prose{max-width:68ch;color:var(--ib-body);line-height:var(--ib-lh-body)}
+.ib-block-prose>:first-child{margin-top:0}
+.ib-block-prose h2{margin:var(--ib-8) 0 10px;font-size:var(--ib-fs-20);font-weight:var(--ib-w-semibold);letter-spacing:-.015em;color:var(--ib-ink);scroll-margin-top:var(--ib-6)}
+.ib-block-prose h3{margin:var(--ib-6) 0 var(--ib-2);font-size:var(--ib-fs-16);font-weight:var(--ib-w-semibold);color:var(--ib-ink);scroll-margin-top:var(--ib-6)}
+.ib-block-prose p{margin:10px 0 0}
+.ib-block-prose ul,.ib-block-prose ol{margin:10px 0 0;padding-left:20px}
+.ib-block-prose li{margin-top:6px}
+.ib-block-prose li::marker{color:var(--ib-dim)}
+.ib-block-prose a{color:var(--ib-action);text-decoration:underline;text-underline-offset:2px}
+.ib-block-prose a:hover{color:var(--ib-action-hover)}
+.ib-block-prose strong,.ib-block-prose b{font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.ib-block-prose code{padding:1px 5px;border-radius:var(--ib-r-sm);background:var(--ib-soft);font:.92em var(--ib-mono);color:var(--ib-ink)}
+.ib-block-prose pre{margin:var(--ib-3) 0 0;padding:var(--ib-3) var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:auto;font:var(--ib-fs-13)/1.55 var(--ib-mono);color:var(--ib-ink)}
+.ib-block-prose pre code{padding:0;background:none;font-size:inherit}
+.ib-block-prose img{display:block;max-width:100%;height:auto;margin-top:var(--ib-4);border-radius:var(--ib-r-lg)}
+.ib-block-prose figure{margin:var(--ib-4) 0 0}
+.ib-block-prose figure img{margin-top:0}
+.ib-block-prose figcaption{margin-top:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-block-prose blockquote{margin:var(--ib-4) 0 0;padding:var(--ib-3) var(--ib-4);border-radius:var(--ib-r-lg);background:var(--ib-soft);color:var(--ib-ink)}
+.ib-block-prose blockquote>:first-child{margin-top:0}
+.ib-block-prose hr{height:1px;border:0;margin:var(--ib-6) 0;background:var(--ib-line)}
+.ib-block-prose table{width:100%;margin-top:var(--ib-3);border-collapse:collapse;font-size:var(--ib-fs-13)}
+.ib-block-prose th,.ib-block-prose td{padding:var(--ib-2) var(--ib-3) var(--ib-2) 0;border-bottom:1px solid var(--ib-line);text-align:left;vertical-align:top}
+.ib-block-prose th{font-weight:var(--ib-w-medium);color:var(--ib-dim)}
+
+/* the stack adapts to its own width */
+@container ib-blocks (max-width:860px){
+  .ib-block{--ib-block-px:var(--ib-8);--ib-block-py:var(--ib-10);--ib-block-gap:var(--ib-6)}
+  .ib-block--split>.ib-block__in{grid-template-columns:minmax(0,1fr)}
+}
+@container ib-blocks (max-width:520px){
+  .ib-block{--ib-block-px:var(--ib-4);--ib-block-py:var(--ib-8)}
+  .ib-block__title{font-size:var(--ib-fs-24)}
+}

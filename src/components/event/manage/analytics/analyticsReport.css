@@ -1,0 +1,33 @@
+/* «Звіт по заході»: a page on screen, a clean document in print. */
+.event-report__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2)}
+.event-report__head{display:grid;gap:var(--ib-1)}
+.event-report__head h2{font-size:var(--ib-fs-20)}
+.event-report__head p{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-report__section{display:grid;gap:var(--ib-3)}
+.event-report__section>.event-analytics__block-head{padding:0}
+.event-report .event-manage-table{height:auto;max-height:520px}
+
+@media print{
+  @page{margin:14mm}
+  /* Only the report goes to paper: no menu, top bar, controls or scroll frames. */
+  body:has(.event-report){background:#fff}
+  body:has(.event-report) .ib-admin-side,
+  body:has(.event-report) .ib-topbar,
+  body:has(.event-report) .ib-admin-shell__backdrop,
+  body:has(.event-report) .event-manage-heading__actions{display:none!important}
+  body:has(.event-report) .event-manage-frame,
+  body:has(.event-report) .ib-admin-shell,
+  body:has(.event-report) .ib-admin-shell__layout,
+  body:has(.event-report) .ib-admin-shell__main,
+  body:has(.event-report) .ib-admin-shell__scroll{display:block!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;position:static!important}
+  .event-report .event-manage-table,
+  .event-report .event-manage-table__scroll{height:auto!important;max-height:none!important;overflow:visible!important}
+  .event-report .event-manage-table thead th{position:static}
+  .event-report .event-manage-table thead{display:table-header-group}
+  .event-report .event-manage-table tr,
+  .event-report .event-analytics-stat,
+  .event-report__block{break-inside:avoid}
+  .event-report__section{break-before:auto}
+  .event-report .event-analytics__columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .event-report .event-brand-help{display:none}
+}

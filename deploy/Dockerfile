@@ -1,70 +1,68 @@
-FROM node:20-alpine AS base
+FROM node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS base
 
-# Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Install dependencies based on the preferred package manager
-COPY ../package.json package-lock.json* ./
-RUN \
-  if [ -f package-lock.json ]; then npm ci; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
-
-
-# Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY .. .
+COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Runtime Environment Variables
-ENV NEXT_PUBLIC_DOMAIN="NEXT_PUBLIC_DOMAIN"
+# Placeholders substituted at container start by entrypoint.sh. Each value is the variable name wrapped in double
+# underscores: the bare name also appears as an object key in the compiled server code, and only the value may be replaced.
+# Required at start: NEXT_PUBLIC_DOMAIN (the only host input, every host derives from it) and NEXT_PUBLIC_SUPPORT_EMAIL.
+# Optional, defaulted by entrypoint.sh: NEXT_PUBLIC_GOOGLE_ANALYTICS_ID, NEXT_PUBLIC_SHOW_PARTNERS, NEXT_PUBLIC_WIREGUARD_INSTALL_URL.
+ENV NEXT_PUBLIC_DOMAIN="__NEXT_PUBLIC_DOMAIN__"
+ENV NEXT_PUBLIC_SUPPORT_EMAIL="__NEXT_PUBLIC_SUPPORT_EMAIL__"
+ENV NEXT_PUBLIC_SHOW_PARTNERS="__NEXT_PUBLIC_SHOW_PARTNERS__"
+ENV NEXT_PUBLIC_WIREGUARD_INSTALL_URL="__NEXT_PUBLIC_WIREGUARD_INSTALL_URL__"
+ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="__NEXT_PUBLIC_GOOGLE_ANALYTICS_ID__"
 
-RUN yarn build
+RUN npm run build
 
-# If using npm comment out above and use below instead
-# RUN npm run build
+# The node binary of the base image, without its symbol table and DWARF (about 22 MB); the runtime needs neither.
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS node-bin
+RUN apk add --no-cache binutils
+COPY --from=base /usr/local/bin/node /node
+RUN strip --strip-all /node && /node -e "process.exit(0)"
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Production image, copy all the files and run next. It is plain alpine plus the node binary of the base image:
+# the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
+# laboratory Dockerfile pins.
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS runner
+RUN apk add --no-cache libstdc++ nginx tini gettext-envsubst
+COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs \
+    && mkdir .next \
+    && chown nextjs:nodejs .next
 
 COPY --from=builder /app/public ./public
-
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-COPY ../deploy/entrypoint.sh /usr/bin/
-RUN chmod +x /usr/bin/entrypoint.sh
-RUN chown nextjs:nodejs /usr/bin/entrypoint.sh
+COPY --chown=nextjs:nodejs --chmod=0755 deploy/entrypoint.sh /usr/bin/
+# The base-domain derivation (the NEXT_PUBLIC_DOMAIN check), sourced by entrypoint.sh.
+COPY deploy/base-domain.sh /usr/local/lib/base-domain.sh
+COPY deploy/nginx /etc/cybericebox/nginx
 
 USER nextjs
 
-EXPOSE 3000
+# nginx listens on HTTP_PORT (default 8080, plain) and, when /tls/tls.crt and /tls/tls.key exist (or TLS_CERT_FILE and
+# TLS_KEY_FILE are set), on HTTPS_PORT (default 8443), requiring client certificates when /aop/ca.crt exists;
+# HEALTH_PORT (default 8081) is a plain health-only listener. Next.js itself is internal on 127.0.0.1:3001
+# (entrypoint.sh sets PORT and HOSTNAME for it). tini is PID 1. The variables are documented in README.md.
+EXPOSE 8080 8443 8081
 
-ENV PORT=3000
-# set hostname to localhost
-ENV HOSTNAME="0.0.0.0"
+ENV PORT=3001
+ENV HOSTNAME="127.0.0.1"
 
-ENTRYPOINT [ "entrypoint.sh" ]
+ENTRYPOINT [ "/sbin/tini", "--", "entrypoint.sh" ]

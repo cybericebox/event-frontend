@@ -1,36 +1,18 @@
 'use client'
 
-import {Button} from "@/components/ui/button";
-import Link from "next/link";
+import {useEffect} from "react";
+import {EventErrorScreen} from "@/components/event/EventErrorScreen";
 
-export default function Error({
-                                  error,
-                                  reset,
-                              }: {
-    error: Error
-    reset: () => void
+// Segment error boundary: replaces Next's built-in «This page couldn't load» fallback.
+// It renders inside the root layout, so the event logo and brand colours still apply.
+export default function Error({error, retry}: {
+    error: Error & {digest?: string}
+    retry: () => void
 }) {
+    useEffect(() => {
+        // details stay out of the UI; developers see them in the console
+        if (process.env.NODE_ENV !== "production") console.error(error);
+    }, [error]);
 
-
-    return (
-        <div
-            className={"flex flex-col items-center justify-center h-full w-full gap-10"}
-        >
-            <h1 className={"text-2xl text-orange-600 font-bold"}>Щось пішло не так</h1>
-            <pre className={"text-xl text-wrap text-center"}>{error.message}</pre>
-            <Button
-                onClick={
-                    // Attempt to recover by trying to re-render the segment
-                    () => reset()
-                }
-            >
-                Спробувати ще раз
-            </Button>
-            <Link
-                href={"/"}
-            >
-                Повернутися на головну
-            </Link>
-        </div>
-    )
+    return <EventErrorScreen onRetry={retry} />;
 }

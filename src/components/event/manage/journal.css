@@ -1,0 +1,14 @@
+/* «Журнал спроб»: view switch above the table, period pickers and actions in
+   the ManageTable toolbar. */
+.event-journal__views{margin-bottom:var(--ib-4)}
+.event-journal__period{display:flex;align-items:center;gap:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-13);white-space:nowrap}
+.event-journal__period .event-date-picker__trigger{width:230px;min-height:36px}
+.event-journal__actions{display:flex;align-items:center;gap:var(--ib-3);margin-left:auto;font-size:var(--ib-fs-13)}
+.event-journal__answer{display:block;font:var(--ib-fs-12)/var(--ib-lh-ui) var(--ib-mono)}
+.event-journal__result{display:inline-flex;align-items:center;gap:var(--ib-2)}
+.event-journal__flag{display:inline-flex;color:var(--ib-warn,var(--ib-dim))}
+.event-journal__flag:hover{color:var(--ib-ink)}
+.event-mail-note{font-size:var(--ib-fs-12)}
+.event-mail-technical{margin-top:2px;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-mail-technical summary{cursor:pointer}
+.event-mail-technical code{display:block;margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--ib-font-mono,monospace)}

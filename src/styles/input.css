@@ -1,0 +1,61 @@
+/* Input — .ib-input (also base look for textarea/select, see their CSS)
+   Height 40 default, --sm 32. --mono for flags ICE{…}, codes, hosts.
+   States: :hover/.is-hover · :focus/.is-focus · [aria-invalid=true]/.is-invalid · [disabled] · [readonly]
+   Wrappers:
+     .ib-input-wrap--password  input + .ib-input__reveal button («Показати» / «Сховати»), JS: IB.Password
+     .ib-input-wrap--search    leading search svg + trailing <kbd class="ib-kbd">/</kbd>, JS: IB.Search */
+
+:root,[data-theme="light"]{
+  --ib-field-bg:var(--ib-surface);   /* #FFFFFF; control border 3.71:1 */
+}
+[data-theme="dark"]{
+  --ib-field-bg:var(--ib-paper);     /* #383645 inset well; control border 4.07:1 */
+}
+
+.ib-input{
+  display:block;width:100%;height:var(--ib-control-h-lg);padding:0 var(--ib-3);margin:0;
+  border:1px solid var(--ib-control);border-radius:var(--ib-r);background:var(--ib-field-bg);color:var(--ib-ink);
+  font:var(--ib-w-regular) var(--ib-fs-14)/var(--ib-lh-ui) var(--ib-font);caret-color:var(--ib-action);
+  transition:border-color var(--ib-dur-fast) var(--ib-ease);
+}
+.ib-input::placeholder{color:var(--ib-placeholder);opacity:1}
+.ib-input:hover,.ib-input.is-hover{border-color:var(--ib-dim)}
+.ib-input:focus,.ib-input.is-focus{outline:2px solid var(--ib-action);outline-offset:-1px;border-color:var(--ib-action)}
+.ib-input[aria-invalid="true"],.ib-input.is-invalid{border-color:var(--ib-danger)}
+.ib-input[aria-invalid="true"]:focus,.ib-input.is-invalid.is-focus{outline-color:var(--ib-danger);border-color:var(--ib-danger)}
+.ib-input:disabled{background:color-mix(in srgb,var(--ib-ink) 4%,var(--ib-field-bg));border-color:var(--ib-line);color:var(--ib-faint);cursor:not-allowed}
+.ib-input[readonly]{background:var(--ib-paper);border-color:var(--ib-line);color:var(--ib-dim)}
+.ib-input--sm{height:var(--ib-control-h);font-size:var(--ib-fs-13)}
+.ib-input--mono{font-family:var(--ib-mono);font-size:var(--ib-fs-14);letter-spacing:0}
+.ib-input--code{font-family:var(--ib-mono);letter-spacing:.2em;text-align:center;width:140px}
+
+/* iOS zooms the page when a focused field is under 16px: every text field is 16px on touch (any width) */
+@media (pointer:coarse){.ib-input,.ib-input--sm,.ib-input--mono,.ib-textarea,.ib-select>select.ib-input,.ib-tag-input__field{font-size:16px}}
+
+/* keyboard hint (12px: the product floor; 18px box) */
+.ib-kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;
+  font:var(--ib-w-medium) var(--ib-fs-12)/1 var(--ib-mono);color:var(--ib-faint);background:var(--ib-surface);
+  border:1px solid var(--ib-line);border-bottom-width:2px;border-radius:var(--ib-r-sm)}
+
+/* wrappers */
+.ib-input-wrap{position:relative;display:block;width:100%}
+.ib-input-wrap>svg{position:absolute;left:10px;top:50%;width:16px;height:16px;margin-top:-8px;color:var(--ib-faint);pointer-events:none;
+  stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+.ib-input-wrap--search .ib-input{padding-left:34px;padding-right:36px}
+.ib-input-wrap--search .ib-kbd{position:absolute;right:10px;top:50%;margin-top:-9px;pointer-events:none}
+.ib-input-wrap--search .ib-input:focus~.ib-kbd,.ib-input-wrap--search .ib-input:not(:placeholder-shown)~.ib-kbd{display:none}
+
+.ib-input-wrap--password .ib-input{padding-right:96px}
+.ib-input__reveal{position:absolute;right:4px;top:4px;bottom:4px;display:inline-flex;align-items:center;padding:0 10px;
+  border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);
+  font:var(--ib-w-medium) var(--ib-fs-13)/1 var(--ib-font);cursor:pointer}
+.ib-input__reveal:hover,.ib-input__reveal.is-hover{color:var(--ib-ink);background:color-mix(in srgb,var(--ib-ink) 6%,transparent)}
+.ib-input__reveal:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
+.ib-input:disabled~.ib-input__reveal{display:none}
+
+/* PasswordInput on manage forms: the manage input inside .ib-input-wrap--password */
+.ib-input-wrap--password>.event-manage-input{padding-right:96px}
+/* Number fields: no native stepper arrows; ArrowUp/ArrowDown still step the value. */
+input[type="number"]{-moz-appearance:textfield;appearance:textfield}
+input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}

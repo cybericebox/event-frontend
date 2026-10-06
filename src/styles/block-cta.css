@@ -1,0 +1,21 @@
+/* Block «cta» — one call to action between sections: title, short text, main + optional secondary action.
+   Variants: brand mass (.ib-mass .ib-mass-waves) · plain (surface band with hairlines).
+   Fields: {type:'cta', variant:'mass'|'plain', title, text, action:{label, href, act}, secondary:{label, href, act}} */
+
+.ib-block-cta{--ib-block-py:var(--ib-10)}
+.ib-block-cta:not(.ib-mass){background:var(--ib-paper)}
+.ib-block-cta--buttons-only.ib-block{--ib-block-py:var(--ib-4)}
+.ib-block-cta .ib-block__in{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4) var(--ib-10);flex-wrap:wrap}
+.ib-block-cta__title{margin:0;font-size:var(--ib-fs-24);font-weight:var(--ib-w-semibold);letter-spacing:-.02em;color:var(--ib-ink)}
+.ib-block-cta__text{margin-top:var(--ib-1);max-width:56ch;color:var(--ib-dim)}
+.ib-block-cta__acts{display:flex;width:100%;gap:var(--ib-3);flex-wrap:wrap}
+.ib-block-cta--actions-start .ib-block-cta__acts{justify-content:flex-start}
+.ib-block-cta--actions-center .ib-block-cta__acts{justify-content:center}
+.ib-block-cta--actions-end .ib-block-cta__acts{justify-content:flex-end}
+.ib-mass .ib-block-cta__title{color:var(--ib-on-brand)}
+.ib-mass .ib-block-cta__text{color:var(--ib-on-brand-2)}
+@container ib-blocks (max-width:520px){.ib-block-cta__acts{width:100%}.ib-block-cta__acts .ib-btn{flex:1}}
+/* Join action states: the status replaces the button without an action; while the
+   visitor's status loads, an invisible copy keeps the button's space (B5). */
+.ib-block-cta__status{cursor:default;pointer-events:none;opacity:.7}
+.ib-block-cta__reserved{visibility:hidden;pointer-events:none}

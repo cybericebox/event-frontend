@@ -1,0 +1,23 @@
+/* «Учасники» and «Комунікації»: block heads, question grid, constant-size tables. */
+.event-analytics-people__title{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--ib-2)}
+.event-analytics-people__title p{flex-basis:100%;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-analytics-people__actions{display:flex;align-items:center;gap:var(--ib-2)}
+.event-analytics-people__body{display:flex;flex-direction:column;flex:1 1 auto;padding:var(--ib-2) var(--ib-3) var(--ib-3)}
+.event-analytics-people__table{padding:var(--ib-3)}
+.event-analytics-people__table .event-manage-table{height:420px;min-height:0}
+.event-analytics-people__table--short .event-manage-table{height:320px}
+.event-analytics-people__note{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-analytics-questions{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--ib-4);padding:var(--ib-3)}
+.event-analytics-question{display:flex;flex-direction:column;min-width:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
+.event-analytics-question__head{display:grid;gap:var(--ib-1);padding:var(--ib-3) var(--ib-4) 0}
+.event-analytics-question__head h3{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);overflow-wrap:anywhere}
+.event-analytics-question__head small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-analytics-question .event-analytics-chart{padding:var(--ib-1) var(--ib-2)}
+.event-analytics-values{display:flex;flex-direction:column;height:220px;margin:0;padding:var(--ib-2) var(--ib-4) var(--ib-3);overflow:auto;list-style:none}
+.event-analytics-values>.event-block-state{flex:1 1 auto}
+.event-analytics-values li{display:flex;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) 0;border-top:1px solid var(--ib-line);overflow-wrap:anywhere}
+.event-analytics-values li:first-child{border-top:0}
+.event-analytics-values strong{font-variant-numeric:tabular-nums}
+.event-analytics-fill{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--ib-4);padding:var(--ib-3)}
+.event-analytics-fill>*{min-width:0}
+@media(max-width:960px){.event-analytics-fill{grid-template-columns:minmax(0,1fr)}}

@@ -1,0 +1,26 @@
+/* DS file picker (EventFilePicker): a dashed drop zone that opens the native
+   picker; with a file it shows the name, size and a remove button.
+   .is-over while a file is dragged over it; .is-compact is one line for dialogs. */
+.event-file-picker{display:grid;gap:var(--ib-1);min-width:0}
+.event-file-picker__input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.event-file-drop{display:grid;justify-items:center;gap:var(--ib-2);min-width:0;padding:var(--ib-5) var(--ib-4);border:1px dashed var(--ib-control);border-radius:var(--ib-r-lg);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-13);text-align:center;cursor:pointer;
+  transition:border-color var(--ib-dur-fast) var(--ib-ease),background-color var(--ib-dur-fast) var(--ib-ease)}
+.event-file-drop:hover{border-color:var(--ib-dim)}
+.event-file-drop:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.event-file-drop.is-over{border:1px solid var(--ib-action);background:color-mix(in srgb,var(--ib-action) 8%,var(--ib-soft))}
+.event-file-drop.is-invalid{border-color:var(--ib-danger)}
+.event-file-drop.is-disabled{cursor:not-allowed;opacity:.6}
+.event-file-drop__icon{flex:none;color:var(--ib-dim)}
+.event-file-drop__prompt{display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--ib-2);color:var(--ib-ink)}
+.event-file-drop__hint{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+.event-file-drop__busy{display:inline-flex;flex:none}
+.event-file-drop.has-file{display:flex;align-items:center;justify-items:start;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);text-align:left;cursor:default}
+.event-file-drop__file{display:grid;flex:1;min-width:0}
+.event-file-drop__name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-ink);font-size:var(--ib-fs-13)}
+.event-file-drop__size{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-file-drop.is-compact{display:flex;align-items:center;justify-content:flex-start;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);text-align:left}
+.event-file-drop.is-compact .event-file-drop__prompt{justify-content:flex-start}
+.event-file-drop.is-compact .event-file-drop__hint{margin-left:auto}
+.event-file-picker__message{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-file-picker__message.is-error{color:var(--ib-danger)}
+@media(prefers-reduced-motion:reduce){.event-file-drop{transition:none}}

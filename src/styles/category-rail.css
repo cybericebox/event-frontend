@@ -1,0 +1,51 @@
+/* Category rail — «Рейка»: category list on the left («лишилось N», «4 / 10», keys 1–6),
+   large tiles of the current category on the right. For events with many challenges.
+   Needs: challenge-tile, input (.ib-kbd). */
+
+:root,[data-theme="light"]{
+  --ib-rail-bg:#F7F7F9;       /* = paper: the rail is a quiet well beside a surface sheet */
+  --ib-rail-hover:#EDEDF1;    /* = soft */
+  --ib-rail-current:#FFFFFF;  /* = surface; hairline border marks it */
+}
+[data-theme="dark"]{
+  --ib-rail-bg:var(--ib-surface);
+  --ib-rail-hover:var(--ib-raised);
+  --ib-rail-current:var(--ib-raised); /* control border marks it */
+}
+
+.ib-rail{display:grid;grid-template-columns:var(--ib-admin-side-w) minmax(0,1fr);min-height:0;background:var(--ib-surface)}
+[data-theme="dark"] .ib-rail,.ib-rail[data-theme="dark"]{background:var(--ib-paper)}
+.ib-rail__nav{display:flex;flex-direction:column;gap:2px;min-height:0;overflow:auto;padding:var(--ib-3) 10px;border-right:1px solid var(--ib-line);background:var(--ib-rail-bg)}
+.ib-rail__item{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:var(--ib-2);height:52px;padding:0 var(--ib-3);
+  flex:none;border:1px solid transparent;border-radius:var(--ib-r-lg);background:none;color:var(--ib-ink);font:inherit;text-align:left;cursor:pointer;
+  transition:background-color var(--ib-dur-fast) var(--ib-ease)}
+.ib-rail__item:hover,.ib-rail__item.is-hover{background:var(--ib-rail-hover)}
+.ib-rail__item:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
+.ib-rail__item[aria-current="true"]{background:var(--ib-rail-current);border-color:var(--ib-line)}
+[data-theme="dark"] .ib-rail__item[aria-current="true"]{border-color:var(--ib-control)}
+.ib-rail__key{font:var(--ib-w-medium) var(--ib-fs-12) var(--ib-mono);color:var(--ib-faint)}
+.ib-rail__name{min-width:0}
+.ib-rail__name b{display:block;min-width:0;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib-rail__name small{display:block;font-size:var(--ib-fs-12);color:var(--ib-dim);line-height:1.3}
+.ib-rail__count{font:var(--ib-w-medium) var(--ib-fs-13) var(--ib-mono);color:var(--ib-dim)}
+.ib-rail__item[aria-current="true"] .ib-rail__count{color:var(--ib-ink)}
+.ib-rail__item.is-done small{color:var(--ib-ok)}
+.ib-rail__hint{margin-top:auto;padding:var(--ib-3) var(--ib-3) 2px;font-size:var(--ib-fs-12);color:var(--ib-faint);line-height:1.9}
+
+.ib-rail__main{min-width:0;min-height:0;overflow:auto;padding:18px 28px 28px}
+.ib-rail__head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px}
+.ib-rail__head .ib-tip{min-width:0}
+.ib-rail__head h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-20);letter-spacing:-.02em}
+.ib-rail__head .ib-num{color:var(--ib-dim)}
+.ib-rail__rest{margin-left:auto;font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-rail__empty{padding:56px 0;text-align:center;color:var(--ib-dim)}
+.ib-rail__state{display:flex;flex:1 1 auto;flex-direction:column;align-items:center;justify-content:center}
+.ib-rail__empty b{display:block;color:var(--ib-ink);font-size:15px;font-weight:var(--ib-w-semibold);margin-bottom:var(--ib-1)}
+
+@media (max-width:720px){
+  .ib-rail{grid-template-columns:1fr}
+  .ib-rail__nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--ib-line)}
+  .ib-rail__item{flex:none;min-width:164px}
+  .ib-rail__hint{display:none}
+  .ib-rail__main{padding:var(--ib-4)}
+}

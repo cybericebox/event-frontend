@@ -1,0 +1,29 @@
+/* Link — .ib-link
+   Inline (in running text): underlined, underline at 70% of action colour, full on hover.
+   --standalone: no underline until hover, medium weight, optional trailing svg (chevron).
+   --external: trailing ext icon; add <span class="ib-sr">(нова вкладка)</span> when target=_blank.
+   --mass: on brand mass (white). Also works on <button class="ib-link">. */
+
+.ib-link{
+  color:var(--ib-action);font:inherit;font-weight:var(--ib-w-medium);
+  text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;
+  text-decoration-color:color-mix(in srgb,currentColor 70%,transparent);   /* underlined at rest: colour alone never marks a link */
+  background:none;border:0;padding:0;cursor:pointer;border-radius:var(--ib-r-sm);
+  transition:text-decoration-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease);
+}
+.ib-link:hover,.ib-link.is-hover{text-decoration-color:currentColor;color:var(--ib-action-hover)}
+.ib-link:focus-visible,.ib-link.is-focus{outline:2px solid var(--ib-action);outline-offset:2px;text-decoration-color:currentColor}
+.ib-link:visited{color:var(--ib-action)}
+
+.ib-link--standalone,.ib-link--external{display:inline-flex;align-items:center;gap:var(--ib-1);text-decoration-color:transparent}
+.ib-link--standalone:hover,.ib-link--standalone.is-hover,.ib-link--external:hover,.ib-link--external.is-hover{text-decoration-color:currentColor}
+.ib-link>svg{width:14px;height:14px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.ib-link--dim{color:var(--ib-dim);font-weight:var(--ib-w-regular)}
+.ib-link--dim:hover,.ib-link--dim.is-hover{color:var(--ib-ink)}
+
+.ib-link--mass,.ib-link--mass:visited{color:var(--ib-on-brand)}
+.ib-link--mass:hover,.ib-link--mass.is-hover{color:var(--ib-on-brand)}
+.ib-link--mass:focus-visible,.ib-link--mass.is-focus{outline-color:var(--ib-on-brand)}
+
+.ib-link[aria-disabled="true"]{color:var(--ib-faint);text-decoration:none;cursor:not-allowed;pointer-events:none}

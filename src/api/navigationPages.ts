@@ -1,0 +1,17 @@
+import {z} from "zod";
+import {requireApiOrigin} from "@/utils/origins";
+
+const pageSchema = z.object({Slug: z.string(), Title: z.string(), NavigationOrder: z.number().int()});
+const pagesSchema = z.array(pageSchema);
+export type NavigationPage = z.infer<typeof pageSchema>;
+
+export async function getNavigationPages(eventID: string): Promise<NavigationPage[]> {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/content/pages`, {
+        credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
+    });
+    if (response.status === 404) return [];
+    if (!response.ok) throw new Error(`Event navigation request failed: ${response.status}`);
+    const data: unknown = await response.json();
+    return z.object({Data: pagesSchema}).parse(data).Data;
+}

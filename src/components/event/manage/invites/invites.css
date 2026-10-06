@@ -1,0 +1,48 @@
+/* Invitation dialogs: DS modal on the raised fill (no tinted background), no
+   divider above the actions; email chips input; DS file picker. */
+.event-modal__drop{position:absolute;inset:var(--ib-3);z-index:5;display:grid;place-content:center;justify-items:center;gap:var(--ib-2);padding:var(--ib-5);border:1px dashed var(--ib-action);border-radius:var(--ib-r-lg);background:color-mix(in srgb,var(--ib-action) 8%,var(--ib-raised,var(--ib-surface)));color:var(--ib-ink);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);text-align:center;pointer-events:none}
+.event-modal__drop svg{color:var(--ib-action)}
+.event-modal__form{display:flex;flex-direction:column;min-height:0}
+.event-modal__summary{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.event-modal__issues{display:flex;flex-direction:column;gap:var(--ib-1);margin:0;padding:0;list-style:none;
+  font-size:var(--ib-fs-13);color:var(--ib-danger);max-height:180px;overflow:auto}
+.event-modal__issues--soft{color:var(--ib-dim)}
+.event-modal__modes{align-self:flex-start}
+
+.event-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:var(--ib-control-h-lg);height:auto;
+  padding:6px var(--ib-2);cursor:text;max-height:220px;overflow:auto}
+.event-chips:focus-within{outline:2px solid var(--ib-action);outline-offset:-1px;border-color:var(--ib-action)}
+.event-chips[aria-invalid="true"]:focus-within{outline-color:var(--ib-danger)}
+.event-chips__input{flex:1 0 160px;min-width:120px;height:26px;border:0;padding:0 var(--ib-1);background:transparent;color:var(--ib-ink);
+  font:inherit;outline:none}
+.event-chips__input::placeholder{color:var(--ib-faint)}
+.event-chip{height:26px;padding:0 2px 0 var(--ib-2);color:var(--ib-ink);background:var(--ib-tag-bg)}
+.event-chip.is-invalid{border-color:var(--ib-danger);color:var(--ib-danger);background:var(--ib-danger-bg)}
+.event-chip__text{overflow:hidden;text-overflow:ellipsis}
+.event-chip__remove{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin:0;padding:0;border:0;
+  border-radius:var(--ib-r-sm);background:transparent;color:inherit;cursor:pointer}
+.event-chip__remove:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+.event-chip__remove:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
+.event-chip__remove svg{width:14px;height:14px}
+
+.event-field-help{display:inline-flex;align-items:center;gap:var(--ib-1)}
+
+/* Email chips. */
+.event-chip{max-width:100%}
+.event-chip__text{min-width:0}
+
+/* CSV row: file picker, then the template link; wraps on narrow screens. */
+.event-csv-row{display:flex;flex-wrap:wrap;align-items:center;column-gap:var(--ib-3);row-gap:var(--ib-2);min-width:0}
+.event-csv-row>.event-file-picker{flex:1 1 220px}
+.event-csv-template{flex:none;white-space:nowrap;font-size:var(--ib-fs-13)}
+.event-csv-template:focus:not(:focus-visible){outline:none}
+
+/* Portalled help tooltip (HelpTooltip): fixed, above the modal, capped width. */
+.event-help-tip{position:fixed;z-index:1200;max-width:min(280px,calc(100vw - 16px));padding:var(--ib-2) var(--ib-3);
+  border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-raised);color:var(--ib-body);
+  font-size:var(--ib-fs-13);line-height:var(--ib-lh-ui);pointer-events:none;overflow-wrap:anywhere}
+.event-help-tip__copy{display:flex;flex-direction:column;gap:2px}
+.event-help-tip__point{padding-left:var(--ib-3);position:relative}
+.event-help-tip__point::before{content:"–";position:absolute;left:0;color:var(--ib-dim)}
+.event-chip__tip{min-width:0}
+.event-chip{overflow:visible}

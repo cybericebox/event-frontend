@@ -1,0 +1,197 @@
+{
+  "base.css": {
+    "kind": "copy",
+    "source": "19fc5ee838ab8bdea403168e91e9b74cd9272fc6689ef7a209c6a8b3e3909d9c",
+    "sha": "19fc5ee838ab8bdea403168e91e9b74cd9272fc6689ef7a209c6a8b3e3909d9c"
+  },
+  "admin-sidebar.css": {
+    "kind": "copy",
+    "source": "08a9d0ed7d7355283688de7cd82677494ece35d546ab394cb74d588509a9099a",
+    "sha": "08a9d0ed7d7355283688de7cd82677494ece35d546ab394cb74d588509a9099a"
+  },
+  "navbar.css": {
+    "kind": "copy",
+    "source": "dc5a75dbfc44cbe07848735738ebbd1af3c509e1c122f0653879ba4e8fde4e6e",
+    "sha": "dc5a75dbfc44cbe07848735738ebbd1af3c509e1c122f0653879ba4e8fde4e6e"
+  },
+  "modal.css": {
+    "kind": "copy",
+    "source": "e466cf40a67d06133353f680775b1025fb3348186f5aab051b6d48a28be859dd",
+    "sha": "e466cf40a67d06133353f680775b1025fb3348186f5aab051b6d48a28be859dd"
+  },
+  "tooltip.css": {
+    "kind": "copy",
+    "source": "b0e2c34642c8e9ab9705e803a9121dc398245e4e42ba5669672d2661ce7ae09e",
+    "sha": "b0e2c34642c8e9ab9705e803a9121dc398245e4e42ba5669672d2661ce7ae09e"
+  },
+  "accordion.css": {
+    "kind": "copy",
+    "source": "5898cb4f4709c8b3b5dc0ce7e5c9dc6055930c5153607cd22cdbb97059676c97",
+    "sha": "5898cb4f4709c8b3b5dc0ce7e5c9dc6055930c5153607cd22cdbb97059676c97"
+  },
+  "toc.css": {
+    "kind": "copy",
+    "source": "03d8b047a1684ae74a1ec2d47bbbe809fa156500d7e64ca24f2ba3af3925f235",
+    "sha": "03d8b047a1684ae74a1ec2d47bbbe809fa156500d7e64ca24f2ba3af3925f235"
+  },
+  "field.css": {
+    "kind": "copy",
+    "source": "4713e92406ac89bd45860a76024c15f008a90ba6377058bcad0b7d088a76f15f",
+    "sha": "4713e92406ac89bd45860a76024c15f008a90ba6377058bcad0b7d088a76f15f"
+  },
+  "tabs.css": {
+    "kind": "copy",
+    "source": "e5354c73323864bcec623b16e418c71f03cdd380225ae3bc423e5b8990c1d565",
+    "sha": "e5354c73323864bcec623b16e418c71f03cdd380225ae3bc423e5b8990c1d565"
+  },
+  "segmented.css": {
+    "kind": "copy",
+    "source": "556fd7acde3ad43609b129365586cc3648e57ee7607e3f400958dc034c310f06",
+    "sha": "556fd7acde3ad43609b129365586cc3648e57ee7607e3f400958dc034c310f06"
+  },
+  "link.css": {
+    "kind": "copy",
+    "source": "ad24efdc89676d6756f227c9a11cd3a69d43dd36c714f38bc3f6c8f6b608856f",
+    "sha": "ad24efdc89676d6756f227c9a11cd3a69d43dd36c714f38bc3f6c8f6b608856f"
+  },
+  "checkbox.css": {
+    "kind": "copy",
+    "source": "f612407f68a59d76beb133a0706732b45c43564402e8541d396652129ade1e0b",
+    "sha": "f612407f68a59d76beb133a0706732b45c43564402e8541d396652129ade1e0b"
+  },
+  "switch.css": {
+    "kind": "copy",
+    "source": "5fa306cc5be231aa5c72faf85cc5bb6660bcdbbc28aefa442af3e135f1f57c61",
+    "sha": "5fa306cc5be231aa5c72faf85cc5bb6660bcdbbc28aefa442af3e135f1f57c61"
+  },
+  "banner.css": {
+    "kind": "copy",
+    "source": "c54597573f712195cdd60da6e670f43df052100fb20be8265f4246514cf5f66d",
+    "sha": "c54597573f712195cdd60da6e670f43df052100fb20be8265f4246514cf5f66d"
+  },
+  "icon-button.css": {
+    "kind": "copy",
+    "source": "09e9274dff90a46c7a4768d585a2618f91d58c693b1cee84d3049c47898b30d0",
+    "sha": "09e9274dff90a46c7a4768d585a2618f91d58c693b1cee84d3049c47898b30d0"
+  },
+  "page-header.css": {
+    "kind": "copy",
+    "source": "b3e79d3f89b60130fee9f275ee6efbd9c7b5daf03f4e4cbd3ddafcea0cca60d7",
+    "sha": "b3e79d3f89b60130fee9f275ee6efbd9c7b5daf03f4e4cbd3ddafcea0cca60d7"
+  },
+  "block-facts.css": {
+    "kind": "copy",
+    "source": "b0ee43102d97312cdda2b877294a9825d6c404317d2c7600fdd3967db0aa8fe4",
+    "sha": "b0ee43102d97312cdda2b877294a9825d6c404317d2c7600fdd3967db0aa8fe4"
+  },
+  "block-faq.css": {
+    "kind": "copy",
+    "source": "2a0e38aad2c0b1a1124c0ed1cf0a27b8cdcb9ac6ebb74fa169fd5d419ceff488",
+    "sha": "2a0e38aad2c0b1a1124c0ed1cf0a27b8cdcb9ac6ebb74fa169fd5d419ceff488"
+  },
+  "block-doc.css": {
+    "kind": "copy",
+    "source": "6e1cd5b529ead29522e10bdfad8a7f7bb59fc16f71221b1a25b8d47d11a70645",
+    "sha": "6e1cd5b529ead29522e10bdfad8a7f7bb59fc16f71221b1a25b8d47d11a70645"
+  },
+  "tokens.css": {
+    "kind": "extended",
+    "source": "78020bef7de916a752bd8fd85fe70d9f1e0690afae37dc9cfa6101d19fdc9a7d",
+    "sha": "2fbe28e1ee33ab5eb32ece17a64257b40c75c633c26525a8c392d2ff2415f905"
+  },
+  "button.css": {
+    "kind": "extended",
+    "source": "863c84990cc6a502cc733c4510cf2cdefe162668bbfb73f634e00f37ac2403ec",
+    "sha": "40eca6021bba2198eea9b4490b4a1f2147188d1d049f3ff8c3231e50380573b7"
+  },
+  "category-rail.css": {
+    "kind": "extended",
+    "source": "0fb3974c9d10fed285343bacc62a8b88a8927f5b3974aea687600cb499839bbf",
+    "sha": "8a56c5c72013cae90e111c1d1807c9cddbe9d1eea308991a35612163e9cc3437"
+  },
+  "challenge-board.css": {
+    "kind": "extended",
+    "source": "2ca078b35a68a67f9fd78329d196fb9e2cfce3552775f0dfa1119201a0b2c9cc",
+    "sha": "9e6db22665837536707657691c427b08538fe6a1c1dbcf79a761310d59f81d34"
+  },
+  "challenge-modal.css": {
+    "kind": "extended",
+    "source": "ee479b421c5aa3f9ac920c901076f1ea99de8bc89c75da7dab29ed2f06e1f03f",
+    "sha": "52b784e8550b54d28b63ce36675f586b26065be965e88cb98e05b49195d39ac0"
+  },
+  "challenge-tile.css": {
+    "kind": "extended",
+    "source": "8132fa72259886e395e64513f984c45364ff00e9b6fb24372a99e92b3850d12a",
+    "sha": "8d04ee36f2722fe5b96d31984d6e4c3c13ee1d8127b5399be41ad4ff6e347431"
+  },
+  "copy-field.css": {
+    "kind": "extended",
+    "source": "6ebc83c1eed34c0136708329dbc87eab954fc7e7f365130bba17bebe0f69c966",
+    "sha": "b8706ddfbc502cc0b0efcc53384c824ea5ee0c909e67046d8b549ccc23cf79fa"
+  },
+  "empty-state.css": {
+    "kind": "extended",
+    "source": "a6525729813dabd9f1dbbc192b95edc8926ee661b0087bed35104ce1c3f6f1b6",
+    "sha": "d47296c2dc4d619a6bb35eafd6f058ad385c8bfa8a5f2a96263186fa1589cba6"
+  },
+  "footer.css": {
+    "kind": "extended",
+    "source": "e3ff1f482f848dc184e1e4ae69442a661ff36262931eb825c3a8a3a8e2d2ee6a",
+    "sha": "edf398c9447d7c7bed12bfe7f46400b21379f6d55d73551aec7fd7a9e17886cf"
+  },
+  "hero.css": {
+    "kind": "extended",
+    "source": "d15c5f1462994d8b05511db5c6f762323e3e92d2b1a6ce03cd8325d1c5e4eaf0",
+    "sha": "9368b8f8a30083d9aa65f5ab2f7b6a1977c64ed0260168cc13ba46ff66a9c085"
+  },
+  "input.css": {
+    "kind": "extended",
+    "source": "d893c4a3afd03bdb878bd042e0a63d019de6df264609b65e1a759fa1a973d0b3",
+    "sha": "dd0ad919bf2990be9c982a0cf6c8734afa8334a0c341131c2a034e7dac17d80f"
+  },
+  "select.css": {
+    "kind": "extended",
+    "source": "12a94c8a55f9897a9fe8ae5ff335cdf90102e92d8429f0db5466407f67f46571",
+    "sha": "c9941a4e650eef433e51593bb2c2460549814c22a910a27690638fd58fd05e91"
+  },
+  "tag.css": {
+    "kind": "extended",
+    "source": "c826fe9a474ff3aa03d6fbe482f7a1ef918cf4340483be070bf1b8942438a85c",
+    "sha": "91857ec5384d203acd9e751ff84354448822bced978e94b942f64a7e4ad7c728"
+  },
+  "timer.css": {
+    "kind": "extended",
+    "source": "98d6b5ebd09c90f7b4ef684c716fcdc434d587afe81c08a6848f043eee0a201f",
+    "sha": "3ed1866b9782ce4c6bfff5aa63f8117743135c4646df1a782025204506e0d576"
+  },
+  "tower.css": {
+    "kind": "extended",
+    "source": "6e8f9a5ce73bb356994265d4891ba1a7aa854022b569e961cc461ad3c005a0df",
+    "sha": "57837cb81ca0501b55be1d55395e3d9e88e0e3391a0551a1ab7038fa9d011827"
+  },
+  "block-countdown.css": {
+    "kind": "extended",
+    "source": "710c56247bb5771d53808a8fd663959f95758ac24de0020ed8b7b31da1e9c5a4",
+    "sha": "34cf21dc836bcc82a3788f59ad1e8885f2fd44330cf8a7a652958075f09f6c17"
+  },
+  "block-cta.css": {
+    "kind": "extended",
+    "source": "69e76023f4fa00d420f5cab14a3bb04baaeafc2f145e1974210b52ba3b242e0a",
+    "sha": "6675ba41b8d1244e2ada665d98d82e11f59f78813aa06064b8fbe352e1e9e6f8"
+  },
+  "block-divider.css": {
+    "kind": "extended",
+    "source": "15cc5b8dc58b42e432c2b6972b9ad33428e36bae46d23ffc327e1b30d9146be7",
+    "sha": "d1343a40a94e64715bf42a795dc3df2ae551eb71c1a48600222684d1fe0e9555"
+  },
+  "block-partners.css": {
+    "kind": "extended",
+    "source": "fbefe0d99dc1536aa0bdb32349511b88419fa7b5a127dd874c98cfa6907617b4",
+    "sha": "4606ef6e4cb238385294dbbb0e788a933c4723413fbd57379e1d851b79fce41f"
+  },
+  "block-timeline.css": {
+    "kind": "extended",
+    "source": "a23f0e4d5c1b8d711eb05dcd36ad3483a15b53cdc3b56336e57301584dedc9c8",
+    "sha": "fa7ffc9ead39a84c990aabb166a6ed77e30be10bfbe0808ad98dfd60a166600c"
+  }
+}

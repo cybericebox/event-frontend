@@ -1,11 +1,12 @@
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type React from "react";
+import {useState} from "react";
 import {ReactQueryDevtools} from "@tanstack/react-query-devtools";
 
 export default function QueryProvider({children}: {
     children: React.ReactNode;
 }) {
-    const queryClient = new QueryClient({
+    const [queryClient] = useState(() => new QueryClient({
         defaultOptions: {
             queries: {
                 refetchOnMount: true,
@@ -15,7 +16,7 @@ export default function QueryProvider({children}: {
                 refetchInterval: 60 * 1000
             },
         }
-    })
+    }))
     return (
         <QueryClientProvider client={queryClient}>
             {children}

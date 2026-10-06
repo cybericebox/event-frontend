@@ -1,0 +1,42 @@
+/* Access settings use a versioned stylesheet while the development edge caches Next's stable CSS URL. */
+.event-manage-warning{display:flex;align-items:center;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-danger);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
+.event-manage-warning svg{flex:none}
+.event-manage-general .event-manage-fields-two>.event-manage-field:nth-child(-n+2) .ib-tip__bubble{bottom:auto;top:calc(100% + 6px)}
+.event-manage-status{display:inline-flex;align-items:center;gap:var(--ib-2);padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r-pill);background:var(--ib-soft);color:var(--ib-ink);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);white-space:nowrap}
+.event-manage-check{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);cursor:pointer}
+.event-manage-schedule .event-manage-field:has(.event-manage-check input:not(:checked))+.event-manage-fields-two{display:none}
+.event-manage-check input,.event-manage-choice-group input{accent-color:var(--ib-action);margin-top:3px;flex:none}
+.event-manage-check span,.event-manage-choice-group label>span,.event-manage-choice-content{display:grid;gap:var(--ib-1)}
+.event-manage-check strong,.event-manage-choice-group strong{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
+.event-manage-check small,.event-manage-choice-group small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-manage-choice-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ib-3)}
+.event-manage-choice-group label{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r);cursor:pointer}
+.event-manage-choice-group label:has(input:checked){border-color:var(--ib-action);background:var(--ib-soft)}
+.event-manage-choice-points{display:block;margin:var(--ib-2) 0 0;padding-left:var(--ib-4);list-style:disc;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+.event-manage-choice-points li+li{margin-top:var(--ib-1)}
+.event-date-picker__trigger{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-2);text-align:left;cursor:pointer}
+.event-date-picker__trigger span{flex:1;min-width:0}
+.event-date-picker__trigger svg{flex:none;color:var(--ib-dim)}
+.event-date-picker__trigger:disabled{cursor:not-allowed}
+.event-date-picker__placeholder{color:var(--ib-dim)}
+.event-date-picker__dialog{width:min(380px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);overflow-y:auto;gap:var(--ib-2);padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);color:var(--ib-ink)}
+.event-date-picker__title{margin-bottom:var(--ib-2);font-size:var(--ib-fs-16)}
+.event-date-picker__month{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-2)}
+.event-date-picker__month strong{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);text-transform:capitalize}
+.event-date-picker__month button,.event-date-picker__day{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:var(--ib-r);background:transparent;color:var(--ib-ink);cursor:pointer}
+.event-date-picker__month button:hover,.event-date-picker__day:hover{background:var(--ib-soft)}
+.event-date-picker__weekdays,.event-date-picker__days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));justify-items:center;gap:var(--ib-1);text-align:center}
+.event-date-picker__weekdays{margin-top:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-date-picker__day{width:100%;max-width:34px;font-size:var(--ib-fs-12);font-variant-numeric:tabular-nums}
+.event-date-picker__day.is-other-month{color:var(--ib-dim)}
+.event-date-picker__day.is-selected,.event-date-picker__day.is-selected:hover{background:var(--ib-action);color:var(--ib-on-action)}
+.event-date-picker__footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--ib-3);margin-top:var(--ib-3);padding-top:var(--ib-3)}
+.event-date-picker__time,.event-date-picker__actions{display:flex;align-items:center;gap:var(--ib-2)}
+.event-date-picker__time{font-size:var(--ib-fs-13)}
+.event-date-picker__time:has(.event-date-picker__time-hint),.event-date-picker__time:has(input:disabled){display:grid;justify-items:start;gap:4px}
+.event-date-picker__time-hint{max-width:220px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+.event-date-picker__time:has(input:disabled) input,.event-date-picker__time:has(input:disabled)>span:nth-of-type(2){display:none}
+.event-date-picker__time:has(input:disabled)::after{content:"Спочатку оберіть дату, щоб вказати час.";max-width:220px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:var(--ib-lh-ui)}
+.event-date-picker__time input{width:44px;height:32px;padding:0 var(--ib-1);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-ink);font:inherit;font-variant-numeric:tabular-nums;text-align:center}
+.event-date-picker__actions .ib-btn{min-height:32px;padding:0 var(--ib-3);font-size:var(--ib-fs-12)}
+@media(max-width:640px){.event-manage-choice-group{grid-template-columns:minmax(0,1fr)}}

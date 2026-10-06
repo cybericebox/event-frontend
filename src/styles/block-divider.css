@@ -1,0 +1,9 @@
+/* Block «divider» — space between blocks, optionally with one hairline.
+   Sizes: --sm 24 · default 48 · --lg 96 (px). --line draws a hairline in the content width.
+   Fields: {type:'divider', size:'sm'|'md'|'lg', line:false} */
+
+.ib-block.ib-block-divider{height:var(--ib-12);padding:0 var(--ib-block-px);border-top:0!important;display:flex;align-items:center}
+.ib-block-divider--sm{height:var(--ib-6)!important}
+.ib-block-divider--lg{height:96px!important}
+.ib-block-divider .ib-block__in{width:100%}
+.ib-block-divider--line .ib-block__in{height:1px;background:var(--ib-line)}

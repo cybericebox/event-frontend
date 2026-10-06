@@ -1,0 +1,51 @@
+/* Block states — empty, loading, load error, no access. One fixed combination each, always centred (horizontally and
+   vertically) inside the same block that shows the data, and the block keeps its size across loading → empty / error → data.
+   - empty     .ib-empty            ONE fixed icon (the tray, i-tray) + a message. Only the message changes with context. No per-context icons, no bare text, no tile under the icon.
+   - loading   .ib-empty--loading   the crest loader (on event sites the event logo) + an optional line for one specific stage. Nothing else.
+   - error     .ib-empty--error     LoadError: warning icon (i-warn) + title (the context message) + ONE help line + «Спробувати ще раз».
+   - no access .ib-empty--lock      NoAccess: lock icon (i-lock) + «Немає доступу» + one line. One look for every permission fallback.
+   Markup:
+     <div class="ib-empty" role="status"><span class="ib-empty__icon"><svg aria-hidden="true"><use href="assets/icons.svg#i-tray"/></svg></span>
+       <p class="ib-empty__text">Подій ще немає</p><div class="ib-empty__action">…one button…</div></div>
+     <div class="ib-empty ib-empty--loading" role="status" aria-live="polite"><img class="ib-crest" src="assets/crest-64.png" width="48" height="47" alt=""><p class="ib-empty__text">Шукаємо завдання</p></div>
+     <div class="ib-empty ib-empty--error" role="alert"><span class="ib-empty__icon"><svg aria-hidden="true"><use href="assets/icons.svg#i-warn"/></svg></span>
+       <p class="ib-empty__text">Не вдалося завантажити список</p><p class="ib-empty__help">Перевірте зʼєднання й повторіть.</p>
+       <div class="ib-empty__action"><button type="button" class="ib-btn ib-btn--sm">Спробувати ще раз</button></div></div>
+   Size: .ib-empty fills its block (min-height --ib-state-h, 200px by default; --fill = 100% of a block that already has a height;
+   --compact for popovers and dropdown lists). In a table the state is ONE full-width body cell under the header
+   (components/table: tbody.ib-table__state), never a replacement of <thead>.
+   Crest loader: .ib-crest pulses opacity only (no scale). Reduced motion keeps a slower, shallower pulse (not removed). */
+
+.ib-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--ib-3);
+  min-height:var(--ib-state-h,200px);padding:var(--ib-8) var(--ib-6);text-align:center;color:var(--ib-dim);
+}
+.ib-empty svg{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ib-empty__icon{display:flex;color:var(--ib-faint)}
+.ib-empty__text{max-width:40ch;color:var(--ib-ink);font-size:var(--ib-fs-15);font-weight:var(--ib-w-medium);line-height:var(--ib-lh-ui);text-wrap:balance}
+.ib-empty__text q,.ib-empty__query{font-family:var(--ib-mono);font-weight:var(--ib-w-regular);quotes:"«" "»"}
+.ib-empty__help{max-width:44ch;margin-top:calc(var(--ib-1) * -1);font-size:var(--ib-fs-13);color:var(--ib-dim);line-height:var(--ib-lh-ui)}
+.ib-empty__action{display:flex;gap:var(--ib-2);margin-top:var(--ib-1)}
+
+.ib-empty--fill{height:100%;min-height:0}
+.ib-empty--error .ib-empty__icon{color:var(--ib-danger)}
+.ib-empty--lock .ib-empty__icon{color:var(--ib-dim)}
+/* in popovers, dropdown lists and narrow columns */
+.ib-empty--compact{--ib-state-h:120px;padding:var(--ib-4);gap:var(--ib-2)}
+/* load error (EventLoadError): one line of help and an optional error code under the title */
+.ib-empty__hint{max-width:44ch;color:var(--ib-dim);font-size:var(--ib-fs-13);line-height:var(--ib-lh-ui);text-wrap:balance}
+.ib-empty__code{color:var(--ib-faint);font-family:var(--ib-mono);font-size:var(--ib-fs-12)}
+.ib-empty--compact .ib-empty__action{margin-top:0}
+/* left-aligned, inside a card row */
+.ib-empty--start{align-items:flex-start;text-align:left;padding-left:0;padding-right:0}
+
+/* crest loader — the platform crest (the event logo on event sites: pass its URL in src). Static file, cached, never inlined as data: */
+.ib-crest{display:block;width:48px;height:auto;flex:none;animation:ib-crest-pulse 1.6s ease-in-out infinite}
+.ib-crest--sm{width:20px}
+.ib-crest--lg{width:72px}
+@keyframes ib-crest-pulse{0%,100%{opacity:.45}50%{opacity:1}}
+/* reduced motion: shallower, slower pulse (the loader must still read as "working"); beats the global kill-switch in base.css */
+@media (prefers-reduced-motion:reduce){
+  .ib-crest{animation:ib-crest-pulse-soft 3.2s ease-in-out infinite!important}
+}
+@keyframes ib-crest-pulse-soft{0%,100%{opacity:.7}50%{opacity:1}}

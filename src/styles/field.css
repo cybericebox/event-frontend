@@ -1,0 +1,40 @@
+/* Field — label + control + hint + error.
+   <div class="ib-field">
+     <div class="ib-field__row"><label class="ib-field__label" for="x">Пароль<span class="ib-field__req" aria-hidden="true">*</span></label>
+       <a class="ib-link ib-field__aside" href="…">Відновити доступ</a></div>
+     control (.ib-input / .ib-select / .ib-input-wrap …)  with aria-describedby="x-hint x-err", aria-invalid when error
+     <p class="ib-field__hint" id="x-hint">…</p>
+     <p class="ib-field__error" id="x-err"><svg/>…</p>
+   </div>
+   .is-invalid on .ib-field shows the error; .ib-field__error:empty is hidden. --inline: label left, control right (settings).
+
+   One Field for the whole product (T12). Label 14/500, hint and error 13. Required marks are ONE component:
+   RequiredMark = <span class="ib-field__req"><span aria-hidden="true">*</span><span class="ib-sr"> обовʼязкове</span></span>
+   Optional = <span class="ib-field__opt">(необовʼязково)</span>; mark the minority (if most fields are required, mark the optional ones).
+   Wiring (IB.Field, field.js, or the same in React): label for= control id; aria-describedby lists ONLY ids that exist
+   (hint, and the error while it has text); aria-invalid="true" while the error shows; aria-required="true" for required controls.
+   Errors are inline under the control with role="alert"; a form-level error is .ib-form__error (role="alert") above the actions,
+   not a toast (toasts are for success). Forms are real <form> with noValidate and Ukrainian messages, so Enter submits, also in dialogs;
+   validation mode is "on touched, then on change". After a failed submit focus goes to the first invalid control (IB.Field.focusFirstInvalid).
+   Only the submit button shows busy; fields stay editable while saving. */
+
+.ib-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ib-field__row{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3)}
+.ib-field__label{font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium);color:var(--ib-ink);line-height:var(--ib-lh-ui)}
+.ib-field__opt{font-size:var(--ib-fs-13);font-weight:var(--ib-w-regular);color:var(--ib-dim);margin-left:6px}
+.ib-field__req{color:var(--ib-danger);margin-left:2px;font-weight:var(--ib-w-semibold)}
+.ib-field__aside{font-size:var(--ib-fs-13)}
+.ib-field__hint{font-size:var(--ib-fs-13);color:var(--ib-dim);line-height:var(--ib-lh-ui)}
+.ib-field__error{display:flex;gap:6px;align-items:flex-start;font-size:var(--ib-fs-13);color:var(--ib-danger);font-weight:var(--ib-w-medium);line-height:var(--ib-lh-ui)}
+.ib-field__error:empty{display:none}
+.ib-field__error>svg{width:16px;height:16px;flex:none;margin-top:0;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-field.is-disabled .ib-field__label{color:var(--ib-faint)}
+
+.ib-field--inline{display:grid;grid-template-columns:minmax(120px,200px) 1fr;column-gap:var(--ib-4);align-items:center}
+.ib-field--inline>.ib-field__hint,.ib-field--inline>.ib-field__error{grid-column:2}
+
+.ib-form{display:flex;flex-direction:column;gap:14px}
+.ib-form__error{display:flex;gap:6px;align-items:flex-start;padding:var(--ib-3);border:1px solid var(--ib-danger);border-radius:var(--ib-r);background:var(--ib-danger-bg);
+  font-size:var(--ib-fs-14);color:var(--ib-ink);line-height:var(--ib-lh-ui)}
+.ib-form__error:empty{display:none}
+.ib-form__error>svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--ib-danger);stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}

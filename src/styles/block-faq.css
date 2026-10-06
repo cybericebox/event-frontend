@@ -1,0 +1,5 @@
+/* Block «faq» — questions and answers on .ib-accordion (native details/summary, keyboard by default).
+   Fields: {type:'faq', title, sub, level, split, open:0 (index open at start, -1 = none), items:[{q, a}]}   a = HTML. */
+
+.ib-block-faq .ib-accordion{max-width:760px}
+.ib-block-faq .ib-accordion__a p+p{margin-top:var(--ib-2)}

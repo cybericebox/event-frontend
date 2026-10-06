@@ -1,0 +1,29 @@
+/* Copy field — mono value + «Копіювати» + optional external open. JS: IB.Copy (components/copy-field/copy-field.js)
+   <div class="ib-copy"><span class="ib-copy__value" title="…">10.10.4.21:31337</span>
+     <button class="ib-btn ib-btn--sm ib-copy__btn" data-ib-copy="10.10.4.21:31337"><svg copy/>Копіювати</button>
+     <a class="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" href="…" target="_blank" rel="noopener" aria-label="Відкрити сервіс"><svg ext/></a></div>
+   Copied state: .is-copied on the button (label «Скопійовано», ok colour) for 1.6 s. --code: large dashed invite code. */
+
+:root,[data-theme="light"]{--ib-copy-bg:var(--ib-paper)}   /* well: #F7F7F9 */
+[data-theme="dark"]{--ib-copy-bg:var(--ib-surface)}            /* well: #413F4E */
+
+.ib-copy{display:flex;align-items:center;gap:6px;min-width:0;padding:3px 3px 3px var(--ib-3);
+  border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-copy-bg)}
+.ib-copy__value{flex:1;min-width:0;font:var(--ib-w-regular) var(--ib-fs-13)/1.4 var(--ib-mono);color:var(--ib-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib-copy .ib-btn,.ib-copy .ib-icon-btn{background:var(--ib-raised)}
+.ib-copy .ib-btn:hover,.ib-copy .ib-icon-btn:hover{background:color-mix(in srgb,var(--ib-ink) 6%,var(--ib-raised))}
+.ib-copy__btn.is-copied{color:var(--ib-ok);border-color:currentColor}
+.ib-copy__idle,.ib-copy__done{display:inline-flex;align-items:center;gap:6px}
+.ib-copy__btn .ib-copy__done{display:none}
+.ib-copy__btn.is-copied .ib-copy__idle{display:none}
+.ib-copy__btn.is-copied .ib-copy__done{display:inline-flex}
+.ib-copy.is-disabled .ib-copy__value{color:var(--ib-faint)}
+.ib-copy__note{font-size:var(--ib-fs-13);color:var(--ib-dim);margin-top:6px}
+
+/* invite code: shows the whole value, no truncation */
+.ib-copy--code{display:inline-flex;border:0;background:none;padding:0;gap:var(--ib-3)}
+.ib-copy--code .ib-copy__value{flex:none;font-size:var(--ib-fs-16);letter-spacing:.04em;padding:6px 10px;border:1px dashed var(--ib-control);border-radius:var(--ib-r)}
+
+/* Local: the tooltip wrapper takes the value's place in the row. */
+.ib-copy__tip{flex:1;min-width:0}
+.ib-copy--code .ib-copy__tip{flex:none}

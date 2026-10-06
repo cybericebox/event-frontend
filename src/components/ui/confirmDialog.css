@@ -1,0 +1,7 @@
+/* ConfirmDialog — ds-v2 .ib-confirm on the native .ib-modal base (see
+   event-participant.css): 440 px, no close button, actions without a divider. */
+.ib-modal.event-confirm{width:440px}
+.event-confirm .ib-modal__body{gap:var(--ib-3);padding-top:var(--ib-3);padding-bottom:0}
+.event-confirm .ib-modal__foot{border-top:0;padding-top:var(--ib-5)}
+.event-confirm__subject{margin:0;color:var(--ib-ink);font-weight:var(--ib-w-semibold);overflow-wrap:anywhere}
+.event-confirm__error{margin:0;color:var(--ib-danger);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium)}

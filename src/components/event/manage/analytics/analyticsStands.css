@@ -1,0 +1,3 @@
+/* «Стенди»: the failures cell keeps its tooltip reachable from the keyboard. */
+.event-stands__failures{display:inline-flex;align-items:center;gap:var(--ib-2);cursor:default}
+.event-stands__failures:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}

@@ -1,0 +1,18 @@
+/* Block «facts» — key–value information: format, team size, dates, prizes, rules in short.
+   Layouts: strip (default: columns, big values) · rows (--rows: label column + text, hairlines; «Правила коротко»).
+   Fields: {type:'facts', title, sub, split, layout:'strip'|'rows', items:[[label, value]]}   value may hold inline HTML (links, .ib-num). */
+
+.ib-block-facts__list{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--ib-6) var(--ib-8)}
+.ib-block-facts__item{min-width:0;padding-top:var(--ib-3);border-top:1px solid var(--ib-line)}
+.ib-block-facts__item dt{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-block-facts__item dd{margin:var(--ib-1) 0 0;font-size:var(--ib-fs-20);font-weight:var(--ib-w-medium);letter-spacing:-.01em;line-height:1.25;color:var(--ib-ink)}
+/* rows */
+.ib-block-facts--rows .ib-block-facts__list{display:block;border-top:1px solid var(--ib-line)}
+.ib-block-facts--rows .ib-block-facts__item{display:grid;grid-template-columns:170px minmax(0,1fr);gap:var(--ib-4);padding:13px 0;border-top:0;border-bottom:1px solid var(--ib-line)}
+.ib-block-facts--rows .ib-block-facts__item dt{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.ib-block-facts--rows .ib-block-facts__item dd{margin:0;font-size:var(--ib-fs-14);font-weight:var(--ib-w-regular);letter-spacing:0;line-height:var(--ib-lh-body);color:var(--ib-body)}
+.ib-block-facts a{color:var(--ib-action)}
+.ib-mass .ib-block-facts__item{border-color:var(--ib-brand-line)}
+.ib-mass .ib-block-facts__item dt{color:var(--ib-on-brand-3)}
+.ib-mass .ib-block-facts__item dd{color:var(--ib-on-brand)}
+@container ib-blocks (max-width:520px){.ib-block-facts--rows .ib-block-facts__item{grid-template-columns:minmax(0,1fr);gap:2px}}

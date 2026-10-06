@@ -1,0 +1,113 @@
+/* /manage challenges group: «Налаштування», «Групи й порядок», «Завдання». */
+
+/* Sortable list: grip + main + actions on one thin row. */
+.event-sortable{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
+.event-sortable__row{display:flex;align-items:center;gap:var(--ib-2);min-width:0;min-height:44px;padding:0 var(--ib-2);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
+.event-sortable__row.is-selected{border-color:var(--ib-action);background:var(--ib-soft)}
+.event-sortable__grip{display:grid;place-items:center;flex:none;width:20px;height:28px;padding:0;border:0;background:transparent;color:var(--ib-dim);cursor:grab;touch-action:none}
+.event-sortable__grip:active{cursor:grabbing}
+.event-sortable__main{display:flex;align-items:center;flex:1;min-width:0;min-height:42px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left}
+button.event-sortable__main{cursor:pointer}
+.event-sortable__actions{display:flex;align-items:center;flex:none;gap:2px}
+
+/* «Групи й порядок»: groups | tasks of the selected group. */
+.event-group-order{display:grid;grid-template-columns:minmax(340px,440px) minmax(0,1fr);gap:var(--ib-5);align-items:start}
+.event-group-order__groups,.event-group-order__tasks{display:grid;gap:var(--ib-3);min-width:0}
+.event-group-order__head{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3)}
+.event-group-order__label{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3);width:100%;min-width:0}
+.event-group-order__label strong,.event-group-order__task strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-group-order__label small,.event-group-order__task small{flex:none;color:var(--ib-dim);font-size:var(--ib-fs-12);white-space:nowrap}
+.event-group-order__none{display:flex;align-items:center;min-height:44px;padding:0 var(--ib-3) 0 34px;border:1px dashed var(--ib-line);border-radius:var(--ib-r);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-group-order__none.is-selected{border-style:solid;border-color:var(--ib-action);background:var(--ib-soft)}
+.event-group-order__task{display:flex;align-items:center;gap:var(--ib-3);min-width:0}
+.event-group-order__task small{overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+.event-group-order__position{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:var(--ib-r);background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12)}
+
+/* «Завдання»: collapsible sets with thin task rows. */
+.event-exercise-set__head{cursor:pointer}
+.event-exercise-set__side{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-2)}
+.event-exercise-set__title h3{cursor:pointer}
+.event-exercise-set__toggle{margin-left:-6px}
+/* Icon-only row actions (set, task, group), like the constructor block
+   actions; removing last in danger colour. */
+.event-row-actions{display:flex;align-items:center;gap:var(--ib-1);flex:none}
+.event-row-actions__button{display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
+.event-row-actions__button:hover:not(:disabled,[aria-disabled="true"]){background:var(--ib-soft);color:var(--ib-ink)}
+.event-row-actions__button.is-danger{color:var(--ib-danger)}
+.event-row-actions__button.is-danger:hover:not(:disabled,[aria-disabled="true"]){background:var(--ib-danger-bg);color:var(--ib-danger)}
+.event-row-actions__button:disabled,.event-row-actions__button[aria-disabled="true"]{opacity:.35;cursor:not-allowed}
+.event-exercise-set__chevron,.event-task__chevron{flex:none;color:var(--ib-dim);transition:transform .15s ease}
+.event-exercise-set.is-open .event-exercise-set__chevron,.event-task.is-open .event-task__chevron{transform:rotate(90deg)}
+.event-exercise-set__body{display:grid;gap:var(--ib-3)}
+.event-exercise-set__warning{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-13);cursor:default}
+.event-exercise-set__warning strong{margin-right:var(--ib-1);font-weight:var(--ib-w-semibold)}
+.event-exercise-set__warning .ib-btn{flex:none}
+.event-exercise-picker .event-exercise-editor__search{width:100%}
+.event-exercise-picker .event-exercise-editor__search .event-manage-field{max-width:none}
+.event-exercise-picker__notice{margin:0;padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink);font-size:var(--ib-fs-13);line-height:var(--ib-lh-ui)}
+.event-exercise-picker__reason{grid-column:1/-1;color:var(--ib-danger);font-size:var(--ib-fs-12)}
+.event-manage-blockers{display:grid;gap:var(--ib-2);margin-bottom:var(--ib-5);padding:var(--ib-3) var(--ib-4);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger)}
+.event-manage-blockers p{margin:0;font-size:var(--ib-fs-13)}
+.event-manage-blockers h2{margin:0;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-manage-blockers ul{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none;font-size:var(--ib-fs-13)}
+.event-manage-blockers a{color:inherit;font-weight:var(--ib-w-semibold)}
+.event-task-list{display:grid;gap:var(--ib-1);margin:0;padding:0;list-style:none}
+.event-task{border:1px solid var(--ib-line);border-radius:var(--ib-r)}
+.event-task.is-open{border-color:var(--ib-control)}
+.event-task__row{display:flex;align-items:center;gap:var(--ib-2);width:100%;min-height:44px;padding:var(--ib-1) var(--ib-2);cursor:pointer}
+.event-task__toggle{display:grid;place-items:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:inherit;cursor:pointer}
+.event-task__toggle:hover{background:var(--ib-soft)}
+.event-task__text{display:flex;align-items:baseline;gap:var(--ib-3);flex:1;min-width:0}
+.event-task__text strong{flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
+.event-task__text span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-task__badges{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-1);flex:none}
+.event-task__hints{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:0 var(--ib-1);color:var(--ib-ink);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium)}
+.event-task__hints.is-hidden{color:var(--ib-dim);text-decoration:line-through;opacity:.7}
+.event-task__panel{display:grid;gap:var(--ib-5);padding:var(--ib-4) var(--ib-4) var(--ib-4) calc(var(--ib-3) + 16px + var(--ib-3));border-top:1px solid var(--ib-line)}
+.event-task__section{display:grid;gap:var(--ib-3)}
+.event-task__section+.event-task__section{padding-top:var(--ib-5);border-top:1px solid var(--ib-line)}
+.event-task__section h4{margin:0;font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold)}
+.event-task__fields{display:flex;flex-wrap:wrap;align-items:flex-start;gap:var(--ib-4)}
+.event-task__kind{width:240px}
+.event-task__number{width:160px}
+.event-task__summary{margin:0;align-self:flex-end;padding-bottom:10px;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-task__note{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-task__save{justify-self:start}
+
+/* «Налаштування». */
+.event-challenge-settings__kind{margin:0;padding:0;border:0}
+.event-challenge-settings__fields{display:grid;gap:var(--ib-4)}
+.event-challenge-settings__fields>.event-manage-field{max-width:280px}
+.event-challenge-settings__force{display:grid;gap:var(--ib-1);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
+.event-challenge-settings__switch{display:grid;gap:var(--ib-1)}
+.event-challenge-settings__force p,.event-challenge-settings__switch p{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+
+@media(max-width:900px){.event-group-order{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){
+  .event-task__row{flex-wrap:wrap}
+  .event-task__text{flex-basis:calc(100% - 40px);flex-direction:column;gap:2px}
+  .event-task__text strong{max-width:100%}
+  .event-task__badges{justify-content:flex-start;padding-left:28px}
+  .event-task__panel{padding:var(--ib-4)}
+  .event-task__kind,.event-task__number{width:100%}
+}
+
+/* A set's state (shown / hidden / cannot work) as one icon with a tooltip. */
+.event-set-status{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border-radius:var(--ib-r-sm);color:var(--ib-dim)}
+.event-set-status.is-broken,.event-set-status.is-broken svg{color:var(--ib-danger)}
+
+/* Row actions show on hover or keyboard focus (always on touch, and on an
+   expanded set); they keep their space, so nothing jumps. The status icon
+   and the chevron always show. */
+.event-sortable__actions,.event-exercise-set__head .event-row-actions{opacity:0;transition:opacity .12s ease}
+.event-sortable__row:hover .event-sortable__actions,.event-sortable__row:focus-within .event-sortable__actions,
+.event-exercise-set__head:hover .event-row-actions,.event-exercise-set__head:focus-within .event-row-actions,
+.event-exercise-set.is-open>.event-exercise-set__head .event-row-actions{opacity:1}
+@media (hover:none),(pointer:coarse){.event-sortable__actions,.event-exercise-set__head .event-row-actions{opacity:1}}
+@media (prefers-reduced-motion:reduce){.event-sortable__actions,.event-exercise-set__head .event-row-actions{transition:none}}
+
+/* The stage of one set (an instant select next to the board switch). */
+.event-exercise-set__stage{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2) var(--ib-3)}
+.event-exercise-set__stage-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-exercise-set__stage .event-select{min-width:200px}
+.event-exercise-set__stage-note{flex-basis:100%;margin:0}

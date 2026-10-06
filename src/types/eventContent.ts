@@ -1,0 +1,92 @@
+import {z} from "zod";
+
+export const ContentValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+export const ContentVariableSchema = z.object({name: z.string(), format: z.enum(["text", "number", "date-time", "boolean"])});
+export const ContentDateDisplaySchema = z.object({format: z.enum(["date-time", "date", "time", "short", "custom"]), pattern: z.string().optional()});
+export const ContentVisibilitySchema = z.object({variable: z.string(), operator: z.string(), value: ContentValueSchema});
+export const ContentRichTextSchema = z.object({root: z.object({type: z.literal("root"), children: z.array(z.unknown())}).passthrough()}).passthrough();
+export const PageBlockTypes = ["section", "text", "hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "divider", "partners"] as const;
+export const PartnerLogoSchema = z.object({name: z.string(), imageURL: z.string(), href: z.string().optional()});
+export const PartnerGroupSchema = z.object({title: z.string().optional(), items: z.array(PartnerLogoSchema)});
+export type PartnerGroup = z.infer<typeof PartnerGroupSchema>;
+export type PageBlockType = typeof PageBlockTypes[number];
+export const ContentBlockSchema = z.object({
+    id: z.string(),
+    type: z.enum(PageBlockTypes),
+    // Readable element id for links (#anchor, /slug#anchor).
+    anchor: z.string().optional(),
+    label: z.string().optional(),
+    richText: ContentRichTextSchema.optional(),
+    title: z.string().optional(),
+    sub: z.string().optional(),
+    text: z.string().optional(),
+    by: z.string().optional(),
+    kicker: z.string().optional(),
+    note: z.string().optional(),
+    tocTitle: z.string().optional(),
+    items: z.array(z.object({
+        label: z.string().optional(), value: z.string().optional(), richText: ContentRichTextSchema.optional(),
+        dateSource: z.enum(["event", "custom"]).optional(),
+        dateVariable: z.string().optional(), dateValue: z.string().optional(),
+        dateFormat: z.enum(["date-time", "date", "time", "short", "custom"]).optional(),
+        datePattern: z.string().optional(),
+    })).optional(),
+    targetVariable: z.string().optional(),
+    targetDate: z.string().optional(),
+    dateSource: z.string().optional(),
+    showFromSource: z.enum(["none", "event", "custom"]).optional(),
+    showFromVariable: z.string().optional(),
+    showFromDate: z.string().optional(),
+    hideAfterFinish: z.boolean().optional(),
+    layout: z.string().optional(),
+    verticalAlignment: z.string().optional(),
+    actionAlignment: z.string().optional(),
+    timerSize: z.string().optional(),
+    timerDisplay: z.enum(["segments", "compact", "tiles", "focus", "dial", "ledger", "poster", "tracks", "flip", "ticker", "stairs", "orbits", "matrix", "ribbon", "rings"]).optional(),
+    surface: z.string().optional(),
+    imageSource: z.string().optional(),
+    imageURL: z.string().optional(),
+    action: z.object({label: z.string(), kind: z.enum(["link", "join_event"]).optional(), href: z.string().optional()}).optional(),
+    secondaryAction: z.object({label: z.string(), kind: z.enum(["link", "join_event"]).optional(), href: z.string().optional()}).optional(),
+    variant: z.string().optional(),
+    widthPercent: z.number().int().min(50).max(100).multipleOf(5).optional(),
+    size: z.string().optional(),
+    line: z.boolean().optional(),
+    openItem: z.number().int().optional(),
+    groups: z.array(PartnerGroupSchema).optional(),
+    variables: z.array(ContentVariableSchema).optional(),
+    dateDisplays: z.record(z.string(), z.record(z.string(), ContentDateDisplaySchema)).optional(),
+    visibility: z.array(ContentVisibilitySchema).optional(),
+});
+export const ContentDocumentSchema = z.object({blocks: z.array(ContentBlockSchema)}).transform(document => {
+    const usedIDs = new Set(document.blocks.map(block => block.id));
+    const blocks: typeof document.blocks = [];
+    for (const block of document.blocks) {
+        if ((block.type !== "hero" && block.type !== "countdown") || (!block.action && !block.secondaryAction)) {
+            blocks.push(block);
+            continue;
+        }
+        const {action, secondaryAction, actionAlignment, ...withoutActions} = block;
+        blocks.push(withoutActions);
+        const primary = action ?? secondaryAction;
+        if (!primary) continue;
+        const baseID = `${block.id}-action`;
+        let id = baseID;
+        for (let suffix = 2; usedIDs.has(id); suffix++) id = `${baseID}-${suffix}`;
+        usedIDs.add(id);
+        blocks.push({id, type: "cta", action: primary, secondaryAction: action ? secondaryAction : undefined,
+            actionAlignment, variant: block.type === "hero" && block.variant === "mass" ? "mass" : "plain",
+            variables: block.variables, dateDisplays: block.dateDisplays, visibility: block.visibility});
+    }
+    return {blocks};
+});
+export const EventContentSchema = z.object({Landing: ContentDocumentSchema, Variables: z.record(z.string(), ContentValueSchema)});
+export const EventPageContentSchema = z.object({
+    Page: z.object({Slug: z.string(), Title: z.string(), Document: ContentDocumentSchema}),
+    Variables: z.record(z.string(), ContentValueSchema),
+});
+export type ContentDocument = z.infer<typeof ContentDocumentSchema>;
+export type ContentBlock = ContentDocument["blocks"][number];
+export type ContentValue = z.infer<typeof ContentValueSchema>;
+export type EventContent = z.infer<typeof EventContentSchema>;
+export type EventPageContent = z.infer<typeof EventPageContentSchema>;

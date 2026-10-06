@@ -1,0 +1,199 @@
+/* Timer — event countdown in mono. Four sizes: tower (sidebar on brand mass),
+   header (page head, on surface), hero (landing event panel on brand mass), screen (big screen / live band on brand mass).
+   Phase is always words: «До старту / Наживо / Остання година / Фініш». No dots, no pulse. */
+
+:root{
+  --ib-timer-warn-on-mass:#E8B45E; /* «Остання година» on #211A52 — 8.3:1, same in both themes */
+}
+
+.ib-timer{display:flex;flex-direction:column;gap:var(--ib-1);min-width:0;color:var(--ib-ink)}
+.ib-timer__phase{font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);color:var(--ib-dim);line-height:var(--ib-lh-ui);white-space:nowrap}
+.ib-timer__meta{font-size:var(--ib-fs-12);color:var(--ib-dim);line-height:var(--ib-lh-ui);white-space:nowrap}
+.ib-timer__meta .ib-num{font-size:inherit}
+.ib-timer__value{font-family:var(--ib-mono);font-weight:var(--ib-w-medium);font-variant-numeric:tabular-nums;line-height:1;
+  letter-spacing:-.04em;white-space:nowrap}
+.ib-timer__days{font-family:var(--ib-font);font-size:.55em;letter-spacing:0;color:var(--ib-dim);margin-right:.25em}
+
+/* phases */
+.ib-timer[data-phase="last-hour"] .ib-timer__phase{color:var(--ib-warn)}
+.ib-timer[data-phase="finish"] .ib-timer__value{color:var(--ib-dim)}
+
+/* size: page header — right aligned, 26px */
+.ib-timer--header{align-items:flex-end;text-align:right;gap:2px}
+.ib-timer--header .ib-timer__value{font-size:26px;line-height:1.05}
+.ib-timer--header .ib-timer__head{display:flex;gap:var(--ib-1);font-size:var(--ib-fs-12)}
+.ib-timer__head{display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.ib-timer__head .ib-timer__meta::before{content:"·";margin-right:6px}
+
+/* size: hero — landing «Найближча подія» on brand mass, 60 / 50 / 40px */
+.ib-timer--hero{gap:var(--ib-3)}
+.ib-timer--hero .ib-timer__head,.ib-timer--hero .ib-timer__phase,.ib-timer--hero .ib-timer__meta{font-size:var(--ib-fs-14)}
+.ib-timer--hero .ib-timer__value{font-size:60px;letter-spacing:-.05em}
+.ib-timer--segments{gap:var(--ib-3)}
+.ib-timer__parts{display:flex;justify-content:center;align-items:flex-end;gap:clamp(16px,3cqi,48px)}
+.ib-timer__part{display:grid;gap:var(--ib-2);min-width:0;text-align:center}
+.ib-timer__part strong{font:var(--ib-w-semibold) clamp(34px,5cqi,64px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.05em;color:var(--ib-ink)}
+.ib-timer__part span{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-timer--segments .ib-timer__meta{align-self:center;font-size:var(--ib-fs-13)}
+.ib-timer--compact .ib-timer__value{font-size:clamp(34px,5cqi,64px)}
+.ib-timer--compact .ib-timer__value{display:inline-flex;flex-wrap:wrap;align-items:baseline;column-gap:.35em;row-gap:.1em;max-width:100%;white-space:normal}
+.ib-timer__compact-days,.ib-timer__compact-clock{white-space:nowrap}
+.ib-block-hero.ib-mass .ib-timer--compact .ib-timer__value{color:var(--ib-on-brand)}
+.ib-block-hero--timer-xl .ib-timer--compact .ib-timer__value,.ib-block-countdown--timer-xl .ib-timer--compact .ib-timer__value{font-size:clamp(42px,7cqi,88px)}
+.ib-timer--tiles .ib-timer__parts{align-items:stretch;gap:clamp(6px,1cqi,12px)}
+.ib-timer--tiles .ib-timer__part{align-content:center;min-width:clamp(62px,8cqi,100px);padding:clamp(8px,1.4cqi,16px);border:1px solid var(--ib-line);border-radius:var(--ib-r-md);background:var(--ib-surface)}
+.ib-timer--tiles .ib-timer__part strong{font-size:clamp(30px,4cqi,54px)}
+.ib-block-hero.ib-mass .ib-timer--tiles .ib-timer__part{border-color:color-mix(in srgb,var(--ib-on-brand) 26%,transparent);background:color-mix(in srgb,var(--ib-on-brand) 9%,transparent)}
+.ib-timer--focus{gap:var(--ib-2)}
+.ib-timer__focus-main{display:flex;align-items:baseline;gap:var(--ib-2);font-variant-numeric:tabular-nums}
+.ib-timer__focus-main strong{font:var(--ib-w-semibold) clamp(72px,10cqi,120px)/.9 var(--ib-mono);letter-spacing:-.07em}
+.ib-timer__focus-main span{font-size:var(--ib-fs-14);color:var(--ib-dim)}
+.ib-timer__focus-rest{display:flex;flex-wrap:wrap;gap:var(--ib-3);padding-top:var(--ib-2);border-top:1px solid var(--ib-line);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-timer__focus-rest strong{font-family:var(--ib-mono);font-size:var(--ib-fs-20);font-variant-numeric:tabular-nums;color:var(--ib-ink)}
+.ib-timer--dial{flex-direction:row;align-items:center;gap:var(--ib-4)}
+.ib-timer__dial-face{position:relative;display:grid;place-content:center;flex:none;width:clamp(120px,15cqi,170px);aspect-ratio:1;text-align:center;font-variant-numeric:tabular-nums}
+.ib-timer__dial-face::before{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--ib-action) var(--ib-timer-progress),var(--ib-line) 0);mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px));content:""}
+.ib-timer__dial-face strong{font:var(--ib-w-semibold) clamp(36px,5cqi,62px)/1 var(--ib-mono);letter-spacing:-.05em}
+.ib-timer__dial-face span{font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-timer__dial-rest{display:grid;gap:var(--ib-1);min-width:0}
+.ib-timer__dial-rest>span{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3)}
+.ib-timer__dial-rest strong{font:var(--ib-w-medium) clamp(20px,3cqi,32px)/1 var(--ib-mono);font-variant-numeric:tabular-nums}
+.ib-timer__dial-rest small{font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-timer--ledger{width:clamp(220px,28cqi,320px);max-width:100%}
+.ib-timer__ledger-rows{width:100%}
+.ib-timer__ledger-rows>div{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-4);padding:var(--ib-1) 0;border-bottom:1px solid var(--ib-line)}
+.ib-timer__ledger-rows span{font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-timer__ledger-rows strong{font:var(--ib-w-medium) clamp(25px,3.5cqi,40px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.ib-timer--poster{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:end;gap:clamp(16px,3cqi,36px);width:max-content;max-width:100%}
+.ib-timer__poster-lead{display:grid;gap:var(--ib-2);line-height:1}
+.ib-timer__poster-lead>span{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);letter-spacing:.12em;text-transform:uppercase;color:var(--ib-dim)}
+.ib-timer__poster-lead>strong{font:var(--ib-w-semibold) clamp(80px,12cqi,144px)/.82 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.09em}
+.ib-timer__poster-rest{display:grid;grid-auto-flow:column;grid-auto-columns:max-content;align-items:end;gap:clamp(10px,1.7cqi,24px);padding-bottom:var(--ib-1)}
+.ib-timer__poster-rest>span{display:grid;gap:var(--ib-1);text-align:center}
+.ib-timer__poster-rest strong{font:var(--ib-w-medium) clamp(27px,4cqi,48px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.05em}
+.ib-timer__poster-rest small{font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-timer--poster .ib-timer__meta{grid-column:1/-1}
+.ib-timer--tracks{width:clamp(230px,35cqi,400px);max-width:100%;gap:var(--ib-3)}
+.ib-timer__tracks-days{display:flex;align-items:baseline;gap:var(--ib-2);margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.ib-timer__tracks-days strong{color:var(--ib-ink);font:var(--ib-w-semibold) clamp(32px,5cqi,54px)/1 var(--ib-mono);font-variant-numeric:tabular-nums}
+.ib-timer__tracks-list{display:grid;gap:var(--ib-3);width:100%}
+.ib-timer__tracks-row{display:grid;grid-template-columns:64px minmax(0,1fr) 38px;align-items:center;gap:var(--ib-2)}
+.ib-timer__tracks-row>span{font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-timer__tracks-row>strong{font:var(--ib-w-medium) var(--ib-fs-20)/1 var(--ib-mono);font-variant-numeric:tabular-nums;text-align:right}
+.ib-timer__tracks-bar{height:5px;overflow:hidden;border-radius:99px;background:var(--ib-line)}
+.ib-timer__tracks-bar::before{display:block;width:var(--ib-track-progress);height:100%;border-radius:inherit;background:var(--ib-action);content:""}
+.ib-timer--flip{max-width:100%}
+.ib-timer__flip-parts{display:flex;gap:clamp(5px,.8cqi,12px);max-width:100%}
+.ib-timer__flip-part{display:grid;min-width:clamp(58px,8cqi,92px);overflow:hidden;border-radius:var(--ib-r);background:var(--ib-brand);color:var(--ib-on-brand);text-align:center}
+.ib-timer__flip-part strong{position:relative;display:grid;place-items:center;min-height:clamp(58px,8cqi,90px);padding:var(--ib-2);font:var(--ib-w-semibold) clamp(32px,4.6cqi,54px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.06em}
+.ib-timer__flip-part strong::after{position:absolute;top:50%;right:0;left:0;border-top:1px solid color-mix(in srgb,var(--ib-on-brand) 35%,transparent);content:""}
+.ib-timer__flip-part span{padding:var(--ib-1) var(--ib-2) var(--ib-2);background:color-mix(in srgb,var(--ib-on-brand) 9%,transparent);font-size:var(--ib-fs-12);color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__focus-main span,.ib-mass .ib-timer__focus-rest,.ib-mass .ib-timer__dial-face span,.ib-mass .ib-timer__dial-rest small,.ib-mass .ib-timer__ledger-rows span{color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__poster-lead>span,.ib-mass .ib-timer__poster-rest small,.ib-mass .ib-timer__tracks-days,.ib-mass .ib-timer__tracks-row>span{color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__tracks-days strong{color:var(--ib-on-brand)}
+.ib-mass .ib-timer__tracks-bar{background:color-mix(in srgb,var(--ib-on-brand) 24%,transparent)}
+.ib-mass .ib-timer__tracks-bar::before{background:var(--ib-on-brand)}
+.ib-mass .ib-timer__flip-part{background:var(--ib-on-brand);color:var(--ib-brand)}
+.ib-mass .ib-timer__flip-part strong::after{border-color:color-mix(in srgb,var(--ib-brand) 32%,transparent)}
+.ib-mass .ib-timer__flip-part span{background:color-mix(in srgb,var(--ib-brand) 8%,transparent);color:var(--ib-brand)}
+/* Three distinct full-width presentations for page and hero countdowns. */
+.ib-timer--ticker{max-width:100%}
+.ib-timer__ticker-parts{display:flex;align-items:stretch;max-width:100%}
+.ib-timer__ticker-part{display:grid;align-content:end;gap:var(--ib-2);min-width:0;padding:var(--ib-2) clamp(10px,1.8cqi,24px);border-left:2px solid var(--ib-action)}
+.ib-timer__ticker-part:first-child{padding-left:0;border-left:0}
+.ib-timer__ticker-part span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.ib-timer__ticker-part strong{color:var(--ib-ink);font:var(--ib-w-semibold) clamp(36px,6cqi,78px)/.95 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.065em}
+.ib-timer--stairs{width:clamp(250px,36cqi,470px);max-width:100%}
+.ib-timer__stairs-list{display:grid;gap:5px;width:100%}
+.ib-timer__stairs-step{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-4);min-width:0;margin-left:calc(var(--ib-step)*12px);padding:var(--ib-2) var(--ib-3);border-left:4px solid var(--ib-action);background:var(--ib-soft)}
+.ib-timer__stairs-step strong{color:var(--ib-ink);font:var(--ib-w-semibold) clamp(28px,4cqi,46px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.05em}
+.ib-timer__stairs-step span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.ib-timer--orbits{max-width:100%}
+.ib-timer__orbits-list{display:flex;flex-wrap:wrap;gap:clamp(6px,1cqi,14px);max-width:100%}
+.ib-timer__orbits-unit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;width:clamp(78px,10cqi,120px);aspect-ratio:1;border:2px solid var(--ib-action);border-radius:50%;color:var(--ib-ink);text-align:center}
+.ib-timer__orbits-unit:nth-child(even){border-style:dashed}
+.ib-timer__orbits-unit strong{font:var(--ib-w-semibold) clamp(26px,4cqi,46px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.05em}
+.ib-timer__orbits-unit span{max-width:90%;margin-top:var(--ib-1);font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-mass .ib-timer__ticker-part{border-color:var(--ib-on-brand)}
+.ib-mass .ib-timer__ticker-part span,.ib-mass .ib-timer__stairs-step span,.ib-mass .ib-timer__orbits-unit span{color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__ticker-part strong,.ib-mass .ib-timer__orbits-unit{color:var(--ib-on-brand)}
+.ib-mass .ib-timer__stairs-step{border-color:var(--ib-on-brand);background:color-mix(in srgb,var(--ib-on-brand) 12%,transparent)}
+.ib-mass .ib-timer__stairs-step strong{color:var(--ib-on-brand)}
+.ib-mass .ib-timer__orbits-unit{border-color:var(--ib-on-brand)}
+.ib-block-hero--timer-xl .ib-timer__ticker-part strong,.ib-block-countdown--timer-xl .ib-timer__ticker-part strong{font-size:clamp(44px,7.5cqi,96px)}
+.ib-block-hero--timer-xl .ib-timer__stairs-step strong,.ib-block-countdown--timer-xl .ib-timer__stairs-step strong{font-size:clamp(36px,5cqi,58px)}
+.ib-block-hero--timer-xl .ib-timer__orbits-unit,.ib-block-countdown--timer-xl .ib-timer__orbits-unit{width:clamp(94px,12cqi,148px)}
+.ib-block-hero--timer-xl .ib-timer__orbits-unit strong,.ib-block-countdown--timer-xl .ib-timer__orbits-unit strong{font-size:clamp(34px,5cqi,58px)}
+@container ib-blocks (max-width:480px){.ib-timer__ticker-parts{flex-wrap:wrap;row-gap:var(--ib-3)}.ib-timer__ticker-part{flex:0 0 50%;padding:var(--ib-1) var(--ib-2)}.ib-timer__ticker-part:nth-child(odd){padding-left:0;border-left:0}.ib-timer__ticker-part strong,.ib-block-hero--timer-xl .ib-timer__ticker-part strong,.ib-block-countdown--timer-xl .ib-timer__ticker-part strong{font-size:clamp(36px,10cqi,52px)}.ib-timer__stairs-step{margin-left:calc(var(--ib-step)*6px)}.ib-timer__orbits-unit,.ib-block-hero--timer-xl .ib-timer__orbits-unit,.ib-block-countdown--timer-xl .ib-timer__orbits-unit{width:clamp(70px,20cqi,92px)}.ib-timer__orbits-unit strong,.ib-block-hero--timer-xl .ib-timer__orbits-unit strong,.ib-block-countdown--timer-xl .ib-timer__orbits-unit strong{font-size:clamp(25px,7cqi,38px)}}
+/* Matrix reads as a single 2×2 panel rather than four separate tiles. */
+.ib-timer--matrix{width:390px;max-width:100%}
+.ib-timer__matrix-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;width:100%;overflow:hidden;border:1px solid var(--ib-line);border-radius:var(--ib-r-md);background:var(--ib-line)}
+.ib-timer__matrix-cell{display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:104px;padding:var(--ib-3) var(--ib-4);background:var(--ib-surface)}
+.ib-timer__matrix-cell:first-child{background:var(--ib-brand);color:var(--ib-on-brand)}
+.ib-timer__matrix-cell span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.ib-timer__matrix-cell:first-child span{color:var(--ib-on-brand-2)}
+.ib-timer__matrix-cell strong{align-self:flex-end;font:var(--ib-w-semibold) clamp(36px,6cqi,64px)/.92 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.ib-mass .ib-timer__matrix-grid{border-color:var(--ib-on-brand-3);background:var(--ib-on-brand-3)}
+.ib-mass .ib-timer__matrix-cell{background:color-mix(in srgb,var(--ib-on-brand) 12%,var(--ib-brand));color:var(--ib-on-brand)}
+.ib-mass .ib-timer__matrix-cell:first-child{background:var(--ib-on-brand);color:var(--ib-brand)}
+.ib-mass .ib-timer__matrix-cell span{color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__matrix-cell:first-child span{color:var(--ib-brand)}
+/* Ribbon uses one continuous high-contrast strip, with no individual cards. */
+.ib-timer--ribbon{max-width:100%}
+.ib-timer__ribbon-strip{display:flex;flex-wrap:wrap;width:max-content;max-width:100%;overflow:hidden;border-radius:var(--ib-r-md);background:var(--ib-brand);color:var(--ib-on-brand)}
+.ib-timer__ribbon-unit{display:grid;align-content:center;justify-items:center;gap:var(--ib-2);min-width:92px;padding:var(--ib-3) clamp(14px,2cqi,28px);text-align:center}
+.ib-timer__ribbon-unit+.ib-timer__ribbon-unit{border-left:1px solid var(--ib-on-brand-3)}
+.ib-timer__ribbon-unit strong{font:var(--ib-w-semibold) clamp(35px,5.5cqi,68px)/.92 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.ib-timer__ribbon-unit span{font-size:var(--ib-fs-12);color:var(--ib-on-brand-2)}
+.ib-mass .ib-timer__ribbon-strip{background:var(--ib-on-brand);color:var(--ib-brand)}
+.ib-mass .ib-timer__ribbon-unit+.ib-timer__ribbon-unit{border-color:color-mix(in srgb,var(--ib-brand) 25%,transparent)}
+.ib-mass .ib-timer__ribbon-unit span{color:var(--ib-brand)}
+/* Rings show the remaining fraction of the current hour, minute and second. */
+.ib-timer--rings{max-width:100%}
+.ib-timer__rings-list{display:flex;flex-wrap:wrap;gap:var(--ib-3);max-width:100%}
+.ib-timer__rings-unit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;width:clamp(90px,12cqi,132px);aspect-ratio:1;color:var(--ib-ink);text-align:center}
+.ib-timer__rings-unit::before{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--ib-action) var(--ib-ring-progress),var(--ib-line) 0);mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px));content:""}
+.ib-timer__rings-unit strong{font:var(--ib-w-semibold) clamp(30px,4.4cqi,52px)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.ib-timer__rings-unit span{margin-top:var(--ib-1);font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.ib-mass .ib-timer__rings-unit{color:var(--ib-on-brand)}
+.ib-mass .ib-timer__rings-unit::before{background:conic-gradient(var(--ib-on-brand) var(--ib-ring-progress),color-mix(in srgb,var(--ib-on-brand) 24%,transparent) 0)}
+.ib-mass .ib-timer__rings-unit span{color:var(--ib-on-brand-2)}
+.ib-block-hero--timer-xl .ib-timer__matrix-cell,.ib-block-countdown--timer-xl .ib-timer__matrix-cell{min-height:126px}
+.ib-block-hero--timer-xl .ib-timer__matrix-cell strong,.ib-block-countdown--timer-xl .ib-timer__matrix-cell strong{font-size:clamp(48px,7cqi,78px)}
+.ib-block-hero--timer-xl .ib-timer__ribbon-unit strong,.ib-block-countdown--timer-xl .ib-timer__ribbon-unit strong{font-size:clamp(48px,7cqi,88px)}
+.ib-block-hero--timer-xl .ib-timer__rings-unit,.ib-block-countdown--timer-xl .ib-timer__rings-unit{width:clamp(112px,15cqi,160px)}
+@container ib-blocks (max-width:480px){.ib-timer__matrix-cell{min-height:90px;padding:var(--ib-2) var(--ib-3)}.ib-timer__matrix-cell strong,.ib-block-hero--timer-xl .ib-timer__matrix-cell strong,.ib-block-countdown--timer-xl .ib-timer__matrix-cell strong{font-size:clamp(34px,10cqi,54px)}.ib-timer__ribbon-strip{width:100%}.ib-timer__ribbon-unit{flex:1 0 50%;min-width:0;padding:var(--ib-2)}.ib-timer__ribbon-unit:nth-child(odd){border-left:0}.ib-timer__ribbon-unit:nth-child(n+3){border-top:1px solid var(--ib-on-brand-3)}.ib-timer__ribbon-unit strong,.ib-block-hero--timer-xl .ib-timer__ribbon-unit strong,.ib-block-countdown--timer-xl .ib-timer__ribbon-unit strong{font-size:clamp(36px,10cqi,55px)}.ib-timer__rings-list{display:grid;grid-template-columns:repeat(2,max-content)}.ib-timer__rings-unit,.ib-block-hero--timer-xl .ib-timer__rings-unit,.ib-block-countdown--timer-xl .ib-timer__rings-unit{width:clamp(76px,24cqi,108px)}.ib-timer__rings-unit strong{font-size:clamp(28px,8cqi,40px)}}
+.ib-mass .ib-timer__focus-rest strong{color:var(--ib-on-brand)}
+.ib-mass .ib-timer__focus-rest,.ib-mass .ib-timer__ledger-rows>div{border-color:color-mix(in srgb,var(--ib-on-brand) 28%,transparent)}
+.ib-mass .ib-timer__dial-face::before{background:conic-gradient(var(--ib-on-brand) var(--ib-timer-progress),color-mix(in srgb,var(--ib-on-brand) 22%,transparent) 0)}
+.ib-block-hero--timer-xl .ib-timer__focus-main strong,.ib-block-countdown--timer-xl .ib-timer__focus-main strong{font-size:clamp(92px,13cqi,150px)}
+.ib-block-hero--timer-xl .ib-timer__dial-face,.ib-block-countdown--timer-xl .ib-timer__dial-face{width:clamp(145px,19cqi,210px)}
+.ib-block-hero--timer-xl .ib-timer__ledger-rows strong,.ib-block-countdown--timer-xl .ib-timer__ledger-rows strong{font-size:clamp(34px,5cqi,54px)}
+.ib-block-hero--timer-xl .ib-timer__poster-lead>strong,.ib-block-countdown--timer-xl .ib-timer__poster-lead>strong{font-size:clamp(100px,15cqi,180px)}
+.ib-block-hero--timer-xl .ib-timer__tracks-days strong,.ib-block-countdown--timer-xl .ib-timer__tracks-days strong{font-size:clamp(42px,7cqi,72px)}
+.ib-block-hero--timer-xl .ib-timer__flip-part strong,.ib-block-countdown--timer-xl .ib-timer__flip-part strong{font-size:clamp(40px,6cqi,68px);min-height:clamp(72px,10cqi,110px)}
+@container ib-blocks (max-width:480px){.ib-timer--dial{gap:var(--ib-3)}.ib-timer__dial-face{width:112px}.ib-timer__focus-main strong{font-size:72px}.ib-block-hero--timer-xl .ib-timer__focus-main strong,.ib-block-countdown--timer-xl .ib-timer__focus-main strong{font-size:92px}.ib-block-hero--timer-xl .ib-timer__dial-face,.ib-block-countdown--timer-xl .ib-timer__dial-face{width:132px}}
+@container ib-blocks (max-width:480px){.ib-timer--poster{display:flex;flex-wrap:wrap;gap:var(--ib-3)}.ib-timer__poster-lead>strong{font-size:72px}.ib-timer__poster-rest{gap:var(--ib-2)}.ib-timer__poster-rest strong{font-size:26px}.ib-timer__flip-part{min-width:0;flex:1}.ib-timer__flip-part strong{min-height:56px;font-size:clamp(26px,7cqi,42px)}.ib-block-hero--timer-xl .ib-timer__flip-part strong,.ib-block-countdown--timer-xl .ib-timer__flip-part strong{min-height:68px;font-size:clamp(30px,8cqi,48px)}}
+@container ib-blocks (max-width:480px){.ib-timer--tiles .ib-timer__part{min-width:0;padding:8px}.ib-timer--tiles .ib-timer__part strong{font-size:clamp(26px,7cqi,42px)}.ib-timer--tiles .ib-timer__part span{font-size:var(--ib-fs-12)}}
+@media (max-width:1100px){.ib-timer--hero .ib-timer__value{font-size:50px}}
+@media (max-width:640px){.ib-timer--hero .ib-timer__value{font-size:40px}}
+
+/* size: tower — sits in the brand-mass sidebar, 28px */
+.ib-timer--tower{padding:14px var(--ib-4);color:var(--ib-on-brand)}
+.ib-timer--tower .ib-timer__value{font-size:28px;margin-top:2px}
+
+/* size: screen — projector / live band, scales with viewport height */
+.ib-timer--screen{align-items:flex-end;text-align:right;color:var(--ib-on-brand);gap:var(--ib-2)}
+.ib-timer--screen .ib-timer__head{font-size:clamp(14px,2vh,22px)}
+.ib-timer--screen .ib-timer__phase,.ib-timer--screen .ib-timer__meta{font-size:inherit}
+.ib-timer--screen .ib-timer__value{font-size:clamp(48px,11vh,120px);letter-spacing:-.055em;line-height:.9}
+
+/* on brand mass (tower, screen, or any .ib-mass parent) */
+.ib-timer--tower .ib-timer__phase,.ib-timer--screen .ib-timer__phase,.ib-mass .ib-timer__phase{color:var(--ib-on-brand-2)}
+.ib-timer--tower .ib-timer__meta,.ib-timer--screen .ib-timer__meta,.ib-mass .ib-timer__meta,
+.ib-timer--tower .ib-timer__days,.ib-timer--screen .ib-timer__days,.ib-mass .ib-timer__days{color:var(--ib-on-brand-2)}
+.ib-timer--tower[data-phase="last-hour"] .ib-timer__phase,.ib-timer--screen[data-phase="last-hour"] .ib-timer__phase,
+.ib-mass .ib-timer[data-phase="last-hour"] .ib-timer__phase{color:var(--ib-timer-warn-on-mass)}
+.ib-timer--tower[data-phase="finish"] .ib-timer__value,.ib-timer--screen[data-phase="finish"] .ib-timer__value,
+.ib-mass .ib-timer[data-phase="finish"] .ib-timer__value{color:var(--ib-on-brand-3)}
+.ib-mass .ib-timer{color:var(--ib-on-brand)}

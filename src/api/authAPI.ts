@@ -1,7 +1,8 @@
-import {baseAPI} from "@/api/baseAPI";
-import {AxiosResponse} from "axios";
-import {IResponse} from "@/types/api";
-
-export const signOut = async (): Promise<AxiosResponse<IResponse, any>> => {
-    return await baseAPI.post('/auth/sign-out')
+import {requireApiOrigin} from "@/utils/origins";
+export async function signOut(): Promise<void> {
+    const api = requireApiOrigin();
+    const response = await fetch(`${api}/api/auth/sign-out`, {
+        method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
+    });
+    if (!response.ok) throw new Error(`Sign-out failed: ${response.status}`);
 }

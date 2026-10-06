@@ -1,0 +1,116 @@
+import type {ManageConfig, ManageContent, ManageLifecycle} from "@/api/manage";
+import type {EventExerciseAttachment} from "@/api/manageChallenges";
+import type {EventMailSettings} from "@/api/manageMail";
+import type {ManageResources} from "@/api/manageResources";
+import {infrastructureMismatch} from "../exercises/attachmentModel";
+
+// done: nothing left to do. todo: a required step that is still open.
+// review: nothing is wrong, but the organizer has not looked at it yet (still open).
+// blocked: a required step that cannot finish until something is fixed.
+// optional: nothing is required; the default is fine, the page is there to tune it.
+export type SetupStatus = "done" | "todo" | "review" | "blocked" | "optional";
+export type SetupStepID = "participation" | "registration" | "schedule" | "challenges" | "scoring" | "pages" | "mail" | "results" | "resources" | "stands" | "publish";
+type SetupVars = Record<string, string | number>;
+// warning: an informational note under the step; it never changes the status.
+export type SetupStep = {id: SetupStepID; status: SetupStatus; href: string; detail: string; vars?: SetupVars; warning?: {detail: string; vars?: SetupVars}};
+
+// The part of a board task the hint warning reads.
+export type SetupBoardChallenge = {HintsEnabled: boolean; Hints: {Cost: number}[]};
+
+// Whatever has loaded so far; a missing part leaves its step out rather than guessing.
+export type SetupInput = {
+    config: ManageConfig;
+    lifecycle: ManageLifecycle;
+    attachments?: EventExerciseAttachment[];
+    content?: ManageContent;
+    mail?: EventMailSettings;
+    resources?: ManageResources;
+    // The tasks of every active set; without them the hint warning is left out.
+    challenges?: SetupBoardChallenge[];
+};
+
+// detail is a message key suffix under manage.setup.detail.
+export function buildSetupSteps({config, lifecycle, attachments, content, mail, resources, challenges}: SetupInput): SetupStep[] {
+    const steps: SetupStep[] = [];
+    const published = lifecycle.Status !== "not_published";
+
+    steps.push(config.Participation === null
+        ? {id: "participation", status: "todo", href: "/manage/participation-settings", detail: "participationPending"}
+        : {id: "participation", status: "done", href: "/manage/participation-settings", detail: config.Participation === 1 ? "participationTeams" : "participationSolo", vars: {size: config.MaxTeamSize}});
+
+    steps.push(config.Registration === 0
+        ? {id: "registration", status: "optional", href: "/manage/registration", detail: "registrationClosed"}
+        : {id: "registration", status: "done", href: "/manage/registration", detail: config.Registration === 1 ? "registrationApproval" : "registrationOpen"});
+
+    steps.push(lifecycle.Configured
+        ? {id: "schedule", status: "done", href: "/manage/schedule", detail: "scheduleSaved"}
+        : {id: "schedule", status: "todo", href: "/manage/schedule", detail: "schedulePending"});
+
+    if (attachments) {
+        const active = attachments.filter(item => item.Status === 0);
+        const blocked = active.filter(item => infrastructureMismatch(item, config.InfrastructureAllowed));
+        steps.push(blocked.length > 0
+            ? {id: "challenges", status: "blocked", href: "/manage/exercises", detail: "challengesBlocked", vars: {count: blocked.length}}
+            : active.length === 0
+                ? {id: "challenges", status: "todo", href: "/manage/exercises", detail: "challengesNone"}
+                : {id: "challenges", status: "done", href: "/manage/exercises", detail: "challengesReady", vars: {count: active.length}});
+        const unseen = (challenges ?? []).filter(challenge => challenge.Hints.length > 0
+            && (config.HintsDisabled || !challenge.HintsEnabled || challenge.Hints.every(hint => hint.Cost === 0))).length;
+        if (unseen > 0) steps[steps.length - 1].warning = {detail: "challengesHints", vars: {count: unseen}};
+
+        // Lab tasks need a reservation the platform administrator makes.
+        if (config.InfrastructureAllowed && resources && active.some(item => item.Infrastructure)) {
+            steps.push(resources.Reserved
+                ? {id: "resources", status: "done", href: "/manage/resources", detail: "resourcesReserved"}
+                : {id: "resources", status: "todo", href: "/manage/resources", detail: "resourcesNone"});
+        }
+    }
+
+    steps.push({id: "scoring", status: "optional", href: "/manage/challenge-settings", detail: "scoringDefault"});
+
+    if (content) {
+        // A new event has an empty home page nobody has built yet: only a saved draft or published blocks mean the organizer prepared it.
+        steps.push(content.LandingDraft
+            ? {id: "pages", status: "todo", href: "/manage/content/landing", detail: "pagesDraft"}
+            : content.Landing.blocks.length === 0
+                ? {id: "pages", status: "review", href: "/manage/content/landing", detail: "pagesUntouched"}
+                : {id: "pages", status: "done", href: "/manage/content/landing", detail: "pagesPublished"});
+    }
+
+    if (mail) {
+        const sender = mail.Identity.Sender.Address || mail.Inherited.Sender.Address;
+        steps.push(sender
+            ? {id: "mail", status: "done", href: "/manage/mail", detail: "mailReady"}
+            : {id: "mail", status: "optional", href: "/manage/mail", detail: "mailNoSender"});
+    }
+
+    steps.push({id: "results", status: "optional", href: "/manage/results-settings", detail: "resultsDefault"});
+
+    if (config.InfrastructureAllowed) {
+        const infra = lifecycle.Infrastructure;
+        steps.push(infra.HasDynamicLabs && !infra.CanStart
+            ? {id: "stands", status: "blocked", href: "/manage/labs", detail: "standsBlocked"}
+            : infra.HasDynamicLabs
+                ? {id: "stands", status: "done", href: "/manage/labs", detail: "standsReady"}
+                : {id: "stands", status: "optional", href: "/manage/labs", detail: "standsNone"});
+    }
+
+    // Publishing waits for every required step before it.
+    const open = steps.filter(step => step.status === "todo" || step.status === "review" || step.status === "blocked");
+    steps.push(published
+        ? {id: "publish", status: "done", href: "/manage/schedule", detail: "publishDone"}
+        : open.length > 0
+            ? {id: "publish", status: open.some(step => step.status === "blocked") ? "blocked" : "todo", href: "/manage/schedule", detail: "publishWaiting", vars: {count: open.length}}
+            : {id: "publish", status: "todo", href: "/manage/schedule", detail: "publishReady"});
+    return steps;
+}
+
+export type SetupSummary = {done: number; total: number; blocked: boolean; complete: boolean};
+
+// Optional steps are outside the count: they never hold the event back.
+export function summarizeSetup(steps: SetupStep[]): SetupSummary {
+    const required = steps.filter(step => step.status !== "optional");
+    const done = required.filter(step => step.status === "done").length;
+    const blocked = required.some(step => step.status === "blocked");
+    return {done, total: required.length, blocked, complete: !blocked && done === required.length};
+}

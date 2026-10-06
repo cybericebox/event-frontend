@@ -1,0 +1,39 @@
+/* Cookie consent: fixed to the bottom, non-blocking, hairline border instead of a shadow.
+   Banner = one line + two buttons; panel = categories with switches + two buttons.
+   Stacks under 640 px. Tokens only. */
+.cb-consent{position:fixed;z-index:60;left:var(--ib-4);right:var(--ib-4);bottom:var(--ib-4);margin:0 auto;max-width:880px;display:flex;align-items:center;gap:var(--ib-6);padding:var(--ib-4) var(--ib-5);background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-body);font-size:var(--ib-fs-14);line-height:var(--ib-lh-body)}
+.cb-consent:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.cb-consent a{color:var(--ib-ink);text-decoration:underline;text-underline-offset:3px}
+.cb-consent__text{flex:1;min-width:0}
+.cb-consent__actions{display:flex;align-items:center;gap:var(--ib-2);flex:none}
+
+.cb-consent--panel{display:block;max-width:360px;max-height:calc(100dvh - var(--ib-8));overflow-y:auto;padding:var(--ib-5)}
+.cb-consent__title{color:var(--ib-ink);font-size:var(--ib-fs-16);font-weight:var(--ib-w-semibold)}
+.cb-consent__cats{margin:var(--ib-3) 0 0;padding:0;list-style:none}
+.cb-consent__cats li{border-top:1px solid var(--ib-line)}
+.cb-consent__cat{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);padding:var(--ib-3) 0;cursor:pointer}
+.cb-consent__cat:has(:disabled){cursor:default}
+.cb-consent__name{display:block;color:var(--ib-ink);font-weight:var(--ib-w-medium)}
+.cb-consent__desc{display:block;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.cb-consent__policy{padding-top:var(--ib-3);border-top:1px solid var(--ib-line);color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.cb-consent__actions--panel{margin-top:var(--ib-4);justify-content:flex-end}
+
+/* switch: a native checkbox (role=switch) drawn as the ds-v2 .ib-switch — 32×18 track, 12px knob */
+.cb-switch{appearance:none;flex:none;position:relative;width:32px;height:18px;margin:0;border:1px solid var(--ib-control);border-radius:var(--ib-r-pill,999px);background:var(--ib-field-bg,var(--ib-surface));cursor:pointer;transition:background-color var(--ib-dur,160ms) var(--ib-ease,ease),border-color var(--ib-dur,160ms) var(--ib-ease,ease)}
+.cb-switch::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--ib-control);transition:transform var(--ib-dur,160ms) var(--ib-ease,ease),background-color var(--ib-dur,160ms) var(--ib-ease,ease)}
+.cb-switch:hover:not(:disabled,:checked){border-color:var(--ib-dim)}
+.cb-switch:hover:not(:disabled,:checked)::after{background:var(--ib-dim)}
+.cb-switch:checked{background:var(--ib-action);border-color:var(--ib-action)}
+.cb-switch:checked::after{transform:translateX(14px);background:var(--ib-on-action)}
+.cb-switch:disabled{opacity:.5;cursor:not-allowed}
+.cb-switch:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+
+@media (max-width:640px){
+  .cb-consent{flex-direction:column;align-items:stretch;gap:var(--ib-3);left:var(--ib-2);right:var(--ib-2);bottom:var(--ib-2)}
+  .cb-consent__actions>.ib-btn{flex:1}
+}
+
+/* «Налаштування файлів cookie» (event footer, 13 px): reads as a footer link */
+.cb-consent-link{padding:0;border:0;background:none;color:var(--ib-dim);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}
+.cb-consent-link:hover{color:var(--ib-ink)}
+.cb-consent-link:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}

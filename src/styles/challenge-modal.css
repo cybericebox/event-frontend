@@ -1,0 +1,82 @@
+/* Challenge modal — the only way to open a challenge. Centered, 640px, native <dialog>.
+   Header: category · points (+ «Розвʼязано» / «Оновлено» tags), name, close.
+   Tabs «Завдання» / «N рішень». Body: description with code, files with size,
+   host copy-field, flag field (wrong / checking / accepted), solves list.
+   Needs: button, icon-button, input, tag, tabs, copy-field. */
+
+.ib-cmodal{width:min(var(--ib-modal-w),calc(100vw - 32px));max-height:calc(100vh - 112px);margin:56px auto auto;padding:0;
+  display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-body);box-shadow:var(--ib-shadow-overlay)}
+dialog.ib-cmodal:not([open]){display:none}
+.ib-cmodal::backdrop{background:var(--ib-backdrop)}
+.ib-cmodal[open]{animation:ib-cmodal-in var(--ib-dur-move) var(--ib-ease)}
+@keyframes ib-cmodal-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* preview / inline: the same box without top-layer positioning */
+.ib-cmodal--static{position:static;margin:0;max-height:none;animation:none}
+
+.ib-cmodal__head{position:relative;padding:20px 24px 0}
+.ib-cmodal__meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-dim)}
+.ib-cmodal__meta .ib-num{color:var(--ib-ink)}
+.ib-cmodal__cat{min-width:0;max-width:100%}
+.ib-cmodal__cat>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib-cmodal__title{margin-top:5px;padding-right:44px;overflow-wrap:anywhere;font-size:var(--ib-fs-20);letter-spacing:-.02em;color:var(--ib-ink)}
+.ib-cmodal__title:focus{outline:none}
+.ib-cmodal__close{position:absolute;top:14px;right:14px}
+.ib-cmodal__tabs{margin-top:var(--ib-3);padding:0 24px}
+.ib-cmodal__tabs[data-pointer]>[role="tab"]:focus{outline:none}
+
+.ib-cmodal__body{min-height:0;overflow:auto;padding:20px 24px 24px}
+.ib-cmodal__body[hidden]{display:none}
+.ib-cmodal__desc{max-width:66ch;min-width:0;overflow-wrap:anywhere;color:var(--ib-body);line-height:var(--ib-lh-body)}
+.ib-cmodal__desc p+p{margin-top:10px}
+.ib-cmodal__desc pre{margin:10px 0 0;max-width:100%;padding:10px 12px;overflow:auto;border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-paper);
+  font:var(--ib-fs-13)/1.5 var(--ib-mono);color:var(--ib-ink)}
+.ib-cmodal__desc pre code{padding:0;background:none}
+
+.ib-cmodal__blk{margin-top:18px}
+.ib-cmodal__blk h3{margin:0 0 var(--ib-2);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);color:var(--ib-ink);letter-spacing:0}
+.ib-cmodal__files{margin:0;padding:0;list-style:none;border-top:1px solid var(--ib-line)}
+.ib-cmodal__file{display:flex;align-items:center;gap:10px;min-width:0;overflow-wrap:anywhere;min-height:36px;padding:var(--ib-2) 2px;border-bottom:1px solid var(--ib-line);
+  color:var(--ib-action);font-weight:var(--ib-w-medium);text-decoration:none}
+.ib-cmodal__file:hover{background:var(--ib-soft);text-decoration:none}
+.ib-cmodal__file[role="button"]{cursor:pointer}
+.ib-cmodal__file svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-cmodal__size{flex:none;margin-left:auto;font:var(--ib-fs-12) var(--ib-mono);color:var(--ib-dim);font-weight:var(--ib-w-regular)}
+.ib-cmodal__hint{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:var(--ib-fs-12);color:var(--ib-dim)}
+
+/* flag */
+.ib-cmodal__flag{margin-top:18px;padding-top:18px;border-top:1px solid var(--ib-line)}
+.ib-cmodal__flag label{display:block;margin-bottom:var(--ib-2);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.ib-cmodal__row{display:flex;gap:var(--ib-2)}
+.ib-cmodal__row .ib-input{flex:1;min-width:0}
+.ib-cmodal__msg{min-height:20px;margin-top:var(--ib-2);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);color:var(--ib-dim)}
+.ib-cmodal__msg.is-error{color:var(--ib-danger)}
+.ib-cmodal__msg.is-warn{color:var(--ib-warn)}
+.ib-cmodal__ok{display:flex;align-items:center;gap:10px;margin-top:18px;padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);
+  background:var(--ib-ok-bg);color:var(--ib-ok);font-weight:var(--ib-w-semibold)}
+.ib-cmodal__ok svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ib-cmodal__ok .ib-num{margin-left:auto;font-weight:var(--ib-w-medium)}
+
+/* Solves tab: fixed height, windowed rows of a fixed height. */
+.ib-solvers{display:flex;height:320px;flex-direction:column}
+.ib-solvers__scroll{flex:1 1 auto;min-height:0;overflow-y:auto}
+.ib-solvers__list{position:relative;margin:0;padding:0;list-style:none}
+.ib-solvers__row{position:absolute;right:0;left:0;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:var(--ib-2);padding:0 var(--ib-2);border-bottom:1px solid var(--ib-line);font-size:var(--ib-fs-13);color:var(--ib-ink)}
+.ib-solvers__row.is-own{background:var(--ib-soft);font-weight:var(--ib-w-semibold)}
+.ib-solvers__n{font-family:var(--ib-mono);color:var(--ib-faint)}
+.ib-solvers__name{display:flex;min-width:0;align-items:center;gap:var(--ib-2)}
+.ib-solvers__name .ib-tag{flex:none}
+.ib-solvers__name .ib-tag svg{margin-right:4px}
+.ib-solvers__tip{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib-solvers__time{font-family:var(--ib-mono);color:var(--ib-dim);white-space:nowrap}
+.ib-solvers__more{display:flex;min-height:40px;align-items:center;justify-content:center}
+.ib-solvers__sentinel{width:100%;height:1px}
+.ib-cmodal__empty{padding:26px 0;text-align:center;color:var(--ib-dim)}
+/* Solves tab: loader, empty and table share the compact state height. */
+.ib-cmodal__body--solves{display:flex;flex-direction:column;min-height:calc(160px + 44px)}
+.ib-cmodal__empty b{display:block;margin-bottom:var(--ib-1);color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+
+@media (max-width:560px){
+  .ib-cmodal{margin-top:16px;max-height:calc(100vh - 32px)}
+  .ib-cmodal__row{flex-direction:column}
+}

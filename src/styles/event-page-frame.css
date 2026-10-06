@@ -1,0 +1,34 @@
+/* One content frame for every participant-facing page (both shells): the navbar bar and
+   the footer row use the same 1280px width and 24px gutter, 16px on phones.
+   Mirrors src/styles/event.css; versioned because the development edge caches Next's CSS chunk. */
+.event-page-content{width:100%;max-width:1280px;margin:0 auto;padding:var(--ib-8) var(--ib-6) var(--ib-12)}
+.event-page-content:has(.ib-blocks){padding:0}
+/* The frame fills the height between the navbar and the footer, and so does the page in it:
+   empty, loading and error states centre in that whole area, not at its top. */
+.event-guest-main{display:flex;flex-direction:column}
+.event-page-content{display:flex;flex:1 0 auto;flex-direction:column}
+.event-page-content>:last-child{flex:1 0 auto}
+.event-page-content>.event-private-preview-banner:last-child{flex:none}
+.event-page-content .ib-board__empty,.event-challenges__countdown{display:flex;flex:1 0 auto;flex-direction:column;align-items:center;justify-content:center}
+/* The event footer is the platform credit alone. */
+.ib-footer--event .ib-footer__org>span:first-child{margin:0}
+.event-page-content>.event-shell-state{min-height:max(60dvh,240px);padding-inline:0;background:none}
+/* Constructor blocks keep their backgrounds to the 1280px frame, and their text on the navbar gutter. */
+.event-page-content .ib-blocks>.ib-block{--ib-block-px:var(--ib-6);--ib-block-max:none}
+@media(max-width:760px){.event-page-content .ib-blocks>.ib-block{--ib-block-px:var(--ib-4)}}
+.event-join-banner{max-width:none;margin:0 0 var(--ib-5)}
+.event-join-page{max-width:880px;margin:0 auto;padding:0}
+.event-join-card{padding:var(--ib-6)}
+.event-forms-page{max-width:none;margin:0}
+.event-results{max-width:none;margin:0;padding:0}
+.event-participation{max-width:none;margin:0}
+.event-private-preview-banner{padding:.75rem max(var(--ib-6),calc((100% - 1280px) / 2 + var(--ib-6)))}
+@media(max-width:760px){
+  .event-page-content{padding:var(--ib-6) var(--ib-4) var(--ib-10)}
+  .event-page-content:has(.ib-blocks){padding:0}
+  .event-landing,.event-page-content>.ib-blocks{padding:var(--ib-4) 0 var(--ib-8)}
+  .event-landing>.ib-blocks{padding:0}
+  .event-private-preview-banner{padding-inline:var(--ib-4)}
+  .ib-footer--event .ib-footer__inner{padding-inline:var(--ib-4)}
+}
+@media(max-width:600px){.event-join-banner{margin:0 0 var(--ib-4)}.event-join-page{padding:0}.event-join-card{padding:var(--ib-5)}}
