@@ -19,6 +19,11 @@
     "source": "e466cf40a67d06133353f680775b1025fb3348186f5aab051b6d48a28be859dd",
     "sha": "e466cf40a67d06133353f680775b1025fb3348186f5aab051b6d48a28be859dd"
   },
+  "tooltip.css": {
+    "kind": "copy",
+    "source": "b0e2c34642c8e9ab9705e803a9121dc398245e4e42ba5669672d2661ce7ae09e",
+    "sha": "b0e2c34642c8e9ab9705e803a9121dc398245e4e42ba5669672d2661ce7ae09e"
+  },
   "toc.css": {
     "kind": "copy",
     "source": "03d8b047a1684ae74a1ec2d47bbbe809fa156500d7e64ca24f2ba3af3925f235",
@@ -158,11 +163,6 @@
     "kind": "extended",
     "source": "98d6b5ebd09c90f7b4ef684c716fcdc434d587afe81c08a6848f043eee0a201f",
     "sha": "3ed1866b9782ce4c6bfff5aa63f8117743135c4646df1a782025204506e0d576"
-  },
-  "tooltip.css": {
-    "kind": "extended",
-    "source": "b0e2c34642c8e9ab9705e803a9121dc398245e4e42ba5669672d2661ce7ae09e",
-    "sha": "4ee375a7967adb3548237fb7116dbae7638e6aaefc2247d7ecb16668fd477ca2"
   },
   "tower.css": {
     "kind": "extended",

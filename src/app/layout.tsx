@@ -11,6 +11,7 @@ import "@/styles/hero.css";
 import "@/styles/accordion.css";
 import "@/styles/timer.css";
 import "@/styles/tooltip.css";
+import "@/styles/tooltip-local.css";
 import "@/styles/select.css";
 import "@/styles/block-facts.css";
 import "@/styles/block-partners.css";

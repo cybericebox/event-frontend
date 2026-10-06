@@ -47,15 +47,3 @@
 .ib-help:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
 .ib-help svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 @media (pointer:coarse){.ib-help{width:32px;height:32px}}
-
-/* Local (event): rich bubble content (.ib-tip__copy) */
-.ib-tip__bubble:has(.ib-tip__copy){max-width:min(320px,calc(100vw - 24px));padding:10px 12px;line-height:1.45}
-.ib-tip__copy{display:grid;gap:6px;min-width:0;white-space:normal}
-.ib-tip__point{position:relative;padding-left:12px;font-weight:var(--ib-w-regular)}
-.ib-tip__point::before{content:"•";position:absolute;left:0}
-
-/* Local: a closed bubble is scaled to a point so it never widens the page (horizontal scroll on phones). */
-.ib-tip__bubble{scale:0}
-@media (hover:hover){.ib-tip:hover>.ib-tip__bubble{scale:1}}
-.ib-tip:not(.ib-tip--help):has(:focus-visible)>.ib-tip__bubble,.ib-tip.is-open>.ib-tip__bubble{scale:1}
-.ib-tip.is-dismissed>.ib-tip__bubble{scale:0}
