@@ -58,7 +58,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // (An unknown event address answers without CORS headers; the query turns that into a 404.)
         if (failure === "notFound") return <EventUnavailableScreen />;
         // Any other failure (the backend answered with an error) is a load failure with a retry.
-        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} error={identity.error ?? access.error} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
+        return <EventErrorScreen page body={t("error.load.body")} error={identity.error ?? access.error} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
     }
     const event = identity.data!;
     return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>

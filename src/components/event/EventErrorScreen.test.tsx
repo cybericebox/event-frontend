@@ -64,3 +64,15 @@ describe("EventErrorScreen 500", () => {
         expect(body).not.toContain("x".repeat(201));
     });
 });
+
+describe("EventErrorScreen caller text", () => {
+    it("a backend 5xx shows the reported text over the caller body; a non-API failure keeps the caller body", () => {
+        const {unmount} = render(<EventErrorScreen onRetry={() => {}} body="Перевірте зʼєднання та спробуйте ще раз." error={{status: 503, code: 50310}} />);
+        expect(screen.getByText("Ми вже отримали звіт про цю помилку. Оновіть сторінку або поверніться назад.")).toBeTruthy();
+        expect(screen.queryByText("Перевірте зʼєднання та спробуйте ще раз.")).toBeNull();
+        expect(screen.getByRole("heading", {name: "Не вдалося завантажити сторінку"})).toBeTruthy();
+        unmount();
+        render(<EventErrorScreen onRetry={() => {}} body="Перевірте зʼєднання та спробуйте ще раз." error={new TypeError("fetch failed")} />);
+        expect(screen.getByText("Перевірте зʼєднання та спробуйте ще раз.")).toBeTruthy();
+    });
+});
