@@ -2,7 +2,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, renderHook} from "@testing-library/react";
 import {defaultLiveLayout, type LiveLayout} from "@/api/manageLive";
-import {liveAutosaveDelay, useLiveAutosave} from "./useLiveAutosave";
+import {liveAutosaveDelay, liveAutosaveRetryDelay, useLiveAutosave} from "./useLiveAutosave";
 
 const save = vi.hoisted(() => vi.fn());
 vi.mock("@/api/manageLive", async importOriginal => ({...await importOriginal<typeof import("@/api/manageLive")>(), saveManageLiveDraft: save}));
@@ -50,6 +50,16 @@ describe("live autosave", () => {
         await act(async () => {vi.advanceTimersByTime(liveAutosaveDelay);});
         expect(result.current.status).toBe("error");
         await act(async () => {result.current.retry();});
+        expect(save).toHaveBeenCalledTimes(2);
+        expect(result.current.status).toBe("saved");
+    });
+
+    it("retries a failed save on its own", async () => {
+        save.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(undefined);
+        const {result} = setup(changed);
+        await act(async () => {vi.advanceTimersByTime(liveAutosaveDelay);});
+        expect(result.current.status).toBe("error");
+        await act(async () => {vi.advanceTimersByTime(liveAutosaveRetryDelay);});
         expect(save).toHaveBeenCalledTimes(2);
         expect(result.current.status).toBe("saved");
     });

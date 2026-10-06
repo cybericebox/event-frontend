@@ -6,6 +6,7 @@ import {saveManageLiveDraft, type LiveLayout} from "@/api/manageLive";
 export type LiveSaveState = "saved" | "pending" | "saving" | "error" | "invalid";
 
 export const liveAutosaveDelay = 800;
+export const liveAutosaveRetryDelay = 5000;
 
 // The editor keeps the draft saved on its own: every valid change is written
 // shortly after the last edit. The draft is never shown on the screen until
@@ -48,6 +49,14 @@ export function useLiveAutosave({eventID, layout, savedJSON, valid, enabled, onS
         const timer = setTimeout(() => void save(), liveAutosaveDelay);
         return () => clearTimeout(timer);
     }, [enabled, valid, json, savedBody, save]);
+
+    // A failed save is retried on its own, so a brief network drop does not leave the draft unsaved.
+    const failed = state.status === "error" && state.json === json;
+    useEffect(() => {
+        if (!enabled || !valid || !failed || json === savedBody) return;
+        const timer = setTimeout(() => void save(), liveAutosaveRetryDelay);
+        return () => clearTimeout(timer);
+    }, [enabled, valid, failed, json, savedBody, save]);
 
     const dirty = json !== savedBody;
     useEffect(() => {
