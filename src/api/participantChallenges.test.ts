@@ -47,7 +47,7 @@ describe("getChallengeSolves", () => {
 describe("openLabLink", () => {
     it("posts the device to the team route, or the manage route for the moderators team", async () => {
         const {openLabLink} = await import("./participantChallenges");
-        fetchMock.mockImplementation(async () => reply({Data: {url: "https://web-abc123.labs.test/_auth?t=x", expires_at: "2026-09-30T13:00:00Z"}}));
+        fetchMock.mockImplementation(async () => reply({Data: {URL: "https://web-abc123.labs.test/_auth?t=x", ExpiresAt: "2026-09-30T13:00:00Z"}}));
         expect(await openLabLink("e1", "c1", "web", 80)).toEqual({url: "https://web-abc123.labs.test/_auth?t=x", expiresAt: Date.parse("2026-09-30T13:00:00Z")});
         await openLabLink("e1", "c1", "web", 80, true);
         expect(fetchMock.mock.calls[0][0]).toMatch(/\/api\/events\/e1\/teams\/challenges\/c1\/lab\/link$/);

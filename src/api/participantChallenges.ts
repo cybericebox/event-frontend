@@ -187,8 +187,8 @@ export async function openLabLink(eventID: string, challengeID: string, device: 
         body: JSON.stringify({Device: device, Port: port}),
     });
     if (!response.ok) throw await failure(response);
-    const data = z.object({Data: z.object({url: z.string(), expires_at: z.string()})}).parse(await response.json()).Data;
-    return {url: data.url, expiresAt: new Date(data.expires_at).getTime()};
+    const data = z.object({Data: z.object({URL: z.string(), ExpiresAt: z.string()})}).parse(await response.json()).Data;
+    return {url: data.URL, expiresAt: new Date(data.ExpiresAt).getTime()};
 }
 
 // Idempotent per team: a repeat returns the first unlock. Cost is 0 once solved or finished.
