@@ -45,7 +45,9 @@ function ShellContent({children, event, unavailable}: Props) {
     const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
     const isLive = pathname === "/live";
     const slug = pathname.slice(1);
-    const isContentPage = pathname === "/" || pathname.startsWith("/p/") || (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && !reservedPageSlugs.has(slug));
+    // Pages a guest reads too: while the account loads they stay in the guest frame (navbar and footer
+    // in place) instead of flashing the full-page loader. /join and /invite are guest pages for the same reason.
+    const isContentPage = pathname === "/" || pathname.startsWith("/p/") || pathname === "/scoreboard" || pathname === "/join" || pathname === "/invite" || (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && !reservedPageSlugs.has(slug));
     const currentUser = useQuery({
         queryKey: ["event-current-user"], queryFn: getCurrentUser,
         enabled: !!event && !unavailable && !isManagement && !isLive,

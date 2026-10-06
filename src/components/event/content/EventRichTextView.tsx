@@ -61,7 +61,7 @@ export function EventRichTextView({value, variables = {}, links = {}, dateDispla
                 const raw = variables[name];
                 const display = dateDisplays?.[name];
                 const text = typeof raw === "string" && display && !Number.isNaN(Date.parse(raw)) ? formatDateTime(raw, display.format, display.pattern)
-                    : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? name : String(raw);
+                    : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? "—" : String(raw);
                 const formats = Array.isArray(node.formats) ? node.formats : [];
                 const href = variableHref(links[name]);
                 if (href) return <a key={key} className="event-lexical__link" href={href} target="_blank" rel="noopener noreferrer" data-event-variable={name}>{text}</a>;

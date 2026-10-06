@@ -1,5 +1,11 @@
 /* Local event application adjustments around the copied ds-v2 primitives. */
-html{background:var(--ib-paper)!important}
+/* The sticky navbar: 60px bar + 1px line (56 + 1 under 760px). Anchors, the document TOC and the
+   category headers all clear it through this one token. */
+:root{--event-navbar-h:61px}
+@media(max-width:760px){:root{--event-navbar-h:57px}}
+html{background:var(--ib-paper)!important;scroll-padding-top:calc(var(--event-navbar-h) + var(--ib-4))}
+.event-page-content .ib-block-doc .ib-toc{--ib-toc-top:calc(var(--event-navbar-h) + var(--ib-4))}
+.event-page-content .ib-block-prose h2,.event-page-content .ib-block-prose h3{scroll-margin-top:calc(var(--event-navbar-h) + var(--ib-4))}
 body.event-root{display:block;min-height:100dvh;background:var(--ib-paper)!important;color:var(--ib-body);font:var(--ib-w-regular) var(--ib-fs-14)/var(--ib-lh-body) var(--ib-font)}
 body.event-root main{overflow-x:visible}
 .event-guest-shell{display:flex;min-height:100dvh;flex-direction:column;background:var(--ib-paper)}
@@ -96,6 +102,9 @@ body.event-root main{overflow-x:visible}
 /* Route loading, content errors: centred in the content frame, not the viewport. */
 .event-page-content>.event-shell-state{min-height:max(60dvh,240px);padding-inline:0;background:none}
 .event-join-banner{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-4);margin:0 0 var(--ib-5);padding:var(--ib-4) var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);font-size:var(--ib-fs-14)}
+/* On block pages the frame has no padding: keep the join banners on the navbar gutter, not edge to edge. */
+.event-page-content:has(.ib-blocks)>.event-join-banner{margin:var(--ib-4) var(--ib-6)}
+@media(max-width:760px){.event-page-content:has(.ib-blocks)>.event-join-banner{margin:var(--ib-4)}}
 .event-join-page{max-width:880px;margin:0 auto}
 .event-join-card{display:grid;gap:var(--ib-5);padding:var(--ib-6);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
 .event-join-card h1,.event-join-card h2,.event-join-card h3,.event-join-card p{margin:0}
@@ -105,12 +114,10 @@ body.event-root main{overflow-x:visible}
 .event-join-card>.ib-btn{justify-self:end}
 .event-join-back{justify-self:start;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-join-form{display:grid;gap:var(--ib-5);padding-top:var(--ib-4);border-top:1px solid var(--ib-line)}
-.event-join-form>p,.event-join-question>p{color:var(--ib-dim);font-size:var(--ib-fs-13)}
-.event-join-question{display:grid;gap:var(--ib-2)}
+.event-join-form>p{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 fieldset.event-join-question{border:0;margin:0;padding:0;min-width:0}
-.event-join-question>label:first-child{display:flex;align-items:baseline;gap:3px;font-size:var(--ib-fs-14)}
-.event-join-input{width:100%;min-height:40px;padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-body);font:inherit}
-.event-join-input:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
+fieldset.event-join-question>legend{margin-bottom:6px;padding:0}
+.event-form-textarea{height:auto;min-height:96px;padding:var(--ib-2) var(--ib-3);resize:vertical}
 .event-join-options{display:grid;gap:var(--ib-2)}
 .event-join-choice{display:flex;align-items:center;gap:var(--ib-2);font-size:var(--ib-fs-14)}
 .event-join-choice input{accent-color:var(--ib-action)}
@@ -132,7 +139,7 @@ fieldset.event-join-question{border:0;margin:0;padding:0;min-width:0}
 .event-forms-page__detail-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-3)}
 .event-forms-page__detail-head h2{font-size:var(--ib-fs-18)}
 .event-forms-page__detail-head span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
-.event-forms-page__detail>.ib-btn{justify-self:end}
+.event-forms-page__detail>.ib-btn,.event-join-form>.ib-btn[type="submit"]{justify-self:end}
 .event-forms-page__state{display:grid;gap:var(--ib-3)}
 @media(max-width:720px){.event-forms-page__layout{grid-template-columns:minmax(0,1fr)}}
 .event-shell-state{display:flex;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;gap:var(--ib-4);padding:var(--ib-6);background:var(--ib-paper);color:var(--ib-body);text-align:center}

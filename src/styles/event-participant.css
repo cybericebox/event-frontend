@@ -14,7 +14,7 @@
 
 /* The page scrolls, not the board: category headers stick under the 60px navbar. */
 .event-board .ib-board__body{overflow:visible}
-.event-board .ib-board__cat{top:61px}
+.event-board .ib-board__cat{top:var(--event-navbar-h)}
 .event-board .ib-board__bar{position:relative;z-index:3}
 
 /* «Рейка»: the toolbar sits above the rail like in prototypes/event.html */
