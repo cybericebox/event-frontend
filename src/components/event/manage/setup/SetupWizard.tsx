@@ -35,7 +35,7 @@ export function SetupWizard() {
     const percent = summary.total === 0 ? 0 : Math.round(summary.done / summary.total * 100);
     const state = summary.complete ? "complete" : summary.blocked ? "blocked" : "progress";
     return <div className="event-manage-setup event-setup">
-        <header className="event-manage-heading"><div><p className="event-manage-eyebrow">{t("manage.overview.eyebrow")}</p><h1>{t("manage.setup.title")}</h1><p>{t("manage.setup.intro")}</p></div><Link className="ib-btn" href="/">{t("manage.overview.viewSite")} <ArrowUpRight size={16} /></Link></header>
+        <header className="event-manage-heading"><div><h1>{t("manage.setup.title")}</h1><p>{t("manage.setup.intro")}</p></div><Link className="ib-btn" href="/">{t("manage.overview.viewSite")} <ArrowUpRight size={16} /></Link></header>
         <ChallengeBlockers eventID={eventID} />
         <div className="event-manage-setup__summary" role="status">
             <div><span className="event-manage-setup__summary-label">{t("manage.setup.summary.label")}</span><strong>{t(`manage.setup.summary.${state}`)}</strong><p>{t(`manage.setup.summary.${state}Text`)}</p></div>
