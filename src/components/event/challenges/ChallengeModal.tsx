@@ -56,7 +56,7 @@ function CopyField({value, onOpen, linkPending = false}: {value: string; onOpen?
     const [copied, setCopied] = useState(false);
     return <div className="ib-copy">
         <EventTooltip content={value} className="ib-copy__tip" truncated>{() => <span className="ib-copy__value">{value}</span>}</EventTooltip>
-        <button type="button" className={`ib-btn ib-btn--sm ib-copy__btn${copied ? " is-copied" : ""}`} aria-label={t("challenges.copy.aria")} onClick={() => {
+        <button type="button" className={`ib-btn ib-btn--sm ib-copy__btn${copied ? " is-copied" : ""}`} aria-label={t("challenges.copy.ariaFor", {value})} onClick={() => {
             void navigator.clipboard?.writeText(value).then(() => {
                 setCopied(true);
                 window.setTimeout(() => setCopied(false), 1600);
@@ -65,12 +65,13 @@ function CopyField({value, onOpen, linkPending = false}: {value: string; onOpen?
             <span className="ib-copy__idle">{ICON.copy}{t("challenges.copy.idle")}</span>
             <span className="ib-copy__done">{ICON.check}{t("challenges.copy.done")}</span>
         </button>
+        <span className="ib-sr" role="status">{copied ? t("challenges.copy.done") : ""}</span>
         {onOpen && linkPending && <span className="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" role="status" aria-label={t("challenges.lab.starting")}><BusyMark /></span>}
         {onOpen && !linkPending && <button type="button" className="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" onClick={onOpen} aria-label={t("challenges.host.open")}>{ICON.ext}</button>}
     </div>;
 }
 
-function HostBlock({lab, pending, link, busyKey, onOpen, onRetry}: {lab: LabRuntime | undefined; pending: boolean; link: LabLinkState; busyKey: string | null; onOpen: (device: string, port: number) => void; onRetry: () => void}) {
+function HostBlock({lab, pending, error, link, busyKey, onOpen, onRetry, onReload}: {lab: LabRuntime | undefined; pending: boolean; error?: unknown; link: LabLinkState; busyKey: string | null; onOpen: (device: string, port: number) => void; onRetry: () => void; onReload: () => void}) {
     const access = lab?.Access ?? [];
     const web = access.some(item => /^https?$/i.test(item.Protocol) || !!item.URL);
     return <section className="ib-cmodal__blk">
@@ -80,6 +81,7 @@ function HostBlock({lab, pending, link, busyKey, onOpen, onRetry}: {lab: LabRunt
                 const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
                 return <CopyField key={`${item.Device}-${item.Port}`} value={value} onOpen={item.URL ? () => onOpen(item.Device, item.Port) : undefined} linkPending={busyKey === `${item.Device}:${item.Port}`} />;
             })}</div>
+            : error ? <EventLoadError compact error={error} message={t("challenges.host.loadFailed")} onRetry={onReload} />
             : <p className="ib-cmodal__hint">{pending && <BusyMark />}{pending ? t("challenges.host.checking") : queueLine(lab?.Queue) ?? t("challenges.host.preparing")}</p>}
         {link.status === "error" && <EventLoadError compact error={link.error} message={labLinkErrorMessage(link.error)} onRetry={onRetry} />}
         <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>
@@ -200,6 +202,8 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const opener = useRef<Element | null>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
     const flagRef = useRef<HTMLInputElement>(null);
+    const taskTabRef = useRef<HTMLButtonElement>(null);
+    const solvesTabRef = useRef<HTMLButtonElement>(null);
     const id = useId();
     const vpn = useEventVpn();
     const [tab, setTab] = useState<"task" | "solves">("task");
@@ -213,6 +217,8 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const [practiceAnswer, setPracticeAnswer] = useState(false);
     const [spend, setSpend] = useState<AttemptSpend>(NO_SPEND);
     const [waitUntil, setWaitUntil] = useState(0);
+    // The announced text stays constant (the full wait); only the visible countdown ticks.
+    const [waitTotal, setWaitTotal] = useState(0);
     const [now, setNow] = useState(() => Date.now());
     const challengeID = challenge?.EventChallengeID;
     const moderators = mode === "moderators";
@@ -234,7 +240,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
         if (challengeID && !dialog.open) {
             opener.current = document.activeElement;
             dialog.showModal();
-            (flagRef.current ?? titleRef.current)?.focus();
+            titleRef.current?.focus();
         } else if (!challengeID && dialog.open) {
             dialog.close();
         }
@@ -316,6 +322,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             } else if (error instanceof ParticipantChallengeError && error.status === 429) {
                 const seconds = error.retryAfter ?? 30;
                 setWaitUntil(Date.now() + seconds * 1000);
+                setWaitTotal(seconds);
                 setNow(Date.now());
                 setMessage(null);
             } else {
@@ -371,10 +378,10 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             </header>
             <div className="ib-tabs ib-cmodal__tabs" role="tablist" aria-label={t("challenges.modal.sections")} data-pointer={pointer || undefined}
                 onPointerDown={() => setPointer(true)} onKeyDownCapture={() => setPointer(false)}>
-                <button type="button" role="tab" id={`${id}-tab1`} aria-controls={`${id}-p1`} aria-selected={tab === "task"} tabIndex={tab === "task" ? 0 : -1} onClick={() => setTab("task")}
-                    onKeyDown={event => { if (solvesVisible && ["ArrowRight", "ArrowLeft", "End"].includes(event.key)) { event.preventDefault(); setTab("solves"); } }}>{t("challenges.modal.taskTab")}</button>
-                {solvesVisible && <button type="button" role="tab" id={`${id}-tab2`} aria-controls={`${id}-p2`} aria-selected={tab === "solves"} tabIndex={tab === "solves" ? 0 : -1} onClick={() => setTab("solves")}
-                    onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{challenge.SolveCount !== null ? t("challenges.modal.solvesTabCount", {count: challenge.SolveCount}) : t("challenges.modal.solvesTab")}</button>}
+                <button type="button" role="tab" id={`${id}-tab1`} ref={taskTabRef} aria-controls={`${id}-p1`} aria-selected={tab === "task"} tabIndex={tab === "task" ? 0 : -1} onClick={() => setTab("task")}
+                    onKeyDown={event => { if (solvesVisible && ["ArrowRight", "ArrowLeft", "End"].includes(event.key)) { event.preventDefault(); setTab("solves"); solvesTabRef.current?.focus(); } }}>{t("challenges.modal.taskTab")}</button>
+                {solvesVisible && <button type="button" role="tab" id={`${id}-tab2`} ref={solvesTabRef} aria-controls={`${id}-p2`} aria-selected={tab === "solves"} tabIndex={tab === "solves" ? 0 : -1} onClick={() => setTab("solves")}
+                    onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); taskTabRef.current?.focus(); } }}>{challenge.SolveCount !== null ? t("challenges.modal.solvesTabCount", {count: challenge.SolveCount}) : t("challenges.modal.solvesTab")}</button>}
             </div>
             <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
                 <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
@@ -385,7 +392,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
-                {challenge.Infrastructure && !moderators && <HostBlock lab={lab.data} pending={lab.isPending} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
+                {challenge.Infrastructure && !moderators && <HostBlock lab={lab.data} pending={lab.isPending} error={lab.isError && !lab.data ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}
@@ -399,9 +406,11 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                             onChange={event => { setAnswer(event.target.value); if (message?.tone === "error") setMessage(null); if (moderators) setAccepted(false); }} />
                         <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy}>{t("challenges.modal.submit")}</EventButton>
                     </div>
-                    <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role="alert">
-                        {waiting ? t("challenges.modal.rateLimited", {seconds: waitSeconds}) : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
+                    {/* While waiting, the visible countdown ticks silently; one status announces the full wait once. */}
+                    <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role={waiting ? undefined : "alert"}>
+                        {waiting ? <span aria-hidden="true">{t("challenges.modal.rateLimited", {seconds: waitSeconds})}</span> : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
                     </p>
+                    {waiting && <span className="ib-sr" role="status">{t("challenges.modal.rateLimited", {seconds: waitTotal})}</span>}
                     {left !== null && left > 0 && <p className="ib-cmodal__hint" id={`${id}-left`}>{t("challenges.modal.attemptsLeft", {count: left})}</p>}
                 </form>}
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import {useNow} from "./useNow";
 import {useState} from "react";
 import Link from "next/link";
 import {useQuery} from "@tanstack/react-query";
@@ -30,7 +31,7 @@ export function ParticipationPage() {
     const guest = useGuestEvent();
     const staff = useStaffAccess(guest?.EventID);
     const linkCode = useLinkCode();
-    const [now] = useState(() => Date.now());
+    const now = useNow();
     const [selected, setSelected] = useState<string | null>(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("tab"));
     const event = access?.event ?? guest;
     const teamMode = event?.Participation === 1;

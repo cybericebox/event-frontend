@@ -1,5 +1,6 @@
 "use client";
 
+import {useNow} from "./useNow";
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -136,8 +137,8 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         }
     };
     const memberActions = (member: TeamMember) => !preview && captain && manage && !member.Own && !member.Pending && <>
-        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
-        {remove && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>}
+        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" aria-label={t("participation.team.makeCaptainFor", {name: member.DisplayName})} onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
+        {remove && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" aria-label={t("participation.team.kickFor", {name: member.DisplayName})} onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>}
     </>;
     const min = team.MinTeamSize ?? info?.MinTeamSize;
     const max = team.MaxTeamSize ?? info?.MaxTeamSize;
@@ -207,7 +208,7 @@ export function TeamTab() {
     const linkCode = useLinkCode();
     const event = access?.event ?? guest;
     const registration = useParticipation(event?.EventID, !!event);
-    const [now] = useState(() => Date.now());
+    const now = useNow();
     const previewing = !access && staff.staff;
     const previewStats = useParticipationStats(event?.EventID, {preview: previewing, enabled: previewing});
     if (!event) return <EventLoading label={t("participation.loading")} />;

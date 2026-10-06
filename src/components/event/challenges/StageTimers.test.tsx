@@ -40,4 +40,12 @@ describe("stage timers", () => {
         act(() => {vi.advanceTimersByTime(3000);});
         expect(zero).toHaveBeenCalled();
     });
+
+    it("fires the refetch once per target, not every second afterwards", () => {
+        vi.setSystemTime(T);
+        const zero = vi.fn();
+        render(<StageTimers board={{CurrentStage: {...stage, EndsAt: "2026-10-01T10:00:02Z"}, NextOpensAt: null}} offset={0} onZero={zero} />);
+        act(() => {vi.advanceTimersByTime(10_000);});
+        expect(zero).toHaveBeenCalledTimes(1);
+    });
 });

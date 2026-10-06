@@ -5,6 +5,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {toast} from "react-hot-toast";
 import {getOwnBoard, type BoardStage, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
 import {getModeratorsBoard} from "@/api/moderatorsBoard";
 import {getManageAccess} from "@/api/manage";
@@ -53,6 +54,13 @@ function useBoardFilters(): [BoardFilters, (next: BoardFilters) => void] {
         window.history.replaceState(window.history.state, "", `${pathname}${boardFilterSearch(search, next)}${hash}`);
     };
     return [filters, update];
+}
+
+// A failed background poll with data on screen is a toast; the board and an open modal stay (only the first load shows LoadError).
+function useRefreshFailedToast(failed: boolean, at: number) {
+    useEffect(() => {
+        if (failed) toast.error(t("challenges.refreshFailed"), {id: "event-challenges-refresh"});
+    }, [failed, at]);
 }
 
 function Page({banners, sub, view, onView, countdown, children}: {banners?: ReactNode; sub?: ReactNode; view?: BoardView; onView?: (view: BoardView) => void; countdown?: ReactNode; children?: ReactNode}) {
@@ -125,11 +133,15 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     const access = useQuery({queryKey: ["event-management-access", event.EventID], queryFn: () => getManageAccess(event.EventID), retry: false, refetchOnWindowFocus: false});
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
     const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: () => getModeratorsBoard(event.EventID), enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
+    useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (access.isPending) return <EventLoading label={t("challenges.loading")} />;
     if (!access.data?.CanManage) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
     const banner = <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
-    if (board.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (board.isError) return <Page banners={banner}><EventLoadError message={t("challenges.moderators.unavailableTitle")} error={board.error} onRetry={() => void board.refetch()} /></Page>;
+    if (!board.data) {
+        return <Page banners={banner}>{board.isPending
+            ? <EventLoading label={t("challenges.loading")} />
+            : <EventLoadError message={t("challenges.moderators.unavailableTitle")} error={board.error} onRetry={() => void board.refetch()} />}</Page>;
+    }
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
         <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode finished={finished} showDifficulty showHints
             userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner}
@@ -169,6 +181,7 @@ export function ChallengesBoard() {
         return () => clearTimeout(timer);
     }, [nextChangeAt, offset, refetchBoard]);
 
+    useRefreshFailedToast(challenges.isError && !!challenges.data, challenges.errorUpdatedAt);
     if (!event) return <EventLoading label={t("challenges.loading")} />;
     if (!participant) return <ModeratorsBoard event={event} finished={finished} />;
 
@@ -191,8 +204,11 @@ export function ChallengesBoard() {
     </div>;
     if (!started) return <Page countdown={countdown}><EmptyState message={t("challenges.beforeStart")} /></Page>;
     if (!ownTeam.Formed) return <Page countdown={countdown}><EmptyState message={t("challenges.teamNotFormed")} /></Page>;
-    if (challenges.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (challenges.isError) return <Page banners={finishedBanner || undefined} countdown={countdown}><EventLoadError message={t("challenges.loadFailed.title")} error={challenges.error} onRetry={() => void challenges.refetch()} /></Page>;
+    if (!challenges.data) {
+        return <Page banners={finishedBanner || undefined} countdown={countdown}>{challenges.isPending
+            ? <EventLoading label={t("challenges.loading")} />
+            : <EventLoadError message={t("challenges.loadFailed.title")} error={challenges.error} onRetry={() => void challenges.refetch()} />}</Page>;
+    }
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data.Challenges} stages={challenges.data.Stages} nextOpensAt={challenges.data.NextOpensAt} teamMode={teamMode} finished={finished}
         showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}

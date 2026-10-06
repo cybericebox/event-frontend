@@ -13,8 +13,11 @@
 .ib-ranking-note{margin:calc(var(--ib-2) - var(--ib-4)) 0 0;font-size:var(--ib-fs-12);color:var(--ib-faint)}
 
 /* The page scrolls, not the board: category headers stick under the 60px navbar. */
-.event-board .ib-board__body{overflow:visible}
 .event-board .ib-board__cat{top:var(--event-navbar-h)}
+.event-board{flex:1 1 auto}
+.event-board .ib-board__body{display:flex;flex:1 1 auto;flex-direction:column;overflow:visible}
+.event-board .ib-board__sec{flex:none}
+.event-board .ib-board__state{flex:1 1 auto}
 .event-board .ib-board__bar{position:relative;z-index:3}
 
 /* «Рейка»: the toolbar sits above the rail like in prototypes/event.html */

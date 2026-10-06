@@ -3,7 +3,7 @@
 // Categorized inbox (docs/INBOX-DESIGN.md §3, §8): a one-to-one copy of main-frontend's
 // components/site/InboxButton.tsx; only imports and styling (src/styles/event-inbox.css) differ.
 
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {createPortal} from "react-dom";
 import DOMPurify from "isomorphic-dompurify";
@@ -67,7 +67,10 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     const [counts, setCounts] = useState<InboxCounts | null>(null);
     const [otherEvents, setOtherEvents] = useState(0);
     const [error, setError] = useState("");
-    const [resolving, setResolving] = useState<string | null>(null);
+    // Resolves go through one promise chain, so quick clicks never race; the list refetches once the chain is empty.
+    const resolveQueue = useRef<Promise<void>>(Promise.resolve());
+    const resolvesPending = useRef(0);
+    const clientReady = useSyncExternalStore(() => () => {}, () => true, () => false);
     const cursorRef = useRef<InboxCursor | null>(null);
     const unreadCountRef = useRef(0);
     const countsRef = useRef<InboxCounts | null>(null);
@@ -118,7 +121,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         return () => observer.disconnect();
     }, [open, olderCursor, lastItemID, loading, loadOlder]);
 
-    const refresh = useCallback((): Promise<Message[] | null> => {
+    const refresh = useCallback((clearOnError = false): Promise<Message[] | null> => {
         const revision = ++listRevisionRef.current;
         const current = tabRef.current;
         return getInbox(inboxQuery(current, eventId))
@@ -137,7 +140,12 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                 setError("");
                 return list;
             })
-            .catch(() => { setError(t("inbox.loadError")); return null; })
+            .catch(() => {
+                // After a tab switch the kept items belong to the other tab: on failure they must go.
+                if (clearOnError && revision === listRevisionRef.current) setItems([]);
+                setError(t("inbox.loadError"));
+                return null;
+            })
             .finally(() => { if (revision === listRevisionRef.current) setLoading(false); });
     }, [eventId]);
 
@@ -221,12 +229,9 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     const selectTab = useCallback((next: InboxTab) => {
         tabRef.current = next;
         setTab(next);
-        setItems([]);
-        setOlderCursor(null);
-        olderCursorRef.current = null;
-        setLoading(true);
+        // The previous items stay until the new tab's arrive: the list never flashes the loader.
         scrollAreaRef.current?.scrollTo({top: 0});
-        void refresh();
+        void refresh(true);
     }, [refresh]);
 
     const openInbox = useCallback((next: boolean) => {
@@ -286,27 +291,40 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         window.location.assign(href);
     }
 
-    // «Вирішено» closes a «Лабораторія впала» request for every recipient (§8.2).
-    async function resolve(item: Message) {
+    // «Вирішено» closes a «Лабораторія впала» request for every recipient (§8.2). The row shows as resolved at once;
+    // on a failure the list is refetched (the rollback) and the reason is shown.
+    function resolve(item: Message) {
         setError("");
-        setResolving(item.ID);
-        let failure = "";
-        try {
-            await resolveInboxRequest(item.ID);
-            if (countsRef.current) applyCounts(countsAfterResolve(countsRef.current, item));
-            if (isUnread(item)) {
-                unreadCountRef.current = Math.max(0, unreadCountRef.current - 1);
-                setUnread(unreadCountRef.current);
-            }
-            announceRead();
-        } catch (err) {
-            // 30217 not found, 20218 not resolvable by hand, 70219 already resolved: show why, then the current state.
-            failure = apiErrorMessage(err instanceof InboxError ? err.code : undefined);
+        const now = new Date().toISOString();
+        const previousCounts = countsRef.current;
+        const previousUnread = unreadCountRef.current;
+        setItems(list => list.map(entry => entry.ID === item.ID ? {...entry, ResolvedAt: now, Resolution: "resolved", ReadAt: entry.ReadAt ?? now} : entry));
+        if (countsRef.current) applyCounts(countsAfterResolve(countsRef.current, item));
+        if (isUnread(item)) {
+            unreadCountRef.current = Math.max(0, unreadCountRef.current - 1);
+            setUnread(unreadCountRef.current);
         }
-        setResolving(null);
-        await refresh();
-        if (failure) setError(failure);
-        else pollNowRef.current();
+        resolvesPending.current += 1;
+        resolveQueue.current = resolveQueue.current.then(async () => {
+            let failure = "";
+            try {
+                await resolveInboxRequest(item.ID);
+                announceRead();
+            } catch (err) {
+                // 30217 not found, 20218 not resolvable by hand, 70219 already resolved: show why, then the current state.
+                failure = apiErrorMessage(err instanceof InboxError ? err.code : undefined);
+            }
+            resolvesPending.current -= 1;
+            // The server's answer applies only when no newer change is waiting.
+            if (failure || resolvesPending.current === 0) await refresh();
+            if (failure) {
+                // Rollback of the counters; the refetch above restored the row.
+                if (previousCounts) applyCounts(previousCounts);
+                unreadCountRef.current = previousUnread;
+                setUnread(previousUnread);
+                setError(failure);
+            } else if (resolvesPending.current === 0) pollNowRef.current();
+        });
     }
 
     // «Позначити прочитаним» acts on the current tab only.
@@ -384,8 +402,8 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                                 </span>}
                                 actions={href || unreadItem || canResolve(item) ? <>
                                     {href ? <a href={href} onClick={clickEvent => { clickEvent.preventDefault(); void followLink(item, href); }}>{t("inbox.open")}</a> : unreadItem ? <button type="button" onClick={() => void markRead(item)}>{t("inbox.markRead")}</button> : null}
-                                    {canResolve(item) && <button type="button" className="event-notifications__resolve" disabled={resolving !== null} aria-busy={resolving === item.ID} onClick={() => void resolve(item)}>
-                                        {resolving === item.ID ? <EventLoading compact label={t("common.loading")} /> : <Check size={14} aria-hidden="true" />}{t("inbox.resolve")}
+                                    {canResolve(item) && <button type="button" className="event-notifications__resolve" onClick={() => resolve(item)}>
+                                        <Check size={14} aria-hidden="true" />{t("inbox.resolve")}
                                     </button>}
                                 </> : undefined}
                             />
@@ -398,7 +416,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                 </a>}
             </PopoverContent>
         </Popover>
-        {popIns.length > 0 && createPortal(<div className="event-notifications__popins" aria-live="polite">
+        {clientReady && createPortal(<div className="event-notifications__popins" aria-live="polite">
             {popIns.slice(0, 3).map(item => <NotificationPopIn key={item.ID} message={item} onClose={() => setPopIns(current => current.filter(entry => entry.ID !== item.ID))} onAction={href => { const safe = safeHref(href); if (safe) void followLink(item, safe); }} />)}
         </div>, document.body)}
     </>;
