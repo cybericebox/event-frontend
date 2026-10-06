@@ -340,7 +340,7 @@ describe("Доброчесність", () => {
         expect(within(row).getByText("Olena")).toBeTruthy();
         fireEvent.click(within(row).getByRole("button", {name: "Прибрати"}));
         const dialog = await screen.findByRole("alertdialog");
-        expect(within(dialog).getByRole("button", {name: "Прибрати"}).className).toContain("ib-btn--primary");
+        expect(within(dialog).getByRole("button", {name: "Прибрати"}).className).toContain("ib-btn--danger");
         fireEvent.click(within(dialog).getByRole("button", {name: "Прибрати"}));
         await waitFor(() => expect(calls.some(call => call.method === "DELETE" && call.url.endsWith(`/dismissals/${dismissal.ID}`))).toBe(true));
         await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());

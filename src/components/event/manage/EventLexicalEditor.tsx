@@ -24,6 +24,7 @@ import type {ContentVariableDefinition} from "../content/variableCatalog";
 import {EventTooltip} from "../../ui/EventTooltip";
 import {EventVariableNode, EventVariableProvider, $createEventVariableNode, $isEventVariableNode, $toggleSelectedEventVariableFormat} from "./EventVariableNode";
 import {t} from "@/i18n/t";
+import {useRovingToolbar} from "./useRovingToolbar";
 
 export type EventRichTextEditorProps = {
     value: ContentRichText | null;
@@ -116,6 +117,8 @@ function Toolbar({variables, onInsertVariable, onEditLink}: Pick<EventRichTextEd
     const [formats, setFormats] = useState<Set<string>>(new Set());
     const [block, setBlock] = useState("paragraph");
     const [alignment, setAlignment] = useState("left");
+    const toolbarRef = useRef<HTMLDivElement>(null);
+    useRovingToolbar(toolbarRef);
     const [linkOpen, setLinkOpen] = useState(false);
     const [link, setLink] = useState("");
     const [variableOpen, setVariableOpen] = useState(false);
@@ -162,7 +165,7 @@ function Toolbar({variables, onInsertVariable, onEditLink}: Pick<EventRichTextEd
     const headingOptions = [{value: "h1", label: t("manage.editor.toolbar.heading1"), icon: <Heading1 size={16} />}, {value: "h2", label: t("manage.editor.toolbar.heading2"), icon: <Heading2 size={16} />}, {value: "h3", label: t("manage.editor.toolbar.heading3"), icon: <Heading3 size={16} />}, {value: "h4", label: t("manage.editor.toolbar.heading4"), icon: <Heading4 size={16} />}, {value: "h5", label: t("manage.editor.toolbar.heading5"), icon: <Heading5 size={16} />}, {value: "h6", label: t("manage.editor.toolbar.heading6"), icon: <Heading6 size={16} />}];
     const alignmentOptions = [{value: "left", label: t("manage.editor.toolbar.alignLeft"), icon: <AlignLeft size={16} />}, {value: "center", label: t("manage.editor.toolbar.alignCenter"), icon: <AlignCenter size={16} />}, {value: "right", label: t("manage.editor.toolbar.alignRight"), icon: <AlignRight size={16} />}, {value: "justify", label: t("manage.editor.toolbar.alignJustify"), icon: <AlignJustify size={16} />}];
     const AlignIcon = ({left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify} as const)[alignment as "left" | "center" | "right" | "justify"] ?? AlignLeft;
-    return <div className="event-lexical__toolbar-wrap"><div className="event-lexical__toolbar" role="toolbar" aria-label={t("manage.editor.toolbar.label")}>
+    return <div className="event-lexical__toolbar-wrap"><div className="event-lexical__toolbar" role="toolbar" aria-label={t("manage.editor.toolbar.label")} ref={toolbarRef}>
         <span className="event-lexical__group"><Tool label={t("manage.editor.toolbar.bold")} active={formats.has("bold")} onClick={() => formatText("bold")} icon={<Bold size={16} />} /><Tool label={t("manage.editor.toolbar.italic")} active={formats.has("italic")} onClick={() => formatText("italic")} icon={<Italic size={16} />} /><Tool label={t("manage.editor.toolbar.underline")} active={formats.has("underline")} onClick={() => formatText("underline")} icon={<Underline size={16} />} /><Tool label={t("manage.editor.toolbar.strikethrough")} active={formats.has("strikethrough")} onClick={() => formatText("strikethrough")} icon={<Strikethrough size={16} />} /></span>
         <span className="event-lexical__group"><Menu label={t("manage.editor.toolbar.heading")} icon={<Heading1 size={16} />} options={headingOptions} onOpen={remember} onSelect={value => restore(() => formatBlock(value))} /><Tool label={t("manage.editor.toolbar.paragraph")} active={block === "paragraph"} onClick={() => formatBlock("paragraph")} icon={<Pilcrow size={16} />} /></span>
         <span className="event-lexical__group"><Menu label={t("manage.editor.toolbar.alignment")} icon={<AlignIcon size={16} />} options={alignmentOptions} onOpen={remember} onSelect={value => restore(() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value as "left" | "center" | "right" | "justify"))} /></span>

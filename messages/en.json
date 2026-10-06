@@ -2223,6 +2223,7 @@
   "manage.shell.checkingAccess": "Checking event panel access…",
   "manage.shell.closeMenu": "Close menu",
   "manage.shell.documentTitle": "{name} | Cyber ICE Box",
+  "manage.shell.tabTitle": "{tab} · Event panel · {name}",
   "manage.shell.entry": "Event panel",
   "manage.shell.forbiddenTitle": "No access to the event panel",
   "manage.shell.loadFailedBody": "Event data is unchanged. Try again once the connection is restored.",

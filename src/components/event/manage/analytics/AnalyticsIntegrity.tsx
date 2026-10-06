@@ -104,7 +104,7 @@ function ReviewDialog({draft, onChange, onClose, onConfirm}: {draft: ReviewDraft
     const id = useId();
     const review = draft?.mode === "review";
     const subject = draft ? t("manage.analytics.integrity.review.subject", {team: draft.item.TeamName, task: draft.item.ChallengeName}) : undefined;
-    return <ConfirmDialog open={!!draft} onCancel={onClose} busy={draft?.busy ?? false} error={draft?.error}
+    return <ConfirmDialog open={!!draft} onCancel={onClose} tone={review ? "default" : "danger"} busy={draft?.busy ?? false} error={draft?.error}
         title={t(review ? "manage.analytics.integrity.review.title" : "manage.analytics.integrity.unreview.title")}
         description={t(review ? "manage.analytics.integrity.review.description" : "manage.analytics.integrity.unreview.description")}
         subject={subject} confirmLabel={t(review ? "manage.analytics.integrity.review.confirm" : "manage.analytics.integrity.unreview.confirm")} onConfirm={onConfirm}>

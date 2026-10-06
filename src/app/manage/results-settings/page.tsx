@@ -36,7 +36,7 @@ export default function ResultsSettingsPage() {
     const value = edit?.eventID === eventID ? edit.value : saved;
     const dirty = !!saved && !!value && JSON.stringify(saved) !== JSON.stringify(value);
     const valid = !!value && inRange(value.FreezeMinutes, 1, 1440) && inRange(value.ChartTeams, 1, 10) && (value.RowsLimit === null || inRange(value.RowsLimit, 1, 1000));
-    const disabled = !canManage || saving;
+    const disabled = !canManage;
 
     function change(patch: Partial<ResultsSettingsInput>) {
         if (value) setEdit({eventID, value: {...value, ...patch}});
@@ -50,7 +50,7 @@ export default function ResultsSettingsPage() {
             const updated = await putResultsSettings(eventID, value);
             queryClient.setQueryData(["event-management-results-settings", eventID], updated);
             void queryClient.invalidateQueries({queryKey: ["event-management-config", eventID]});
-            setEdit(null);
+            setEdit(current => current?.value === value ? null : current);
             toast.success(t("manage.results.settings.saved"));
         } catch {toast.error(t("manage.results.settings.saveFailed"));}
         finally {setSaving(false);}

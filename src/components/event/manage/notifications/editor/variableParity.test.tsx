@@ -13,7 +13,7 @@ afterEach(cleanup)
 
 const VARS = [{ name: "event_name", description: "Event", example: "CTF" }, { name: "user_name", description: "User", example: "Jane" }]
 const NAMES = VARS.map((variable) => variable.name)
-const AMBER = ["border-amber-300", "bg-amber-100", "text-amber-950"]
+const AMBER = ["border-[var(--ib-warn)]", "bg-[var(--ib-warn-bg)]", "text-[var(--ib-ink)]"]
 
 const text = (value: string) => ({ detail: 0, format: 0, mode: "normal", style: "", text: value, type: "text", version: 1 })
 const TEMPLATE = {
@@ -53,7 +53,7 @@ describe("variable formatting parity (admin = event)", () => {
   it("single-line field DOM: amber valid pills, flagged invalid pill", () => {
     render(<VariableRichText value="{{.event_name}} {{.ghost}}" onChange={vi.fn()} variables={VARS} dotted placeholder="x" />)
     const field = screen.getByRole("textbox")
-    expect(field.className).toContain("[&_.var-pill]:bg-amber-100")
+    expect(field.className).toContain("[&_.var-pill]:bg-[var(--ib-warn-bg)]")
     expect(field.className).toContain("[&_.var-pill-invalid]:")
     expect(field.querySelector('[data-var="event_name"]')?.hasAttribute("data-invalid")).toBe(false)
     expect(field.querySelector('[data-var="ghost"]')?.getAttribute("data-invalid")).toBe("true")

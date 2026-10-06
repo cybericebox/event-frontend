@@ -2223,6 +2223,7 @@
   "manage.shell.checkingAccess": "Перевіряємо доступ до панелі заходу…",
   "manage.shell.closeMenu": "Закрити меню",
   "manage.shell.documentTitle": "{name} | Cyber ICE Box",
+  "manage.shell.tabTitle": "{tab} · Панель заходу · {name}",
   "manage.shell.entry": "Панель заходу",
   "manage.shell.forbiddenTitle": "Немає доступу до панелі заходу",
   "manage.shell.loadFailedBody": "Дані заходу залишилися без змін. Повторіть запит, коли зʼєднання відновиться.",

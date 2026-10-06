@@ -18,6 +18,7 @@ vi.mock("@/api/manage", async original => ({
 }));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 
+import {toast} from "react-hot-toast";
 import {ChallengeSettings} from "./ChallengeSettings";
 
 function renderPage() {
@@ -37,6 +38,15 @@ describe("Показ завдань", () => {
         await waitFor(() => expect((screen.getByLabelText(/Для кожної команди окремо/) as HTMLInputElement).checked).toBe(true));
         expect(current.matches(":disabled")).toBe(false);
         await waitFor(() => expect(server.put).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({TaskRevealMode: "as_ready"})));
+    });
+
+    it("rolls the choice back and shows a toast when the save fails", async () => {
+        server.put.mockRejectedValue(new Error("boom"));
+        renderPage();
+        fireEvent.click(await screen.findByLabelText(/Для кожної команди окремо/));
+        await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect((screen.getByLabelText(/Одночасно для всіх/) as HTMLInputElement).checked).toBe(true));
+        expect((screen.getByLabelText(/Для кожної команди окремо/) as HTMLInputElement).checked).toBe(false);
     });
 
     it("is locked with a hint after the event has started", async () => {

@@ -12,6 +12,7 @@ import {t} from "@/i18n/t";
 import {formatDateTime} from "@/utils/dateTime";
 import {ChangeRequestDialog} from "./ChangeRequestDialog";
 import {amountText} from "./resourcesModel";
+import {TableEmptyBody} from "../TableEmptyBody";
 import "./resources.css";
 
 const STATUS_TONE: Record<ChangeStatus, string> = {pending: "ib-tag--warn", approved: "ib-tag--ok", rejected: "ib-tag--danger"};
@@ -60,17 +61,17 @@ export function ResourcesPage() {
             </dl>
             <section className="event-manage-section">
                 <h2>{t("manage.resources.history.title")}</h2>
-                {resources.Changes.length === 0 ? <EmptyState compact message={t("manage.resources.history.empty")} /> : <div className="event-participants-table"><table>
-                    <thead><tr><th>{t("manage.resources.history.requested")}</th><th>{t("manage.resources.history.change")}</th><th>{t("manage.resources.history.reason")}</th><th>{t("manage.resources.history.status")}</th></tr></thead>
-                    <tbody>{resources.Changes.map(change => <tr key={change.ID}>
+                <div className="event-participants-table" role="region" tabIndex={0} aria-label={t("manage.resources.history.title")}><table>
+                    <thead><tr><th scope="col">{t("manage.resources.history.requested")}</th><th scope="col">{t("manage.resources.history.change")}</th><th scope="col">{t("manage.resources.history.reason")}</th><th scope="col">{t("manage.resources.history.status")}</th></tr></thead>
+                    {resources.Changes.length === 0 ? <TableEmptyBody colSpan={4} message={t("manage.resources.history.empty")} /> : <tbody>{resources.Changes.map(change => <tr key={change.ID}>
                         <td className="event-participants-table__dim">{formatDateTime(change.RequestedAt)}</td>
                         <td>{changeSummary(change)}</td>
                         <td>{change.Reason}</td>
                         <td><span className={`ib-tag ib-tag--sm ${STATUS_TONE[change.Status]}`}>{t(`manage.resources.status.${change.Status}`)}</span>
                             {change.DecidedAt && <small className="event-participants-table__dim"> {formatDateTime(change.DecidedAt)}</small>}
                             {change.DecisionNote && <small className="event-participants-table__dim">{change.DecisionNote}</small>}</td>
-                    </tr>)}</tbody>
-                </table></div>}
+                    </tr>)}</tbody>}
+                </table></div>
             </section>
         </>}
         <ChangeRequestDialog eventID={eventID} open={requesting} onClose={() => setRequesting(false)} onSent={() => void query.refetch()} />

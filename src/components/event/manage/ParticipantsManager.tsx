@@ -24,6 +24,7 @@ import {useTableState} from "./useTableState";
 import {InviteParticipantsDialog} from "./InviteParticipantsDialog";
 import {LiveStatus} from "./LiveStatus";
 import {ManageTable, ManageTablePagination, ManageTableSearch} from "./ManageTable";
+import {ManageTabs, manageTabID, manageTabPanelID} from "./ManageTabs";
 import {participantTabHref, participantTabs, type ParticipantTab} from "./participantTabs";
 import {useManager} from "./ManagerShell";
 import {t, tPlural} from "@/i18n/t";
@@ -241,7 +242,8 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     return <div className="event-manage-settings event-manage-participants">
         <header className="event-manage-heading"><div><h1>{t("manage.nav.participants")}</h1><p>{teamMode ? t("manage.participants.subtitleTeams") : t("manage.participants.subtitle")}</p></div><div className="event-manage-heading__actions"><LiveStatus freshness={{kind: "manual", onRefresh: () => void query.refetch(), refreshing: query.isFetching}} updatedAt={query.dataUpdatedAt} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setInviteOpen(true)}>{t("manage.participants.invite.title")}</button>}</div></header>
         <InviteParticipantsDialog eventID={eventID} open={inviteOpen} onOpenChange={setInviteOpen} onSent={refresh} />
-        <div className="event-manage-participants__filters" role="tablist" aria-label={t("manage.participants.sections")}>{participantTabs.map(option => <button key={option.value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={tab === option.value} onClick={() => changeTab(option.value)}>{option.label}{counts && <span className="event-manage-participants__count">{counts[option.count]}</span>}</button>)}</div>
+        <ManageTabs idPrefix="participants" label={t("manage.participants.sections")} tabs={participantTabs.map(option => ({value: option.value, label: option.label, count: counts?.[option.count]}))} value={tab} onChange={changeTab} />
+        <div className="ib-tabpanel" role="tabpanel" id={manageTabPanelID("participants")} aria-labelledby={manageTabID("participants", tab)}>
         <ManageTable event={event} state={tableState} busy={query.isFetching && !query.isPending} loadingLabel={t("manage.participants.loading")} errorMessage={t("manage.participants.loadFailed")} onRetry={() => void query.refetch()} error={query.error}
             emptyMessage={table.filtered ? t("manage.participants.emptySearch") : emptyTexts[tab]}
             toolbar={<>
@@ -266,6 +268,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
                 </div></td>}
             </tr>)}</tbody>
         </ManageTable>
+        </div>
         <ManageDialog open={openedID !== null} onOpenChange={value => {if (!value) setOpened(null);}} size="md"
             title={current ? personName(current) : notFound ? t("manage.participants.detail.notFound") : ""}
             description={current ? [current.Pseudonym && t("manage.participants.pseudonym", {pseudonym: current.Pseudonym}), current.Email, !current.Invited && t("manage.participants.submittedAt", {date: formatDateTime(current.CreatedAt)})].filter(Boolean).join(" · ") : undefined}
