@@ -30,7 +30,7 @@ describe("MissingFieldsNotice", () => {
         answers = ownAnswers(["school"]);
         renderNotice(null);
         expect(await screen.findByText("Заповніть нові поля")).toBeTruthy();
-        expect(screen.getByText("Організатори додали обов’язкові поля до вашого профілю: Школа.")).toBeTruthy();
+        expect(screen.getByText("Організатори додали обовʼязкові поля до вашого профілю: Школа.")).toBeTruthy();
         expect(screen.getByRole("link", {name: "Перейти до профілю"}).getAttribute("href")).toBe("/participation");
     });
 
@@ -43,7 +43,7 @@ describe("MissingFieldsNotice", () => {
     it("asks about the team fields too and links to the team page", async () => {
         answers = ownAnswers([]);
         renderNotice(team(["motto"], true));
-        expect(await screen.findByText(/Організатори додали обов’язкові поля команди: Девіз\./)).toBeTruthy();
+        expect(await screen.findByText(/Організатори додали обовʼязкові поля команди: Девіз\./)).toBeTruthy();
         expect(screen.getByRole("link", {name: "Перейти до команди"}).getAttribute("href")).toBe("/participation?tab=team");
         expect(screen.getByText(/Заповнити їх може капітан\. Поки їх не заповнено/)).toBeTruthy();
     });

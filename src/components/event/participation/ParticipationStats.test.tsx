@@ -110,8 +110,8 @@ it("shows the empty states before the first solve", async () => {
     state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member)};
     state.stats = stats({Team: {...stats().Team, Solves: []}, Timeline: [], Solved: 0, Points: 0});
     view();
-    expect(await screen.findByText("Бали з’являться після першого розв’язаного завдання.")).toBeTruthy();
-    expect(screen.getByText("Розв’язаних завдань поки немає.")).toBeTruthy();
+    expect(await screen.findByText("Бали зʼявляться після першого розвʼязаного завдання.")).toBeTruthy();
+    expect(screen.getByText("Розвʼязаних завдань поки немає.")).toBeTruthy();
 });
 
 it("has no tabs in individual mode and reads the whole result as the participant's own", async () => {
@@ -143,7 +143,7 @@ it("gives the captain the roster with contributions, pending invitees, the link 
     expect((screen.getByLabelText("Посилання для запрошення") as HTMLInputElement).value).toContain("join=secret");
     expect(screen.getByRole("button", {name: "Перевипустити"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Розпустити команду"})).toBeTruthy();
-    expect(screen.getByText("Розв’язав")).toBeTruthy();
+    expect(screen.getByText("Розвʼязав")).toBeTruthy();
     expect(screen.getByText("Успішність")).toBeTruthy();
 });
 

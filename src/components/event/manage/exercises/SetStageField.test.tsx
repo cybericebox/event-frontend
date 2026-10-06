@@ -44,7 +44,7 @@ describe("the stage of a set", () => {
         expect((trigger() as HTMLButtonElement).disabled).toBe(true);
         expect(screen.getByText("Набір в етапі, що вже почався: прибрати його звідти не можна.")).toBeTruthy();
         // the open stage's note: the labs deploy now
-        expect(screen.getByText("Лаби розгорнуться зараз; завдання з’являться за правилом показу заходу.")).toBeTruthy();
+        expect(screen.getByText("Лаби розгорнуться зараз; завдання зʼявляться за правилом показу заходу.")).toBeTruthy();
     });
 
     it("keeps a set of an upcoming stage free to move", () => {

@@ -92,7 +92,7 @@ describe("participant modal in the URL", () => {
         const facts = await screen.findByTestId("participant-facts");
         expect(api.detail).toHaveBeenCalledWith("e1", ID_OTHER);
         expect(screen.getAllByText("Ігор Мельник").length).toBeGreaterThan(0);
-        for (const text of ["Статус", "Псевдонім", "ihor", "Альфа", "Капітан", "За запрошенням", "Запрошення надіслано", "Рішення ухвалено", "Розв’язано завдань", "4", "Спроб", "11"]) expect(facts.textContent).toContain(text);
+        for (const text of ["Статус", "Псевдонім", "ihor", "Альфа", "Капітан", "За запрошенням", "Запрошення надіслано", "Рішення ухвалено", "Розвʼязано завдань", "4", "Спроб", "11"]) expect(facts.textContent).toContain(text);
     });
 
     it("a row click sets the param and keeps the others; close removes it", async () => {

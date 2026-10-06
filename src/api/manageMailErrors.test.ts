@@ -8,7 +8,7 @@ describe("smtpErrorLine", () => {
         ["smtp_auth", "SMTP-сервер відхилив вхід: перевірте логін і пароль SMTP"],
         ["smtp_rcpt", "Адресу одержувача відхилено"],
         ["smtp_rejected", "Лист відхилено сервером (можливо, адресу не підтверджено в SES)"],
-        ["smtp_connect", "Не вдалося з'єднатися з SMTP-сервером"],
+        ["smtp_connect", "Не вдалося зʼєднатися з SMTP-сервером"],
     ])("maps %s to human text and keeps the raw text as details", (kind, text) => {
         expect(smtpErrorLine(kind, "", raw)).toEqual({text, technical: raw});
     });

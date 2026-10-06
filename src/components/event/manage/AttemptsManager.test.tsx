@@ -112,7 +112,7 @@ describe("Журнал спроб: позначка доброчесності",
     afterEach(() => { cleanup(); manager.canManage = true; });
     const flag = {TeamChallengeID: ids.challenge, TeamID: ids.team, ChallengeID: ids.challenge, Count: 2, Signals: ["too_fast", "burst"], CrossFlagTimes: ["2026-09-29T07:31:00.000Z"]};
     const page = {Items: [attempt(1, {Correct: true, AutomaticCorrect: true, Points: 100}), attempt(2, {EventChallengeID: "0190c6a4-0000-7000-8000-000000000009", TeamChallengeID: "0190c6a4-0000-7000-8000-00000000000a", Correct: true}), attempt(3)], Total: 3};
-    const flagged = () => screen.queryAllByRole("link", {name: /Є підозрілі сигнали для цього розв'язку/});
+    const flagged = () => screen.queryAllByRole("link", {name: /Є підозрілі сигнали для цього розвʼязку/});
 
     it("marks a flagged correct attempt only, linking to the integrity page on that team and task", async () => {
         const calls = mockApi(page, [], {sensitive: true, flags: [flag]});
@@ -121,7 +121,7 @@ describe("Журнал спроб: позначка доброчесності",
         await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(4));
         await waitFor(() => expect(flagged()).toHaveLength(1));
         const icon = flagged()[0];
-        expect(icon.getAttribute("aria-label")).toBe("Є підозрілі сигнали для цього розв'язку: Розв'язано швидше за поріг рівня складності; Кілька розв'язань за дуже короткий час");
+        expect(icon.getAttribute("aria-label")).toBe("Є підозрілі сигнали для цього розвʼязку: Розвʼязано швидше за поріг рівня складності; Кілька розвʼязань за дуже короткий час");
         const href = new URL(icon.getAttribute("href")!, "https://event.test");
         expect(href.pathname).toBe("/manage/analytics/integrity");
         expect(href.searchParams.get("teamId")).toBe(ids.team);
@@ -138,7 +138,7 @@ describe("Журнал спроб: позначка доброчесності",
         await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(4));
         await waitFor(() => expect(flagged()).toHaveLength(2));
         const rows = within(table).getAllByRole("row");
-        expect(within(rows[2]).getByRole("link").getAttribute("aria-label")).toBe("Є підозрілі сигнали для цього розв'язку: Надіслано прапор іншої команди");
+        expect(within(rows[2]).getByRole("link").getAttribute("aria-label")).toBe("Є підозрілі сигнали для цього розвʼязку: Надіслано прапор іншої команди");
         expect(within(rows[3]).queryByRole("link")).toBeNull();
     });
 

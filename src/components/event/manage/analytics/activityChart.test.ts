@@ -23,7 +23,7 @@ describe("activity chart", () => {
     });
 
     it("draws the solves and the wrong attempts (attempts minus correct)", () => {
-        expect(option.series.slice(0, 2).map(series => series.name)).toEqual(["Розв'язання", "Хибні спроби"]);
+        expect(option.series.slice(0, 2).map(series => series.name)).toEqual(["Розвʼязання", "Хибні спроби"]);
         expect(option.series[1].data).toEqual([[Date.parse("2026-09-29T10:00:00Z"), 2], [Date.parse("2026-09-29T10:05:00Z"), 0]]);
     });
 

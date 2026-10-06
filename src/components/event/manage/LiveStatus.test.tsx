@@ -28,7 +28,7 @@ describe("live status", () => {
         render(<LiveStatus freshness={stream("live")} updatedAt={at} />);
         expect(screen.getByText("Наживо")).toBeTruthy();
         expect(screen.getByText("Оновлено 14:05:09")).toBeTruthy();
-        expect(screen.getByRole("tooltip").textContent).toBe("Нові дані з'являються одразу. «Оновлено» — останнє підтвердження від сервера, що з'єднання живе (щонайменше кожні 15 с).");
+        expect(screen.getByRole("tooltip").textContent).toBe("Нові дані зʼявляються одразу. «Оновлено» — останнє підтвердження від сервера, що зʼєднання живе (щонайменше кожні 15 с).");
     });
 
     it("never keeps «Наживо» with an old time: after 2× heartbeat it says «Перепідключення…»", () => {

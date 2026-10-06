@@ -47,7 +47,7 @@ function SolveRow({row, index, now}: {row: ChallengeSolve; index: number; now: n
     </li>;
 }
 
-// «Розв'язання» tab of the challenge modal: who solved it, first solves on top.
+// «Розвʼязання» tab of the challenge modal: who solved it, first solves on top.
 // Pages load as the list reaches its end (IntersectionObserver on a sentinel).
 export function ChallengeSolvesTab({eventID, challengeID, moderators, enabled}: {eventID: string; challengeID: string; moderators: boolean; enabled: boolean}) {
     const query = useInfiniteQuery({

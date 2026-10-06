@@ -7,7 +7,7 @@ import type {TableColumn} from "./listColumns";
 afterEach(cleanup);
 
 const columns: TableColumn[] = [
-    {key: "@name", label: "Ім’я", visible: true, locked: true},
+    {key: "@name", label: "Імʼя", visible: true, locked: true},
     {key: "@email", label: "Пошта", visible: true},
     {key: "city", label: "Місто", visible: false},
 ];
