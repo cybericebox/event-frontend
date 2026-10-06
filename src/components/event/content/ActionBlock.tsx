@@ -113,7 +113,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     const participation = useParticipation(eventID, hasJoin && !viewer && join.data === 0);
     const eventSite = eventTag ? eventOrigin(eventTag) : "";
     const signInHref = idOrigin && eventSite
-        ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${eventSite}/join`)}`
+        ? `${idOrigin}/sign-in?return_to=${encodeURIComponent(`${eventSite}/join?continue=1`)}`
         : "/join";
     const state = hasJoin ? joinState({
         preview: viewer, staff: staff.staff, windowOpen, timeWindowOpen, signInHref,

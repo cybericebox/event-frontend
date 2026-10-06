@@ -81,6 +81,14 @@ describe("session pages of a visible event", () => {
         expect(screen.queryByRole("heading", {name: "Сторінка"})).toBeNull();
     });
 
+    it("sends an anonymous visitor of /join to the sign-in and back to registration with continue=1", async () => {
+        user.current = async () => null;
+        mount("/join");
+        await vi.waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
+        const target = new URL(replace.mock.calls[0][0] as string);
+        expect(target.searchParams.get("return_to")).toBe("https://ev.example.test/join?continue=1");
+    });
+
     it("renders the public landing of the same event without sign-in or redirect", async () => {
         user.current = async () => null;
         mount("/");

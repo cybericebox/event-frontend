@@ -12,7 +12,10 @@ import {EventLoading} from "./EventLoading";
 // configured, or already on the sign-in page) it does nothing, so two redirects never bounce.
 export function SignInRedirect({event}: {event?: PublicEventInfo | null}) {
     useEffect(() => {
-        const target = signInRedirectTarget(window.location.href);
+        // Registration continues by itself after the sign-in: the join page reads «continue».
+        const here = new URL(window.location.href);
+        if (here.pathname === "/join") here.searchParams.set("continue", "1");
+        const target = signInRedirectTarget(here.toString());
         if (target !== "/") window.location.replace(target);
     }, []);
     return <EventLoading event={event} full label={t("auth.signInRedirect")} />;

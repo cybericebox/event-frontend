@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useEffectEvent, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
@@ -44,6 +44,20 @@ export default function JoinPage() {
     const [error, setError] = useState("");
 
     useEffect(() => {if (invited) router.replace("/invite");}, [invited, router]);
+
+    // Back from the sign-in that registration asked for (?continue=1): with no form to fill the
+    // application is sent at once; with a form the visitor fills it and presses the button.
+    const resumed = useRef(false);
+    const resume = useEffectEvent(() => void submit());
+    useEffect(() => {
+        if (resumed.current || !canJoin || form.isPending || form.isError || form.data?.Enabled) return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("continue") !== "1") return;
+        resumed.current = true;
+        params.delete("continue");
+        window.history.replaceState(null, "", params.size ? `/join?${params}` : "/join");
+        resume();
+    }, [canJoin, form.isPending, form.isError, form.data]);
 
     async function submit() {
         if (!event || working || !identity.data || !canJoin || form.isPending || form.isError) return;
