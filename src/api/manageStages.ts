@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {manageApiError} from "@/api/manage";
+import {EventExerciseAttachmentSchema} from "@/api/manageChallenges";
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
@@ -32,5 +33,5 @@ export const getManageStages = (eventID: string) => request(eventID, "stages", z
 export const createManageStage = (eventID: string, input: StageCreateInput) => request(eventID, "stages", StageSchema, "POST", input);
 export const updateManageStage = (eventID: string, stageID: string, input: StageUpdateInput) => request(eventID, `stages/${encodeURIComponent(stageID)}`, StageSchema, "PUT", input);
 export const deleteManageStage = (eventID: string, stageID: string) => request(eventID, `stages/${encodeURIComponent(stageID)}`, z.unknown(), "DELETE").then(() => undefined);
-// The stage of an exercise set; null puts it back on the whole event.
-export const setExerciseStage = (eventID: string, attachmentID: string, stageID: string | null) => request(eventID, `exercises/${encodeURIComponent(attachmentID)}/stage`, z.unknown(), "PUT", {StageID: stageID}).then(() => undefined);
+// The stage of an exercise set; null puts it back on the whole event. The answer is the set as the server now has it.
+export const setExerciseStage = (eventID: string, attachmentID: string, stageID: string | null) => request(eventID, `exercises/${encodeURIComponent(attachmentID)}/stage`, EventExerciseAttachmentSchema, "PUT", {StageID: stageID});

@@ -33,8 +33,10 @@ describe("manage stages API", () => {
     });
 
     it("puts a set on a stage, or back on the whole event with null", async () => {
-        fetchMock.mockImplementation(async () => reply({Data: {}}));
-        await setExerciseStage("e1", "a1", stage.ID);
+        const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+        const saved = {ID: uid(1), ExerciseID: uid(2), ExerciseName: "Веб", ExerciseVersionID: uid(3), VariantMode: 0, FixedVariantIndex: null, Revision: 1, Status: 0, ReplacesID: null, SupersededAt: null, CreatedAt: "2026-09-26T00:00:00Z", StageID: stage.ID};
+        fetchMock.mockImplementation(async () => reply({Data: saved}));
+        expect(await setExerciseStage("e1", "a1", stage.ID)).toMatchObject({ID: uid(1), StageID: stage.ID});
         expect(fetchMock.mock.calls[0][0]).toBe("https://api.test/api/events/e1/manage/exercises/a1/stage");
         expect(fetchMock.mock.calls[0][1]).toMatchObject({method: "PUT", body: JSON.stringify({StageID: stage.ID})});
         await setExerciseStage("e1", "a1", null);

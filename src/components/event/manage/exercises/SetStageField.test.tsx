@@ -5,15 +5,17 @@ import {QueryClient, QueryClientProvider, useQuery} from "@tanstack/react-query"
 import type {EventExerciseAttachment} from "@/api/manageChallenges";
 import type {ManageStage} from "@/api/manageStages";
 
-const api = vi.hoisted(() => ({set: vi.fn(), toastError: vi.fn(), toastOk: vi.fn()}));
+const api = vi.hoisted(() => ({set: vi.fn(), fetchAll: vi.fn(), toastError: vi.fn(), toastOk: vi.fn()}));
 vi.mock("@/utils/origins", async importOriginal => ({...await importOriginal<typeof import("@/utils/origins")>(), requireApiOrigin: () => "https://api.test"}));
 vi.mock("react-hot-toast", () => ({toast: {error: api.toastError, success: api.toastOk}}));
 vi.mock("@/api/manageStages", async importOriginal => ({...await importOriginal<typeof import("@/api/manageStages")>(), setExerciseStage: (...args: unknown[]) => api.set(...args)}));
 
+vi.mock("@/api/manageChallenges", async importOriginal => ({...await importOriginal<typeof import("@/api/manageChallenges")>(), getEventExerciseAttachments: (...args: unknown[]) => api.fetchAll(...args)}));
+
 const {SetStageField} = await import("./SetStageField");
 const {ManageApiError} = await import("@/api/manage");
 
-afterEach(() => {cleanup(); api.set.mockReset(); api.toastError.mockReset(); api.toastOk.mockReset();});
+afterEach(() => {cleanup(); api.set.mockReset(); api.fetchAll.mockReset(); api.toastError.mockReset(); api.toastOk.mockReset();});
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const stage = (n: number, extra: Partial<ManageStage> = {}): ManageStage => ({
@@ -65,5 +67,68 @@ describe("the stage of a set", () => {
         fireEvent.click(option);
         await waitFor(() => expect(api.set).toHaveBeenCalledWith("e1", id(100), id(1)));
         await waitFor(() => expect(api.toastError).toHaveBeenCalledWith("Етап закрито, його не можна змінювати"));
+    });
+});
+
+function Two({initial, stages}: {initial: EventExerciseAttachment[]; stages: ManageStage[]}) {
+    const query = useQuery({queryKey: ["event-exercise-attachments", "e1"], queryFn: async () => initial, initialData: initial, staleTime: Infinity});
+    return <>{query.data.map(item => <SetStageField key={item.ID} eventID="e1" attachment={item} stages={stages} canManage />)}</>;
+}
+const renderTwo = (initial: EventExerciseAttachment[], stages: ManageStage[]) => render(<QueryClientProvider client={new QueryClient()}><Two initial={initial} stages={stages} /></QueryClientProvider>);
+const triggerOf = (name: string) => screen.getByRole("button", {name: new RegExp(`Етап: ${name}`)});
+async function pick(name: string, option: string) {
+    fireEvent.pointerDown(triggerOf(name), {button: 0, ctrlKey: false});
+    fireEvent.click(await screen.findByRole("menuitemradio", {name: option}));
+    await waitFor(() => expect(screen.queryByRole("menuitemradio")).toBeNull());
+}
+const answer = (setID: string, stageID: string | null) => attachment({ID: setID, ExerciseName: setID === id(100) ? "Веб" : "Мережа", StageID: stageID});
+const two = () => [attachment({ID: id(100), ExerciseName: "Веб"}), attachment({ID: id(101), ExerciseName: "Мережа"})];
+
+describe("several sets", () => {
+    it("keeps both selectors right when set A and then set B change", async () => {
+        api.set.mockImplementation(async (_event: string, setID: string, stageID: string | null) => answer(setID, stageID));
+        renderTwo(two(), [stage(1), stage(2)]);
+        await pick("Веб", "Етап 1");
+        await pick("Мережа", "Етап 2");
+        await waitFor(() => expect(api.set).toHaveBeenCalledTimes(2));
+        expect(triggerOf("Веб").textContent).toContain("Етап 1");
+        expect(triggerOf("Мережа").textContent).toContain("Етап 2");
+    });
+
+    it("saves the sets one after another, never in parallel", async () => {
+        let release: () => void = () => undefined;
+        api.set.mockImplementationOnce(() => new Promise(resolve => {release = () => resolve(answer(id(100), id(1)));}));
+        api.set.mockImplementation(async (_event: string, setID: string, stageID: string | null) => answer(setID, stageID));
+        renderTwo(two(), [stage(1), stage(2)]);
+        await pick("Веб", "Етап 1");
+        await pick("Мережа", "Етап 2");
+        expect(api.set).toHaveBeenCalledTimes(1);
+        // the selectors stay enabled and show the choices while the first save is pending
+        expect((triggerOf("Мережа") as HTMLButtonElement).disabled).toBe(false);
+        expect(triggerOf("Мережа").textContent).toContain("Етап 2");
+        release();
+        await waitFor(() => expect(api.set).toHaveBeenCalledTimes(2));
+    });
+
+    it("takes the server's answer when it changed the set", async () => {
+        api.set.mockImplementation(async (_event: string, setID: string) => answer(setID, id(2)));
+        renderTwo(two(), [stage(1), stage(2)]);
+        await pick("Веб", "Етап 1");
+        await waitFor(() => expect(triggerOf("Веб").textContent).toContain("Етап 2"));
+        expect(triggerOf("Мережа").textContent).toContain("Весь захід");
+    });
+
+    it("rolls back only the failed set, with a toast", async () => {
+        api.set.mockImplementation(async (_event: string, setID: string, stageID: string | null) => {
+            if (setID === id(100)) throw new ManageApiError(409, 1148);
+            return answer(setID, stageID);
+        });
+        api.fetchAll.mockResolvedValue(two());
+        renderTwo(two(), [stage(1), stage(2)]);
+        await pick("Веб", "Етап 1");
+        await pick("Мережа", "Етап 2");
+        await waitFor(() => expect(api.toastError).toHaveBeenCalledWith("Етап закрито, його не можна змінювати"));
+        await waitFor(() => expect(triggerOf("Веб").textContent).toContain("Весь захід"));
+        expect(triggerOf("Мережа").textContent).toContain("Етап 2");
     });
 });
