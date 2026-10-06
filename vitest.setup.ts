@@ -9,3 +9,10 @@ if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
         dispatchEvent: () => false,
     })) as typeof window.matchMedia;
 }
+
+// findBy*/waitFor poll up to this long. The default 1 s is a wall-clock budget that a starved CPU
+// exhausts before the first render of a heavy component finishes; a passing wait still returns at once.
+if (typeof window !== "undefined") {
+    const {configure} = await import("@testing-library/react");
+    configure({asyncUtilTimeout: 8000});
+}
