@@ -19,3 +19,5 @@
 .event-manage-sidebar__items .ib-admin-side__item{font-size:13px}
 .event-manage-sidebar__items .ib-admin-side__item:not([aria-current="page"]){color:var(--ib-on-brand-3)}
 .event-manage-sidebar__items .ib-admin-side__item:not([aria-current="page"]):hover{color:var(--ib-on-brand)}
+.ib-admin-side__foot .ib-tip{display:flex}
+.ib-admin-side__foot .ib-tip>.ib-admin-side__item{flex:1;min-width:0}

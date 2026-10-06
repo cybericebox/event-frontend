@@ -144,7 +144,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
 
     return <aside className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")}>
         <div className="ib-admin-side__head">
-            <Link href="/" className="event-manage-brand" aria-label={t("manage.shell.toEventSite")}><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>{t("manage.nav.eventManagement")}</small></div></Link>
+            <Link href="/" className="event-manage-brand" aria-label={t("manage.shell.toEventSiteHint")}><EventBrandLogo event={event} className="ib-admin-side__crest" /><div className="ib-admin-side__title"><b>{event.Name}</b><small>{t("manage.nav.eventManagement")}</small></div></Link>
             <EventTooltip content={t("manage.shell.closeMenu")} silent>{() => <button className="ib-admin-side__close" type="button" aria-label={t("manage.shell.closeMenu")} onClick={onNavigate}><X size={18} /></button>}</EventTooltip>
         </div>
         <nav className="ib-admin-side__nav" aria-label={t("manage.nav.sections")}>
@@ -176,7 +176,7 @@ export function ManagerSidebar({event, pathname, pages, pagesError, canManage, i
             })}
         </nav>
         <div className="ib-admin-side__foot">
-            {adminReturn && <a className="ib-admin-side__item" href={adminReturn}><Settings size={16} aria-hidden="true" /><SideLabel text={t("manage.nav.returnToAdmin")} /></a>}
-            <Link className="ib-admin-side__item" href="/" onClick={onNavigate}><ArrowLeft size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.shell.toEventSite")}</span></Link></div>
+            {adminReturn && <EventTooltip content={t("manage.nav.returnToAdminHint")} silent>{() => <a className="ib-admin-side__item" href={adminReturn} aria-label={t("manage.nav.returnToAdminHint")}><Settings size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.returnToAdmin")}</span></a>}</EventTooltip>}
+            <EventTooltip content={t("manage.shell.toEventSiteHint")} silent>{() => <Link className="ib-admin-side__item" href="/" aria-label={t("manage.shell.toEventSiteHint")} onClick={onNavigate}><ArrowLeft size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.shell.toEventSite")}</span></Link>}</EventTooltip></div>
     </aside>;
 }
