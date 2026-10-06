@@ -27,3 +27,4 @@
 .event-error__card p{max-width:none;margin:0;font-size:var(--ib-fs-14)}
 .event-error__card .event-error__actions{flex-direction:column;align-items:stretch;margin-top:var(--ib-3)}
 .event-error__card .event-error__actions .ib-btn{width:100%}
+@media (min-width:640px){.event-error__card .event-error__actions{flex-direction:row}.event-error__card .event-error__actions .ib-btn{flex:1 1 0;width:auto}}
