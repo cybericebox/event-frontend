@@ -55,7 +55,7 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         // visitor, and a redirect would reveal that it exists: one neutral screen for all three.
         // (An unknown event address answers without CORS headers; the query turns that into a 404.)
         if (failure === "notFound") return <EventUnavailableScreen />;
-        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} error={event.error} onRetry={() => void event.refetch()} />;
+        return <EventErrorScreen page body={t("error.load.body")} error={event.error} onRetry={() => void event.refetch()} />;
     }
     return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data} onSection={setSection}>{children}</ManagerShell></EventBrandProvider>;
 }

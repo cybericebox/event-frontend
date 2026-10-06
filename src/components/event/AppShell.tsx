@@ -73,7 +73,7 @@ function ShellContent({children, event, unavailable, failure}: Props) {
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
 
-    if (failure) return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} error={failure} onRetry={() => router.refresh()} />;
+    if (failure) return <EventErrorScreen page body={t("error.load.body")} error={failure} onRetry={() => router.refresh()} />;
     if (unavailable) {
         // The server-side event fetch failed: no event data, so the bare frame with the
         // platform crest stays under the outage modal until the event loads again.

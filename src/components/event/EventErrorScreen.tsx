@@ -38,7 +38,7 @@ function ReportLink({ticket, message}: {ticket?: string; message: string}) {
 //   request id is known (X-Request-ID; without it, the code alone);
 //   anything else is a frontend crash: nothing is journaled, so no report line and no reference number.
 // `page` is the full-screen mode with the footer (global error, the shell could not render); otherwise it is
-// the block inside the shell's content area. A caller's own `body` wins over the default text.
+// the block inside the shell's content area. A backend 5xx always gets the «report received» text; a caller's own `body` wins over the default text otherwise.
 export function EventErrorScreen({onRetry, title = t("error.page.title"), body, page = false, error}: {
     onRetry: () => void;
     title?: string;
@@ -56,7 +56,7 @@ export function EventErrorScreen({onRetry, title = t("error.page.title"), body, 
     const ref = shortId ? (code ? `${code}-${shortId}` : shortId) : undefined;
     const message = error instanceof Error ? error.message : "";
     return <ErrorPage mode={page ? "page" : "block"} role="alert" code={500} title={title}
-        text={body ?? (fromApi ? t("error.page.reported") : t("error.page.body"))}
+        text={fromApi ? t("error.page.reported") : (body ?? t("error.page.body"))}
         refCode={code || undefined} ticket={ref}
         report={<ReportLink ticket={ref} message={message} />}>
         <button type="button" className="ib-btn ib-btn--primary" onClick={onRetry}>{t("error.load.retry")}</button>
