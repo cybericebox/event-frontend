@@ -1,5 +1,6 @@
 import type {AnalyticsHeatmap, AnalyticsInactive, AnalyticsMatrix, AnalyticsScores} from "@/api/manageAnalyticsTasks";
 import {t} from "@/i18n/t";
+import {holdPoints} from "@/components/event/charts/holdPoints";
 
 // Pure helpers of «Прогрес» (§6.4): the score chart, the matrix cells, the
 // heatmap and the inactive teams. Chart colours and axes follow the results
@@ -32,7 +33,7 @@ export function scoreChartOption(scores: AnalyticsScores) {
         dataZoom: [{type: "inside", filterMode: "none"}, {type: "slider", height: 18, bottom: 8, filterMode: "none"}],
         series: scores.Series.map(series => ({
             name: series.Name, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, lineStyle: {width: 2}, emphasis: {focus: "series"},
-            data: series.Points.map(point => [Date.parse(point.At), point.Score]),
+            data: holdPoints(series.Points.map((point): [number, number] => [Date.parse(point.At), point.Score])),
         })),
     };
 }

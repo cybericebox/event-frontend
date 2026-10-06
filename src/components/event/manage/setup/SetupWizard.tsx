@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {ArrowUpRight, Bell, CalendarDays, Check, FileText, Layers3, Rocket, Server, SlidersHorizontal, Trophy, UserRound, UsersRound, type LucideIcon} from "lucide-react";
+import {ArrowUpRight, Bell, CalendarDays, Check, FileText, Gauge, Layers3, Rocket, Server, SlidersHorizontal, Trophy, TriangleAlert, UserRound, UsersRound, type LucideIcon} from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {getManageConfig, getManageLifecycle} from "@/api/manage";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -15,7 +15,7 @@ import "./setup.css";
 
 const icons: Record<SetupStepID, LucideIcon> = {
     participation: UsersRound, registration: UserRound, schedule: CalendarDays, challenges: Layers3, scoring: SlidersHorizontal,
-    pages: FileText, mail: Bell, results: Trophy, stands: Server, publish: Rocket,
+    pages: FileText, mail: Bell, results: Trophy, resources: Gauge, stands: Server, publish: Rocket,
 };
 
 // «Підготовка заходу»: the step-by-step checklist to run the event. Always
@@ -23,7 +23,7 @@ const icons: Record<SetupStepID, LucideIcon> = {
 export function SetupWizard() {
     const {event} = useManager();
     const eventID = event.EventID;
-    const setup = useSetup(eventID);
+    const setup = useSetup(eventID, true);
     // The queries behind the wizard; a failed base read must not look like a load.
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const lifecycle = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
@@ -47,7 +47,7 @@ export function SetupWizard() {
                 return <li className={`event-setup__row is-${step.status}`} key={step.id}>
                     <span className="event-setup__number">{step.status === "done" ? <Check size={14} aria-hidden="true" /> : String(index + 1).padStart(2, "0")}</span>
                     <Icon className="event-setup__icon" size={18} aria-hidden="true" />
-                    <div className="event-setup__body"><strong>{t(`manage.setup.step.${step.id}`)}</strong><span>{t(`manage.setup.detail.${step.detail}`, step.vars)}</span></div>
+                    <div className="event-setup__body"><strong>{t(`manage.setup.step.${step.id}`)}</strong><span>{t(`manage.setup.detail.${step.detail}`, step.vars)}</span>{step.warning && <span className="event-setup__warning" role="note"><TriangleAlert size={14} aria-hidden="true" />{t(`manage.setup.detail.${step.warning.detail}`, step.warning.vars)}</span>}</div>
                     <span className={`event-setup__status is-${step.status}`}>{t(`manage.setup.status.${step.status}`)}</span>
                     <Link className="ib-btn" href={step.href}>{t(step.status === "done" || step.status === "optional" || step.status === "review" ? "manage.setup.open" : "manage.setup.fix")}</Link>
                 </li>;

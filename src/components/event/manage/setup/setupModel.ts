@@ -1,6 +1,7 @@
 import type {ManageConfig, ManageContent, ManageLifecycle} from "@/api/manage";
 import type {EventExerciseAttachment} from "@/api/manageChallenges";
 import type {EventMailSettings} from "@/api/manageMail";
+import type {ManageResources} from "@/api/manageResources";
 import {infrastructureMismatch} from "../exercises/attachmentModel";
 
 // done: nothing left to do. todo: a required step that is still open.
@@ -8,8 +9,13 @@ import {infrastructureMismatch} from "../exercises/attachmentModel";
 // blocked: a required step that cannot finish until something is fixed.
 // optional: nothing is required; the default is fine, the page is there to tune it.
 export type SetupStatus = "done" | "todo" | "review" | "blocked" | "optional";
-export type SetupStepID = "participation" | "registration" | "schedule" | "challenges" | "scoring" | "pages" | "mail" | "results" | "stands" | "publish";
-export type SetupStep = {id: SetupStepID; status: SetupStatus; href: string; detail: string; vars?: Record<string, string | number>};
+export type SetupStepID = "participation" | "registration" | "schedule" | "challenges" | "scoring" | "pages" | "mail" | "results" | "resources" | "stands" | "publish";
+type SetupVars = Record<string, string | number>;
+// warning: an informational note under the step; it never changes the status.
+export type SetupStep = {id: SetupStepID; status: SetupStatus; href: string; detail: string; vars?: SetupVars; warning?: {detail: string; vars?: SetupVars}};
+
+// The part of a board task the hint warning reads.
+export type SetupBoardChallenge = {HintsEnabled: boolean; Hints: {Cost: number}[]};
 
 // Whatever has loaded so far; a missing part leaves its step out rather than guessing.
 export type SetupInput = {
@@ -18,10 +24,13 @@ export type SetupInput = {
     attachments?: EventExerciseAttachment[];
     content?: ManageContent;
     mail?: EventMailSettings;
+    resources?: ManageResources;
+    // The tasks of every active set; without them the hint warning is left out.
+    challenges?: SetupBoardChallenge[];
 };
 
 // detail is a message key suffix under manage.setup.detail.
-export function buildSetupSteps({config, lifecycle, attachments, content, mail}: SetupInput): SetupStep[] {
+export function buildSetupSteps({config, lifecycle, attachments, content, mail, resources, challenges}: SetupInput): SetupStep[] {
     const steps: SetupStep[] = [];
     const published = lifecycle.Status !== "not_published";
 
@@ -45,6 +54,16 @@ export function buildSetupSteps({config, lifecycle, attachments, content, mail}:
             : active.length === 0
                 ? {id: "challenges", status: "todo", href: "/manage/exercises", detail: "challengesNone"}
                 : {id: "challenges", status: "done", href: "/manage/exercises", detail: "challengesReady", vars: {count: active.length}});
+        const unseen = (challenges ?? []).filter(challenge => challenge.Hints.length > 0
+            && (config.HintsDisabled || !challenge.HintsEnabled || challenge.Hints.every(hint => hint.Cost === 0))).length;
+        if (unseen > 0) steps[steps.length - 1].warning = {detail: "challengesHints", vars: {count: unseen}};
+
+        // Lab tasks need a reservation the platform administrator makes.
+        if (config.InfrastructureAllowed && resources && active.some(item => item.Infrastructure)) {
+            steps.push(resources.Reserved
+                ? {id: "resources", status: "done", href: "/manage/resources", detail: "resourcesReserved"}
+                : {id: "resources", status: "todo", href: "/manage/resources", detail: "resourcesNone"});
+        }
     }
 
     steps.push({id: "scoring", status: "optional", href: "/manage/challenge-settings", detail: "scoringDefault"});

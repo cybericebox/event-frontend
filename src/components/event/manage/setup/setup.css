@@ -21,3 +21,5 @@
 .event-setup-chip__track span{display:block;height:100%;border-radius:inherit;background:var(--ib-accent);transition:width var(--ib-dur-move) var(--ib-ease)}
 .event-setup-chip.is-blocked .event-setup-chip__track span{background:var(--ib-danger)}
 @media(max-width:640px){.event-setup-chip__track{display:none}}
+.event-setup__body .event-setup__warning{display:flex;align-items:flex-start;gap:var(--ib-2);color:var(--ib-warn)}
+.event-setup__warning svg{flex:none;margin-top:2px}

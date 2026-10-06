@@ -47,22 +47,22 @@ describe("spreadLabels", () => {
 });
 
 describe("chartSeries", () => {
-    it("samples the cumulative score on an even time grid", () => {
+    it("holds the score flat and rises only around a solve", () => {
         const team = "01900000-0000-7000-8000-000000000041";
         const results = {
             Revision: 1, GeneratedAt: "", TotalTeams: 1, Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
             Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
             Scoreboard: [{Rank: 1, TeamID: team, TeamName: "A", Points: 300, Solved: 2, LastSolveAt: null}],
             Timeline: [
-                {EventTeamID: team, EventChallengeID: team, ChallengeName: "x", Points: 100, SolvedAt: new Date(50).toISOString()},
-                {EventTeamID: team, EventChallengeID: team, ChallengeName: "y", Points: 200, SolvedAt: new Date(75).toISOString()},
+                {EventTeamID: team, EventChallengeID: team, ChallengeName: "x", Points: 100, SolvedAt: new Date(50000).toISOString()},
+                {EventTeamID: team, EventChallengeID: team, ChallengeName: "y", Points: 200, SolvedAt: new Date(75000).toISOString()},
             ],
         };
-        const {series, max} = chartSeries(results, 5, {left: 0, top: 0, width: 100, height: 300}, 0, 100, 4);
+        const {series, max} = chartSeries(results, 5, {left: 0, top: 0, width: 100, height: 300}, 0, 100000);
         expect(max).toBe(300);
-        // Samples at 0, 25, 50, 75, 100 ms: 0, 0, 100, 300, 300 points.
-        expect(series[0].path.startsWith("M0 300 C")).toBe(true);
-        expect(series[0].path).toContain(" 25 300 ");
+        // The hold point sits 1 s ahead of the first solve at 50 s: flat at 0 until then.
+        expect(series[0].path.startsWith("M0 300 ")).toBe(true);
+        expect(series[0].path).toContain(" 49 300 ");
         expect(series[0].path).toContain(" 50 200 ");
         expect(series[0].endY).toBe(0);
     });

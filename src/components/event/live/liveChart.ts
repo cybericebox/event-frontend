@@ -1,4 +1,5 @@
 import type {ManageResultsSnapshot} from "@/api/manageResults";
+import {holdPoints} from "@/components/event/charts/holdPoints";
 
 export type ChartPoint = [number, number];
 
@@ -39,7 +40,7 @@ export type ChartSeries = {teamID: string; name: string; path: string; endY: num
 
 // Cumulative score lines in pixel space: x runs from the event start to now
 // (or the finish), y from 0 to a round maximum.
-export function chartSeries(results: ManageResultsSnapshot | undefined, lines: number, box: {left: number; top: number; width: number; height: number}, start: number, end: number, samples = 24): {series: ChartSeries[]; max: number} {
+export function chartSeries(results: ManageResultsSnapshot | undefined, lines: number, box: {left: number; top: number; width: number; height: number}, start: number, end: number): {series: ChartSeries[]; max: number} {
     const teams = (results?.Scoreboard ?? []).slice(0, lines);
     const max = niceMax(Math.max(0, ...teams.map(team => team.Points)));
     const span = Math.max(1, end - start);
@@ -47,17 +48,15 @@ export function chartSeries(results: ManageResultsSnapshot | undefined, lines: n
     const y = (points: number) => box.top + box.height * (1 - points / max);
     const series = teams.map(team => {
         const solves = (results?.Timeline ?? []).filter(item => item.EventTeamID === team.TeamID).sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
-        // Cumulative score sampled on an even time grid (as on the «Класика»
-        // board): a long gap before a solve stays flat instead of a slow rise
-        // across the whole event.
-        const times = solves.map(solve => Date.parse(solve.SolvedAt));
-        const points: ChartPoint[] = [];
-        let sum = 0, next = 0;
-        for (let step = 0; step <= samples; step++) {
-            const at = start + span * step / samples;
-            while (next < solves.length && times[next] <= at) sum += solves[next++].Points;
-            points.push([x(at), y(sum)]);
-        }
+        // Cumulative score: flat between solves (a hold point ahead of each
+        // change), rising smoothly only around a solve.
+        let sum = 0;
+        const clamp = (time: number) => Math.min(end, Math.max(start, time));
+        const points = holdPoints([
+            [start, 0],
+            ...solves.map((solve): [number, number] => [clamp(Date.parse(solve.SolvedAt)), sum += solve.Points]),
+            [end, sum],
+        ]).map((point): ChartPoint => [x(point[0]), y(point[1])]);
         return {teamID: team.TeamID, name: team.TeamName, path: monotonePath(points), endY: y(sum)};
     });
     return {series, max};
