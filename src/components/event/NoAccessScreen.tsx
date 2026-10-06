@@ -12,7 +12,7 @@ import {EventBrandLogo} from "./EventBrandLogo";
 import {EventLoading} from "./EventLoading";
 import {SignInRedirect} from "./SignInRedirect";
 import {EventButton} from "@/components/ui/EventButton";
-import "@/styles/error-screen.css";
+import {ErrorPageCard} from "./ErrorPageCard";
 
 // A feature of a visible event the signed-in account has no rights for (403: /manage, /live).
 // An event the account cannot see at all is EventUnavailableScreen. Same frame:
@@ -39,15 +39,14 @@ export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mai
     if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;
     // The session ended meanwhile: that is a 401 after all.
     if (!user.data) return <SignInRedirect />;
-    return <main className="event-error event-error--page" role="alert">
-        <EventBrandLogo className="event-error__logo" size={64} />
-        <Lock className="event-error__mark event-error__mark--muted" aria-hidden="true" />
-        <h1>{title}</h1>
-        <p>{t("auth.noAccess.body", {email: user.data?.Email ?? ""})}</p>
-        {failed && <p role="alert">{t("account.signOutFailed")}</p>}
-        <div className="event-error__actions">
-            <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} busy={working} onClick={() => void switchAccount()}>{t("auth.noAccess.switch")}</EventButton>
-            <a className="ib-btn" href={homeHref}>{t("auth.noAccess.home")}</a>
-        </div>
-    </main>;
+    return <ErrorPageCard role="alert" head={<EventBrandLogo className="event-error__logo" size={32} />}
+        mark={<Lock className="event-error__mark event-error__mark--muted" aria-hidden="true" />}
+        title={title}
+        body={<>
+            <p>{t("auth.noAccess.body", {email: user.data?.Email ?? ""})}</p>
+            {failed && <p role="alert">{t("account.signOutFailed")}</p>}
+        </>}>
+        <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} busy={working} onClick={() => void switchAccount()}>{t("auth.noAccess.switch")}</EventButton>
+        <a className="ib-btn" href={homeHref}>{t("auth.noAccess.home")}</a>
+    </ErrorPageCard>;
 }

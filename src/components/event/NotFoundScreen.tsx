@@ -6,7 +6,7 @@ import {BRAND_HEAD, BRAND_TAIL} from "@/i18n/brand";
 import {t} from "@/i18n/t";
 import {EventBrandLogo, useEventBrandName} from "./EventBrandLogo";
 import {goBack} from "./EventErrorScreen";
-import "@/styles/error-screen.css";
+import {ErrorPageCard} from "./ErrorPageCard";
 
 // «Page not found» inside this site, the same screen as in every frontend: the event logo
 // and name (the crest and the wordmark when the event is unknown), muted SearchX mark,
@@ -19,19 +19,22 @@ export function NotFoundScreen({title = t("error.notFound"), body = t("error.not
     block?: boolean;
 }) {
     const eventName = useEventBrandName();
-    // `block` sits inside the shell's <main>; the full-page variant is the main itself.
-    const Frame = block ? "div" : "main";
-    return <Frame className={block ? "event-error" : "event-error event-error--page"}>
+    const name = eventName
+        ? <p className="event-error__name">{eventName}</p>
+        : <p className="event-error__brand">{BRAND_HEAD}<span className="event-error__ice">ICE</span>{BRAND_TAIL}</p>;
+    const actions = <>
+        <Link className="ib-btn ib-btn--primary" href="/">{t("error.goHome")}</Link>
+        <button type="button" className="ib-btn" onClick={goBack}>{t("error.page.back")}</button>
+    </>;
+    const mark = <SearchX className="event-error__mark event-error__mark--muted" aria-hidden="true" />;
+    // `block` sits inside the shell's <main>; the full-page variant is the card page, the main itself.
+    if (!block) return <ErrorPageCard head={<><EventBrandLogo className="event-error__logo" size={32} />{name}</>} mark={mark} title={title} body={body}>{actions}</ErrorPageCard>;
+    return <div className="event-error">
         <EventBrandLogo className="event-error__logo" size={64} />
-        {eventName
-            ? <p className="event-error__name">{eventName}</p>
-            : <p className="event-error__brand">{BRAND_HEAD}<span className="event-error__ice">ICE</span>{BRAND_TAIL}</p>}
-        <SearchX className="event-error__mark event-error__mark--muted" aria-hidden="true" />
+        {name}
+        {mark}
         <h1>{title}</h1>
         <p>{body}</p>
-        <div className="event-error__actions">
-            <Link className="ib-btn ib-btn--primary" href="/">{t("error.goHome")}</Link>
-            <button type="button" className="ib-btn" onClick={goBack}>{t("error.page.back")}</button>
-        </div>
-    </Frame>;
+        <div className="event-error__actions">{actions}</div>
+    </div>;
 }
