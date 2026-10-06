@@ -49,7 +49,7 @@ describe("ManagerShell access errors", () => {
     it("keeps the no-access screen of the manage feature for a 403 on a visible event, no redirect", async () => {
         getManageAccess.mockRejectedValue(new ManageApiError(403));
         renderShell();
-        expect(await screen.findByRole("heading", {name: "Немає доступу до керування заходом"})).toBeTruthy();
+        expect(await screen.findByRole("heading", {name: "Немає доступу до панелі заходу"})).toBeTruthy();
         expect(screen.getByText(/mod@b\.test/)).toBeTruthy();
         expect(replace).not.toHaveBeenCalled();
     });

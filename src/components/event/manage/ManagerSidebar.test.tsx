@@ -120,7 +120,7 @@ describe("participation navigation", () => {
 
     it("gives every top-level row and every sub-item an icon, in one row style", () => {
         renderSidebar(1, true);
-        const nav = screen.getByRole("navigation", {name: "Розділи керування"});
+        const nav = screen.getByRole("navigation", {name: "Розділи панелі заходу"});
         const rows = Array.from(nav.querySelectorAll<HTMLElement>(":scope > a, :scope > section > button"));
         expect(rows.length).toBeGreaterThan(5);
         for (const row of rows) {
@@ -139,7 +139,7 @@ describe("participation navigation", () => {
     });
 
     describe("return to administration", () => {
-        const back = () => screen.queryByRole("link", {name: "Повернутися до адміністрування платформи"});
+        const back = () => screen.queryByRole("link", {name: "Повернутися до панелі платформи"});
         it("is hidden without an origin", () => {
             renderSidebar(0);
             expect(back()).toBeNull();

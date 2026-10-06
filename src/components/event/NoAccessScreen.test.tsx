@@ -29,7 +29,7 @@ describe("NoAccessScreen", () => {
 
     it("takes a page-specific title", async () => {
         getCurrentUser.mockResolvedValue({ID: "u1", Email: "a@b.test"});
-        renderScreen("Немає доступу до керування заходом");
-        expect(await screen.findByRole("heading", {name: "Немає доступу до керування заходом"})).toBeTruthy();
+        renderScreen("Немає доступу до панелі заходу");
+        expect(await screen.findByRole("heading", {name: "Немає доступу до панелі заходу"})).toBeTruthy();
     });
 });
