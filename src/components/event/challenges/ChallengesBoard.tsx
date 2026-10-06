@@ -93,7 +93,7 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
     const category = categories.some(item => item.key === filters.category) ? filters.category : "";
     const selected = challenges.find(item => item.EventChallengeID === selectedID) ?? null;
     const toolbar = <BoardFilterBar filters={filters} stages={stages} hasUnstaged={challenges.some(item => !item.StageID)} onChange={setFilters} />;
-    const emptyMessage = nextOpensAt && filters.status === "open" && !filters.stage
+    const emptyMessage = nextOpensAt && (filters.status === "" || filters.status === "open") && !filters.stage
         ? t("challenges.stage.emptyBreak", {time: formatClock(nextOpensAt)})
         : t("challenges.filter.empty");
     const solved = challenges.filter(item => item.SolvedAt);

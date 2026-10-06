@@ -39,9 +39,11 @@ const status = (label: string) => within(screen.getByRole("group", {name: "Ст�
 describe("the board filters", () => {
     const tasks = [task(1, 1), task(2, 1, {StageID: open.ID}), task(3, 2, {StageID: closed.ID, Closed: true}), task(4, 2, {StageID: closed.ID, Closed: true, SolvedAt: "2026-10-01T09:00:00Z"})];
 
-    it("defaults to «Відкриті»: open tasks only, one row of status segments and no «Активні» toggle", () => {
+    it("defaults to «Усі»; «Відкриті» narrows to open tasks. One row of status segments, no «Активні» toggle", () => {
         renderBoard(tasks, [closed, open]);
-        expect(status("Відкриті").getAttribute("aria-pressed")).toBe("true");
+        expect(status("Усі").getAttribute("aria-pressed")).toBe("true");
+        expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
+        fireEvent.click(status("Відкриті"));
         expect(within(screen.getByRole("group", {name: "Статус"})).getAllByRole("button").map(b => b.textContent)).toEqual(["Відкриті", "Розвʼязані", "Закриті", "Усі"]);
         expect(screen.queryByRole("group", {name: "Показати"})).toBeNull();
         expect(names()).toEqual(["Завдання 1", "Завдання 2"]);
@@ -58,9 +60,9 @@ describe("the board filters", () => {
         fireEvent.click(status("Усі"));
         expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
         expect(screen.getAllByText("закрито").length).toBe(2);
-        expect(window.location.search).toContain("status=all");
-        fireEvent.click(status("Відкриті"));
         expect(window.location.search).not.toContain("status");
+        fireEvent.click(status("Відкриті"));
+        expect(window.location.search).toContain("status=open");
     });
 
     it("starts from the URL: a stored link opens the same view", () => {
@@ -78,6 +80,7 @@ describe("the board filters", () => {
 
     it("during a break with nothing active shows the break message in the centered empty state, and «Усі» still works", () => {
         renderBoard([task(3, 2, {StageID: closed.ID, Closed: true})], [closed], "2026-10-01T10:30:00Z");
+        fireEvent.click(status("Відкриті"));
         expect(screen.getByText(/^Перерва до \d{2}:\d{2}\. Завдання наступного етапу зʼявляться після її завершення\.$/)).toBeTruthy();
         expect(document.querySelector("[data-empty-state]")).toBeTruthy();
         fireEvent.click(status("Усі"));
@@ -91,6 +94,6 @@ describe("the board filters", () => {
         renderBoard(tasks, [closed, open]);
         expect(screen.getByText("За цими фільтрами завдань немає")).toBeTruthy();
         fireEvent.click(screen.getByRole("button", {name: "Скинути фільтри"}));
-        expect(names()).toEqual(["Завдання 1", "Завдання 2"]);
+        expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
     });
 });

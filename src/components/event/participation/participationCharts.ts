@@ -3,10 +3,10 @@ import type {CategoryShare, PointsPoint} from "./participationStatsModel";
 
 // Same look as the analytics charts: slate axes and grid, the tooltip follows
 // the axis. The lines take the event accent.
-const axisText = "#64748b";
-const axisLine = "#cbd5e1";
-const gridLine = "#e2e8f0";
-const secondary = "#94a3b8";
+const axisText = "var(--ib-dim)";
+const axisLine = "var(--ib-control)";
+const gridLine = "var(--ib-line)";
+const secondary = "var(--ib-faint)";
 
 export type PointsSeries = {name: string; points: PointsPoint[]; color: string; dashed?: boolean};
 

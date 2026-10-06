@@ -5,10 +5,10 @@ import {formatCount} from "./analyticsFormat";
 // The report's charts share the results chart's look: slate axes and grid, the
 // event palette, tooltips following the axis. They are static pictures of a
 // finished event, so no live behaviour beyond hover and zoom.
-const axisText = "#64748b";
+const axisText = "var(--ib-dim)";
 const palette = {primary: "#0091EA", navy: "#1E2A6B", ok: "#22C55E", warn: "#F59E0B"};
-const axisLine = {lineStyle: {color: "#cbd5e1"}};
-const gridLine = {lineStyle: {color: "#e2e8f0"}};
+const axisLine = {lineStyle: {color: "var(--ib-control)"}};
+const gridLine = {lineStyle: {color: "var(--ib-line)"}};
 
 const clip = (name: string, max = 22) => name.length > max ? `${name.slice(0, max - 1)}…` : name;
 

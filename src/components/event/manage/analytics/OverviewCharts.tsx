@@ -15,7 +15,7 @@ import {registrationsHaveData} from "./peopleModel";
 
 const POLL_SECONDS = 15;
 export const LEADER_LINES = 5;
-const axisText = "#64748b";
+const axisText = "var(--ib-dim)";
 const palette = {total: "#1E2A6B", open: "#0091EA", approval: "#22C55E", invitation: "#F59E0B"};
 
 // The score chart of the top teams as smooth lines (the Live «Динаміка балів»
@@ -43,8 +43,8 @@ export function registrationsOverviewOption(registrations: AnalyticsParticipants
         grid: {left: 44, right: 16, top: 36, bottom: 64},
         legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
         tooltip: {trigger: "axis"},
-        xAxis: {type: "time", axisLine: {lineStyle: {color: "#cbd5e1"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
-        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "#e2e8f0"}}},
+        xAxis: {type: "time", axisLine: {lineStyle: {color: "var(--ib-control)"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
+        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "var(--ib-line)"}}},
         dataZoom: [{type: "inside", filterMode: "none"}, {type: "slider", height: 18, bottom: 8, filterMode: "none"}],
         series: [
             line(t("manage.analytics.overviewCharts.registrations.total"), palette.total, running(day => day.Open + day.Approval + day.Invitation), 3),

@@ -163,7 +163,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
             onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />}
         <div className="event-pp-charts">
             <PointsChartCard event={event} title={t("participation.chart.points.teamTitle")} state={teamState} error={stats.error} onRetry={stats.retry} window={window}
-                series={[{name: t("participation.chart.points.team"), points: teamSeries, color: accent}, ...(mineSeries.length ? [{name: t("participation.chart.points.mine"), points: mineSeries, color: "#94a3b8", dashed: true}] : [])]} />
+                series={[{name: t("participation.chart.points.team"), points: teamSeries, color: accent}, ...(mineSeries.length ? [{name: t("participation.chart.points.mine"), points: mineSeries, color: "var(--ib-faint)", dashed: true}] : [])]} />
             <CategoryChartCard event={event} state={teamState} solves={solves} color={accent} error={stats.error} onRetry={stats.retry} />
         </div>
         <Card title={t("participation.ratio.title")} note={t("participation.ratio.note")}>

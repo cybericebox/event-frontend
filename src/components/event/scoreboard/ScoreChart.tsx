@@ -3,9 +3,10 @@
 import {useRef, useState} from "react";
 import ReactECharts from "echarts-for-react";
 import {t} from "@/i18n/t";
+import {useChartTokens} from "@/components/event/charts/chartTokens";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 
-const palette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "#64748B"];
+const palette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "var(--ib-dim)"];
 
 // `note` is written over the plot (before the start, or with nobody to
 // chart): the axes stay, so the block keeps its place and size.
@@ -26,15 +27,15 @@ export function scoreChartOption({snapshot, teamIDs, ownTeamID, startTime, finis
     return {
         color: palette,
         grid: {left: 44, right: 16, top: 36, bottom: 56},
-        legend: {type: "scroll", orient: "horizontal", top: 0, textStyle: {color: "#64748b"}},
-        xAxis: {type: "time", min: startTime.getTime(), max: Math.max(finishTime.getTime(), startTime.getTime() + 1), axisLine: {lineStyle: {color: "#cbd5e1"}}, axisLabel: {color: "#64748b"}, splitLine: {show: false}},
-        yAxis: {type: "value", min: 0, minInterval: 1, max: series.length === 0 || note ? 100 : undefined, axisLabel: {color: "#64748b"}, splitLine: {lineStyle: {color: "#e2e8f0"}}},
-        graphic: note ? [{type: "text", left: "center", top: "middle", silent: true, style: {text: note, fill: "#64748b", fontSize: 14}}] : [],
+        legend: {type: "scroll", orient: "horizontal", top: 0, textStyle: {color: "var(--ib-dim)"}},
+        xAxis: {type: "time", min: startTime.getTime(), max: Math.max(finishTime.getTime(), startTime.getTime() + 1), axisLine: {lineStyle: {color: "var(--ib-control)"}}, axisLabel: {color: "var(--ib-dim)"}, splitLine: {show: false}},
+        yAxis: {type: "value", min: 0, minInterval: 1, max: series.length === 0 || note ? 100 : undefined, axisLabel: {color: "var(--ib-dim)"}, splitLine: {lineStyle: {color: "var(--ib-line)"}}},
+        graphic: note ? [{type: "text", left: "center", top: "middle", silent: true, style: {text: note, fill: "var(--ib-dim)", fontSize: 14}}] : [],
         tooltip: {trigger: "axis"},
-        // Neutral translucent greys read on both themes.
+        // Slider colours are DS tokens, resolved per theme by useChartTokens.
         dataZoom: [
             {type: "inside", xAxisIndex: 0, filterMode: "none"},
-            {type: "slider", xAxisIndex: 0, filterMode: "none", height: 16, bottom: 8, borderColor: "transparent", backgroundColor: "rgba(100,116,139,.12)", fillerColor: "rgba(100,116,139,.28)", handleSize: "100%", handleStyle: {color: "#64748b", borderColor: "transparent"}, moveHandleSize: 0, showDetail: false, dataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}, selectedDataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}},
+            {type: "slider", xAxisIndex: 0, filterMode: "none", height: 16, bottom: 8, borderColor: "transparent", backgroundColor: "var(--ib-line)", fillerColor: "var(--ib-control)", handleSize: "100%", handleStyle: {color: "var(--ib-dim)", borderColor: "transparent"}, moveHandleSize: 0, showDetail: false, dataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}, selectedDataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}},
         ],
         series,
     };
@@ -42,6 +43,7 @@ export function scoreChartOption({snapshot, teamIDs, ownTeamID, startTime, finis
 
 export function ScoreChart(input: ChartInput) {
     const chart = useRef<ReactECharts>(null);
+    const option = useChartTokens(scoreChartOption(input));
     const [zoomed, setZoomed] = useState(false);
     const reset = () => {
         chart.current?.getEchartsInstance().dispatchAction({type: "dataZoom", start: 0, end: 100});
@@ -52,7 +54,7 @@ export function ScoreChart(input: ChartInput) {
         setZoomed((zoom.start ?? 0) > 0.01 || (zoom.end ?? 100) < 99.99);
     };
     return <div className="event-score-chart">
-        <ReactECharts ref={chart} style={{height: 320, width: "100%"}} option={scoreChartOption(input)} notMerge onEvents={{datazoom: onZoom, dblclick: reset}} />
+        <ReactECharts ref={chart} style={{height: 320, width: "100%"}} option={option} notMerge onEvents={{datazoom: onZoom, dblclick: reset}} />
         {zoomed && <button type="button" className="ib-btn ib-btn--sm event-score-chart__reset" onClick={reset}>{t("scoreboard.chartResetZoom")}</button>}
     </div>;
 }

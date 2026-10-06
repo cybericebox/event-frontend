@@ -5,6 +5,7 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {useChartTokens} from "@/components/event/charts/chartTokens";
 import type {ChartState} from "./analyticsModel";
 import "./analytics.css";
 
@@ -24,10 +25,11 @@ export function AnalyticsChart({event, state, option, height = 340, ariaLabel, l
     onRetry?: () => void;
     error?: unknown;
 }) {
+    const resolved = useChartTokens(option);
     return <div className="event-analytics-chart" style={{height, "--event-block-state-h": `${height}px`} as React.CSSProperties} role="img" aria-label={ariaLabel} aria-busy={state === "loading"}>
         {state === "loading" && <EventLoading event={event} label={loadingLabel} />}
         {state === "error" && <EventLoadError message={errorMessage} onRetry={onRetry} error={error} />}
         {state === "empty" && <EmptyState message={emptyMessage} />}
-        {state === "ready" && option && <ReactECharts style={{height: "100%", width: "100%"}} option={option} notMerge />}
+        {state === "ready" && option && <ReactECharts style={{height: "100%", width: "100%"}} option={resolved ?? {}} notMerge />}
     </div>;
 }

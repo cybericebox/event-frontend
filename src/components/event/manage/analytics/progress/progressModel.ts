@@ -4,10 +4,10 @@ import {t} from "@/i18n/t";
 // Pure helpers of «Прогрес» (§6.4): the score chart, the matrix cells, the
 // heatmap and the inactive teams. Chart colours and axes follow the results
 // chart (scoreboard/ScoreChart).
-const axisText = "#64748b";
-const gridLine = "#e2e8f0";
-const axisLine = "#cbd5e1";
-export const scorePalette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "#64748B"];
+const axisText = "var(--ib-dim)";
+const gridLine = "var(--ib-line)";
+const axisLine = "var(--ib-control)";
+export const scorePalette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "var(--ib-dim)"];
 
 export const TOP_OPTIONS = [5, 10, 20] as const;
 export const DEFAULT_TOP = 10;

@@ -6,11 +6,11 @@ import {percent} from "./analyticsModel";
 
 // Chart look shared with the results chart (see activityChart.ts): slate axes
 // and grid, the event palette, tooltip on the axis.
-const axisText = "#64748b";
-const gridLine = "#e2e8f0";
+const axisText = "var(--ib-dim)";
+const gridLine = "var(--ib-line)";
 const palette = {main: "#0091EA", navy: "#1E2A6B", green: "#22C55E", amber: "#F59E0B", red: "#EF4444"};
 
-const axisLine = {lineStyle: {color: "#cbd5e1"}};
+const axisLine = {lineStyle: {color: "var(--ib-control)"}};
 const baseGrid = {left: 44, right: 16, top: 24, bottom: 32, containLabel: true};
 
 export const stageLabel = (stage: FunnelStage) => t(`manage.analytics.people.stage.${stage}`);

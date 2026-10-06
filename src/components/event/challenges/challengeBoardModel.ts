@@ -2,11 +2,11 @@ import type {BoardStage, OwnChallenge} from "@/api/participantChallenges";
 import {t, tPlural} from "@/i18n/t";
 
 export type BoardView = "tiles" | "rail";
-// "" is «Усі»; the default is «Відкриті». Tasks of closed stages are reached through «Закриті».
+// "" is «Усі» and the default, so a task that was just solved stays on the board; «Відкриті» narrows it. Tasks of closed stages are reached through «Закриті».
 export type BoardStatus = "" | "open" | "solved" | "closed";
 export type BoardFilters = {stage: string; status: BoardStatus; category: string};
 export const UNSTAGED = "none";
-export const DEFAULT_BOARD_FILTERS: BoardFilters = {stage: "", status: "open", category: ""};
+export const DEFAULT_BOARD_FILTERS: BoardFilters = {stage: "", status: "", category: ""};
 export type BoardCategory = {key: string; name: string; order: number; challenges: OwnChallenge[]};
 
 // «1 250» — a narrow no-break space groups thousands like the DS boards.
@@ -87,13 +87,13 @@ export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilt
 
 const STATUSES: BoardStatus[] = ["open", "solved", "closed"];
 
-// The filters live in the URL: ?stage=…&status=…&category=… (the default «Відкриті» is left out, «Усі» is status=all).
+// The filters live in the URL: ?stage=…&status=…&category=… (the default «Усі» is left out).
 export function parseBoardFilters(search: string): BoardFilters {
     const params = new URLSearchParams(search);
     const status = params.get("status");
     return {
         stage: params.get("stage") ?? "",
-        status: status === "all" ? "" : STATUSES.includes(status as BoardStatus) ? status as BoardStatus : "open",
+        status: STATUSES.includes(status as BoardStatus) ? status as BoardStatus : "",
         category: params.get("category") ?? "",
     };
 }
@@ -103,7 +103,7 @@ export function boardFilterSearch(search: string, filters: BoardFilters): string
     const params = new URLSearchParams(search);
     for (const key of ["scope", "stage", "status", "category"]) params.delete(key);
     if (filters.stage) params.set("stage", filters.stage);
-    if (filters.status !== DEFAULT_BOARD_FILTERS.status) params.set("status", filters.status || "all");
+    if (filters.status !== DEFAULT_BOARD_FILTERS.status) params.set("status", filters.status);
     if (filters.category) params.set("category", filters.category);
     const query = params.toString();
     return query ? `?${query}` : "";
