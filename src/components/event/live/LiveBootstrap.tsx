@@ -11,7 +11,7 @@ import {LiveLinkClosed, LiveScreen} from "./LiveScreen";
 import "./live.css";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
-import {isNetworkFailure} from "@/utils/eventGone";
+import {loadFailure} from "@/utils/loadFailure";
 import {EventUnavailableScreen} from "@/components/event/EventUnavailableScreen";
 import {NoAccessScreen} from "@/components/event/NoAccessScreen";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
@@ -64,7 +64,7 @@ function LiveStaffBootstrap() {
     if (failed) {
         const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
         // The event itself is not readable: the one neutral screen, never a redirect.
-        if (event.isError && (status === 401 || status === 403 || status === 404 || isNetworkFailure(event.error))) return <EventUnavailableScreen />;
+        if (event.isError && loadFailure(event.error) === "notFound") return <EventUnavailableScreen />;
         // The event is visible, the live screen is not: sign in, or no rights for it.
         if (status === 401) return <SignInRedirect event={event.data} />;
         if (status === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;

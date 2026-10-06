@@ -189,3 +189,12 @@ describe("EventServiceStatusGate", () => {
         expect(html).not.toContain(">page<");
     });
 });
+
+describe("trackApiFetch request id", () => {
+    it("a 5xx with X-Request-ID is our backend answering, not an outage; one without is", async () => {
+        await trackApiFetch(() => Promise.resolve(new Response("", {status: 500, headers: {"X-Request-ID": "a1b2c3d4"}})), "https://api.test")("https://api.test/api/x");
+        expect(getServiceStatus()).toBe("up");
+        await trackApiFetch(() => Promise.resolve(new Response("", {status: 502})), "https://api.test")("https://api.test/api/x");
+        expect(getServiceStatus()).toBe("suspect");
+    });
+});

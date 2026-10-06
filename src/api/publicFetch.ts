@@ -7,7 +7,7 @@ export const SERVER_FETCH_TIMEOUT_MS = 10_000;
 // on save: the server cannot know how many replicas there are, so a change shows within this time.
 export const PUBLIC_REVALIDATE_SECONDS = 30;
 
-export type PublicResponse = {status: number; body: unknown};
+export type PublicResponse = {status: number; body: unknown; requestId?: string};
 
 // One fetch per key at a time per replica: concurrent renders of the same event wait for the same request, so a
 // burst of visitors on a cold or expired cache costs the API one call, not one per visitor.
@@ -26,7 +26,11 @@ export function fetchPublic(url: string, headers: Record<string, string>): Promi
             next: {revalidate: PUBLIC_REVALIDATE_SECONDS},
             signal: AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS),
         });
-        if (!response.ok) return {status: response.status, body: null};
+        if (!response.ok) {
+            // A 5xx that carries X-Request-ID came from our backend (it journaled the error); one without is a proxy answer.
+            const requestId = response.status >= 500 ? response.headers.get("X-Request-ID") : null;
+            return requestId ? {status: response.status, body: null, requestId} : {status: response.status, body: null};
+        }
         // An answer without a JSON body (the page access check) is still a success.
         const text = await response.text();
         let body: unknown = null;

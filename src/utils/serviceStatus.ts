@@ -99,8 +99,9 @@ export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): type
         try {
             const response = await fetchImpl(input, init);
             const stream = response.headers.get("Content-Type")?.includes("text/event-stream") ?? false;
-            if (!stream && isUnavailableStatus(response.status)) reportServiceUnavailable();
             const requestId = response.status >= 500 ? response.headers.get("X-Request-ID") : null;
+            // A 5xx with X-Request-ID is our backend answering with an error (journaled): a 500 page, not an outage.
+            if (!stream && isUnavailableStatus(response.status) && !requestId) reportServiceUnavailable();
             if (requestId) lastServerError = {requestId, at: Date.now()};
             if (response.status === 404 && isEventSelfRequest(requestURL(input), origin)) void reportEventNotFound(origin, fetchImpl);
             return response;

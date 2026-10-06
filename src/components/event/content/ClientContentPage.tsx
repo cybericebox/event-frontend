@@ -18,7 +18,7 @@ async function getVisiblePage(eventID: string, slug: string): Promise<EventPageC
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (response.status === 404) return null;
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, undefined, undefined, response.headers.get("X-Request-ID") ?? undefined);
     const body: unknown = await response.json();
     return z.object({Data: EventPageContentSchema}).parse(body).Data;
 }
