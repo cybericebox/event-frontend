@@ -64,7 +64,8 @@ import {Providers} from "@/utils/providers";
 import {AppShell} from "@/components/event/AppShell";
 import {EventActionToaster} from "@/components/ui/EventActionToaster";
 import {headers} from "next/headers";
-import {getPublicEventInfo} from "@/api/publicEventInfo";
+import {getPublicEventInfo, PublicEventError} from "@/api/publicEventInfo";
+import {loadFailure} from "@/utils/loadFailure";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 import {EventBrandProvider} from "@/components/event/EventBrandLogo";
 import {apiOrigin} from "@/utils/origins";
@@ -111,10 +112,14 @@ export default async function RootLayout({
     const nonce = (await headers()).get("x-nonce") ?? undefined;
     let event: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
     let unavailable = false;
+    let failure: {status: number; requestId?: string} | undefined;
     try {
         event = await getPublicEventInfo();
-    } catch {
-        unavailable = true;
+    } catch (error) {
+        // Our backend answered with an error (it carries X-Request-ID): the 500 page. Anything else (network
+        // failure, timeout, a proxy 502/503/504) is the backend being unavailable: the outage overlay.
+        if (error instanceof PublicEventError && loadFailure(error) === "error") failure = {status: error.status, requestId: error.requestId};
+        else unavailable = true;
     }
     const theme = event?.Theme;
     const themeStyle = theme ? {
@@ -131,7 +136,7 @@ export default async function RootLayout({
         <body className="event-root">
         <Providers>
             <EventBrandProvider logoURL={event?.LogoURL ?? ""} name={event?.Name ?? ""}>
-            <AppShell event={event} unavailable={unavailable}>
+            <AppShell event={event} unavailable={unavailable} failure={failure}>
                 {children}
             </AppShell>
             </EventBrandProvider>

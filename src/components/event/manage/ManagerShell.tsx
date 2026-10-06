@@ -19,7 +19,7 @@ import {SetupChip} from "./setup/SetupChip";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {useDrawerContract} from "./useDrawerContract";
 import {managerCrumbs} from "./managerNavigation";
-import {isOutageError} from "@/utils/serviceStatus";
+import {loadFailure} from "@/utils/loadFailure";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {SkipLink} from "@/components/ui/SkipLink";
@@ -70,7 +70,7 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
     if (access.isError) {
         const status = access.error instanceof ManageApiError ? access.error.status : 0;
         // An outage keeps the frame under the outage modal; access refetches on recovery.
-        if (isOutageError(access.error, status)) return <OutageShell manage event={event} />;
+        if (loadFailure(access.error) === "unavailable") return <OutageShell manage event={event} />;
         // 401: no session, straight to the sign-in and back here (no screen in between). 403: signed in without rights.
         if (status === 401) return <SignInRedirect event={event} />;
         if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} homeHref="/" />;

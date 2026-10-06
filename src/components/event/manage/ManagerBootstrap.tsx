@@ -2,15 +2,14 @@
 
 import {useEffect, useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
+import {getClientEventInfo} from "@/api/clientEventInfo";
 import {ManagerShell} from "./ManagerShell";
 import {EventErrorScreen} from "../EventErrorScreen";
 import {EventLoading} from "../EventLoading";
 import {EventBrandProvider} from "../EventBrandLogo";
 import {OutageShell} from "../OutageShell";
 import {EventUnavailableScreen} from "../EventUnavailableScreen";
-import {isNetworkFailure} from "@/utils/eventGone";
-import {isOutageError} from "@/utils/serviceStatus";
+import {loadFailure} from "@/utils/loadFailure";
 import {t} from "@/i18n/t";
 
 export function ManagerBootstrap({children}: {children: ReactNode}) {
@@ -48,15 +47,14 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
 
     if (event.isPending) return <EventLoading full label={t("manage.shell.loadingEvent")} />;
     if (event.isError) {
-        const status = event.error instanceof ClientEventInfoError ? event.error.status : 0;
-        // An outage keeps the /manage frame; the outage modal covers it and the
-        // query refetches once the API answers.
-        // The server read answered 404; a browser read that cannot reach the API is the same missing event.
-        if (isNetworkFailure(event.error)) return <EventUnavailableScreen />;
-        if (isOutageError(event.error, status)) return <OutageShell manage />;
+        const failure = loadFailure(event.error);
+        // The backend is unavailable: the /manage frame stays under the outage modal and the query refetches once
+        // the API answers.
+        if (failure === "unavailable") return <OutageShell manage />;
         // 401, 403 and 404 do not say whether the event is missing, closed or private to this
         // visitor, and a redirect would reveal that it exists: one neutral screen for all three.
-        if (status === 401 || status === 403 || status === 404) return <EventUnavailableScreen />;
+        // (An unknown event address answers without CORS headers; the query turns that into a 404.)
+        if (failure === "notFound") return <EventUnavailableScreen />;
         return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} error={event.error} onRetry={() => void event.refetch()} />;
     }
     return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data} onSection={setSection}>{children}</ManagerShell></EventBrandProvider>;

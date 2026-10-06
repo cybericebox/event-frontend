@@ -14,6 +14,13 @@ export {SERVER_FETCH_TIMEOUT_MS} from "./publicFetch";
 // the host-only API session cookie is never sent to the event frontend server.
 // React cache deduplicates the metadata and layout reads within one render; across renders the read comes from
 // the 30 s stale-while-revalidate fetch cache, one fetch per replica at a time (publicFetch.ts).
+// The API answered the event read with a failure other than 404; `requestId` is set when our backend answered.
+export class PublicEventError extends Error {
+    constructor(readonly status: number, readonly requestId?: string) {
+        super(`Event info request failed: ${status}`);
+    }
+}
+
 export const getPublicEventInfo = cache(async (): Promise<PublicEventInfo | null> => {
     const host = (await headers()).get("host");
     if (!host) return null;
@@ -24,7 +31,7 @@ export const getPublicEventInfo = cache(async (): Promise<PublicEventInfo | null
         ...(internalOrigin ? {Host: apiHost} : {}),
     });
     if (response.status === 404) return null;
-    if (response.status < 200 || response.status >= 300) throw new Error(`Event info request failed: ${response.status}`);
+    if (response.status < 200 || response.status >= 300) throw new PublicEventError(response.status, response.requestId);
     const envelope = z.object({Data: PublicEventInfoSchema}).safeParse(response.body);
     if (!envelope.success) throw new Error("Invalid public event info response");
     return envelope.data.Data;

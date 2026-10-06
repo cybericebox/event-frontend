@@ -43,6 +43,15 @@ describe("EventErrorScreen 500", () => {
         expect(screen.getByText("Код помилки: 50310")).toBeTruthy();
     });
 
+    it("without a platform code (none or 0) the reference is the 8 request id characters alone", () => {
+        for (const code of [undefined, 0]) {
+            render(<EventErrorScreen onRetry={() => {}} error={{status: 500, code, requestId: "a1b2c3d4-0000-4000-8000-000000000000"}} />);
+            expect(screen.getByText(/Номер звернення: a1b2c3d4$/)).toBeTruthy();
+            expect(screen.queryByText(/0-a1b2c3d4/)).toBeNull();
+            cleanup();
+        }
+    });
+
     it("frontend crash: no report line, no reference, details link carries the trimmed message", () => {
         render(<EventErrorScreen onRetry={() => {}} error={new Error("x".repeat(300))} />);
         expect(screen.getByText("Сталася непередбачена помилка. Оновіть сторінку або поверніться назад.")).toBeTruthy();

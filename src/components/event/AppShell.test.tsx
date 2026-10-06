@@ -108,3 +108,26 @@ describe("session pages of a visible event", () => {
         expect(replace).not.toHaveBeenCalled();
     });
 });
+
+describe("a failed session check never leaves the endless loader", () => {
+    const event = {EventID: "event-1"} as never;
+    function renderShell(props: Partial<React.ComponentProps<typeof AppShell>> = {}) {
+        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        render(<QueryClientProvider client={client}><AppShell event={event} unavailable={false} {...props}><h1>Сторінка</h1></AppShell></QueryClientProvider>);
+    }
+
+    it("5xx on a session page shows the error page with a retry", async () => {
+        path.value = "/team";
+        user.current = () => Promise.reject(Object.assign(new Error("500"), {status: 500, requestId: "a1b2c3d4-0000-4000-8000-000000000000"}));
+        renderShell();
+        expect(await screen.findByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+        expect(screen.queryByText("Завантаження події")).toBeNull();
+    });
+
+    it("a server read that failed with our backend error shows the 500 page, not the outage overlay", () => {
+        renderShell({event: null, failure: {status: 500, requestId: "a1b2c3d4-0000-4000-8000-000000000000"}});
+        expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+        expect(screen.getByText(/Номер звернення: a1b2c3d4$/)).toBeTruthy();
+        expect(screen.queryByRole("alertdialog")).toBeNull();
+    });
+});

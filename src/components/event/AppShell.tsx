@@ -7,7 +7,7 @@ import {getCurrentUser, getJoinStatus, getOwnTeam} from "@/api/clientAuth";
 import {getParticipantEventInfo} from "@/api/participantEventInfo";
 import {ParticipationStatusEnum} from "@/types/event";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
-import {usePathname} from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
 import {GuestShell} from "./GuestShell";
 import {ParticipantShell} from "./ParticipantShell";
 import {ManagerShell} from "./manage/ManagerShell";
@@ -27,6 +27,8 @@ type Props = {
     children: ReactNode;
     event: PublicEventInfo | null;
     unavailable: boolean;
+    // The server read of the event failed with an error of our backend: the 500 page, not the outage overlay.
+    failure?: {status: number; requestId?: string};
 };
 
 // The outage modal is mounted once over every shell state; the page stays underneath.
@@ -40,8 +42,9 @@ export function AppShell(props: Props) {
     </>;
 }
 
-function ShellContent({children, event, unavailable}: Props) {
+function ShellContent({children, event, unavailable, failure}: Props) {
     const pathname = usePathname();
+    const router = useRouter();
     const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
     const isLive = pathname === "/live";
     const slug = pathname.slice(1);
@@ -70,6 +73,7 @@ function ShellContent({children, event, unavailable}: Props) {
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
 
+    if (failure) return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} error={failure} onRetry={() => router.refresh()} />;
     if (unavailable) {
         // The server-side event fetch failed: no event data, so the bare frame with the
         // platform crest stays under the outage modal until the event loads again.

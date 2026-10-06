@@ -34,8 +34,8 @@ function ReportLink({ticket, message}: {ticket?: string; message: string}) {
 // Error boundary screen, the error page with code 500: «Спробувати ще раз» and «Назад». Never shows error
 // details on the page. `error` decides what the page says:
 //   an API error (it carries a platform code or an HTTP status): the backend journaled it, so the text says the report
-//   is received, and the reference «{code}-{request id, 8 chars}» shows when the request id is known (X-Request-ID;
-//   without it, the code alone);
+//   is received, and the reference «{code}-{request id, 8 chars}» (the 8 characters alone when there is no platform code) shows when the
+//   request id is known (X-Request-ID; without it, the code alone);
 //   anything else is a frontend crash: nothing is journaled, so no report line and no reference number.
 // `page` is the full-screen mode with the footer (global error, the shell could not render); otherwise it is
 // the block inside the shell's content area. A caller's own `body` wins over the default text.
@@ -47,15 +47,17 @@ export function EventErrorScreen({onRetry, title = t("error.page.title"), body, 
     error?: unknown;
 }) {
     const code = platformErrorCode(error);
-    const status = error && typeof error === "object" ? (error as {status?: unknown}).status : undefined;
+    const fields = error && typeof error === "object" ? error as {status?: unknown; requestId?: unknown} : {};
+    const status = fields.status;
     const fromApi = code !== undefined || (typeof status === "number" && status >= 500);
-    const requestId = fromApi ? lastServerErrorRequestId() : null;
-    const base = code ?? (typeof status === "number" ? status : undefined);
-    const ref = requestId && base !== undefined ? `${base}-${requestId.replace(/-/g, "").slice(0, 8)}` : undefined;
+    const requestId = fromApi ? (typeof fields.requestId === "string" && fields.requestId ? fields.requestId : lastServerErrorRequestId()) : null;
+    // «{platform code}-{request id, 8 chars}»; without a platform code (none, or 0) the 8 characters alone.
+    const shortId = requestId ? requestId.replace(/-/g, "").slice(0, 8) : "";
+    const ref = shortId ? (code ? `${code}-${shortId}` : shortId) : undefined;
     const message = error instanceof Error ? error.message : "";
     return <ErrorPage mode={page ? "page" : "block"} role="alert" code={500} title={title}
         text={body ?? (fromApi ? t("error.page.reported") : t("error.page.body"))}
-        refCode={code} ticket={ref}
+        refCode={code || undefined} ticket={ref}
         report={<ReportLink ticket={ref} message={message} />}>
         <button type="button" className="ib-btn ib-btn--primary" onClick={onRetry}>{t("error.load.retry")}</button>
         <button type="button" className="ib-link" onClick={goBack}>{t("error.page.back")}</button>

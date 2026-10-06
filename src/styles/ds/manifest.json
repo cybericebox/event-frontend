@@ -96,8 +96,8 @@
   },
   "error-page.css": {
     "kind": "copy",
-    "source": "06adf5d0c745037b1f119bcbdd37dcdf06426345222987f633afea8faf1dfd6c",
-    "sha": "06adf5d0c745037b1f119bcbdd37dcdf06426345222987f633afea8faf1dfd6c"
+    "source": "1afdf6594613b22c79f9f54d283e4e6da79746118edb97f18d4035d64203834b",
+    "sha": "1afdf6594613b22c79f9f54d283e4e6da79746118edb97f18d4035d64203834b"
   },
   "service-down.css": {
     "kind": "copy",
