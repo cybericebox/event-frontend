@@ -16,8 +16,8 @@ const event = {
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
 } satisfies PublicEventInfo;
 
-function renderSidebar(participation: 0 | 1, infrastructure = false) {
-    render(<ManagerSidebar event={{...event, Participation: participation}} pathname="/manage/participants" pages={[]} pagesError={false} canManage infrastructureAllowed={infrastructure} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
+function renderSidebar(participation: 0 | 1, infrastructure = false, platformStaff = false) {
+    render(<ManagerSidebar event={{...event, Participation: participation}} pathname="/manage/participants" pages={[]} pagesError={false} canManage platformStaff={platformStaff} infrastructureAllowed={infrastructure} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
     // The group of the current page (/manage/participants) opens on its own.
     expect(screen.getByRole("button", {name: "Участь"}).getAttribute("aria-expanded")).toBe("true");
 }
@@ -172,6 +172,10 @@ describe("participation navigation", () => {
             window.history.replaceState(null, "", "/manage/labs");
             renderSidebar(0);
             expect(back()!.getAttribute("href")).toBe("https://admin.example.org/events");
+        });
+        it("always shows the platform panel link to platform staff", () => {
+            renderSidebar(0, false, true);
+            expect(back()!.getAttribute("href")).toBe("https://admin.example.org");
         });
         it("ignores a foreign origin", () => {
             window.history.replaceState(null, "", `/manage?from=${encodeURIComponent("https://evil.example.com/events")}`);

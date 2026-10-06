@@ -2,10 +2,12 @@
 
 import {createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode} from "react";
 import {EventErrorScreen} from "@/components/event/EventErrorScreen";
+import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useQuery} from "@tanstack/react-query";
 import {Menu} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
+import {getCurrentUser} from "@/api/clientAuth";
 import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
 import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavigation";
@@ -16,7 +18,7 @@ import {useAnalyticsAccess} from "./analytics/useAnalyticsAccess";
 import {SetupChip} from "./setup/SetupChip";
 import {ManagerSidebar} from "./ManagerSidebar";
 import {useDrawerContract} from "./useDrawerContract";
-import {managerLocationTitle} from "./managerNavigation";
+import {managerCrumbs} from "./managerNavigation";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -52,8 +54,13 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
         retry: false, refetchOnWindowFocus: false,
     });
 
+    // Platform staff always get the way back to the platform panel; others only through a validated `?from=`.
+    const profile = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
+    const platformStaff = !!profile.data && profile.data.Role !== "user";
+
     const analytics = useAnalyticsAccess(event.EventID, !!access.data);
-    const section = access.data ? managerLocationTitle(pathname, pages.data ?? []) : null;
+    const crumbs = access.data ? managerCrumbs(pathname, pages.data ?? []) : null;
+    const section = crumbs ? crumbs[crumbs.length - 1].label : null;
     useEffect(() => {
         onSection?.(section);
         return () => onSection?.(null);
@@ -74,11 +81,13 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <SkipLink />
         <div className="ib-admin-shell__layout">
-            <ManagerSidebar asideRef={sidebarRef} drawerOpen={drawerOpen} event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} infrastructureAllowed={access.data.InfrastructureAllowed} analytics={analytics.data} onRetryPages={() => void pages.refetch()} onNavigate={closeDrawer} />
+            <ManagerSidebar asideRef={sidebarRef} drawerOpen={drawerOpen} event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} platformStaff={platformStaff} infrastructureAllowed={access.data.InfrastructureAllowed} analytics={analytics.data} onRetryPages={() => void pages.refetch()} onNavigate={closeDrawer} />
             <div ref={mainRef} className="ib-admin-shell__main">
                 <header className="ib-topbar">
                     <EventTooltip content={t("manage.shell.openMenu")} silent>{() => <button ref={menuRef} className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>}</EventTooltip>
-                    <ol className="ib-topbar__crumbs"><li aria-current="page">{section}</li></ol>
+                    <ol className="ib-topbar__crumbs">{(crumbs ?? [{label: t("manage.nav.eventManagement")}]).map((crumb, index, all) => index === all.length - 1
+                        ? <li key={index} aria-current="page">{crumb.label}</li>
+                        : <li key={index}>{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : crumb.label}</li>)}</ol>
                     <div className="ib-topbar__actions"><SetupChip eventID={event.EventID} />{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
                 <main id="main" tabIndex={-1} className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
