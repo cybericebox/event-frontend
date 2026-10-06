@@ -1,4 +1,4 @@
-import type {OwnChallenge} from "@/api/participantChallenges";
+import type {BoardStage, OwnChallenge} from "@/api/participantChallenges";
 import {t, tPlural} from "@/i18n/t";
 
 export type BoardView = "tiles" | "rail";
@@ -62,16 +62,26 @@ export function matchesBoard(challenge: OwnChallenge, query: string, categoryNam
 
 // What the team has done with a task, whatever its stage says: solved counts a practice solve too (it is shown as
 // solved, only the rating ignores it); closed is a task of a closed stage that is not solved; the rest is open.
-export function boardStatus(challenge: OwnChallenge): Exclude<BoardStatus, ""> {
+export function boardStatus(challenge: OwnChallenge, stages: BoardStage[] = []): Exclude<BoardStatus, ""> {
     if (challenge.SolvedAt || challenge.Practice) return "solved";
-    return challenge.Closed ? "closed" : "open";
+    return challenge.Closed || stageOf(challenge, stages)?.State === "closed" ? "closed" : "open";
+}
+
+const stageOf = (challenge: OwnChallenge, stages: BoardStage[]) => challenge.StageID ? stages.find(stage => stage.ID === challenge.StageID) : undefined;
+
+// «Відкриті» = can be solved now: not solved, not locked by an unmet prerequisite, and its stage (if any) is open. A stage the
+// board does not list yet has not opened.
+export function isSolvableNow(challenge: OwnChallenge, stages: BoardStage[]): boolean {
+    if (challenge.SolvedAt || challenge.Practice || challenge.Closed || challenge.Locked) return false;
+    return !challenge.StageID || stageOf(challenge, stages)?.State === "open";
 }
 
 // Applies the stage and status filters (the category and the search narrow further inside a board).
-export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilters): OwnChallenge[] {
+export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilters, stages: BoardStage[] = []): OwnChallenge[] {
     return challenges.filter(challenge => {
         if (filters.stage && (filters.stage === UNSTAGED ? challenge.StageID !== null : challenge.StageID !== filters.stage)) return false;
-        return !filters.status || boardStatus(challenge) === filters.status;
+        if (filters.status === "open") return isSolvableNow(challenge, stages);
+        return !filters.status || boardStatus(challenge, stages) === filters.status;
     });
 }
 

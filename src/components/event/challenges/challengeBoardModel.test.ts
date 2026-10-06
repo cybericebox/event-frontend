@@ -112,6 +112,7 @@ describe("attempts left", () => {
 describe("board filters", () => {
     const open = {ID: uuid(1), Name: "Open", OpensAt: "2026-10-01T10:00:00Z", ClosesAt: "2026-10-01T12:00:00Z", Returnable: false, State: "open" as const};
     const closed = {ID: uuid(2), Name: "Closed", OpensAt: "2026-10-01T08:00:00Z", ClosesAt: "2026-10-01T10:00:00Z", Returnable: true, State: "closed" as const};
+    const stages = [closed, open];
     const unstaged = challenge(1, 1);
     const inOpen = challenge(2, 1, {StageID: open.ID});
     const inClosed = challenge(3, 1, {StageID: closed.ID, Closed: true});
@@ -121,8 +122,18 @@ describe("board filters", () => {
 
     it("defaults to «Відкриті»: unsolved tasks that are not closed, whatever their stage", () => {
         expect(DEFAULT_BOARD_FILTERS.status).toBe("open");
-        expect(applyBoardFilters(all, DEFAULT_BOARD_FILTERS)).toEqual([unstaged, inOpen]);
+        expect(applyBoardFilters(all, DEFAULT_BOARD_FILTERS, stages)).toEqual([unstaged, inOpen]);
         expect(applyBoardFilters(all, {...DEFAULT_BOARD_FILTERS, status: ""})).toEqual(all);
+    });
+
+    it("«Відкриті» means can be solved now: no locked tasks, no tasks of a stage that is closed or not open yet", () => {
+        const locked = challenge(7, 1, {Locked: true});
+        const future = challenge(8, 1, {StageID: uuid(99)});
+        const returnable = challenge(9, 1, {StageID: closed.ID});
+        const pool = [unstaged, inOpen, locked, future, returnable];
+        expect(applyBoardFilters(pool, DEFAULT_BOARD_FILTERS, stages)).toEqual([unstaged, inOpen]);
+        expect(applyBoardFilters(pool, {...DEFAULT_BOARD_FILTERS, status: ""}, stages)).toEqual(pool);
+        expect(applyBoardFilters(pool, {...DEFAULT_BOARD_FILTERS, status: "closed"}, stages)).toEqual([returnable]);
     });
 
     it("narrows by stage, including the sets without one", () => {
@@ -139,7 +150,7 @@ describe("board filters", () => {
         const wide = {...DEFAULT_BOARD_FILTERS, status: "" as const};
         expect(applyBoardFilters(all, {...wide, status: "solved"})).toEqual([solvedInClosed, practice]);
         expect(applyBoardFilters(all, {...wide, status: "closed"})).toEqual([inClosed]);
-        expect(applyBoardFilters(all, {...wide, status: "open"})).toEqual([unstaged, inOpen]);
+        expect(applyBoardFilters(all, {...wide, status: "open"}, stages)).toEqual([unstaged, inOpen]);
     });
 
     it("groups with no visible task vanish: categories are built from the filtered tasks", () => {

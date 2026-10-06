@@ -88,7 +88,7 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
     }, [acceptedID]);
     const [filters, setFilters] = useBoardFilters();
     // A category groups only the tasks that pass the filters, so a group with nothing to show never appears.
-    const visible = useMemo(() => applyBoardFilters(challenges, filters), [challenges, filters]);
+    const visible = useMemo(() => applyBoardFilters(challenges, filters, stages), [challenges, filters, stages]);
     const categories = useMemo(() => buildCategories(visible), [visible]);
     const category = categories.some(item => item.key === filters.category) ? filters.category : "";
     const selected = challenges.find(item => item.EventChallengeID === selectedID) ?? null;
