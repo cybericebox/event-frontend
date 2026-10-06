@@ -36,15 +36,17 @@ afterEach(() => {
 });
 
 describe("ManagerShell access errors", () => {
-    it("asks for the sign-in with a button on 401 and never redirects by itself", async () => {
+    it("sends a visitor without a session straight to the sign-in with return_to on 401", async () => {
         getManageAccess.mockRejectedValue(new ManageApiError(401));
         renderShell();
-        expect(await screen.findByRole("heading", {name: "Потрібен вхід"})).toBeTruthy();
-        expect(screen.getByRole("link", {name: "Увійти"})).toBeTruthy();
-        expect(replace).not.toHaveBeenCalled();
+        await vi.waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
+        const target = new URL(replace.mock.calls[0][0] as string);
+        expect(target.origin).toBe("https://id.example.test");
+        expect(target.searchParams.get("return_to")).toBe("https://ev.example.test/manage/tasks?x=1");
+        expect(screen.queryByRole("link", {name: "Увійти"})).toBeNull();
     });
 
-    it("shows the no-access screen with the account email for a 403 and does not redirect", async () => {
+    it("keeps the no-access screen of the manage feature for a 403 on a visible event, no redirect", async () => {
         getManageAccess.mockRejectedValue(new ManageApiError(403));
         renderShell();
         expect(await screen.findByRole("heading", {name: "Немає доступу до керування заходом"})).toBeTruthy();

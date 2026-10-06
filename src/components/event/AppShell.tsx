@@ -17,7 +17,9 @@ import {EventLoading} from "./EventLoading";
 import {EventServiceStatusGate} from "./EventServiceStatusGate";
 import {OutageShell} from "./OutageShell";
 import {reservedPageSlugs} from "./content/pageSlugs";
-import {EventNotFoundScreen} from "./EventNotFoundScreen";
+import {EventUnavailableScreen} from "./EventUnavailableScreen";
+import {SignInRedirect} from "./SignInRedirect";
+import {needsSession} from "@/utils/sessionRoutes";
 import {isEventGone, subscribeEventGone} from "@/utils/eventGone";
 import {t} from "@/i18n/t";
 
@@ -31,7 +33,7 @@ type Props = {
 export function AppShell(props: Props) {
     // The event was deleted while the site was open: the same screen as for an event that never existed.
     const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
-    if (gone) return <EventNotFoundScreen />;
+    if (gone) return <EventUnavailableScreen />;
     return <>
         <ShellContent {...props} />
         <EventServiceStatusGate serverUnavailable={props.unavailable} />
@@ -75,11 +77,13 @@ function ShellContent({children, event, unavailable}: Props) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
         if (isLive) return children;
         // Server reads are anonymous, so an unpublished event is absent here. Every other route
-        // retries in the browser with the session; the bootstrap shows the sign-in prompt, the
-        // no-access screen or the not-found screen from the browser answer.
+        // retries in the browser with the session; the bootstrap shows the one
+        // «not found or no access» screen when the browser answer is no either.
         return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
     }
     if (isLive) return children;
+    // A session page of a visible event opened without a session goes to the sign-in at once.
+    if (needsSession(pathname) && currentUser.isSuccess && !currentUser.data) return <SignInRedirect event={event} />;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
     // Public content is already in the server response. Keep it visible while
     // browser-only account and team requests finish.

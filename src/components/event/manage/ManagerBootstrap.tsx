@@ -8,9 +8,7 @@ import {EventErrorScreen} from "../EventErrorScreen";
 import {EventLoading} from "../EventLoading";
 import {EventBrandProvider} from "../EventBrandLogo";
 import {OutageShell} from "../OutageShell";
-import {EventNotFoundScreen} from "../EventNotFoundScreen";
-import {NoAccessScreen} from "../NoAccessScreen";
-import {SignInRequired} from "../SignInRequired";
+import {EventUnavailableScreen} from "../EventUnavailableScreen";
 import {isNetworkFailure} from "@/utils/eventGone";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
@@ -52,13 +50,11 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         // An outage keeps the /manage frame; the outage modal covers it and the
         // query refetches once the API answers.
         // The server read answered 404; a browser read that cannot reach the API is the same missing event.
-        if (isNetworkFailure(event.error)) return <EventNotFoundScreen />;
+        if (isNetworkFailure(event.error)) return <EventUnavailableScreen />;
         if (isOutageError(event.error, status)) return <OutageShell manage />;
-        if (status === 401) return <SignInRequired />;
-        if (status === 403) return <NoAccessScreen title={t("manage.shell.forbiddenTitle")} />;
-        // 404 does not say whether the event is missing or closed to this visitor: a visitor
-        // goes to the sign-in, a signed-in account gets the neutral "not available" screen.
-        if (status === 404) return <EventNotFoundScreen />;
+        // 401, 403 and 404 do not say whether the event is missing, closed or private to this
+        // visitor, and a redirect would reveal that it exists: one neutral screen for all three.
+        if (status === 401 || status === 403 || status === 404) return <EventUnavailableScreen />;
         return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => void event.refetch()} />;
     }
     return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data}>{children}</ManagerShell></EventBrandProvider>;

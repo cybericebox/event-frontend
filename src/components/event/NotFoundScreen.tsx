@@ -11,7 +11,7 @@ import "@/styles/error-screen.css";
 // «Page not found» inside this site, the same screen as in every frontend: the event logo
 // and name (the crest and the wordmark when the event is unknown), muted SearchX mark,
 // title, one line, «На головну» (the event home) and «Назад». A missing or unavailable
-// EVENT is EventNotFoundScreen. `block` centers it in its content area, as the shell keeps
+// EVENT is EventUnavailableScreen. `block` centers it in its content area, as the shell keeps
 // the navbar; without it the screen fills the viewport.
 export function NotFoundScreen({title = t("error.notFound"), body = t("error.notFoundDescription"), block = false}: {
     title?: string;

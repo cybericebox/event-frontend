@@ -15,7 +15,7 @@ import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
-import {SignInRequired} from "@/components/event/SignInRequired";
+import {SignInRedirect} from "@/components/event/SignInRedirect";
 import {JoinResultCard} from "@/components/event/join/JoinResultCard";
 import {EventButton} from "@/components/ui/EventButton";
 import {JoinPreview} from "@/components/event/join/JoinPreview";
@@ -76,7 +76,7 @@ export default function JoinPage() {
         <h1>{t("join.title")}</h1>
         {!event || identity.isPending || staff.pending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <EventLoading event={event} label={t("join.loading")} />
             : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <EventLoadError message={t("join.loadFailed")} error={identity.error ?? join.error ?? registration.error ?? invitation.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
-            : !identity.data ? <SignInRequired event={event} full={false} />
+            : !identity.data ? <SignInRedirect event={event} />
             : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <JoinResultCard outcome="approved" title={t("joinPreview.result.approved.title")} text={t("invite.already")} />
             : status === ParticipationStatusEnum.PendingParticipationStatus ? <JoinResultCard outcome="pending" title={t("joinPreview.result.pending.title")} text={t("join.pending")} />
             : status === ParticipationStatusEnum.RejectedParticipationStatus ? <JoinResultCard outcome="rejected" title={t("joinPreview.result.rejected.title")} text={t("shell.join.rejected")} />
