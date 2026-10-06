@@ -59,7 +59,7 @@ describe("AttachExerciseDialog", () => {
         expect(api.choices).toHaveBeenCalledWith("e", "", "all", []);
         fireEvent.click(await screen.findByRole("button", {name: /Web/}));
         fireEvent.click(await screen.findByRole("button", {name: "Додати"}));
-        await waitFor(() => expect(screen.getByText("Набір потребує інфраструктури, а в заходу її вимкнено.")).toBeTruthy());
+        await waitFor(() => expect(screen.getByText("Завдання потребує інфраструктури, а в заходу її вимкнено.")).toBeTruthy());
     });
 
     it("offers a change request when the reservation cannot hold the set (72508)", async () => {
