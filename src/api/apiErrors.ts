@@ -41,6 +41,8 @@ export const ApiErrorCode = {
     ExerciseDetachNeedsConfirm: 1810,
     ExerciseNotAvailable: 1811,
     ExerciseNoForkSource: 1812,
+    // A running stage: its prepared teams' stands are recreated only on confirmation.
+    ExerciseStandsRunning: 1813,
     ResultsHidden: 1213,
     ResultsParticipantsOnly: 1214,
     ResultsNotStarted: 1215,
@@ -94,11 +96,16 @@ export function readRetryAfter(response: Response): number | undefined {
     return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : undefined;
 }
 
-export async function readApiErrorCode(response: Response): Promise<number | undefined> {
-    const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
-    if (body.success) return errorDetailCode(body.data.Status.Code);
+// The detail code and the public context (what the server marked safe to show, e.g. the teams of a conflict) of an error answer.
+export async function readApiError(response: Response): Promise<{code?: number; context?: Record<string, unknown>}> {
+    const body = z.object({Status: z.object({Code: z.number(), Context: z.record(z.string(), z.unknown()).nullish()})}).safeParse(await response.json().catch(() => null));
+    if (body.success) return {code: errorDetailCode(body.data.Status.Code), context: body.data.Status.Context ?? undefined};
     // The token-bucket limiter answers a bare 429 without a body.
-    return response.status === 429 ? ApiErrorCode.AuthTooManyRequests : undefined;
+    return {code: response.status === 429 ? ApiErrorCode.AuthTooManyRequests : undefined};
+}
+
+export async function readApiErrorCode(response: Response): Promise<number | undefined> {
+    return (await readApiError(response)).code;
 }
 
 // Messages live in messages/errors.{uk,en}.json, keyed by detail code.

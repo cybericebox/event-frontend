@@ -53,7 +53,7 @@ const ownTeamSchema = z.object({
 export type OwnTeam = z.infer<typeof ownTeamSchema>;
 
 export class ClientAuthError extends Error {
-    constructor(readonly status: number) {
+    constructor(readonly status: number, readonly requestId?: string) {
         super(`Event authentication request failed: ${status}`);
     }
 }
@@ -64,7 +64,7 @@ function apiUrl(path: string): string {
 }
 
 async function readData<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
-    if (!response.ok) throw new ClientAuthError(response.status);
+    if (!response.ok) throw new ClientAuthError(response.status, response.headers.get("X-Request-ID") ?? undefined);
     const body: unknown = await response.json();
     return z.object({Data: schema}).parse(body).Data;
 }

@@ -6,7 +6,7 @@ import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 
 vi.mock("next/navigation", () => ({usePathname: () => "/"}));
 const clientEvent = vi.hoisted(() => {
-    class ClientEventInfoError extends Error {constructor(readonly status: number) {super(String(status));}}
+    class ClientEventInfoError extends Error {constructor(readonly status: number, readonly requestId?: string) {super(String(status));}}
     return {ClientEventInfoError, getClientEventInfo: vi.fn(() => new Promise(() => {}))};
 });
 vi.mock("@/api/clientEventInfo", () => clientEvent);
@@ -71,15 +71,32 @@ describe("PrivateEventBootstrap when the browser read fails", () => {
         render(<QueryClientProvider client={client}><PrivateEventBootstrap><p>Сторінка</p></PrivateEventBootstrap></QueryClientProvider>);
     }
 
-    it("shows the not-found screen when the server saw 404 and the browser cannot reach the API (CORS)", async () => {
+    it("a network failure is the backend being unavailable, never the not-found screen", async () => {
         clientEvent.getClientEventInfo.mockRejectedValueOnce(new TypeError("Failed to fetch"));
         renderBootstrap();
-        expect(await screen.findByRole("heading", {name: UNAVAILABLE})).toBeTruthy();
+        expect(await screen.findByRole("banner")).toBeTruthy();
+        expect(screen.queryByRole("heading", {name: UNAVAILABLE})).toBeNull();
+        expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
+    });
+
+    it("a proxy 503 without X-Request-ID is the backend being unavailable", async () => {
+        clientEvent.getClientEventInfo.mockRejectedValueOnce(new clientEvent.ClientEventInfoError(503));
+        renderBootstrap();
+        expect(await screen.findByRole("banner")).toBeTruthy();
+        expect(screen.queryByRole("heading", {name: UNAVAILABLE})).toBeNull();
+    });
+
+    it("a 5xx with X-Request-ID is the 500 page with the 8-character reference and no code prefix", async () => {
+        clientEvent.getClientEventInfo.mockRejectedValueOnce(new clientEvent.ClientEventInfoError(500, "a1b2c3d4-0000-4000-8000-000000000000"));
+        renderBootstrap();
+        expect(await screen.findByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+        expect(screen.getByText(/Номер звернення: a1b2c3d4$/)).toBeTruthy();
+        expect(screen.queryByRole("heading", {name: UNAVAILABLE})).toBeNull();
     });
 
     it("shows the error screen with a retry, never a blank page, on a server error", async () => {
         clientEvent.getClientEventInfo.mockRejectedValueOnce(new clientEvent.ClientEventInfoError(500));
         renderBootstrap();
-        expect(await screen.findByRole("button", {name: "Оновити"})).toBeTruthy();
+        expect(await screen.findByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
     });
 });

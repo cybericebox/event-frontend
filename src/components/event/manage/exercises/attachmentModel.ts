@@ -1,3 +1,4 @@
+import {z} from "zod";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {t} from "@/i18n/t";
@@ -71,6 +72,15 @@ export async function detachWithConfirm(detach: (confirm: boolean) => Promise<vo
         if (!confirmed && error instanceof ManageApiError && error.code === ApiErrorCode.ExerciseDetachNeedsConfirm) return "needs-confirm";
         throw error;
     }
+}
+
+export type StandTeam = {ID: string; Name: string};
+
+// The teams a 409 1813 lists: those whose running stands the change would recreate; null when the error is something else.
+export function runningStandTeams(error: unknown): StandTeam[] | null {
+    if (!(error instanceof ManageApiError) || error.code !== ApiErrorCode.ExerciseStandsRunning) return null;
+    const parsed = z.array(z.object({ID: z.string(), Name: z.string()})).safeParse(error.context?.teams);
+    return parsed.success ? parsed.data : [];
 }
 
 export function attachmentActionError(error: unknown, fallback: string): string {

@@ -58,6 +58,7 @@ import {comparePageOrder} from "../content/pageNavigationOrder";
 import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {readAdminReturn} from "@/utils/returnOrigin";
+import {adminOrigin} from "@/utils/origins";
 
 type Item = {dividerBefore?: boolean; href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
 type Group = {id: string; label: string; icon: LucideIcon; items: Item[]};
@@ -128,7 +129,7 @@ function SideLabel({text, hint = text}: {text: string; hint?: string}) {
     return <EventTooltip content={hint} className="event-manage-sidebar__tip" truncated>{() => <span className="ib-admin-side__label">{text}</span>}</EventTooltip>;
 }
 
-export function ManagerSidebar({asideRef, drawerOpen = false, event, pathname, pages, pagesError, canManage, infrastructureAllowed, analytics, onRetryPages, onNavigate}: {
+export function ManagerSidebar({asideRef, drawerOpen = false, event, pathname, pages, pagesError, canManage, platformStaff = false, infrastructureAllowed, analytics, onRetryPages, onNavigate}: {
     asideRef?: RefObject<HTMLElement | null>;
     // Narrow screens show the sidebar as a modal drawer.
     drawerOpen?: boolean;
@@ -137,6 +138,8 @@ export function ManagerSidebar({asideRef, drawerOpen = false, event, pathname, p
     pages?: ManagePage[];
     pagesError: boolean;
     canManage: boolean;
+    // Platform staff see the way back to the platform panel even without a `?from=`.
+    platformStaff?: boolean;
     infrastructureAllowed: boolean;
     // What the viewer may see of the analytics; without it the group is hidden.
     analytics?: AnalyticsAccess;
@@ -156,6 +159,8 @@ export function ManagerSidebar({asideRef, drawerOpen = false, event, pathname, p
         // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only state, unknown on the server
         setAdminReturn(readAdminReturn(window.location.search, storage));
     }, []);
+
+    const platformHref = adminReturn ?? (platformStaff && adminOrigin ? adminOrigin : null);
 
     return <aside ref={asideRef} className="ib-admin-side ib-mass" aria-label={t("manage.nav.eventManagement")} role={drawerOpen ? "dialog" : undefined} aria-modal={drawerOpen ? true : undefined}>
         <div className="ib-admin-side__head">
@@ -191,7 +196,7 @@ export function ManagerSidebar({asideRef, drawerOpen = false, event, pathname, p
             })}
         </nav>
         <div className="ib-admin-side__foot">
-            {adminReturn && <EventTooltip content={t("manage.nav.returnToAdminHint")} silent>{() => <a className="ib-admin-side__item" href={adminReturn} aria-label={t("manage.nav.returnToAdminHint")}><Settings size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.returnToAdmin")}</span></a>}</EventTooltip>}
+            {platformHref && <EventTooltip content={t("manage.nav.returnToAdminHint")} silent>{() => <a className="ib-admin-side__item" href={platformHref} aria-label={t("manage.nav.returnToAdminHint")}><Settings size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.nav.returnToAdmin")}</span></a>}</EventTooltip>}
             <EventTooltip content={t("manage.shell.toEventSiteHint")} silent>{() => <Link className="ib-admin-side__item" href="/" aria-label={t("manage.shell.toEventSiteHint")} onClick={onNavigate}><ArrowLeft size={16} aria-hidden="true" /><span className="ib-admin-side__label">{t("manage.shell.toEventSite")}</span></Link>}</EventTooltip></div>
     </aside>;
 }

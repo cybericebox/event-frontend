@@ -1,3 +1,5 @@
+import {readFileSync} from "node:fs"
+
 // One base domain: NEXT_PUBLIC_DOMAIN is the only host input and every host derives from it (src/**/hosts.ts, deploy/base-domain.sh; the daemon and
 // the infrastructure renderer share the rule and tests/base-domain-vectors.json). The Docker build bakes a placeholder for it.
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? ""
@@ -33,6 +35,7 @@ const nextConfig = () => {
             ],
             minimumCacheTTL: 24 * 60 * 60,// 24 hours
         },
+        env: {NEXT_PUBLIC_APP_VERSION: JSON.parse(readFileSync("package.json", "utf8")).version},
         output: 'standalone',
         // images.unoptimized is set, so the image optimizer never loads sharp: keep its native libvips
         // (~45 MB, an optional dependency of next) out of the standalone trace.

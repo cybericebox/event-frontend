@@ -94,6 +94,16 @@
     "source": "6e1cd5b529ead29522e10bdfad8a7f7bb59fc16f71221b1a25b8d47d11a70645",
     "sha": "6e1cd5b529ead29522e10bdfad8a7f7bb59fc16f71221b1a25b8d47d11a70645"
   },
+  "error-page.css": {
+    "kind": "copy",
+    "source": "1afdf6594613b22c79f9f54d283e4e6da79746118edb97f18d4035d64203834b",
+    "sha": "1afdf6594613b22c79f9f54d283e4e6da79746118edb97f18d4035d64203834b"
+  },
+  "service-down.css": {
+    "kind": "copy",
+    "source": "4933539d02d2e81b8521d388008140830942e6f600074ecfade5030c09f88615",
+    "sha": "4933539d02d2e81b8521d388008140830942e6f600074ecfade5030c09f88615"
+  },
   "tokens.css": {
     "kind": "extended",
     "source": "78020bef7de916a752bd8fd85fe70d9f1e0690afae37dc9cfa6101d19fdc9a7d",
@@ -136,7 +146,7 @@
   },
   "footer.css": {
     "kind": "extended",
-    "source": "e3ff1f482f848dc184e1e4ae69442a661ff36262931eb825c3a8a3a8e2d2ee6a",
+    "source": "b2fae62ad81b3fcb877726973745ae9b58b56e0411aa1b87d5eeb080ccdf60f3",
     "sha": "edf398c9447d7c7bed12bfe7f46400b21379f6d55d73551aec7fd7a9e17886cf"
   },
   "hero.css": {
