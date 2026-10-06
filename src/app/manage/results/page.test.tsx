@@ -23,7 +23,7 @@ it("lists teams, marks the freeze for participants and expands the solves", asyn
     render(<QueryClientProvider client={client}><ManageResultsPage /></QueryClientProvider>);
     expect(await screen.findByText("Альфа")).toBeTruthy();
     expect(screen.getByText("Заморожено для учасників.")).toBeTruthy();
-    expect(screen.getByRole("link", {name: "Відкрити Live"}).getAttribute("href")).toBe("/live");
+    expect(screen.getByRole("link", {name: "Відкрити результати наживо"}).getAttribute("href")).toBe("/live");
     expect(screen.getByRole("columnheader", {name: /Підказки/})).toBeTruthy();
     const toggle = screen.getByRole("button", {name: "Показати розвʼязання: Альфа"});
     fireEvent.click(toggle);

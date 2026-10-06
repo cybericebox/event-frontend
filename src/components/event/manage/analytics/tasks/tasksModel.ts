@@ -3,10 +3,10 @@ import {t} from "@/i18n/t";
 
 // Pure helpers of «Завдання» (§6.3): formatting, filters, totals and the chart
 // options. Chart colours and axes follow the results chart.
-const axisText = "var(--ib-dim)";
-const gridLine = "var(--ib-line)";
-const axisLine = "var(--ib-control)";
-const palette = {ok: "#22C55E", tooEasy: "#F59E0B", tooHard: "#EF4444", neutral: "var(--ib-faint)", band: "#0091EA", solves: "#22C55E", attempts: "#0091EA"};
+const axisText = "var(--ib-chart-axis)";
+const gridLine = "var(--ib-chart-grid)";
+const axisLine = "var(--ib-chart-line)";
+const palette = {ok: "var(--ib-ok)", tooEasy: "var(--ib-warn)", tooHard: "var(--ib-danger)", neutral: "var(--ib-faint)", band: "var(--ib-s1)", solves: "var(--ib-ok)", attempts: "var(--ib-s1)"};
 
 export const difficultyOrder = ["elementary", "trivial", "easy", "medium", "hard", "insane"] as const;
 
@@ -105,7 +105,7 @@ export function calibrationChartOption(rows: AnalyticsTaskRow[]) {
     const bandName = t("manage.analytics.tasks.calibration.band");
     return {
         grid: {left: 44, right: 16, top: 36, bottom: 32},
-        legend: {top: 0, textStyle: {color: axisText}, data: [bandName]},
+        legend: {top: 0, textStyle: {color: "var(--ib-chart-legend)"}, data: [bandName]},
         tooltip: {
             trigger: "item",
             formatter: (params: {seriesType?: string; data?: {name?: string; tried?: number; solved?: number; value?: (string | number)[]; verdict?: CalibrationVerdict}}) => {
@@ -139,7 +139,7 @@ export function solvesChartOption(detail: AnalyticsTaskDetail) {
     });
     return {
         grid: {left: 44, right: 16, top: 36, bottom: 64},
-        legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
+        legend: {type: "scroll", top: 0, textStyle: {color: "var(--ib-chart-legend)"}},
         tooltip: {trigger: "axis"},
         xAxis: {type: "time", min: from, max: Math.max(to, from + 1), axisLine: {lineStyle: {color: axisLine}}, axisLabel: {color: axisText}, splitLine: {show: false}},
         yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},

@@ -18,11 +18,8 @@ import crest from "@/styles/assets/crest-128.png";
 import "./live.css";
 import {t} from "@/i18n/t";
 
-// Series colours of the «Класика» boards (EVENT-THEME §3.4), per theme.
-const seriesColors = {
-    dark: ["#3987e5", "#d95926", "#199e70", "#b55fd6", "#c98500", "#1a94ad", "#d55181", "#2f9a2f", "#e66767", "#a0671f"],
-    light: ["#2a78d6", "#ea6833", "#069f6d", "#d86c96", "#048203", "#c28301", "#de4444", "#099db6", "#b0651a", "#b04ad0"],
-};
+// Series colours of the «Класика» boards: DS series tokens, which `data-live` on the chart sets for the board theme.
+const seriesColors = Array.from({length: 10}, (_, index) => `var(--ib-s${index + 1})`);
 
 function useElementSize<T extends HTMLElement>() {
     const ref = useRef<T>(null);
@@ -55,9 +52,9 @@ function LiveChart({widget, event, results, now, theme, sample}: {widget: LiveWi
     const box = {left: axis, top: line * 0.6, width: Math.max(10, size.width - axis - labels - line * 0.6), height: Math.max(10, size.height - line * 2.2)};
     const {series, max} = chartSeries(results, lines, box, start, end);
     const labelYs = spreadLabels(series.map(item => item.endY), line * 1.2, box.top, box.top + box.height);
-    const colors = seriesColors[theme];
+    const colors = seriesColors;
     const hasData = !!results?.Scoreboard.length;
-    return <div className="live-chart">
+    return <div className="live-chart" data-live={theme}>
         <h2>{t("live.chart.title", {suffix: frozenSuffix(results)})}</h2>
         <div className="live-chart__plot" ref={ref}>
             <span className="live-chart__probe" ref={labelRef} aria-hidden="true">0</span>

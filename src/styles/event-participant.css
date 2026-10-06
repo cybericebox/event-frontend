@@ -32,7 +32,7 @@
 .ib-tile.is-locked,.ib-tile.is-locked:hover{background:var(--ib-tile-locked-bg);border:1px dashed var(--ib-control);color:var(--ib-dim);cursor:not-allowed}
 .ib-tile.is-locked .ib-tile__name{font-weight:var(--ib-w-medium)}
 .ib-tile.is-locked .ib-tile__pts{flex:none;margin-right:0;color:var(--ib-faint)}
-.ib-tile__lock{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:var(--ib-fs-11);color:var(--ib-dim)}
+.ib-tile__lock{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:var(--ib-fs-12);color:var(--ib-dim)}
 .ib-tile__lock svg{display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-2px}
 
 /* ── challenge window extras ─────────────────────────────────────────────── */

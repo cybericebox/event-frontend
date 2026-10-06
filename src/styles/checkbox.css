@@ -20,4 +20,3 @@
 /* group */
 .ib-check-group{display:flex;flex-direction:column;gap:var(--ib-2);border:0;margin:0;padding:0;min-width:0}
 .ib-check-group>legend{padding:0;margin-bottom:var(--ib-2);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);color:var(--ib-ink)}
-

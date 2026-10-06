@@ -1,6 +1,14 @@
-/* Segmented control — one choice among 2–4 views/filters («Усі / Нерозв’язані», «Плитки / Рейка»).
+/* Segmented control — one choice among 2–4 views/filters («Усі / Нерозвʼязані», «Плитки / Рейка»).
    <div class="ib-seg" role="group" aria-label="Фільтр"><button type="button" aria-pressed="true">Усі</button>…</div>
-   Pressed = raised fill + hairline (no shadow). Optional .ib-num count inside a button. --sm for dense bars. JS: IB.Segmented */
+   Pressed = raised fill + hairline (no shadow). Optional .ib-num count inside a button. --sm for dense bars. JS: IB.Segmented
+   Sizes: button 14px / 32px (--sm 13px / 28px). Hit area is the whole button; --sm still clears the 24px WCAG minimum.
+   One component for the three jobs the apps hand-built:
+   - filter / view switch   role="group" + aria-pressed (above)
+   - choice that must stay selected (theme: Світла / Темна / Системна, scope, status)
+       <div class="ib-seg" role="radiogroup" aria-label="Тема" data-ib-seg><button type="button" role="radio" aria-checked="true" data-value="light">Світла</button>…</div>
+     roving tabindex (only the checked radio is in the Tab order), ←/→/↑/↓ move and select, Home/End jump. The initial radio is
+     set on the server, so there is no first-paint flash: render aria-checked from the stored value, not in an effect.
+   - views of one page (topology view): use Tabs, not a nav of buttons. */
 
 :root,[data-theme="light"]{--ib-seg-bg:var(--ib-paper)}   /* #F7F7F9 well */
 [data-theme="dark"]{--ib-seg-bg:var(--ib-surface)}         /* #413F4E well; pressed = raised #4A4858 */
@@ -8,17 +16,17 @@
 .ib-seg{display:inline-flex;gap:2px;max-width:100%;overflow-x:auto;scrollbar-width:none;
   padding:3px;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-seg-bg)}
 .ib-seg::-webkit-scrollbar{display:none}
-.ib-seg>button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;
+.ib-seg>button{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 var(--ib-3);
   border:1px solid transparent;border-radius:var(--ib-r);background:transparent;color:var(--ib-dim);
-  font:var(--ib-w-medium) var(--ib-fs-13)/1 var(--ib-font);white-space:nowrap;cursor:pointer;
+  font:var(--ib-w-medium) var(--ib-fs-14)/1 var(--ib-font);white-space:nowrap;cursor:pointer;
   transition:color var(--ib-dur-fast) var(--ib-ease),background-color var(--ib-dur-fast) var(--ib-ease)}
 .ib-seg>button:hover,.ib-seg>button.is-hover{color:var(--ib-ink)}
 .ib-seg>button:focus-visible,.ib-seg>button.is-focus{outline:2px solid var(--ib-action);outline-offset:0}
-.ib-seg>button[aria-pressed="true"]{background:var(--ib-raised);border-color:var(--ib-line);color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.ib-seg>button[aria-pressed="true"],.ib-seg>button[aria-checked="true"]{background:var(--ib-raised);border-color:var(--ib-line);color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
 .ib-seg>button:disabled{color:var(--ib-faint);opacity:.6;cursor:not-allowed}
 .ib-seg>button .ib-num{font-size:var(--ib-fs-12);color:var(--ib-faint);font-weight:var(--ib-w-regular)}
-.ib-seg>button[aria-pressed="true"] .ib-num{color:var(--ib-dim)}
+.ib-seg>button[aria-pressed="true"] .ib-num,.ib-seg>button[aria-checked="true"] .ib-num{color:var(--ib-dim)}
 .ib-seg>button>svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.ib-seg--sm>button{height:24px;padding:0 8px;font-size:var(--ib-fs-12)}
+.ib-seg--sm>button{height:28px;padding:0 10px;font-size:var(--ib-fs-13)}
 .ib-seg--block{display:flex}
 .ib-seg--block>button{flex:1;justify-content:center}

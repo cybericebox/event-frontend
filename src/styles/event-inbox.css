@@ -1,6 +1,6 @@
 /* Event inbox uses the same notification layout as the platform administration UI. */
 .event-notifications__trigger{position:relative;flex:none}
-.event-notifications__count{position:absolute;top:-3px;right:-5px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 3px;border-radius:var(--ib-r-pill);background:var(--ib-action);color:var(--ib-on-action);font-size:10px;font-weight:var(--ib-w-semibold);line-height:1}
+.event-notifications__count{position:absolute;top:-3px;right:-5px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 3px;border-radius:var(--ib-r-pill);background:var(--ib-action);color:var(--ib-on-action);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);line-height:1}
 .event-notifications__panel{z-index:80;display:flex;flex-direction:column;width:min(32rem,calc(100vw - 24px));max-height:min(28rem,calc(100dvh - 6rem));overflow:hidden;padding:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-ink)}
 .event-notifications__head{display:flex;flex:none;align-items:center;justify-content:space-between;gap:var(--ib-2);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
 /* With tabs the head and the tab row share one border (the row draws it). */
@@ -57,7 +57,7 @@
 /* Row meta: time (or who resolved it) on the left, the event label on the right. */
 .event-notifications__meta{display:flex;min-width:0;align-items:center;justify-content:space-between;gap:var(--ib-2)}
 .event-notifications__meta>:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.event-notifications__event{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 6px;border-radius:4px;background:var(--ib-soft);color:var(--ib-dim);font-size:11px;font-weight:var(--ib-w-medium)}
+.event-notifications__event{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 6px;border-radius:4px;background:var(--ib-soft);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium)}
 /* Resolved requests stay in the list, greyed. */
 .event-notifications__list li.is-resolved{opacity:.6}
 .event-notification-card__actions .event-notifications__resolve{display:inline-flex;align-items:center;gap:4px;font-size:var(--ib-fs-12)}

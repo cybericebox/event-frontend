@@ -3,7 +3,14 @@
      <button role="tab" id="t1" aria-selected="true" aria-controls="p1">Завдання</button>
      <button role="tab" id="t2" aria-selected="false" aria-controls="p2" tabindex="-1">4 рішення</button></div>
    <div role="tabpanel" id="p1" aria-labelledby="t1" class="ib-tabpanel">…</div>
-   Default = modal tabs (gap 20, fs 14). --page = page-level tabs (gap 24, fs 14, taller, optional .ib-num count).
+   Default = modal tabs (gap 20, fs 14, 44px high). --page = page-level tabs (gap 24, same height, optional .ib-num count).
+   One tabs component for the whole product (theme switches use Segmented role=radiogroup, not tabs):
+   - roving tabindex, ←/→, Home/End, focus follows selection (IB.Tabs). Every tab has aria-controls → its panel.
+   - URL-driven: data-ib-tabs-param="tab" on the tablist reads/writes ?tab=<id> (history.replaceState), so a reload
+     and a shared link keep the tab. Tab ids = the param values.
+   - a tablist holds tabs only: a remove / close button NEVER sits inside role=tablist (put it in the panel header or
+     next to the list). A section with one tab is not tabs.
+   - narrow screens: add --scroll (horizontal scroll, focusable, ring inset).
    Indicator = 2px action underline; the list has a 1px hairline.
    --vertical = settings navigation (profile «Профіль / Безпека / Сесії…»): add aria-orientation="vertical";
      each tab = .ib-tabs__label (title) + optional .ib-tabs__caption (one short line). Selected = soft fill,
@@ -14,7 +21,7 @@
 .ib-tabs--scroll::-webkit-scrollbar{display:none}
 .ib-tabs.ib-tabs--scroll>[role="tab"]:focus-visible{outline-offset:-2px}
 .ib-tabs>[role="tab"]{position:relative;display:inline-flex;align-items:center;gap:6px;flex:none;
-  padding:10px 0;margin-bottom:-1px;border:0;border-bottom:2px solid transparent;background:none;
+  min-height:44px;padding:0;margin-bottom:-1px;border:0;border-bottom:2px solid transparent;background:none;
   color:var(--ib-dim);font:var(--ib-w-medium) var(--ib-fs-14)/var(--ib-lh-ui) var(--ib-font);cursor:pointer;white-space:nowrap;
   transition:color var(--ib-dur-fast) var(--ib-ease),border-color var(--ib-dur-fast) var(--ib-ease)}
 .ib-tabs>[role="tab"]:hover,.ib-tabs>[role="tab"].is-hover{color:var(--ib-ink);border-bottom-color:var(--ib-line)}
@@ -25,7 +32,7 @@
 .ib-tabs>[role="tab"]>svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 
 .ib-tabs--page{gap:var(--ib-6)}
-.ib-tabs--page>[role="tab"]{padding:12px 0}
+.ib-tabs--page>[role="tab"]{padding:0}   /* same 44px height; kept as the page-level hook */
 .ib-tabs--inset{padding:0 var(--ib-6)}   /* inside a modal header: aligns with 24px body padding */
 
 .ib-tabpanel{padding-top:var(--ib-5)}
@@ -33,11 +40,11 @@
 
 /* vertical (settings) */
 .ib-tabs--vertical{flex-direction:column;gap:2px;border-bottom:0}
-.ib-tabs--vertical>[role="tab"]{flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin:0;padding:var(--ib-2) var(--ib-3);
+.ib-tabs--vertical>[role="tab"]{flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin:0;padding:var(--ib-2) var(--ib-3);min-height:44px;
   border:0;border-radius:var(--ib-r);color:var(--ib-dim);text-align:left;white-space:normal;
   transition:background-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease)}
 .ib-tabs__label{font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium);color:var(--ib-ink)}
-.ib-tabs__caption{font-size:var(--ib-fs-12);font-weight:var(--ib-w-regular);color:var(--ib-dim)}
+.ib-tabs__caption{font-size:var(--ib-fs-13);font-weight:var(--ib-w-regular);color:var(--ib-dim)}
 .ib-tabs--vertical>[role="tab"]:hover,.ib-tabs--vertical>[role="tab"].is-hover{background:var(--ib-hover)}
 .ib-tabs--vertical>[role="tab"][aria-selected="true"]{background:var(--ib-soft)}
 .ib-tabs--vertical>[role="tab"][aria-selected="true"] .ib-tabs__label{font-weight:var(--ib-w-semibold)}

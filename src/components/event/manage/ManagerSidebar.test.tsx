@@ -134,7 +134,7 @@ describe("participation navigation", () => {
     it("does not indent sub-items", () => {
         renderSidebar(0);
         const items = document.getElementById("event-manage-group-participation")!;
-        expect(items.className).toBe("event-manage-sidebar__items");
+        expect(items.className).toBe("ib-admin-side__items");
         expect(items.querySelector("a")!.className).toBe("ib-admin-side__item");
     });
 

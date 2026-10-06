@@ -5,9 +5,9 @@ import ReactECharts from "echarts-for-react";
 import {t} from "@/i18n/t";
 import {useChartTokens} from "@/components/event/charts/chartTokens";
 import {holdPoints} from "@/components/event/charts/holdPoints";
+import {chartOwn, chartSeries} from "@/components/event/charts/chartTheme";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 
-const palette = ["#1E2A6B", "#0091EA", "#3B82F6", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#EF4444", "var(--ib-dim)"];
 
 // `note` is written over the plot (before the start, or with nobody to
 // chart): the axes stay, so the block keeps its place and size.
@@ -19,24 +19,24 @@ export function scoreChartOption({snapshot, teamIDs, ownTeamID, startTime, finis
         let points = 0;
         const solves = snapshot.Timeline.filter(item => item.EventTeamID === team.TeamID).sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
         const own = team.TeamID === ownTeamID;
-        return {name: team.TeamName, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, lineStyle: {width: own ? 4 : 2}, z: own ? 3 : 2, data: holdPoints([
+        return {name: team.TeamName, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, ...(own ? {color: chartOwn} : {}), lineStyle: {width: own ? 3 : 2}, z: own ? 3 : 2, data: holdPoints([
             [startTime.getTime(), 0],
             ...solves.map((item): [number, number] => [Date.parse(item.SolvedAt), points += item.Points]),
             [finishTime.getTime(), points],
         ])};
     });
     return {
-        color: palette,
+        color: chartSeries,
         grid: {left: 44, right: 16, top: 36, bottom: 56},
-        legend: {type: "scroll", orient: "horizontal", top: 0, textStyle: {color: "var(--ib-dim)"}},
-        xAxis: {type: "time", min: startTime.getTime(), max: Math.max(finishTime.getTime(), startTime.getTime() + 1), axisLine: {lineStyle: {color: "var(--ib-control)"}}, axisLabel: {color: "var(--ib-dim)"}, splitLine: {show: false}},
-        yAxis: {type: "value", min: 0, minInterval: 1, max: series.length === 0 || note ? 100 : undefined, axisLabel: {color: "var(--ib-dim)"}, splitLine: {lineStyle: {color: "var(--ib-line)"}}},
-        graphic: note ? [{type: "text", left: "center", top: "middle", silent: true, style: {text: note, fill: "var(--ib-dim)", fontSize: 14}}] : [],
+        legend: {type: "scroll", orient: "horizontal", top: 0, textStyle: {color: "var(--ib-chart-legend)"}},
+        xAxis: {type: "time", min: startTime.getTime(), max: Math.max(finishTime.getTime(), startTime.getTime() + 1), axisLine: {lineStyle: {color: "var(--ib-chart-line)"}}, axisLabel: {color: "var(--ib-chart-axis)"}, splitLine: {show: false}},
+        yAxis: {type: "value", min: 0, minInterval: 1, max: series.length === 0 || note ? 100 : undefined, axisLabel: {color: "var(--ib-chart-axis)"}, splitLine: {lineStyle: {color: "var(--ib-chart-grid)"}}},
+        graphic: note ? [{type: "text", left: "center", top: "middle", silent: true, style: {text: note, fill: "var(--ib-chart-axis)", fontSize: 14}}] : [],
         tooltip: {trigger: "axis"},
         // Slider colours are DS tokens, resolved per theme by useChartTokens.
         dataZoom: [
             {type: "inside", xAxisIndex: 0, filterMode: "none"},
-            {type: "slider", xAxisIndex: 0, filterMode: "none", height: 16, bottom: 8, borderColor: "transparent", backgroundColor: "var(--ib-line)", fillerColor: "var(--ib-control)", handleSize: "100%", handleStyle: {color: "var(--ib-dim)", borderColor: "transparent"}, moveHandleSize: 0, showDetail: false, dataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}, selectedDataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}},
+            {type: "slider", xAxisIndex: 0, filterMode: "none", height: 16, bottom: 8, borderColor: "transparent", backgroundColor: "var(--ib-chart-grid)", fillerColor: "var(--ib-chart-line)", handleSize: "100%", handleStyle: {color: "var(--ib-dim)", borderColor: "transparent"}, moveHandleSize: 0, showDetail: false, dataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}, selectedDataBackground: {lineStyle: {opacity: 0}, areaStyle: {opacity: 0}}},
         ],
         series,
     };

@@ -1,6 +1,6 @@
 /* Challenge tile — a <button> that opens the challenge modal.
    Unsolved = brand mass (#211A52 in both themes), white name, mono points.
-   Solved   = --ib-ok-bg tint, ink name, check + awarded «+80» in ok colour.
+   Solved   = --ib-solved with hairline, dim name, «Розвʼязано» + check in ok colour.
    Updated  = small «Оновлено» label. No difficulty, no author, no first blood. */
 
 :root,[data-theme="light"]{
@@ -20,9 +20,9 @@
 .ib-tile__name{font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);line-height:1.25;overflow:hidden;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .ib-tile__foot{display:flex;align-items:center;gap:var(--ib-2);min-width:0;position:relative}
-.ib-tile__pts{font:var(--ib-w-regular) 13.5px/1 var(--ib-mono);font-variant-numeric:tabular-nums;color:var(--ib-brand-points);margin-right:auto}
+.ib-tile__pts{font:var(--ib-w-regular) var(--ib-fs-13)/1 var(--ib-mono);font-variant-numeric:tabular-nums;color:var(--ib-brand-points);margin-right:auto}
 .ib-tile__upd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid var(--ib-brand-line);border-radius:var(--ib-r-sm);
-  font-size:var(--ib-fs-11);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-on-brand-2);white-space:nowrap}
+  font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-on-brand-2);white-space:nowrap}
 .ib-tile__solved{display:none;align-items:center;gap:var(--ib-1);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-ok);white-space:nowrap}
 .ib-tile__solved svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -42,8 +42,8 @@
 .ib-tile.is-closed .ib-tile__name,.ib-tile.is-practice .ib-tile__name{font-weight:var(--ib-w-medium)}
 .ib-tile.is-closed .ib-tile__pts,.ib-tile.is-practice .ib-tile__pts{color:var(--ib-faint)}
 .ib-tile__closed{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);
-  font-size:var(--ib-fs-11);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-dim);white-space:nowrap}
-.ib-tile__practice{display:inline-flex;align-items:center;gap:var(--ib-1);min-width:0;font-size:var(--ib-fs-11);font-weight:var(--ib-w-medium);color:var(--ib-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-dim);white-space:nowrap}
+.ib-tile__practice{display:inline-flex;align-items:center;gap:var(--ib-1);min-width:0;font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ib-tile__practice svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* just accepted: one ok ring that fades (outline, not a shadow) */

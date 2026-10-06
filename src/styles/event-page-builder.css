@@ -307,7 +307,7 @@
 .event-lexical__picker{position:absolute;right:6px;top:100%;z-index:1000;display:grid;gap:2px;width:min(340px,calc(100vw - 24px));max-height:300px;overflow:auto;padding:8px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-raised)}
 .event-lexical__picker input,.event-lexical__link-input input{min-height:36px;padding:0 10px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-body)}
 .event-lexical__picker button{display:grid;gap:1px;padding:7px;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-body);text-align:left;cursor:pointer}.event-lexical__picker button:hover{background:var(--ib-soft)}
-.event-lexical__picker code{font-size:var(--ib-fs-11);color:var(--ib-dim)}
+.event-lexical__picker code{font-size:var(--ib-fs-12);color:var(--ib-dim)}
 .event-lexical__link-input{display:flex;gap:8px;padding:8px;border-top:1px solid var(--ib-line)}.event-lexical__link-input input{flex:1;min-width:0}.event-lexical__link-input button{padding:0 12px;border:0;border-radius:var(--ib-r-sm);background:var(--ib-brand);color:var(--ib-on-brand);cursor:pointer}.event-lexical__link-input button:disabled{opacity:.5;cursor:default}
 .event-rich-text-field>.is-invalid .event-lexical{border-color:var(--ib-danger);outline:1px solid var(--ib-danger)}
 .event-rich-text-field__link{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding:8px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-soft)}

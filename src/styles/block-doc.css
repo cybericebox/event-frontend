@@ -1,15 +1,10 @@
-/* Event page document block, copied from the local ds-v2 block and TOC patterns. */
+/* Block «doc» — table of contents + rich text, for rules and other long pages. The TOC is .ib-toc (IB.Toc scroll-spy),
+   filled from the h2 of the text by IB.Blocks.render; sticky on wide stacks, above the text on narrow ones.
+   Fields: {type:'doc', title, sub, level, tocTitle:'Зміст', sections:[{h:'Загальне', html:'<p>…</p>'}]} */
+
 .ib-block-doc__grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:var(--ib-block-gap);align-items:start}
-.ib-block-doc__grid>article{min-width:0}
-.ib-block-doc__grid>article section+section{margin-top:var(--ib-6)}
-.ib-block-doc__grid>article h3{scroll-margin-top:84px}
-.ib-block-doc .ib-toc{position:sticky;top:var(--ib-6);align-self:start;min-width:0;font-size:var(--ib-fs-13)}
-.ib-toc__title{margin:0 0 var(--ib-2);padding:0 var(--ib-3);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-dim)}
-.ib-toc__list{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
-.ib-toc__link{display:block;padding:6px var(--ib-3);border-radius:var(--ib-r);color:var(--ib-dim);font-weight:var(--ib-w-regular);line-height:var(--ib-lh-ui);text-decoration:none;transition:background-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease)}
-.ib-toc__link:hover{background:var(--ib-hover);color:var(--ib-ink);text-decoration:none}
-.ib-toc__link:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
-@container ib-blocks (max-width:600px){
+.ib-block-doc .ib-toc{--ib-toc-top:var(--ib-6)}
+@container ib-blocks (max-width:860px){
   .ib-block-doc__grid{grid-template-columns:minmax(0,1fr)}
   .ib-block-doc .ib-toc{order:-1;position:static}
 }

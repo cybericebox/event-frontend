@@ -132,9 +132,9 @@ export function VariablePickerMenu({ variables, onSelect, onClose, values, initi
               )}
             >
               <strong className="block text-xs font-semibold text-(--ib-ink)">{label}</strong>
-              <code className="block font-mono text-[11px] text-(--ib-action)">{variable.name}</code>
+              <code className="block font-mono text-[12px] text-(--ib-action)">{variable.name}</code>
               {example && (
-                <small className="block text-[11px] text-(--ib-dim)">
+                <small className="block text-[12px] text-(--ib-dim)">
                   {t("manage.tpl.editor.variableExample")}: {example}
                 </small>
               )}

@@ -24,7 +24,7 @@
 .ib-accordion__a p+p{margin-top:var(--ib-2)}
 .ib-accordion__item[aria-disabled="true"]>.ib-accordion__q{color:var(--ib-faint);cursor:not-allowed}
 
-.ib-accordion--lg .ib-accordion__q{padding:var(--ib-5) 0;font-size:17px}
+.ib-accordion--lg .ib-accordion__q{padding:var(--ib-5) 0;font-size:var(--ib-fs-16)}
 .ib-accordion--lg .ib-accordion__a{padding-bottom:22px;font-size:var(--ib-fs-16)}
 
 @media (max-width:640px){

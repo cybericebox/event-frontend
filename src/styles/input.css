@@ -18,7 +18,7 @@
   font:var(--ib-w-regular) var(--ib-fs-14)/var(--ib-lh-ui) var(--ib-font);caret-color:var(--ib-action);
   transition:border-color var(--ib-dur-fast) var(--ib-ease);
 }
-.ib-input::placeholder{color:var(--ib-faint);opacity:1}
+.ib-input::placeholder{color:var(--ib-placeholder);opacity:1}
 .ib-input:hover,.ib-input.is-hover{border-color:var(--ib-dim)}
 .ib-input:focus,.ib-input.is-focus{outline:2px solid var(--ib-action);outline-offset:-1px;border-color:var(--ib-action)}
 .ib-input[aria-invalid="true"],.ib-input.is-invalid{border-color:var(--ib-danger)}
@@ -29,9 +29,12 @@
 .ib-input--mono{font-family:var(--ib-mono);font-size:var(--ib-fs-14);letter-spacing:0}
 .ib-input--code{font-family:var(--ib-mono);letter-spacing:.2em;text-align:center;width:140px}
 
-/* keyboard hint */
+/* iOS zooms the page when a focused field is under 16px: every text field is 16px on touch (any width) */
+@media (pointer:coarse){.ib-input,.ib-input--sm,.ib-input--mono,.ib-textarea,.ib-select>select.ib-input,.ib-tag-input__field{font-size:16px}}
+
+/* keyboard hint (12px: the product floor; 18px box) */
 .ib-kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;
-  font:var(--ib-w-medium) var(--ib-fs-11)/1 var(--ib-mono);color:var(--ib-faint);background:var(--ib-surface);
+  font:var(--ib-w-medium) var(--ib-fs-12)/1 var(--ib-mono);color:var(--ib-faint);background:var(--ib-surface);
   border:1px solid var(--ib-line);border-bottom-width:2px;border-radius:var(--ib-r-sm)}
 
 /* wrappers */

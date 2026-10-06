@@ -1,5 +1,5 @@
 /* Link — .ib-link
-   Inline (in running text): underlined, underline at 45% of action colour, full on hover.
+   Inline (in running text): underlined, underline at 70% of action colour, full on hover.
    --standalone: no underline until hover, medium weight, optional trailing svg (chevron).
    --external: trailing ext icon; add <span class="ib-sr">(нова вкладка)</span> when target=_blank.
    --mass: on brand mass (white). Also works on <button class="ib-link">. */
@@ -7,7 +7,7 @@
 .ib-link{
   color:var(--ib-action);font:inherit;font-weight:var(--ib-w-medium);
   text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;
-  text-decoration-color:color-mix(in srgb,currentColor 45%,transparent);
+  text-decoration-color:color-mix(in srgb,currentColor 70%,transparent);   /* underlined at rest: colour alone never marks a link */
   background:none;border:0;padding:0;cursor:pointer;border-radius:var(--ib-r-sm);
   transition:text-decoration-color var(--ib-dur-fast) var(--ib-ease),color var(--ib-dur-fast) var(--ib-ease);
 }

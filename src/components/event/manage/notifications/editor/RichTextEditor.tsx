@@ -826,7 +826,7 @@ function VariablePlugin({ variables }: VariablePluginProps): JSX.Element | null 
           >
             <span className="text-xs font-medium text-(--ib-ink)">{showNames ? opt.varName : `{{${opt.varName}}}`}</span>
             {opt.description && (
-              <span className="block text-[10px] font-sans text-(--ib-dim) mt-0.5">
+              <span className="block text-[12px] font-sans text-(--ib-dim) mt-0.5">
                 {opt.description}
               </span>
             )}

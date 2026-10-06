@@ -22,7 +22,7 @@ export function OutageShell({manage = false, event = null}: {manage?: boolean; e
                     </aside>
                     <div className="ib-admin-shell__main">
                         <header className="ib-topbar"><div className="ib-topbar__actions"><ThemeToggle /></div></header>
-                        <main className="ib-admin-shell__scroll" />
+                        <main id="main" tabIndex={-1} className="ib-admin-shell__scroll" />
                     </div>
                 </div>
             </div>
@@ -36,6 +36,6 @@ export function OutageShell({manage = false, event = null}: {manage?: boolean; e
                 <div className="ib-navbar__actions"><div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div></div>
             </div>
         </header>
-        <main className="event-guest-main" />
+        <main id="main" tabIndex={-1} className="event-guest-main" />
     </div>;
 }

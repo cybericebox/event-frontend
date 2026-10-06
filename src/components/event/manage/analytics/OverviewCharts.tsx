@@ -15,8 +15,8 @@ import {registrationsHaveData} from "./peopleModel";
 
 const POLL_SECONDS = 15;
 export const LEADER_LINES = 5;
-const axisText = "var(--ib-dim)";
-const palette = {total: "#1E2A6B", open: "#0091EA", approval: "#22C55E", invitation: "#F59E0B"};
+const axisText = "var(--ib-chart-axis)";
+const palette = {total: "var(--ib-s4)", open: "var(--ib-s1)", approval: "var(--ib-ok)", invitation: "var(--ib-warn)"};
 
 // The score chart of the top teams as smooth lines (the Live «Динаміка балів»
 // data), with «Зараз» while the event runs.
@@ -41,10 +41,10 @@ export function registrationsOverviewOption(registrations: AnalyticsParticipants
     const line = (name: string, color: string, data: number[][], width = 2) => ({name, type: "line" as const, smooth: true, showSymbol: false, color, lineStyle: {width}, emphasis: {focus: "series"}, data});
     return {
         grid: {left: 44, right: 16, top: 36, bottom: 64},
-        legend: {type: "scroll", top: 0, textStyle: {color: axisText}},
+        legend: {type: "scroll", top: 0, textStyle: {color: "var(--ib-chart-legend)"}},
         tooltip: {trigger: "axis"},
-        xAxis: {type: "time", axisLine: {lineStyle: {color: "var(--ib-control)"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
-        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "var(--ib-line)"}}},
+        xAxis: {type: "time", axisLine: {lineStyle: {color: "var(--ib-chart-line)"}}, axisLabel: {color: axisText}, splitLine: {show: false}},
+        yAxis: {type: "value", min: 0, minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: "var(--ib-chart-grid)"}}},
         dataZoom: [{type: "inside", filterMode: "none"}, {type: "slider", height: 18, bottom: 8, filterMode: "none"}],
         series: [
             line(t("manage.analytics.overviewCharts.registrations.total"), palette.total, running(day => day.Open + day.Approval + day.Invitation), 3),

@@ -1,5 +1,5 @@
 /* Challenge board — «Плитки»: all challenges as a grid grouped by category.
-   Toolbar: filter (.ib-seg «Усі / Нерозв’язані») + category chips + search (.ib-input-wrap--search).
+   Toolbar: filter (.ib-seg «Усі / Нерозвʼязані») + category chips + search (.ib-input-wrap--search).
    Category headers «Web  4 / 10 … лишилось 1 250 балів» stick while scrolling.
    Needs: challenge-tile, segmented, input. */
 

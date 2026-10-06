@@ -19,7 +19,9 @@ export function NotFoundScreen({title = t("error.notFound"), body = t("error.not
     block?: boolean;
 }) {
     const eventName = useEventBrandName();
-    return <main className={block ? "event-error" : "event-error event-error--page"}>
+    // `block` sits inside the shell's <main>; the full-page variant is the main itself.
+    const Frame = block ? "div" : "main";
+    return <Frame className={block ? "event-error" : "event-error event-error--page"}>
         <EventBrandLogo className="event-error__logo" size={64} />
         {eventName
             ? <p className="event-error__name">{eventName}</p>
@@ -31,5 +33,5 @@ export function NotFoundScreen({title = t("error.notFound"), body = t("error.not
             <Link className="ib-btn ib-btn--primary" href="/">{t("error.goHome")}</Link>
             <button type="button" className="ib-btn" onClick={goBack}>{t("error.page.back")}</button>
         </div>
-    </main>;
+    </Frame>;
 }

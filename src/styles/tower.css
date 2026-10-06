@@ -1,4 +1,5 @@
-/* Tower — participant event shell: brand-mass sidebar (216px) + content.
+/* Tower — participant event shell: brand-mass sidebar (--ib-sidebar-w 240px, same as admin and /manage) + content.
+   Item 14px / --ib-nav-item-h 36px, 18px icon, sub-line 13px — same sizes as patterns/admin-sidebar.
    Source: proto/event3.html (.shell/.tower). States: default, .is-collapsed (64px rail),
    narrow container (<768px) → top bar + drawer (.is-drawer-open). Behaviour: tower.js (window.IB.Tower).
    Brand mass is identical in both themes, so its component tokens live on :root only. */
@@ -6,7 +7,7 @@
 :root{
   --ib-tower-rail-w:64px;
   --ib-tower-active:var(--ib-brand-active);   /* tokens.css */
-  --ib-tower-mbar-h:56px;
+  --ib-tower-mbar-h:var(--ib-topbar-h);
 }
 
 .ib-event-shell{container:ib-event-shell/inline-size;height:var(--ib-shell-h,100dvh);position:relative;overflow:hidden}
@@ -23,13 +24,13 @@
 .ib-tower__crest{width:32px;height:32px;object-fit:contain;flex:none}
 .ib-tower__title{min-width:0;flex:1;line-height:var(--ib-lh-tight)}
 .ib-tower__event{display:block;font-weight:var(--ib-w-semibold);color:var(--ib-on-brand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ib-tower__sub{display:block;font-size:var(--ib-fs-12);color:var(--ib-on-brand-3);margin-top:2px}
+.ib-tower__sub{display:block;font-size:var(--ib-fs-13);color:var(--ib-on-brand-3);margin-top:2px}
 .ib-tower__close{display:none}
 
 .ib-tower__live{padding:var(--ib-3) var(--ib-4) var(--ib-4);border-bottom:1px solid var(--ib-brand-line);flex:none}
 .ib-tower__phase{display:block;font-size:var(--ib-fs-13);color:var(--ib-on-brand-2);font-weight:var(--ib-w-medium)}
 .ib-tower__clock{display:block;margin-top:var(--ib-1);font:var(--ib-w-medium) var(--ib-fs-32)/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.04em;color:var(--ib-on-brand)}
-.ib-tower__until{display:block;margin-top:var(--ib-2);font-size:var(--ib-fs-12);color:var(--ib-on-brand-3)}
+.ib-tower__until{display:block;margin-top:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-on-brand-3)}
 
 .ib-tower__points{display:flex;align-items:baseline;justify-content:space-between;gap:var(--ib-2);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-brand-line);flex:none}
 .ib-tower__points-label{font-size:var(--ib-fs-13);color:var(--ib-on-brand-2)}
@@ -41,7 +42,7 @@
 
 .ib-tower__item{
   position:relative;display:flex;align-items:center;gap:var(--ib-3);width:100%;
-  min-height:var(--ib-control-h);padding:var(--ib-1) var(--ib-3);
+  min-height:var(--ib-nav-item-h);padding:var(--ib-1) var(--ib-3);
   border:0;border-radius:var(--ib-r);background:transparent;
   color:var(--ib-on-brand-2);font:var(--ib-w-medium) var(--ib-fs-14)/var(--ib-lh-ui) var(--ib-font);
   text-align:left;text-decoration:none;cursor:pointer;
@@ -50,7 +51,7 @@
 .ib-tower__item:hover{background:var(--ib-brand-hover);color:var(--ib-on-brand);text-decoration:none}
 .ib-tower__item[aria-current="page"]{background:var(--ib-tower-active);color:var(--ib-on-brand);font-weight:var(--ib-w-semibold)}
 .ib-tower__item.is-unread{color:var(--ib-on-brand);font-weight:var(--ib-w-semibold)}
-.ib-tower__item .ib-icon{width:16px;height:16px}
+.ib-tower__item .ib-icon{width:18px;height:18px}
 .ib-tower__label{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ib-tower__meta{margin-left:auto;font:var(--ib-fs-12) var(--ib-mono);font-variant-numeric:tabular-nums;color:var(--ib-on-brand-3)}
 .ib-tower__item[aria-current="page"] .ib-tower__meta{color:var(--ib-on-brand-2)}
@@ -59,7 +60,7 @@
 .ib-tower__count{
   display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;
   border-radius:var(--ib-r-pill);background:var(--ib-mass-btn);color:var(--ib-brand);
-  font:var(--ib-w-semibold) var(--ib-fs-11)/1 var(--ib-mono);font-variant-numeric:tabular-nums;margin-left:auto;
+  font:var(--ib-w-semibold) var(--ib-fs-12)/1 var(--ib-mono);font-variant-numeric:tabular-nums;margin-left:auto;
 }
 
 /* me row: avatar menu + bell */
@@ -101,16 +102,16 @@
   .is-collapsed .ib-tower__label,.is-collapsed .ib-tower__meta,
   .is-collapsed .ib-tower__person{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .is-collapsed .ib-tower__live,.is-collapsed .ib-tower__points{padding:var(--ib-2) 0;text-align:center;justify-content:center}
-  .is-collapsed .ib-tower__clock{font-size:var(--ib-fs-11);letter-spacing:-.02em;margin:0}
-  .is-collapsed .ib-tower__points-value{font-size:var(--ib-fs-11);letter-spacing:0;color:var(--ib-on-brand-2)}
+  .is-collapsed .ib-tower__clock{font-size:var(--ib-fs-12);letter-spacing:-.02em;margin:0}
+  .is-collapsed .ib-tower__points-value{font-size:var(--ib-fs-12);letter-spacing:0;color:var(--ib-on-brand-2)}
   .is-collapsed .ib-tower__nav,.is-collapsed .ib-tower__foot{padding:var(--ib-2) var(--ib-2)}
   .is-collapsed .ib-tower__item{justify-content:center;padding:0;height:var(--ib-control-h-lg)}
-  .is-collapsed .ib-tower__item .ib-tower__count{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;font-size:var(--ib-fs-11)}
+  .is-collapsed .ib-tower__item .ib-tower__count{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;font-size:var(--ib-fs-12)}
   .is-collapsed .ib-tower__sep{margin:var(--ib-2) var(--ib-1)}
   .is-collapsed .ib-tower__me{flex-direction:column;gap:2px}
   .is-collapsed .ib-tower__who{flex:none;justify-content:center;padding:var(--ib-1)}
   .is-collapsed .ib-tower__bell{padding:0;width:var(--ib-control-h-lg);justify-content:center}
-  .is-collapsed .ib-tower__bell .ib-tower__count{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;font-size:var(--ib-fs-11)}
+  .is-collapsed .ib-tower__bell .ib-tower__count{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;font-size:var(--ib-fs-12)}
   .is-collapsed .ib-tower__menu{left:calc(100% + var(--ib-2));bottom:0}
 }
 

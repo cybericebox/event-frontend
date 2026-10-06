@@ -2,7 +2,7 @@
    Variants: --primary (action) · default = secondary (outline, control border) · --ghost · --danger (outline)
              --danger-solid (confirm destructive) · --mass (on brand mass: --ib-mass-btn fill, brand text)
    Sizes: default 40 (--ib-control-h-lg) · --sm 32 (--ib-control-h)
-   Modifiers: --block (full width) · .is-busy (EventButton busy) · [disabled] / [aria-disabled=true]
+   Modifiers: --block (full width) · .is-busy (EventButton busy, event logo) · [disabled] / [aria-disabled=true]
    Hover look can be forced in previews with .is-hover. */
 
 :root,[data-theme="light"]{
@@ -50,6 +50,12 @@
 .ib-btn--mass-outline{--_fg:var(--ib-on-brand);--_bd:var(--ib-on-brand-3);--_hover:var(--ib-brand-hover)}
 .ib-mass .ib-btn:focus-visible,.ib-mass .ib-btn.is-focus{outline-color:var(--ib-on-brand)}
 
+/* busy: the label keeps its width (transparent, not removed) and the crest loader sits over it, so the button never resizes.
+   <button class="ib-btn" aria-busy="true" aria-disabled="true">Зберегти<img class="ib-crest ib-crest--sm ib-btn__crest" src="assets/crest-64.png" alt=""></button>
+   aria-disabled (not disabled) keeps keyboard focus. Event sites: src = the event logo. */
+.ib-btn[aria-busy="true"]{--_fg:transparent;cursor:progress}
+.ib-btn[aria-busy="true"] svg{opacity:0}
+.ib-btn__crest{position:absolute;inset:0;margin:auto}
 
 /* disabled */
 .ib-btn:disabled,.ib-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;background:var(--_bg)}

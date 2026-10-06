@@ -78,8 +78,8 @@
   --ib-control:#9896A6;
   --ib-ink:#EEEDF6;
   --ib-body:#DAD9E5;
-  --ib-dim:#BBB9CB;
-  --ib-faint:#BBB9CB;
+  --ib-dim:#C8C6D6;     /* lifted one step: 5.3:1 on raised, 4.6:1 on soft */
+  --ib-faint:#C8C6D6;
   --ib-action:#E6E6EE;
   --ib-action-hover:#F5F5F9;
   --ib-on-action:var(--ev-brand);
@@ -109,15 +109,18 @@
   --ib-brand-line:color-mix(in srgb,var(--ev-brand),#FFFFFF 17%);
   --ib-on-brand:#FFFFFF;
   --ib-on-brand-2:color-mix(in srgb,var(--ev-brand),#FFFFFF 86%);
-  --ib-on-brand-3:color-mix(in srgb,var(--ev-brand),#FFFFFF 60%);
+  /* on-brand-3: 66% white keeps >=5:1 on the active row for the default brand. A light custom brand can
+     lift it: the event front precomputes --ev-on-brand-3 on save (contrast floor 4.5:1 on --ib-brand-active). */
+  --ib-on-brand-3:var(--ev-on-brand-3,color-mix(in srgb,var(--ev-brand),#FFFFFF 66%));
   --ib-brand-points:color-mix(in srgb,var(--ev-brand),#FFFFFF 84%);
 
   /* type */
   --ib-font:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
   --ib-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  --ib-fs-11:11px;--ib-fs-12:12px;--ib-fs-13:13px;--ib-fs-14:14px;--ib-fs-16:16px;
+  --ib-fs-12:12px;--ib-fs-13:13px;--ib-fs-14:14px;--ib-fs-15:15px;--ib-fs-16:16px;
+  --ib-fs-11:var(--ib-fs-12);   /* alias: nothing in the product is set under 12px */
   --ib-fs-20:20px;--ib-fs-24:24px;--ib-fs-32:32px;--ib-fs-48:48px;--ib-fs-72:72px;
-  --ib-lh-tight:1.15;--ib-lh-ui:1.35;--ib-lh-body:1.55;
+  --ib-lh-tight:1.15;--ib-lh-ui:1.35;--ib-lh-body:1.55;--ib-lh-text:1.6;   /* --ib-lh-text: running text at 15px */
   --ib-w-regular:400;--ib-w-medium:500;--ib-w-semibold:600;
 
   /* space (4px base) */
@@ -125,13 +128,14 @@
 
   /* shape */
   --ib-r-sm:4px;--ib-r:6px;--ib-r-lg:8px;--ib-r-pill:999px;
-  --ib-control-h:32px;--ib-control-h-lg:40px;--ib-row-h:38px;
+  --ib-control-h:32px;--ib-control-h-lg:40px;--ib-row-h:40px;--ib-nav-item-h:36px;
 
   /* motion — opacity/colour/position only */
   --ib-dur-fast:120ms;--ib-dur:160ms;--ib-dur-move:320ms;--ib-ease:cubic-bezier(.2,.7,.2,1);
 
   /* layout */
-  --ib-tower-w:216px;--ib-admin-side-w:224px;--ib-modal-w:640px;--ib-popover-w:376px;
+  --ib-sidebar-w:240px;--ib-topbar-h:56px;--ib-tower-w:var(--ib-sidebar-w);--ib-admin-side-w:var(--ib-sidebar-w);
+  --ib-modal-w:640px;--ib-popover-w:376px;
 }
 
 /* ── 5. LIVE / fullscreen results ────────────────────────────────────────────
@@ -173,4 +177,36 @@
   --ib-wave-quiet-filter:invert(1) grayscale(1);
   --ib-wave-quiet-opacity:.35;
   --ib-diagram-zone:#8F8D9D;   /* 3.2:1 on surface, 3.6:1 on paper */
+}
+
+/* Wave 1 (2026-10-06): placeholder, tooltip and chart-theme tokens. Defined per theme (not on :root only),
+   because a var() alias on :root would be resolved once and ignore data-theme on a subtree. */
+:root,[data-theme="light"]{
+  --ib-placeholder:#5F5F73;            /* 6.2:1 surface, 5.8:1 paper, 5.5:1 hero, 5.3:1 soft */
+  --ib-tip-bg:var(--ib-raised);        /* tooltip bubble: raised fill + hairline + overlay shadow */
+  --ib-tip-fg:var(--ib-ink);
+  --ib-tip-line:var(--ib-line);
+  --ib-tip-dim:var(--ib-dim);
+  /* charts (read by chart-theme.js at render time) */
+  --ib-chart-axis:var(--ib-dim);       /* axis labels, 12px: 6.7:1 on surface */
+  --ib-chart-legend:var(--ib-body);    /* legend text, 13px */
+  --ib-chart-grid:var(--ib-grid);
+  --ib-chart-line:var(--ib-control);   /* axis line, tick marks */
+}
+[data-theme="dark"]{
+  --ib-placeholder:#C8C6D6;            /* 4.6:1 on soft, 5.3:1 on raised */
+  --ib-tip-bg:var(--ib-raised);
+  --ib-tip-fg:var(--ib-ink);
+  --ib-tip-line:var(--ib-control);     /* raised on paper is only 1.5:1, so the dark bubble border is the control line */
+  --ib-tip-dim:var(--ib-dim);
+  --ib-chart-axis:var(--ib-dim);       /* 5.9:1 on surface */
+  --ib-chart-legend:var(--ib-body);
+  --ib-chart-grid:var(--ib-grid);
+  --ib-chart-line:var(--ib-control);
+}
+:root{--ib-chart-fs-axis:12px;--ib-chart-fs-legend:13px;--ib-chart-lw:2px}
+/* live screens carry their own surface and ink: charts and bubbles follow them */
+.ib-live,[data-live]{
+  --ib-chart-axis:var(--ib-live-axis);--ib-chart-legend:var(--ib-live-ink);--ib-chart-grid:var(--ib-live-grid);--ib-chart-line:var(--ib-live-grid);
+  --ib-tip-bg:var(--ib-live-lead);--ib-tip-fg:var(--ib-live-ink);--ib-tip-line:var(--ib-live-line);--ib-tip-dim:var(--ib-live-dim);
 }
