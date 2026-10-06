@@ -68,4 +68,22 @@ describe("event setup steps", () => {
     it("flags an unpublished landing draft", () => {
         expect(status(base({content: {LandingDraft: {}} as never}), "pages")).toBe("todo");
     });
+
+    it("asks for a resource reservation while lab sets are attached and the platform has not reserved", () => {
+        const lab = base({config: {...config, InfrastructureAllowed: true}, attachments: [set({Infrastructure: true})]});
+        expect(status({...lab, resources: {Reserved: false} as never}, "resources")).toBe("todo");
+        expect(status({...lab, resources: {Reserved: true} as never}, "resources")).toBe("done");
+        expect(status(lab, "resources")).toBeUndefined();
+        expect(status({...base({config: {...config, InfrastructureAllowed: true}}), resources: {Reserved: false} as never}, "resources")).toBeUndefined();
+        expect(summarizeSetup(buildSetupSteps({...lab, resources: {Reserved: false} as never})).complete).toBe(false);
+    });
+
+    it("warns, without blocking, about hints participants will not see or that cost nothing", () => {
+        const warning = (input: SetupInput) => buildSetupSteps(input).find(step => step.id === "challenges");
+        const hint = (Cost: number) => ({Cost});
+        expect(warning(base({challenges: [{HintsEnabled: true, Hints: [hint(5)]}]}))?.warning).toBeUndefined();
+        expect(warning(base({challenges: [{HintsEnabled: false, Hints: [hint(5)]}, {HintsEnabled: true, Hints: [hint(0), hint(0)]}, {HintsEnabled: false, Hints: []}]}))?.warning).toEqual({detail: "challengesHints", vars: {count: 2}});
+        expect(warning(base({config: {...config, HintsDisabled: true}, challenges: [{HintsEnabled: true, Hints: [hint(5)]}]}))?.warning?.vars).toEqual({count: 1});
+        expect(warning(base({challenges: [{HintsEnabled: false, Hints: [hint(5)]}]}))?.status).toBe("done");
+    });
 });

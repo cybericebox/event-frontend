@@ -132,3 +132,21 @@ describe("several sets", () => {
         expect(triggerOf("Мережа").textContent).toContain("Етап 2");
     });
 });
+
+// The board hands out copies of the sets taken when it loaded: they never follow the attachments cache.
+function Stale({board, stages}: {board: EventExerciseAttachment[]; stages: ManageStage[]}) {
+    useQuery({queryKey: ["event-exercise-attachments", "e1"], queryFn: async () => board, initialData: board, staleTime: Infinity});
+    return <>{board.map(item => <SetStageField key={item.ID} eventID="e1" attachment={item} stages={stages} canManage />)}</>;
+}
+
+describe("a set copied from the board", () => {
+    it("shows the stage chosen on it after a change of a sibling set, whatever else is toggled", async () => {
+        api.set.mockImplementation(async (_event: string, setID: string, stageID: string | null) => answer(setID, stageID));
+        render(<QueryClientProvider client={new QueryClient()}><Stale board={two()} stages={[stage(1), stage(2)]} /></QueryClientProvider>);
+        await pick("Веб", "Етап 1");
+        await pick("Мережа", "Етап 2");
+        await waitFor(() => expect(api.set).toHaveBeenCalledTimes(2));
+        expect(triggerOf("Веб").textContent).toContain("Етап 1");
+        expect(triggerOf("Мережа").textContent).toContain("Етап 2");
+    });
+});

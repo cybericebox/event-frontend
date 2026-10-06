@@ -1,6 +1,6 @@
 "use client";
 
-import {useQueryClient, type QueryClient} from "@tanstack/react-query";
+import {useQuery, useQueryClient, type QueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
@@ -33,9 +33,12 @@ function enqueue(queryClient: QueryClient, eventID: string, job: () => Promise<v
 // The stage of one set: «Весь захід» or a stage. An instant control: the choice shows at once, saves run one after another
 // and never disable it, and a refused change rolls back with the reason. Before a stage opens everything is free; once it
 // has opened nothing leaves it, and a closed stage accepts nothing new (the server enforces the same).
-export function SetStageField({eventID, attachment, stages, canManage}: {eventID: string; attachment: EventExerciseAttachment; stages: ManageStage[]; canManage: boolean}) {
+export function SetStageField({eventID, attachment: shownAttachment, stages, canManage}: {eventID: string; attachment: EventExerciseAttachment; stages: ManageStage[]; canManage: boolean}) {
     const queryClient = useQueryClient();
     const key = ["event-exercise-attachments", eventID];
+    // The set on the board is a copy taken when the board loaded; the attachments cache is where a stage change lands, so it wins.
+    const live = useQuery({queryKey: key, queryFn: () => getEventExerciseAttachments(eventID), staleTime: Infinity, refetchOnWindowFocus: false, select: items => items.find(item => item.ID === shownAttachment.ID)});
+    const attachment = live.data ? {...shownAttachment, StageID: live.data.StageID} : shownAttachment;
     const current = stages.find(stage => stage.ID === attachment.StageID);
     const locked = !!current && current.State !== "upcoming";
     const options = [

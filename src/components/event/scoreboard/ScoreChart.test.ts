@@ -22,7 +22,7 @@ describe("score charts are smooth monotone curves", () => {
         }
         expect(option.dataZoom.map(zoom => zoom.type)).toEqual(["inside", "slider"]);
         expect(option.dataZoom.every(zoom => zoom.xAxisIndex === 0)).toBe(true);
-        expect(option.series[0].data.map(point => point[1])).toEqual([0, 100, 300, 300]);
+        expect(option.series[0].data.map(point => point[1])).toEqual([0, 0, 100, 100, 300, 300]);
     });
 
     it("participation and analytics score charts are smooth monotone too", () => {

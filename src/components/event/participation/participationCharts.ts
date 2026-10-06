@@ -1,4 +1,5 @@
 import {t} from "@/i18n/t";
+import {holdPoints} from "@/components/event/charts/holdPoints";
 import type {CategoryShare, PointsPoint} from "./participationStatsModel";
 
 // Same look as the analytics charts: slate axes and grid, the tooltip follows
@@ -23,7 +24,7 @@ export function pointsChartOption(series: readonly PointsSeries[], window: {from
             return {
                 name: item.name, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, color: item.color,
                 lineStyle: {width: item.dashed ? 2 : 3, type: item.dashed ? "dashed" : "solid"}, emphasis: {focus: "series"},
-                data: [[window.from, 0], ...item.points, [window.to, last]],
+                data: holdPoints([[window.from, 0], ...item.points, [window.to, last]]),
             };
         }),
     };

@@ -17,7 +17,7 @@ describe("score chart", () => {
         const option = scoreChartOption(scores) as {series: {name: string; data: number[][]}[]};
         expect(option.series).toHaveLength(1);
         expect(option.series[0]).toMatchObject({name: "Blue", smooth: true, smoothMonotone: "x"});
-        expect(option.series[0].data.map(point => point[1])).toEqual([0, 100, 100]);
+        expect(option.series[0].data.map(point => point[1])).toEqual([0, 0, 100, 100]);
         expect(scoresHaveData(scores)).toBe(true);
     });
     it("is empty when every line is flat at zero", () => {
