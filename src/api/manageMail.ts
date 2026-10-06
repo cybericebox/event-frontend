@@ -86,12 +86,12 @@ const journalPageSchema = z.object({
 export type MailParty = z.infer<typeof partySchema>;
 // A send-limit tooltip: what the field is, then whether a limit is saved.
 export function withLimitSource(help: string, source: "saved" | "env" | "none"): string {
-    return `${help} ${t(`manage.mail.limitSource.${source === "env" ? "none" : source}`)}`;
+    return t("manage.mail.helpWithSource", {help, source: t(`manage.mail.limitSource.${source === "env" ? "none" : source}`)});
 }
 
 // A field tooltip: what the field is, then where the placeholder value comes from.
 export function withSource(help: string, source: MailFieldSource): string {
-    return `${help} ${t(`manage.mail.fieldSource.${source}`)}`;
+    return t("manage.mail.helpWithSource", {help, source: t(`manage.mail.fieldSource.${source}`)});
 }
 
 export type MailIdentity = z.infer<typeof identitySchema>;

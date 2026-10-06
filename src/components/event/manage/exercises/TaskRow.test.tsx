@@ -33,7 +33,7 @@ describe("TaskRow", () => {
         expect(row.textContent).toContain("Підказок: 1. Учасники їх бачать.");
         expect(row.querySelector(".event-task__hints.is-hidden")).toBeNull();
         expect(row.textContent).toContain("Стенд не готовий");
-        expect(within(row as HTMLElement).getAllByRole("button").map(button => button.getAttribute("aria-label"))).toEqual(["Розгорнути завдання SQL injection"]);
+        expect(within(row as HTMLElement).getAllByRole("button").map(button => button.getAttribute("aria-label"))).toEqual(["Розгорнути підзавдання SQL injection"]);
     });
 
     it("expands into scoring, hints and attempts only", () => {
@@ -51,7 +51,7 @@ describe("TaskRow", () => {
         renderRow({ForceEventScoring: true});
         fireEvent.click(screen.getByRole("button", {expanded: false}));
         expect(screen.getByText(/Діє оцінювання заходу/)).toBeTruthy();
-        expect((screen.getByRole("button", {name: "Оцінювання завдання SQL injection"}) as HTMLButtonElement).disabled).toBe(true);
+        expect((screen.getByRole("button", {name: "Оцінювання підзавдання SQL injection"}) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it("mutes the hint indicator when the event disables hints for all tasks", () => {
@@ -66,7 +66,7 @@ describe("TaskRow", () => {
     it("marks own scoring fields required and blocks saving with inline errors", () => {
         renderRow();
         fireEvent.click(screen.getByRole("button", {expanded: false}));
-        const kind = screen.getByRole("button", {name: "Оцінювання завдання SQL injection"});
+        const kind = screen.getByRole("button", {name: "Оцінювання підзавдання SQL injection"});
         expect(kind.closest(".event-manage-field")?.querySelector(".event-field-required")).toBeNull();
         // Radix menus open on pointerdown; pick «Статичне».
         fireEvent.pointerDown(kind, {button: 0, ctrlKey: false});
@@ -79,7 +79,7 @@ describe("TaskRow", () => {
     });
 
     describe("attempt limit of the task", () => {
-        const field = () => screen.getByRole("spinbutton", {name: "Максимум невдалих спроб для цього завдання"}) as HTMLInputElement;
+        const field = () => screen.getByRole("spinbutton", {name: "Максимум невдалих спроб для цього підзавдання"}) as HTMLInputElement;
 
         it("shows the event value as the placeholder and the own value when set", () => {
             renderRow({}, false, {eventAttempts: 5});

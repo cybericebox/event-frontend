@@ -47,7 +47,7 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
         <button type="button" className="ib-btn ib-btn--sm" disabled={busy} onClick={() => setEditing(false)}>{t("common.cancel")}</button>
     </form>;
     return <div className="event-pp-rename">
-        <span className="event-pp-hero__sub">{t("participation.pseudonym.label")}: {info.Pseudonym || t("participation.pseudonym.notSet")}</span>
+        <span className="event-pp-hero__sub">{t("participation.pseudonym.line", {value: info.Pseudonym || t("participation.pseudonym.notSet")})}</span>
         {info.PseudonymEditable
             ? <><button type="button" className="ib-btn ib-btn--sm" onClick={() => { setValue(info.Pseudonym ?? ""); setEditing(true); }}>{info.Pseudonym ? t("participation.pseudonym.change") : t("common.add")}</button>
                 {info.Pseudonym && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" disabled={busy} onClick={() => void save(null)}>{t("participation.pseudonym.remove")}</button>}</>

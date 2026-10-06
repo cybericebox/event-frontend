@@ -79,7 +79,7 @@ describe("AttachExerciseDialog", () => {
         expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();
         fireEvent.click(screen.getByRole("button", {name: "Є"}));
         const notice = screen.getByRole("status", {name: ""});
-        expect(notice.textContent).toBe("У заходу немає інфраструктури — набори зі стендами додати не можна. Її може увімкнути адміністратор платформи до публікації.");
+        expect(notice.textContent).toBe("У заходу немає інфраструктури — завдання зі стендами додати не можна. Її може увімкнути адміністратор платформи до публікації.");
         expect(screen.getByRole("button", {name: "Є"}).closest(".ib-seg")).toBeTruthy();
         fireEvent.click(screen.getByRole("button", {name: "Немає"}));
         expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();

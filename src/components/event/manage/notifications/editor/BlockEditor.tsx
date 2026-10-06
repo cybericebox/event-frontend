@@ -18,7 +18,7 @@ import Image from "next/image";
 import { ChevronUp, ChevronDown, Trash2, Upload } from "lucide-react";
 
 import { cn } from "@/utils/cn";
-import { t } from "@/i18n/t";
+import { t, tPlural } from "@/i18n/t";
 import { EventButton } from "@/components/ui/EventButton";
 import { EventSelect } from "@/components/ui/EventSelect";
 import { ManageFieldLabel } from "../../ManageFieldLabel";
@@ -265,7 +265,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
               <div className="event-manage-field">
                 <ManageFieldLabel title={t("manage.tpl.editor.block.preset")} help={t("manage.tpl.editor.presetHelp")} />
                 <EventSelect ariaLabel={t("manage.tpl.editor.selectPreset")} disabled={disabled} value={(block as PresetBlock).preset_id} placeholder={t("manage.tpl.editor.selectPreset")}
-                  options={presets.map((p) => ({ value: p.ID, label: `${p.Name} · ${p.Blocks.length} ${t("manage.tpl.editor.blocksCount")}` }))}
+                  options={presets.map((p) => ({ value: p.ID, label: t("manage.tpl.editor.presetOption", {name: p.Name, blocks: tPlural("manage.tpl.editor.blocksCountN", p.Blocks.length)}) }))}
                   onValueChange={(next) => {
                     const preset = presets.find((p) => p.ID === next);
                     if (preset) updateBlock(i, { type: "preset", preset_id: preset.ID, name: preset.Name });
@@ -295,7 +295,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
                 {presets.map((preset) => (
                   <button key={preset.ID} type="button" onClick={() => addPresetBlock(preset)}
                     className="rounded-md border border-(--ib-line) bg-(--ib-soft) px-2.5 py-1 text-xs font-medium text-(--ib-ink) transition-colors hover:bg-(--ib-hover)">
-                    {preset.Name} · {preset.Blocks.length} {t("manage.tpl.editor.blocksCount")}
+                    {t("manage.tpl.editor.presetOption", {name: preset.Name, blocks: tPlural("manage.tpl.editor.blocksCountN", preset.Blocks.length)})}
                   </button>
                 ))}
               </div>

@@ -47,7 +47,7 @@ describe("CatalogTagFilter", () => {
     it("shows the empty state and the any-tag hint", async () => {
         getTags.mockResolvedValue([]);
         setup();
-        expect(screen.getByText("Показуємо набори з будь-яким із вибраних тегів.")).toBeTruthy();
+        expect(screen.getByText("Показуємо завдання з будь-яким із вибраних тегів.")).toBeTruthy();
         fireEvent.focus(screen.getByRole("combobox"));
         expect(await screen.findByText("Тегів немає.")).toBeTruthy();
     });

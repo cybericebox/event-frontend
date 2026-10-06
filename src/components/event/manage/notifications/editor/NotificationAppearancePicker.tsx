@@ -22,7 +22,7 @@ export function NotificationAppearancePicker({ icon, tone, accentColor, onChange
 
   return <section className="rounded-lg border border-(--ib-line) bg-(--ib-surface) p-4" aria-label={t("manage.tpl.inapp.appearance")}>
     <div className="mb-3">
-      <ManageFieldLabel title={t("manage.tpl.inapp.appearance")} help={`${t("manage.tpl.inapp.appearanceHelp")}\n${t("manage.tpl.inapp.deliveryHint")}`} />
+      <ManageFieldLabel title={t("manage.tpl.inapp.appearance")} help={t("manage.tpl.inapp.appearanceHelp")} />
     </div>
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5" role="radiogroup" aria-label={t("manage.tpl.inapp.appearance")}>
       {APPEARANCES.map((option) => <button key={option.tone} type="button" role="radio" aria-checked={tone === option.tone} disabled={disabled}
