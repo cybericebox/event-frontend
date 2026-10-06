@@ -5,14 +5,16 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {ReactNode} from "react";
 import JoinPage from "./page";
 
+const api = vi.hoisted(() => ({join: vi.fn(async () => 2), push: vi.fn()}));
 const state = vi.hoisted(() => ({
     status: 0,
     participation: null as unknown,
     staff: false,
+    form: false,
 }));
 
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
-vi.mock("next/navigation", () => ({useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
+vi.mock("next/navigation", () => ({useRouter: () => ({push: api.push, replace: vi.fn()})}));
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event-1", Name: "Олімпіада", Registration: 2})}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => null}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
@@ -26,7 +28,8 @@ vi.mock("@/api/clientAuth", () => ({
 }));
 vi.mock("@/api/participantForm", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/participantForm")>()),
-    getSelfParticipantForm: async () => ({Enabled: false}),
+    getSelfParticipantForm: async () => ({Enabled: state.form, Document: {blocks: []}}),
+    joinSelfEvent: () => api.join(),
 }));
 
 const block = (register: {Allowed: boolean; Reason: string}, extra: Record<string, unknown> = {}) => ({Phase: "published", Staff: false, RosterOpen: true, RegistrationWindowOpen: true, Register: register, ...extra});
@@ -36,7 +39,7 @@ function view() {
     return render(<QueryClientProvider client={client}><JoinPage /></QueryClientProvider>);
 }
 
-beforeEach(() => { state.status = 0; state.participation = null; state.staff = false; });
+beforeEach(() => { state.status = 0; state.participation = null; state.staff = false; state.form = false; api.join.mockClear(); window.history.replaceState(null, "", "/join"); });
 afterEach(cleanup);
 
 describe("join page", () => {
@@ -71,5 +74,29 @@ describe("join page", () => {
         view();
         expect(await screen.findByText(text)).toBeTruthy();
         expect(screen.queryByRole("button", {name: "Приєднатися"})).toBeNull();
+    });
+
+    it("sends the application by itself after the sign-in that registration asked for", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        window.history.replaceState(null, "", "/join?continue=1");
+        view();
+        await vi.waitFor(() => expect(api.join).toHaveBeenCalledTimes(1));
+        expect(window.location.search).toBe("");
+    });
+
+    it("does not send anything by itself without continue", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        view();
+        await screen.findByRole("button", {name: "Приєднатися"});
+        expect(api.join).not.toHaveBeenCalled();
+    });
+
+    it("waits for the visitor when the registration has a form", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        state.form = true;
+        window.history.replaceState(null, "", "/join?continue=1");
+        view();
+        await screen.findByRole("button", {name: "Приєднатися"});
+        expect(api.join).not.toHaveBeenCalled();
     });
 });

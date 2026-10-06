@@ -10,11 +10,9 @@ import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {GuestShell} from "./GuestShell";
 import {EventErrorScreen} from "./EventErrorScreen";
 import {EventLoading} from "./EventLoading";
-import {EventNotFoundScreen} from "./EventNotFoundScreen";
+import {EventUnavailableScreen} from "./EventUnavailableScreen";
 import {EventBrandProvider} from "./EventBrandLogo";
 import {OutageShell} from "./OutageShell";
-import {NoAccessScreen} from "./NoAccessScreen";
-import {SignInRequired} from "./SignInRequired";
 import {isNetworkFailure} from "@/utils/eventGone";
 import {isOutageError} from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
@@ -58,15 +56,12 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         // refetch once the API answers.
         // The server read of this page answered 404, so a browser read that cannot even reach the
         // API (it refuses an unknown address without CORS headers) is the same missing event.
-        if (status === 404 || isNetworkFailure(identity.error)) return <EventNotFoundScreen />;
+        if (isNetworkFailure(identity.error)) return <EventUnavailableScreen />;
         if (isOutageError(identity.error ?? access.error, status)) return <OutageShell />;
-        // 401: straight to the sign-in and back. 403: signed in without rights. 404 does not
-        // say whether the event is missing or closed: a visitor goes to the sign-in, a signed-in
-        // account sees the neutral screen. Any other failure (server error, network) is a load
-        // failure with a retry.
-        if (status === 401) return <SignInRequired />;
-        if (status === 403) return <NoAccessScreen />;
-        if (status === 404) return <EventNotFoundScreen />;
+        // 401, 403 and 404 do not say whether the event is missing, closed or private to this
+        // visitor, and a redirect would reveal that it exists: one neutral screen for all three.
+        // Any other failure (server error, network) is a load failure with a retry.
+        if (status === 401 || status === 403 || status === 404) return <EventUnavailableScreen />;
         return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
     }
     const event = identity.data!;

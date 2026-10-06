@@ -10,11 +10,12 @@ import {signInRedirectTarget} from "@/utils/signInRedirect";
 import {t} from "@/i18n/t";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {EventLoading} from "./EventLoading";
-import {SignInRequired} from "./SignInRequired";
+import {SignInRedirect} from "./SignInRedirect";
 import {EventButton} from "@/components/ui/EventButton";
 import "@/styles/error-screen.css";
 
-// A page the signed-in account has no rights for (403). Same frame as EventNotFoundScreen:
+// A feature of a visible event the signed-in account has no rights for (403: /manage, /live).
+// An event the account cannot see at all is EventUnavailableScreen. Same frame:
 // event logo, Lock mark, title, one line with the account, and two ways out: another
 // account (sign out, then sign in back to this page) or home. `homeHref` defaults to the
 // platform home, for pages where the event home is the page itself.
@@ -37,7 +38,7 @@ export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mai
 
     if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;
     // The session ended meanwhile: that is a 401 after all.
-    if (!user.data) return <SignInRequired />;
+    if (!user.data) return <SignInRedirect />;
     return <main className="event-error event-error--page" role="alert">
         <EventBrandLogo className="event-error__logo" size={64} />
         <Lock className="event-error__mark event-error__mark--muted" aria-hidden="true" />
