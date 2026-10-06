@@ -15,13 +15,13 @@
    <span class="ib-tip ib-tip--help"><button type="button" class="ib-help" aria-label="Довідка" aria-describedby="h1"><svg class="ib-icon"><use href="assets/icons.svg#i-help"/></svg></button>
      <span class="ib-tip__bubble" role="tooltip" id="h1">Назва, яку бачать учасники.</span></span>
    Placement: default top, --bottom, --end (right-aligned), --start (left-aligned).
-   Bubble: raised fill, hairline, radius 6, 13px. Tokens --ib-tip-bg/-fg/-line/-dim.
+   Bubble: raised fill, hairline, radius 6, 13px, --ib-shadow-overlay (allowed for overlays). Tokens --ib-tip-bg/-fg/-line/-dim.
    .is-open forces it visible (previews and tap-toggle). */
 
 .ib-tip{position:relative;display:inline-flex}
 .ib-tip__bubble{position:absolute;z-index:70;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
   display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:min(280px,calc(100vw - 32px));padding:6px 10px;
-  background:var(--ib-tip-bg);color:var(--ib-tip-fg);border:1px solid var(--ib-tip-line);border-radius:var(--ib-r);
+  background:var(--ib-tip-bg);color:var(--ib-tip-fg);border:1px solid var(--ib-tip-line);border-radius:var(--ib-r);box-shadow:var(--ib-shadow-overlay);
   font:var(--ib-w-medium) var(--ib-fs-13)/var(--ib-lh-ui) var(--ib-font);white-space:normal;text-align:left;pointer-events:none;
   opacity:0;visibility:hidden;transition:opacity var(--ib-dur-fast) var(--ib-ease),visibility 0s linear var(--ib-dur-fast)}
 /* invisible bridge over the 6px gap, so the pointer can travel from the trigger to the bubble */
@@ -47,6 +47,8 @@
 .ib-help:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
 .ib-help svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 @media (pointer:coarse){.ib-help{width:32px;height:32px}}
+
+/* Local (event): rich bubble content (.ib-tip__copy) */
 .ib-tip__bubble:has(.ib-tip__copy){max-width:min(320px,calc(100vw - 24px));padding:10px 12px;line-height:1.45}
 .ib-tip__copy{display:grid;gap:6px;min-width:0;white-space:normal}
 .ib-tip__point{position:relative;padding-left:12px;font-weight:var(--ib-w-regular)}

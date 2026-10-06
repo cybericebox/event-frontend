@@ -6,7 +6,7 @@
 
 .ib-cmodal{width:min(var(--ib-modal-w),calc(100vw - 32px));max-height:calc(100vh - 112px);margin:56px auto auto;padding:0;
   display:flex;flex-direction:column;overflow:hidden;
-  border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-body)}
+  border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-body);box-shadow:var(--ib-shadow-overlay)}
 dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal::backdrop{background:var(--ib-backdrop)}
 .ib-cmodal[open]{animation:ib-cmodal-in var(--ib-dur-move) var(--ib-ease)}
