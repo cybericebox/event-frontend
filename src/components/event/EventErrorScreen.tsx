@@ -3,6 +3,7 @@
 import {TriangleAlert} from "lucide-react";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {t} from "@/i18n/t";
+import {ErrorPageCard} from "./ErrorPageCard";
 import "@/styles/error-screen.css";
 
 // Browser history back; a tab opened straight on the failing page goes home instead.
@@ -23,16 +24,18 @@ export function EventErrorScreen({onRetry, title = t("error.page.title"), body =
     body?: string;
     page?: boolean;
 }) {
-    // Standalone (page) it is the document's main; inside a shell it sits in the shell's own <main>.
-    const Frame = page ? "main" : "div";
-    return <Frame className={page ? "event-error event-error--page" : "event-error"} role="alert">
+    const actions = <>
+        <button type="button" className="ib-btn ib-btn--primary" onClick={onRetry}>{t("error.page.reload")}</button>
+        <button type="button" className="ib-btn" onClick={goBack}>{t("error.page.back")}</button>
+    </>;
+    // Standalone (page) it is the card page, the document's main; inside a shell it centers in the shell's own <main>.
+    if (page) return <ErrorPageCard role="alert" head={<EventBrandLogo className="event-error__logo" size={32} />}
+        mark={<TriangleAlert className="event-error__mark" aria-hidden="true" />} title={title} body={body}>{actions}</ErrorPageCard>;
+    return <div className="event-error" role="alert">
         <EventBrandLogo className="event-error__logo" size={64} />
         <TriangleAlert className="event-error__mark" aria-hidden="true" />
         <h1>{title}</h1>
         <p>{body}</p>
-        <div className="event-error__actions">
-            <button type="button" className="ib-btn ib-btn--primary" onClick={onRetry}>{t("error.page.reload")}</button>
-            <button type="button" className="ib-btn" onClick={goBack}>{t("error.page.back")}</button>
-        </div>
-    </Frame>;
+        <div className="event-error__actions">{actions}</div>
+    </div>;
 }

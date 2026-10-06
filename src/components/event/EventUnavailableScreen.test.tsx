@@ -30,6 +30,19 @@ describe("EventUnavailableScreen", () => {
         expect(screen.queryByRole("button")).toBeNull();
     });
 
+    it("is one compact card under a brand line, in the page's main", async () => {
+        getCurrentUser.mockResolvedValue(null);
+        const {container} = render(<QueryClientProvider client={new QueryClient()}><EventUnavailableScreen /></QueryClientProvider>);
+        const main = container.querySelector("main#main");
+        expect(main).toBeTruthy();
+        expect(main!.querySelectorAll("h1")).toHaveLength(1);
+        expect(main!.querySelector(".event-error__head")).toBeTruthy();
+        const card = main!.querySelector(".event-error__card")!;
+        expect(card.querySelector("h1")).toBeTruthy();
+        expect(await screen.findByRole("link", {name: "Увійти"})).toBeTruthy();
+        expect(card.contains(screen.getByRole("link", {name: "Увійти"}))).toBe(true);
+    });
+
     it("offers no sign-in to an account that is already signed in", async () => {
         getCurrentUser.mockResolvedValue({ID: "u1", Email: "a@b.test"});
         renderScreen();
