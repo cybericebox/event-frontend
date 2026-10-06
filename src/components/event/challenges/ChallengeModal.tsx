@@ -179,7 +179,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
 }
 
 // React port of ds-v2 IB.ChallengeModal on a native <dialog>.
-export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onRejected, onHintUnlocked}: {
+export function ChallengeModal({challenge, stage = null, eventID, mode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onRejected, onHintUnlocked}: {
     challenge: OwnChallenge | null;
     // The stage of the task's set, when it has one (only opened stages are known to the board).
     stage?: BoardStage | null;
