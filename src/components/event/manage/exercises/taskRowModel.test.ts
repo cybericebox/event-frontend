@@ -16,9 +16,13 @@ describe("task row", () => {
     });
 
     it("lists status badges (visibility is per set)", () => {
-        expect(taskBadges({ScoringOverride: null}, null)).toEqual([]);
-        const badges = taskBadges({ScoringOverride: {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0}}, "notReady");
+        expect(taskBadges({ScoringOverride: null, Points: 100, EffectivePoints: 100}, null)).toEqual([]);
+        const badges = taskBadges({ScoringOverride: {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0}, Points: 100, EffectivePoints: 100}, "notReady");
         expect(badges.map(badge => [badge.label, badge.tone])).toEqual([["Власне оцінювання", undefined], ["Стенд не готовий", "warn"]]);
+    });
+
+    it("shows the value teams get when the event sets it", () => {
+        expect(taskBadges({ScoringOverride: null, Points: 250, EffectivePoints: 100}, null).map(badge => badge.label)).toEqual(["100 балів"]);
     });
 
     it("derives a set's status: broken wins, else shown when its tasks are shown", () => {

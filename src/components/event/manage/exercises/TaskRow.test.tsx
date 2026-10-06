@@ -9,7 +9,7 @@ afterEach(cleanup);
 
 const challenge = {
     ID: "01900000-0000-7000-8000-0000000000c1", TaskID: "01900000-0000-7000-8000-0000000000t1", GroupID: null, PrerequisiteIDs: [],
-    Order: 0, BoardOrder: null, Points: 150, ScoringOverride: null, HintsEnabled: true, MaxFlagAttempts: null, Published: true,
+    Order: 0, BoardOrder: null, Points: 150, EffectivePoints: 100, ScoringOverride: null, HintsEnabled: true, MaxFlagAttempts: null, Published: true,
     Snapshot: {name: "SQL injection", description: {root: {type: "root", children: [{type: "paragraph", children: [{type: "text", text: "Знайдіть прапор у формі входу"}]}]}}, placeholders: []},
     Hints: [{ID: "01900000-0000-7000-8000-0000000000h1", Text: "Подивіться на запит", Level: "nudge", Cost: 20, Overridden: true}],
 } as EventBoardChallenge;
@@ -45,6 +45,13 @@ describe("TaskRow", () => {
         expect((screen.getByLabelText(/Вартість підказки 1/) as HTMLInputElement).value).toBe("20");
         expect(screen.queryByRole("switch", {name: "Показувати учасникам"})).toBeNull();
         expect(screen.queryByRole("button", {name: /Прибрати|Редагувати/})).toBeNull();
+    });
+
+    it("notes the value the event sets when it differs from the task's own points", () => {
+        renderRow();
+        expect(screen.getByRole("button", {expanded: false}).closest(".event-task__row")!.textContent).toContain("100 балів");
+        fireEvent.click(screen.getByRole("button", {expanded: false}));
+        expect(screen.getByText("Бали задає захід: 100.")).toBeTruthy();
     });
 
     it("locks task scoring when the event scoring applies to all tasks", () => {

@@ -14,8 +14,10 @@ export function standReadiness(challengeID: string, labs: ManageLabs | undefined
 }
 
 // Status badges of a collapsed task row (visibility is per set).
-export function taskBadges(challenge: Pick<EventBoardChallenge, "ScoringOverride">, stand: StandReadiness | null): TaskBadge[] {
+export function taskBadges(challenge: Pick<EventBoardChallenge, "ScoringOverride" | "Points" | "EffectivePoints">, stand: StandReadiness | null): TaskBadge[] {
     const badges: TaskBadge[] = [];
+    // The event sets the value teams get: the task's own number is not what they see.
+    if (challenge.EffectivePoints !== challenge.Points) badges.push({key: "points", label: t("manage.challenges.task.effectivePoints", {points: challenge.EffectivePoints})});
     if (challenge.ScoringOverride) badges.push({key: "scoring", label: t("manage.challenges.task.ownScoring")});
     if (stand) badges.push(stand === "ready" ? {key: "stand", label: t("manage.challenges.task.standReady"), tone: "ok"} : {key: "stand", label: t("manage.challenges.task.standNotReady"), tone: "warn"});
     return badges;
