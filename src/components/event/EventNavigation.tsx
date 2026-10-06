@@ -4,7 +4,7 @@ import {Fragment, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, Menu, User, UserRound, X, type LucideIcon} from "lucide-react";
+import {ChevronDown, Menu, MessageSquare, User, UserRound, X, type LucideIcon} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
@@ -18,6 +18,7 @@ import {ManagerEntry} from "./manage/ManagerEntry";
 import {useStaffAccess} from "./useStaffAccess";
 import {InboxButton} from "./InboxButton";
 import {navigationRight} from "./navigationRight";
+import {FeedbackLink} from "@/components/FeedbackLink";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
@@ -71,7 +72,8 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
     }, {id: idOrigin, admin: adminOrigin, exercises: exercisesOrigin});
     // From /manage the admin link carries the page and the event name, so admin can offer the way back.
     const pathname = usePathname() ?? "";
-    if (/^\/manage(\/|$)/.test(pathname) && typeof window !== "undefined") {
+    const inManage = /^\/manage(\/|$)/.test(pathname);
+    if (inManage && typeof window !== "undefined") {
         entries.forEach((entry, index) => {
             if (entry.kind === "link" && entry.key === "admin") entries[index] = {...entry, href: withManageOrigin(entry.href, window.location.href, event.Name)};
         });
@@ -113,11 +115,14 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
                 if (entry.kind === "cookies") {
                     const Icon = ACCOUNT_MENU_ICONS.cookies;
                     // A link to the cookie policy; with JS the menu closes and the consent panel opens instead.
-                    return <a key={i} href={COOKIE_POLICY_HREF} aria-label={t(ACCOUNT_MENU_LABELS.cookiesAria)} onClick={e => {
+                    const cookies = <a key={i} href={COOKIE_POLICY_HREF} aria-label={t(ACCOUNT_MENU_LABELS.cookiesAria)} onClick={e => {
                         e.preventDefault();
                         setOpen(false);
                         window.setTimeout(openConsentSettings, 0);
                     }}><Icon {...ACCOUNT_MENU_ICON_PROPS} />{t(ACCOUNT_MENU_LABELS.cookies)}</a>;
+                    // /manage has no footer, so «Надіслати відгук» is a normal item of the menu there.
+                    if (!inManage) return cookies;
+                    return <Fragment key={i}>{cookies}<FeedbackLink app={t("feedback.appEvent", {name: event.Name})}><MessageSquare {...ACCOUNT_MENU_ICON_PROPS} />{t("feedback.link")}</FeedbackLink></Fragment>;
                 }
                 if (entry.kind === "signOut") {
                     const Icon = ACCOUNT_MENU_ICONS.signOut;

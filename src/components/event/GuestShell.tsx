@@ -36,6 +36,6 @@ export function GuestShell({event, authenticated, joinStatus, pending = false, n
         <EventNavbar event={event} authenticated={authenticated} pending={pending} />
         <SiteBannerBar eventID={event.EventID} />
         <main className="event-guest-main">{notice}<div className="event-page-content">{authenticated && pathname !== "/join" && pathname !== "/invite" && joinStatus === ParticipationStatusEnum.NoParticipationStatus && participation.data?.Register.Allowed === true && <div className="event-join-banner"><span>{t("shell.join.prompt")}</span><Link className="ib-btn ib-btn--primary" href="/join">{t("shell.join.action")}</Link></div>}{invited && pathname !== "/invite" && <div className="event-join-banner" role="status"><span>{invitation.data?.InvitationExpired ? t("shell.invite.expired") : invitation.data?.InvitedTeamName ? t("shell.invite.team", {team: invitation.data.InvitedTeamName}) : t("shell.invite.event")}</span>{!invitation.data?.InvitationExpired && <Link className="ib-btn ib-btn--primary" href="/invite">{t("content.join.invite")}</Link>}</div>}{pendingStatus && !invitation.isPending && !invited && <div className="event-join-banner" role="status">{t("shell.join.pending")}</div>}{authenticated && joinStatus === ParticipationStatusEnum.RejectedParticipationStatus && <div className="event-join-banner" role="status">{t("shell.join.rejected")}</div>}{children}</div></main>
-        <EventFooter />
+        <EventFooter eventName={event.Name} />
     </div></GuestEventContext.Provider>;
 }

@@ -38,6 +38,6 @@ describe("cookie settings entry", () => {
         const read = (f: string) => readFileSync(path.join(process.cwd(), "src/components/event", f), "utf8");
         expect(read("EventFooter.tsx")).toContain("<CookieSettingsLink />");
         expect(read("EventFooter.tsx")).not.toMatch(/GOOGLE_ANALYTICS_ID/);
-        for (const f of ["GuestShell.tsx", "ParticipantShell.tsx"]) expect(read(f)).toContain("<EventFooter />");
+        for (const f of ["GuestShell.tsx", "ParticipantShell.tsx"]) expect(read(f)).toContain("<EventFooter eventName={event.Name} />");
     });
 });
