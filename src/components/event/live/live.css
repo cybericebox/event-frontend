@@ -49,7 +49,9 @@
 .live-chart__grid{stroke:var(--live-line);stroke-width:1}
 .live-chart__axis,.live-chart__time{position:absolute;color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap}
 .live-chart__axis{left:0;text-align:right}
-.live-chart__label{position:absolute;overflow:hidden;font-weight:600;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.live-chart__label{position:absolute;display:flex;align-items:center;gap:.4em;overflow:hidden;color:var(--live-ink);font-weight:600;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.live-chart__label span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.live-chart__label i{flex:none;width:.9em;height:.2em;border-radius:999px}
 .live-announcement{display:grid;place-items:center;height:100%;font-size:var(--live-fs-display);font-weight:600;line-height:1.2;text-align:center}
 /* Logos: monochrome, quieter than the numbers (§3). */
 .live-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em;height:100%;min-height:0;text-align:center}
@@ -83,8 +85,9 @@
 .live-fullscreen__state h1{margin:0;font-size:28px}
 .live-fullscreen__state p{margin:0;color:color-mix(in srgb,var(--ev-brand,#211a52),#fff 80%)}
 .live-controls{position:absolute;right:16px;bottom:16px;z-index:6;display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--ib-brand-line);border-radius:8px;background:var(--ib-brand);color:var(--ib-on-brand);font:14px/1.3 var(--font-geist-sans,Arial,sans-serif);transition:opacity .2s}
-.live-fullscreen.is-idle .live-controls{opacity:0;pointer-events:none}
+.live-fullscreen.is-idle .live-controls:not(:focus-within){opacity:0;pointer-events:none}
 .live-controls button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid var(--ib-brand-line);border-radius:6px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.live-controls button:focus-visible{outline:2px solid var(--ib-on-brand);outline-offset:2px}
 .live-controls button:hover,.live-controls button[aria-pressed="true"]{background:var(--ib-brand-hover)}
 .live-controls>span:not(.ib-tip){padding:0 6px;color:var(--ib-on-brand-3)}
 /* Screen test: a frame on the area edges shows what the processor crops. */
@@ -108,6 +111,7 @@
 .live-canvas--edit .live-widget.is-conflict{z-index:2;outline:calc(3px / var(--live-preview-scale,1)) solid #fd929d;outline-offset:calc(-3px / var(--live-preview-scale,1));background:color-mix(in srgb,#fd929d 22%,var(--live-bg))}
 .live-canvas--edit .live-widget.is-selected.is-conflict,.live-canvas--edit .live-widget.is-selected.is-warned{outline-style:solid}
 .live-canvas--edit .live-widget:active{cursor:grabbing}
+.live-canvas--edit .live-widget:focus-visible{z-index:1;outline:calc(3px / var(--live-preview-scale,1)) solid var(--live-ink);outline-offset:calc(-3px / var(--live-preview-scale,1))}
 .live-widget__resize{position:absolute;right:0;bottom:0;width:calc(22px / var(--live-preview-scale,1));height:calc(22px / var(--live-preview-scale,1));cursor:nwse-resize;background:linear-gradient(135deg,transparent 55%,#aeb3ff 56%)}
 
 @media(max-width:720px){

@@ -65,7 +65,7 @@ function LiveChart({widget, event, results, now, theme, sample}: {widget: LiveWi
                 </svg>
                 {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{Math.round(max * step).toLocaleString("uk-UA")}</span>)}
                 {[0, 0.25, 0.5, 0.75, 1].map(step => <span key={step} className="live-chart__time" style={{left: box.left + box.width * step, top: box.top + box.height + line * 0.3, transform: `translateX(-${step * 100}%)`}}>{clockLabel(start + (end - start) * step)}</span>)}
-                {series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - line / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5, color: colors[index % colors.length]}}>{item.name}</span>)}
+                {series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - line / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors[index % colors.length]}} aria-hidden="true" /><span>{item.name}</span></span>)}
             </>}
         </div>
     </div>;
