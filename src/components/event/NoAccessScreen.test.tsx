@@ -24,7 +24,8 @@ describe("NoAccessScreen", () => {
         expect(await screen.findByRole("heading", {name: "Немає доступу"})).toBeTruthy();
         expect(screen.getByText("Ваш обліковий запис a@b.test не має доступу до цієї сторінки.")).toBeTruthy();
         expect(screen.getByRole("button", {name: "Увійти іншим обліковим записом"})).toBeTruthy();
-        expect(screen.getByRole("link", {name: "На головну"}).getAttribute("href")).toBe("https://example.test");
+        expect(screen.getAllByRole("link", {name: "На головну"}).map(link => link.getAttribute("href"))).toEqual(["https://example.test", "https://example.test"]);
+        expect(document.querySelector(".ib-error__code")?.textContent).toBe("403");
     });
 
     it("takes a page-specific title", async () => {

@@ -57,7 +57,7 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         // 401, 403 and 404 do not say whether the event is missing, closed or private to this
         // visitor, and a redirect would reveal that it exists: one neutral screen for all three.
         if (status === 401 || status === 403 || status === 404) return <EventUnavailableScreen />;
-        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} onRetry={() => void event.refetch()} />;
+        return <EventErrorScreen page title={t("error.load.title")} body={t("error.load.body")} error={event.error} onRetry={() => void event.refetch()} />;
     }
     return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data} onSection={setSection}>{children}</ManagerShell></EventBrandProvider>;
 }

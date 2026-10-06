@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useId, useRef, useState, useSyncExternalStore} from "react";
+import {useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent} from "react";
 import {useRouter} from "next/navigation";
 import {useQueryClient} from "@tanstack/react-query";
 import {EventBrandLogo} from "./EventBrandLogo";
@@ -15,7 +15,10 @@ import {
     subscribeServiceStatus,
 } from "@/utils/serviceStatus";
 import {t} from "@/i18n/t";
-import "@/styles/service-gate.css";
+import "@/styles/service-down.css";
+
+// The element AppShell wraps around the shell: the overlay dims it and makes it inert.
+export const APP_ROOT_ID = "event-app-root";
 
 installServiceStatusTracking();
 
@@ -28,9 +31,10 @@ function backoff(attempt: number): number {
     return BACKOFF_S[Math.min(attempt, BACKOFF_S.length - 1)] * 1000;
 }
 
-function OutageDialog({onCheck}: {onCheck: () => Promise<void>}) {
-    const ref = useRef<HTMLDialogElement>(null);
+function OutageOverlay({onCheck}: {onCheck: () => Promise<void>}) {
+    const cardRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
+    const textId = useId();
     const attemptRef = useRef(0);
     const [deadline, setDeadline] = useState(() => Date.now() + backoff(0));
     const [now, setNow] = useState(() => Date.now());
@@ -53,12 +57,20 @@ function OutageDialog({onCheck}: {onCheck: () => Promise<void>}) {
         }
     }, [onCheck]);
 
+    // The page behind stays rendered, dimmed and inert while the outage lasts; focus moves into the card.
     useEffect(() => {
-        const dialog = ref.current;
-        if (!dialog || dialog.open) return;
-        // The top layer makes the page underneath inert while the outage lasts.
-        if (typeof dialog.showModal === "function") dialog.showModal();
-        else dialog.setAttribute("open", "");
+        const root = document.getElementById(APP_ROOT_ID);
+        const opener = document.activeElement as HTMLElement | null;
+        root?.classList.add("ib-service-down-behind");
+        root?.setAttribute("inert", "");
+        root?.setAttribute("aria-hidden", "true");
+        cardRef.current?.querySelector<HTMLElement>("button")?.focus();
+        return () => {
+            root?.classList.remove("ib-service-down-behind");
+            root?.removeAttribute("inert");
+            root?.removeAttribute("aria-hidden");
+            if (opener?.isConnected) opener.focus();
+        };
     }, []);
 
     useEffect(() => {
@@ -71,19 +83,21 @@ function OutageDialog({onCheck}: {onCheck: () => Promise<void>}) {
         return () => window.clearInterval(id);
     }, [checking, deadline, check]);
 
+    // Esc does nothing; Tab stays on the card's button.
+    function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+        if (event.key === "Escape" || event.key === "Tab") event.preventDefault();
+    }
+
     const seconds = Math.max(1, Math.ceil((deadline - now) / 1000));
-    return <dialog ref={ref} className="ib-modal ib-modal--sm event-service-gate" role="alertdialog" aria-modal="true" aria-labelledby={titleId}
-        onCancel={event => event.preventDefault()}>
-        <div className="ib-modal__body event-service-gate__body">
-            <EventBrandLogo className="event-service-gate__logo" size={48} />
-            <h2 className="ib-modal__title" id={titleId}>{t("shell.unavailable.title")}</h2>
-            <p className="ib-modal__desc">{t("shell.unavailable.body")}</p>
-            <p className="event-service-gate__hint" aria-live="polite">{checking ? t("shell.unavailable.checking") : t("shell.unavailable.nextTry", {seconds})}</p>
+    return <div className="ib-service-down" onKeyDown={onKeyDown}>
+        <div ref={cardRef} className="ib-service-down__card" role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={textId} tabIndex={-1}>
+            <EventBrandLogo className="ib-service-down__crest" size={36} />
+            <h2 className="ib-service-down__title" id={titleId}>{t("shell.unavailable.title")}</h2>
+            <p className="ib-service-down__text" id={textId}>{t("shell.unavailable.body")}</p>
+            <p className="ib-service-down__status" role="status" aria-live="polite">{checking ? t("shell.unavailable.checking") : t("shell.unavailable.nextTry", {seconds})}</p>
+            <EventButton className="ib-btn ib-btn--block" busy={checking} onClick={() => void check()}>{t("shell.unavailable.retryNow")}</EventButton>
         </div>
-        <footer className="ib-modal__foot event-service-gate__foot">
-            <EventButton className="ib-btn" busy={checking} onClick={() => void check()}>{t("shell.unavailable.retryNow")}</EventButton>
-        </footer>
-    </dialog>;
+    </div>;
 }
 
 // App-wide outage modal. The API calls report network failures and 5xx into the
@@ -110,5 +124,5 @@ export function EventServiceStatusGate({serverUnavailable = false}: {serverUnava
     }, [serverUnavailable, router]);
 
     if (!serverUnavailable && status !== "down") return null;
-    return <OutageDialog onCheck={onCheck} />;
+    return <OutageOverlay onCheck={onCheck} />;
 }

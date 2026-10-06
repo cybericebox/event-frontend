@@ -80,6 +80,6 @@ describe("PrivateEventBootstrap when the browser read fails", () => {
     it("shows the error screen with a retry, never a blank page, on a server error", async () => {
         clientEvent.getClientEventInfo.mockRejectedValueOnce(new clientEvent.ClientEventInfoError(500));
         renderBootstrap();
-        expect(await screen.findByRole("button", {name: "Оновити"})).toBeTruthy();
+        expect(await screen.findByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
     });
 });

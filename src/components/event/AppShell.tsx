@@ -14,7 +14,7 @@ import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
 import {EventLoading} from "./EventLoading";
-import {EventServiceStatusGate} from "./EventServiceStatusGate";
+import {EventServiceStatusGate, APP_ROOT_ID} from "./EventServiceStatusGate";
 import {OutageShell} from "./OutageShell";
 import {reservedPageSlugs} from "./content/pageSlugs";
 import {EventUnavailableScreen} from "./EventUnavailableScreen";
@@ -35,7 +35,7 @@ export function AppShell(props: Props) {
     const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
     if (gone) return <EventUnavailableScreen />;
     return <>
-        <ShellContent {...props} />
+        <div id={APP_ROOT_ID}><ShellContent {...props} /></div>
         <EventServiceStatusGate serverUnavailable={props.unavailable} />
     </>;
 }
@@ -97,7 +97,7 @@ function ShellContent({children, event, unavailable}: Props) {
         return <EventLoading event={event} full label={t("shell.loadingEventFull")} />;
     }
     if (currentUser.isError || joinStatus.isError || (approved && (participantInfo.isError || ownTeam.isError))) {
-        return <EventErrorScreen page title={t("shell.accessFailed.title")} body={t("shell.accessFailed.body")} onRetry={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.isError ? participantInfo.refetch() : ownTeam.refetch())} />;
+        return <EventErrorScreen page title={t("shell.accessFailed.title")} body={t("shell.accessFailed.body")} error={currentUser.error ?? joinStatus.error ?? participantInfo.error ?? ownTeam.error} onRetry={() => void (currentUser.isError ? currentUser.refetch() : joinStatus.isError ? joinStatus.refetch() : participantInfo.isError ? participantInfo.refetch() : ownTeam.refetch())} />;
     }
     const authenticated = !!currentUser.data;
     if (approved && participantInfo.data?.EventID !== event.EventID) {
