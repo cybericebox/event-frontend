@@ -86,7 +86,7 @@ it("shows the participant their place, own figures and only their own solves, ne
     expect(await screen.findByText("3 місце")).toBeTruthy();
     expect(screen.getByText("Веб-один")).toBeTruthy();
     expect(screen.queryByText("Крипто-два")).toBeNull();
-    expect(screen.getByText("Перша кров")).toBeTruthy();
+    expect(screen.getByText("Криголам")).toBeTruthy();
     expect(screen.getByText("Успішних: 25%")).toBeTruthy();
     expect(screen.getAllByTestId("chart").length).toBe(2);
 });

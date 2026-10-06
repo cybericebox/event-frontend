@@ -43,7 +43,7 @@ function useClock(event: PublicEventInfo | null) {
     return {started, finished};
 }
 
-// The scope, stage, status and category filters live in the URL (?scope=all&stage=…&status=…&category=…), so a reload or a link keeps them.
+// The stage, status and category filters live in the URL (?stage=…&status=…&category=…), so a reload or a link keeps them.
 function useBoardFilters(): [BoardFilters, (next: BoardFilters) => void] {
     const [filters, setFilters] = useState<BoardFilters>(() => parseBoardFilters(typeof window === "undefined" ? "" : window.location.search));
     const update = (next: BoardFilters) => {
@@ -88,12 +88,12 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
     }, [acceptedID]);
     const [filters, setFilters] = useBoardFilters();
     // A category groups only the tasks that pass the filters, so a group with nothing to show never appears.
-    const visible = useMemo(() => applyBoardFilters(challenges, filters, stages), [challenges, filters, stages]);
+    const visible = useMemo(() => applyBoardFilters(challenges, filters), [challenges, filters]);
     const categories = useMemo(() => buildCategories(visible), [visible]);
     const category = categories.some(item => item.key === filters.category) ? filters.category : "";
     const selected = challenges.find(item => item.EventChallengeID === selectedID) ?? null;
     const toolbar = <BoardFilterBar filters={filters} stages={stages} hasUnstaged={challenges.some(item => !item.StageID)} onChange={setFilters} />;
-    const emptyMessage = nextOpensAt && filters.scope === "active" && !filters.stage && !filters.status
+    const emptyMessage = nextOpensAt && filters.status === "open" && !filters.stage
         ? t("challenges.stage.emptyBreak", {time: formatClock(nextOpensAt)})
         : t("challenges.filter.empty");
     const solved = challenges.filter(item => item.SolvedAt);

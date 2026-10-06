@@ -38,7 +38,10 @@ describe("ChallengeSolvesTab", () => {
         expect(await screen.findByText("Альфа")).toBeTruthy();
         const rows = screen.getAllByRole("listitem");
         expect(rows.map(row => row.querySelector(".ib-solvers__name span")?.textContent)).toEqual(["Альфа", "Бета", "Гамма"]);
-        expect(rows[0].textContent).toContain("Перша кров");
+        expect(rows[0].textContent).toContain("Криголам");
+        const badge = rows[0].querySelector(".ib-tag--info")!;
+        expect(badge.querySelector("svg.lucide-droplet")).toBeTruthy();
+        expect(rows[0].querySelector(".ib-tag--warn, .lucide-trophy")).toBeNull();
         expect(rows[1].className).toContain("is-own");
         expect(rows[1].textContent).toContain("Ви");
         expect(rows[0].querySelector("time")?.getAttribute("datetime")).toBe("2026-01-01T10:00:00Z");

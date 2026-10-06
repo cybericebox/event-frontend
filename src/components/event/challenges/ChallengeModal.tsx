@@ -19,7 +19,7 @@ import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
-import {attemptsLeft, difficultyLabel, formatClock, formatFileSize, NO_SPEND, solvesLabel, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
+import {attemptsLeft, difficultyLabel, formatClock, formatFileSize, NO_SPEND, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
 import {t} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
@@ -83,6 +83,20 @@ function HostBlock({lab, pending, link, busyKey, onOpen, onRetry}: {lab: LabRunt
             : <p className="ib-cmodal__hint">{pending && <BusyMark />}{pending ? t("challenges.host.checking") : queueLine(lab?.Queue) ?? t("challenges.host.preparing")}</p>}
         {link.status === "error" && <EventLoadError compact error={link.error} message={labLinkErrorMessage(link.error)} onRetry={onRetry} />}
         <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>
+    </section>;
+}
+
+// What only moderators see, below the task text: how the lab is reached (no links, they live in the text) and the note about answers.
+function ModeratorsBlock({lab, infrastructure}: {lab: LabRuntime | undefined; infrastructure: boolean}) {
+    const access = lab?.Access ?? [];
+    const methods = [
+        access.some(item => !item.URL && !/^https?$/i.test(item.Protocol)) && t("challenges.moderators.access.vpn"),
+        access.some(item => !!item.URL || /^https?$/i.test(item.Protocol)) && t("challenges.moderators.access.web"),
+    ].filter(Boolean);
+    return <section className="event-cmodal__mods" aria-label={t("challenges.moderators.only")}>
+        <p className="event-cmodal__mods-caption">{t("challenges.moderators.only")}</p>
+        {infrastructure && methods.length > 0 && <p>{t("challenges.moderators.access", {method: methods.join(", ")})}</p>}
+        <p>{t("challenges.modal.moderatorsNote")}</p>
     </section>;
 }
 
@@ -174,6 +188,8 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
     const id = useId();
     const vpn = useEventVpn();
     const [tab, setTab] = useState<"task" | "solves">("task");
+    // A mouse click on a tab never draws the focus ring; the keyboard does.
+    const [pointer, setPointer] = useState(false);
     const [answer, setAnswer] = useState("");
     const [message, setMessage] = useState<Message>(null);
     const [busy, setBusy] = useState(false);
@@ -340,23 +356,24 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
                 <h2 className="ib-cmodal__title" id={`${id}-t`} tabIndex={-1} ref={titleRef}>{challenge.Snapshot.name}</h2>
                 <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label={t("common.close")} onClick={() => ref.current?.close()}>{ICON.x}</button>
             </header>
-            <div className="ib-tabs ib-cmodal__tabs" role="tablist" aria-label={t("challenges.modal.sections")}>
+            <div className="ib-tabs ib-cmodal__tabs" role="tablist" aria-label={t("challenges.modal.sections")} data-pointer={pointer || undefined}
+                onPointerDown={() => setPointer(true)} onKeyDownCapture={() => setPointer(false)}>
                 <button type="button" role="tab" id={`${id}-tab1`} aria-controls={`${id}-p1`} aria-selected={tab === "task"} tabIndex={tab === "task" ? 0 : -1} onClick={() => setTab("task")}
                     onKeyDown={event => { if (solvesVisible && ["ArrowRight", "ArrowLeft", "End"].includes(event.key)) { event.preventDefault(); setTab("solves"); } }}>{t("challenges.modal.taskTab")}</button>
                 {solvesVisible && <button type="button" role="tab" id={`${id}-tab2`} aria-controls={`${id}-p2`} aria-selected={tab === "solves"} tabIndex={tab === "solves" ? 0 : -1} onClick={() => setTab("solves")}
-                    onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{challenge.SolveCount !== null ? solvesLabel(challenge.SolveCount) : t("challenges.modal.solvesTab")}</button>}
+                    onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); } }}>{challenge.SolveCount !== null ? t("challenges.modal.solvesTabCount", {count: challenge.SolveCount}) : t("challenges.modal.solvesTab")}</button>}
             </div>
             <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
                 <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
+                {moderators && <ModeratorsBlock lab={lab.data} infrastructure={!!challenge.Infrastructure} />}
                 {files.length > 0 && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.modal.files")}</h3>
                     <ul className="ib-cmodal__files">{files.map(file => <li key={file.FileID}>
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
-                {challenge.Infrastructure && <HostBlock lab={lab.data} pending={lab.isPending} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
+                {challenge.Infrastructure && !moderators && <HostBlock lab={lab.data} pending={lab.isPending} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
-                {moderators && <p className="ib-cmodal__hint event-cmodal__note">{t("challenges.modal.moderatorsNote")}</p>}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}
                 {accepted && practiceAnswer && <div className="ib-cmodal__ok" role="status">{ICON.check}{t("challenges.modal.practiceAccepted")}</div>}

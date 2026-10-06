@@ -47,6 +47,7 @@
   --ib-ok:#1F7A55;  --ib-ok-bg:#E8F3EE;
   --ib-danger:#B42318; --ib-danger-bg:#FBECEA;
   --ib-warn:#8A5A00; --ib-warn-bg:#FAF1E0;
+  --ib-info:#1D5CB5; --ib-info-bg:#E8F0FB;
   /* challenge tiles */
   --ib-solved:color-mix(in srgb,#FFFFFF,var(--ib-accent) 7%);
   --ib-solved-line:#E4E4EC;
@@ -88,6 +89,7 @@
   --ib-ok:#7CE7AC;  --ib-ok-bg:color-mix(in srgb,#607167,var(--ev-brand) 25%);
   --ib-danger:#FDA69E; --ib-danger-bg:color-mix(in srgb,#5D4F4F,var(--ev-brand) 25%);
   --ib-warn:#E8B45E; --ib-warn-bg:color-mix(in srgb,#544E4A,var(--ev-brand) 25%);
+  --ib-info:#8DB9F5; --ib-info-bg:color-mix(in srgb,#4C5668,var(--ev-brand) 25%);
   --ib-solved:var(--ib-paper); --ib-solved-line:var(--ib-line);
   --ib-backdrop:rgba(6,5,14,.62);
   --ib-mass-btn:#E6E6EE;

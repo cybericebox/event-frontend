@@ -50,6 +50,10 @@
 .event-cmodal__hint-text{margin-top:var(--ib-1)}
 .event-cmodal__hint-mode{margin:0 0 var(--ib-2)}
 .event-cmodal__note{margin-top:18px}
+.event-cmodal__mods{margin-top:18px;padding:12px 14px;border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink);font-size:var(--ib-fs-13);line-height:1.5}
+.event-cmodal__mods p{margin:0}
+.event-cmodal__mods p+p{margin-top:4px}
+.event-cmodal__mods .event-cmodal__mods-caption{margin-bottom:6px;color:var(--ib-warn);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-cmodal__closed{margin-top:18px;padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);background:var(--ib-soft);color:var(--ib-body)}
 .event-cmodal__closed b{color:var(--ib-ink)}
 

@@ -10,7 +10,7 @@ import {richMessage} from "./richMessage";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 type OpenHandler = (challenge: OwnChallenge, tile: HTMLButtonElement) => void;
-// toolbar: the scope, stage and status filters the page owns; category is the selected category key ("" = all), kept in the URL.
+// toolbar: the stage and status filters the page owns; category is the selected category key ("" = all), kept in the URL.
 type BoardProps = {categories: BoardCategory[]; acceptedID: string | null; onOpen: OpenHandler; toolbar?: React.ReactNode; category: string; onCategory: (key: string) => void; emptyMessage: string; onResetFilters?: () => void};
 
 const SEARCH = <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></svg>;

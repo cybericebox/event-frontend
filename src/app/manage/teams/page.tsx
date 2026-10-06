@@ -1,5 +1,6 @@
 "use client";
 
+import {FirstSolveBadge} from "@/components/event/challenges/FirstSolveBadge";
 import {Fragment, useState} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Eye, EyeOff, Trash2} from "lucide-react";
@@ -336,7 +337,7 @@ export default function ManageTeamsPage() {
                                     <div><dt>{t("manage.teams.points")}</dt><dd>{profile.data.Results.Points}</dd></div>
                                     <div><dt>{t("manage.teams.solved")}</dt><dd>{profile.data.Results.Solved}</dd></div>
                                     <div><dt>{t("manage.teams.hints")}</dt><dd>{t("manage.teams.hintsValue", {count: profile.data.Results.Hints, points: profile.data.Results.HintPoints})}</dd></div>
-                                </dl>{profile.data.Results.Solves.length === 0 ? <EmptyState compact message={t("manage.teams.noSolves")} /> : profile.data.Results.Solves.map(solve => <div className="event-manage-teams__member" key={solve.ChallengeID}><span><strong>{solve.ChallengeName}</strong>{solve.FirstBlood && <small>{t("manage.teams.firstBlood")}</small>}<small>{formatDateTime(solve.SolvedAt)}</small></span><span className="ib-tag ib-tag--sm">{t("manage.teams.solvePoints", {points: solve.Points})}</span></div>)}</>}
+                                </dl>{profile.data.Results.Solves.length === 0 ? <EmptyState compact message={t("manage.teams.noSolves")} /> : profile.data.Results.Solves.map(solve => <div className="event-manage-teams__member" key={solve.ChallengeID}><span><strong>{solve.ChallengeName}</strong>{solve.FirstBlood && <FirstSolveBadge />}<small>{formatDateTime(solve.SolvedAt)}</small></span><span className="ib-tag ib-tag--sm">{t("manage.teams.solvePoints", {points: solve.Points})}</span></div>)}</>}
                     </div>
                     {fields.length > 0 && <div className="event-manage-teams__members"><div className="event-manage-teams__members-head"><h3>{t("manage.fields.title")}</h3><button className="ib-btn ib-btn--sm" type="button" onClick={() => setAnswersTeam(team)}>{t("manage.teams.allAnswers")}</button></div>{fieldColumns.length > 0 && <dl className="event-manage-teams__fields">{fieldColumns.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{formatAnswer(team.ExtraFields[column.key])}</dd></div>)}</dl>}</div>}
                     {fieldsQuery.data && hasStaffFields(fieldsQuery.data) && <StaffFieldsPanel key={team.ID} eventID={eventID} scope="team" subjectID={team.ID} form={fieldsQuery.data} answers={team.ExtraFields} canManage={canManage} onSaved={refresh} />}
