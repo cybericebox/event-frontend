@@ -3861,6 +3861,7 @@
   "manage.analytics.usage.detail.task": "Завдання",
   "manage.analytics.usage.detail.access": "Доступ",
   "manage.analytics.usage.detail.requests": "Звернень",
+  "manage.analytics.usage.detail.labInitiated": "З боку лабораторії: {count}",
   "manage.analytics.usage.detail.traffic": "Обсяг",
   "manage.analytics.usage.detail.last": "Останнє",
   "manage.analytics.usage.surface.vpn": "VPN",

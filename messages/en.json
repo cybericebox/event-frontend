@@ -3861,6 +3861,7 @@
   "manage.analytics.usage.detail.task": "Task",
   "manage.analytics.usage.detail.access": "Access",
   "manage.analytics.usage.detail.requests": "Attempts",
+  "manage.analytics.usage.detail.labInitiated": "Started by the lab: {count}",
   "manage.analytics.usage.detail.traffic": "Volume",
   "manage.analytics.usage.detail.last": "Last",
   "manage.analytics.usage.surface.vpn": "VPN",
