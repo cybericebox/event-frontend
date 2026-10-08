@@ -1,6 +1,6 @@
 import {QueryClient} from "@tanstack/react-query";
 import {describe, expect, it, vi} from "vitest";
-import {ownBoardSchema, type ChallengeSubmission, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
+import {ownBoardSchema, type ChallengeSubmission, type OwnBoard, type OwnChallenge, type SnapshotPlaceholder} from "@/api/participantChallenges";
 import {runningLab, completedLab, manuallyStoppedLab, manualRunningLab} from "@/test/labLifecycle";
 import {labAccessScope} from "./labAccessScope";
 import {hasCurrentRuntime, descriptionValues} from "./descriptionValues";
@@ -156,7 +156,13 @@ it.each(["participant", "moderators"] as const)("keeps a known terminal question
     const scope = labAccessScope(client, mode, "event-a", known.EventChallengeID, null, legacy);
     expect(scope.lifecycle).toEqual(completedLab);
     expect(hasCurrentRuntime(legacy, scope.lifecycle ?? null)).toBe(false);
-    expect(descriptionValues([{key: "host", kind: "device", device_name: "web", as_link: true}], legacy, scope.lifecycle ?? null).links).toEqual({});
+    const placeholders: SnapshotPlaceholder[] = [
+        {key: "host", kind: "external.link", device_name: "web"},
+        {key: "ip", kind: "ip", ip_reference: "vpn", last_octet: 5, as_link: true, scheme: "http"},
+        {key: "network", kind: "vpn.subnet"},
+    ];
+    expect(descriptionValues(placeholders, legacy, null)).toEqual({variables: {host: "https://legacy.test", ip: "http://10.128.1.5", network: "10.128.1.0/24"}, links: {host: "https://legacy.test", ip: "http://10.128.1.5"}});
+    expect(descriptionValues(placeholders, legacy, scope.lifecycle ?? null)).toEqual({variables: {host: "—", ip: "—", network: "—"}, links: {}});
 });
 it("scopes remembered question attachments to event, mode, team, account and QueryClient session", () => {
     const client = new QueryClient();
