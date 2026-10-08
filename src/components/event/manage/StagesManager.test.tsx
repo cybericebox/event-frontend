@@ -28,7 +28,7 @@ afterEach(() => {cleanup(); Object.values(api).forEach(mock => mock.mockReset())
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const stage = (n: number, extra: Partial<ManageStage> = {}): ManageStage => ({
     ID: id(n), Name: `Етап ${n}`, OpensAt: `2026-10-0${n}T10:00:00Z`, ClosesAt: `2026-10-0${n}T12:00:00Z`, Returnable: false,
-    State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
+    LabRetentionMinutes: null, State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
 });
 const lifecycle = {Configured: true, StartAt: "2026-10-01T10:00:00Z", FinishAt: "2026-10-03T12:00:00Z"} as ManageLifecycle;
 
@@ -82,7 +82,7 @@ describe("the stages block", () => {
         // a pending save disables no control, not even the same one
         expect(switchOf("Етап 1").disabled).toBe(false);
         expect(switchOf("Етап 2").disabled).toBe(false);
-        expect(api.update).toHaveBeenCalledWith("e1", id(1), {Returnable: true});
+        expect(api.update).toHaveBeenCalledWith("e1", id(1), {Returnable: true, LabRetentionMinutes: null});
         await act(async () => {finish(stage(1, {State: "open", First: true, Returnable: true}));});
         expect(switchOf("Етап 1").checked).toBe(true);
     });
@@ -134,4 +134,37 @@ describe("the stages block", () => {
         expect(screen.queryByRole("button", {name: "Видалити"})).toBeNull();
         expect(screen.queryByRole("button", {name: "Додати етап"})).toBeNull();
     });
+});
+
+
+it("queues retention with Returnable, keeps both controls enabled and never applies a stale stage reply", async () => {
+    const original = stage(1, {State: "open", First: true, LabRetentionMinutes: null});
+    api.list.mockResolvedValue([original]);
+    const finishes: ((value: ManageStage) => void)[] = [];
+    api.update.mockImplementation(() => new Promise<ManageStage>(resolve => {finishes.push(resolve);}));
+    renderManager(); await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
+    fireEvent.click(switchOf("Етап 1"));
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
+    fireEvent.change(retention, {target: {value: "0"}}); fireEvent.blur(retention);
+    expect(retention.value).toBe("0"); expect(retention.disabled).toBe(false); expect(switchOf("Етап 1").disabled).toBe(false);
+    expect(api.update).toHaveBeenCalledTimes(1);
+    await act(async () => {finishes[0]({...original, Returnable: true});});
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
+    expect(api.update.mock.calls[1]).toEqual(["e1", id(1), {Returnable: true, LabRetentionMinutes: 0}]);
+    expect(retention.value).toBe("0"); expect(switchOf("Етап 1").checked).toBe(true);
+    await act(async () => {finishes[1]({...original, Returnable: true, LabRetentionMinutes: 0});});
+    fireEvent.change(retention, {target: {value: ""}}); fireEvent.keyDown(retention, {key: "Enter"});
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(3));
+    expect(api.update.mock.calls[2][2]).toEqual({Returnable: true, LabRetentionMinutes: null});
+});
+it("lets a manager edit retention on a closed stage while preserving its Returnable and time locks", async () => {
+    api.list.mockResolvedValue([stage(1, {State: "closed", First: true, Last: true, LabRetentionMinutes: 40})]);
+    api.update.mockImplementation(() => new Promise(() => {}));
+    renderManager(); await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
+    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
+    expect(retention.disabled).toBe(false); expect(switchOf("Етап 1").disabled).toBe(true);
+    fireEvent.change(retention, {target: {value: "10081"}}); fireEvent.blur(retention);
+    expect(api.update).not.toHaveBeenCalled();
+    expect(within(row("Етап 1")).getByText("Введіть ціле число від 0 до 10080.")).toBeTruthy();
 });

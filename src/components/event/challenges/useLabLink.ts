@@ -7,7 +7,7 @@ import type {LabLifecycle} from "@/api/labLifecycle";
 import {labLifecycleKey} from "./labLifecycleCache";
 import {labAccessScope, taskBoardKey} from "./labAccessScope";
 import {ApiErrorCode} from "@/api/apiErrors";
-import {openLabLink, ParticipantChallengeError} from "@/api/participantChallenges";
+import {openLabLink, ParticipantChallengeError, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
 import {t} from "@/i18n/t";
 
 export type LabLinkState = {status: "idle" | "pending"} | {status: "error"; error: unknown};
@@ -30,26 +30,29 @@ export function labLinkErrorMessage(error: unknown): string {
 // short-lived and single use), so no session is kept here. The tab is opened
 // synchronously inside the click, before the request, so the browser treats it as
 // user-initiated; its location is set once the link arrives.
-export function useLabLink(eventID: string, challengeID: string | undefined, moderators = false, lifecycle?: LabLifecycle): {
+export function useLabLink(eventID: string, challengeID: string | undefined, moderators = false, lifecycle?: LabLifecycle, withdrawn = false): {
     state: LabLinkState; busyKey: string | null; open: (device: string, port: number) => void; retry: () => void;
 } {
     const client = useQueryClient();
     const [state, setState] = useState<LabLinkState>({status: "idle"});
     const [busyKey, setBusyKey] = useState<string | null>(null);
     const last = useRef<{device: string; port: number} | null>(null);
-    const current = useRef({eventID, challengeID, moderators, lifecycle});
+    const current = useRef({eventID, challengeID, moderators, lifecycle, withdrawn});
     const pending = useRef<{tab: Window; cancelled: boolean} | null>(null);
 
     const latestScope = useCallback(() => {
         const latest = current.current;
         const mode = latest.moderators ? "moderators" : "participant";
         const raw = client.getQueryData<LabRuntime>(["event-challenge-lab", mode, latest.eventID, latest.challengeID]);
-        return {...latest, ...labAccessScope(client, mode, latest.eventID, latest.challengeID, latest.lifecycle, raw)};
+        const board = client.getQueryData<OwnBoard | OwnChallenge[]>(taskBoardKey(mode, latest.eventID));
+        const task = board && !Array.isArray(board) ? board.Challenges.find(item => item.EventChallengeID === latest.challengeID) : undefined;
+        const boardWithdrawn = !latest.moderators && !!task && (task.Closed || (board && !Array.isArray(board) && board.Stages.some(stage => stage.ID === task.StageID && stage.State === "closed")));
+        return {...latest, withdrawn: latest.withdrawn || !!boardWithdrawn, ...labAccessScope(client, mode, latest.eventID, latest.challengeID, latest.lifecycle, raw)};
     }, [client]);
 
     useLayoutEffect(() => {
-        current.current = {eventID, challengeID, moderators, lifecycle};
-    }, [eventID, challengeID, moderators, lifecycle]);
+        current.current = {eventID, challengeID, moderators, lifecycle, withdrawn};
+    }, [eventID, challengeID, moderators, lifecycle, withdrawn]);
 
     useLayoutEffect(() => {
         function cancel() {
@@ -74,17 +77,17 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
             const observed = latestScope();
             if (event.type === "removed") {
                 if (boardEvent || key[0] === "event-challenge-lab" || key[3] === current.current.lifecycle?.ID) cancel();
-            } else if (event.type === "updated" && (observed.identityMismatch
+            } else if (event.type === "updated" && (observed.withdrawn || observed.identityMismatch
                 || observed.lifecycle?.ID !== current.current.lifecycle?.ID
                 || observed.lifecycle?.Revision !== current.current.lifecycle?.Revision
                 || observed.lifecycle?.LogicalClosed || (observed.lifecycle && observed.lifecycle.RuntimeState !== "ready"))) cancel();
         });
         return () => {unsubscribe(); cancel();};
-    }, [client, latestScope, eventID, challengeID, moderators, lifecycle?.ID, lifecycle?.Revision, lifecycle?.LogicalClosed, lifecycle?.RuntimeState]);
+    }, [client, latestScope, eventID, challengeID, moderators, lifecycle?.ID, lifecycle?.Revision, lifecycle?.LogicalClosed, lifecycle?.RuntimeState, withdrawn]);
 
     function open(device: string, port: number) {
         const latest = latestScope();
-        if (!latest.challengeID || latest.identityMismatch || pending.current || (latest.lifecycle && (latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"))) return;
+        if (latest.withdrawn || !latest.challengeID || latest.identityMismatch || pending.current || (latest.lifecycle && (latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"))) return;
         const requested = {...latest, revision: latest.lifecycle?.Revision ?? null};
         last.current = {device, port};
         const tab = window.open("about:blank", "_blank");
@@ -108,7 +111,7 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
             : openLabLink(eventID, latest.challengeID, device, port, moderators);
         fetchLink.then(link => {
             const latest = latestScope();
-            const unsafe = !active() || latest.identityMismatch || latest.eventID !== requested.eventID || latest.moderators !== requested.moderators
+            const unsafe = !active() || latest.withdrawn || latest.identityMismatch || latest.eventID !== requested.eventID || latest.moderators !== requested.moderators
                 || latest.challengeID !== requested.challengeID || (requested.revision === null
                     ? !!latest.lifecycle
                     : !latest.lifecycle || latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"

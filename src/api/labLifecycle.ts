@@ -8,8 +8,8 @@ export const LabLifecycleSchema = z.object({
     ClosedAt: z.string().nullable(), RuntimeState: z.enum(["preparing", "ready", "closed", "unavailable"]),
     CanStop: z.boolean(), CanRestart: z.boolean(),
     // Subsequent producer metadata is additive; the base lifecycle needs neither.
-    SnapshotPolicy: z.enum(["none", "required"]).nullish(),
-    RetentionUntil: z.string().nullish(),
+    SnapshotPolicy: z.enum(["none", "required"]).nullish().transform(value => value ?? null),
+    RetentionUntil: z.string().nullish().transform(value => value ?? null),
 });
 export type LabLifecycle = z.infer<typeof LabLifecycleSchema>;
 

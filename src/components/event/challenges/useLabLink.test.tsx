@@ -245,3 +245,23 @@ it("a current board without the active task cannot authorize the old pending acc
     await act(async () => {client.setQueryData(key, ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: []})); resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
 });
+
+
+it("fences a pending ready Lab link synchronously when its returnable stage closes, before modal rerender", async () => {
+    const board = boardValue(runningLab, false) as OwnBoard;
+    const stageID = "00000000-0000-4000-8000-000000000666";
+    const stage = {ID: stageID, Name: "Stage", OpensAt: "2026-10-08T10:00:00Z", ClosesAt: "2026-10-08T12:00:00Z", Returnable: true, State: "open" as const};
+    board.Challenges[0].StageID = stageID; board.Stages = [stage];
+    client.setQueryData(["event-own-challenges", "e"], board);
+    client.setQueryData(["event-lab-lifecycle", "participant", "e", runningLab.ID], runningLab);
+    client.setQueryData(["event-challenge-lab", "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
+    let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
+    renderProbe(<BoardProbe moderators={false} />); fireEvent.click(screen.getByText("open"));
+    await act(async () => {
+        client.setQueryData(["event-own-challenges", "e"], {...board, Stages: [{...stage, State: "closed"}]});
+        expect(tab.close).toHaveBeenCalled();
+        resolve({url: "https://old-stage.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+    });
+    expect(tab.location.href).toBe("about:blank");
+    fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
+});

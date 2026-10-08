@@ -180,3 +180,24 @@ describe("submission lifecycle transport", () => {
         expect(fetchMock.mock.calls[0][0]).toBe("https://api.test/api/events/e1/manage/labs/moderators/board");
     });
 });
+
+
+describe("manual own Lab commands", () => {
+    it.each(["stop", "restart"] as const)("posts %s to the session-scoped Lab route with exact operation identity", async action => {
+        const {stopOwnLab, restartOwnLab} = await import("./participantChallenges");
+        const saved = {...completedLab, CloseReason: "manual", CanRestart: true, SnapshotPolicy: "required"};
+        fetchMock.mockResolvedValue(reply({Data: {Lab: saved}}));
+        const key = "00000000-0000-4000-8000-000000000777";
+        const result = await (action === "stop" ? stopOwnLab : restartOwnLab)("event /", runningLab.ID, runningLab.Revision, key);
+        expect(fetchMock.mock.calls[0][0]).toBe(`https://api.test/api/events/event%20%2F/teams/labs/${runningLab.ID}/${action}`);
+        expect(fetchMock.mock.calls[0][1]).toEqual({method: "POST", credentials: "include", cache: "no-store", headers: {Accept: "application/json", "Content-Type": "application/json"}, body: JSON.stringify({Revision: runningLab.Revision, IdempotencyKey: key})});
+        expect(result).toMatchObject(saved);
+    });
+    it("uses the participant failure parser and rejects malformed authoritative replies", async () => {
+        const {stopOwnLab} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Status: {Code: 61148}}, 409));
+        await expect(stopOwnLab("e", runningLab.ID, runningLab.Revision, "key")).rejects.toMatchObject({status: 409, code: 1148});
+        fetchMock.mockResolvedValue(reply({Data: {Lab: {...runningLab, Revision: 9007199254740992}}}));
+        await expect(stopOwnLab("e", runningLab.ID, runningLab.Revision, "key")).rejects.toThrow();
+    });
+});

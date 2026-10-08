@@ -20,6 +20,7 @@ export const ManagedLabViewSchema = z.object({
     DesiredState: desired, ActualState: ManagedActualStateSchema,
     CloseReason: z.enum(["solved", "manual", "stage", "event"]).nullable(),
     ClosedAt: time, ActualStoppedAt: time, RetentionUntil: time, ObservedAt: time,
+    SnapshotPolicy: z.enum(["none", "required"]).nullish().transform(value => value ?? null),
     SnapshotState: z.enum(["NotRequired", "Pending", "Succeeded", "Failed", "Unknown"]),
     FailureCode: z.string(), FailureMessage: z.string(), Resources: AllocationViewSchema,
 });

@@ -220,3 +220,16 @@ export async function unlockChallengeHint(eventID: string, challengeID: string, 
 export function challengeAttachmentUrl(eventID: string, challengeID: string, fileID: string): string {
     return `${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/files/${encodeURIComponent(fileID)}`;
 }
+
+// Manual lifecycle commands belong to the authenticated team's Lab, not a question.
+async function changeOwnLab(eventID: string, labID: string, action: "stop" | "restart", revision: string, idempotencyKey: string): Promise<LabLifecycle> {
+    const response = await fetch(`${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/teams/labs/${encodeURIComponent(labID)}/${action}`, {
+        method: "POST", credentials: "include", cache: "no-store",
+        headers: {Accept: "application/json", "Content-Type": "application/json"},
+        body: JSON.stringify({Revision: revision, IdempotencyKey: idempotencyKey}),
+    });
+    if (!response.ok) throw await failure(response);
+    return z.object({Data: z.object({Lab: LabLifecycleSchema.refine(lab => lab.ID === labID)})}).parse(await response.json()).Data.Lab;
+}
+export const stopOwnLab = (eventID: string, labID: string, revision: string, key: string) => changeOwnLab(eventID, labID, "stop", revision, key);
+export const restartOwnLab = (eventID: string, labID: string, revision: string, key: string) => changeOwnLab(eventID, labID, "restart", revision, key);

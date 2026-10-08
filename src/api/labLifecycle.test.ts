@@ -16,7 +16,7 @@ describe("shared Lab lifecycle", () => {
         expect(LabLifecycleSchema.safeParse({...runningLab, RuntimeState}).success).toBe(false);
     });
 
-    it.each(Object.keys(runningLab))("requires field %s on a present Lab", field => {
+    it.each(Object.keys(runningLab).filter(field => !["SnapshotPolicy", "RetentionUntil"].includes(field)))("requires field %s on a present Lab", field => {
         const input: Record<string, unknown> = {...runningLab};
         delete input[field];
         expect(LabLifecycleSchema.safeParse(input).success).toBe(false);

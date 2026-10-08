@@ -8,7 +8,7 @@ import {
     getStandDetail, resetStandDevice, setStandDeviceRescue, standErrorMessage,
     type LiveDevice, type StandDetailLab, type StandDetail,
 } from "@/api/manageLabs";
-import type {ManagedLabView} from "@/api/labObservations";
+import type {ManagedGroupView, ManagedLabView} from "@/api/labObservations";
 import {AllocationFacts} from "@/components/event/manage/resources/ResourceObservationFacts";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -115,13 +115,32 @@ export function ManagedLabFacts({lab, stale = false}: {lab: ManagedLabView; stal
     return <section data-lab-id={lab.ID} aria-label={t("manage.labs.lifecycle.title")}>
         {lab.ClosedAt && <p role="status">{t(`manage.labs.lifecycle.closed.${lab.CloseReason ?? "event"}`)}</p>}
         <dl className="event-resources__facts">
+            <div><dt>{t("manage.labs.lifecycle.desired")}</dt><dd>{t(`manage.labs.lifecycle.desired.${lab.DesiredState}`)}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.actual")}</dt><dd>{t(`manage.labs.lifecycle.actual.${current ? lab.ActualState : "Unknown"}`)}</dd></div>
+            {lab.SnapshotPolicy && <div><dt>{t("manage.labs.lifecycle.snapshotPolicy")}</dt><dd>{t(`manage.labs.lifecycle.policy.${lab.SnapshotPolicy}`)}</dd></div>}
+            <div><dt>{t("manage.labs.lifecycle.retentionUntil")}</dt><dd>{lab.RetentionUntil && Number.isFinite(Date.parse(lab.RetentionUntil)) ? formatDateTime(lab.RetentionUntil) : t("manage.labs.lifecycle.unknown")}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.stoppedAt")}</dt><dd>{lab.ActualStoppedAt && Number.isFinite(Date.parse(lab.ActualStoppedAt)) ? formatDateTime(lab.ActualStoppedAt) : t("manage.labs.lifecycle.unknown")}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.snapshot")}</dt><dd>{t(`manage.labs.lifecycle.snapshot.${current ? lab.SnapshotState : "Unknown"}`)}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.observation")}</dt><dd>{t(current ? "manage.labs.lifecycle.current" : "manage.labs.lifecycle.unknown")}</dd></div>
         </dl>
         {lab.FailureMessage && <p className="event-stands__error" role="status">{lab.FailureMessage}</p>}
         <AllocationFacts resources={lab.Resources} current={!stale && hasCurrentLabAllocation(lab)} />
+    </section>;
+}
+
+export function ManagedGroupFacts({group, stale = false}: {group: ManagedGroupView; stale?: boolean}) {
+    const current = !stale && group.Revision === group.ObservedRevision && group.AgentUID.trim() !== "" && group.ObservedAt !== null && Number.isFinite(Date.parse(group.ObservedAt));
+    return <section data-group-name={group.Name} aria-label={t("manage.labs.group.title")}>
+        <h3>{t("manage.labs.group.title")}</h3>
+        <dl className="event-resources__facts">
+            <div><dt>{t("manage.labs.lifecycle.desired")}</dt><dd>{t(`manage.labs.lifecycle.desired.${group.DesiredState}`)}</dd></div>
+            <div><dt>{t("manage.labs.lifecycle.actual")}</dt><dd>{t(`manage.labs.lifecycle.actual.${group.ActualState}`)}</dd></div>
+            <div><dt>{t("manage.labs.lifecycle.observation")}</dt><dd>{t(current ? "manage.labs.lifecycle.current" : "manage.labs.lifecycle.unknown")}</dd></div>
+        </dl>
+        <p role="status">{t(group.Ready && current ? "manage.labs.group.ready" : "manage.labs.group.notReady")}</p>
+        <p>{t("manage.labs.group.prepareHelp")}</p>
+        {(group.FailureCode || group.FailureMessage) && <p className="event-stands__error">{group.FailureMessage || group.FailureCode}</p>}
+        <AllocationFacts resources={group.Resources} current={current} />
     </section>;
 }
 
@@ -153,6 +172,7 @@ export function StandDetailDialog({eventID, teamID, canManage, onClose}: {eventI
         title={data ? t("manage.labs.detail.title", {team: standTeamName(data)}) : t("manage.labs.detail.titleShort")} description={t("manage.labs.detail.description")}
         footer={<button className="ib-btn" type="button" onClick={onClose}>{t("common.close")}</button>}>
         <div className="event-stands__detail">
+            {data?.Group && <ManagedGroupFacts group={data.Group} stale={detail.isError} />}
             {detail.isError && !data ? <EventLoadError compact message={standErrorMessage(detail.error, t("manage.labs.detail.loadFailed"))} error={detail.error} onRetry={() => void detail.refetch()} />
                 : !data ? <EventLoading compact />
                 : data.Labs.length === 0 ? <EmptyState compact message={t("manage.labs.detail.empty")} />

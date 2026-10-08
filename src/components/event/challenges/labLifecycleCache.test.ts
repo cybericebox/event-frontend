@@ -1,7 +1,7 @@
 import {QueryClient} from "@tanstack/react-query";
 import {describe, expect, it, vi} from "vitest";
 import {ownBoardSchema, type ChallengeSubmission} from "@/api/participantChallenges";
-import {runningLab, completedLab} from "@/test/labLifecycle";
+import {runningLab, completedLab, manuallyStoppedLab, manualRunningLab} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {applySubmission, applyModeratorSubmission, labLifecycleKey, newestLab, reconcileBoard, reconcileChallenges, rememberLab} from "./labLifecycleCache";
 
@@ -119,4 +119,23 @@ describe("authoritative shared Lab lifecycle", () => {
         expect(reconcileChallenges(client, "moderators", "event-a", makeBoard().Challenges)[0].Lab).toEqual(completedLab);
         expect(client.getQueryData<ReturnType<typeof makeBoard>>(["event-own-challenges", "event-a"])!.Challenges[0].Lab).toEqual(runningLab);
     });
+});
+
+
+it("manual closure/restart shares only lifecycle and preserves practice, scored history, points and unrelated Lab", () => {
+    const client = new QueryClient();
+    const original = makeBoard();
+    original.Challenges[0] = {...original.Challenges[0], SolvedAt: "scored-at", AwardedPoints: 42};
+    original.Challenges[1] = {...original.Challenges[1], Practice: true};
+    rememberLab(client, "participant", "event-a", manuallyStoppedLab);
+    const stopped = reconcileBoard(client, "participant", "event-a", original);
+    expect(stopped.Challenges[0]).toEqual({...original.Challenges[0], Lab: manuallyStoppedLab});
+    expect(stopped.Challenges[1]).toEqual({...original.Challenges[1], Lab: manuallyStoppedLab});
+    expect(stopped.Challenges[2]).toEqual(original.Challenges[2]);
+    const preparing = {...manualRunningLab, Revision: "9007199254740995", RuntimeState: "preparing" as const};
+    rememberLab(client, "participant", "event-a", preparing);
+    const restarted = reconcileBoard(client, "participant", "event-a", stopped);
+    expect(restarted.Challenges[0]).toEqual({...original.Challenges[0], Lab: preparing});
+    expect(restarted.Challenges[1]).toEqual({...original.Challenges[1], Lab: preparing});
+    expect(restarted.Challenges[2]).toEqual(original.Challenges[2]);
 });

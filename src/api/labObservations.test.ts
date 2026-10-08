@@ -27,3 +27,10 @@ describe("frozen operator observations", () => {
         expect(ResourceObservationSchema.safeParse({}).success).toBe(false);
     });
 });
+
+
+it("accepts additive managed snapshot policy with explicit legacy absence, rejecting inferred states", () => {
+    expect(ManagedLabViewSchema.parse({...managedLab, SnapshotPolicy: undefined}).SnapshotPolicy).toBeNull();
+    expect(ManagedLabViewSchema.parse({...managedLab, SnapshotPolicy: "required"}).SnapshotPolicy).toBe("required");
+    expect(ManagedLabViewSchema.safeParse({...managedLab, SnapshotPolicy: "Succeeded"}).success).toBe(false);
+});

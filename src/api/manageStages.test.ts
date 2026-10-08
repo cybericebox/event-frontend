@@ -49,3 +49,18 @@ describe("manage stages API", () => {
         expect(ManageApiError).toBeTruthy();
     });
 });
+
+
+describe("stage lifecycle retention transport", () => {
+    it("uses a nullable override for inheritance, including zero retention", async () => {
+        fetchMock.mockResolvedValue(reply({Data: {...stage, LabRetentionMinutes: 0}}));
+        expect(await updateManageStage("e1", stage.ID, {LabRetentionMinutes: 0})).toMatchObject({LabRetentionMinutes: 0});
+        fetchMock.mockResolvedValue(reply({Data: stage}));
+        expect(await updateManageStage("e1", stage.ID, {LabRetentionMinutes: null})).toMatchObject({LabRetentionMinutes: null});
+        expect(fetchMock.mock.calls[1][1]).toMatchObject({body: JSON.stringify({LabRetentionMinutes: null})});
+    });
+    it("refuses malformed producer retention", async () => {
+        fetchMock.mockResolvedValue(reply({Data: {...stage, LabRetentionMinutes: 10081}}));
+        await expect(getManageStages("e1")).rejects.toThrow();
+    });
+});

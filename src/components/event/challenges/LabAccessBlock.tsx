@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useState, type ReactNode} from "react";
 import type {LabLifecycle} from "@/api/labLifecycle";
 import type {LabRuntime} from "@/api/manageLabs";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -42,15 +42,16 @@ function CopyField({value, onOpen, linkPending = false}: {value: string; onOpen?
     </div>;
 }
 
-export function LabAccessBlock({lab, lifecycle, pending, error, link, busyKey, onOpen, onRetry, onReload}: {
+export function LabAccessBlock({lab, lifecycle, pending, error, link, busyKey, onOpen, onRetry, onReload, controls, withdrawn = false, withdrawnReason = "stage"}: {
     lab: LabRuntime | undefined; lifecycle: LabLifecycle | null; pending: boolean; error?: unknown;
     link: LabLinkState; busyKey: string | null; onOpen: (device: string, port: number) => void;
-    onRetry: () => void; onReload: () => void;
+    onRetry: () => void; onReload: () => void; controls?: ReactNode; withdrawn?: boolean; withdrawnReason?: "stage" | "event";
 }) {
     // Logical closure is settled even while an older runtime request is outstanding.
-    if (lifecycle?.LogicalClosed) return <section className="ib-cmodal__blk">
+    if (lifecycle?.LogicalClosed || withdrawn) return <section className="ib-cmodal__blk">
         <h3>{t("challenges.lab.environment")}</h3>
-        <div className="event-cmodal__access-state" role="status"><EmptyState compact message={t(`challenges.lab.closed.${lifecycle.CloseReason ?? "event"}`)} /></div>
+        <div className="event-cmodal__access-state" role="status"><EmptyState compact message={t(`challenges.lab.closed.${lifecycle?.LogicalClosed ? lifecycle.CloseReason ?? "event" : withdrawnReason}`)} /></div>
+        {controls}
     </section>;
     const access = hasCurrentRuntime(lab, lifecycle) ? lab?.Access ?? [] : [];
     const web = access.some(item => /^https?$/i.test(item.Protocol) || !!item.URL);
@@ -65,6 +66,7 @@ export function LabAccessBlock({lab, lifecycle, pending, error, link, busyKey, o
                 : <EventLoading compact message={pending ? t("challenges.host.checking") : queueLine(lab?.Queue) ?? t("challenges.host.preparing")} />}
         </div>}
         {link.status === "error" && <EventLoadError error={link.error} message={labLinkErrorMessage(link.error)} onRetry={onRetry} />}
+        {controls}
         {access.length > 0 && <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>}
     </section>;
 }

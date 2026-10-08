@@ -3,6 +3,7 @@
 import {useEffect, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {ChallengeSolvesTab} from "./ChallengeSolvesTab";
 import {labAccessScope} from "./labAccessScope";
+import {LabControls} from "./LabControls";
 import {LabAccessBlock} from "./LabAccessBlock";
 import {descriptionValues, hasCurrentRuntime} from "./descriptionValues";
 import {useLabLink} from "./useLabLink";
@@ -189,6 +190,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const moderators = mode === "moderators";
     const queryClient = useQueryClient();
 
+    const runtimeWithdrawn = !moderators && (!!challenge?.Closed || stage?.State === "closed" || finished);
     const runtimeKey = ["event-challenge-lab", mode, eventID, challengeID];
     const beforeFetch = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, queryClient.getQueryData<LabRuntime>(runtimeKey));
     const lab = useQuery({
@@ -199,10 +201,10 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             if (runtime.Lab) rememberLab(queryClient, mode, eventID, runtime.Lab);
             return runtime; // Preserve the identity/revision that produced Access and CIDRs.
         },
-        enabled: !!challenge?.Infrastructure && !challenge.Locked && !beforeFetch.lifecycle?.LogicalClosed,
+        enabled: !!challenge?.Infrastructure && !challenge.Locked && !runtimeWithdrawn && !beforeFetch.lifecycle?.LogicalClosed,
         retry: false, refetchInterval: query => {
             const current = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, query.state.data);
-            return current.lifecycle?.LogicalClosed ? false : query.state.data?.Queue ? 8000 : 30000;
+            return runtimeWithdrawn || current.lifecycle?.LogicalClosed ? false : query.state.data?.Queue ? 8000 : 30000;
         }, refetchOnWindowFocus: false,
     });
     const accessScope = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, lab.data);
@@ -213,9 +215,9 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     // Subscribe to shared closure independently of a question's runtime request.
     const effectiveLifecycle = accessScope.lifecycle && lifecycle.data?.ID === accessScope.lifecycle.ID
         ? newestLab(accessScope.lifecycle, lifecycle.data) : accessScope.lifecycle;
-    const runtime = lab.data;
+    const runtime = runtimeWithdrawn ? undefined : lab.data;
     // The hook fences both current lifecycle and the session cache before navigation.
-    const labLink = useLabLink(eventID, challengeID, moderators, effectiveLifecycle ?? undefined);
+    const labLink = useLabLink(eventID, challengeID, moderators, effectiveLifecycle ?? undefined, runtimeWithdrawn);
     // The moderators board lists its own team's solves; participants see them only when the event shows counts.
     const solvesVisible = moderators || (challenge?.SolveCount !== null && challenge?.SolveCount !== undefined);
 
@@ -357,7 +359,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                     {stageClosed && <span className="ib-tag">{t("challenges.modal.closedTag")}</span>}
                     {challenge.ContentUpdatedAt && <span className="ib-tag">{t("challenges.modal.updatedAt", {time: formatClock(challenge.ContentUpdatedAt)})}</span>}
                     {moderators && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">{t("challenges.modal.unpublished")}</span>}
-                    {challenge.Infrastructure && !effectiveLifecycle?.LogicalClosed && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />{t("challenges.modal.vpnRequired")}</button>}
+                    {challenge.Infrastructure && !runtimeWithdrawn && !effectiveLifecycle?.LogicalClosed && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />{t("challenges.modal.vpnRequired")}</button>}
                 </p>
                 <h2 className="ib-cmodal__title" id={`${id}-t`} tabIndex={-1} ref={titleRef}>{challenge.Snapshot.name}</h2>
                 <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label={t("common.close")} onClick={() => ref.current?.close()}>{ICON.x}</button>
@@ -378,7 +380,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
-                {challenge.Infrastructure && !moderators && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
+                {challenge.Infrastructure && !moderators && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}

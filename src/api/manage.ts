@@ -9,8 +9,16 @@ import {requireApiOrigin} from "@/utils/origins";
 const themeSchema = EventThemeSchema;
 const optionalLimit = z.number().int().positive().nullable();
 
+export const LabPolicySchema = z.object({
+    SnapshotMode: z.enum(["skip", "required"]),
+    MaxActiveLabsPerTeam: z.number().int().min(1).max(1000).nullable(),
+    RetentionMinutes: z.number().int().min(0).max(10080),
+});
+export type LabPolicy = z.infer<typeof LabPolicySchema>;
+
 export const ManageConfigSchema = z.object({
     EventID: z.string().uuid(),
+    LabPolicy: LabPolicySchema.nullish().transform(value => value ?? null),
     Participation: z.union([z.literal(0), z.literal(1), z.null()]),
     Registration: z.union([z.literal(0), z.literal(1), z.literal(2)]),
     ScoreboardVisibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),
@@ -45,11 +53,12 @@ export const ManageConfigSchema = z.object({
 export type ManageConfig = z.infer<typeof ManageConfigSchema>;
 type CountdownKey = "ShowStartCountdown" | "ShowFinishCountdown" | "FinishCountdownMinutes" | "FinishCountdownMode";
 // The countdown fields are optional: a PUT without them keeps the saved values.
-export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt" | "InfrastructureAllowed" | CountdownKey> & Partial<Pick<ManageConfig, CountdownKey>>;
+export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt" | "InfrastructureAllowed" | "LabPolicy" | CountdownKey> & Partial<Pick<ManageConfig, CountdownKey>> & {LabPolicy?: LabPolicy};
 
 // Every config PUT sends the full input so no setting is silently reset.
 export function manageConfigInput(config: ManageConfig): ManageConfigInput {
     return {
+        ...(config.LabPolicy ? {LabPolicy: config.LabPolicy} : {}),
         Participation: config.Participation, Registration: config.Registration,
         ScoreboardVisibility: config.ScoreboardVisibility, ParticipantsVisibility: config.ParticipantsVisibility,
         PreviewDescription: config.PreviewDescription, PreviewPicture: config.PreviewPicture,

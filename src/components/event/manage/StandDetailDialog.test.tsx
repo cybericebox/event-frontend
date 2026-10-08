@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 vi.mock("@/api/manageLabs", async importOriginal => ({
@@ -79,7 +79,7 @@ describe("StandDetailDialog", () => {
 });
 
 // A single producer row represents the physical environment shared by both objectives.
-import type {ManagedLabView} from "@/api/labObservations";
+import type {ManagedGroupView, ManagedLabView} from "@/api/labObservations";
 import {managedLab} from "@/test/labObservations";
 function canonicalDetail(lab: ManagedLabView = managedLab) {
     return StandDetailSchema.parse({...detail, Labs: [{...detail.Labs[0], Lab: lab, Questions: [{EventChallengeID: challengeID, Name: "First objective"}, {EventChallengeID: managedLab.ID, Name: "Second objective"}]}]});
@@ -230,4 +230,34 @@ it.each([{AgentUID: ""}, {ObservedRevision: "7"}, {ActualState: "StopFailed"}] s
     mount(); await screen.findByText("First objective");
     expect(screen.getByText("Підтверджено звільнено").parentElement?.textContent).toContain("Невідомо");
     expect(screen.queryByText("Звільнення підтверджено")).toBeNull();
+});
+
+
+it("shows group pause/prewarm observations separately from solved child snapshots and fires no device operation", async () => {
+    const group: ManagedGroupView = {Name: "team-services", Revision: "7", ObservedRevision: "7", AgentUID: "group-agent", DesiredState: "Stopped", ActualState: "Stopped", Ready: false, ObservedAt: managedLab.ObservedAt, FailureCode: "", FailureMessage: "", Resources: {...managedLab.Resources, RuntimeState: "Released", AllocatedRequests: {CPUMillicores: "0", MemoryBytes: "0"}, ReleasedRequests: {CPUMillicores: "50", MemoryBytes: "1024"}, ReleasedAt: managedLab.ObservedAt}};
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    vi.mocked(getStandDetail).mockResolvedValue({...canonicalDetail(), Group: group});
+    render(<QueryClientProvider client={client}><StandDetailDialog eventID="e1" teamID={teamID} canManage onClose={() => undefined} /></QueryClientProvider>);
+    await screen.findByText("First objective");
+    const groupNode = document.querySelector('[data-group-name="team-services"]')! as HTMLElement;
+    expect(within(groupNode).getByText("Підтверджено звільнено").parentElement?.textContent).toContain("50 мілі-ядер");
+    expect(document.querySelector(`[data-lab-id="${managedLab.ID}"]`)?.textContent).toContain("Збережено");
+    expect(groupNode.textContent).toContain("Готовність сервісів групи не підтверджено");
+    await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], {...canonicalDetail(), Group: {...group, Revision: "8", ObservedRevision: "8", DesiredState: "Running", ActualState: "Starting", Ready: false, Resources: managedLab.Resources}});});
+    expect(groupNode.textContent).toContain("Запускається");
+    expect(within(groupNode).queryByText("Сервіси групи готові")).toBeNull();
+    await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], {...canonicalDetail(), Group: {...group, Revision: "9", ObservedRevision: "9", DesiredState: "Running", ActualState: "Running", Ready: true}});});
+    expect(within(groupNode).getByText("Сервіси групи готові")).toBeTruthy();
+    expect(document.querySelector(`[data-lab-id="${managedLab.ID}"]`)?.textContent).toContain("Усі залежні завдання виконано");
+    expect(resetStandDevice).not.toHaveBeenCalled(); expect(setStandDeviceRescue).not.toHaveBeenCalled();
+});
+it("does not certify group readiness on an old revision and keeps StopFailed service overhead held", async () => {
+    const group: ManagedGroupView = {Name: "team-services", Revision: "8", ObservedRevision: "7", AgentUID: "group-agent", DesiredState: "Stopped", ActualState: "StopFailed", Ready: true, ObservedAt: managedLab.ObservedAt, FailureCode: "PauseFailed", FailureMessage: "services held", Resources: managedLab.Resources};
+    vi.mocked(getStandDetail).mockResolvedValue({...canonicalDetail(), Group: group}); mount();
+    await screen.findByText("First objective");
+    const node = document.querySelector('[data-group-name="team-services"]')! as HTMLElement;
+    expect(within(node).queryByText("Сервіси групи готові")).toBeNull();
+    expect(within(node).getByText("Утримані ресурси").parentElement?.textContent).toContain("500 мілі-ядер");
+    expect(within(node).getByText("Підтверджено звільнено").parentElement?.textContent).toContain("Невідомо");
+    expect(within(node).getByText("services held")).toBeTruthy();
 });
