@@ -113,8 +113,8 @@ it("prevents an already-open reset confirmation from acting after closure", asyn
 });
 
 it.each([
-    {AgentUID: ""}, {ObservedAt: null}, {ObservedAt: "invalid"}, {ObservedAt: "2026-10-08T09:58:00Z"},
-])("does not treat missing identity/time or a pre-closure observation as current: %j", async patch => {
+    {AgentUID: ""}, {ObservedAt: null}, {ObservedAt: "invalid"},
+])("does not treat missing identity/time as current: %j", async patch => {
     vi.mocked(getStandDetail).mockResolvedValue(canonicalDetail({...managedLab, ...patch}));
     mount(); await screen.findByText("First objective");
     expect(screen.getByText("Спостереження").parentElement?.textContent).toContain("Невідомо");
@@ -126,7 +126,7 @@ it("changes release facts only with the matching stop and allocation observation
     render(<QueryClientProvider client={client}><StandDetailDialog eventID="e1" teamID={teamID} canManage onClose={() => undefined} /></QueryClientProvider>);
     await screen.findByText("First objective");
     const stopped = {...managedLab, Revision: "8", ObservedRevision: "8", ActualState: "Stopped" as const, SnapshotState: "Succeeded" as const, ActualStoppedAt: "2026-10-08T10:01:00Z", ObservedAt: "2026-10-08T10:02:00Z", FailureCode: "", FailureMessage: "", Resources: {...managedLab.Resources, RuntimeState: "Released" as const, ObservedAt: "2026-10-08T10:02:00Z", ReleasedAt: "2026-10-08T10:01:00Z", AllocatedRequests: {CPUMillicores: "0", MemoryBytes: "0"}, ReleasedRequests: {CPUMillicores: "500", MemoryBytes: "1024"}}};
-    await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], canonicalDetail({...stopped, Resources: {...stopped.Resources, ObservedAt: "2026-10-08T10:00:00Z"}}));});
+    await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], canonicalDetail({...stopped, ObservedRevision: "7"}));});
     await waitFor(() => expect(screen.getByText("Підтверджено звільнено").parentElement?.textContent).toContain("Невідомо"));
     await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], canonicalDetail(stopped));});
     await waitFor(() => expect(screen.getByText("Підтверджено звільнено").parentElement?.textContent).toContain("500 мілі-ядер"));
@@ -198,4 +198,19 @@ it("does not credit positive released requests during StopFailed even when runti
     mount(); await screen.findByText("First objective");
     expect(screen.getByText("Підтверджено звільнено").parentElement?.textContent).toContain("Невідомо");
     expect(screen.getByText("Утримані ресурси").parentElement?.textContent).toContain("500 мілі-ядер");
+});
+
+it.each([
+    ["physical release precedes aggregate stopped", "2026-10-08T10:02:00Z", "2026-10-08T10:02:00Z", "2026-10-08T10:02:00Z"],
+    ["independent aggregate observation", "2026-10-08T10:01:00Z", "2026-10-08T10:03:00Z", "2026-10-08T10:02:00Z"],
+    ["later aggregate stopped declaration", "2026-10-08T10:03:00Z", "2026-10-08T10:02:00Z", "2026-10-08T10:02:00Z"],
+    ["original control", "2026-10-08T10:01:00Z", "2026-10-08T10:02:00Z", "2026-10-08T10:02:00Z"],
+])("renders producer-certified release: %s", async (_name, ActualStoppedAt, ObservedAt, allocationObservedAt) => {
+    vi.mocked(getStandDetail).mockResolvedValue(canonicalDetail({...managedLab, Revision: "8", ObservedRevision: "8", ActualState: "Stopped", SnapshotState: "Succeeded", ActualStoppedAt, ObservedAt,
+        Resources: {...managedLab.Resources, RuntimeState: "Released", ReleasedAt: "2026-10-08T10:01:00Z", ObservedAt: allocationObservedAt, AllocatedRequests: {CPUMillicores: "0", MemoryBytes: "0"}, ReleasedRequests: {CPUMillicores: "500", MemoryBytes: "1024"}, PhysicalStorageBytesAvailable: true, PhysicalStorageBytes: "2048"}}));
+    mount(); await screen.findByText("First objective");
+    expect(screen.getByText("Підтверджено звільнено").parentElement?.textContent).toContain("500 мілі-ядер");
+    expect(screen.getByText("Утримані ресурси").parentElement?.textContent).toContain("0 vCPU");
+    expect(screen.getByText("Фізичне сховище").parentElement?.textContent).toContain("2 КіБ");
+    expect(screen.getByText("Звільнення підтверджено")).toBeTruthy();
 });
