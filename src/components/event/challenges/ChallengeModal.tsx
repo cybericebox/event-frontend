@@ -6,15 +6,17 @@ import {descriptionValues} from "./descriptionValues";
 import {queueLine} from "@/components/event/labLive";
 import {labLinkErrorMessage, useLabLink, type LabLinkState} from "./useLabLink";
 import {EventLoadError} from "@/components/event/EventLoadError";
-import {useQuery} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import type {LabLifecycle} from "@/api/labLifecycle";
+import {labLifecycleKey, newestLab, rememberLab} from "./labLifecycleCache";
 import {Network} from "lucide-react";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {
     challengeAttachmentUrl, challengeFiles, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
-    type BoardStage, type ChallengeHint, type OwnChallenge,
+    type BoardStage, type ChallengeHint, type OwnChallenge, type ChallengeSubmission,
 } from "@/api/participantChallenges";
 import {reportTaskOpened} from "@/api/taskOpenedBeacon";
-import {moderatorFileUrl, submitModeratorFlag} from "@/api/moderatorsBoard";
+import {moderatorFileUrl, submitModeratorFlag, type ModeratorSubmission} from "@/api/moderatorsBoard";
 import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
@@ -193,7 +195,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     showHints: boolean;
     hintChargeMode?: HintChargeMode;
     onClose: () => void;
-    onAccepted: (challengeID: string) => void;
+    onAccepted: (challengeID: string, result: ChallengeSubmission | ModeratorSubmission) => void;
     // A wrong answer was counted: the board refetches the attempts left.
     onRejected?: () => void;
     onHintUnlocked?: () => void;
@@ -222,13 +224,28 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const [now, setNow] = useState(() => Date.now());
     const challengeID = challenge?.EventChallengeID;
     const moderators = mode === "moderators";
+    const queryClient = useQueryClient();
 
     const lab = useQuery({
         queryKey: ["event-challenge-lab", mode, eventID, challengeID],
-        queryFn: () => moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!),
+        queryFn: async () => {
+            const runtime = await (moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!));
+            return runtime.Lab ? {...runtime, Lab: rememberLab(queryClient, mode, eventID, runtime.Lab)} : runtime;
+        },
         enabled: !!challenge?.Infrastructure && !challenge.Locked,
         retry: false, refetchInterval: query => query.state.data?.Queue ? 8000 : 30000, refetchOnWindowFocus: false,
     });
+    const lifecycle = useQuery<LabLifecycle>({
+        queryKey: labLifecycleKey(mode, eventID, challenge?.Lab?.ID ?? lab.data?.Lab?.ID ?? ""), enabled: false, gcTime: Infinity,
+    });
+    // Subscribe to shared closure independently of a question's runtime request.
+    const runtime = useMemo(() => {
+        if (!lab.data) return lab.data;
+        const attached = challenge?.Lab ?? lab.data.Lab;
+        const current = attached && lifecycle.data ? newestLab(attached, lifecycle.data) : attached;
+        const Lab = current && lab.data.Lab ? newestLab(current, lab.data.Lab) : current;
+        return {...lab.data, Lab};
+    }, [lab.data, challenge?.Lab, lifecycle.data]);
     // A web device opens through a link fetched on click; the moderators team uses the manage route.
     const labLink = useLabLink(eventID, challengeID, moderators);
     // The moderators board lists its own team's solves; participants see them only when the event shows counts.
@@ -287,21 +304,15 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             const result = moderators
                 ? await submitModeratorFlag(eventID, challenge.EventChallengeID, value)
                 : await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID());
+            if (result.Lab) rememberLab(queryClient, mode, eventID, result.Lab);
             const correct = result.Correct;
             // The server says whether it was rated: a stage that closed while the modal was open turns it into practice.
             const practiced = !moderators && "Practice" in result && result.Practice === true;
-            if (correct && practiced) {
-                // Verified after a returnable stage closed: shown to the team, never rated.
-                setPracticeAnswer(true);
+            if (correct) {
+                setPracticeAnswer(practiced);
                 setAccepted(true);
                 setAnswer("");
-                titleRef.current?.focus();
-                onRejected?.();
-            } else if (correct) {
-                setPracticeAnswer(false);
-                setAccepted(true);
-                setAnswer("");
-                onAccepted(challenge.EventChallengeID);
+                onAccepted(challenge.EventChallengeID, result);
                 titleRef.current?.focus();
             } else {
                 setMessage({text: t("challenges.modal.flagRejected"), tone: "error"});
@@ -333,7 +344,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
         }
     }
 
-    const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], lab.data), [challenge?.Snapshot.placeholders, lab.data]);
+    const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], runtime), [challenge?.Snapshot.placeholders, runtime]);
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
     // A closed stage that is not returnable refuses answers and hints; one that is returnable and has ended takes them
@@ -385,14 +396,14 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             </div>
             <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
                 <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
-                {moderators && <ModeratorsBlock lab={lab.data} infrastructure={!!challenge.Infrastructure} />}
+                {moderators && <ModeratorsBlock lab={runtime} infrastructure={!!challenge.Infrastructure} />}
                 {files.length > 0 && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.modal.files")}</h3>
                     <ul className="ib-cmodal__files">{files.map(file => <li key={file.FileID}>
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
-                {challenge.Infrastructure && !moderators && <HostBlock lab={lab.data} pending={lab.isPending} error={lab.isError && !lab.data ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
+                {challenge.Infrastructure && !moderators && <HostBlock lab={runtime} pending={lab.isPending} error={lab.isError && !lab.data ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}

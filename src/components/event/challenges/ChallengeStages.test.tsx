@@ -28,9 +28,9 @@ afterEach(() => {cleanup(); api.submit.mockReset();});
 const stage = {ID: "55555555-5555-4555-8555-555555555555", Name: "Розминка", OpensAt: "2026-10-01T08:00:00Z", ClosesAt: "2026-10-01T10:00:00Z", Returnable: false, State: "closed" as const};
 const base = {...fixtureChallenge, SolvedAt: null, Infrastructure: false, StageID: stage.ID, MaxAttempts: null, AttemptsLeft: null};
 
-function renderModal(challenge: typeof base, stageValue: typeof stage | null, onRejected = vi.fn()) {
+function renderModal(challenge: typeof base, stageValue: typeof stage | null, onRejected = vi.fn(), onAccepted = vi.fn()) {
     render(<QueryClientProvider client={new QueryClient()}>
-        <ChallengeModal challenge={challenge} stage={stageValue} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} onRejected={onRejected} />
+        <ChallengeModal challenge={challenge} stage={stageValue} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={onAccepted} onRejected={onRejected} />
     </QueryClientProvider>);
     return onRejected;
 }
@@ -60,12 +60,14 @@ describe("a returnable stage after it ended", () => {
 
     it("says answers are checked but not rated, and a correct one is not announced as points", async () => {
         api.submit.mockResolvedValue({Correct: true, FirstSolve: false, Practice: true});
-        const onRejected = renderModal(base, ended);
+        const onAccepted = vi.fn();
+        const onRejected = renderModal(base, ended, vi.fn(), onAccepted);
         expect(screen.getByText("Етап завершено. Відповіді перевіряються, але в рейтинг не йдуть.")).toBeTruthy();
         await send("ICE{ok}");
         expect(screen.getByText("Розвʼязано (практика, без балів)")).toBeTruthy();
         expect(screen.queryByText(/^\+/)).toBeNull();
-        expect(onRejected).toHaveBeenCalledTimes(1);
+        expect(onAccepted).toHaveBeenCalledWith(base.EventChallengeID, {Correct: true, FirstSolve: false, Practice: true});
+        expect(onRejected).not.toHaveBeenCalled();
     });
 
     it("shows the practice solve with its own wording", () => {

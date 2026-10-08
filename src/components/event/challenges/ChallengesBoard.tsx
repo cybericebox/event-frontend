@@ -6,8 +6,9 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {getOwnBoard, type BoardStage, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
-import {getModeratorsBoard} from "@/api/moderatorsBoard";
+import {getOwnBoard, type BoardStage, type OwnBoard, type OwnChallenge, type ChallengeSubmission} from "@/api/participantChallenges";
+import {getModeratorsBoard, type ModeratorSubmission} from "@/api/moderatorsBoard";
+import {applySubmission, applyModeratorSubmission, reconcileBoard, reconcileChallenges} from "./labLifecycleCache";
 import {getManageAccess} from "@/api/manage";
 import {getCurrentUser} from "@/api/clientAuth";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -27,7 +28,7 @@ import {t, tPlural} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {
     applyBoardFilters, boardFilterSearch, boardViewKey, buildCategories, DEFAULT_BOARD_FILTERS, formatClock, formatPoints, missingMembers,
-    markSolved, parseBoardFilters, readBoardView, writeBoardView, type BoardFilters, type BoardView,
+    parseBoardFilters, readBoardView, writeBoardView, type BoardFilters, type BoardView,
 } from "./challengeBoardModel";
 
 function useClock(event: PublicEventInfo | null) {
@@ -81,7 +82,7 @@ function Page({banners, sub, view, onView, countdown, children}: {banners?: Reac
 
 export function Board({eventID, mode, challenges, stages = [], nextOpensAt = null, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, onSolved, banners, countdown}: {
     eventID: string; mode: BoardMode; challenges: OwnChallenge[]; stages?: BoardStage[]; nextOpensAt?: string | null; teamMode: boolean; finished: boolean;
-    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; onSolved?: (challengeID: string) => void; banners?: ReactNode; countdown?: ReactNode;
+    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; onSolved?: (challengeID: string, result: ChallengeSubmission | ModeratorSubmission) => void; banners?: ReactNode; countdown?: ReactNode;
 }) {
     const key = boardViewKey(userID);
     // The board renders only after client-side queries, so reading storage here never races hydration.
@@ -122,7 +123,7 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
         <ChallengeModal challenge={selected} stage={stages.find(item => item.ID === selected?.StageID) ?? null} eventID={eventID} mode={mode} teamMode={teamMode} finished={finished}
             showDifficulty={showDifficulty} showHints={showHints} hintChargeMode={hintChargeMode}
             onClose={() => setSelectedID(null)}
-            onAccepted={challengeID => { setAcceptedID(challengeID); onSolved?.(challengeID); onRefresh(); }}
+            onAccepted={(challengeID, result) => { setAcceptedID(challengeID); onSolved?.(challengeID, result); onRefresh(); }}
             onRejected={onRefresh}
             onHintUnlocked={onRefresh} />
     </Page>;
@@ -132,7 +133,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     const queryClient = useQueryClient();
     const access = useQuery({queryKey: ["event-management-access", event.EventID], queryFn: () => getManageAccess(event.EventID), retry: false, refetchOnWindowFocus: false});
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
-    const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: () => getModeratorsBoard(event.EventID), enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
+    const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: async () => reconcileChallenges(queryClient, "moderators", event.EventID, await getModeratorsBoard(event.EventID)), enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (access.isPending) return <EventLoading label={t("challenges.loading")} />;
     if (!access.data?.CanManage) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
@@ -145,7 +146,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
         <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode finished={finished} showDifficulty showHints
             userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner}
-            onSolved={id => queryClient.setQueryData<OwnChallenge[]>(["event-moderators-board", event.EventID], old => old && markSolved(old, id, new Date().toISOString()))} />
+            onSolved={(id, result) => applyModeratorSubmission(queryClient, event.EventID, id, result, new Date().toISOString())} />
     </EventVpnProvider>;
 }
 
@@ -162,7 +163,7 @@ export function ChallengesBoard() {
     const admitted = ownTeam ? ownTeam.Admitted !== false : false;
     const challenges = useQuery({
         queryKey: ["event-own-challenges", event?.EventID],
-        queryFn: () => getOwnBoard(event!.EventID),
+        queryFn: async () => reconcileBoard(queryClient, "participant", event!.EventID, await getOwnBoard(event!.EventID)),
         enabled: !!participant && !!event && started && !!ownTeam && admitted && !!ownTeam.Formed,
         retry: false,
         refetchInterval: 30000,
@@ -213,5 +214,5 @@ export function ChallengesBoard() {
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data.Challenges} stages={challenges.data.Stages} nextOpensAt={challenges.data.NextOpensAt} teamMode={teamMode} finished={finished}
         showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}
         onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} countdown={countdown}
-        onSolved={id => queryClient.setQueryData<OwnBoard>(["event-own-challenges", event.EventID], old => old && {...old, Challenges: markSolved(old.Challenges, id, new Date().toISOString())})} />;
+        onSolved={(id, result) => applySubmission(queryClient, event.EventID, id, {...result, Practice: "Practice" in result && result.Practice}, new Date().toISOString())} />;
 }
