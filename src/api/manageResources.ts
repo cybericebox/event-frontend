@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {ResourceObservationSchema} from "@/api/labObservations";
 import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 
@@ -29,6 +30,7 @@ export type ResourceChange = z.infer<typeof changeSchema>;
 
 // The organizer's view: never names an agent. Reserved=false means the admin has set no reservation.
 export const ManageResourcesSchema = z.object({
+    Observation: ResourceObservationSchema.nullish().transform(value => value ?? null),
     Reserved: z.boolean().default(false),
     From: optionalTime,
     To: optionalTime,

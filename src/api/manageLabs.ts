@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {ManagedGroupViewSchema, ManagedLabViewSchema} from "@/api/labObservations";
 import {LabLifecycleSchema} from "@/api/labLifecycle";
 import {manageApiError, ManageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
@@ -44,7 +45,11 @@ const liveSchema = z.object({
 });
 export type LabLive = z.infer<typeof liveSchema>;
 
-const standLabSchema = z.object({ChallengeID: id, ChallengeName: optionalText, Status: LabStatusSchema, Reason: optionalText});
+const standLabSchema = z.object({
+    ChallengeID: id, ChallengeName: optionalText, Status: LabStatusSchema, Reason: optionalText,
+    Lab: ManagedLabViewSchema.nullish().transform(value => value ?? null),
+    Questions: z.array(z.object({EventChallengeID: id, Name: z.string()})).nullish().transform(value => value ?? null),
+});
 // A stand's place in the launch queue (the stands list); Position 0 = everything is dispatched.
 const standQueueSchema = z.object({QueuedLabs: optionalNumber, Position: optionalNumber, Length: optionalNumber, Reason: optionalText});
 const standSchema = z.object({
@@ -78,6 +83,7 @@ const detailLabSchema = standLabSchema.extend({
     LiveUnavailable: z.boolean().nullish().transform(value => value ?? false),
 });
 export const StandDetailSchema = z.object({
+    Group: ManagedGroupViewSchema.nullish().transform(value => value ?? null),
     TeamID: id, TeamName: optionalText, Moderators: z.boolean().default(false), Status: StandStatusSchema, Reason: optionalText,
     Generation: z.number().int().default(0), LaboratoriesAvailable: z.boolean().default(false),
     Labs: z.array(detailLabSchema).nullish().transform(value => value ?? []),

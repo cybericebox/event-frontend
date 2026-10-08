@@ -11,6 +11,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {t} from "@/i18n/t";
 import {formatDateTime} from "@/utils/dateTime";
 import {ChangeRequestDialog} from "./ChangeRequestDialog";
+import {ResourceObservationFacts} from "./ResourceObservationFacts";
 import {amountText} from "./resourcesModel";
 import {TableEmptyBody} from "../TableEmptyBody";
 import "./resources.css";
@@ -43,8 +44,9 @@ export function ResourcesPage() {
         {canManage && query.data?.Reserved && <div className="event-manage-heading__actions"><button className="ib-btn ib-btn--primary" type="button" onClick={() => setRequesting(true)}>{t("manage.resources.requestChange")}</button></div>}
     </header>;
     if (query.isPending) return <EventLoading event={event} label={t("manage.resources.loading")} />;
-    if (query.isError) return <EventLoadError message={t("manage.resources.loadFailed")} error={query.error} onRetry={() => void query.refetch()} />;
+    if (query.isError && !query.data) return <EventLoadError message={t("manage.resources.loadFailed")} error={query.error} onRetry={() => void query.refetch()} />;
     const resources = query.data;
+    if (!resources) return <EventLoading event={event} label={t("manage.resources.loading")} />;
 
     return <div className="event-manage-settings event-resources">
         {heading}
@@ -59,6 +61,7 @@ export function ResourcesPage() {
                 <div><dt>{t("manage.resources.buffer")}</dt><dd>{t("manage.resources.bufferValue", {percent: resources.BufferPercent})}</dd></div>
                 <div><dt>{t("manage.resources.dynamic")}</dt><dd>{resources.Dynamic ? amountText(resources.Dynamic) : "—"}</dd></div>
             </dl>
+            <ResourceObservationFacts observation={resources.Observation ?? null} stale={query.isError} />
             <section className="event-manage-section">
                 <h2>{t("manage.resources.history.title")}</h2>
                 <div className="event-participants-table" role="region" tabIndex={0} aria-label={t("manage.resources.history.title")}><table>
