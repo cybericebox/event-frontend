@@ -3,7 +3,7 @@ import type {LabLifecycle} from "@/api/labLifecycle";
 import type {LabRuntime} from "@/api/manageLabs";
 import type {OwnBoard, OwnChallenge} from "@/api/participantChallenges";
 import type {BoardMode} from "./ChallengeModal";
-import {labLifecycleKey, newestLab} from "./labLifecycleCache";
+import {knownQuestionLab, labLifecycleKey, newestLab} from "./labLifecycleCache";
 
 export const taskBoardKey = (mode: BoardMode, eventID: string) =>
     [mode === "moderators" ? "event-moderators-board" : "event-own-challenges", eventID] as const;
@@ -14,7 +14,8 @@ export function labAccessScope(client: QueryClient, mode: BoardMode, eventID: st
     const board = client.getQueryData<OwnBoard | OwnChallenge[]>(taskBoardKey(mode, eventID));
     const tasks = Array.isArray(board) ? board : board?.Challenges;
     const task = tasks?.find(item => item.EventChallengeID === challengeID);
-    const attached = tasks ? task?.Lab : fallback ?? runtime?.Lab;
+    const pin = knownQuestionLab(client, mode, eventID, challengeID, task?.EventExerciseID);
+    const attached = tasks ? task?.Lab ?? (task ? pin : undefined) : pin ?? fallback ?? runtime?.Lab;
     let lifecycle = attached ?? undefined;
     const raw = runtime?.Lab;
     const shared = attached && client.getQueryData<LabLifecycle>(labLifecycleKey(mode, eventID, attached.ID));

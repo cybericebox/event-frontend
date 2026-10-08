@@ -1,9 +1,12 @@
 import {QueryClient} from "@tanstack/react-query";
 import {describe, expect, it, vi} from "vitest";
-import {ownBoardSchema, type ChallengeSubmission, type OwnBoard} from "@/api/participantChallenges";
+import {ownBoardSchema, type ChallengeSubmission, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
 import {runningLab, completedLab, manuallyStoppedLab, manualRunningLab} from "@/test/labLifecycle";
+import {labAccessScope} from "./labAccessScope";
+import {hasCurrentRuntime, descriptionValues} from "./descriptionValues";
+import type {LabRuntime} from "@/api/manageLabs";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
-import {applySubmission, applyModeratorSubmission, labLifecycleKey, newestLab, reconcileBoard, reconcileChallenges, rememberLab} from "./labLifecycleCache";
+import {applySubmission, applyModeratorSubmission, labLifecycleKey, newestLab, reconcileBoard, reconcileChallenges, rememberLab, rememberRuntimeQuestionLab} from "./labLifecycleCache";
 
 const otherLab = {...runningLab, ID: "00000000-0000-4000-8000-000000000101"};
 // Fixtures use arbitrary question names only after the transport schema boundary.
@@ -138,4 +141,70 @@ it("manual closure/restart shares only lifecycle and preserves practice, scored 
     expect(restarted.Challenges[0]).toEqual({...original.Challenges[0], Lab: preparing});
     expect(restarted.Challenges[1]).toEqual({...original.Challenges[1], Lab: preparing});
     expect(restarted.Challenges[2]).toEqual(original.Challenges[2]);
+});
+
+
+it.each(["participant", "moderators"] as const)("keeps a known terminal question attachment through a legacy %s board and runtime", mode => {
+    const client = new QueryClient();
+    const key = [mode === "participant" ? "event-own-challenges" : "event-moderators-board", "event-a"];
+    const known = {...fixtureChallenge, Lab: completedLab};
+    const rows = reconcileChallenges(client, mode, "event-a", [known]);
+    client.setQueryData(key, mode === "participant" ? {...ownBoardSchema.parse({ServerNow: "now"}), Challenges: rows} : rows);
+    const legacy: LabRuntime = {Lab: null, Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://legacy.test"}]};
+    const delayed = reconcileChallenges(client, mode, "event-a", [{...known, Lab: null}]);
+    client.setQueryData(key, mode === "participant" ? {...ownBoardSchema.parse({ServerNow: "now"}), Challenges: delayed} : delayed);
+    const scope = labAccessScope(client, mode, "event-a", known.EventChallengeID, null, legacy);
+    expect(scope.lifecycle).toEqual(completedLab);
+    expect(hasCurrentRuntime(legacy, scope.lifecycle ?? null)).toBe(false);
+    expect(descriptionValues([{key: "host", kind: "device", device_name: "web", as_link: true}], legacy, scope.lifecycle ?? null).links).toEqual({});
+});
+it("scopes remembered question attachments to event, mode, team, account and QueryClient session", () => {
+    const client = new QueryClient();
+    client.setQueryData(["event-current-user"], {ID: "account-a"});
+    client.setQueryData(["event-own-team", "event-a"], {ID: "team-a"});
+    reconcileChallenges(client, "participant", "event-a", [{...fixtureChallenge, Lab: completedLab}]);
+    const legacy = {...fixtureChallenge, Lab: null};
+    expect(reconcileChallenges(client, "participant", "event-a", [legacy])[0].Lab).toEqual(completedLab);
+    expect(reconcileChallenges(client, "participant", "event-b", [legacy])[0].Lab).toBeNull();
+    expect(reconcileChallenges(client, "moderators", "event-a", [legacy])[0].Lab).toBeNull();
+    client.setQueryData(["event-own-team", "event-a"], {ID: "team-b"});
+    expect(reconcileChallenges(client, "participant", "event-a", [legacy])[0].Lab).toBeNull();
+    client.setQueryData(["event-own-team", "event-a"], {ID: "team-a"});
+    client.setQueryData(["event-current-user"], {ID: "account-b"});
+    expect(reconcileChallenges(client, "participant", "event-a", [legacy])[0].Lab).toBeNull();
+    client.clear(); expect(reconcileChallenges(client, "participant", "event-a", [legacy])[0].Lab).toBeNull();
+    expect(reconcileChallenges(new QueryClient(), "participant", "event-a", [legacy])[0].Lab).toBeNull();
+});
+it("an explicit replacement Lab or attachment cannot inherit the old terminal identity", () => {
+    const client = new QueryClient();
+    reconcileChallenges(client, "participant", "event-a", [{...fixtureChallenge, Lab: completedLab}]);
+    const nextLab = {...runningLab, ID: "00000000-0000-4000-8000-000000000199", Revision: "1"};
+    expect(reconcileChallenges(client, "participant", "event-a", [{...fixtureChallenge, Lab: nextLab}])[0].Lab).toEqual(nextLab);
+    expect(reconcileChallenges(client, "participant", "event-a", [{...fixtureChallenge, Lab: null}])[0].Lab).toEqual(nextLab);
+    const replacement: OwnChallenge = {...fixtureChallenge, EventExerciseID: "00000000-0000-4000-8000-000000000299", Lab: null};
+    expect(reconcileChallenges(client, "participant", "event-a", [replacement])[0].Lab).toBeNull();
+});
+
+
+it("a delayed different runtime generation cannot replace a board attachment's terminal pin", () => {
+    const client = new QueryClient();
+    const rows = reconcileChallenges(client, "participant", "event-a", [{...fixtureChallenge, Lab: completedLab}]);
+    client.setQueryData(["event-own-challenges", "event-a"], {...ownBoardSchema.parse({ServerNow: "now"}), Challenges: rows});
+    rememberRuntimeQuestionLab(client, "participant", "event-a", fixtureChallenge.EventChallengeID, {...runningLab, ID: "00000000-0000-4000-8000-000000000199", Revision: "1"});
+    expect(reconcileChallenges(client, "participant", "event-a", [{...fixtureChallenge, Lab: null}])[0].Lab).toEqual(completedLab);
+});
+
+
+it("binds an initially unknown identity/team once without losing its fence or carrying it to later identities", () => {
+    const client = new QueryClient();
+    const legacy = {...fixtureChallenge, Lab: null};
+    reconcileChallenges(client, "moderators", "event-a", [{...fixtureChallenge, Lab: completedLab}]);
+    client.setQueryData(["event-current-user"], {ID: "first-account"});
+    client.setQueryData(["event-own-team", "event-a"], {ID: "first-team"});
+    expect(reconcileChallenges(client, "moderators", "event-a", [legacy])[0].Lab).toEqual(completedLab);
+    client.setQueryData(["event-current-user"], {ID: "next-account"});
+    expect(reconcileChallenges(client, "moderators", "event-a", [legacy])[0].Lab).toBeNull();
+    client.setQueryData(["event-current-user"], {ID: "first-account"});
+    client.setQueryData(["event-own-team", "event-a"], {ID: "next-team"});
+    expect(reconcileChallenges(client, "moderators", "event-a", [legacy])[0].Lab).toBeNull();
 });

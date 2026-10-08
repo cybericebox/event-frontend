@@ -5,6 +5,7 @@ import {QueryClient, QueryClientProvider, skipToken, useQuery} from "@tanstack/r
 import type {LabLifecycle} from "@/api/labLifecycle";
 import {runningLab, completedLab, runtimeFixture} from "@/test/labLifecycle";
 import {ownBoardSchema, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
+import {reconcileChallenges} from "./labLifecycleCache";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {ApiErrorCode} from "@/api/apiErrors";
 
@@ -264,4 +265,19 @@ it("fences a pending ready Lab link synchronously when its returnable stage clos
     });
     expect(tab.location.href).toBe("about:blank");
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
+});
+
+
+it.each([false, true])("a known terminal pin fences links after an identityless legacy board/runtime (moderators=%s)", async moderators => {
+    const mode = moderators ? "moderators" : "participant";
+    const key = [moderators ? "event-moderators-board" : "event-own-challenges", "e"];
+    const known = reconcileChallenges(client, mode, "e", [{...fixtureChallenge, Lab: completedLab}]);
+    const make = (rows: OwnChallenge[]) => moderators ? rows : {...ownBoardSchema.parse({ServerNow: "now"}), Challenges: rows};
+    client.setQueryData(key, make(known));
+    client.setQueryData(["event-challenge-lab", mode, "e", fixtureChallenge.EventChallengeID], {...runtimeFixture, Lab: null});
+    const ui = renderProbe(<BoardProbe moderators={moderators} />);
+    await act(async () => {client.setQueryData(key, make([{...fixtureChallenge, Lab: null}]));});
+    fireEvent.click(screen.getByText("open"));
+    expect(windowOpen).not.toHaveBeenCalled(); expect(openLink).not.toHaveBeenCalled();
+    ui.unmount();
 });

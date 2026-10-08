@@ -9,7 +9,7 @@ import {descriptionValues, hasCurrentRuntime} from "./descriptionValues";
 import {useLabLink} from "./useLabLink";
 import {skipToken, useQuery, useQueryClient} from "@tanstack/react-query";
 import type {LabLifecycle} from "@/api/labLifecycle";
-import {labLifecycleKey, newestLab, rememberLab} from "./labLifecycleCache";
+import {labLifecycleKey, newestLab, questionLabPinKey, rememberLab, rememberRuntimeQuestionLab} from "./labLifecycleCache";
 import {Network} from "lucide-react";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {
@@ -196,9 +196,15 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const lab = useQuery({
         queryKey: runtimeKey,
         queryFn: async ({signal}) => {
+            const pinKey = questionLabPinKey(queryClient, mode, eventID, challengeID!);
             const runtime = await (moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!));
             signal.throwIfAborted();
-            if (runtime.Lab) rememberLab(queryClient, mode, eventID, runtime.Lab);
+            if (runtime.Lab) {
+                rememberLab(queryClient, mode, eventID, runtime.Lab);
+                const currentPinKey = questionLabPinKey(queryClient, mode, eventID, challengeID!);
+                const sameIdentity = (pinKey[3] === null || pinKey[3] === currentPinKey[3]) && (pinKey[4] === null || pinKey[4] === currentPinKey[4]);
+                if (sameIdentity) rememberRuntimeQuestionLab(queryClient, mode, eventID, challengeID!, runtime.Lab);
+            }
             return runtime; // Preserve the identity/revision that produced Access and CIDRs.
         },
         enabled: !!challenge?.Infrastructure && !challenge.Locked && !runtimeWithdrawn && !beforeFetch.lifecycle?.LogicalClosed,

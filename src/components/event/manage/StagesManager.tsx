@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef, useState, type FormEvent} from "react";
-import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query";
+import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError, type ManageLifecycle} from "@/api/manage";
@@ -167,33 +167,79 @@ function AddStage({eventID, lifecycle, first, canManage}: {eventID: string; life
 // (optimistic, queued, rolled back on error), «Закрити зараз» and delete behind a confirmation, and the form for the next stage.
 export function StagesManager({eventID, lifecycle, canManage}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean}) {
     const queryClient = useQueryClient();
-    const stages = useQuery({
-        queryKey: stagesKey(eventID), queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false, refetchInterval: 30_000,
-        // A background refresh never empties the list or shows a loader again.
-        placeholderData: keepPreviousData,
-    });
-    // Returnable saves run one after another; the switches never wait for them.
+    type Controls = Pick<ManageStage, "Returnable" | "LabRetentionMinutes">;
+    type Intent = {desired: Controls; confirmed: Controls; pending: number; version: number};
+    const byEvent = useRef(new Map<string, Map<string, Intent>>());
+    function eventIntents() {
+        if (!byEvent.current.has(eventID)) byEvent.current.set(eventID, new Map());
+        return byEvent.current.get(eventID)!;
+    }
     const queue = useRef<Promise<void>>(Promise.resolve());
-    const stageVersions = useRef(new Map<string, number>());
+    const controlsOf = (stage: ManageStage): Controls => ({Returnable: stage.Returnable, LabRetentionMinutes: stage.LabRetentionMinutes ?? null});
+    const preservePending = (rows: ManageStage[]) => rows.map(row => {
+        const intent = eventIntents().get(row.ID);
+        return intent?.pending ? {...row, ...intent.desired} : row;
+    });
+    const stages = useQuery({
+        queryKey: stagesKey(eventID),
+        queryFn: async ({signal}) => {
+            // A GET that started before or during a write cannot publish stale control values afterwards.
+            const intents = eventIntents();
+            const started = new Map([...intents].map(([id, intent]) => [id, {version: intent.version, pending: intent.pending}]));
+            const rows = await getManageStages(eventID);
+            signal.throwIfAborted();
+            return rows.map(row => {
+                const intent = intents.get(row.ID);
+                if (!intent) return row;
+                const before = started.get(row.ID);
+                if (intent.pending || before?.pending || before?.version !== intent.version) return {...row, ...intent.desired};
+                intent.confirmed = controlsOf(row);
+                intent.desired = intent.confirmed;
+                return row;
+            });
+        },
+        // Protect other cache publications too, including explicit form/close replies.
+        structuralSharing: (previous, next) => replaceEqualDeep(previous, preservePending(next as ManageStage[])),
+        refetchOnWindowFocus: false, refetchInterval: 30_000, placeholderData: keepPreviousData,
+    });
 
-    function saveStagePatch(stage: ManageStage, patch: Partial<Pick<ManageStage, "Returnable" | "LabRetentionMinutes">>) {
+    function saveStagePatch(stage: ManageStage, patch: Partial<Controls>) {
         if (!canManage) return;
         const key = stagesKey(eventID);
-        const version = (stageVersions.current.get(stage.ID) ?? 0) + 1;
-        stageVersions.current.set(stage.ID, version);
         const before = queryClient.getQueryData<ManageStage[]>(key)?.find(item => item.ID === stage.ID);
         if (!before) return;
-        const wanted = {...before, ...patch};
-        queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? wanted : item));
+        const intents = eventIntents();
+        let intent = intents.get(stage.ID);
+        if (!intent) {
+            const controls = controlsOf(before);
+            intent = {desired: controls, confirmed: controls, pending: 0, version: 0};
+            intents.set(stage.ID, intent);
+        }
+        const wanted = {...intent.desired, ...patch};
+        intent.desired = wanted;
+        intent.pending++;
+        const version = ++intent.version;
+        const operation = intent;
+        queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {...item, ...wanted} : item));
         queue.current = queue.current.then(async () => {
             try {
-                const saved = await updateManageStage(eventID, stage.ID, {Returnable: wanted.Returnable, LabRetentionMinutes: wanted.LabRetentionMinutes ?? null});
-                const shown = queryClient.getQueryData<ManageStage[]>(key)?.find(item => item.ID === stage.ID);
-                if (stageVersions.current.get(stage.ID) === version && JSON.stringify(shown) === JSON.stringify(wanted)) queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? saved : item));
+                const saved = await updateManageStage(eventID, stage.ID, wanted);
+                operation.confirmed = controlsOf(saved);
+                operation.pending--;
+                if (operation.version === version) operation.desired = operation.confirmed;
+                queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {
+                    ...saved,
+                    // Keep schedule/name/state updates published after this control command started.
+                    ...Object.fromEntries((["Name", "OpensAt", "ClosesAt", "State", "First", "Last", "DeployLeadMinutes"] as const)
+                        .filter(field => item[field] !== before[field]).map(field => [field, item[field]])),
+                    ...(operation.pending ? operation.desired : {}),
+                } : item));
             } catch (failure) {
-                const latest = queryClient.getQueryData<ManageStage[]>(key)?.find(item => item.ID === stage.ID);
+                operation.pending--;
+                if (operation.version === version) operation.desired = operation.confirmed;
+                // Roll back only the failed final choice; newer queued intent survives its exact refetch.
+                queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {...item, ...operation.desired} : item));
                 await queryClient.invalidateQueries({queryKey: key, exact: true});
-                if (latest && stageVersions.current.get(stage.ID) !== version) queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? latest : item));
                 toast.error(failureText(failure, t("manage.stages.saveFailed")));
             }
         });
