@@ -1,4 +1,5 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
+import {completedLab, exerciseID, runningLab} from "@/test/labLifecycle";
 
 vi.mock("@/utils/origins", () => ({requireApiOrigin: () => "https://api.test"}));
 const {getChallengeSolves, ParticipantChallengeError, SOLVES_PAGE_SIZE} = await import("./participantChallenges");
@@ -8,6 +9,12 @@ vi.stubGlobal("fetch", fetchMock);
 afterEach(() => fetchMock.mockReset());
 
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), {status});
+const question = {
+    ID: "11111111-1111-4111-8111-111111111111", EventChallengeID: "22222222-2222-4222-8222-222222222222",
+    Snapshot: {name: "T", difficulty: "easy"}, Readiness: 2, SolvedAt: null,
+    Points: 10, Order: 1, GroupID: null, GroupName: "", GroupOrder: 0,
+};
+const linkResponse = {URL: "https://web.labs.test/_auth?t=one-use", ExpiresAt: "2026-10-08T13:00:00Z", LabID: runningLab.ID, Revision: runningLab.Revision};
 
 describe("getChallengeSolves", () => {
     it("asks the first page without a cursor and reads the wrapped page", async () => {
@@ -45,10 +52,34 @@ describe("getChallengeSolves", () => {
 });
 
 describe("openLabLink", () => {
+    it("retains exact link identity and decimal revision for a known Lab", async () => {
+        const {openLabLink} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: linkResponse}));
+        expect(await openLabLink("e1", "c1", "web", 80, false, runningLab)).toEqual({
+            url: "https://web.labs.test/_auth?t=one-use", expiresAt: Date.parse("2026-10-08T13:00:00Z"),
+            labID: runningLab.ID, revision: "9007199254740993",
+        });
+    });
+
+    it.each([
+        {LabID: undefined}, {Revision: undefined}, {LabID: null}, {Revision: null},
+        {LabID: exerciseID}, {Revision: "9007199254740994"},
+    ])("fences missing or mismatched known-Lab link fields %j", async fields => {
+        const {openLabLink} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {...linkResponse, ...fields}}));
+        await expect(openLabLink("e1", "c1", "web", 80, true, runningLab)).rejects.toThrow();
+    });
+
+    it.each([{Revision: 9007199254740992}, {Revision: "01"}, {LabID: "bad-id"}])("rejects malformed link fields even without a known Lab %j", async fields => {
+        const {openLabLink} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {...linkResponse, ...fields}}));
+        await expect(openLabLink("e1", "c1", "web", 80)).rejects.toThrow();
+    });
+
     it("posts the device to the team route, or the manage route for the moderators team", async () => {
         const {openLabLink} = await import("./participantChallenges");
         fetchMock.mockImplementation(async () => reply({Data: {URL: "https://web-abc123.labs.test/_auth?t=x", ExpiresAt: "2026-09-30T13:00:00Z"}}));
-        expect(await openLabLink("e1", "c1", "web", 80)).toEqual({url: "https://web-abc123.labs.test/_auth?t=x", expiresAt: Date.parse("2026-09-30T13:00:00Z")});
+        expect(await openLabLink("e1", "c1", "web", 80)).toEqual({url: "https://web-abc123.labs.test/_auth?t=x", expiresAt: Date.parse("2026-09-30T13:00:00Z"), labID: null, revision: null});
         await openLabLink("e1", "c1", "web", 80, true);
         expect(fetchMock.mock.calls[0][0]).toMatch(/\/api\/events\/e1\/teams\/challenges\/c1\/lab\/link$/);
         expect(fetchMock.mock.calls[0][1]).toMatchObject({method: "POST", credentials: "include", body: JSON.stringify({Device: "web", Port: 80})});
@@ -57,6 +88,30 @@ describe("openLabLink", () => {
 });
 
 describe("getOwnBoard", () => {
+    it("keeps attachment identity on static questions and shares Lab identity across dependent questions", async () => {
+        const {getOwnBoard} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {ServerNow: "2026-10-08T12:00:00Z", Challenges: [
+            {...question, EventExerciseID: exerciseID, Lab: null},
+            {...question, EventExerciseID: exerciseID, Lab: runningLab},
+            {...question, EventChallengeID: "33333333-3333-4333-8333-333333333333", EventExerciseID: exerciseID, Lab: runningLab},
+        ]}}));
+        const {Challenges} = await getOwnBoard("e1");
+        expect(Challenges.map(value => value.EventExerciseID)).toEqual([exerciseID, exerciseID, exerciseID]);
+        expect(Challenges.map(value => value.Lab)).toEqual([null, runningLab, runningLab]);
+    });
+
+    it("normalizes legacy lifecycle absence without inferring identity from the question", async () => {
+        const {getOwnBoard} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {ServerNow: "2026-10-08T12:00:00Z", Challenges: [question]}}));
+        expect((await getOwnBoard("e1")).Challenges[0]).toMatchObject({EventExerciseID: null, Lab: null});
+    });
+
+    it.each([{EventExerciseID: "bad-id"}, {Lab: {...runningLab, Revision: 9007199254740992}}, {Lab: {...runningLab, RuntimeState: "stopping"}}])("rejects malformed present board lifecycle %j", async fields => {
+        const {getOwnBoard} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {ServerNow: "2026-10-08T12:00:00Z", Challenges: [{...question, ...fields}]}}));
+        await expect(getOwnBoard("e1")).rejects.toThrow();
+    });
+
     it("reads the board with its stage context and fills the stage fields of a task", async () => {
         const {getOwnBoard} = await import("./participantChallenges");
         const task = {ID: "11111111-1111-4111-8111-111111111111", EventChallengeID: "22222222-2222-4222-8222-222222222222", Snapshot: {name: "T", difficulty: "easy"}, Readiness: 2, SolvedAt: null, Points: 10, Order: 1, GroupID: null, GroupName: "", GroupOrder: 0};
@@ -78,5 +133,50 @@ describe("getOwnBoard", () => {
         const {getOwnBoard} = await import("./participantChallenges");
         fetchMock.mockResolvedValue(reply({Data: {Challenges: null, Stages: null, ServerNow: "2026-10-01T12:30:00Z"}}));
         expect(await getOwnBoard("e1")).toMatchObject({Challenges: [], Stages: [], CurrentStage: null, NextOpensAt: null, NextChangeAt: null});
+    });
+});
+
+describe("submission lifecycle transport", () => {
+    it.each([false, true])("preserves authoritative closure on correct submission with Practice=%s", async Practice => {
+        const {submitChallenge} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {Correct: true, FirstSolve: true, Practice, Lab: completedLab}}));
+        expect(await submitChallenge("e1", "c1", "answer", "key")).toEqual({Correct: true, FirstSolve: true, Practice, Lab: completedLab});
+        expect(fetchMock.mock.calls[0]).toEqual(["https://api.test/api/events/e1/teams/challenges/c1/submit", expect.objectContaining({
+            method: "POST", body: JSON.stringify({Answer: "answer"}), headers: expect.objectContaining({"Idempotency-Key": "key"}),
+        })]);
+    });
+
+    it.each([undefined, null])("normalizes static/legacy submission Lab=%s", async Lab => {
+        const {submitChallenge} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {Correct: false, Lab}}));
+        expect(await submitChallenge("e1", "c1", "answer", "key")).toEqual({Correct: false, FirstSolve: false, Practice: false, Lab: null});
+    });
+
+    it("rejects malformed submission lifecycle", async () => {
+        const {submitChallenge} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {Correct: true, Lab: {...completedLab, Revision: 9007199254740992}}}));
+        await expect(submitChallenge("e1", "c1", "answer", "key")).rejects.toThrow();
+    });
+
+    it("keeps the moderator route and parses its shared closure", async () => {
+        const {submitModeratorFlag} = await import("./moderatorsBoard");
+        fetchMock.mockResolvedValue(reply({Data: {Correct: true, FirstSolve: true, Practice: false, Lab: completedLab}}));
+        expect(await submitModeratorFlag("e1", "c1", "answer")).toMatchObject({Correct: true, Lab: completedLab});
+        expect(fetchMock.mock.calls[0][0]).toBe("https://api.test/api/events/e1/manage/labs/moderators/challenges/c1/submit");
+    });
+
+    it("normalizes legacy moderator absence and rejects malformed present closure", async () => {
+        const {submitModeratorFlag} = await import("./moderatorsBoard");
+        fetchMock.mockResolvedValueOnce(reply({Data: {Correct: true}}))
+            .mockResolvedValueOnce(reply({Data: {Correct: true, Lab: {...completedLab, RuntimeState: "StopFailed"}}}));
+        expect(await submitModeratorFlag("e1", "c1", "answer")).toMatchObject({Correct: true, Lab: null});
+        await expect(submitModeratorFlag("e1", "c1", "answer")).rejects.toThrow();
+    });
+
+    it("retains shared identity on the moderators board", async () => {
+        const {getModeratorsBoard} = await import("./moderatorsBoard");
+        fetchMock.mockResolvedValue(reply({Data: [{...question, EventExerciseID: exerciseID, Lab: runningLab}]}));
+        expect((await getModeratorsBoard("e1"))[0]).toMatchObject({EventExerciseID: exerciseID, Lab: runningLab});
+        expect(fetchMock.mock.calls[0][0]).toBe("https://api.test/api/events/e1/manage/labs/moderators/board");
     });
 });

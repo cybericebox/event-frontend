@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {LabLifecycleSchema} from "@/api/labLifecycle";
 import {manageApiError, ManageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
@@ -95,6 +96,7 @@ export type ModeratorChallenge = z.infer<typeof ModeratorChallengeSchema>;
 
 const labAccessSchema = z.object({Device: optionalText, Port: z.number().int(), Protocol: optionalText, URL: optionalText});
 export const LabRuntimeSchema = z.object({
+    Lab: LabLifecycleSchema.nullish().transform(value => value ?? null),
     Phase: optionalText, Ready: z.boolean(), Queue: LabQueueSchema.nullish().transform(value => value ?? null), VPNCIDR: optionalText, InternetCIDR: optionalText,
     Access: z.array(labAccessSchema).nullish().transform(value => value ?? []),
 });

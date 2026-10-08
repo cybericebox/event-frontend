@@ -1,4 +1,5 @@
 import type {OwnChallenge} from "@/api/participantChallenges";
+import {exerciseID, runningLab} from "@/test/labLifecycle";
 
 // A task that uses every formatting feature the catalog editor (exercises-frontend
 // RichTextEditor: headings, bold/italic/underline/strike/inline code, code, links,
@@ -53,6 +54,8 @@ const hintDoc = (value: string, code: string) => JSON.stringify(document(
 export const fixtureChallenge: OwnChallenge = {
     ID: "11111111-1111-4111-8111-111111111111",
     EventChallengeID: "22222222-2222-4222-8222-222222222222",
+    EventExerciseID: exerciseID,
+    Lab: runningLab,
     Snapshot: {
         name: LONG_TITLE,
         description: fixtureDescription,

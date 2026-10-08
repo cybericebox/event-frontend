@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {readApiErrorCode} from "@/api/apiErrors";
 import {LabRuntimeSchema, type LabRuntime} from "@/api/manageLabs";
+import {LabLifecycleSchema, revisionSchema, type LabLifecycle} from "@/api/labLifecycle";
 import {t} from "@/i18n/t";
 import {requireApiOrigin} from "@/utils/origins";
 
@@ -47,6 +48,10 @@ const prerequisiteSchema = z.object({EventChallengeID: id, Name: z.string(), Sol
 export const challengeSchema = z.object({
     ID: id,
     EventChallengeID: id,
+    // Every new question has its pinned attachment identity, including static ones.
+    // Legacy absence remains unknown; a question ID cannot identify a shared Lab.
+    EventExerciseID: id.nullish().transform(value => value ?? null),
+    Lab: LabLifecycleSchema.nullish().transform(value => value ?? null),
     Snapshot: snapshotSchema,
     Readiness: z.number().int(),
     SolvedAt: z.string().nullable(),
@@ -101,7 +106,10 @@ export const ownBoardSchema = z.object({
     NextOpensAt: optionalTime,
     NextChangeAt: optionalTime,
 });
-const submissionSchema = z.object({Correct: z.boolean(), FirstSolve: z.boolean().default(false), Practice: z.boolean().default(false)});
+const submissionSchema = z.object({
+    Correct: z.boolean(), FirstSolve: z.boolean().default(false), Practice: z.boolean().default(false),
+    Lab: LabLifecycleSchema.nullish().transform(value => value ?? null),
+});
 const solveSchema = z.object({TeamName: z.string(), NameHidden: z.boolean().optional(), SolvedAt: z.string(), Own: z.boolean(), FirstBlood: z.boolean().default(false)})
     .transform(row => row.NameHidden ? {...row, TeamName: t("scoreboard.nameHidden")} : row);
 const solvesPageSchema = z.object({
@@ -181,7 +189,7 @@ export async function getOwnChallengeLab(eventID: string, challengeID: string): 
 // It is short-lived and single use, so it is fetched on every click and never kept.
 // The lab proxy turns it into its own cookie on the lab domain; the platform sets none.
 // Staff testing tasks as the moderators team use the manage route.
-export async function openLabLink(eventID: string, challengeID: string, device: string, port: number, moderators = false): Promise<{url: string; expiresAt: number}> {
+export async function openLabLink(eventID: string, challengeID: string, device: string, port: number, moderators = false, expectedLab?: Pick<LabLifecycle, "ID" | "Revision">): Promise<{url: string; expiresAt: number; labID: string | null; revision: string | null}> {
     const path = moderators
         ? `${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/labs/moderators/challenges/${encodeURIComponent(challengeID)}`
         : `${baseUrl(eventID)}/${encodeURIComponent(challengeID)}`;
@@ -191,8 +199,13 @@ export async function openLabLink(eventID: string, challengeID: string, device: 
         body: JSON.stringify({Device: device, Port: port}),
     });
     if (!response.ok) throw await failure(response);
-    const data = z.object({Data: z.object({URL: z.string(), ExpiresAt: z.string()})}).parse(await response.json()).Data;
-    return {url: data.URL, expiresAt: new Date(data.ExpiresAt).getTime()};
+    const schema = z.object({
+        URL: z.string(), ExpiresAt: z.string(),
+        LabID: id.nullish().transform(value => value ?? null),
+        Revision: revisionSchema.nullish().transform(value => value ?? null),
+    }).refine(data => !expectedLab || (data.LabID === expectedLab.ID && data.Revision === expectedLab.Revision));
+    const data = z.object({Data: schema}).parse(await response.json()).Data;
+    return {url: data.URL, expiresAt: new Date(data.ExpiresAt).getTime(), labID: data.LabID, revision: data.Revision};
 }
 
 // Idempotent per team: a repeat returns the first unlock. Cost is 0 once solved or finished.
