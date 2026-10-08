@@ -1,4 +1,9 @@
 {
+  "challenges.lab.environment": "Environment",
+  "challenges.lab.closed.solved": "All tasks in this environment are complete. The environment is closed.",
+  "challenges.lab.closed.manual": "The environment is stopped. Task progress is saved.",
+  "challenges.lab.closed.stage": "The stage has ended. The environment is closed.",
+  "challenges.lab.closed.event": "The event has ended. The environment is closed.",
   "manage.attempts.col.attempts": "Attempts",
   "manage.attempts.unlimited": "Unlimited",
   "manage.attempts.usedOf": "{used} of {allowed}",

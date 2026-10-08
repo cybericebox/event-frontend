@@ -108,7 +108,8 @@ describe("authoritative shared Lab on the participant board", () => {
         const dialog = document.querySelector("dialog");
         await act(async () => {boardReply(initial); runtimeReply({Lab: runningLab, Phase: "Ready", Ready: true, VPNCIDR: "", InternetCIDR: "", Access: [], Queue: null});});
         await waitFor(() => expect(client.getQueryData<OwnBoard>(key)!.Challenges[0].Lab?.LogicalClosed).toBe(true));
-        await waitFor(() => expect(client.getQueryData<LabRuntime>(["event-challenge-lab", "participant", "e", uuid(2)])?.Lab).toEqual(completedLab));
+        await waitFor(() => expect(client.getQueryData<LabRuntime>(["event-challenge-lab", "participant", "e", uuid(2)])?.Lab).toEqual(runningLab));
+        expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy();
         expect(document.querySelector("dialog")).toBe(dialog);
         expect(client.getQueryData(labKey("e", otherLab.ID))).toEqual(otherLab);
     });

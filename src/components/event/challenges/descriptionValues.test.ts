@@ -1,6 +1,7 @@
 import {describe, expect, it} from "vitest";
 import type {LabRuntime} from "@/api/manageLabs";
 import type {SnapshotPlaceholder} from "@/api/participantChallenges";
+import {runningLab, completedLab, runtimeFixture} from "@/test/labLifecycle";
 import {descriptionValues} from "./descriptionValues";
 
 const lab: LabRuntime = {Lab: null, Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "10.9.4.0/24", Access: []};
@@ -49,4 +50,17 @@ describe("descriptionValues", () => {
             expect(links).toEqual({});
         }
     });
+});
+
+const runtimePlaceholders: SnapshotPlaceholder[] = [
+    {key: "web", kind: "external.link", device_name: "web"},
+    {key: "ip", kind: "ip", ip_reference: "vpn", last_octet: 5, as_link: true, scheme: "http"},
+    {key: "subnet", kind: "vpn.subnet"},
+];
+it.each([completedLab, {...runningLab, Revision: "9007199254740995"}, {...runningLab, ID: "00000000-0000-4000-8000-000000000101"}, {...runningLab, RuntimeState: "preparing" as const}])("withdraws runtime values for closed, stale, other-identity or unready access %j", lifecycle => {
+    const stale = {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://web.test"}]};
+    expect(descriptionValues(runtimePlaceholders, stale, lifecycle)).toEqual({variables: {web: "—", ip: "—", subnet: "—"}, links: {}});
+});
+it("retains organizer static IP content after closure", () => {
+    expect(descriptionValues([ip({ip_reference: "static", octets_1to3: "192.0.2", as_link: true})], runtimeFixture, completedLab).links).toEqual({ph_a: "http://192.0.2.5"});
 });

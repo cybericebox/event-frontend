@@ -1,4 +1,9 @@
 {
+  "challenges.lab.environment": "Середовище",
+  "challenges.lab.closed.solved": "Усі завдання цього середовища виконано. Середовище закрито.",
+  "challenges.lab.closed.manual": "Середовище зупинено. Прогрес завдань збережено.",
+  "challenges.lab.closed.stage": "Етап завершено. Середовище закрито.",
+  "challenges.lab.closed.event": "Захід завершено. Середовище закрито.",
   "manage.attempts.col.attempts": "Спроби",
   "manage.attempts.unlimited": "Без ліміту",
   "manage.attempts.usedOf": "{used} з {allowed}",

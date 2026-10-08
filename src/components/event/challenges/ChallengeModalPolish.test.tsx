@@ -4,6 +4,7 @@ import {cleanup, fireEvent, render, screen, within} from "@testing-library/react
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {readFileSync} from "node:fs";
 import {resolve} from "node:path";
+import {runtimeFixture} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: true, openVpn: () => {}})}));
@@ -12,7 +13,7 @@ vi.mock("@/api/taskOpenedBeacon", () => ({reportTaskOpened: () => {}}));
 vi.mock("@/api/participantChallenges", async importOriginal => ({...await importOriginal<typeof import("@/api/participantChallenges")>(), getOwnChallengeLab: () => new Promise(() => {})}));
 vi.mock("@/api/manageLabs", async importOriginal => ({
     ...await importOriginal<typeof import("@/api/manageLabs")>(),
-    getModeratorChallengeLab: () => Promise.resolve({Phase: "Ready", Ready: true, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [
+    getModeratorChallengeLab: () => Promise.resolve({...runtimeFixture, Access: [
         {Device: "web", Port: 443, Protocol: "https", URL: "https://lab.example/panel"},
         {Device: "db", Port: 5432, Protocol: "tcp", URL: ""},
     ]}),
