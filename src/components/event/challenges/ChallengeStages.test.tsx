@@ -2,7 +2,9 @@
 import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import type {BoardStage, OwnChallenge} from "@/api/participantChallenges";
 import {ApiErrorCode} from "@/api/apiErrors";
+import {plainTextRichText} from "@/components/event/content/richTextState";
 import {completedLab, runningLab, runtimeFixture} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 
@@ -29,7 +31,7 @@ afterEach(() => {cleanup(); Object.values(api).forEach(mock => mock.mockReset())
 const stage = {ID: "55555555-5555-4555-8555-555555555555", Name: "Розминка", OpensAt: "2026-10-01T08:00:00Z", ClosesAt: "2026-10-01T10:00:00Z", Returnable: false, State: "closed" as const};
 const base = {...fixtureChallenge, SolvedAt: null, Infrastructure: false, StageID: stage.ID, MaxAttempts: null, AttemptsLeft: null};
 
-function renderModal(challenge: typeof base, stageValue: typeof stage | null, onRejected = vi.fn(), onAccepted = vi.fn()) {
+function renderModal(challenge: OwnChallenge, stageValue: BoardStage | null, onRejected = vi.fn(), onAccepted = vi.fn()) {
     render(<QueryClientProvider client={new QueryClient()}>
         <ChallengeModal challenge={challenge} stage={stageValue} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={onAccepted} onRejected={onRejected} />
     </QueryClientProvider>);
@@ -110,7 +112,7 @@ describe("the tile of a stage task", () => {
 
 
 it("retains a returnable stage task's description and practice meaning while withdrawing legacy cached runtime access", () => {
-    const challenge = {...base, Infrastructure: true, Lab: runningLab, Snapshot: {...base.Snapshot, description: "Retained task description"}};
+    const challenge = {...base, Infrastructure: true, Lab: runningLab, Snapshot: {...base.Snapshot, description: plainTextRichText("Retained task description")}};
     const client = new QueryClient();
     client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://runtime.test"}]});
     render(<QueryClientProvider client={client}><ChallengeModal challenge={challenge} stage={{...stage, Returnable: true}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints onClose={() => {}} onAccepted={() => {}} /></QueryClientProvider>);
@@ -122,7 +124,7 @@ it("retains a returnable stage task's description and practice meaning while wit
     expect(api.runtime).not.toHaveBeenCalled(); expect(api.stop).not.toHaveBeenCalled(); expect(api.restart).not.toHaveBeenCalled();
 });
 it("next-stage preparation does not reopen a solved shared Lab even when a malformed capability permits restart", () => {
-    renderModal({...base, Infrastructure: true, Lab: {...completedLab, CanRestart: true}, SolvedAt: "2026-10-01T09:00:00Z"}, {...stage, State: "open"} as typeof stage);
+    renderModal({...base, Infrastructure: true, Lab: {...completedLab, CanRestart: true}, SolvedAt: "2026-10-01T09:00:00Z"}, {...stage, State: "open"});
     expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Запустити знову"})).toBeNull();
     expect(api.runtime).not.toHaveBeenCalled(); expect(api.restart).not.toHaveBeenCalled();

@@ -4875,5 +4875,7 @@
   "manage.labs.lifecycle.snapshotPolicy": "Політика знімків",
   "manage.labs.lifecycle.policy.none": "Не вимагати знімок",
   "manage.labs.lifecycle.policy.required": "Вимагати успішний знімок",
-  "manage.labs.lifecycle.retentionUntil": "Зберігати до"
+  "manage.labs.lifecycle.retentionUntil": "Зберігати до",
+  "manage.labs.policy.numberHelp": "Введіть ціле число від {min} до {max}. Зміна зберігається після виходу з поля або натискання Enter.",
+  "manage.labs.policy.snapshotHelp": "Вимога успішного знімка стосується файлового стану. Вона не гарантує збереження памʼяті процесів чи незаписаних мережевих змін."
 }

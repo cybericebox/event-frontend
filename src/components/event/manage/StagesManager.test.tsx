@@ -147,7 +147,7 @@ it("queues retention with Returnable, keeps both controls enabled and never appl
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
     fireEvent.change(retention, {target: {value: "0"}}); fireEvent.blur(retention);
-    expect(retention.value).toBe("0"); expect(retention.disabled).toBe(false); expect(switchOf("Етап 1").disabled).toBe(false);
+    await waitFor(() => expect(retention.value).toBe("0")); expect(retention.disabled).toBe(false); expect(switchOf("Етап 1").disabled).toBe(false);
     expect(api.update).toHaveBeenCalledTimes(1);
     await act(async () => {finishes[0]({...original, Returnable: true});});
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));

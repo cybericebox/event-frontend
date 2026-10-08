@@ -20,7 +20,7 @@ export function LabPolicyNumberField({id, title, value, min, max, nullable, plac
         if (parsed !== value) onCommit(parsed);
     }
     return <div className="event-manage-field">
-        <ManageFieldLabel htmlFor={id} title={title} />
+        <ManageFieldLabel htmlFor={id} title={title} help={t("manage.labs.policy.numberHelp", {min, max})} />
         <input id={id} className="event-manage-input" type="number" inputMode="numeric" min={min} max={max} step={1}
             value={text} placeholder={placeholder} disabled={disabled} aria-invalid={invalid} aria-describedby={invalid ? `${id}-error` : undefined}
             onChange={event => setDraft(event.target.value)} onBlur={commit} onKeyDown={event => {

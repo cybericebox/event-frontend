@@ -156,7 +156,7 @@ export function ChallengeSettings() {
         </form>
         {config.data.LabPolicy && <section className="event-manage-section" aria-labelledby="lab-policy-title">
             <div className="event-manage-section__head"><h2 id="lab-policy-title">{t("manage.labs.policy.title")}</h2><p>{t("manage.labs.policy.help")}</p></div>
-            <div className="event-manage-field"><ManageFieldLabel title={t("manage.labs.policy.snapshot")} />
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.labs.policy.snapshot")} help={t("manage.labs.policy.snapshotHelp")} />
                 <EventSelect ariaLabel={t("manage.labs.policy.snapshot")} value={config.data.LabPolicy.SnapshotMode}
                     options={[{value: "skip", label: t("manage.labs.policy.skip")}, {value: "required", label: t("manage.labs.policy.required")}]}
                     disabled={!canManage} onValueChange={mode => savePolicy({SnapshotMode: mode as "skip" | "required"})} />

@@ -1,13 +1,13 @@
 import {QueryClient} from "@tanstack/react-query";
 import {describe, expect, it, vi} from "vitest";
-import {ownBoardSchema, type ChallengeSubmission} from "@/api/participantChallenges";
+import {ownBoardSchema, type ChallengeSubmission, type OwnBoard} from "@/api/participantChallenges";
 import {runningLab, completedLab, manuallyStoppedLab, manualRunningLab} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {applySubmission, applyModeratorSubmission, labLifecycleKey, newestLab, reconcileBoard, reconcileChallenges, rememberLab} from "./labLifecycleCache";
 
 const otherLab = {...runningLab, ID: "00000000-0000-4000-8000-000000000101"};
 // Fixtures use arbitrary question names only after the transport schema boundary.
-const makeBoard = () => ({...ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z"}), Challenges: [
+const makeBoard = (): OwnBoard => ({...ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z"}), Challenges: [
     {...fixtureChallenge, EventChallengeID: "first", SolvedAt: null},
     {...fixtureChallenge, EventChallengeID: "second", SolvedAt: null},
     {...fixtureChallenge, EventChallengeID: "other", Lab: otherLab, SolvedAt: null},

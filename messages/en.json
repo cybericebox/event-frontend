@@ -4875,5 +4875,7 @@
   "manage.labs.lifecycle.snapshotPolicy": "Snapshot policy",
   "manage.labs.lifecycle.policy.none": "Do not require a snapshot",
   "manage.labs.lifecycle.policy.required": "Require a successful snapshot",
-  "manage.labs.lifecycle.retentionUntil": "Retain until"
+  "manage.labs.lifecycle.retentionUntil": "Retain until",
+  "manage.labs.policy.numberHelp": "Enter a whole number from {min} to {max}. The change saves when you leave the field or press Enter.",
+  "manage.labs.policy.snapshotHelp": "A required successful snapshot covers filesystem state. It does not guarantee preservation of process memory or unrecorded network changes."
 }

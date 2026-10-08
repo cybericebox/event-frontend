@@ -118,12 +118,12 @@ describe("lifecycle policy optimistic save queue", () => {
         await waitFor(() => expect(server.put).toHaveBeenCalledTimes(1));
         const limit = screen.getByLabelText("Максимум активних середовищ команди") as HTMLInputElement;
         fireEvent.change(limit, {target: {value: "7"}}); fireEvent.blur(limit);
-        expect(snapshot.value).toBe("required"); expect(limit.value).toBe("7");
+        await waitFor(() => {expect(snapshot.value).toBe("required"); expect(limit.value).toBe("7");});
         expect(snapshot.disabled).toBe(false); expect(limit.disabled).toBe(false);
         expect(server.put).toHaveBeenCalledTimes(1);
         await act(async () => {finishes[0]({...server.put.mock.calls[0][1], LabPolicy: {SnapshotMode: "skip", MaxActiveLabsPerTeam: null, RetentionMinutes: 90}});});
         await waitFor(() => expect(server.put).toHaveBeenCalledTimes(2));
-        expect(snapshot.value).toBe("required"); expect(limit.value).toBe("7");
+        await waitFor(() => {expect(snapshot.value).toBe("required"); expect(limit.value).toBe("7");});
         expect(server.put.mock.calls[1][1]).toMatchObject({LabPolicy: {SnapshotMode: "required", MaxActiveLabsPerTeam: 7, RetentionMinutes: 90}, MaxFlagAttempts: null, ShowDifficulty: true});
         await act(async () => {finishes[1]({...server.put.mock.calls[1][1]});});
     });

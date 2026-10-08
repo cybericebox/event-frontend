@@ -9,7 +9,7 @@ const raw = {EventID: "00000000-0000-4000-8000-000000000001", Participation: 1, 
 const policy = {SnapshotMode: "required" as const, MaxActiveLabsPerTeam: 7, RetentionMinutes: 90};
 describe("event lifecycle config transport", () => {
     it("preserves every existing full-payload value and sends the frozen policy", async () => {
-        fetchMock.mockResolvedValue(new Response(JSON.stringify({Data: {...raw, LabPolicy: policy}})));
+        fetchMock.mockImplementation(async () => new Response(JSON.stringify({Data: {...raw, LabPolicy: policy}})));
         const config = await getManageConfig("event /");
         const input = manageConfigInput(config);
         await putManageConfig("event /", input);

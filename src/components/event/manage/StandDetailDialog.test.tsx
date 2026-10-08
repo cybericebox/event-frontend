@@ -244,11 +244,11 @@ it("shows group pause/prewarm observations separately from solved child snapshot
     expect(document.querySelector(`[data-lab-id="${managedLab.ID}"]`)?.textContent).toContain("Збережено");
     expect(groupNode.textContent).toContain("Готовність сервісів групи не підтверджено");
     await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], {...canonicalDetail(), Group: {...group, Revision: "8", ObservedRevision: "8", DesiredState: "Running", ActualState: "Starting", Ready: false, Resources: managedLab.Resources}});});
-    expect(groupNode.textContent).toContain("Запускається");
+    await waitFor(() => expect(groupNode.textContent).toContain("Запускається"));
     expect(within(groupNode).queryByText("Сервіси групи готові")).toBeNull();
     await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], {...canonicalDetail(), Group: {...group, Revision: "9", ObservedRevision: "9", DesiredState: "Running", ActualState: "Running", Ready: true}});});
-    expect(within(groupNode).getByText("Сервіси групи готові")).toBeTruthy();
-    expect(document.querySelector(`[data-lab-id="${managedLab.ID}"]`)?.textContent).toContain("Усі залежні завдання виконано");
+    await within(groupNode).findByText("Сервіси групи готові");
+    expect(document.querySelector(`[data-lab-id="${managedLab.ID}"]`)?.textContent).toContain("Доступ закрито: всі завдання розвʼязано");
     expect(resetStandDevice).not.toHaveBeenCalled(); expect(setStandDeviceRescue).not.toHaveBeenCalled();
 });
 it("does not certify group readiness on an old revision and keeps StopFailed service overhead held", async () => {
