@@ -53,6 +53,27 @@ describe("authoritative shared Lab lifecycle", () => {
         }
     });
 
+    it("clears lifecycle retention together with data instead of retaining per-Lab default registrations", () => {
+        const client = new QueryClient();
+        const key = labLifecycleKey("participant", "event-a", completedLab.ID);
+        rememberLab(client, "participant", "event-a", completedLab);
+        expect(client.getQueryCache().find({queryKey: key, exact: true})?.gcTime).toBe(Infinity);
+        client.clear();
+        expect(client.getQueryData(key)).toBeUndefined();
+        expect(client.getQueryDefaults(key)).toEqual({});
+        expect(rememberLab(client, "participant", "event-a", runningLab)).toEqual(runningLab);
+    });
+
+    it("retains the existing modal-owned query when remembering a lifecycle", () => {
+        const client = new QueryClient({defaultOptions: {queries: {gcTime: 5 * 60 * 1000}}});
+        const key = labLifecycleKey("participant", "event-a", runningLab.ID);
+        const query = client.getQueryCache().build(client, {queryKey: key, gcTime: Infinity});
+        rememberLab(client, "participant", "event-a", completedLab);
+        expect(client.getQueryCache().find({queryKey: key, exact: true})).toBe(query);
+        expect(query.gcTime).toBe(Infinity);
+        expect(client.getQueryDefaults(key)).toEqual({});
+    });
+
     it("solves only the answered question and propagates final closure to its shared Lab", () => {
         const client = new QueryClient();
         client.setQueryData(["event-own-challenges", "event-a"], makeBoard());

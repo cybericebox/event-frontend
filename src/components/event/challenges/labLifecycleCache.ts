@@ -19,7 +19,7 @@ export function newestLab(current: LabLifecycle | undefined, next: LabLifecycle)
 export function rememberLab(client: QueryClient, mode: BoardMode, eventID: string, next: LabLifecycle): LabLifecycle {
     const key = labLifecycleKey(mode, eventID, next.ID);
     // Keep the largest observed revision for this session, including when no modal observes it.
-    client.setQueryDefaults(key, {gcTime: Infinity});
+    client.getQueryCache().build<LabLifecycle>(client, {queryKey: key, gcTime: Infinity});
     client.setQueryData<LabLifecycle>(key, current => newestLab(current, next));
     return client.getQueryData<LabLifecycle>(key)!;
 }

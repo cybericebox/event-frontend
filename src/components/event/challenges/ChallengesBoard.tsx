@@ -133,7 +133,11 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     const queryClient = useQueryClient();
     const access = useQuery({queryKey: ["event-management-access", event.EventID], queryFn: () => getManageAccess(event.EventID), retry: false, refetchOnWindowFocus: false});
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
-    const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: async () => reconcileChallenges(queryClient, "moderators", event.EventID, await getModeratorsBoard(event.EventID)), enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
+    const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: async ({signal}) => {
+        const response = await getModeratorsBoard(event.EventID);
+        signal.throwIfAborted();
+        return reconcileChallenges(queryClient, "moderators", event.EventID, response);
+    }, enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (access.isPending) return <EventLoading label={t("challenges.loading")} />;
     if (!access.data?.CanManage) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
@@ -163,7 +167,11 @@ export function ChallengesBoard() {
     const admitted = ownTeam ? ownTeam.Admitted !== false : false;
     const challenges = useQuery({
         queryKey: ["event-own-challenges", event?.EventID],
-        queryFn: async () => reconcileBoard(queryClient, "participant", event!.EventID, await getOwnBoard(event!.EventID)),
+        queryFn: async ({signal}) => {
+            const response = await getOwnBoard(event!.EventID);
+            signal.throwIfAborted();
+            return reconcileBoard(queryClient, "participant", event!.EventID, response);
+        },
         enabled: !!participant && !!event && started && !!ownTeam && admitted && !!ownTeam.Formed,
         retry: false,
         refetchInterval: 30000,

@@ -125,6 +125,36 @@ describe("authoritative shared Lab on the participant board", () => {
         expect(screen.getByText("Розвʼязано (практика, без балів)")).toBeTruthy();
         expect(screen.queryByText(/^\+\d/)).toBeNull();
     });
+
+    it("still accepts a pending solve after closing its dialog in the same session", async () => {
+        const client = await start();
+        let reply!: (value: object) => void;
+        api.submit.mockImplementation(() => new Promise(resolve => {reply = resolve;}));
+        fireEvent.click(screen.getByRole("button", {name: /^Завдання 1/}));
+        await send();
+        fireEvent.click(screen.getByRole("button", {name: "Закрити"}));
+        await act(async () => {await client.refetchQueries({queryKey: key, exact: true});});
+        api.board.mockImplementation(() => new Promise(() => {}));
+        await act(async () => {reply({Correct: true, FirstSolve: true, Practice: false, Lab: completedLab});});
+        const result = client.getQueryData<OwnBoard>(key)!;
+        expect(result.Challenges.map(item => !!item.SolvedAt)).toEqual([true, false, false]);
+        expect(result.Challenges.map(item => item.Lab?.LogicalClosed)).toEqual([true, true, false]);
+    });
+
+    it("rejects a previous session's solve even when a new session builds the same lifecycle key", async () => {
+        const client = await start();
+        let reply!: (value: object) => void;
+        api.submit.mockImplementation(() => new Promise(resolve => {reply = resolve;}));
+        fireEvent.click(screen.getByRole("button", {name: /^Завдання 1/}));
+        await send();
+        api.board.mockImplementation(() => new Promise(() => {}));
+        client.clear();
+        client.setQueryData(labKey("e", runningLab.ID), runningLab);
+        client.setQueryData(key, initial);
+        await act(async () => {reply({Correct: true, FirstSolve: true, Practice: false, Lab: completedLab});});
+        expect(client.getQueryData(labKey("e", runningLab.ID))).toEqual(runningLab);
+        expect(client.getQueryData<OwnBoard>(key)!.Challenges.map(item => !!item.SolvedAt)).toEqual([false, false, false]);
+    });
 });
 
 describe("solved task dialog", () => {

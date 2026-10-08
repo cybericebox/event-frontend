@@ -6,7 +6,7 @@ import {descriptionValues} from "./descriptionValues";
 import {queueLine} from "@/components/event/labLive";
 import {labLinkErrorMessage, useLabLink, type LabLinkState} from "./useLabLink";
 import {EventLoadError} from "@/components/event/EventLoadError";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {skipToken, useQuery, useQueryClient} from "@tanstack/react-query";
 import type {LabLifecycle} from "@/api/labLifecycle";
 import {labLifecycleKey, newestLab, rememberLab} from "./labLifecycleCache";
 import {Network} from "lucide-react";
@@ -228,15 +228,17 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
 
     const lab = useQuery({
         queryKey: ["event-challenge-lab", mode, eventID, challengeID],
-        queryFn: async () => {
+        queryFn: async ({signal}) => {
             const runtime = await (moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!));
+            signal.throwIfAborted();
             return runtime.Lab ? {...runtime, Lab: rememberLab(queryClient, mode, eventID, runtime.Lab)} : runtime;
         },
         enabled: !!challenge?.Infrastructure && !challenge.Locked,
         retry: false, refetchInterval: query => query.state.data?.Queue ? 8000 : 30000, refetchOnWindowFocus: false,
     });
+    const lifecycleKey = labLifecycleKey(mode, eventID, challenge?.Lab?.ID ?? lab.data?.Lab?.ID ?? "");
     const lifecycle = useQuery<LabLifecycle>({
-        queryKey: labLifecycleKey(mode, eventID, challenge?.Lab?.ID ?? lab.data?.Lab?.ID ?? ""), enabled: false, gcTime: Infinity,
+        queryKey: lifecycleKey, queryFn: skipToken, enabled: false, gcTime: Infinity,
     });
     // Subscribe to shared closure independently of a question's runtime request.
     const runtime = useMemo(() => {
@@ -298,12 +300,18 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             flagRef.current?.focus();
             return;
         }
+        // Cache reset removes this session's Query object; a new login may build the same key.
+        // Closing the dialog or refetching retains it, so valid same-session solves still apply.
+        const cache = queryClient.getQueryCache();
+        const scope = cache.find({queryKey: lifecycleKey, exact: true});
+        const currentSession = () => !!scope && cache.find({queryKey: scope.queryKey, exact: true}) === scope;
         setBusy(true);
         setMessage(null);
         try {
             const result = moderators
                 ? await submitModeratorFlag(eventID, challenge.EventChallengeID, value)
                 : await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID());
+            if (!currentSession()) return;
             if (result.Lab) rememberLab(queryClient, mode, eventID, result.Lab);
             const correct = result.Correct;
             // The server says whether it was rated: a stage that closed while the modal was open turns it into practice.
@@ -323,6 +331,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 }
             }
         } catch (error) {
+            if (!currentSession()) return;
             if (error instanceof ParticipantChallengeError && error.code === ApiErrorCode.StageClosed) {
                 setMessage(submitMessage(error));
                 onRejected?.();
@@ -340,7 +349,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 setMessage(submitMessage(error));
             }
         } finally {
-            setBusy(false);
+            if (currentSession()) setBusy(false);
         }
     }
 
