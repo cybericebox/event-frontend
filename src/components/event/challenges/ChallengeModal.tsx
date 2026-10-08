@@ -2,6 +2,7 @@
 
 import {useEffect, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {ChallengeSolvesTab} from "./ChallengeSolvesTab";
+import {labAccessScope} from "./labAccessScope";
 import {LabAccessBlock} from "./LabAccessBlock";
 import {descriptionValues, hasCurrentRuntime} from "./descriptionValues";
 import {useLabLink} from "./useLabLink";
@@ -188,32 +189,30 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const moderators = mode === "moderators";
     const queryClient = useQueryClient();
 
+    const runtimeKey = ["event-challenge-lab", mode, eventID, challengeID];
+    const beforeFetch = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, queryClient.getQueryData<LabRuntime>(runtimeKey));
     const lab = useQuery({
-        queryKey: ["event-challenge-lab", mode, eventID, challengeID],
+        queryKey: runtimeKey,
         queryFn: async ({signal}) => {
             const runtime = await (moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!));
             signal.throwIfAborted();
             if (runtime.Lab) rememberLab(queryClient, mode, eventID, runtime.Lab);
             return runtime; // Preserve the identity/revision that produced Access and CIDRs.
         },
-        enabled: !!challenge?.Infrastructure && !challenge.Locked && !challenge.Lab?.LogicalClosed
-            && !queryClient.getQueryData<LabLifecycle>(labLifecycleKey(mode, eventID, challenge.Lab?.ID ?? ""))?.LogicalClosed,
+        enabled: !!challenge?.Infrastructure && !challenge.Locked && !beforeFetch.lifecycle?.LogicalClosed,
         retry: false, refetchInterval: query => {
-            const attached = challenge?.Lab ?? query.state.data?.Lab;
-            const shared = attached && queryClient.getQueryData<LabLifecycle>(labLifecycleKey(mode, eventID, attached.ID));
-            return (shared ?? attached)?.LogicalClosed ? false : query.state.data?.Queue ? 8000 : 30000;
+            const current = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, query.state.data);
+            return current.lifecycle?.LogicalClosed ? false : query.state.data?.Queue ? 8000 : 30000;
         }, refetchOnWindowFocus: false,
     });
-    const lifecycleKey = labLifecycleKey(mode, eventID, challenge?.Lab?.ID ?? lab.data?.Lab?.ID ?? "");
+    const accessScope = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, lab.data);
+    const lifecycleKey = labLifecycleKey(mode, eventID, accessScope.lifecycle?.ID ?? "");
     const lifecycle = useQuery<LabLifecycle>({
         queryKey: lifecycleKey, queryFn: skipToken, enabled: false, gcTime: Infinity,
     });
     // Subscribe to shared closure independently of a question's runtime request.
-    const effectiveLifecycle = useMemo(() => {
-        const attached = challenge?.Lab ?? lab.data?.Lab;
-        const current = attached && lifecycle.data ? newestLab(attached, lifecycle.data) : attached;
-        return current && lab.data?.Lab ? newestLab(current, lab.data.Lab) : current;
-    }, [lab.data, challenge?.Lab, lifecycle.data]);
+    const effectiveLifecycle = accessScope.lifecycle && lifecycle.data?.ID === accessScope.lifecycle.ID
+        ? newestLab(accessScope.lifecycle, lifecycle.data) : accessScope.lifecycle;
     const runtime = lab.data;
     // The hook fences both current lifecycle and the session cache before navigation.
     const labLink = useLabLink(eventID, challengeID, moderators, effectiveLifecycle ?? undefined);
@@ -320,7 +319,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
         }
     }
 
-    const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], runtime, effectiveLifecycle), [challenge?.Snapshot.placeholders, runtime, effectiveLifecycle]);
+    const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], runtime, effectiveLifecycle ?? null), [challenge?.Snapshot.placeholders, runtime, effectiveLifecycle]);
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
     // A closed stage that is not returnable refuses answers and hints; one that is returnable and has ended takes them
@@ -379,7 +378,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
-                {challenge.Infrastructure && !moderators && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} error={lab.isError && !lab.data ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
+                {challenge.Infrastructure && !moderators && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}

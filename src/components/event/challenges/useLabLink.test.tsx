@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
-import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {QueryClient, QueryClientProvider, skipToken, useQuery} from "@tanstack/react-query";
 import type {LabLifecycle} from "@/api/labLifecycle";
-import {runningLab, completedLab} from "@/test/labLifecycle";
+import {runningLab, completedLab, runtimeFixture} from "@/test/labLifecycle";
+import {ownBoardSchema, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
+import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {ApiErrorCode} from "@/api/apiErrors";
 
 const openLink = vi.fn();
@@ -168,12 +170,12 @@ it("fences a shared cache closure before React can render the new lifecycle", as
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
 it.each([403, 409])("refreshes only affected board/runtime after an access denial %s", async status => {
-    const board = vi.fn(async () => ({Challenges: []})); const runtime = vi.fn(async () => ({})); const other = vi.fn(async () => ({}));
+    const board = vi.fn(async () => boardValue(runningLab, false)); const runtime = vi.fn(async () => ({})); const other = vi.fn(async () => ({}));
     await client.fetchQuery({queryKey: ["event-own-challenges", "e"], queryFn: board});
-    await client.fetchQuery({queryKey: ["event-challenge-lab", "participant", "e", "c1"], queryFn: runtime});
+    await client.fetchQuery({queryKey: ["event-challenge-lab", "participant", "e", fixtureChallenge.EventChallengeID], queryFn: runtime});
     await client.fetchQuery({queryKey: ["event-own-challenges", "other"], queryFn: other});
     openLink.mockRejectedValue(new ParticipantChallengeError(status, ApiErrorCode.TeamNotAdmitted));
-    renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); await flush();
+    renderProbe(<Probe challengeID={fixtureChallenge.EventChallengeID} lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); await flush();
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     expect(board).toHaveBeenCalledTimes(2); expect(runtime).toHaveBeenCalledTimes(2); expect(other).toHaveBeenCalledTimes(1);
 });
@@ -186,4 +188,60 @@ it("closes a legacy blank tab when the same task runtime first publishes Lab bef
     await act(async () => {client.setQueryData(key, {Lab: runningLab}); resolve({url: "https://old.test", expiresAt: 0, labID: null, revision: null});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
+});
+
+const replacementLab = {...runningLab, ID: "00000000-0000-4000-8000-000000000101", Revision: "1"};
+function boardValue(lab: LabLifecycle | null, moderators: boolean): OwnBoard | OwnChallenge[] {
+    const board = ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: [{...fixtureChallenge, Lab: lab}]});
+    return moderators ? board.Challenges : board;
+}
+function BoardProbe({moderators}: {moderators: boolean}) {
+    const board = useQuery<OwnBoard | OwnChallenge[]>({queryKey: [moderators ? "event-moderators-board" : "event-own-challenges", "e"], queryFn: skipToken, enabled: false});
+    const tasks = Array.isArray(board.data) ? board.data : board.data?.Challenges;
+    return <Probe challengeID={fixtureChallenge.EventChallengeID} moderators={moderators} lifecycle={tasks?.[0]?.Lab ?? undefined} />;
+}
+it.each([false, true])("closed canonical B refuses a window despite cached raw ready A (moderators=%s)", moderators => {
+    client.setQueryData(["event-challenge-lab", moderators ? "moderators" : "participant", "e", "c1"], runtimeFixture);
+    renderProbe(<Probe moderators={moderators} lifecycle={{...replacementLab, LogicalClosed: true, CloseReason: "solved", RuntimeState: "closed"}} />);
+    fireEvent.click(screen.getByText("open")); expect(windowOpen).not.toHaveBeenCalled(); expect(openLink).not.toHaveBeenCalled();
+});
+it("ready canonical B waits when cached raw access still belongs to A", () => {
+    client.setQueryData(["event-challenge-lab", "participant", "e", "c1"], runtimeFixture);
+    renderProbe(<Probe lifecycle={replacementLab} />); fireEvent.click(screen.getByText("open"));
+    expect(windowOpen).not.toHaveBeenCalled(); expect(openLink).not.toHaveBeenCalled();
+});
+it.each([false, true])("board publication of canonical B fences A before observer rerender (moderators=%s)", async moderators => {
+    const mode = moderators ? "moderators" : "participant"; const boardKey = [moderators ? "event-moderators-board" : "event-own-challenges", "e"];
+    client.setQueryData(boardKey, boardValue(runningLab, moderators));
+    client.setQueryData(["event-lab-lifecycle", mode, "e", runningLab.ID], runningLab);
+    client.setQueryData(["event-challenge-lab", mode, "e", fixtureChallenge.EventChallengeID], runtimeFixture);
+    let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
+    renderProbe(<BoardProbe moderators={moderators} />); fireEvent.click(screen.getByText("open"));
+    await act(async () => {
+        const closed = {...replacementLab, LogicalClosed: true, CloseReason: "solved" as const, RuntimeState: "closed" as const};
+        client.setQueryData(["event-lab-lifecycle", mode, "e", closed.ID], closed);
+        client.setQueryData(boardKey, boardValue(closed, moderators));
+        expect(tab.close).toHaveBeenCalled();
+        resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+    });
+    expect(tab.location.href).toBe("about:blank"); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
+});
+it.each([false, true])("first canonical board Lab fences a pending legacy link (moderators=%s)", async moderators => {
+    const mode = moderators ? "moderators" : "participant"; const boardKey = [moderators ? "event-moderators-board" : "event-own-challenges", "e"];
+    client.setQueryData(boardKey, boardValue(null, moderators));
+    client.setQueryData(["event-challenge-lab", mode, "e", fixtureChallenge.EventChallengeID], {...runtimeFixture, Lab: null});
+    let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
+    renderProbe(<BoardProbe moderators={moderators} />); fireEvent.click(screen.getByText("open"));
+    await act(async () => {client.setQueryData(boardKey, boardValue(replacementLab, moderators)); resolve({url: "https://legacy.test", expiresAt: 0, labID: null, revision: null});});
+    expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled(); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
+});
+
+it("a current board without the active task cannot authorize the old pending access", async () => {
+    const key = ["event-own-challenges", "e"];
+    client.setQueryData(key, boardValue(runningLab, false));
+    client.setQueryData(["event-challenge-lab", "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
+    let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
+    renderProbe(<BoardProbe moderators={false} />); fireEvent.click(screen.getByText("open"));
+    await act(async () => {client.setQueryData(key, ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: []})); resolve({url: "https://old.test", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+    expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
 });

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
-import {act, cleanup, render, screen, waitFor} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {ownBoardSchema} from "@/api/participantChallenges";
 import {completedLab, runningLab, runtimeFixture} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 
@@ -86,4 +87,50 @@ it("an individually solved question keeps matching running environment access", 
     const {container} = render(scopedModal(new QueryClient(), runningLab));
     await screen.findByRole("link", {name: "https://10.128.1.5:8443/panel"});
     expect(container.querySelector(".ib-copy")).toBeTruthy(); expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
+});
+
+it.each([true, false])("canonical task B never exposes cached raw A access (closed=%s)", async closed => {
+    const canonical = {...runningLab, ID: "00000000-0000-4000-8000-000000000101", Revision: "1", LogicalClosed: closed,
+        CloseReason: closed ? "solved" as const : null, RuntimeState: closed ? "closed" as const : "ready" as const};
+    const client = new QueryClient(); client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
+    runtimeAPI.mockReturnValue(new Promise(() => {}));
+    const {container} = render(scopedModal(client, canonical));
+    expect(container.querySelector(".ib-copy")).toBeNull(); expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
+    expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
+    if (closed) {expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy(); expect(screen.queryByRole("button", {name: /VPN/})).toBeNull();}
+    else {
+        const dialog = container.querySelector("dialog");
+        await act(async () => {client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Lab: canonical, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://current.test"}]});});
+        await screen.findByRole("link", {name: "https://10.128.1.5:8443/panel"});
+        expect(container.querySelector(".ib-copy")?.textContent).toContain("https://current.test"); expect(container.querySelector("dialog")).toBe(dialog);
+    }
+});
+it.each([false, true])("failed refresh with cached runtime forwards error only when access is unusable (matching=%s)", async matching => {
+    const current = {...runningLab, Revision: "3"}; const raw = {...runningLab, Revision: matching ? "3" : "1"};
+    const key = ["event-challenge-lab", "participant", "e", challenge.EventChallengeID]; const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    client.setQueryData(key, {...runtimeFixture, Lab: raw, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://cached.test"}]});
+    runtimeAPI.mockRejectedValue(new Error("offline"));
+    const {container} = render(scopedModal(client, current));
+    await waitFor(() => expect(client.getQueryState(key)?.status).toBe("error"));
+    if (matching) {expect(container.querySelector(".ib-copy")?.textContent).toContain("https://cached.test"); expect(container.querySelector("[data-load-error]")).toBeNull();}
+    else {
+        const retry = await screen.findByRole("button", {name: "Спробувати ще раз"});
+        expect(container.querySelector("[data-load-error]")).toBeTruthy(); expect(container.querySelector(".event-loading-logo")).toBeNull(); expect(container.querySelector(".ib-copy")).toBeNull();
+        const dialog = container.querySelector("dialog");
+        runtimeAPI.mockResolvedValue({...runtimeFixture, Lab: current, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://refreshed.test"}]});
+        fireEvent.click(retry);
+        await waitFor(() => expect(container.querySelector(".ib-copy")?.textContent).toContain("https://refreshed.test"));
+        expect(container.querySelector("[data-load-error]")).toBeNull(); expect(container.querySelector("dialog")).toBe(dialog);
+    }
+});
+
+it("synchronous board ownership B renders closed before old A props update and does not poll access", () => {
+    const canonical = {...completedLab, ID: "00000000-0000-4000-8000-000000000101", Revision: "1"};
+    const client = new QueryClient();
+    client.setQueryData(["event-own-challenges", "e"], ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: [{...challenge, Lab: canonical}]}));
+    client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
+    runtimeAPI.mockReturnValue(new Promise(() => {}));
+    const {container} = render(scopedModal(client, runningLab));
+    expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy();
+    expect(container.querySelector(".ib-copy")).toBeNull(); expect(runtimeAPI).not.toHaveBeenCalled();
 });

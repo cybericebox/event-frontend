@@ -114,6 +114,20 @@ describe("authoritative shared Lab on the participant board", () => {
         expect(client.getQueryData(labKey("e", otherLab.ID))).toEqual(otherLab);
     });
 
+    it("keeps solved history and the same dialog when canonical B closes while raw access still belongs to A", async () => {
+        const client = await start();
+        api.runtime.mockResolvedValue({Lab: runningLab, Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
+        fireEvent.click(screen.getByRole("button", {name: /^Завдання 1/}));
+        await waitFor(() => expect(document.querySelector(".ib-copy")?.textContent).toContain("https://old.test"));
+        const dialog = document.querySelector("dialog");
+        const replacement = {...completedLab, ID: uuid(102), Revision: "1"};
+        await act(async () => {client.setQueryData(key, {...initial, Challenges: initial.Challenges.map((item, index) => index === 0 ? {...item, Lab: replacement, SolvedAt: "2026-10-08T12:00:00Z", AwardedPoints: 100} : item)});});
+        await screen.findByText("Усі завдання цього середовища виконано. Середовище закрито.");
+        expect(document.querySelector(".ib-copy")).toBeNull(); expect(document.querySelector("dialog")).toBe(dialog);
+        expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
+        expect(client.getQueryData<LabRuntime>(["event-challenge-lab", "participant", "e", uuid(1)])?.Lab?.ID).toBe(runningLab.ID);
+    });
+
     it("practice follows the accepted path without creating a rated solve", async () => {
         const client = await start();
         api.board.mockImplementation(() => new Promise(() => {}));

@@ -1,10 +1,11 @@
 "use client";
 
-import {useLayoutEffect, useRef, useState} from "react";
+import {useCallback, useLayoutEffect, useRef, useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import type {LabRuntime} from "@/api/manageLabs";
 import type {LabLifecycle} from "@/api/labLifecycle";
-import {labLifecycleKey, newestLab} from "./labLifecycleCache";
+import {labLifecycleKey} from "./labLifecycleCache";
+import {labAccessScope, taskBoardKey} from "./labAccessScope";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {openLabLink, ParticipantChallengeError} from "@/api/participantChallenges";
 import {t} from "@/i18n/t";
@@ -39,6 +40,13 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
     const current = useRef({eventID, challengeID, moderators, lifecycle});
     const pending = useRef<{tab: Window; cancelled: boolean} | null>(null);
 
+    const latestScope = useCallback(() => {
+        const latest = current.current;
+        const mode = latest.moderators ? "moderators" : "participant";
+        const raw = client.getQueryData<LabRuntime>(["event-challenge-lab", mode, latest.eventID, latest.challengeID]);
+        return {...latest, ...labAccessScope(client, mode, latest.eventID, latest.challengeID, latest.lifecycle, raw)};
+    }, [client]);
+
     useLayoutEffect(() => {
         current.current = {eventID, challengeID, moderators, lifecycle};
     }, [eventID, challengeID, moderators, lifecycle]);
@@ -54,44 +62,29 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
             setState({status: "idle"});
             setBusyKey(null);
         }
-        // A cache removal (including logout clear) invalidates this session's link.
+        // Read the current task attachment synchronously, before React's board observer rerenders.
         const unsubscribe = client.getQueryCache().subscribe(event => {
             const key = event.query.queryKey;
             const mode = moderators ? "moderators" : "participant";
-            if (key[1] !== mode || key[2] !== eventID) return;
-            if (key[0] === "event-lab-lifecycle" && key[3] === lifecycle?.ID) {
-                if (event.type === "removed") cancel();
-                else if (event.type === "updated" && event.query.state.data) {
-                    const observed = newestLab(current.current.lifecycle, event.query.state.data as LabLifecycle);
-                    if (observed.LogicalClosed || observed.RuntimeState !== "ready" || observed.Revision !== lifecycle?.Revision) cancel();
-                }
-            } else if (key[0] === "event-challenge-lab" && key[3] === challengeID) {
-                if (event.type === "removed") cancel();
-                else if (event.type === "updated") {
-                    const raw = (event.query.state.data as LabRuntime | undefined)?.Lab;
-                    if (raw) {
-                        const observed = newestLab(current.current.lifecycle, raw);
-                        if (!current.current.lifecycle || observed.LogicalClosed || observed.RuntimeState !== "ready"
-                            || observed.ID !== lifecycle?.ID || observed.Revision !== lifecycle?.Revision) cancel();
-                    }
-                }
-            }
+            const boardKey = taskBoardKey(mode, eventID);
+            const boardEvent = key[0] === boardKey[0] && key[1] === eventID;
+            const scopeEvent = key[1] === mode && key[2] === eventID && (
+                (key[0] === "event-lab-lifecycle") || (key[0] === "event-challenge-lab" && key[3] === challengeID));
+            if (!boardEvent && !scopeEvent) return;
+            const observed = latestScope();
+            if (event.type === "removed") {
+                if (boardEvent || key[0] === "event-challenge-lab" || key[3] === current.current.lifecycle?.ID) cancel();
+            } else if (event.type === "updated" && (observed.identityMismatch
+                || observed.lifecycle?.ID !== current.current.lifecycle?.ID
+                || observed.lifecycle?.Revision !== current.current.lifecycle?.Revision
+                || observed.lifecycle?.LogicalClosed || (observed.lifecycle && observed.lifecycle.RuntimeState !== "ready"))) cancel();
         });
         return () => {unsubscribe(); cancel();};
-    }, [client, eventID, challengeID, moderators, lifecycle?.ID, lifecycle?.Revision, lifecycle?.LogicalClosed, lifecycle?.RuntimeState]);
-
-    function latestScope() {
-        const latest = current.current;
-        const mode = latest.moderators ? "moderators" : "participant";
-        const raw = client.getQueryData<LabRuntime>(["event-challenge-lab", mode, latest.eventID, latest.challengeID])?.Lab;
-        const attached = raw ? newestLab(latest.lifecycle, raw) : latest.lifecycle;
-        const shared = attached && client.getQueryData<LabLifecycle>(labLifecycleKey(mode, latest.eventID, attached.ID));
-        return {...latest, lifecycle: shared && attached ? newestLab(attached, shared) : attached};
-    }
+    }, [client, latestScope, eventID, challengeID, moderators, lifecycle?.ID, lifecycle?.Revision, lifecycle?.LogicalClosed, lifecycle?.RuntimeState]);
 
     function open(device: string, port: number) {
         const latest = latestScope();
-        if (!latest.challengeID || pending.current || (latest.lifecycle && (latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"))) return;
+        if (!latest.challengeID || latest.identityMismatch || pending.current || (latest.lifecycle && (latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"))) return;
         const requested = {...latest, revision: latest.lifecycle?.Revision ?? null};
         last.current = {device, port};
         const tab = window.open("about:blank", "_blank");
@@ -115,7 +108,7 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
             : openLabLink(eventID, latest.challengeID, device, port, moderators);
         fetchLink.then(link => {
             const latest = latestScope();
-            const unsafe = !active() || latest.eventID !== requested.eventID || latest.moderators !== requested.moderators
+            const unsafe = !active() || latest.identityMismatch || latest.eventID !== requested.eventID || latest.moderators !== requested.moderators
                 || latest.challengeID !== requested.challengeID || (requested.revision === null
                     ? !!latest.lifecycle
                     : !latest.lifecycle || latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"
