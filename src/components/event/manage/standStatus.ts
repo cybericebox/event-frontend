@@ -62,8 +62,8 @@ export function hasCurrentLabAllocation(lab: ManagedLabView): boolean {
     if (lab.Resources.RuntimeState !== "Released" && lab.Resources.ReleasedRequests.CPUMillicores === "0" && lab.Resources.ReleasedRequests.MemoryBytes === "0") return true;
     // The producer certifies identity/revision and release. Independent timestamps are
     // required evidence fields, not a client-side ordering contract between clocks.
+    // Nullable aggregate stop time is display metadata, not a veto on its release certificate.
     return (lab.ActualState === "Stopped" || lab.ActualState === "Deleted")
         && (lab.SnapshotState === "Succeeded" || lab.SnapshotState === "NotRequired")
-        && lab.ActualStoppedAt !== null && Number.isFinite(Date.parse(lab.ActualStoppedAt))
         && lab.Resources.ReleasedAt !== null && Number.isFinite(Date.parse(lab.Resources.ReleasedAt));
 }

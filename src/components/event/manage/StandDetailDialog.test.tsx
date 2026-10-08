@@ -214,3 +214,20 @@ it.each([
     expect(screen.getByText("Фізичне сховище").parentElement?.textContent).toContain("2 КіБ");
     expect(screen.getByText("Звільнення підтверджено")).toBeTruthy();
 });
+
+it("shows confirmed release and unknown aggregate stop time independently", async () => {
+    vi.mocked(getStandDetail).mockResolvedValue(canonicalDetail({...managedLab, Revision: "8", ObservedRevision: "8", ActualState: "Stopped", SnapshotState: "Succeeded", ActualStoppedAt: null,
+        Resources: {...managedLab.Resources, RuntimeState: "Released", ReleasedAt: "2026-10-08T10:01:00Z", AllocatedRequests: {CPUMillicores: "0", MemoryBytes: "0"}, ReleasedRequests: {CPUMillicores: "500", MemoryBytes: "1024"}}}));
+    mount(); await screen.findByText("First objective");
+    expect(screen.getByText("Підтверджено звільнено").parentElement?.textContent).toContain("500 мілі-ядер");
+    expect(screen.getByText("Утримані ресурси").parentElement?.textContent).toContain("0 vCPU");
+    expect(screen.getByText("Час зупинки").parentElement?.textContent).toContain("Невідомо");
+    expect(screen.getByText("Звільнення підтверджено")).toBeTruthy();
+});
+it.each([{AgentUID: ""}, {ObservedRevision: "7"}, {ActualState: "StopFailed"}] satisfies Partial<ManagedLabView>[])('shows no release on bad identity or failed stop even with nullable time: %j', async patch => {
+    vi.mocked(getStandDetail).mockResolvedValue(canonicalDetail({...managedLab, Revision: "8", ObservedRevision: "8", ActualState: "Stopped", SnapshotState: "Succeeded", ActualStoppedAt: null, ...patch,
+        Resources: {...managedLab.Resources, RuntimeState: "Released", ReleasedAt: "2026-10-08T10:01:00Z", ReleasedRequests: {CPUMillicores: "500", MemoryBytes: "1024"}}}));
+    mount(); await screen.findByText("First objective");
+    expect(screen.getByText("Підтверджено звільнено").parentElement?.textContent).toContain("Невідомо");
+    expect(screen.queryByText("Звільнення підтверджено")).toBeNull();
+});

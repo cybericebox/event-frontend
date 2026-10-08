@@ -20,6 +20,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
+import {formatDateTime} from "@/utils/dateTime";
 
 function Failure({device}: {device: LiveDevice}) {
     const failure = device.Scheduling?.Failure;
@@ -115,6 +116,7 @@ export function ManagedLabFacts({lab, stale = false}: {lab: ManagedLabView; stal
         {lab.ClosedAt && <p role="status">{t(`manage.labs.lifecycle.closed.${lab.CloseReason ?? "event"}`)}</p>}
         <dl className="event-resources__facts">
             <div><dt>{t("manage.labs.lifecycle.actual")}</dt><dd>{t(`manage.labs.lifecycle.actual.${current ? lab.ActualState : "Unknown"}`)}</dd></div>
+            <div><dt>{t("manage.labs.lifecycle.stoppedAt")}</dt><dd>{lab.ActualStoppedAt && Number.isFinite(Date.parse(lab.ActualStoppedAt)) ? formatDateTime(lab.ActualStoppedAt) : t("manage.labs.lifecycle.unknown")}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.snapshot")}</dt><dd>{t(`manage.labs.lifecycle.snapshot.${current ? lab.SnapshotState : "Unknown"}`)}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.observation")}</dt><dd>{t(current ? "manage.labs.lifecycle.current" : "manage.labs.lifecycle.unknown")}</dd></div>
         </dl>

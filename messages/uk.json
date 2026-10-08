@@ -4845,5 +4845,6 @@
   "manage.labs.lifecycle.closed.manual": "Доступ закрито вручну",
   "manage.labs.lifecycle.closed.stage": "Доступ закрито після завершення етапу",
   "manage.labs.lifecycle.closed.event": "Доступ закрито після завершення події",
-  "manage.resources.observation.unknownContributors": "Деякі складові невідомі"
+  "manage.resources.observation.unknownContributors": "Деякі складові невідомі",
+  "manage.labs.lifecycle.stoppedAt": "Час зупинки"
 }

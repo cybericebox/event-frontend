@@ -4845,5 +4845,6 @@
   "manage.labs.lifecycle.closed.manual": "Access closed manually",
   "manage.labs.lifecycle.closed.stage": "Access closed after stage completion",
   "manage.labs.lifecycle.closed.event": "Access closed after event completion",
-  "manage.resources.observation.unknownContributors": "Some contributors are unknown"
+  "manage.resources.observation.unknownContributors": "Some contributors are unknown",
+  "manage.labs.lifecycle.stoppedAt": "Stopped at"
 }

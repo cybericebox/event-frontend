@@ -41,11 +41,18 @@ describe("certified release uses identity and producer state, not independent cl
     });
     it.each([
         {AgentUID: ""}, {ObservedRevision: "7"}, {ObservedAt: null}, {ObservedAt: "invalid"},
-        {ActualState: "StopFailed"}, {SnapshotState: "Failed"}, {ActualStoppedAt: null},
+        {ActualState: "StopFailed"}, {SnapshotState: "Failed"},
     ] satisfies Partial<ManagedLabView>[])('keeps identity/missing observation/failed-stop safeguards: %j', patch => {
         expect(hasCurrentLabAllocation({...certified, ...patch})).toBe(false);
     });
     it.each([{ObservedAt: null}, {ObservedAt: "invalid"}, {ReleasedAt: null}, {ReleasedAt: "invalid"}])("rejects missing/malformed allocation certification time: %j", patch => {
         expect(hasCurrentLabAllocation({...certified, Resources: {...certified.Resources, ...patch}})).toBe(false);
     });
+});
+
+it("accepts a current released certificate with nullable aggregate stop time", () => {
+    expect(hasCurrentLabAllocation({...certified, ActualStoppedAt: null})).toBe(true);
+});
+it.each([{AgentUID: ""}, {ObservedRevision: "7"}, {ActualState: "StopFailed"}] satisfies Partial<ManagedLabView>[])('does not let a nullable stop time bypass a bad certificate: %j', patch => {
+    expect(hasCurrentLabAllocation({...certified, ActualStoppedAt: null, ...patch})).toBe(false);
 });
