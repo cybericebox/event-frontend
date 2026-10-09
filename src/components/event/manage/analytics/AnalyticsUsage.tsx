@@ -71,7 +71,11 @@ function Detail({user}: {user: UsageUser}) {
                 <tbody>{user.Labs.map(lab => <tr key={`${lab.ChallengeID}:${lab.Surface}`}>
                     <td>{lab.Task || noValue}</td>
                     <td>{t(`manage.analytics.usage.surface.${lab.Surface}`)}</td>
-                    <td>{formatCount(lab.Attempts)}</td>
+                    <td><span>{formatCount(lab.Attempts)}</span>
+                        {lab.Surface === "vpn" && lab.LabInitiatedAttempts > 0 && <p className="event-manage-table__dim">
+                            {t("manage.analytics.usage.detail.labInitiated", {count: formatCount(lab.LabInitiatedAttempts)})}
+                        </p>}
+                    </td>
                     <td className="event-manage-table__nowrap">{formatBytes(lab.BytesIn + lab.BytesOut)}</td>
                     <td className="event-manage-table__nowrap">{formatDateTime(lab.LastAt)}</td>
                 </tr>)}</tbody>

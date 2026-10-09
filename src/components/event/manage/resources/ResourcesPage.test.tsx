@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {cleanup, render, screen} from "@testing-library/react";
+import {act, cleanup, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ResourcesPage} from "./ResourcesPage";
 
@@ -35,4 +35,19 @@ describe("ResourcesPage", () => {
         await screen.findByText("828 мілі-ядер · 3,4 ГіБ");
         expect(screen.queryByRole("button", {name: "Запросити зміну"})).toBeNull();
     });
+});
+
+import {observation} from "@/test/labObservations";
+it("retains existing facts and their DOM through a failed background refresh", async () => {
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    mocks.get.mockResolvedValue({...data, Observation: {...observation, PhysicalStorageBytesAvailable: true, PhysicalStorageBytes: "512"}});
+    render(<QueryClientProvider client={client}><ResourcesPage /></QueryClientProvider>);
+    const held = await screen.findByTestId("observation-held");
+    const button = screen.getByRole("button", {name: "Запросити зміну"});
+    mocks.get.mockRejectedValue(new Error("offline"));
+    await act(async () => {await client.refetchQueries({queryKey: ["event-management-resources", "e"]});});
+    await waitFor(() => expect(screen.getByText("Фізичне сховище").parentElement?.textContent).toContain("Невідомо"));
+    expect(screen.queryByText("Спостереження актуальні")).toBeNull();
+    expect(screen.getByTestId("observation-held")).toBe(held);
+    expect(screen.getByRole("button", {name: "Запросити зміну"})).toBe(button);
 });

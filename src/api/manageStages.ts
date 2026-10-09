@@ -9,6 +9,7 @@ const id = z.string().uuid();
 // (the first opens with the event, the last closes with it: those two times are the event's own).
 export const StageSchema = z.object({
     ID: id, Name: z.string(), OpensAt: z.string(), ClosesAt: z.string(), Returnable: z.boolean(),
+    LabRetentionMinutes: z.number().int().min(0).max(10080).nullish().transform(value => value ?? null),
     State: z.enum(["upcoming", "open", "closed"]),
     First: z.boolean().default(false), Last: z.boolean().default(false),
     // The lead the platform computes for the labs that open with this stage (0 when unknown): their deploy starts that long before OpensAt.
@@ -17,7 +18,7 @@ export const StageSchema = z.object({
 export type ManageStage = z.infer<typeof StageSchema>;
 export type StageState = ManageStage["State"];
 export type StageCreateInput = {Name: string; OpensAt: string; ClosesAt: string; Returnable: boolean};
-export type StageUpdateInput = Partial<{Name: string; OpensAt: string; ClosesAt: string; Returnable: boolean; CloseNow: boolean}>;
+export type StageUpdateInput = Partial<{Name: string; OpensAt: string; ClosesAt: string; Returnable: boolean; LabRetentionMinutes: number | null; CloseNow: boolean}>;
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     const response = await fetch(`${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {

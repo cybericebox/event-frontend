@@ -16,10 +16,11 @@ const labSchema = z.object({
     Task: z.string().default(""),
     Surface: z.enum(["vpn", "proxy"]),
     Attempts: count,
+    LabInitiatedAttempts: count.default(0),
     BytesIn: count,
     BytesOut: count,
-    FirstAt: z.string(),
-    LastAt: z.string(),
+    FirstAt: optionalTime,
+    LastAt: optionalTime,
 });
 export type UsageLab = z.infer<typeof labSchema>;
 

@@ -5,10 +5,11 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {
     getManageConfig, getManageLifecycle, getManageScoring, manageConfigInput, putManageConfig, putManageScoring,
-    type ManageConfig, type ManageScoring, type ManageScoringInput,
+    type LabPolicy, type ManageConfig, type ManageScoring, type ManageScoringInput,
 } from "@/api/manage";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
+import {LabPolicyNumberField} from "@/components/event/manage/LabPolicyNumberField";
 import {AttemptLimitField} from "@/components/event/manage/AttemptLimitField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -57,9 +58,11 @@ export function ChallengeSettings() {
     const [saving, setSaving] = useState(false);
     // Config saves run one after another; the controls never wait for them.
     const configQueue = useRef<Promise<void>>(Promise.resolve());
+    const configVersion = useRef(0);
+    const latestConfig = useRef<ManageConfig | undefined>(undefined);
 
     if (scoring.isPending || lifecycle.isPending || config.isPending) return <EventLoading event={event} />;
-    if (scoring.isError || lifecycle.isError || config.isError) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} error={scoring.error ?? lifecycle.error ?? config.error} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
+    if (!scoring.data || !lifecycle.data || !config.data) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} error={scoring.error ?? lifecycle.error ?? config.error} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
 
     const original = draftOf(scoring.data);
     const value = edit?.eventID === eventID ? edit.value : original;
@@ -85,24 +88,32 @@ export function ChallengeSettings() {
         finally {setSaving(false);}
     }
 
-    function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode" | "TaskRevealMode" | "MaxFlagAttempts">>) {
+    function saveConfig(patch: Partial<Pick<ManageConfig, "ShowDifficulty" | "HintsDisabled" | "HintChargeMode" | "TaskRevealMode" | "MaxFlagAttempts" | "LabPolicy">>) {
         if (!config.data || !canManage) return;
         const key = ["event-management-config", eventID];
-        // Optimistic: every control reacts at once and nothing else on the page is disabled or reloaded.
-        queryClient.setQueryData<ManageConfig>(key, current => current ? {...current, ...patch} : current);
+        // Capture each complete desired config before queuing; failures cannot lose a newer choice.
+        const version = ++configVersion.current;
+        const current = queryClient.getQueryData<ManageConfig>(key);
+        if (!current) return;
+        const wanted = {...current, ...patch};
+        latestConfig.current = wanted;
+        queryClient.setQueryData(key, wanted);
         configQueue.current = configQueue.current.then(async () => {
-            const wanted = queryClient.getQueryData<ManageConfig>(key);
-            if (!wanted) return;
             try {
                 const saved = await putManageConfig(eventID, manageConfigInput(wanted));
-                // Apply the server answer only when no newer change is waiting and it differs from what is shown.
                 const shown = queryClient.getQueryData<ManageConfig>(key);
-                if (shown === wanted && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData(key, saved);
+                if (version === configVersion.current && JSON.stringify(shown) === JSON.stringify(wanted) && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData(key, saved);
             } catch {
-                await queryClient.invalidateQueries({queryKey: key});
+                await queryClient.invalidateQueries({queryKey: key, exact: true});
+                if (version !== configVersion.current && latestConfig.current) queryClient.setQueryData(key, latestConfig.current);
                 toast.error(t("manage.board.saveFailed"));
             }
         });
+    }
+
+    function savePolicy(patch: Partial<LabPolicy>) {
+        const policy = queryClient.getQueryData<ManageConfig>(["event-management-config", eventID])?.LabPolicy;
+        if (policy) saveConfig({LabPolicy: {...policy, ...patch}});
     }
 
     return <div className="event-manage-settings event-manage-general event-challenge-settings">
@@ -143,6 +154,22 @@ export function ChallengeSettings() {
             </div>
             {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>}
         </form>
+        {config.data.LabPolicy && <section className="event-manage-section" aria-labelledby="lab-policy-title">
+            <div className="event-manage-section__head"><h2 id="lab-policy-title">{t("manage.labs.policy.title")}</h2><p>{t("manage.labs.policy.help")}</p></div>
+            <div className="event-manage-field"><ManageFieldLabel title={t("manage.labs.policy.snapshot")} help={t("manage.labs.policy.snapshotHelp")} />
+                <EventSelect ariaLabel={t("manage.labs.policy.snapshot")} value={config.data.LabPolicy.SnapshotMode}
+                    options={[{value: "skip", label: t("manage.labs.policy.skip")}, {value: "required", label: t("manage.labs.policy.required")}]}
+                    disabled={!canManage} onValueChange={mode => savePolicy({SnapshotMode: mode as "skip" | "required"})} />
+            </div>
+            <div className="event-manage-fields-two">
+                <LabPolicyNumberField id="lab-active-limit" title={t("manage.labs.policy.activeLimit")} value={config.data.LabPolicy.MaxActiveLabsPerTeam}
+                    min={1} max={1000} nullable placeholder={t("manage.labs.policy.unlimited")} disabled={!canManage}
+                    onCommit={limit => savePolicy({MaxActiveLabsPerTeam: limit})} />
+                <LabPolicyNumberField id="lab-retention" title={t("manage.labs.policy.retention")} value={config.data.LabPolicy.RetentionMinutes}
+                    min={0} max={10080} nullable={false} disabled={!canManage}
+                    onCommit={minutes => {if (minutes !== null) savePolicy({RetentionMinutes: minutes});}} />
+            </div>
+        </section>}
         <section className="event-manage-section" aria-labelledby="attempts-title">
             <div className="event-manage-section__head"><h2 id="attempts-title">{t("manage.challenges.attempts.title")}</h2><p>{t("manage.challenges.attempts.subtitle")}</p></div>
             <AttemptLimitField id="max-flag-attempts" title={t("manage.challenges.attempts.label")} help={t("manage.challenges.attempts.help")} value={config.data.MaxFlagAttempts}

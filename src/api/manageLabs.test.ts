@@ -1,14 +1,42 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {ManageApiError} from "./manage";
+import {completedLab, runningLab} from "@/test/labLifecycle";
 vi.mock("@/utils/origins", async (importOriginal) => ({
     ...await importOriginal<typeof import("@/utils/origins")>(),
     requireApiOrigin: () => "https://api.example.org",
 }));
-import {ManageLabsSchema, ModeratorChallengeSchema, isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage} from "./manageLabs";
+import {LabRuntimeSchema, ManageLabsSchema, ModeratorChallengeSchema, getModeratorChallengeLab, isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage} from "./manageLabs";
 
 afterEach(() => {vi.unstubAllEnvs(); vi.unstubAllGlobals();});
 
 const eventID = "01900000-0000-7000-8000-000000000001";
+const runtime = {Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://web.labs.test"}]};
+
+describe("runtime lifecycle", () => {
+    it("preserves access and authoritative Lab on participant and moderator routes", async () => {
+        const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({Data: {...runtime, Lab: runningLab}})));
+        vi.stubGlobal("fetch", fetchMock);
+        const {getOwnChallengeLab} = await import("./participantChallenges");
+        expect(await getOwnChallengeLab(eventID, "c1")).toEqual({...runtime, Lab: runningLab});
+        expect(await getModeratorChallengeLab(eventID, "c1")).toEqual({...runtime, Lab: runningLab});
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+            `https://api.example.org/api/events/${eventID}/teams/challenges/c1/lab`,
+            `https://api.example.org/api/events/${eventID}/manage/labs/moderators/challenges/c1/lab`,
+        ]);
+    });
+
+    it("retains settled closure without replacing existing runtime fields", () => {
+        expect(LabRuntimeSchema.parse({...runtime, Ready: false, Access: [], Lab: completedLab})).toEqual({...runtime, Ready: false, Access: [], Lab: completedLab});
+    });
+
+    it.each([undefined, null])("normalizes legacy Lab=%s while retaining access", Lab => {
+        expect(LabRuntimeSchema.parse({...runtime, Lab})).toEqual({...runtime, Lab: null});
+    });
+
+    it.each([{Revision: 9007199254740992}, {RuntimeState: "stopping"}, {RuntimeState: "StopFailed"}, {ID: "bad-id"}])("rejects malformed present runtime lifecycle %j", fields => {
+        expect(LabRuntimeSchema.safeParse({...runtime, Lab: {...runningLab, ...fields}}).success).toBe(false);
+    });
+});
 
 describe("labs schemas", () => {
     it("parses the manage labs view with nullable times and missing labs", () => {
