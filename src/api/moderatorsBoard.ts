@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {LabLifecycleSchema} from "@/api/labLifecycle";
 import {manageApiError} from "@/api/manage";
 import {challengeSchema, type OwnChallenge} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
@@ -16,7 +17,10 @@ export async function getModeratorsBoard(eventID: string): Promise<OwnChallenge[
     return z.object({Data: challengeSchema.array().nullish().transform(value => value ?? [])}).parse(await response.json()).Data;
 }
 
-export const moderatorSubmissionSchema = z.object({Correct: z.boolean(), FirstSolve: z.boolean().default(false)});
+export const moderatorSubmissionSchema = z.object({
+    Correct: z.boolean(), FirstSolve: z.boolean().default(false),
+    Lab: LabLifecycleSchema.nullish().transform(value => value ?? null),
+});
 export type ModeratorSubmission = z.infer<typeof moderatorSubmissionSchema>;
 
 // A real attempt of the moderators team.

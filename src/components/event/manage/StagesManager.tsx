@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef, useState, type FormEvent} from "react";
-import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query";
+import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError, type ManageLifecycle} from "@/api/manage";
@@ -10,6 +10,7 @@ import {
 } from "@/api/manageStages";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
+import {LabPolicyNumberField} from "./LabPolicyNumberField";
 import {ManageDateField} from "@/components/event/manage/ManageDateField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
@@ -27,8 +28,8 @@ const failureText = (failure: unknown, fallback: string) => failure instanceof M
 
 const stateTag = (state: ManageStage["State"]) => <span className={`ib-tag ib-tag--sm${state === "open" ? " ib-tag--ok" : ""}`}>{t(`manage.stages.state.${state}`)}</span>;
 
-function StageRow({eventID, stage, canManage, onReturnable}: {
-    eventID: string; stage: ManageStage; canManage: boolean; onReturnable: (stage: ManageStage, returnable: boolean) => void;
+function StageRow({eventID, stage, canManage, onPatch}: {
+    eventID: string; stage: ManageStage; canManage: boolean; onPatch: (stage: ManageStage, patch: Partial<Pick<ManageStage, "Returnable" | "LabRetentionMinutes">>) => void;
 }) {
     const queryClient = useQueryClient();
     const locks = stageLocks(stage);
@@ -41,7 +42,7 @@ function StageRow({eventID, stage, canManage, onReturnable}: {
     const [dialogError, setDialogError] = useState("");
 
     const apply = (saved: ManageStage) => queryClient.setQueryData<ManageStage[]>(stagesKey(eventID), current => (current ?? []).map(item => item.ID === saved.ID ? saved : item));
-    const refresh = () => queryClient.invalidateQueries({queryKey: stagesKey(eventID)});
+    const refresh = () => queryClient.invalidateQueries({queryKey: stagesKey(eventID), exact: true});
 
     async function save(submitEvent: FormEvent) {
         submitEvent.preventDefault();
@@ -94,10 +95,14 @@ function StageRow({eventID, stage, canManage, onReturnable}: {
                 <ManageDateField id={`stage-closes-${stage.ID}`} title={t("manage.stages.closes")} help={stage.Last ? t("manage.stages.anchoredFinish") : stage.State === "closed" ? t("manage.stages.closedLocked") : t("manage.stages.help")}
                     value={locks.closes ? localDateTime(stage.ClosesAt) : draft.ClosesAt} onChange={value => setEdit({stageID: stage.ID, value: {...draft, ClosesAt: value}})} disabled={disabled || locks.closes} required />
             </div>
+            <LabPolicyNumberField id={`stage-retention-${stage.ID}`} title={t("manage.labs.policy.retention")} value={stage.LabRetentionMinutes ?? null}
+                min={0} max={10080} nullable placeholder={t("manage.labs.policy.inherit")} disabled={disabled}
+                onCommit={minutes => onPatch(stage, {LabRetentionMinutes: minutes})} />
+            <p className="event-stage__lead">{t("manage.labs.group.prepareHelp")}</p>
             <div className="event-stage__foot">
                 <div className="event-stage__returnable">
                     <EventSwitch className="event-manage-form__switch" checked={stage.Returnable} disabled={disabled || locks.returnable}
-                        onCheckedChange={checked => onReturnable(stage, checked)} label={t("manage.stages.returnable")} />
+                        onCheckedChange={checked => onPatch(stage, {Returnable: checked})} label={t("manage.stages.returnable")} />
                     <p>{stage.State === "closed" ? t("manage.stages.closedLocked") : t("manage.stages.returnableHelp")}</p>
                 </div>
                 {canManage && <div className="event-stage__actions">
@@ -131,7 +136,7 @@ function AddStage({eventID, lifecycle, first, canManage}: {eventID: string; life
         setSaving(true);
         try {
             await createManageStage(eventID, {Name: name.trim(), OpensAt: opensISO, ClosesAt: finish, Returnable: returnable});
-            await queryClient.invalidateQueries({queryKey: stagesKey(eventID)});
+            await queryClient.invalidateQueries({queryKey: stagesKey(eventID), exact: true});
             setName("");
             setOpens("");
             setReturnable(false);
@@ -162,44 +167,95 @@ function AddStage({eventID, lifecycle, first, canManage}: {eventID: string; life
 // (optimistic, queued, rolled back on error), «Закрити зараз» and delete behind a confirmation, and the form for the next stage.
 export function StagesManager({eventID, lifecycle, canManage}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean}) {
     const queryClient = useQueryClient();
-    const stages = useQuery({
-        queryKey: stagesKey(eventID), queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false, refetchInterval: 30_000,
-        // A background refresh never empties the list or shows a loader again.
-        placeholderData: keepPreviousData,
-    });
-    // Returnable saves run one after another; the switches never wait for them.
+    type Controls = Pick<ManageStage, "Returnable" | "LabRetentionMinutes">;
+    type Intent = {desired: Controls; confirmed: Controls; pending: number; version: number};
+    const byEvent = useRef(new Map<string, Map<string, Intent>>());
+    function eventIntents() {
+        if (!byEvent.current.has(eventID)) byEvent.current.set(eventID, new Map());
+        return byEvent.current.get(eventID)!;
+    }
     const queue = useRef<Promise<void>>(Promise.resolve());
+    const controlsOf = (stage: ManageStage): Controls => ({Returnable: stage.Returnable, LabRetentionMinutes: stage.LabRetentionMinutes ?? null});
+    const preservePending = (rows: ManageStage[]) => rows.map(row => {
+        const intent = eventIntents().get(row.ID);
+        return intent?.pending ? {...row, ...intent.desired} : row;
+    });
+    const stages = useQuery({
+        queryKey: stagesKey(eventID),
+        queryFn: async ({signal}) => {
+            // A GET that started before or during a write cannot publish stale control values afterwards.
+            const intents = eventIntents();
+            const started = new Map([...intents].map(([id, intent]) => [id, {version: intent.version, pending: intent.pending}]));
+            const rows = await getManageStages(eventID);
+            signal.throwIfAborted();
+            return rows.map(row => {
+                const intent = intents.get(row.ID);
+                if (!intent) return row;
+                const before = started.get(row.ID);
+                if (intent.pending || before?.pending || before?.version !== intent.version) return {...row, ...intent.desired};
+                intent.confirmed = controlsOf(row);
+                intent.desired = intent.confirmed;
+                return row;
+            });
+        },
+        // Protect other cache publications too, including explicit form/close replies.
+        structuralSharing: (previous, next) => replaceEqualDeep(previous, preservePending(next as ManageStage[])),
+        refetchOnWindowFocus: false, refetchInterval: 30_000, placeholderData: keepPreviousData,
+    });
 
-    function setReturnable(stage: ManageStage, returnable: boolean) {
+    function saveStagePatch(stage: ManageStage, patch: Partial<Controls>) {
         if (!canManage) return;
         const key = stagesKey(eventID);
-        queryClient.setQueryData<ManageStage[]>(key, current => (current ?? []).map(item => item.ID === stage.ID ? {...item, Returnable: returnable} : item));
+        const before = queryClient.getQueryData<ManageStage[]>(key)?.find(item => item.ID === stage.ID);
+        if (!before) return;
+        const intents = eventIntents();
+        let intent = intents.get(stage.ID);
+        if (!intent) {
+            const controls = controlsOf(before);
+            intent = {desired: controls, confirmed: controls, pending: 0, version: 0};
+            intents.set(stage.ID, intent);
+        }
+        const wanted = {...intent.desired, ...patch};
+        intent.desired = wanted;
+        intent.pending++;
+        const version = ++intent.version;
+        const operation = intent;
+        queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {...item, ...wanted} : item));
         queue.current = queue.current.then(async () => {
-            const wanted = queryClient.getQueryData<ManageStage[]>(key)?.find(item => item.ID === stage.ID)?.Returnable;
-            if (wanted === undefined) return;
             try {
-                const saved = await updateManageStage(eventID, stage.ID, {Returnable: wanted});
-                // The server's answer replaces the stage only when no newer change of this switch is waiting.
-                const shown = queryClient.getQueryData<ManageStage[]>(key)?.find(item => item.ID === stage.ID);
-                if (shown && shown.Returnable === saved.Returnable) queryClient.setQueryData<ManageStage[]>(key, current => (current ?? []).map(item => item.ID === saved.ID ? saved : item));
+                const saved = await updateManageStage(eventID, stage.ID, wanted);
+                operation.confirmed = controlsOf(saved);
+                operation.pending--;
+                if (operation.version === version) operation.desired = operation.confirmed;
+                queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {
+                    ...saved,
+                    // Keep schedule/name/state updates published after this control command started.
+                    ...Object.fromEntries((["Name", "OpensAt", "ClosesAt", "State", "First", "Last", "DeployLeadMinutes"] as const)
+                        .filter(field => item[field] !== before[field]).map(field => [field, item[field]])),
+                    ...(operation.pending ? operation.desired : {}),
+                } : item));
             } catch (failure) {
-                await queryClient.invalidateQueries({queryKey: key});
+                operation.pending--;
+                if (operation.version === version) operation.desired = operation.confirmed;
+                // Roll back only the failed final choice; newer queued intent survives its exact refetch.
+                queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {...item, ...operation.desired} : item));
+                await queryClient.invalidateQueries({queryKey: key, exact: true});
                 toast.error(failureText(failure, t("manage.stages.saveFailed")));
             }
         });
     }
 
     if (stages.isPending) return <section className="event-manage-section event-stages"><EventLoading compact /></section>;
-    if (stages.isError) return <section className="event-manage-section event-stages"><EventLoadError compact message={t("manage.stages.loadFailed")} error={stages.error} onRetry={() => void stages.refetch()} /></section>;
+    if (stages.isError && !stages.data) return <section className="event-manage-section event-stages"><EventLoadError compact message={t("manage.stages.loadFailed")} error={stages.error} onRetry={() => void stages.refetch()} /></section>;
 
-    const items = stages.data;
+    const items = stages.data ?? [];
     const hasSchedule = lifecycle.Configured && !!lifecycle.FinishAt;
     const breaks = shortBreaks(items);
     return <section className="event-manage-section event-stages" aria-labelledby="stages-title">
         <div className="event-manage-section__head"><h2 id="stages-title">{t("manage.stages.title")}</h2><p>{t("manage.stages.help")}</p></div>
         {!hasSchedule && <p className="event-manage-feedback" role="status">{t("manage.stages.needsFinish")}</p>}
         {items.length === 0 ? <EmptyState compact message={t("manage.stages.empty")} /> : <ol className="event-stage-list">
-            {items.map(stage => <StageRow key={stage.ID} eventID={eventID} stage={stage} canManage={canManage} onReturnable={setReturnable} />)}
+            {items.map(stage => <StageRow key={stage.ID} eventID={eventID} stage={stage} canManage={canManage} onPatch={saveStagePatch} />)}
         </ol>}
         {breaks.map(item => <p className="event-manage-feedback" role="status" key={item.name}>{t("manage.stages.shortBreak", {name: item.name, minutes: item.minutes})}</p>)}
         {hasSchedule && canManage && <AddStage eventID={eventID} lifecycle={lifecycle} first={items.length === 0} canManage={canManage} />}

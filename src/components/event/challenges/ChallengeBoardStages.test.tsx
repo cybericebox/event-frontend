@@ -97,3 +97,15 @@ describe("the board filters", () => {
         expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
     });
 });
+
+
+it("keeps returnable ended-stage history in all/closed views and excludes it from open despite an unresolved ready Lab", () => {
+    const ended = task(7, 1, {StageID: closed.ID, Closed: false});
+    const solvedHistory = task(8, 1, {StageID: closed.ID, Closed: false, SolvedAt: "2026-10-01T09:00:00Z", AwardedPoints: 37});
+    renderBoard([ended, solvedHistory], [closed]);
+    expect(names()).toEqual(["Завдання 7", "Завдання 8"]);
+    fireEvent.click(status("Відкриті")); expect(names()).toEqual([]);
+    fireEvent.click(status("Закриті")); expect(names()).toEqual(["Завдання 7"]);
+    fireEvent.click(status("Розвʼязані")); expect(names()).toEqual(["Завдання 8"]);
+    fireEvent.click(status("Усі")); expect(names()).toEqual(["Завдання 7", "Завдання 8"]);
+});

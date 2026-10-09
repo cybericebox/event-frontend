@@ -1,3 +1,4 @@
+import type {LabLifecycle} from "@/api/labLifecycle";
 import type {LabRuntime} from "@/api/manageLabs";
 import type {SnapshotPlaceholder} from "@/api/participantChallenges";
 
@@ -45,11 +46,24 @@ function resolveOne(placeholder: SnapshotPlaceholder, lab: LabRuntime | undefine
 
 // Fills the description's placeholder variables from the team's lab. A link-form IP becomes
 // the full URL scheme://ip[:port][path] and is also returned in `links` so it renders as <a>.
-export function descriptionValues(placeholders: SnapshotPlaceholder[], lab: LabRuntime | undefined): DescriptionValues {
+export function hasCurrentRuntime(lab: LabRuntime | undefined, lifecycle: LabLifecycle | null | undefined = lab?.Lab): boolean {
+    if (!lifecycle && !lab?.Lab) return true; // Older servers carry no lifecycle.
+    return !!lifecycle && !lifecycle.LogicalClosed && lifecycle.RuntimeState === "ready"
+        && !!lab?.Lab && !lab.Lab.LogicalClosed && lab.Lab.RuntimeState === "ready"
+        && lab.Lab.ID === lifecycle.ID && lab.Lab.Revision === lifecycle.Revision;
+}
+
+export function descriptionValues(placeholders: SnapshotPlaceholder[], lab: LabRuntime | undefined, lifecycle?: LabLifecycle | null): DescriptionValues {
     const variables: Record<string, string> = {};
     const links: Record<string, string> = {};
+    const current = hasCurrentRuntime(lab, lifecycle);
     for (const placeholder of placeholders) {
         if (!placeholder.key) continue;
+        const staticIP = placeholder.kind === "ip" && placeholder.ip_reference === "static";
+        if (!current && !staticIP) {
+            variables[placeholder.key] = UNRESOLVED;
+            continue;
+        }
         if (placeholder.kind === "external.link") {
             // The proxy access URL of the named device, from the team's lab.
             const url = lab?.Access.find(entry => entry.Device === placeholder.device_name && entry.URL)?.URL ?? "";

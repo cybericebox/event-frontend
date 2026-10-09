@@ -40,7 +40,9 @@
 
 /* ── challenge window extras ─────────────────────────────────────────────── */
 .event-vpn-badge svg{width:13px;height:13px}
-.event-cmodal__hosts{display:grid;gap:6px}
+.event-cmodal__hosts{display:grid;gap:6px;min-height:240px;align-content:start}
+.event-cmodal__access-state{min-height:240px;display:flex;align-items:center;justify-content:center}
+.event-cmodal__access-state>.event-block-state{min-height:240px;width:100%}
 .event-cmodal__hints{margin:0;padding:0;list-style:none;border-top:1px solid var(--ib-line)}
 .event-cmodal__hints li{padding:var(--ib-2) 2px;border-bottom:1px solid var(--ib-line)}
 .event-cmodal__hints p{margin-top:var(--ib-1);color:var(--ib-body);overflow-wrap:anywhere;white-space:pre-line}

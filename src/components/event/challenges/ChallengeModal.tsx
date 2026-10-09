@@ -2,19 +2,22 @@
 
 import {useEffect, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {ChallengeSolvesTab} from "./ChallengeSolvesTab";
-import {descriptionValues} from "./descriptionValues";
-import {queueLine} from "@/components/event/labLive";
-import {labLinkErrorMessage, useLabLink, type LabLinkState} from "./useLabLink";
-import {EventLoadError} from "@/components/event/EventLoadError";
-import {useQuery} from "@tanstack/react-query";
+import {labAccessScope} from "./labAccessScope";
+import {LabControls} from "./LabControls";
+import {LabAccessBlock} from "./LabAccessBlock";
+import {descriptionValues, hasCurrentRuntime} from "./descriptionValues";
+import {useLabLink} from "./useLabLink";
+import {skipToken, useQuery, useQueryClient} from "@tanstack/react-query";
+import type {LabLifecycle} from "@/api/labLifecycle";
+import {labLifecycleKey, newestLab, questionLabPinKey, rememberLab, rememberRuntimeQuestionLab} from "./labLifecycleCache";
 import {Network} from "lucide-react";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {
     challengeAttachmentUrl, challengeFiles, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
-    type BoardStage, type ChallengeHint, type OwnChallenge,
+    type BoardStage, type ChallengeHint, type OwnChallenge, type ChallengeSubmission,
 } from "@/api/participantChallenges";
 import {reportTaskOpened} from "@/api/taskOpenedBeacon";
-import {moderatorFileUrl, submitModeratorFlag} from "@/api/moderatorsBoard";
+import {moderatorFileUrl, submitModeratorFlag, type ModeratorSubmission} from "@/api/moderatorsBoard";
 import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
@@ -23,7 +26,7 @@ import {attemptsLeft, awardedPoints, difficultyLabel, formatClock, formatFileSiz
 import {t} from "@/i18n/t";
 import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
-import {BusyMark, EventButton} from "@/components/ui/EventButton";
+import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
@@ -51,46 +54,9 @@ function submitMessage(error: unknown): Message {
     return {text: t("challenges.submit.failed"), tone: "warn"};
 }
 
-// A web device opens through a fresh short-lived link fetched on click: while it is fetched the row shows the busy mark.
-function CopyField({value, onOpen, linkPending = false}: {value: string; onOpen?: () => void; linkPending?: boolean}) {
-    const [copied, setCopied] = useState(false);
-    return <div className="ib-copy">
-        <EventTooltip content={value} className="ib-copy__tip" truncated>{() => <span className="ib-copy__value">{value}</span>}</EventTooltip>
-        <button type="button" className={`ib-btn ib-btn--sm ib-copy__btn${copied ? " is-copied" : ""}`} aria-label={t("challenges.copy.ariaFor", {value})} onClick={() => {
-            void navigator.clipboard?.writeText(value).then(() => {
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1600);
-            }).catch(() => {});
-        }}>
-            <span className="ib-copy__idle">{ICON.copy}{t("challenges.copy.idle")}</span>
-            <span className="ib-copy__done">{ICON.check}{t("challenges.copy.done")}</span>
-        </button>
-        <span className="ib-sr" role="status">{copied ? t("challenges.copy.done") : ""}</span>
-        {onOpen && linkPending && <span className="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" role="status" aria-label={t("challenges.lab.starting")}><BusyMark /></span>}
-        {onOpen && !linkPending && <button type="button" className="ib-icon-btn ib-icon-btn--sm ib-icon-btn--outline" onClick={onOpen} aria-label={t("challenges.host.open")}>{ICON.ext}</button>}
-    </div>;
-}
-
-function HostBlock({lab, pending, error, link, busyKey, onOpen, onRetry, onReload}: {lab: LabRuntime | undefined; pending: boolean; error?: unknown; link: LabLinkState; busyKey: string | null; onOpen: (device: string, port: number) => void; onRetry: () => void; onReload: () => void}) {
-    const access = lab?.Access ?? [];
-    const web = access.some(item => /^https?$/i.test(item.Protocol) || !!item.URL);
-    return <section className="ib-cmodal__blk">
-        <h3>{web ? t("challenges.host.service") : t("challenges.host.connection")}</h3>
-        {access.length
-            ? <div className="event-cmodal__hosts">{access.map(item => {
-                const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
-                return <CopyField key={`${item.Device}-${item.Port}`} value={value} onOpen={item.URL ? () => onOpen(item.Device, item.Port) : undefined} linkPending={busyKey === `${item.Device}:${item.Port}`} />;
-            })}</div>
-            : error ? <EventLoadError compact error={error} message={t("challenges.host.loadFailed")} onRetry={onReload} />
-            : <p className="ib-cmodal__hint">{pending && <BusyMark />}{pending ? t("challenges.host.checking") : queueLine(lab?.Queue) ?? t("challenges.host.preparing")}</p>}
-        {link.status === "error" && <EventLoadError compact error={link.error} message={labLinkErrorMessage(link.error)} onRetry={onRetry} />}
-        <p className="ib-cmodal__hint">{t("challenges.host.viaVpn")}</p>
-    </section>;
-}
-
 // What only moderators see, below the task text: how the lab is reached (no links, they live in the text) and the note about answers.
-function ModeratorsBlock({lab, infrastructure}: {lab: LabRuntime | undefined; infrastructure: boolean}) {
-    const access = lab?.Access ?? [];
+function ModeratorsBlock({lab, lifecycle, infrastructure}: {lab: LabRuntime | undefined; lifecycle: LabLifecycle | null; infrastructure: boolean}) {
+    const access = hasCurrentRuntime(lab, lifecycle) ? lab?.Access ?? [] : [];
     const methods = [
         access.some(item => !item.URL && !/^https?$/i.test(item.Protocol)) && t("challenges.moderators.access.vpn"),
         access.some(item => !!item.URL || /^https?$/i.test(item.Protocol)) && t("challenges.moderators.access.web"),
@@ -193,7 +159,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     showHints: boolean;
     hintChargeMode?: HintChargeMode;
     onClose: () => void;
-    onAccepted: (challengeID: string) => void;
+    onAccepted: (challengeID: string, result: ChallengeSubmission | ModeratorSubmission) => void;
     // A wrong answer was counted: the board refetches the attempts left.
     onRejected?: () => void;
     onHintUnlocked?: () => void;
@@ -222,15 +188,42 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const [now, setNow] = useState(() => Date.now());
     const challengeID = challenge?.EventChallengeID;
     const moderators = mode === "moderators";
+    const queryClient = useQueryClient();
 
+    const runtimeWithdrawn = !moderators && (!!challenge?.Closed || stage?.State === "closed" || finished);
+    const runtimeKey = ["event-challenge-lab", mode, eventID, challengeID];
+    const beforeFetch = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, queryClient.getQueryData<LabRuntime>(runtimeKey));
     const lab = useQuery({
-        queryKey: ["event-challenge-lab", mode, eventID, challengeID],
-        queryFn: () => moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!),
-        enabled: !!challenge?.Infrastructure && !challenge.Locked,
-        retry: false, refetchInterval: query => query.state.data?.Queue ? 8000 : 30000, refetchOnWindowFocus: false,
+        queryKey: runtimeKey,
+        queryFn: async ({signal}) => {
+            const pinKey = questionLabPinKey(queryClient, mode, eventID, challengeID!);
+            const runtime = await (moderators ? getModeratorChallengeLab(eventID, challengeID!) : getOwnChallengeLab(eventID, challengeID!));
+            signal.throwIfAborted();
+            if (runtime.Lab) {
+                rememberLab(queryClient, mode, eventID, runtime.Lab);
+                const currentPinKey = questionLabPinKey(queryClient, mode, eventID, challengeID!);
+                const sameIdentity = (pinKey[3] === null || pinKey[3] === currentPinKey[3]) && (pinKey[4] === null || pinKey[4] === currentPinKey[4]);
+                if (sameIdentity) rememberRuntimeQuestionLab(queryClient, mode, eventID, challengeID!, runtime.Lab);
+            }
+            return runtime; // Preserve the identity/revision that produced Access and CIDRs.
+        },
+        enabled: !!challenge?.Infrastructure && !challenge.Locked && !runtimeWithdrawn && !beforeFetch.lifecycle?.LogicalClosed,
+        retry: false, refetchInterval: query => {
+            const current = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, query.state.data);
+            return runtimeWithdrawn || current.lifecycle?.LogicalClosed ? false : query.state.data?.Queue ? 8000 : 30000;
+        }, refetchOnWindowFocus: false,
     });
-    // A web device opens through a link fetched on click; the moderators team uses the manage route.
-    const labLink = useLabLink(eventID, challengeID, moderators);
+    const accessScope = labAccessScope(queryClient, mode, eventID, challengeID, challenge?.Lab, lab.data);
+    const lifecycleKey = labLifecycleKey(mode, eventID, accessScope.lifecycle?.ID ?? "");
+    const lifecycle = useQuery<LabLifecycle>({
+        queryKey: lifecycleKey, queryFn: skipToken, enabled: false, gcTime: Infinity,
+    });
+    // Subscribe to shared closure independently of a question's runtime request.
+    const effectiveLifecycle = accessScope.lifecycle && lifecycle.data?.ID === accessScope.lifecycle.ID
+        ? newestLab(accessScope.lifecycle, lifecycle.data) : accessScope.lifecycle;
+    const runtime = runtimeWithdrawn ? undefined : lab.data;
+    // The hook fences both current lifecycle and the session cache before navigation.
+    const labLink = useLabLink(eventID, challengeID, moderators, effectiveLifecycle ?? undefined, runtimeWithdrawn);
     // The moderators board lists its own team's solves; participants see them only when the event shows counts.
     const solvesVisible = moderators || (challenge?.SolveCount !== null && challenge?.SolveCount !== undefined);
 
@@ -281,27 +274,27 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             flagRef.current?.focus();
             return;
         }
+        // Cache reset removes this session's Query object; a new login may build the same key.
+        // Closing the dialog or refetching retains it, so valid same-session solves still apply.
+        const cache = queryClient.getQueryCache();
+        const scope = cache.find({queryKey: lifecycleKey, exact: true});
+        const currentSession = () => !!scope && cache.find({queryKey: scope.queryKey, exact: true}) === scope;
         setBusy(true);
         setMessage(null);
         try {
             const result = moderators
                 ? await submitModeratorFlag(eventID, challenge.EventChallengeID, value)
                 : await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID());
+            if (!currentSession()) return;
+            if (result.Lab) rememberLab(queryClient, mode, eventID, result.Lab);
             const correct = result.Correct;
             // The server says whether it was rated: a stage that closed while the modal was open turns it into practice.
             const practiced = !moderators && "Practice" in result && result.Practice === true;
-            if (correct && practiced) {
-                // Verified after a returnable stage closed: shown to the team, never rated.
-                setPracticeAnswer(true);
+            if (correct) {
+                setPracticeAnswer(practiced);
                 setAccepted(true);
                 setAnswer("");
-                titleRef.current?.focus();
-                onRejected?.();
-            } else if (correct) {
-                setPracticeAnswer(false);
-                setAccepted(true);
-                setAnswer("");
-                onAccepted(challenge.EventChallengeID);
+                onAccepted(challenge.EventChallengeID, result);
                 titleRef.current?.focus();
             } else {
                 setMessage({text: t("challenges.modal.flagRejected"), tone: "error"});
@@ -312,6 +305,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 }
             }
         } catch (error) {
+            if (!currentSession()) return;
             if (error instanceof ParticipantChallengeError && error.code === ApiErrorCode.StageClosed) {
                 setMessage(submitMessage(error));
                 onRejected?.();
@@ -329,11 +323,11 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 setMessage(submitMessage(error));
             }
         } finally {
-            setBusy(false);
+            if (currentSession()) setBusy(false);
         }
     }
 
-    const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], lab.data), [challenge?.Snapshot.placeholders, lab.data]);
+    const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], runtime, effectiveLifecycle ?? null), [challenge?.Snapshot.placeholders, runtime, effectiveLifecycle]);
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
     // A closed stage that is not returnable refuses answers and hints; one that is returnable and has ended takes them
@@ -371,7 +365,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                     {stageClosed && <span className="ib-tag">{t("challenges.modal.closedTag")}</span>}
                     {challenge.ContentUpdatedAt && <span className="ib-tag">{t("challenges.modal.updatedAt", {time: formatClock(challenge.ContentUpdatedAt)})}</span>}
                     {moderators && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">{t("challenges.modal.unpublished")}</span>}
-                    {challenge.Infrastructure && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />{t("challenges.modal.vpnRequired")}</button>}
+                    {challenge.Infrastructure && !runtimeWithdrawn && !effectiveLifecycle?.LogicalClosed && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />{t("challenges.modal.vpnRequired")}</button>}
                 </p>
                 <h2 className="ib-cmodal__title" id={`${id}-t`} tabIndex={-1} ref={titleRef}>{challenge.Snapshot.name}</h2>
                 <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label={t("common.close")} onClick={() => ref.current?.close()}>{ICON.x}</button>
@@ -385,14 +379,14 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             </div>
             <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
                 <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
-                {moderators && <ModeratorsBlock lab={lab.data} infrastructure={!!challenge.Infrastructure} />}
+                {moderators && <ModeratorsBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} infrastructure={!!challenge.Infrastructure} />}
                 {files.length > 0 && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.modal.files")}</h3>
                     <ul className="ib-cmodal__files">{files.map(file => <li key={file.FileID}>
                         <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
                     </li>)}</ul>
                 </section>}
-                {challenge.Infrastructure && !moderators && <HostBlock lab={lab.data} pending={lab.isPending} error={lab.isError && !lab.data ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} />}
+                {challenge.Infrastructure && !moderators && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}

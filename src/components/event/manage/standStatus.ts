@@ -1,3 +1,4 @@
+import type {ManagedLabView} from "@/api/labObservations";
 import type {LabStatus, ManageStand, StandStatus} from "@/api/manageLabs";
 import {t} from "@/i18n/t";
 
@@ -48,4 +49,21 @@ export function canRecreate(status: StandStatus): boolean {
 // Moderators first; the backend already orders the rest by public name.
 export function orderStands(items: ManageStand[]): ManageStand[] {
     return [...items.filter(item => item.Moderators), ...items.filter(item => !item.Moderators)];
+}
+
+// A status from another desired revision/agent or without a valid time is not current proof.
+export function hasCurrentLabObservation(lab: ManagedLabView): boolean {
+    return lab.Revision === lab.ObservedRevision && lab.AgentUID.trim() !== "" && lab.ObservedAt !== null
+        && Number.isFinite(Date.parse(lab.ObservedAt));
+}
+
+export function hasCurrentLabAllocation(lab: ManagedLabView): boolean {
+    if (!hasCurrentLabObservation(lab) || lab.Resources.ObservedAt === null || !Number.isFinite(Date.parse(lab.Resources.ObservedAt))) return false;
+    if (lab.Resources.RuntimeState !== "Released" && lab.Resources.ReleasedRequests.CPUMillicores === "0" && lab.Resources.ReleasedRequests.MemoryBytes === "0") return true;
+    // The producer certifies identity/revision and release. Independent timestamps are
+    // required evidence fields, not a client-side ordering contract between clocks.
+    // Nullable aggregate stop time is display metadata, not a veto on its release certificate.
+    return (lab.ActualState === "Stopped" || lab.ActualState === "Deleted")
+        && (lab.SnapshotState === "Succeeded" || lab.SnapshotState === "NotRequired")
+        && lab.Resources.ReleasedAt !== null && Number.isFinite(Date.parse(lab.Resources.ReleasedAt));
 }

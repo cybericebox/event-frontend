@@ -4,7 +4,7 @@ import {draftOfStage, isoOf, localDateTime, shortBreaks, stageDirty, stageLocks}
 
 const stage = (extra: Partial<ManageStage> = {}): ManageStage => ({
     ID: "11111111-1111-4111-8111-111111111111", Name: "Етап", OpensAt: "2026-10-01T10:00:00Z", ClosesAt: "2026-10-01T12:00:00Z", Returnable: false,
-    State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
+    LabRetentionMinutes: null, State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
 });
 
 describe("stage locks", () => {

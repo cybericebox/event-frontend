@@ -19,7 +19,7 @@ afterEach(() => {cleanup(); api.set.mockReset(); api.fetchAll.mockReset(); api.t
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const stage = (n: number, extra: Partial<ManageStage> = {}): ManageStage => ({
-    ID: id(n), Name: `Етап ${n}`, OpensAt: "2026-10-01T10:00:00Z", ClosesAt: "2026-10-01T12:00:00Z", Returnable: false, State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
+    ID: id(n), Name: `Етап ${n}`, OpensAt: "2026-10-01T10:00:00Z", ClosesAt: "2026-10-01T12:00:00Z", Returnable: false, LabRetentionMinutes: null, State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
 });
 const attachment = (extra: Partial<EventExerciseAttachment> = {}) => ({ID: id(100), ExerciseName: "Веб", StageID: null, ...extra}) as EventExerciseAttachment;
 

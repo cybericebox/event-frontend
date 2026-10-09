@@ -8,3 +8,6 @@
 .event-resources-form__group legend{padding:0;margin-bottom:var(--ib-2);font-weight:var(--ib-w-semibold);font-size:var(--ib-fs-14)}
 .event-resources-form__help{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-12)}
 @media(max-width:760px){.event-resources__facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.event-stands__lab-block .event-resources__facts{grid-template-columns:repeat(2,minmax(0,1fr));margin:var(--ib-3) 0}
+.event-resources__facts dd{overflow-wrap:anywhere}

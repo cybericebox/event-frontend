@@ -8,6 +8,7 @@ vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({ev
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 
 import {AnalyticsUsage, usageState} from "./AnalyticsUsage";
+import {getAnalyticsUsage} from "@/api/manageAnalyticsUsage";
 
 afterEach(cleanup);
 
@@ -84,6 +85,40 @@ describe("Використання", () => {
         expect(await screen.findByText("Web login")).toBeTruthy();
         expect(screen.getByText("Веб-проксі")).toBeTruthy();
         expect(screen.getByText("Останні VPN-сесії")).toBeTruthy();
+    });
+
+    it.each([{attempts: 0, at: null}, {attempts: 7, at: past}])("keeps lab-initiated connections separate with $attempts participant attempts", async ({attempts, at}) => {
+        const data = usage();
+        mockApi({...data, Users: [{...data.Users[2], UserName: "Lab recipient", Labs: [
+            {ChallengeID: "vpn", Task: "VPN task", Surface: "vpn", Attempts: attempts, LabInitiatedAttempts: 3,
+                BytesIn: 100, BytesOut: 200, FirstAt: at, LastAt: at},
+        ]}]});
+        renderUsage();
+        const participant = (await screen.findByText("Lab recipient")).closest("tr")!;
+        expect(within(participant).getByText("Не підключався")).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "Подробиці: Lab recipient"}));
+        const row = screen.getByText("VPN task").closest("tr")!;
+        const cells = within(row).getAllByRole("cell");
+        expect(cells).toHaveLength(5);
+        expect(within(cells[2]).getByText(String(attempts), {exact: true})).toBeTruthy();
+        expect(within(cells[2]).getByText("З боку лабораторії: 3")).toBeTruthy();
+        if (at === null) expect(cells[4].textContent).toBe("—");
+    });
+
+    it("defaults the missing lab counter for older responses and hides zero and proxy lab counters", async () => {
+        const data = usage();
+        mockApi(data);
+        const parsed = await getAnalyticsUsage(event.EventID);
+        expect(parsed.Users[0].Labs[0].LabInitiatedAttempts).toBe(0);
+        mockApi({...data, Users: [{...data.Users[0], Labs: [
+            {...data.Users[0].Labs[0], LabInitiatedAttempts: 9},
+            {...data.Users[0].Labs[0], ChallengeID: "vpn", Task: "VPN task", Surface: "vpn", LabInitiatedAttempts: 0},
+        ]}]});
+        renderUsage();
+        await screen.findByText("Ann");
+        fireEvent.click(screen.getByRole("button", {name: "Подробиці: Ann"}));
+        expect(screen.getByText("VPN task")).toBeTruthy();
+        expect(screen.queryByText(/З боку лабораторії:/)).toBeNull();
     });
 
     it("filters by team and says so when nobody matches", async () => {
