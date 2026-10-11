@@ -12,7 +12,11 @@ export type StageDraft = {Name: string; OpensAt: string; ClosesAt: string};
 
 export const draftOfStage = (stage: ManageStage): StageDraft => ({Name: stage.Name, OpensAt: localDateTime(stage.OpensAt), ClosesAt: localDateTime(stage.ClosesAt)});
 
-export const stageDirty = (stage: ManageStage, draft: StageDraft): boolean => JSON.stringify(draftOfStage(stage)) !== JSON.stringify(draft);
+export function stageDirty(stage: ManageStage, draft: StageDraft): boolean {
+    const saved = draftOfStage(stage);
+    const locks = stageLocks(stage);
+    return draft.Name.trim() !== saved.Name.trim() || !locks.opens && draft.OpensAt !== saved.OpensAt || !locks.closes && draft.ClosesAt !== saved.ClosesAt;
+}
 
 // What a stage allows by its state (the server enforces the same): upcoming everything; open its name, the
 // returnable switch and the closing time; closed only the name. The first stage's opening and the last stage's

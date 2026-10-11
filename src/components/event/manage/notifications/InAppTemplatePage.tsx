@@ -12,6 +12,7 @@ import {
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
@@ -52,6 +53,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     const types = useQuery({queryKey: ["event-manage-notification-types", eventID], queryFn: () => getManageNotificationTypes(eventID), refetchOnWindowFocus: false});
     const [drafts, setDrafts] = useState<Record<string, ManageInAppTemplateInput>>({});
     const [busy, setBusy] = useState(false);
+    const [saving, setSaving] = useState(false);
     const href = (id?: string) => `${BASE}/${encodeURIComponent(signal)}${id ? `?id=${id}` : ""}`;
 
     const rows = (subscriptions.data ?? []).filter(row => row.Channel === "in_app");
@@ -64,15 +66,15 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     const draft = template ? drafts[template.ID] ?? saved : null;
     const dirty = !!(saved && draft && !sameValue(saved, draft));
     const validation = draft ? inAppValidation(draft) : "";
-    const editable = !!(canManage && mode === "edit" && !busy);
+    const editable = !!(canManage && mode === "edit");
     const ownVersions = versions.filter(item => item.Source === "event");
 
-    async function run(action: () => Promise<unknown>, success: string, failure: string): Promise<boolean> {
+    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true): Promise<boolean> {
         if (!canManage || busy) return false;
         setBusy(true);
         try {
             await action();
-            await Promise.all([
+            if (refresh) await Promise.all([
                 queryClient.invalidateQueries({queryKey: ["event-manage-notification-subscriptions", eventID]}),
                 queryClient.invalidateQueries({queryKey: ["event-manage-in-app-templates", eventID]}),
             ]);
@@ -85,12 +87,22 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
         } finally {setBusy(false);}
     }
 
-    function mutate(action: () => Promise<ManageInAppTemplate>, success: string) {
+    function mutate(action: () => Promise<ManageInAppTemplate>, success: string, refresh = true) {
+        const submitted = template ? drafts[template.ID] : undefined;
+        const sourceID = template?.ID;
         return run(async () => {
             const result = await action();
-            setDrafts(current => {const next = {...current}; delete next[result.ID]; return next;});
+            queryClient.setQueryData<ManageInAppTemplate[]>(["event-manage-in-app-templates", eventID], current => current?.some(item => item.ID === result.ID) ? current.map(item => item.ID === result.ID ? result : item) : [...(current ?? []), result]);
+            setDrafts(current => {if (result.ID === sourceID && current[result.ID] !== submitted) return current; const next = {...current}; delete next[result.ID]; return next;});
             router.replace(href(result.ID));
-        }, success, t("manage.notifications.updateError"));
+        }, success, t("manage.notifications.updateError"), refresh);
+    }
+
+    async function save() {
+        if (!editable || !dirty || validation || busy || !template || !draft) return;
+        setSaving(true);
+        try {await mutate(() => updateManageInAppTemplate(eventID, template.ID, draft), t("manage.notifications.draftSaved"), false);}
+        finally {setSaving(false);}
     }
 
     const toggleSubscription = useSubscriptionToggle(eventID, canManage, {success: t("manage.notifications.showUpdated"), failure: t("manage.notifications.showError")});
@@ -107,7 +119,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
         <TemplateHeader backHref={BASE} backLabel={t("manage.notifications.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
                 {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
-                {editable && <button className={`ib-btn${dirty ? " ib-btn--primary" : ""}`} type="button" disabled={!dirty || !!validation || busy} onClick={() => void mutate(() => updateManageInAppTemplate(eventID, template!.ID, draft!), t("manage.notifications.draftSaved"))}>{t("manage.notifications.saveDraft")}</button>}
+                {editable && <EventButton saveDirty={dirty} busy={saving} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageInAppTemplate(eventID, template!), t("manage.notifications.published"))}>{t("manage.notifications.publish")}</button>}
                 <TemplateActions mode={mode} canManage={canManage} busy={busy}
                     onCustomize={() => void mutate(() => customizeManageInAppTemplate(eventID, template!), t("manage.notifications.customized"))}

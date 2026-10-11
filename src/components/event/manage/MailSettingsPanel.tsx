@@ -48,12 +48,12 @@ export function MailSettingsPanel() {
     const settings = query.data;
     const savedIdentity = identityForm(settings.Identity);
     const idForm = identityDraft ?? savedIdentity;
-    const identityDirty = JSON.stringify(idForm) !== JSON.stringify(savedIdentity);
+    const identityDirty = JSON.stringify(identityInput(idForm)) !== JSON.stringify(identityInput(savedIdentity));
     const identityInvalid = identityError(idForm);
     const inherited = settings.Inherited;
     const savedSMTP = smtpForm(settings.SMTP);
     const form = smtpDraft ?? savedSMTP;
-    const smtpDirty = JSON.stringify(form) !== JSON.stringify(savedSMTP);
+    const smtpDirty = smtpError(form) ? JSON.stringify(form) !== JSON.stringify(savedSMTP) : JSON.stringify(smtpInput(form)) !== JSON.stringify(smtpInput(savedSMTP));
     const smtpValidation = smtpError(form);
     const disabled = !canManage;
     const canTest = canManage && ((!smtpDirty && !!settings.SMTP) || !smtpValidation);
@@ -96,7 +96,12 @@ export function MailSettingsPanel() {
         setBusy("smtp", true);
         try {
             applied(await putEventMailSMTP(eventID, smtpInput(submitted)));
-            setSMTPDraft(current => current && JSON.stringify(current) !== JSON.stringify(submitted) ? current : null);
+            setSMTPDraft(current => {
+                if (!current || JSON.stringify(current) === JSON.stringify(submitted)) return null;
+                // Acknowledged secret operations stop being pending intent, while newer fields stay.
+                return {...current, password: current.password === submitted.password ? "" : current.password,
+                    clearPassword: current.clearPassword === submitted.clearPassword ? false : current.clearPassword};
+            });
             toast.success(t("manage.mail.smtp.saved"));
         } catch (error) {toast.error(errorText(error, t("manage.mail.smtp.saveError")));}
         finally {setBusy("smtp", false);}
@@ -156,7 +161,7 @@ export function MailSettingsPanel() {
             <small>{t("manage.mail.identity.inheritHint")}</small>
             {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
             {identityDirty && identityInvalid && <p className="event-manage-validation" role="alert">{t(`manage.mail.validation.${identityInvalid}`)}</p>}
-            {canManage && identityDirty && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity}>{t("common.save")}</EventButton></div>}
+            {canManage && <div className="event-manage-section__actions"><EventButton saveDirty={identityDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity}>{t("common.save")}</EventButton></div>}
         </form>
 
         <form className="event-manage-section" onSubmit={saveSMTP} aria-labelledby="mail-smtp-title">
@@ -208,7 +213,7 @@ export function MailSettingsPanel() {
             {canManage && <div className="event-manage-section__actions event-manage-mail__actions">
                 {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => {setResetError(""); setConfirmReset(true);}}>{t("manage.mail.smtp.usePlatform")}</button>}
                 <EventButton className="ib-btn" type="button" disabled={disabled || busy.test || !canTest} onClick={() => void runTest()} busy={busy.test}>{t("manage.mail.smtp.test")}</EventButton>
-                <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.smtp || !smtpDirty || !!smtpValidation} busy={busy.smtp}>{t("common.save")}</EventButton>
+                <EventButton saveDirty={smtpDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.smtp || !smtpDirty || !!smtpValidation} busy={busy.smtp}>{t("common.save")}</EventButton>
             </div>}
         </form>
 

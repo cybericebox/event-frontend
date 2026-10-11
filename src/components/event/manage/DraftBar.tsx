@@ -45,7 +45,7 @@ export function DraftBar({state, busy, canManage, invalid, onSave, onPublish, on
         {canManage && <div className="event-draft-bar__actions">
             {state.dirty && <button className="ib-btn" type="button" disabled={!!busy} onClick={onRevertLocal}><RotateCcw size={16} /> {t("common.cancel")}</button>}
             {!state.dirty && state.hasDraft && state.published && onDiscardDraft && <button className="ib-btn" type="button" disabled={!!busy} onClick={() => setConfirmDiscard(true)}><RotateCcw size={16} /> {t("manage.editor.draft.discard")}</button>}
-            <EventButton className="ib-btn" type="button" disabled={!state.dirty || invalid || !!busy} onClick={onSave} busy={busy === "save"}>{t("common.save")}</EventButton>
+            <EventButton saveDirty={state.dirty} className="ib-btn" type="button" disabled={!state.dirty || invalid || !!busy} onClick={() => {if (state.dirty && !invalid && !busy) onSave();}} busy={busy === "save"}>{t("common.save")}</EventButton>
             <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canPublish || invalid || !!busy} onClick={onPublish} busy={busy === "publish"}><Send size={16} /> {t("manage.editor.draft.publish")}</EventButton>
         </div>}
         <ConfirmDialog open={confirmDiscard} onCancel={() => {if (!busy) setConfirmDiscard(false);}} tone="danger" busy={busy === "discard"} disabled={!!busy}

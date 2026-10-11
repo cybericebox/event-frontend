@@ -62,6 +62,6 @@ export default function ParticipationSettingsPage() {
         {!locked && <section className="event-manage-section">
             <p className="event-manage-readonly-note" data-testid="infrastructure-note">{configQuery.data?.InfrastructureAllowed ? t("manage.participation.infrastructureOn") : t("manage.participation.infrastructureHint")}</p>
         </section>}
-        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
+        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>
     </form>;
 }

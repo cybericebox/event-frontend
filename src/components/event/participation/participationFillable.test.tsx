@@ -74,3 +74,31 @@ describe("the answers form", () => {
         expect(screen.getByLabelText("Поле city")).toBeTruthy();
     });
 });
+
+it("does not submit unchanged answers with Enter", () => {
+    const save = vi.fn();
+    render(<AnswersCard scope="participant" title="Анкета" form={form} answers={{city: "Lviv"}} missing={[]} canEdit onSave={save} />);
+    fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
+    fireEvent.submit(screen.getByLabelText("Поле city").closest("form")!);
+    expect(save).not.toHaveBeenCalled();
+});
+
+it("keeps newer answers after an earlier save completes", async () => {
+    let resolve!: () => void;
+    const save = vi.fn(() => new Promise<void>(done => {resolve = done;}));
+    render(<AnswersCard scope="participant" title="Анкета" form={form} answers={{city: "old"}} missing={[]} canEdit onSave={save} />);
+    fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
+    const city = screen.getByLabelText("Поле city") as HTMLInputElement;
+    fireEvent.change(city, {target: {value: "first"}});
+    fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+    expect(city.disabled).toBe(false);
+    fireEvent.change(city, {target: {value: "second"}});
+    resolve();
+    await waitFor(() => expect(screen.getByRole("button", {name: "Зберегти"}).getAttribute("aria-busy")).toBeNull());
+    expect(city.value).toBe("second");
+});
+
+it("treats multi-select answers as a set", () => {
+    const choices = {...form, Document: {blocks: [field("choices", {input: "multi_select", editable: true, options: ["a", "b"]})]}};
+    expect(changedEditableAnswers(choices, {choices: ["a", "b"]}, {choices: ["b", "a"]})).toEqual({});
+});

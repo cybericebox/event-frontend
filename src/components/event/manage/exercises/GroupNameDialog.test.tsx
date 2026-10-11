@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {GroupNameDialog} from "./GroupNameDialog";
 
 // jsdom has no top-layer dialog.
@@ -37,6 +37,39 @@ describe("GroupNameDialog", () => {
         render(<GroupNameDialog open mode="rename" initialName="Веб" otherNames={[]} busy={false} onClose={vi.fn()} onSubmit={vi.fn()} />);
         expect(screen.getByRole("heading", {name: "Перейменувати групу"})).toBeTruthy();
         expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("Веб");
+        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        fireEvent.change(screen.getByRole("textbox"), {target: {value: " Веб "}});
+        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        fireEvent.change(screen.getByRole("textbox"), {target: {value: "Крипто"}});
         expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy();
     });
+});
+
+it("does not submit an unchanged rename through Enter", () => {
+    const submit = vi.fn();
+    render(<GroupNameDialog open mode="rename" initialName="Веб" otherNames={[]} busy={false} onClose={vi.fn()} onSubmit={submit} />);
+    fireEvent.change(screen.getByRole("textbox"), {target: {value: " Веб "}});
+    fireEvent.submit((screen.getByRole("textbox") as HTMLInputElement).form!);
+    expect(submit).not.toHaveBeenCalled();
+});
+
+it("keeps a newer name editable when an older rename finishes", async () => {
+    let acknowledge!: (saved: boolean) => void;
+    const submit = vi.fn(() => new Promise<boolean>(resolve => { acknowledge = resolve; }));
+    const close = vi.fn();
+    const props = {open: true, mode: "rename" as const, initialName: "Веб", otherNames: [], busy: false, onClose: close, onSubmit: submit};
+    const {rerender} = render(<GroupNameDialog {...props} />);
+    const field = screen.getByRole("textbox") as HTMLInputElement;
+    fireEvent.change(field, {target: {value: "Крипто"}});
+    fireEvent.submit(field.form!);
+    rerender(<GroupNameDialog {...props} busy />);
+    expect(field.disabled).toBe(false);
+    fireEvent.change(field, {target: {value: "Нові задачі"}});
+    await act(async () => acknowledge(true));
+    expect(close).not.toHaveBeenCalled();
+    rerender(<GroupNameDialog {...props} initialName="Крипто" />);
+    await waitFor(() => expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy());
+    expect(field.value).toBe("Нові задачі");
+    fireEvent.change(field, {target: {value: "Крипто"}});
+    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
 });

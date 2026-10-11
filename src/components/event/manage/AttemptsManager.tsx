@@ -121,7 +121,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
     const selected = items.find(item => item.ID === selectedID) ?? null;
     const decision = draft && selected && draft.id === selected.ID ? draft.decision : selected?.Decision ?? "automatic";
     const reason = draft && selected && draft.id === selected.ID ? draft.reason : selected?.DecisionReason ?? "";
-    const changed = !!selected && (decision !== selected.Decision || reason !== (selected.DecisionReason ?? ""));
+    const changed = !!selected && (decision !== selected.Decision || reason.trim() !== (selected.DecisionReason ?? "").trim());
     const filtered = filters.teamID !== null || filters.participantID !== null || filters.challengeID !== null || filters.correct !== null || !!filters.from || !!filters.to;
     const {offset} = zoneLabel();
     const busy = pageQuery.isFetching && !!pageQuery.data;
@@ -158,7 +158,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
         try {
             await decideManageAttempt(eventID, selected.ID, decision, reason.trim());
             await queryClient.invalidateQueries({queryKey: ["event-manage-attempts", eventID]});
-            setDraft(null);
+            setDraft(current => current === draft ? null : current);
             toast.success(t("manage.attempts.decisionSaved"));
         } catch {toast.error(t("manage.attempts.decisionSaveFailed"));}
         finally {setSaving(false);}
@@ -239,9 +239,9 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
                 {selected.ExpectedFlag !== null && <div className="event-attempts-manager__expected"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setShowExpected(value => !value)}>{showExpected ? t("manage.attempts.hideExpected") : t("manage.attempts.showExpected")}</button>{showExpected && <code>{selected.ExpectedFlag}</code>}</div>}
                 {selected.DecisionReason && <p className="event-attempts-manager__reason"><strong>{t("manage.attempts.previousReason")}</strong> {selected.DecisionReason}</p>}
                 {canManage && <form className="event-attempts-manager__review" onSubmit={save}>
-                    <label className="event-manage-field">{t("manage.attempts.decision")}<EventSelect ariaLabel={t("manage.attempts.decisionLabel")} value={decision} options={[{value: "automatic", label: t("manage.attempts.automaticCheck")}, {value: "accepted", label: t("manage.attempts.accept")}, {value: "rejected", label: t("manage.attempts.reject")}]} onValueChange={value => setDraft({id: selected.ID, decision: value as AttemptDecision, reason: value === selected.Decision ? selected.DecisionReason ?? "" : ""})} disabled={saving} /></label>
-                    <label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={reason} onChange={changeEvent => setDraft({id: selected.ID, decision, reason: changeEvent.target.value})} placeholder={t("manage.attempts.reasonPlaceholder")} maxLength={1000} disabled={saving} /></label>
-                    {changed && <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || !reason.trim()} busy={saving}>{t("manage.attempts.saveDecision")}</EventButton></div>}
+                    <label className="event-manage-field">{t("manage.attempts.decision")}<EventSelect ariaLabel={t("manage.attempts.decisionLabel")} value={decision} options={[{value: "automatic", label: t("manage.attempts.automaticCheck")}, {value: "accepted", label: t("manage.attempts.accept")}, {value: "rejected", label: t("manage.attempts.reject")}]} onValueChange={value => setDraft({id: selected.ID, decision: value as AttemptDecision, reason: value === selected.Decision ? selected.DecisionReason ?? "" : ""})} /></label>
+                    <label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={reason} onChange={changeEvent => setDraft({id: selected.ID, decision, reason: changeEvent.target.value})} placeholder={t("manage.attempts.reasonPlaceholder")} maxLength={1000} /></label>
+                    <div className="event-manage-section__actions"><EventButton saveDirty={changed} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !reason.trim()} busy={saving}>{t("manage.attempts.saveDecision")}</EventButton></div>
                 </form>}
                 {canManage && selected.Correct && <div className="event-attempts-manager__annul"><div><strong>{t("manage.attempts.annul.title")}</strong><p>{teamMode ? t("manage.attempts.annul.hintTeam") : t("manage.attempts.annul.hintParticipant")}</p></div><button className="ib-btn ib-btn--danger" type="button" onClick={() => setAnnul({attempt: selected, reason: ""})}>{t("manage.attempts.annul.confirm")}</button></div>}
             </div>}

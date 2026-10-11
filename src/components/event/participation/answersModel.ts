@@ -1,6 +1,7 @@
 import type {FormBlock, FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswer, ParticipantAnswers} from "@/api/participantForm";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
+import {sameValue} from "../manage/notifications/notificationModel";
 import {visibleFieldKeys} from "@/components/event/formVisibility";
 
 export type AnswerGroup = {id: string; title: string | null; blocks: FormBlock[]};
@@ -36,11 +37,17 @@ export function missingRequired(form: ParticipantForm, answers: ParticipantAnswe
         .map(field => field.key);
 }
 
+// Multiple choices are an unordered set; text/content arrays elsewhere keep their order.
+export function sameAnswer(field: Pick<FormField, "input">, left: ParticipantAnswer | undefined, right: ParticipantAnswer | undefined): boolean {
+    if (isEmptyAnswer(left) && isEmptyAnswer(right)) return true;
+    const normalize = (value: ParticipantAnswer | undefined) => field.input === "multi_select" && Array.isArray(value) ? [...new Set(value)].sort() : value ?? null;
+    return sameValue(normalize(left), normalize(right));
+}
+
 // Whether the draft differs from the saved answers on a field the person may change.
 export function isDirty(form: ParticipantForm, saved: ParticipantAnswers, draft: ParticipantAnswers, fillable: readonly string[]): boolean {
     return form.Document.blocks.filter(isFormField).some(field => isChangeable(field, fillable)
-        && JSON.stringify(saved[field.key] ?? null) !== JSON.stringify(draft[field.key] ?? null)
-        && !(isEmptyAnswer(saved[field.key]) && isEmptyAnswer(draft[field.key])));
+        && !sameAnswer(field, saved[field.key], draft[field.key]));
 }
 
 // Something to edit: any field the person may change.

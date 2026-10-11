@@ -8,6 +8,7 @@ import ManageTeamsPage from "./page";
 let teams: ManageTeam[];
 let moderators: unknown;
 const setHidden = vi.fn();
+const update = vi.fn();
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "e1", Participation: 1}, canManage: true})}));
 vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => null}));
 vi.mock("next/link", () => ({default: ({href, children}: {href: string; children: React.ReactNode}) => <a href={href}>{children}</a>}));
@@ -18,6 +19,8 @@ vi.mock("@/api/moderatorsBoard", () => ({getModeratorsTeam: async () => { if (!m
 vi.mock("@/api/manageTeams", async original => ({
     ...await original() as object,
     getManageTeamsTable: async () => ({Items: teams, Total: teams.length, Page: 1, PageSize: 25}),
+    getManageTeamProfile: async () => ({Results: null}),
+    updateManageTeam: (...args: unknown[]) => update(...args),
     setManageTeamHidden: (...args: unknown[]) => setHidden(...args),
 }));
 
@@ -31,7 +34,7 @@ const RED = "22222222-2222-4222-8222-222222222222";
 beforeEach(() => {
     teams = [team(BLUE, "Blue Team"), team(RED, "Red Team", {Hidden: true})];
     moderators = {TeamID: "33333333-3333-4333-8333-333333333333", Members: [{UserID: "44444444-4444-4444-8444-444444444444", Name: "Богдан", Role: 0}, {UserID: "55555555-5555-4555-8555-555555555555", Name: "Ірина", Role: 1}]};
-    setHidden.mockReset();
+    setHidden.mockReset(); update.mockReset();
 });
 afterEach(cleanup);
 
@@ -85,4 +88,18 @@ describe("hidden teams (teams table)", () => {
         expect((screen.getByRole("button", {name: "Приховати команду Blue Team"}) as HTMLButtonElement).disabled).toBe(true);
         expect((screen.getByRole("button", {name: "Показати команду Red Team"}) as HTMLButtonElement).disabled).toBe(false);
     });
+});
+
+it("does not offer a team Save until effective values change", async () => {
+    renderPage();
+    await screen.findByText("Blue Team");
+    fireEvent.click(screen.getByRole("button", {name: "Керувати командою Blue Team"}));
+    fireEvent.click(screen.getByRole("button", {name: "Змінити"}));
+    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    const name = screen.getByRole("textbox", {name: "Назва"});
+    fireEvent.change(name, {target: {value: "New Blue Team"}});
+    expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy();
+    fireEvent.change(name, {target: {value: " Blue Team "}});
+    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    expect(update).not.toHaveBeenCalled();
 });

@@ -117,6 +117,6 @@ export default function ResultsSettingsPage() {
             </div>
         </section>
 
-        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
+        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>
     </form>;
 }
