@@ -88,11 +88,12 @@ export default function ManageSchedulePage() {
         }
         return "";
     }, [draft]);
-    const dirty = !!draft && !!lifecycle.data && JSON.stringify(draft) !== JSON.stringify(toDraft(lifecycle.data));
+    const scheduleValue = (value: ScheduleDraft) => ({...value, FinishAt: value.ScheduledEnd ? value.FinishAt : "", WithdrawAt: value.ScheduledEnd ? value.WithdrawAt : ""});
+    const dirty = !!draft && !!lifecycle.data && JSON.stringify(scheduleValue(draft)) !== JSON.stringify(scheduleValue(toDraft(lifecycle.data)));
 
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (!draft || validation || !canManage || saving || config.data?.Participation === null) return;
+        if (!draft || validation || !canManage || saving || (lifecycle.data?.Configured && !dirty) || config.data?.Participation === null) return;
         setSaving(true);
         try {
             const updated = await putManageLifecycle(eventID, {
@@ -121,7 +122,7 @@ export default function ManageSchedulePage() {
 
     async function saveCountdown(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (!countdown || !config.data || !canManage || countdownSaving || !validMinutes(countdown.Minutes)) return;
+        if (!countdownDirty || !countdown || !config.data || !canManage || countdownSaving || !validMinutes(countdown.Minutes)) return;
         setCountdownSaving(true);
         try {
             const updated = await putManageConfig(eventID, {
@@ -159,7 +160,7 @@ export default function ManageSchedulePage() {
                 <ManageDateField id="withdraw-at" title={t("manage.schedule.withdraw")} help={t("manage.schedule.withdrawHelp")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
             </div>}
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
-            <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving}>{t("manage.schedule.save")}</EventButton></div>
+            <div className="event-manage-section__actions"><EventButton saveDirty={!lifecycle.data.Configured || dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving}>{t("manage.schedule.save")}</EventButton></div>
         </form>
         <StagesManager eventID={eventID} lifecycle={lifecycle.data} canManage={canManage} />
         {countdown && <form className="event-manage-section" onSubmit={saveCountdown}>
@@ -177,7 +178,7 @@ export default function ManageSchedulePage() {
                     options={[{value: "before_end", label: t("manage.schedule.countdown.mode.beforeEnd")}, {value: "from_start", label: t("manage.schedule.countdown.mode.fromStart")}]}
                     onValueChange={mode => setCountdown({...countdown, Mode: mode as CountdownDraft["Mode"]})} />
             </div>}
-            <div className="event-manage-section__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || countdownSaving || !countdownDirty || !validMinutes(countdown.Minutes)} busy={countdownSaving}>{t("manage.schedule.countdown.save")}</EventButton></div>
+            <div className="event-manage-section__actions"><EventButton saveDirty={countdownDirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || countdownSaving || !countdownDirty || !validMinutes(countdown.Minutes)} busy={countdownSaving}>{t("manage.schedule.countdown.save")}</EventButton></div>
         </form>}
     </div>;
 }

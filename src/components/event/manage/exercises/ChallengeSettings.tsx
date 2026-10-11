@@ -152,7 +152,7 @@ export function ChallengeSettings() {
                 <EventSwitch className="event-manage-form__switch" checked={value.ForceEventScoring} onCheckedChange={checked => update({ForceEventScoring: checked})} disabled={disabled} label={t("manage.challenges.scoring.force")} />
                 <p>{t("manage.challenges.scoring.forceNote")}</p>
             </div>
-            {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>}
+            <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>
         </form>
         {config.data.LabPolicy && <section className="event-manage-section" aria-labelledby="lab-policy-title">
             <div className="event-manage-section__head"><h2 id="lab-policy-title">{t("manage.labs.policy.title")}</h2><p>{t("manage.labs.policy.help")}</p></div>

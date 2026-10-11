@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useLayoutEffect, useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {Lock} from "lucide-react";
@@ -28,28 +28,34 @@ import {useParticipationStats} from "./useParticipationStats";
 function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: string}) {
     const queryClient = useQueryClient();
     const [editing, setEditing] = useState(false);
-    const [value, setValue] = useState(info.Pseudonym ?? "");
+    const [valueEdit, setValue] = useState<string | null>(null);
+    const value = valueEdit ?? info.Pseudonym ?? "";
     const [busy, setBusy] = useState(false);
+    const latestValue = useRef(value);
+    useLayoutEffect(() => {latestValue.current = value;}, [value]);
+    const dirty = (value.trim() || null) !== (info.Pseudonym?.trim() || null);
     const save = async (next: string | null) => {
+        if (busy || next === (info.Pseudonym?.trim() || null)) return;
+        const submitted = value;
         setBusy(true);
         try {
             await putSelfPseudonym(next);
             await queryClient.invalidateQueries({queryKey: ["event-participant-info", eventID]});
-            setEditing(false);
+            if (latestValue.current === submitted) setEditing(false);
             toast.success(next ? t("participation.pseudonym.saved") : t("participation.pseudonym.removed"));
         } catch (error) {
             toast.error(errorText(error, t("participation.pseudonym.saveFailed")));
         } finally { setBusy(false); }
     };
     if (editing) return <form className="event-pp-rename" onSubmit={event => { event.preventDefault(); void save(value.trim() || null); }}>
-        <input className="ib-input" value={value} onChange={event => setValue(event.target.value)} maxLength={32} minLength={2} aria-label={t("participation.pseudonym.label")} disabled={busy} autoFocus />
-        <EventButton type="submit" className="ib-btn ib-btn--primary ib-btn--sm" busy={busy}>{t("common.save")}</EventButton>
+        <input className="ib-input" value={value} onChange={event => setValue((event.target.value.trim() || null) === (info.Pseudonym?.trim() || null) ? null : event.target.value)} maxLength={32} minLength={2} aria-label={t("participation.pseudonym.label")} autoFocus />
+        <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary ib-btn--sm" busy={busy}>{t("common.save")}</EventButton>
         <button type="button" className="ib-btn ib-btn--sm" disabled={busy} onClick={() => setEditing(false)}>{t("common.cancel")}</button>
     </form>;
     return <div className="event-pp-rename">
         <span className="event-pp-hero__sub">{t("participation.pseudonym.line", {value: info.Pseudonym || t("participation.pseudonym.notSet")})}</span>
         {info.PseudonymEditable
-            ? <><button type="button" className="ib-btn ib-btn--sm" onClick={() => { setValue(info.Pseudonym ?? ""); setEditing(true); }}>{info.Pseudonym ? t("participation.pseudonym.change") : t("common.add")}</button>
+            ? <><button type="button" className="ib-btn ib-btn--sm" onClick={() => { setValue(null); setEditing(true); }}>{info.Pseudonym ? t("participation.pseudonym.change") : t("common.add")}</button>
                 {info.Pseudonym && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" disabled={busy} onClick={() => void save(null)}>{t("participation.pseudonym.remove")}</button>}</>
             : <EventTooltip content={t("participation.pseudonym.locked")}>{id => <span className="event-pp-field__lock" tabIndex={0} aria-describedby={id} aria-label={t("participation.pseudonym.locked")}><Lock aria-hidden="true" /></span>}</EventTooltip>}
     </div>;

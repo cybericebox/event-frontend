@@ -1,7 +1,7 @@
 "use client";
 
 import {useNow} from "./useNow";
-import {useState, type FormEvent} from "react";
+import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type {OwnTeam, Participation} from "@/api/clientAuth";
@@ -42,16 +42,21 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
     stats: {rank: number; points: number} | null; preview: boolean; onRename: (name: string) => Promise<void>;
 }) {
     const [renaming, setRenaming] = useState(false);
-    const [name, setName] = useState(team.Name);
+    const [nameEdit, setName] = useState<string | null>(null);
+    const name = nameEdit ?? team.Name;
     const [busy, setBusy] = useState(false);
+    const latestName = useRef(name);
+    useLayoutEffect(() => {latestName.current = name;}, [name]);
+    const dirty = name.trim() !== team.Name.trim();
     const min = team.MinTeamSize ?? info?.MinTeamSize;
     const max = team.MaxTeamSize ?? info?.MaxTeamSize;
     const missing = missingMembers(team.MemberCount, min);
     const admitted = team.Admitted !== false;
     const rename = async (submit: FormEvent) => {
         submit.preventDefault();
+        if (!dirty || busy || !name.trim()) return;
         setBusy(true);
-        try { await onRename(name.trim()); setRenaming(false); } catch { /* toast shown */ } finally { setBusy(false); }
+        try { await onRename(name.trim()); if (latestName.current === name) setRenaming(false); } catch { /* toast shown */ } finally { setBusy(false); }
     };
     return <>
         {!admitted && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="warning" title={missing ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title")} message={t("participation.team.notAdmittedMessage")} /></div>}
@@ -59,12 +64,12 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
             <div className="event-pp-hero__who">
                 {renaming
                     ? <form className="event-pp-rename" onSubmit={submit => void rename(submit)}>
-                        <input className="ib-input" value={name} onChange={submit => setName(submit.target.value)} minLength={3} maxLength={64} required aria-label={t("participation.team.name")} autoFocus disabled={busy} />
-                        <EventButton type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
+                        <input className="ib-input" value={name} onChange={submit => setName(submit.target.value.trim() === team.Name.trim() ? null : submit.target.value)} minLength={3} maxLength={64} required aria-label={t("participation.team.name")} autoFocus />
+                        <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
                         <button type="button" className="ib-btn" disabled={busy} onClick={() => setRenaming(false)}>{t("common.cancel")}</button>
                     </form>
                     : <div className="event-pp-rename"><h2 className="event-pp-hero__name">{team.Name}</h2>
-                        {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm" onClick={() => { setName(team.Name); setRenaming(true); }}>{t("participation.team.rename")}</button>}</div>}
+                        {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm" onClick={() => { setName(null); setRenaming(true); }}>{t("participation.team.rename")}</button>}</div>}
                 <div className="event-pp-hero__tags">
                     {!preview && (admitted ? <span className="ib-tag ib-tag--ok">{t("participation.team.admitted")}</span> : <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>)}
                     <span className="event-pp-hero__sub">{t("participation.team.rosterLine", {line: rosterLine(team.MemberCount, max, min)})}</span>

@@ -126,3 +126,14 @@ describe("Пошта заходу: збереження без миготінн�
         expect(host.value).toBe("smtp.other.edu");
     });
 });
+
+it("does not show or submit SMTP Save for equivalent normalized values", async () => {
+    const puts = mockApi(settings({SMTP: {...settings().SMTP, DailyQuota: 10}}));
+    renderPanel();
+    const username = await screen.findByLabelText(/^Користувач/);
+    fireEvent.change(username, {target: {value: " mailer "}});
+    fireEvent.change(screen.getByLabelText("Ліміт листів на добу"), {target: {value: "10.0"}});
+    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    fireEvent.submit(username.closest("form")!);
+    expect(puts).toHaveLength(0);
+});

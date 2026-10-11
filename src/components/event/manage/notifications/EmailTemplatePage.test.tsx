@@ -70,7 +70,7 @@ describe("Сторінка листа", () => {
         const subject = await screen.findByRole("textbox", {name: "Тема листа"});
         expect(subject.closest("[inert]")).toBeNull();
         expect(screen.getByRole("button", {name: "Опублікувати"})).toBeTruthy();
-        expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(true);
+        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
         subject.textContent = "Нова тема";
         fireEvent.input(subject);
         expect(screen.queryByRole("button", {name: "Опублікувати"})).toBeNull();
@@ -87,6 +87,26 @@ describe("Сторінка листа", () => {
         fireEvent.input(subject);
         expect(screen.getByRole("alert").textContent).toContain("тему листа");
         expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it("acknowledges the saved subject without clearing a later edit", async () => {
+        const template = emailTemplate(2, FINISHED, {Source: "event", Status: "draft"});
+        fakeServer("email", subs, [emailTemplate(1, FINISHED), template]);
+        const fetch = globalThis.fetch;
+        let acknowledge!: (response: Response) => void;
+        const pending = new Promise<Response>(resolve => { acknowledge = resolve; });
+        globalThis.fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => init?.method === "PUT" ? pending : fetch(input, init)) as typeof fetch;
+        renderPage();
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        subject.textContent = "Sent subject"; fireEvent.input(subject);
+        fireEvent.click(screen.getByRole("button", {name: "Зберегти чернетку"}));
+        expect(subject.closest("[inert]")).toBeNull();
+        subject.textContent = "Later subject"; fireEvent.input(subject);
+        acknowledge(new Response(JSON.stringify({Status: {Code: 0}, Data: {...template, Subject: "Sent subject"}}), {status: 200}));
+        await waitFor(() => expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(false));
+        expect(subject.textContent).toBe("Later subject");
+        subject.textContent = "Sent subject"; fireEvent.input(subject);
+        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
     });
 
     it("returns to the standard template only after a confirmation", async () => {

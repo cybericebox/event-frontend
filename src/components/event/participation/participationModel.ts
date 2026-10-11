@@ -1,3 +1,4 @@
+import {sameAnswer} from "./answersModel";
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswer, ParticipantAnswers} from "@/api/participantForm";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
@@ -31,7 +32,7 @@ export function changedEditableAnswers(form: ParticipantForm, before: Participan
     const changed: ParticipantAnswers = {};
     for (const field of formFields(form)) {
         if (!(field.editable || fillable.includes(field.key)) || !(field.key in after)) continue;
-        if (JSON.stringify(before[field.key] ?? null) !== JSON.stringify(after[field.key] ?? null)) changed[field.key] = after[field.key];
+        if (!sameAnswer(field, before[field.key], after[field.key])) changed[field.key] = after[field.key];
     }
     return changed;
 }

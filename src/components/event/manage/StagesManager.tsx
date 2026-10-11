@@ -47,7 +47,7 @@ function StageRow({eventID, stage, canManage, onPatch}: {
     async function save(submitEvent: FormEvent) {
         submitEvent.preventDefault();
         if (!canManage || !dirty || saving) return;
-        const input: StageUpdateInput = {Name: draft.Name};
+        const input: StageUpdateInput = {Name: draft.Name.trim()};
         if (!locks.opens) input.OpensAt = isoOf(draft.OpensAt) ?? undefined;
         if (!locks.closes) input.ClosesAt = isoOf(draft.ClosesAt) ?? undefined;
         setSaving(true);
@@ -55,7 +55,7 @@ function StageRow({eventID, stage, canManage, onPatch}: {
             apply(await updateManageStage(eventID, stage.ID, input));
             // Another stage may have moved with it (the neighbours keep to the order): reread them all.
             void refresh();
-            setEdit(null);
+            setEdit(current => current?.value === draft ? null : current);
             toast.success(t("manage.stages.saved"));
         } catch (failure) {toast.error(failureText(failure, t("manage.stages.saveFailed")));}
         finally {setSaving(false);}
@@ -108,7 +108,7 @@ function StageRow({eventID, stage, canManage, onPatch}: {
                 {canManage && <div className="event-stage__actions">
                     {locks.canClose && <button className="ib-btn" type="button" onClick={() => {setDialogError(""); setDialog("close");}}>{t("manage.stages.closeNow")}</button>}
                     {locks.canDelete && <button className="ib-btn" type="button" onClick={() => {setDialogError(""); setDialog("delete");}}>{t("manage.stages.delete")}</button>}
-                    {dirty && <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || !draft.Name.trim()} busy={saving}>{t("manage.stages.save")}</EventButton>}
+                    {<EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !draft.Name.trim()} busy={saving}>{t("manage.stages.save")}</EventButton>}
                 </div>}
             </div>
         </form>

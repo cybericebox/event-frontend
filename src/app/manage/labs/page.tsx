@@ -59,7 +59,7 @@ function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: Man
         setSaving(true);
         try {
             queryClient.setQueryData(["event-management-labs", eventID], await putManageLabsSettings(eventID, {TeardownDelayMinutes: delay}));
-            setEdit(null);
+            setEdit(current => current?.delay === delay ? null : current);
             toast.success(t("manage.labs.schedule.saved"));
         } catch (failure) {toast.error(standErrorMessage(failure, t("manage.labs.schedule.saveFailed")));}
         finally {setSaving(false);}
@@ -72,9 +72,9 @@ function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: Man
             <div><dt>{t("manage.labs.schedule.challenges")}</dt><dd>{labs.ChallengesOpened ? t("manage.labs.schedule.challengesOpen") : t("manage.labs.schedule.challengesWaiting")}</dd></div>
         </dl>
         <p className="event-stands__note">{t("manage.labs.schedule.deployComputed")}</p>
-        <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-delay" title={t("manage.labs.schedule.delay")} help={t("manage.labs.schedule.delayHelp", TEARDOWN_DELAY_RANGE)} /><input id="stand-delay" className="event-manage-input" type="number" min={TEARDOWN_DELAY_RANGE.min} max={TEARDOWN_DELAY_RANGE.max} value={Number.isNaN(delay) ? "" : delay} onChange={change => setEdit({delay: change.target.valueAsNumber})} disabled={!canManage || saving} /></div>
+        <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-delay" title={t("manage.labs.schedule.delay")} help={t("manage.labs.schedule.delayHelp", TEARDOWN_DELAY_RANGE)} /><input id="stand-delay" className="event-manage-input" type="number" min={TEARDOWN_DELAY_RANGE.min} max={TEARDOWN_DELAY_RANGE.max} value={Number.isNaN(delay) ? "" : delay} onChange={change => setEdit({delay: change.target.valueAsNumber})} disabled={!canManage} /></div>
         {dirty && !valid && <p className="event-manage-validation" role="alert">{t("manage.labs.schedule.invalid", {delayMin: TEARDOWN_DELAY_RANGE.min, delayMax: TEARDOWN_DELAY_RANGE.max})}</p>}
-        {canManage && dirty && <div className="event-manage-section__actions"><button className="ib-btn" type="button" disabled={saving} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
+        {canManage && <div className="event-manage-section__actions"><button className="ib-btn" style={{visibility: dirty || saving ? undefined : "hidden"}} type="button" disabled={saving || !dirty} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
     </form>;
 }
 

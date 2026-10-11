@@ -41,10 +41,10 @@ export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, m
     }
 
     function reset() { setDraft({action: "remove"}); setError(""); }
-    function saved(url: string) { setSavedURL({eventID, url}); setDraft({action: "keep"}); setError(""); }
+    function saved(url: string) { setSavedURL({eventID, url}); setDraft(current => current === draft ? {action: "keep"} : current); setError(""); }
     const source = draft.action === "replace" ? draft.previewURL ?? "" : draft.action === "remove" ? "" : savedURL?.eventID === eventID ? savedURL.url : currentURL;
     const change: BrandAssetChange = {Action: draft.action, ...(draft.action === "replace" ? {FileID: draft.fileID} : {})};
-    return {source, change, dirty: draft.action !== "keep", uploading, error, select, reset, saved};
+    return {source, change, dirty: draft.action === "replace" || draft.action === "remove" && !!(savedURL?.eventID === eventID ? savedURL.url : currentURL), uploading, error, select, reset, saved};
 }
 
 export type BrandDraftControl = ReturnType<typeof useBrandDraft>;

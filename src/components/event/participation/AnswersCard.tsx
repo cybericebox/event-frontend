@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, type FormEvent, type ReactNode} from "react";
+import {useLayoutEffect, useRef, useState, type FormEvent, type ReactNode} from "react";
 import {CircleHelp, Lock} from "lucide-react";
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswer, ParticipantAnswers} from "@/api/participantForm";
@@ -46,24 +46,28 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
     form: ParticipantForm; saved: ParticipantAnswers; fillable: readonly string[]; scope: "participant" | "team"; error: string;
     onCancel: () => void; onSave: (draft: ParticipantAnswers) => Promise<void>;
 }) {
-    const [draft, setDraft] = useState<ParticipantAnswers>(saved);
+    const [edited, setEdited] = useState<ParticipantAnswers | null>(null);
+    const draft = edited ?? saved;
+    const latestDraft = useRef(draft);
+    useLayoutEffect(() => {latestDraft.current = draft;}, [draft]);
     const [busy, setBusy] = useState(false);
     const [invalid, setInvalid] = useState<string[]>([]);
     const [discard, setDiscard] = useState(false);
     const dirty = isDirty(form, saved, draft, fillable);
     const shown = visibleFieldKeys(form.Document.blocks, draft);
     const change = (key: string, value: ParticipantAnswer) => {
-        setDraft(current => ({...current, [key]: value}));
+        setEdited(current => ({...(current ?? saved), [key]: value}));
         setInvalid(current => current.filter(item => item !== key));
     };
     const upload = (key: string, file: File) => uploadSelfAnswerFile(scope, key, file);
     const submit = async (event: FormEvent) => {
         event.preventDefault();
+        if (!dirty || busy) return;
         const missing = missingRequired(form, draft, fillable);
         setInvalid(missing);
         if (missing.length) return;
         setBusy(true);
-        try { await onSave(draft); } finally { setBusy(false); }
+        try { await onSave(draft); if (latestDraft.current === draft) onCancel(); } catch { /* the card displays the save error */ } finally { setBusy(false); }
     };
     return <form className="event-pp-form" onSubmit={event => void submit(event)} noValidate>
         {answerGroups(form).map(group => <section className="event-pp-form__group" key={group.id} aria-label={group.title ?? t("participation.form.general")}>
@@ -82,21 +86,20 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
                         {block.help && <EventTooltip content={block.help}>{tip => <button type="button" className="event-brand-help" aria-label={t("manage.fields.aboutField", {title: block.label})} aria-describedby={tip}><CircleHelp size={14} /></button>}</EventTooltip>}
                         {!editable && <EventTooltip content={t("participation.form.locked")}>{tip => <button type="button" className="event-pp-field__lock" aria-label={t("participation.form.lockedAria", {title: block.label})} aria-describedby={tip}><Lock aria-hidden="true" /></button>}</EventTooltip>}
                     </span>
-                    {editable ? <Control field={block} id={id} value={draft[block.key]} onChange={value => change(block.key, value)} disabled={busy} upload={upload} />
+                    {editable ? <Control field={block} id={id} value={draft[block.key]} onChange={value => change(block.key, value)} disabled={false} upload={upload} />
                         : <div className="event-pp-field__value" id={id}><AnswerValue field={block} value={saved[block.key]} /></div>}
                     {failed && <span className="event-pp-field__error" role="alert">{t("participation.form.required", {title: block.label})}</span>}
                 </div>;
             })}</div>
         </section>)}
         {error && <p className="event-pp-field__error" role="alert">{error}</p>}
-        {dirty && <div className="event-pp-savebar" role="region" aria-label={t("participation.form.saveBar")}>
-            <div className="event-pp-savebar__text"><strong>{t("participation.form.dirty")}</strong><small>{t("participation.form.dirtyNote")}</small></div>
+        {<div className="event-pp-savebar" role={dirty || busy ? "region" : undefined} aria-label={dirty || busy ? t("participation.form.saveBar") : undefined}>
+            <div className="event-pp-savebar__text" style={{visibility: dirty || busy ? undefined : "hidden"}}><strong>{t("participation.form.dirty")}</strong><small>{t("participation.form.dirtyNote")}</small></div>
             <div className="event-pp-savebar__actions">
-                <button type="button" className="ib-btn" disabled={busy} onClick={() => setDiscard(true)}>{t("common.cancel")}</button>
-                <EventButton type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
+                <button type="button" className="ib-btn" disabled={busy} onClick={() => dirty ? setDiscard(true) : onCancel()}>{t(dirty ? "common.cancel" : "participation.form.close")}</button>
+                <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
             </div>
         </div>}
-        {!dirty && <div className="event-part__actions"><button type="button" className="ib-btn" onClick={onCancel}>{t("participation.form.close")}</button></div>}
         <ConfirmDialog open={discard} onCancel={() => setDiscard(false)} title={t("participation.form.discardTitle")} description={t("participation.form.discardText")}
             cancelLabel={t("participation.form.keepEditing")} confirmLabel={t("participation.form.discard")} onConfirm={() => { setDiscard(false); onCancel(); }} />
     </form>;
@@ -132,7 +135,7 @@ export function AnswersCard({title, note, form, answers, missing, canEdit, whyRe
     const editable = canEdit && hasChangeable(form, missing);
     const save = async (draft: ParticipantAnswers) => {
         setError("");
-        try { await onSave(draft); setEditing(false); } catch (failure) { setError(failure instanceof Error ? failure.message : t("participation.form.saveFailed")); }
+        try { await onSave(draft); } catch (failure) { setError(failure instanceof Error ? failure.message : t("participation.form.saveFailed")); throw failure; }
     };
     const action = editable && !editing ? <button type="button" className="ib-btn ib-btn--sm" onClick={() => { setError(""); setEditing(true); }}>{t("participation.form.edit")}</button> : undefined;
     return <Card title={title} note={note} actions={action}>

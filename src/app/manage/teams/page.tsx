@@ -36,6 +36,8 @@ import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
+import {sameValue} from "@/components/event/manage/notifications/notificationModel";
+import {sameAnswer} from "@/components/event/participation/answersModel";
 import {formatDateTime, zoneOffset} from "@/utils/dateTime";
 
 const MEMBER_TAGS = 3;
@@ -82,6 +84,7 @@ export default function ManageTeamsPage() {
     const [memberChoices, setMemberChoices] = useState<Record<string, string>>({});
     // Only the team being saved is locked; the other rows and teams stay usable.
     const [busyTeams, setBusyTeams] = useState<string[]>([]);
+    const [savingTeamID, setSavingTeamID] = useState<string | null>(null);
     const isBusy = (teamID?: string | null) => !!teamID && busyTeams.includes(teamID);
     const [confirm, setConfirm] = useState<{kind: "delete"; team: ManageTeam} | {kind: "remove" | "captain"; team: ManageTeam; userID: string; name: string} | {kind: "form"; team: ManageTeam} | null>(null);
     const [confirmError, setConfirmError] = useState("");
@@ -149,16 +152,23 @@ export default function ManageTeamsPage() {
         ]);
     }
 
+    function teamDirty(team: ManageTeam): boolean {
+        return editing?.id === team.ID && (editing.name.trim() !== team.Name.trim() || editing.hidden !== team.Hidden
+            || fields.some(field => !field.staffOnly && !sameAnswer(field, team.ExtraFields[field.key] as ParticipantAnswers[string], editing.fields[field.key])));
+    }
+
     async function saveTeam(team: ManageTeam) {
-        if (!canManage || isBusy(team.ID) || editing?.id !== team.ID || !editing.name.trim()) return;
+        if (!canManage || isBusy(team.ID) || editing?.id !== team.ID || !editing.name.trim() || !teamDirty(team)) return;
+        const submitted = editing;
+        setSavingTeamID(team.ID);
         setBusyTeams(ids => [...ids, team.ID]);
         try {
             await updateManageTeam(eventID, team.ID, {Name: editing.name.trim(), Hidden: editing.hidden, ...(fields.length > 0 ? {Fields: withoutKeys(editing.fields, staffKeys)} : {})});
-            setEditing(null);
+            setEditing(current => sameValue(current, submitted) ? null : current);
             await refresh();
             toast.success(t("manage.teams.updated"));
         } catch (error) {toast.error(failure(error, t("manage.teams.saveFailed")));}
-        finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
+        finally {setSavingTeamID(null); setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
     function ask(next: NonNullable<typeof confirm>) {
@@ -328,7 +338,7 @@ export default function ManageTeamsPage() {
                     <div className="event-manage-teams__head"><div><p>{t("manage.teams.summary", {count: team.MemberCount, captain: captainName(team)})}{team.Hidden ? t("manage.teams.hiddenSuffix") : ""}</p><p className={`event-manage-teams__admission${team.Admitted ? " is-admitted" : ""}`}>{admissionText(team)}</p></div>{canManage && <div className="event-manage-teams__head-actions"><button className="ib-btn ib-btn--sm" type="button" onClick={() => setInviteTeam({ID: team.ID, Name: team.Name})}>{t("manage.teams.invite")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setEditing(current => current?.id === team.ID ? null : {id: team.ID, name: team.Name, hidden: team.Hidden, fields: team.ExtraFields as ParticipantAnswers})}>{editing?.id === team.ID ? t("common.cancel") : t("manage.teams.edit")}</button></div>}</div>
                     {canManage && !team.Formed && <div><button className="ib-btn ib-btn--sm" type="button" disabled={isBusy(team.ID)} onClick={() => ask({kind: "form", team})}>{t("manage.teams.form")}</button></div>}
                     {canManage && <label className="event-manage-form__switch"><input type="checkbox" checked={team.AdmittedManually} disabled={isBusy(team.ID)} onChange={event => void setAdmission(team, event.target.checked)} />{t("manage.teams.admitManually")}</label>}
-                    {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} disabled={isBusy(team.ID)} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} disabled={isBusy(team.ID)} /> {t("manage.teams.excludeFromRanking")}</label><button className="ib-btn ib-btn--primary" type="button" disabled={isBusy(team.ID) || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</button>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={{...fieldsQuery.data, Document: {blocks: fieldsQuery.data.Document.blocks.filter(block => !(isFormField(block) && block.staffOnly))}}} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={isBusy(team.ID)} /></div>}</div>}
+                    {editing?.id === team.ID && <div className="event-manage-teams__edit"><label className="event-manage-field">{t("manage.teams.name")}<input className="event-manage-input" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} minLength={3} maxLength={64} /></label><label className="event-exercise-editor__check"><input type="checkbox" checked={editing.hidden} onChange={e => setEditing({...editing, hidden: e.target.checked})} /> {t("manage.teams.excludeFromRanking")}</label><EventButton saveDirty={teamDirty(team)} busy={savingTeamID === team.ID} className="ib-btn ib-btn--primary" type="button" disabled={isBusy(team.ID) || !editing.name.trim()} onClick={() => void saveTeam(team)}>{t("common.save")}</EventButton>{fieldsQuery.data && fields.length > 0 && <div className="event-manage-teams__edit-fields"><TeamFieldsInputs form={{...fieldsQuery.data, Document: {blocks: fieldsQuery.data.Document.blocks.filter(block => !(isFormField(block) && block.staffOnly))}}} answers={editing.fields} onChange={(key, value) => setEditing(current => current && {...current, fields: {...current.fields, [key]: value}})} disabled={!canManage} /></div>}</div>}
                     <div className="event-manage-teams__members"><h3>{t("manage.teams.results")}</h3>
                         {profile.isPending ? <EventLoading compact label={t("manage.teams.resultsLoading")} /> : profile.isError ? <EventLoadError compact message={t("manage.teams.resultsFailed")} error={profile.error} onRetry={() => void profile.refetch()} />
                             : !profile.data.Results ? <EmptyState compact message={t("manage.teams.resultsNone")} />
