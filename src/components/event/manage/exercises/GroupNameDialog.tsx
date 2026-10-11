@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useRef, useState, type FormEvent} from "react";
+import {useEffect, useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {DialogModal} from "@/components/event/DialogModal";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventButton} from "@/components/ui/EventButton";
@@ -11,11 +11,14 @@ import {groupNameMax, groupNameProblem} from "./groupName";
 // closes, the field gets focus on open.
 export function GroupNameDialog({open, mode, initialName, otherNames, busy, onClose, onSubmit}: {
     open: boolean; mode: "create" | "rename"; initialName: string; otherNames: string[]; busy: boolean;
-    onClose: () => void; onSubmit: (name: string) => void;
+    onClose: () => void; onSubmit: (name: string) => void | Promise<boolean | void>;
 }) {
     const [name, setName] = useState(initialName);
     const [touched, setTouched] = useState(false);
     const input = useRef<HTMLInputElement>(null);
+    const latestName = useRef(name);
+    useLayoutEffect(() => {latestName.current = name;}, [name]);
+    const dirty = mode === "create" || name.trim() !== initialName.trim();
     const problem = groupNameProblem(name, otherNames);
 
     useEffect(() => {
@@ -25,22 +28,23 @@ export function GroupNameDialog({open, mode, initialName, otherNames, busy, onCl
         return () => window.clearTimeout(timer);
     }, [open]);
 
-    function submit(submitEvent: FormEvent<HTMLFormElement>) {
+    async function submit(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
         setTouched(true);
-        if (problem || busy) return;
-        onSubmit(name.trim());
+        if (problem || busy || !dirty) return;
+        const saved = await onSubmit(name.trim());
+        if (saved && latestName.current === name) onClose();
     }
 
     const shownProblem = touched || name !== initialName ? problem : "";
     return <DialogModal open={open} onClose={() => { if (!busy) onClose(); }} title={t(mode === "create" ? "manage.challenges.groups.createTitle" : "manage.challenges.groups.renameTitle")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={onClose}>{t("common.cancel")}</button>
-            <EventButton className="ib-btn ib-btn--primary" type="submit" form="group-name-form" disabled={busy} busy={busy}>{t(mode === "create" ? "manage.challenges.groups.create" : "common.save")}</EventButton></>}>
+            <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" form="group-name-form" disabled={busy} busy={busy}>{t(mode === "create" ? "manage.challenges.groups.create" : "common.save")}</EventButton></>}>
         <form id="group-name-form" className="event-manage-field" onSubmit={submit} noValidate>
             <ManageFieldLabel htmlFor="group-name" title={t("manage.challenges.groups.name")} help={t("manage.challenges.groups.nameHelp")} required />
             <input ref={input} id="group-name" className="event-manage-input" value={name} maxLength={groupNameMax} required placeholder={t("manage.exercises.groups.newGroupPlaceholder")}
                 aria-invalid={!!shownProblem} aria-describedby={shownProblem ? "group-name-error" : undefined}
-                onChange={changeEvent => setName(changeEvent.target.value)} disabled={busy} />
+                onChange={changeEvent => setName(changeEvent.target.value)} disabled={busy && mode === "create"} />
             {shownProblem && <p className="event-manage-validation" id="group-name-error" role="alert">{shownProblem}</p>}
         </form>
     </DialogModal>;

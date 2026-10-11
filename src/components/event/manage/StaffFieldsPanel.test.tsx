@@ -78,3 +78,17 @@ describe("staff field helpers", () => {
         expect(changedStaffValues({}, {city: "x"}, ["note"])).toEqual({});
     });
 });
+
+it("retains newer staff answers when an older save is acknowledged", async () => {
+    let resolve!: (value: StaffFields) => void;
+    put.mockReturnValue(new Promise<StaffFields>(done => {resolve = done;}));
+    setup({Values: {note: "old"}, Change: null});
+    const note = await screen.findByDisplayValue("old") as HTMLTextAreaElement;
+    fireEvent.change(note, {target: {value: "first"}});
+    fireEvent.click(screen.getByRole("button", {name: "Зберегти службові поля"}));
+    expect(note.disabled).toBe(false);
+    fireEvent.change(note, {target: {value: "second"}});
+    resolve({Values: {note: "first"}, Change: null});
+    await waitFor(() => expect(screen.getByRole("button", {name: "Зберегти службові поля"}).getAttribute("aria-busy")).toBeNull());
+    expect(note.value).toBe("second");
+});

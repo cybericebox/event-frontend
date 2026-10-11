@@ -61,6 +61,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const types = useQuery({queryKey: ["event-manage-notification-types", eventID], queryFn: () => getManageNotificationTypes(eventID), refetchOnWindowFocus: false});
     const [drafts, setDrafts] = useState<Record<string, ManageEmailTemplateInput>>({});
     const [busy, setBusy] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
     const href = (id?: string) => `${BASE}/${encodeURIComponent(signal)}${id ? `?id=${id}` : ""}`;
 
@@ -81,16 +82,16 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
         : !draft.Body.length || !draft.Body.some(block => block.type === "rich_text" && emailRichText(block).trim() || block.type === "button" || block.type === "image" || block.type === "preset") ? t("manage.email.validation.body")
         : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.email.validation.buttons")
         : "";
-    const editable = !!(canManage && mode === "edit" && !busy);
+    const editable = !!(canManage && mode === "edit");
     const livePreview = useDebounced(draft && !validation ? draft : null);
     const ownVersions = versions.filter(item => item.Source === "event");
 
-    async function run(action: () => Promise<unknown>, success: string, failure: string): Promise<boolean> {
+    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true): Promise<boolean> {
         if (!canManage || busy) return false;
         setBusy(true);
         try {
             await action();
-            await Promise.all([
+            if (refresh) await Promise.all([
                 queryClient.invalidateQueries({queryKey: ["event-manage-notification-subscriptions", eventID]}),
                 queryClient.invalidateQueries({queryKey: ["event-manage-email-templates", eventID]}),
             ]);
@@ -102,12 +103,15 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
         } finally {setBusy(false);}
     }
 
-    function mutate(action: () => Promise<ManageEmailTemplate>, success: string) {
+    function mutate(action: () => Promise<ManageEmailTemplate>, success: string, refresh = true) {
+        const submitted = template ? drafts[template.ID] : undefined;
+        const sourceID = template?.ID;
         return run(async () => {
             const result = await action();
-            setDrafts(current => {const next = {...current}; delete next[result.ID]; return next;});
+            queryClient.setQueryData<ManageEmailTemplate[]>(["event-manage-email-templates", eventID], current => current?.some(item => item.ID === result.ID) ? current.map(item => item.ID === result.ID ? result : item) : [...(current ?? []), result]);
+            setDrafts(current => {if (result.ID === sourceID && current[result.ID] !== submitted) return current; const next = {...current}; delete next[result.ID]; return next;});
             router.replace(href(result.ID));
-        }, success, t("manage.email.updateError"));
+        }, success, t("manage.email.updateError"), refresh);
     }
 
     function change(input: ManageEmailTemplateInput) {
@@ -129,6 +133,13 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
         finally {setTesting(false);}
     }
 
+    async function save() {
+        if (!editable || !dirty || validation || busy || !template || !draft) return;
+        setSaving(true);
+        try {await mutate(() => updateManageEmailTemplate(eventID, template.ID, draft), t("manage.email.draftSaved"), false);}
+        finally {setSaving(false);}
+    }
+
     const toggleSubscription = useSubscriptionToggle(eventID, canManage, {success: t("manage.email.sendUpdated"), failure: t("manage.email.sendError")});
     const toggle = (enabled: boolean) => {if (subscription) toggleSubscription(subscription.SignalType, subscription.Channel, enabled);};
 
@@ -144,7 +155,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
             actions={<>
                 {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
                 {canManage && template && <EventButton className="ib-btn" type="button" disabled={testing || busy} busy={testing} onClick={() => void sendTest()}><Send size={15} /> {t("manage.email.sendTest")}</EventButton>}
-                {editable && <button className={`ib-btn${dirty ? " ib-btn--primary" : ""}`} type="button" disabled={!dirty || !!validation || busy} onClick={() => void mutate(() => updateManageEmailTemplate(eventID, template!.ID, draft!), t("manage.email.draftSaved"))}>{t("manage.notifications.saveDraft")}</button>}
+                {editable && <EventButton saveDirty={dirty} busy={saving} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageEmailTemplate(eventID, template!), t("manage.email.published"))}>{t("manage.notifications.publish")}</button>}
                 <TemplateActions mode={mode} canManage={canManage} busy={busy}
                     onCustomize={() => void mutate(() => customizeManageEmailTemplate(eventID, template!), t("manage.notifications.customized"))}

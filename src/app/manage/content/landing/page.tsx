@@ -14,6 +14,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {validateLanding} from "@/components/event/manage/validatePageBlocks";
 import type {ContentDocument} from "@/types/eventContent";
 import {t} from "@/i18n/t";
+import {sameValue} from "@/components/event/manage/notifications/notificationModel";
 
 export default function ManageLandingPage() {
     const {event, canManage} = useManager();
@@ -35,7 +36,7 @@ export default function ManageLandingPage() {
     // The editor starts from the saved draft; the site keeps the published landing.
     const saved = content.data ? content.data.LandingDraft ?? content.data.Landing : null;
     const draft = edited?.eventID === eventID ? edited.draft : saved;
-    const dirty = !!draft && !!saved && JSON.stringify(draft) !== JSON.stringify(saved);
+    const dirty = !!draft && !!saved && !sameValue(draft, saved);
     const catalog = useMemo(() => (variables.data ?? []).filter(variable => variable.audience === 0), [variables.data]);
     const validation = useMemo(() => draft && variables.data ? validateLanding(draft, catalog, event.PreviewPicture ?? "") : null, [draft, variables.data, catalog, event.PreviewPicture]);
     const publicValues = useMemo(() => Object.fromEntries(catalog.map(variable => [variable.name, content.data?.Variables[variable.name] ?? null])), [content.data?.Variables, catalog]);
@@ -49,7 +50,7 @@ export default function ManageLandingPage() {
         if (!draft || !content.data) return false;
         await putManageLanding(eventID, draft);
         queryClient.setQueryData(["event-management-content", eventID], {...content.data, LandingDraft: draft});
-        setEdited(null);
+        setEdited(current => current?.draft === draft ? null : current);
         return true;
     }
 
@@ -69,7 +70,7 @@ export default function ManageLandingPage() {
             if (dirty) await saveDraft();
             await publishManageLanding(eventID);
             queryClient.setQueryData(["event-management-content", eventID], {...content.data!, Landing: draft, LandingDraft: null});
-            setEdited(null);
+            setEdited(current => current?.draft === draft ? null : current);
             toast.success(t("manage.content.landing.published"));
         } catch (error) { failure(error, "manage.content.page.publishFailed"); } finally { setBusy(null); }
     }
@@ -95,7 +96,7 @@ export default function ManageLandingPage() {
         <DraftBar state={{dirty, hasDraft: !!content.data.LandingDraft, published: true}} busy={busy} canManage={canManage} invalid={!!validation}
             onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={() => void discardDraft()} />
         <BlockStackEditor editorKey={`landing:${eventID}`} eventID={eventID} coverImage={event.PreviewPicture ?? ""} document={draft} catalog={catalog} values={publicValues} validation={validation}
-            canEdit={canManage && !busy} landing previewTitle={event.Name} previewClassName="event-landing ib-blocks"
+            canEdit={canManage} landing previewTitle={event.Name} previewClassName="event-landing ib-blocks"
             onChange={update => setEdited(previous => {
                 const current = previous?.eventID === eventID ? previous.draft : saved;
                 return current ? {eventID, draft: update(current)} : previous;

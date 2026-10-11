@@ -88,13 +88,13 @@ export function ChallengeGroupsManager() {
     }
 
     async function rename(group: EventChallengeGroup, name: string) {
-        if (!canManage || busy) return;
-        if (name === group.Name) {setNaming(null); return;}
+        if (!canManage || busy || name === group.Name) return false;
         const ok = await run(async () => {
-            await updateEventChallengeGroup(eventID, group.ID, name, group.Order);
+            const saved = await updateEventChallengeGroup(eventID, group.ID, name, group.Order);
+            setNaming(current => current?.group?.ID === group.ID ? {...current, group: saved} : current);
             await board.refreshGroups();
         }, t("manage.exercises.groups.renamed"), error => error instanceof ManageApiError && error.status === 409 ? t("manage.exercises.groups.exists") : t("manage.exercises.groups.renameFailed"));
-        if (ok) setNaming(null);
+        return ok;
     }
 
     async function remove() {
@@ -182,7 +182,7 @@ export function ChallengeGroupsManager() {
         </div>
         {naming && <GroupNameDialog key={naming.key} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
             otherNames={sorted.filter(group => group.ID !== naming.group?.ID).map(group => group.Name)}
-            onClose={() => setNaming(null)} onSubmit={name => void (naming.group ? rename(naming.group, name) : create(name))} />}
+            onClose={() => setNaming(null)} onSubmit={name => naming.group ? rename(naming.group, name) : create(name)} />}
         <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} error={removeError} title={t("manage.challenges.groups.deleteTitle")}
             description={removing ? bucketOf(removing.ID).tasks.length > 0 ? tPlural("manage.exercises.groups.deleteConfirmWithTasks", bucketOf(removing.ID).tasks.length, {name: removing.Name}) : t("manage.exercises.groups.deleteConfirm", {name: removing.Name}) : undefined}
             subject={removing?.Name} confirmLabel={t("manage.exercises.groups.deleteGroup")} onConfirm={() => void remove()} />

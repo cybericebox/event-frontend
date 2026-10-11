@@ -60,4 +60,25 @@ describe("Сторінка сповіщення на сайті", () => {
         expect(screen.getByRole("alert").textContent).toBe("Заповніть заголовок.");
         expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(true);
     });
+
+    it("keeps a later title edit and compares against the acknowledged save", async () => {
+        const template = inAppTemplate(2, {Source: "event", Status: "draft"});
+        fakeServer("in_app", subs, [inAppTemplate(1), template]);
+        const fetch = globalThis.fetch;
+        let acknowledge!: (response: Response) => void;
+        const pending = new Promise<Response>(resolve => { acknowledge = resolve; });
+        globalThis.fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => init?.method === "PUT" ? pending : fetch(input, init)) as typeof fetch;
+        renderPage();
+        const title = await screen.findByRole("textbox", {name: "Заголовок"});
+        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
+        title.textContent = "Sent title"; fireEvent.input(title);
+        fireEvent.click(screen.getByRole("button", {name: "Зберегти чернетку"}));
+        expect(title.closest("[inert]")).toBeNull();
+        title.textContent = "Later title"; fireEvent.input(title);
+        acknowledge(new Response(JSON.stringify({Status: {Code: 0}, Data: {...template, Title: "Sent title"}}), {status: 200}));
+        await waitFor(() => expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(false));
+        expect(title.textContent).toBe("Later title");
+        title.textContent = "Sent title"; fireEvent.input(title);
+        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
+    });
 });

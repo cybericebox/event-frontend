@@ -22,6 +22,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
+import {sameValue} from "../notifications/notificationModel";
 import {ManageFieldLabel} from "../ManageFieldLabel";
 import {useManager} from "../ManagerShell";
 import {bannerFormInput, bannerToForm, bannerValidation, emptyBannerForm, type BannerForm} from "./bannerModel";
@@ -104,6 +105,7 @@ export function BannersManager() {
     const toggleQueue = useRef<Promise<void>>(Promise.resolve());
     const toggling = useRef(0);
     const banners = query.data ?? [];
+    const dirty = !!editing && (!editing.banner || !sameValue(bannerFormInput(editing.form), bannerFormInput(bannerToForm(editing.banner))));
     const validation = editing ? bannerValidation(editing.form) : "";
 
     async function run(action: () => Promise<unknown>, success: string, failure: (error: unknown) => string): Promise<boolean> {
@@ -122,11 +124,12 @@ export function BannersManager() {
     }
 
     async function save() {
-        if (!editing || validation) return;
+        if (!editing || validation || !dirty) return;
         const input = bannerFormInput(editing.form);
         const target = editing.banner;
-        const done = await run(() => target ? updateManageBanner(eventID, target.ID, input) : createManageBanner(eventID, input), t("manage.banners.saved"), saveErrorMessage);
-        if (done) setEditing(null);
+        let saved: ManageBanner | undefined;
+        const done = await run(async () => {saved = await (target ? updateManageBanner(eventID, target.ID, input) : createManageBanner(eventID, input));}, t("manage.banners.saved"), saveErrorMessage);
+        if (done) setEditing(current => current === editing ? null : current ? {...current, banner: saved ?? current.banner} : null);
     }
 
     // «Вимкнути / Увімкнути»: the label flips at once, saves run one after another and block nothing.
@@ -189,10 +192,10 @@ export function BannersManager() {
         <DialogModal open={editing !== null} onClose={() => {if (!busy) setEditing(null);}} size="md" title={editing?.banner ? t("manage.banners.editTitle") : t("manage.banners.createTitle")}
             footer={<>
                 <button className="ib-btn" type="button" disabled={busy} onClick={() => setEditing(null)}>{t("common.cancel")}</button>
-                <EventButton className="ib-btn ib-btn--primary" type="button" busy={busy} disabled={!!validation} onClick={() => void save()}>{t("common.save")}</EventButton>
+                <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" busy={busy} disabled={!!validation} onClick={() => void save()}>{t("common.save")}</EventButton>
             </>}>
             {editing && <>
-                <BannerFormFields form={editing.form} disabled={busy} onChange={form => setEditing({...editing, form})} />
+                <BannerFormFields form={editing.form} disabled={!canManage} onChange={form => setEditing({...editing, form})} />
                 {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 {error && !validation && <p className="event-manage-validation" role="alert">{error}</p>}
             </>}

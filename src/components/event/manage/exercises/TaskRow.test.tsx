@@ -129,3 +129,10 @@ describe("TaskRow", () => {
         });
     });
 });
+
+it("does not offer scoring Save when static points have the same numeric value", () => {
+    render(<ul><TaskRow eventID="e" attachment={attachment} challenge={{...challenge, ScoringOverride: {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0}}} scoring={scoring} lifecycle={lifecycle} hintsDisabled={false} stand="notReady" canManage eventAttempts={null} onSaved={vi.fn(async () => undefined)} onHintsEnabled={vi.fn()} onMaxAttempts={vi.fn()} /></ul>);
+    fireEvent.click(screen.getByRole("button", {expanded: false}));
+    fireEvent.change(screen.getByRole("spinbutton", {name: /Бали за завдання/}), {target: {value: "150.0"}});
+    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+});

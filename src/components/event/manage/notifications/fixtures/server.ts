@@ -37,6 +37,11 @@ export function fakeServer(channel: "email" | "in_app", subscriptions: unknown[]
         else if (path === "notification-subscriptions") data = {...subscription(payload.SignalType, payload.Channel), ...payload, Source: "event"};
         else if (path === "notification-types") data = [{Type: REMINDER, Channels: ["email"], Variables: [{Name: "event_name", Description: "Назва заходу", Default: "Приклад"}]}, {Type: FINISHED, Channels: ["email", "in_app"], Variables: [{Name: "event_name", Description: "Назва заходу", Default: "Приклад"}]}];
         else if (path === `notification-templates/${kind}` && method === "GET") data = list;
+        else if (path.startsWith(`notification-templates/${kind}/`) && method === "PUT") {
+            const id = path.split("/").at(-1);
+            data = {...list.find(item => item.ID === id), ...payload};
+            list = list.map(item => item.ID === id ? data as Record<string, unknown> : item);
+        }
         else if (path.endsWith("/preview")) data = {Subject: "Тема з прикладу", Preheader: "Вступ", HTML: "<p>Привіт, учаснику</p>"};
         else if (path.endsWith("/customize")) {
             const source = list.find(item => path.includes(String(item.ID)))!;

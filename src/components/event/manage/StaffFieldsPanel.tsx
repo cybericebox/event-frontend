@@ -5,7 +5,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
-import type {ParticipantForm} from "@/api/manageParticipantForm";
+import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import {getManageStaffFields, putManageStaffFields, type StaffScope} from "@/api/manageStaffFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -14,6 +14,7 @@ import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {EventButton} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
 import {formFields} from "./listColumns";
+import {sameAnswer} from "../participation/answersModel";
 
 const changedAt = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 
@@ -23,11 +24,11 @@ export function hasStaffFields(form: ParticipantForm | null | undefined): boolea
 
 // Only the staff-only keys whose value differs from what is saved; a cleared
 // field goes as "" (the backend deletes it).
-export function changedStaffValues(saved: ParticipantAnswers, draft: ParticipantAnswers, keys: string[]): ParticipantAnswers {
+export function changedStaffValues(saved: ParticipantAnswers, draft: ParticipantAnswers, keys: string[], fields: Pick<FormField, "key" | "input">[] = []): ParticipantAnswers {
     const changed: ParticipantAnswers = {};
     for (const key of keys) {
         if (!(key in draft)) continue;
-        if (JSON.stringify(saved[key] ?? null) !== JSON.stringify(draft[key] ?? null)) changed[key] = draft[key];
+        if (!sameAnswer(fields.find(field => field.key === key) ?? {input: "text"}, saved[key], draft[key])) changed[key] = draft[key];
     }
     return changed;
 }
@@ -57,7 +58,7 @@ export function StaffFieldsPanel({eventID, scope, subjectID, form, answers, canM
 
     const saved = query.data.Values as ParticipantAnswers;
     const draft = edited ?? saved;
-    const changed = changedStaffValues(saved, draft, keys);
+    const changed = changedStaffValues(saved, draft, keys, formFields(form.Document.blocks));
     const dirty = Object.keys(changed).length > 0;
     const change = query.data.Change;
 
@@ -67,7 +68,7 @@ export function StaffFieldsPanel({eventID, scope, subjectID, form, answers, canM
         try {
             const result = await putManageStaffFields(eventID, scope, subjectID, changed);
             queryClient.setQueryData(queryKey, result);
-            setEdited(null);
+            setEdited(current => current === draft ? null : current);
             await onSaved();
             toast.success(t("manage.staffFields.saved"));
         } catch (error) {
@@ -78,14 +79,14 @@ export function StaffFieldsPanel({eventID, scope, subjectID, form, answers, canM
     return <section className="event-manage-staff-fields" aria-label={t("manage.staffFields.title")}>
         <h3>{t("manage.staffFields.title")}</h3>
         <p className="event-manage-staff-fields__note">{t("manage.staffFields.note")}</p>
-        <TeamFieldsInputs form={staffForm} staffOnly answers={{...answers, ...draft} as ParticipantAnswers} disabled={!canManage || busy}
+        <TeamFieldsInputs form={staffForm} staffOnly answers={{...answers, ...draft} as ParticipantAnswers} disabled={!canManage}
             onChange={(key, value) => setEdited({...draft, [key]: value})} />
         <small className="event-manage-staff-fields__change">{change
             ? t("manage.staffFields.changed", {name: change.ActorName || t("manage.staffFields.unknownActor"), date: changedAt.format(new Date(change.At))})
             : t("manage.staffFields.never")}</small>
-        {canManage && dirty && <div className="event-manage-staff-fields__actions">
-            <EventButton className="ib-btn ib-btn--primary" type="button" busy={busy} disabled={busy} onClick={() => void save()}>{t("manage.staffFields.save")}</EventButton>
-            <button className="ib-btn" type="button" disabled={busy} onClick={() => setEdited(null)}>{t("common.cancel")}</button>
+        {canManage && <div className="event-manage-staff-fields__actions">
+            <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" busy={busy} disabled={busy} onClick={() => void save()}>{t("manage.staffFields.save")}</EventButton>
+            <button className="ib-btn" style={{visibility: dirty || busy ? undefined : "hidden"}} type="button" disabled={busy || !dirty} onClick={() => setEdited(null)}>{t("common.cancel")}</button>
         </div>}
     </section>;
 }

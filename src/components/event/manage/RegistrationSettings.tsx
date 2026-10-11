@@ -81,6 +81,6 @@ export function RegistrationSettings() {
             {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title={t("manage.registration.maxTeams")} help={t("manage.registration.maxTeamsHelp")} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage} placeholder={t("manage.registration.noLimit")} /></div>}
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.pseudonyms")} help={t("manage.registration.pseudonymsHelp")} /><EventSwitch className="event-manage-form__switch" checked={!!allowPseudonyms} onCheckedChange={checked => update({allowPseudonyms: checked})} disabled={!canManage} label={t("manage.registration.allowPseudonyms")} /></div>
         </section>
-        {(dirty || saving) && <div className="event-manage-savebar"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))} busy={saving}>{t("common.save")}</EventButton></div>}
+        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))} busy={saving}>{t("common.save")}</EventButton></div>
     </form>;
 }

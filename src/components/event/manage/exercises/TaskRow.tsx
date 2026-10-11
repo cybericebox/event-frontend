@@ -12,6 +12,7 @@ import {AttemptLimitField} from "@/components/event/manage/AttemptLimitField";
 import {hintLevelLabel, hintPlainText} from "@/components/event/challenges/hintModel";
 import {withTimeDecayFloor} from "@/components/event/manage/scoringFloor";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
+import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -52,23 +53,24 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;
     disabled: boolean; onSaved: () => Promise<unknown>;
 }) {
-    const [draft, setDraft] = useState<ScoringDraft>(() => scoringDraftOf(challenge));
+    const [edit, setDraft] = useState<ScoringDraft | null>(null);
+    const draft = edit ?? scoringDraftOf(challenge);
     const [saving, setSaving] = useState(false);
     const forced = scoring.ForceEventScoring;
     const original = scoringDraftOf(challenge);
     const changed = draft.kind !== original.kind
-        || (draft.kind === "static" && draft.points.trim() !== original.points)
+        || (draft.kind === "static" && Number(draft.points) !== Number(original.points))
         || (draft.kind === "dynamic" && JSON.stringify(withTimeDecayFloor(draft.profile)) !== JSON.stringify(withTimeDecayFloor(original.profile)));
     const problem = draft.kind === "dynamic" ? decayProblem(draft.profile.Mode, lifecycle) : "";
     const valid = draft.kind === "static" ? staticPointsValid(draft.points, true) : draft.kind === "dynamic" ? dynamicValid(draft.profile) : true;
-    const locked = disabled || saving || forced;
+    const locked = disabled || forced;
     const eventPoints = challenge.EffectivePoints;
     const updateProfile = (patch: Partial<DynamicProfile>) => setDraft({...draft, profile: {...draft.profile, ...patch}});
     const errors = draft.kind === "dynamic" ? dynamicErrors(draft.profile) : {max: "", min: "", floor: ""};
     const fieldID = `task-${challenge.ID}`;
 
     async function save() {
-        if (locked || !changed || !valid || problem) return;
+        if (locked || saving || !changed || !valid || problem) return;
         setSaving(true);
         try {
             if (draft.kind === "event") await updateEventChallengeScoring(eventID, attachmentID, challenge.ID, null);
@@ -79,6 +81,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
             }
             if (draft.kind === "dynamic") await updateEventChallengeScoring(eventID, attachmentID, challenge.ID, withTimeDecayFloor(draft.profile));
             await onSaved();
+            setDraft(current => current === draft ? null : current);
             toast.success(t("manage.challenges.scoring.saved"));
         } catch {toast.error(t("manage.challenges.scoring.saveFailed"));}
         finally {setSaving(false);}
@@ -111,7 +114,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
             </>}
         </div>
         {problem && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{problem}</p>}
-        {changed && !forced && <button className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid || !!problem} onClick={() => void save()}>{t("common.save")}</button>}
+        {!forced && <EventButton saveDirty={changed} busy={saving} className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid || !!problem} onClick={() => void save()}>{t("common.save")}</EventButton>}
     </section>;
 }
 
@@ -123,15 +126,15 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
     const [saving, setSaving] = useState(false);
     const changes = hintCostChanges(challenge.Hints, drafts);
     const valid = Object.values(drafts).every(hintCostDraftValid);
-    const locked = disabled || saving;
+    const locked = disabled;
 
     async function saveCosts() {
-        if (locked || !valid || changes.length === 0) return;
+        if (locked || saving || !valid || changes.length === 0) return;
         setSaving(true);
         try {
             await updateEventChallengeHintCosts(eventID, attachmentID, challenge.ID, changes);
             await onSaved();
-            setDrafts({});
+            setDrafts(current => current === drafts ? {} : current);
             toast.success(t("manage.exercises.hints.saved"));
         } catch (error) {toast.error(attachmentActionError(error, t("manage.exercises.hints.saveFailed")));}
         finally {setSaving(false);}
@@ -159,7 +162,7 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
                 </li>;
             })}</ol>
             {!valid && <p className="event-manage-validation" role="alert">{t("manage.exercises.hints.invalid")}</p>}
-            {changes.length > 0 && <button className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid} onClick={() => void saveCosts()}>{t("manage.exercises.hints.save")}</button>}
+            <EventButton saveDirty={changes.length > 0} busy={saving} className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid} onClick={() => void saveCosts()}>{t("manage.exercises.hints.save")}</EventButton>
         </>}
     </section>;
 }
