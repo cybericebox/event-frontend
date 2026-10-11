@@ -7,6 +7,7 @@ import {ManagerShell} from "./ManagerShell";
 import {EventErrorScreen} from "../EventErrorScreen";
 import {EventLoading} from "../EventLoading";
 import {EventBrandProvider} from "../EventBrandLogo";
+import {useEventFavicon} from "../useEventFavicon";
 import {OutageShell} from "../OutageShell";
 import {EventUnavailableScreen} from "../EventUnavailableScreen";
 import {loadFailure} from "@/utils/loadFailure";
@@ -20,6 +21,7 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         refetchInterval: false,
         refetchOnWindowFocus: false,
     });
+    useEventFavicon(event.data?.FaviconURL);
 
     useEffect(() => {
         if (!event.data) return;

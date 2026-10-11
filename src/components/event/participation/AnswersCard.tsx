@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useLayoutEffect, useRef, useState, type FormEvent, type ReactNode} from "react";
 import {CircleHelp, Lock} from "lucide-react";
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
@@ -46,7 +48,7 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
     form: ParticipantForm; saved: ParticipantAnswers; fillable: readonly string[]; scope: "participant" | "team"; error: string;
     onCancel: () => void; onSave: (draft: ParticipantAnswers) => Promise<void>;
 }) {
-    const [edited, setEdited] = useState<ParticipantAnswers | null>(null);
+    const [edited, setEdited] = useSessionDraftState<ParticipantAnswers | null>(`participation-answers-${scope}`, null);
     const draft = edited ?? saved;
     const latestDraft = useRef(draft);
     useLayoutEffect(() => {latestDraft.current = draft;}, [draft]);
@@ -54,6 +56,7 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
     const [invalid, setInvalid] = useState<string[]>([]);
     const [discard, setDiscard] = useState(false);
     const dirty = isDirty(form, saved, draft, fillable);
+    useDraftDirty(`participation-answers-${scope}`, dirty);
     const shown = visibleFieldKeys(form.Document.blocks, draft);
     const change = (key: string, value: ParticipantAnswer) => {
         setEdited(current => ({...(current ?? saved), [key]: value}));
@@ -67,7 +70,7 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
         setInvalid(missing);
         if (missing.length) return;
         setBusy(true);
-        try { await onSave(draft); if (latestDraft.current === draft) onCancel(); } catch { /* the card displays the save error */ } finally { setBusy(false); }
+        try { await onSave(draft); if (latestDraft.current === draft) {setEdited(null); onCancel();} } catch { /* the card displays the save error */ } finally { setBusy(false); }
     };
     return <form className="event-pp-form" onSubmit={event => void submit(event)} noValidate>
         {answerGroups(form).map(group => <section className="event-pp-form__group" key={group.id} aria-label={group.title ?? t("participation.form.general")}>
@@ -101,7 +104,7 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
             </div>
         </div>}
         <ConfirmDialog open={discard} onCancel={() => setDiscard(false)} title={t("participation.form.discardTitle")} description={t("participation.form.discardText")}
-            cancelLabel={t("participation.form.keepEditing")} confirmLabel={t("participation.form.discard")} onConfirm={() => { setDiscard(false); onCancel(); }} />
+            cancelLabel={t("participation.form.keepEditing")} confirmLabel={t("participation.form.discard")} tone="danger" onConfirm={() => { setEdited(null); setDiscard(false); onCancel(); }} />
     </form>;
 }
 
@@ -130,7 +133,7 @@ export function AnswersCard({title, note, form, answers, missing, canEdit, whyRe
     title: string; note?: string; form: ParticipantForm; answers: ParticipantAnswers; missing: readonly string[]; canEdit: boolean; whyReadOnly?: string; scope: "participant" | "team";
     onSave: (draft: ParticipantAnswers) => Promise<void>;
 }) {
-    const [editing, setEditing] = useState(false);
+    const [editing, setEditing] = useSessionDraftState(`answers-editing-${scope}`, false, {dirty: () => false});
     const [error, setError] = useState("");
     const editable = canEdit && hasChangeable(form, missing);
     const save = async (draft: ParticipantAnswers) => {

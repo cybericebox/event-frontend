@@ -12,6 +12,7 @@ import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useQuery} from "@tanstack/react-query";
 import {getManageConfig, ManageApiError} from "@/api/manage";
 import {infrastructureMismatch} from "./attachmentModel";
@@ -40,7 +41,7 @@ export function ChallengeGroupsManager() {
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const [selectedID, setSelectedID] = useState<string | null>(null);
     // «Додати групу» / «Перейменувати групу» dialog.
-    const [naming, setNaming] = useState<{group: EventChallengeGroup | null; key: number} | null>(null);
+    const [naming, setNaming] = useSessionDraftState<{group: EventChallengeGroup | null; key: number} | null>("group-naming", null, {dirty: () => false});
     const [removing, setRemoving] = useState<EventChallengeGroup | null>(null);
     const [removeError, setRemoveError] = useState("");
     const [moving, setMoving] = useState<{task: GroupTask; target: string} | null>(null);
@@ -56,6 +57,7 @@ export function ChallengeGroupsManager() {
     const groups = groupOrder ? groupOrder.map(id => sorted.find(group => group.ID === id)).filter((group): group is EventChallengeGroup => !!group) : sorted;
     const buckets = groupBuckets(groups, board.sets.data ?? []);
     const bucketOf = (groupID: string | null) => buckets.find(bucket => bucket.groupID === groupID)!;
+    const showUngrouped = groups.length > 0 || bucketOf(null).tasks.length > 0;
     const selected = selectedID && groups.some(group => group.ID === selectedID) ? selectedID : selectedID === noGroup ? null : groups[0]?.ID ?? null;
     const selectedGroup = groups.find(group => group.ID === selected) ?? null;
     const selectedName = selectedGroup?.Name ?? t("manage.exercises.groups.none");
@@ -85,6 +87,7 @@ export function ChallengeGroupsManager() {
             await board.refreshGroups();
         }, t("manage.exercises.groups.created"), error => error instanceof ManageApiError && error.status === 409 ? t("manage.exercises.groups.exists") : t("manage.exercises.groups.createFailed"));
         if (ok) setNaming(null);
+        return ok;
     }
 
     async function rename(group: EventChallengeGroup, name: string) {
@@ -150,7 +153,7 @@ export function ChallengeGroupsManager() {
                 <div className="event-manage-section__head event-group-order__head"><h2 id="challenge-groups-title">{t("manage.exercises.groups.groups")}</h2>
                     {canManage && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy} onClick={() => setNaming({group: null, key: Date.now()})}><Plus aria-hidden="true" />{t("manage.exercises.groups.add")}</button>}
                 </div>
-                {groups.length === 0 ? <EmptyState compact message={t("manage.exercises.groups.empty")} /> : <SortableList ariaLabel={t("manage.exercises.groups.groups")} items={groups}
+                {!showUngrouped ? <EmptyState compact message={t("manage.exercises.groups.empty")} /> : groups.length > 0 ? <SortableList ariaLabel={t("manage.exercises.groups.groups")} items={groups}
                     itemID={group => group.ID} itemName={group => group.Name} disabled={!canManage || busy} onReorder={ids => void reorderGroups(ids)}
                     renderItem={group => ({
                         selected: selected === group.ID,
@@ -160,10 +163,10 @@ export function ChallengeGroupsManager() {
                             {key: "rename", label: t("manage.exercises.groups.rename"), icon: Pencil, onSelect: () => setNaming({group, key: Date.now()})},
                             {key: "delete", label: t("manage.exercises.groups.deleteGroup"), icon: Trash2, danger: true, onSelect: () => {setRemoveError(""); setRemoving(group);}},
                         ]} />,
-                    })} />}
-                <button type="button" className={`event-group-order__none${selected === null ? " is-selected" : ""}`} aria-pressed={selected === null} onClick={() => setSelectedID(noGroup)}>
+                    })} /> : null}
+                {showUngrouped && <button type="button" className={`event-group-order__none${selected === null ? " is-selected" : ""}`} aria-pressed={selected === null} onClick={() => setSelectedID(noGroup)}>
                     <span className="event-group-order__label"><strong>{t("manage.exercises.groups.none")}</strong><small>{count(null)}</small></span>
-                </button>
+                </button>}
             </section>
             <section className="event-manage-section event-group-order__tasks" aria-labelledby="group-tasks-title">
                 <div className="event-manage-section__head"><h2 id="group-tasks-title">{selectedName}</h2><p>{t("manage.challenges.groups.tasksHelp")}</p></div>
@@ -180,7 +183,7 @@ export function ChallengeGroupsManager() {
                         })} />}
             </section>
         </div>
-        {naming && <GroupNameDialog key={naming.key} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
+        {naming && <GroupNameDialog key={naming.key} draftID={naming.group?.ID ?? "new"} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
             otherNames={sorted.filter(group => group.ID !== naming.group?.ID).map(group => group.Name)}
             onClose={() => setNaming(null)} onSubmit={name => naming.group ? rename(naming.group, name) : create(name)} />}
         <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} error={removeError} title={t("manage.challenges.groups.deleteTitle")}

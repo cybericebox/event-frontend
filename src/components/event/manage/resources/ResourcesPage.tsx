@@ -1,6 +1,8 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
+import {useEffect} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {AlertTriangle} from "lucide-react";
 import {getManageResources, type ChangeStatus, type ResourceChange} from "@/api/manageResources";
@@ -32,13 +34,13 @@ export function ResourcesPage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const query = useQuery({queryKey: ["event-management-resources", eventID], queryFn: () => getManageResources(eventID), refetchInterval: 30_000, refetchOnWindowFocus: false, placeholderData: previous => previous});
-    const [requesting, setRequesting] = useState(false);
+    const [requesting, setRequesting] = useSessionDraftState("resource-request-open", false, {dirty: () => false});
 
     // The task picker links here with ?request=1 when it hits «not enough reserved».
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only address, unknown on the server
         if (new URLSearchParams(window.location.search).get("request") === "1") setRequesting(true);
-    }, []);
+    }, [setRequesting]);
 
     const heading = <header className="event-manage-heading"><div><h1>{t("manage.resources.title")}</h1><p>{t("manage.resources.subtitle")}</p></div>
         {canManage && query.data?.Reserved && <div className="event-manage-heading__actions"><button className="ib-btn ib-btn--primary" type="button" onClick={() => setRequesting(true)}>{t("manage.resources.requestChange")}</button></div>}

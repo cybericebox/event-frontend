@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useSessionDraftState} from "../manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {getManageConfig, getManageLifecycle} from "@/api/manage";
 import {Plus} from "lucide-react";
@@ -16,7 +16,7 @@ export function ExercisesSection() {
     const {event, canManage} = useManager();
     const queryClient = useQueryClient();
     const returnURL = useReturnURL();
-    const [attachOpen, setAttachOpen] = useState(false);
+    const [attachOpen, setAttachOpen] = useSessionDraftState("exercise-attachment-open", false, {dirty: () => false});
     const config = useQuery({queryKey: ["event-management-config", event.EventID], queryFn: () => getManageConfig(event.EventID), refetchOnWindowFocus: false});
     const lifecycle = useQuery({queryKey: ["event-management-lifecycle", event.EventID], queryFn: () => getManageLifecycle(event.EventID), refetchOnWindowFocus: false});
 

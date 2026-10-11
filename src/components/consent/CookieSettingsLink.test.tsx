@@ -6,13 +6,36 @@ import {cleanup, fireEvent, render, screen} from "@testing-library/react";
 import {CONSENT_OPEN_EVENT} from "@/utils/consent";
 import {CookieSettingsLink} from "./CookieSettingsLink";
 import {Analytics} from "./Analytics";
+import {ManualDraftProvider, useSessionDraftState} from "@/components/event/manage/manualDraft";
+import {t} from "@/i18n/t";
 
 // next/script stands in as a marker element carrying the id and src
 vi.mock("next/script", () => ({default: (p: {id: string; src?: string}) => <i data-script={p.id} data-src={p.src} />}));
+vi.mock("next/navigation", () => ({usePathname: () => "/manage/settings", useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
+HTMLDialogElement.prototype.showModal ??= function () {this.setAttribute("open", "");};
+HTMLDialogElement.prototype.close ??= function () {this.removeAttribute("open");};
 
 afterEach(() => cleanup());
 
 describe("cookie settings entry", () => {
+    it("opens consent settings without discarding a manual draft", () => {
+        sessionStorage.clear();
+        function Form() {
+            const [name, setName] = useSessionDraftState<string | null>("name", null);
+            return <input aria-label="name" value={name ?? ""} onChange={event => setName(event.target.value)} />;
+        }
+        const opened = vi.fn();
+        window.addEventListener(CONSENT_OPEN_EVENT, opened);
+        render(<ManualDraftProvider userID="user-a" eventID="event-a"><Form /><CookieSettingsLink /></ManualDraftProvider>);
+        fireEvent.change(screen.getByLabelText("name"), {target: {value: "unsaved"}});
+        fireEvent.click(screen.getByRole("link", {name: t("consent.settings")}));
+        expect(opened).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText(t("manage.unsaved.title"))).toBeNull();
+        expect(screen.getByLabelText("name")).toHaveProperty("value", "unsaved");
+        window.removeEventListener(CONSENT_OPEN_EVENT, opened);
+        sessionStorage.clear();
+    });
+
     it("is a link to the cookie policy that opens the panel without navigating", () => {
         const opened = vi.fn();
         window.addEventListener(CONSENT_OPEN_EVENT, opened);

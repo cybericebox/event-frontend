@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -29,12 +31,13 @@ export default function ResultsSettingsPage() {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const settingsQuery = useQuery({queryKey: ["event-management-results-settings", eventID], queryFn: () => getResultsSettings(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useState<{eventID: string; value: ResultsSettingsInput} | null>(null);
+    const [edit, setEdit] = useSessionDraftState<{eventID: string; value: ResultsSettingsInput} | null>("results", null);
     const [saving, setSaving] = useState(false);
     const settings = settingsQuery.data;
     const saved = settings ? resultsSettingsInput(settings) : null;
     const value = edit?.eventID === eventID ? edit.value : saved;
     const dirty = !!saved && !!value && JSON.stringify(saved) !== JSON.stringify(value);
+    useDraftDirty("results", saved ? dirty : undefined);
     const valid = !!value && inRange(value.FreezeMinutes, 1, 1440) && inRange(value.ChartTeams, 1, 10) && (value.RowsLimit === null || inRange(value.RowsLimit, 1, 1000));
     const disabled = !canManage;
 

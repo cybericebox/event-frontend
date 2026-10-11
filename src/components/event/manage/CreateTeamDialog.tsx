@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -59,7 +61,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     onCreated: () => Promise<void>;
 }) {
     const id = useId();
-    const [mode, setMode] = useState<Mode>("manual");
+    const [mode, setMode] = useSessionDraftState<Mode>("create-team-mode", "manual", {dirty: () => false});
     const csvPicker = useRef<FilePickerHandle | null>(null);
     // A CSV dropped in manual mode waits here until the CSV field mounts.
     const droppedCsv = useRef<File[] | null>(null);
@@ -74,15 +76,15 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
         droppedCsv.current = files;
         setMode("csv"); setServerIssues([]);
     }
-    const [name, setName] = useState("");
-    const [chips, setChips] = useState<EmailChip[]>([]);
-    const [captain, setCaptain] = useState("");
+    const [name, setName] = useSessionDraftState("create-team-name", "");
+    const [chips, setChips] = useSessionDraftState<EmailChip[]>("create-team-chips", []);
+    const [captain, setCaptain] = useSessionDraftState("create-team-captain", "");
     const [pick, setPick] = useState("");
-    const [fieldAnswers, setFieldAnswers] = useState<ParticipantAnswers>({});
-    const [fileName, setFileName] = useState<string | null>(null);
-    const [csvIssues, setCsvIssues] = useState<CsvIssue[]>([]);
-    const [csvTeams, setCsvTeams] = useState<TeamDraft[]>([]);
-    const [preview, setPreview] = useState<BatchTeamsResult | null>(null);
+    const [fieldAnswers, setFieldAnswers] = useSessionDraftState<ParticipantAnswers>("create-team-fieldAnswers", {});
+    const [fileName, setFileName] = useSessionDraftState<string | null>("create-team-fileName", null, {dirty: () => false});
+    const [csvIssues, setCsvIssues] = useSessionDraftState<CsvIssue[]>("create-team-csvIssues", [], {dirty: () => false});
+    const [csvTeams, setCsvTeams] = useSessionDraftState<TeamDraft[]>("create-team-csvTeams", []);
+    const [preview, setPreview] = useSessionDraftState<BatchTeamsResult | null>("create-team-preview", null, {dirty: () => false});
     const [serverIssues, setServerIssues] = useState<string[]>([]);
     const [busy, setBusy] = useState(false);
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: open, refetchOnWindowFocus: false});
@@ -113,7 +115,6 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
 
     function close() {
         if (busy) return;
-        reset();
         onOpenChange(false);
     }
 
@@ -191,7 +192,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             </div>
             <div className="ib-field">
                 <label className="ib-field__label" htmlFor={`${id}-members`}>{t("manage.teams.batch.members")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></label>
-                <EmailChipsInput id={`${id}-members`} chips={chips} onChange={next => {setChips(next); setServerIssues([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-members-hint ${id}-members-error`} />
+                <EmailChipsInput draftSlot="create-team-pending-email" id={`${id}-members`} chips={chips} onChange={next => {setChips(next); setServerIssues([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-members-hint ${id}-members-error`} />
                 <p className="ib-field__hint" id={`${id}-members-hint`}>{t("manage.teams.batch.membersHint")}</p>
                 <p className="ib-field__error" id={`${id}-members-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : ""}</p>
                 {available.length > 0 && <EventSelect ariaLabel={t("manage.teams.batch.pickParticipant")} value={pick} placeholder={t("manage.teams.batch.pickParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name ? `${person.Name} · ${person.Email}` : person.Email}))} onValueChange={addParticipant} disabled={busy} />}

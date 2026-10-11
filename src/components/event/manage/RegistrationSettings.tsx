@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState, type FormEvent} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -21,7 +23,7 @@ export function RegistrationSettings() {
     const queryClient = useQueryClient();
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const lifecycleQuery = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useState<{eventID: string; registration: 0 | 1 | 2; joinPolicy: 0 | 1; maxTeams: number | null; allowPseudonyms: boolean} | null>(null);
+    const [edit, setEdit] = useSessionDraftState<{eventID: string; registration: 0 | 1 | 2; joinPolicy: 0 | 1; maxTeams: number | null; allowPseudonyms: boolean} | null>("registration", null);
     const [saving, setSaving] = useState(false);
     const config = configQuery.data;
     const lifecycle = lifecycleQuery.data;
@@ -33,6 +35,7 @@ export function RegistrationSettings() {
     const joinDirty = lifecycle !== undefined && joinPolicy !== lifecycle.JoinPolicy;
     const dirty = registrationDirty || joinDirty;
 
+    useDraftDirty("registration", config && lifecycle ? dirty : undefined);
     function update(patch: Partial<{registration: 0 | 1 | 2; joinPolicy: 0 | 1; maxTeams: number | null; allowPseudonyms: boolean}>) {
         if (registration === undefined || joinPolicy === undefined || maxTeams === undefined || allowPseudonyms === undefined) return;
         setEdit({eventID, registration: patch.registration ?? registration, joinPolicy: patch.joinPolicy ?? joinPolicy, maxTeams: patch.maxTeams === undefined ? maxTeams : patch.maxTeams, allowPseudonyms: patch.allowPseudonyms ?? allowPseudonyms});

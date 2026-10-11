@@ -1,7 +1,9 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useMemo, useState} from "react";
-import {useRouter} from "next/navigation";
+import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import Link from "next/link";
 import {ArrowLeft, Send, TriangleAlert} from "lucide-react";
@@ -52,7 +54,7 @@ export function BroadcastCompose() {
     const eventID = event.EventID;
     const router = useRouter();
     const queryClient = useQueryClient();
-    const [draft, setDraft] = useState<BroadcastDraft>(emptyDraft);
+    const [draft, setDraft] = useSessionDraftState<BroadcastDraft>("broadcast-compose", emptyDraft);
     const [confirming, setConfirming] = useState(false);
     // A template chosen over existing content waits here for the replacement to be confirmed.
     const [pendingTemplate, setPendingTemplate] = useState<BroadcastTemplate | null>(null);
@@ -103,6 +105,7 @@ export function BroadcastCompose() {
             const broadcast = await sendEventBroadcast(eventID, broadcastPayload(draft));
             await queryClient.invalidateQueries({queryKey: ["event-manage-broadcasts", eventID]});
             setConfirming(false);
+            setDraft(current => current === draft ? emptyDraft() : current);
             router.push(`${BASE}/${broadcast.ID}`);
         } catch (failure) {
             setError(sendErrorMessage(failure));

@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useId, useMemo, useState, type CSSProperties, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
@@ -37,7 +39,7 @@ export default function ManageAppearancePage() {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useState<{eventID: string; brand: string; accent: string} | null>(null);
+    const [edit, setEdit] = useSessionDraftState<{eventID: string; brand: string; accent: string} | null>("appearance-colors", null);
     const [suggestion, setSuggestion] = useState<{brand: string; accent: string} | null>(null);
     const [saving, setSaving] = useState(false);
     const brand = edit?.eventID === eventID ? edit.brand : configQuery.data?.Theme.Brand ?? defaultBrand;
@@ -48,6 +50,7 @@ export default function ManageAppearancePage() {
     const invalidFormat = !colorPattern.test(brand.trim()) || (accent.trim() !== "" && !colorPattern.test(accent.trim()));
     const lowContrast = !invalidFormat && (whiteTextContrast(brand) ?? 0) < 4.5;
     const dirty = !!configQuery.data && (brand.trim().toUpperCase() !== configQuery.data.Theme.Brand.trim().toUpperCase() || accent.trim().toUpperCase() !== configQuery.data.Theme.Accent.trim().toUpperCase() || logo.dirty || favicon.dirty);
+    useDraftDirty("appearance-colors", configQuery.data ? brand.trim().toUpperCase() !== (configQuery.data?.Theme.Brand ?? defaultBrand).trim().toUpperCase() || accent.trim().toUpperCase() !== (configQuery.data?.Theme.Accent ?? "").trim().toUpperCase() : undefined);
     const disabled = !canManage;
     const previewStyle = theme ? {"--ev-brand": theme.Brand, "--ev-accent-light": theme.AccentLight, "--ev-accent-dark": theme.AccentDark, "--ev-accent-live": theme.AccentLive} as CSSProperties : undefined;
     const changeBrand = (value: string) => setEdit({eventID, brand: value, accent});
@@ -60,7 +63,7 @@ export default function ManageAppearancePage() {
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
-        if (!dirty || !theme || logo.uploading || favicon.uploading || saving || !canManage) return;
+        if (!dirty || !theme || logo.uploading || favicon.uploading || logo.expired || favicon.expired || saving || !canManage) return;
         setSaving(true);
         try {
             const result = await putManageAppearance(eventID, {Brand: brand.trim(), Accent: accent.trim(), Logo: logo.change, Favicon: favicon.change});
@@ -105,7 +108,7 @@ export default function ManageAppearancePage() {
                 <div className="event-manage-preview__sample" style={previewStyle} data-theme="dark"><div className="event-manage-preview__body"><strong>{t("manage.appearance.darkTheme")}</strong><span className="event-manage-preview__accent">{t("manage.appearance.accentElement")}</span></div></div>
             </aside>
         </div>
-        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !theme || logo.uploading || favicon.uploading} busy={saving}>{t("common.save")}</EventButton></div>
+        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !theme || logo.uploading || favicon.uploading || logo.expired || favicon.expired} busy={saving}>{t("common.save")}</EventButton></div>
         <ManageDialog open={suggestion !== null} onOpenChange={open => {if (!open) setSuggestion(null);}} title={t("manage.appearance.paletteTitle")} description={t("manage.appearance.paletteBody")}
             footer={<><button className="ib-btn" type="button" onClick={() => setSuggestion(null)}>{t("manage.appearance.keepCurrent")}</button><button className="ib-btn ib-btn--primary" type="button" disabled={disabled} onClick={() => {if (suggestion && (whiteTextContrast(suggestion.brand) ?? 0) >= 4.5) setEdit({eventID, brand: suggestion.brand, accent: suggestion.accent}); setSuggestion(null);}}>{t("manage.appearance.applyColors")}</button></>}>
             {suggestion && <div className="event-brand-palette-dialog__colors"><div><span>{t("manage.appearance.brand")}</span><strong><i style={{backgroundColor: suggestion.brand}} />{suggestion.brand}</strong></div><div><span>{t("manage.appearance.accent")}</span><strong><i style={{backgroundColor: suggestion.accent || "#FFFFFF"}} />{suggestion.accent || t("manage.appearance.undefined")}</strong></div></div>}

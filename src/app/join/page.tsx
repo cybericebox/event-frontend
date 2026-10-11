@@ -1,9 +1,11 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
+import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
@@ -42,7 +44,7 @@ export default function JoinPage() {
     const register = registration.data?.Register;
     const canJoin = join.data === 0 && !!register?.Allowed;
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!identity.data && !!event && canJoin, retry: false});
-    const [answers, setAnswers] = useState<ParticipantAnswers>({});
+    const [answers, setAnswers] = useSessionDraftState<ParticipantAnswers>("registration-answers", {});
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -86,6 +88,7 @@ export default function JoinPage() {
                 void queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]});
                 void queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]});
             }
+            setAnswers({});
             router.push("/");
         } catch (failure) {
             setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("join.failed")));

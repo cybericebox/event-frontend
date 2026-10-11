@@ -24,6 +24,8 @@ import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {SkipLink} from "@/components/ui/SkipLink";
 
+import {ManualDraftProvider} from "./manualDraft";
+
 const ManagerContext = createContext<{event: PublicEventInfo; canManage: boolean} | null>(null);
 
 export function useManager() {
@@ -66,7 +68,7 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
         return () => onSection?.(null);
     }, [section, onSection]);
 
-    if (access.isPending) return <EventLoading event={event} full label={t("manage.shell.checkingAccess")} />;
+    if (access.isPending || profile.isPending) return <EventLoading event={event} full label={t("manage.shell.checkingAccess")} />;
     if (access.isError) {
         const status = access.error instanceof ManageApiError ? access.error.status : 0;
         // An outage keeps the frame under the outage modal; access refetches on recovery.
@@ -77,7 +79,9 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
         return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} error={access.error} onRetry={() => void access.refetch()} page />;
     }
 
-    return <div className="event-manage-frame">
+    if (profile.isError && !profile.data) return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} error={profile.error} onRetry={() => void profile.refetch()} page />;
+
+    return <ManualDraftProvider userID={profile.data?.ID ?? ""} eventID={event.EventID}><div className="event-manage-frame">
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <SkipLink />
         <div className="ib-admin-shell__layout">
@@ -95,5 +99,5 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
         </div>
         <button className="ib-admin-shell__backdrop" type="button" aria-label={t("manage.shell.closeMenu")} onClick={closeDrawer} />
         </div>
-    </div>;
+    </div></ManualDraftProvider>;
 }

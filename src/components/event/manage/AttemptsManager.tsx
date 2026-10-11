@@ -1,7 +1,9 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useEffect, useState, type FormEvent, type KeyboardEvent} from "react";
-import {useRouter} from "next/navigation";
+import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import Link from "next/link";
@@ -102,12 +104,12 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
     const pages = useCursorPages();
     const options = useJournalOptions();
     const flags = useIntegrityFlags(eventID);
-    const [selectedID, setSelectedID] = useState<string | null>(null);
-    const [draft, setDraft] = useState<{id: string; decision: AttemptDecision; reason: string} | null>(null);
+    const [selectedID, setSelectedID] = useSessionDraftState<string | null>("selected-attempt", null, {dirty: () => false});
+    const [draft, setDraft] = useSessionDraftState<{id: string; decision: AttemptDecision; reason: string} | null>("attempt-decision", null);
     const [showExpected, setShowExpected] = useState(false);
     const [saving, setSaving] = useState(false);
     const [filters, setFilters] = useState<AttemptFilters>(() => ({...emptyAttemptFilters, ...journalFiltersFromParams(initialFilters)}));
-    const [annul, setAnnul] = useState<{attempt: ManageAttempt; reason: string; error?: string} | null>(null);
+    const [annul, setAnnul] = useSessionDraftState<{attempt: ManageAttempt; reason: string; error?: string} | null>("annul-attempt", null, {dirty: value => !!value?.reason.trim(), serialize: value => value && {attempt: value.attempt, reason: value.reason}});
     const [annulling, setAnnulling] = useState(false);
     const [exporting, setExporting] = useState(false);
     // Realtime: the stream says "changed", the page refetches; polling when SSE fails.
@@ -122,6 +124,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
     const decision = draft && selected && draft.id === selected.ID ? draft.decision : selected?.Decision ?? "automatic";
     const reason = draft && selected && draft.id === selected.ID ? draft.reason : selected?.DecisionReason ?? "";
     const changed = !!selected && (decision !== selected.Decision || reason.trim() !== (selected.DecisionReason ?? "").trim());
+    useDraftDirty("attempt-decision", changed || !!draft && !selected);
     const filtered = filters.teamID !== null || filters.participantID !== null || filters.challengeID !== null || filters.correct !== null || !!filters.from || !!filters.to;
     const {offset} = zoneLabel();
     const busy = pageQuery.isFetching && !!pageQuery.data;

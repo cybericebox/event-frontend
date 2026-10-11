@@ -1,7 +1,9 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState} from "react";
-import {useRouter} from "next/navigation";
+import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Send} from "lucide-react";
 import {toast} from "react-hot-toast";
@@ -59,7 +61,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const templates = useQuery({queryKey: ["event-manage-email-templates", eventID], queryFn: () => getManageEmailTemplates(eventID), refetchOnWindowFocus: false});
     const presets = useQuery({queryKey: ["event-manage-email-presets", eventID], queryFn: () => getManageEmailPresets(eventID), refetchOnWindowFocus: false});
     const types = useQuery({queryKey: ["event-manage-notification-types", eventID], queryFn: () => getManageNotificationTypes(eventID), refetchOnWindowFocus: false});
-    const [drafts, setDrafts] = useState<Record<string, ManageEmailTemplateInput>>({});
+    const [drafts, setDrafts] = useSessionDraftState<Record<string, ManageEmailTemplateInput>>(`email-templates-${signal}`, {});
     const [busy, setBusy] = useState(false);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
@@ -78,6 +80,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const body = (draft?.Body ?? []) as EmailBodyBlock[];
     const footer = body.find((block): block is PresetBlock => block.type === "preset" && block.placement === "footer");
     const bodyContent = body.filter(block => !(block.type === "preset" && block.placement === "footer"));
+    useDraftDirty(`email-templates-${signal}`, Object.entries(drafts).some(([id, value]) => {const original = templates.data?.find(item => item.ID === id); return !original || !sameValue(value, inputOf(original));}));
     const validation = !draft?.Subject.trim() ? t("manage.email.validation.subject")
         : !draft.Body.length || !draft.Body.some(block => block.type === "rich_text" && emailRichText(block).trim() || block.type === "button" || block.type === "image" || block.type === "preset") ? t("manage.email.validation.body")
         : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.email.validation.buttons")

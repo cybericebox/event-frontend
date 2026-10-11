@@ -15,6 +15,7 @@ import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
 import {VpnHeaderButton} from "./vpn/EventVpn";
 import {ManagerEntry} from "./manage/ManagerEntry";
+import {clearManualDrafts, useDraftNavigation} from "./manage/manualDraft";
 import {useStaffAccess} from "./useStaffAccess";
 import {InboxButton} from "./InboxButton";
 import {navigationRight} from "./navigationRight";
@@ -53,6 +54,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
     const [open, setOpen] = useState(false);
     const [signOutError, setSignOutError] = useState(false);
     const router = useRouter();
+    const navigate = useDraftNavigation();
     const queryClient = useQueryClient();
     const profile = useQuery({
         queryKey: ["event-current-user"], queryFn: getCurrentUser,
@@ -81,10 +83,11 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
     const contextAt = entries.findIndex(entry => entry.kind === "divider");
     const picture = profilePictureUrl(profile.data?.Picture ?? "");
     const avatarInitials = initials(profile.data?.FirstName, profile.data?.LastName, profile.data?.Email);
-    const leave = async () => {
+    const performLeave = async () => {
         try {
             setSignOutError(false);
             await signOut();
+            clearManualDrafts();
             queryClient.clear();
             router.push("/");
             router.refresh();
@@ -92,6 +95,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
             setSignOutError(true);
         }
     };
+    const leave = () => navigate(() => void performLeave());
     return <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild><button className="event-account__trigger" type="button" aria-label={t("account.menu")} aria-expanded={open}><span className="event-account__avatar" aria-hidden="true">{picture ? (
             // The API returns an origin-specific media URL; this app is statically exported.
@@ -115,7 +119,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
                 if (entry.kind === "cookies") {
                     const Icon = ACCOUNT_MENU_ICONS.cookies;
                     // A link to the cookie policy; with JS the menu closes and the consent panel opens instead.
-                    const cookies = <a key={i} href={COOKIE_POLICY_HREF} aria-label={t(ACCOUNT_MENU_LABELS.cookiesAria)} onClick={e => {
+                    const cookies = <a key={i} href={COOKIE_POLICY_HREF} data-manual-draft-navigation aria-label={t(ACCOUNT_MENU_LABELS.cookiesAria)} onClick={e => {
                         e.preventDefault();
                         setOpen(false);
                         window.setTimeout(openConsentSettings, 0);

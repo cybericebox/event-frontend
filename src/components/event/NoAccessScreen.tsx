@@ -11,6 +11,7 @@ import {EventLoading} from "./EventLoading";
 import {SignInRedirect} from "./SignInRedirect";
 import {EventButton} from "@/components/ui/EventButton";
 import {ErrorPage} from "./ErrorPage";
+import {clearManualDrafts} from "./manage/manualDraft";
 
 // A feature of a visible event the signed-in account has no rights for (403: /manage, /live).
 // An event the account cannot see at all is EventUnavailableScreen.
@@ -27,6 +28,7 @@ export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mai
         setFailed(false);
         try {
             await signOut();
+            clearManualDrafts();
             window.location.replace(signInRedirectTarget(window.location.href));
         } catch {
             setFailed(true);

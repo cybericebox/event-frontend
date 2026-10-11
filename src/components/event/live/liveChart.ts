@@ -1,5 +1,4 @@
 import type {ManageResultsSnapshot} from "@/api/manageResults";
-import {holdPoints} from "@/components/event/charts/holdPoints";
 
 export type ChartPoint = [number, number];
 
@@ -48,15 +47,15 @@ export function chartSeries(results: ManageResultsSnapshot | undefined, lines: n
     const y = (points: number) => box.top + box.height * (1 - points / max);
     const series = teams.map(team => {
         const solves = (results?.Timeline ?? []).filter(item => item.EventTeamID === team.TeamID).sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
-        // Cumulative score: flat between solves (a hold point ahead of each
-        // change), rising smoothly only around a solve.
+        // Interpolate the cumulative scores at their actual solve times.
+        // Synthetic hold points compress each rise into a near-vertical step.
         let sum = 0;
         const clamp = (time: number) => Math.min(end, Math.max(start, time));
-        const points = holdPoints([
+        const points: ChartPoint[] = [
             [start, 0],
             ...solves.map((solve): [number, number] => [clamp(Date.parse(solve.SolvedAt)), sum += solve.Points]),
             [end, sum],
-        ]).map((point): ChartPoint => [x(point[0]), y(point[1])]);
+        ].map((point): ChartPoint => [x(point[0]), y(point[1])]);
         return {teamID: team.TeamID, name: team.TeamName, path: monotonePath(points), endY: y(sum)};
     });
     return {series, max};
