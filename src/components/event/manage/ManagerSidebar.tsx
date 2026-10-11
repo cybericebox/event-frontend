@@ -88,9 +88,9 @@ const groups: Group[] = [
         {href: "/manage/content/landing", label: t("manage.nav.landing"), icon: FileText},
     ]},
     {id: "results", label: t("manage.nav.group.results"), icon: Medal, items: [
-        {href: "/manage/results-settings", label: t("manage.nav.resultsSettings"), icon: Cog},
         {href: "/manage/results", label: t("manage.nav.results"), icon: Trophy},
         {href: "/manage/live", label: t("manage.nav.live"), icon: MonitorPlay},
+        {href: "/manage/results-settings", label: t("manage.nav.resultsSettings"), icon: Cog},
     ]},
     // Shown only to the viewers with analytics access (§7); «Стенди» needs infrastructure, «Доброчесність» the sensitive level.
     {id: "analytics", label: t("manage.nav.group.analytics"), icon: ChartNoAxesCombined, items: [
