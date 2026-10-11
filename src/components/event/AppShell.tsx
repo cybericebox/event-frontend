@@ -21,6 +21,7 @@ import {EventUnavailableScreen} from "./EventUnavailableScreen";
 import {SignInRedirect} from "./SignInRedirect";
 import {needsSession} from "@/utils/sessionRoutes";
 import {isEventGone, subscribeEventGone} from "@/utils/eventGone";
+import {ManualDraftProvider} from "./manage/manualDraft";
 import {t} from "@/i18n/t";
 
 type Props = {
@@ -73,6 +74,8 @@ function ShellContent({children, event, unavailable, failure}: Props) {
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
 
+    const draftFrame = (content: ReactNode) => <ManualDraftProvider userID={currentUser.data?.ID ?? ""} eventID={event?.EventID ?? ""}>{content}</ManualDraftProvider>;
+
     if (failure) return <EventErrorScreen page body={t("error.load.body")} error={failure} onRetry={() => router.refresh()} />;
     if (unavailable) {
         // The server-side event fetch failed: no event data, so the bare frame with the
@@ -95,7 +98,7 @@ function ShellContent({children, event, unavailable, failure}: Props) {
     // browser-only account and team requests finish.
     const identityPending = currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending));
     if (isContentPage && (!approved || participantInfo.isPending || ownTeam.isPending || currentUser.isError || joinStatus.isError || participantInfo.isError || ownTeam.isError)) {
-        return <GuestShell event={event} authenticated={!!currentUser.data} joinStatus={joinStatus.data} pending={identityPending}>{children}</GuestShell>;
+        return draftFrame(<GuestShell event={event} authenticated={!!currentUser.data} joinStatus={joinStatus.data} pending={identityPending}>{children}</GuestShell>);
     }
     if (identityPending) {
         return <EventLoading event={event} full label={t("shell.loadingEventFull")} />;
@@ -107,7 +110,7 @@ function ShellContent({children, event, unavailable, failure}: Props) {
     if (approved && participantInfo.data?.EventID !== event.EventID) {
         return <EventErrorScreen title={t("shell.eventFailed")} onRetry={() => window.location.reload()} page />;
     }
-    return approved && !!participantInfo.data
+    return draftFrame(approved && !!participantInfo.data
         ? <ParticipantShell event={event} participantInfo={participantInfo.data} ownTeam={ownTeam.data ?? null}>{children}</ParticipantShell>
-        : <GuestShell event={event} authenticated={authenticated} joinStatus={joinStatus.data}>{children}</GuestShell>;
+        : <GuestShell event={event} authenticated={authenticated} joinStatus={joinStatus.data}>{children}</GuestShell>);
 }

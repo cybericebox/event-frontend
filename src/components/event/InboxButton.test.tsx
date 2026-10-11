@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {ManualDraftProvider, useSessionDraftState} from "./manage/manualDraft";
+import {t} from "@/i18n/t";
 
 const api = vi.hoisted(() => ({
     getInbox: vi.fn(), pollInbox: vi.fn(), markInboxRead: vi.fn(), markInboxAllRead: vi.fn(), resolveInboxRequest: vi.fn(),
 }));
 vi.mock("@/api/inbox", () => ({...api, InboxError: class extends Error { code?: number }}));
+vi.mock("next/navigation", () => ({usePathname: () => "/manage/settings", useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
 const {InboxButton} = await import("./InboxButton");
 
 const lab = (id: string, extra = {}) => ({
@@ -16,12 +19,21 @@ const poll = {Cursor: null, UnreadCount: 2, Counts: {All: 2, Requests: 2, Person
 
 beforeEach(() => {
     vi.useRealTimers();
+    sessionStorage.clear();
     HTMLElement.prototype.scrollTo = () => {};
     api.pollInbox.mockResolvedValue(poll);
     api.getInbox.mockResolvedValue({Items: [lab("a"), lab("b")], NextCursor: null});
     api.resolveInboxRequest.mockResolvedValue(undefined);
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
+
+function EditedPage() {
+    const [value, setValue] = useSessionDraftState("inbox-form", "");
+    return <input aria-label="draft" value={value} onChange={event => setValue(event.target.value)} />;
+}
+
+HTMLDialogElement.prototype.showModal ??= function () {this.setAttribute("open", "");};
+HTMLDialogElement.prototype.close ??= function () {this.removeAttribute("open");};
 
 async function openInbox() {
     render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
@@ -30,6 +42,32 @@ async function openInbox() {
 }
 
 describe("inbox", () => {
+    it.each(["list", "pop-in"])("guards the %s navigation before marking the notification read", async mode => {
+        const message = lab("a", {Link: "/manage/schedule", Actions: [{label: "notification action", href: "/manage/schedule"}]});
+        api.getInbox.mockResolvedValue({Items: [message], NextCursor: null});
+        api.markInboxRead.mockImplementationOnce(() => new Promise(() => {}));
+        api.pollInbox.mockResolvedValueOnce(poll).mockResolvedValue({...poll, UnreadCount: 3, NewInbox: [message]});
+        render(<ManualDraftProvider userID="user-a" eventID="e1"><EditedPage /><InboxButton event={{id: "e1", otherEventsHref: "/"}} /></ManualDraftProvider>);
+        await waitFor(() => expect(api.getInbox).toHaveBeenCalled());
+        if (mode === "list") fireEvent.click(screen.getByRole("button", {name: /Вхідні/}));
+        else act(() => window.dispatchEvent(new Event("cybericebox:inbox-updated")));
+        const action = mode === "list" ? await screen.findByRole("link", {name: t("inbox.open")}) : await screen.findByRole("button", {name: "notification action"});
+        fireEvent.change(screen.getByLabelText("draft"), {target: {value: "keep this"}});
+        fireEvent.click(action);
+        expect(api.markInboxRead).not.toHaveBeenCalled();
+        expect(screen.getByText(t("manage.unsaved.title"))).toBeTruthy();
+        fireEvent.click(screen.getByText(t("common.cancel")));
+        expect(screen.getByLabelText("draft")).toHaveProperty("value", "keep this");
+        expect(api.markInboxRead).not.toHaveBeenCalled();
+        if (mode === "list") {
+            fireEvent.click(screen.getByRole("button", {name: /Вхідні/}));
+            fireEvent.click(await screen.findByRole("link", {name: t("inbox.open")}));
+        } else fireEvent.click(action);
+        fireEvent.click(screen.getByText(t("manage.unsaved.discard")));
+        expect(api.markInboxRead).toHaveBeenCalledExactlyOnceWith("a");
+        expect(screen.queryByText(t("manage.unsaved.title"))).toBeNull();
+    });
+
     it("keeps a polite live region mounted before any pop-in arrives", async () => {
         render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
         await waitFor(() => expect(document.querySelector(".event-notifications__popins[aria-live=polite]")).toBeTruthy());

@@ -12,6 +12,7 @@ import {EventErrorScreen} from "./EventErrorScreen";
 import {EventLoading} from "./EventLoading";
 import {EventUnavailableScreen} from "./EventUnavailableScreen";
 import {EventBrandProvider} from "./EventBrandLogo";
+import {useEventFavicon} from "./useEventFavicon";
 import {OutageShell} from "./OutageShell";
 import {loadFailure} from "@/utils/loadFailure";
 import {t} from "@/i18n/t";
@@ -28,6 +29,7 @@ export function PrivateEventBootstrap({children}: {children: ReactNode}) {
         queryKey: ["event-manager-public-info"], queryFn: getClientEventInfo,
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
+    useEventFavicon(identity.data?.FaviconURL);
     const access = useQuery({
         queryKey: ["event-management-access", identity.data?.EventID],
         queryFn: () => getManageAccess(identity.data!.EventID),

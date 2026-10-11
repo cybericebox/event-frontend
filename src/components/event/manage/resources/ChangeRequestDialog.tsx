@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState, type FormEvent} from "react";
 import {toast} from "react-hot-toast";
 import {requestResourceChange} from "@/api/manageResources";
@@ -12,7 +14,7 @@ import "./resources.css";
 
 // The change request: size, dynamic estimate and/or window, with a reason. Only the submit button is busy.
 export function ChangeRequestDialog({eventID, open, onClose, onSent}: {eventID: string; open: boolean; onClose: () => void; onSent: () => void}) {
-    const [draft, setDraft] = useState<ChangeDraft>(emptyDraft);
+    const [draft, setDraft] = useSessionDraftState<ChangeDraft>("resource-request", emptyDraft);
     const [issue, setIssue] = useState<string>("");
     const [failure, setFailure] = useState("");
     const [busy, setBusy] = useState(false);
@@ -20,7 +22,6 @@ export function ChangeRequestDialog({eventID, open, onClose, onSent}: {eventID: 
 
     function close() {
         if (busy) return;
-        setDraft(emptyDraft);
         setIssue("");
         setFailure("");
         onClose();

@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {eventVpnFileName} from "@/utils/wireguard";
 import {Fragment, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -47,10 +49,11 @@ function inRange(value: number, range: {min: number; max: number}): boolean {
 
 function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: ManageLabs; canManage: boolean}) {
     const queryClient = useQueryClient();
-    const [edit, setEdit] = useState<{delay: number} | null>(null);
+    const [edit, setEdit] = useSessionDraftState<{delay: number} | null>("lab-schedule", null);
     const [saving, setSaving] = useState(false);
     const delay = edit?.delay ?? labs.TeardownDelayMinutes;
     const dirty = delay !== labs.TeardownDelayMinutes;
+    useDraftDirty("lab-schedule", dirty);
     const valid = inRange(delay, TEARDOWN_DELAY_RANGE);
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {

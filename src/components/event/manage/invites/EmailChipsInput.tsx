@@ -1,6 +1,8 @@
 "use client";
 
-import {useRef, useState, type ClipboardEvent, type KeyboardEvent} from "react";
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
+import {useRef, type ClipboardEvent, type KeyboardEvent} from "react";
 import {X} from "lucide-react";
 import {t} from "@/i18n/t";
 import {addChips, addressSeparator, chipName, splitAddresses, type EmailChip} from "./emailChips";
@@ -10,8 +12,9 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 // Gmail-style address input: typing a separator or pasting turns addresses
 // into chips; repeats are skipped; invalid ones stay as red chips; Backspace
 // in the empty input removes the last chip.
-export function EmailChipsInput({id, chips, onChange, disabled = false, placeholder, describedBy, required = false}: {
+export function EmailChipsInput({id, draftSlot, chips, onChange, disabled = false, placeholder, describedBy, required = false}: {
     id: string;
+    draftSlot?: string;
     chips: EmailChip[];
     onChange: (chips: EmailChip[]) => void;
     disabled?: boolean;
@@ -19,7 +22,7 @@ export function EmailChipsInput({id, chips, onChange, disabled = false, placehol
     describedBy?: string;
     required?: boolean;
 }) {
-    const [draft, setDraft] = useState("");
+    const [draft, setDraft] = useSessionDraftState(draftSlot ?? `email-chips-${id}`, "");
     const input = useRef<HTMLInputElement>(null);
     const invalid = chips.some(chip => !chip.valid);
 

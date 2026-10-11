@@ -1,30 +1,56 @@
 // @vitest-environment jsdom
-import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeAll, beforeEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {PublishedExerciseChoice} from "@/api/manageChallenges";
 import {ManageApiError} from "@/api/manage";
 import {AttachExerciseDialog} from "./AttachExerciseDialog";
+import {ManualDraftProvider} from "../manualDraft";
+import {t} from "@/i18n/t";
+/* eslint-disable @next/next/no-html-link-for-pages -- Tests interception of a navigation link. */
 
 const api = vi.hoisted(() => ({choices: vi.fn(), preview: vi.fn(), attach: vi.fn(), tags: vi.fn()}));
 vi.mock("@/api/manageChallenges", () => ({
     getPublishedExerciseChoices: api.choices, getPublishedExercisePreview: api.preview, attachEventExercise: api.attach, getPublishedExerciseTags: api.tags,
 }));
+vi.mock("next/navigation", () => ({usePathname: () => "/manage/exercises", useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
 
 beforeAll(() => {
     HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) { this.setAttribute("open", ""); };
     HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) { this.removeAttribute("open"); this.dispatchEvent(new Event("close")); };
 });
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
+beforeEach(() => sessionStorage.clear());
 
 const choice = (id: string, name: string, infrastructure: boolean) => ({ID: id, Name: name, Description: "", PublishedVersionID: id, Tags: [], Scope: "catalog", Infrastructure: infrastructure, Attached: false, ResourceHeavy: false, Resources: null}) as PublishedExerciseChoice;
 
-function renderDialog(infrastructureAllowed: boolean) {
+function renderDialog(infrastructureAllowed: boolean, withDrafts = false) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    render(<QueryClientProvider client={client}><AttachExerciseDialog eventID="e" infrastructureAllowed={infrastructureAllowed} open onClose={vi.fn()} onAttached={vi.fn(async () => undefined)} /></QueryClientProvider>);
+    const dialog = <AttachExerciseDialog eventID="e" infrastructureAllowed={infrastructureAllowed} open onClose={vi.fn()} onAttached={vi.fn(async () => undefined)} />;
+    return render(<QueryClientProvider client={client}>{withDrafts ? <ManualDraftProvider userID="user-a" eventID="e">{dialog}<a href="/manage/settings">next</a></ManualDraftProvider> : dialog}</QueryClientProvider>);
 }
 
 describe("AttachExerciseDialog", () => {
+    it("restores a pending attachment and its variant policy after refresh, then clears it after success", async () => {
+        const web = choice("22222222-2222-4222-8222-222222222222", "Web", false);
+        api.choices.mockResolvedValue([web]);
+        api.preview.mockResolvedValue({ID: web.ID, Name: "Web", Description: "", VersionID: "v", VariantCount: 3, Variant: 0, Tasks: []});
+        api.attach.mockResolvedValue(undefined);
+        const first = renderDialog(true, true);
+        fireEvent.click(await screen.findByRole("button", {name: /Web/}));
+        fireEvent.click(await screen.findByRole("radio", {name: t("manage.exercises.attachDialog.variantForAll", {number: 1})}));
+        first.unmount();
+        renderDialog(true, true);
+        await waitFor(() => expect(screen.getByRole("button", {name: /Web/}).getAttribute("aria-pressed")).toBe("true"));
+        expect(await screen.findByRole("radio", {name: t("manage.exercises.attachDialog.variantForAll", {number: 1})})).toHaveProperty("checked", true);
+        fireEvent.click(screen.getByText("next"));
+        expect(screen.getByText(t("manage.unsaved.title"))).toBeTruthy();
+        fireEvent.click(screen.getAllByText(t("common.cancel")).at(-1)!);
+        fireEvent.click(screen.getByRole("button", {name: t("common.add")}));
+        await waitFor(() => expect(api.attach).toHaveBeenCalledWith("e", web.PublishedVersionID, 1, 0));
+        await waitFor(() => expect(Object.keys(sessionStorage).filter(key => key.includes("exercise-attachment"))).toEqual([]));
+    });
+
     it("starts at «Немає» and disables sets that need infrastructure when the event has none", async () => {
         api.choices.mockResolvedValue([choice("11111111-1111-4111-8111-111111111111", "Test", true)]);
         renderDialog(false);

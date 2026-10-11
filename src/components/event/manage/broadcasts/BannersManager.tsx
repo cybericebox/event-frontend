@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CircleHelp, Plus} from "lucide-react";
@@ -98,7 +100,7 @@ export function BannersManager() {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const query = useQuery({queryKey: ["event-manage-banners", eventID], queryFn: () => getManageBanners(eventID), refetchOnWindowFocus: false});
-    const [editing, setEditing] = useState<{banner: ManageBanner | null; form: BannerForm} | null>(null);
+    const [editing, setEditing] = useSessionDraftState<{banner: ManageBanner | null; form: BannerForm} | null>("banner-edit", null);
     const [removing, setRemoving] = useState<ManageBanner | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
@@ -106,6 +108,7 @@ export function BannersManager() {
     const toggling = useRef(0);
     const banners = query.data ?? [];
     const dirty = !!editing && (!editing.banner || !sameValue(bannerFormInput(editing.form), bannerFormInput(bannerToForm(editing.banner))));
+    useDraftDirty("banner-edit", !!editing && !sameValue(bannerFormInput(editing.form), bannerFormInput(editing.banner ? bannerToForm(editing.banner) : emptyBannerForm())), {preserveInput: true});
     const validation = editing ? bannerValidation(editing.form) : "";
 
     async function run(action: () => Promise<unknown>, success: string, failure: (error: unknown) => string): Promise<boolean> {

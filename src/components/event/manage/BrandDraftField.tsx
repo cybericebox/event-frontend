@@ -1,5 +1,6 @@
 "use client";
 
+import {useSessionDraftState} from "./manualDraft";
 import {useEffect, useRef, useState, type ChangeEvent, type DragEvent} from "react";
 import {ImagePlus, Pencil, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
@@ -11,10 +12,10 @@ import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 
 type Kind = "preview" | "logo" | "favicon";
-type Draft = {action: "keep" | "remove" | "replace"; fileID?: string; previewURL?: string};
+type Draft = {action: "keep" | "remove" | "replace"; fileID?: string; previewURL?: string; fileName?: string; uploadedAt?: number};
 
 export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, maxBytes: number) {
-    const [draft, setDraft] = useState<Draft>({action: "keep"});
+    const [draft, setDraft] = useSessionDraftState<Draft>(`brand-${kind}`, {action: "keep"}, {reconcile: true, serialize: value => ({action: value.action, fileID: value.fileID, fileName: value.fileName, uploadedAt: value.uploadedAt}), dirty: value => value.action === "replace" || value.action === "remove" && !!currentURL});
     const [savedURL, setSavedURL] = useState<{eventID: string; url: string} | null>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState("");
@@ -30,7 +31,7 @@ export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, m
         setUploading(true); setError("");
         try {
             const fileID = await uploadManageBrandDraft(eventID, kind, file);
-            setDraft({action: "replace", fileID, previewURL: URL.createObjectURL(file)});
+            setDraft({action: "replace", fileID, fileName: file.name, uploadedAt: Date.now(), previewURL: URL.createObjectURL(file)});
             return true;
         } catch (error) {
             toast.error(imageUploadMessage(error, t("manage.appearance.brand.uploadFailed")));
@@ -42,9 +43,18 @@ export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, m
 
     function reset() { setDraft({action: "remove"}); setError(""); }
     function saved(url: string) { setSavedURL({eventID, url}); setDraft(current => current === draft ? {action: "keep"} : current); setError(""); }
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        if (draft.action !== "replace" || !draft.uploadedAt) return;
+        const remaining = draft.uploadedAt + 24 * 60 * 60 * 1000 - 60_000 - Date.now();
+        if (remaining <= 0) return;
+        const timer = window.setTimeout(() => setNow(Date.now()), remaining);
+        return () => window.clearTimeout(timer);
+    }, [draft.action, draft.uploadedAt]);
+    const expired = draft.action === "replace" && (!draft.uploadedAt || now - draft.uploadedAt >= 24 * 60 * 60 * 1000 - 60_000);
     const source = draft.action === "replace" ? draft.previewURL ?? "" : draft.action === "remove" ? "" : savedURL?.eventID === eventID ? savedURL.url : currentURL;
     const change: BrandAssetChange = {Action: draft.action, ...(draft.action === "replace" ? {FileID: draft.fileID} : {})};
-    return {source, change, dirty: draft.action === "replace" || draft.action === "remove" && !!(savedURL?.eventID === eventID ? savedURL.url : currentURL), uploading, error, select, reset, saved};
+    return {source, change, dirty: draft.action === "replace" || draft.action === "remove" && !!(savedURL?.eventID === eventID ? savedURL.url : currentURL), uploading, expired, fileName: draft.fileName, error: expired ? t("manage.appearance.brand.draftExpired") : error, select, reset, saved};
 }
 
 export type BrandDraftControl = ReturnType<typeof useBrandDraft>;
@@ -77,6 +87,7 @@ export function BrandDraftField({id, title, help, hint, kind, draft, disabled, o
             <ImagePlus size={22} aria-hidden="true" />
             <span className="event-brand-drop__action"><strong>{t("manage.appearance.brand.attach")}</strong><small>{t("manage.appearance.brand.drop")}</small></span>
         </EventButton>}
+        {draft.fileName && !draft.source && !draft.expired && <small>{t("manage.appearance.brand.pending", {name: draft.fileName})}</small>}
         {draft.error && <small className="event-brand-field__error" role="alert">{draft.error}</small>}
     </div>;
 }

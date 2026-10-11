@@ -24,6 +24,7 @@ import {
 } from "./inboxModel";
 import { keepBrand } from "@/i18n/brand"
 import {STORAGE_INBOX_READ} from "@/utils/storageKeys";
+import {useDraftNavigation} from "./manage/manualDraft";
 
 // A link here with ?inbox opens the dropdown on arrival (the event site's «Ще N в інших заходах»).
 const OPEN_PARAM = "inbox";
@@ -54,6 +55,7 @@ function resolvedLine(item: Message): string {
 }
 
 export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) {
+    const navigate = useDraftNavigation();
     const eventId = event?.id;
     const [open, setOpen] = useState(false);
     const [tab, setTab] = useState<InboxTab>("all");
@@ -285,10 +287,15 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         }
     }
 
-    async function followLink(item: Message, href: string) {
+    async function performFollowLink(item: Message, href: string) {
         if (!(await markRead(item))) return;
         openInbox(false);
         window.location.assign(href);
+    }
+    function followLink(item: Message, href: string) {
+        const target = new URL(href, window.location.href);
+        if (target.origin === window.location.origin && target.pathname === window.location.pathname && target.search === window.location.search) void performFollowLink(item, href);
+        else navigate(() => void performFollowLink(item, href));
     }
 
     // «Вирішено» closes a «Лабораторія впала» request for every recipient (§8.2). The row shows as resolved at once;
@@ -401,7 +408,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                                     {!event && <EventLabel name={item.EventName} />}
                                 </span>}
                                 actions={href || unreadItem || canResolve(item) ? <>
-                                    {href ? <a href={href} onClick={clickEvent => { clickEvent.preventDefault(); void followLink(item, href); }}>{t("inbox.open")}</a> : unreadItem ? <button type="button" onClick={() => void markRead(item)}>{t("inbox.markRead")}</button> : null}
+                                    {href ? <a href={href} data-manual-draft-navigation onClick={clickEvent => { clickEvent.preventDefault(); followLink(item, href); }}>{t("inbox.open")}</a> : unreadItem ? <button type="button" onClick={() => void markRead(item)}>{t("inbox.markRead")}</button> : null}
                                     {canResolve(item) && <button type="button" className="event-notifications__resolve" onClick={() => resolve(item)}>
                                         <Check size={14} aria-hidden="true" />{t("inbox.resolve")}
                                     </button>}

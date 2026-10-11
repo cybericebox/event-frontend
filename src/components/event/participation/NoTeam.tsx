@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -19,10 +21,10 @@ import {errorText} from "./participationParts";
 // No team yet: create one or join with a link or a code.
 export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, createReason = "", joinReason = ""}: {event: PublicEventInfo; rosterOpen: boolean; closedReason: string; linkCode: string; preview: boolean; createReason?: string; joinReason?: string}) {
     const queryClient = useQueryClient();
-    const [code, setCode] = useState(linkCode);
-    const [name, setName] = useState("");
-    const [fields, setFields] = useState<ParticipantAnswers>({});
-    const [createOpen, setCreateOpen] = useState(false);
+    const [code, setCode] = useSessionDraftState("team-join-code", linkCode);
+    const [name, setName] = useSessionDraftState("create-team-name", "");
+    const [fields, setFields] = useSessionDraftState<ParticipantAnswers>("create-team-fields", {});
+    const [createOpen, setCreateOpen] = useSessionDraftState("create-team-open", false, {dirty: () => false});
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const fieldsQuery = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(), enabled: createOpen && !preview, refetchOnWindowFocus: false});
@@ -38,6 +40,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
         setError("");
         try {
             await joinEventTeam(event.EventID, parseJoinCode(code));
+            setCode(linkCode);
             forgetJoinCode();
             await refresh();
         } catch (failure) {
@@ -52,7 +55,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
         setError("");
         try {
             await createEventTeam(event.EventID, name.trim(), fields);
-            setCreateOpen(false);
+            setName(""); setFields({}); setCreateOpen(false);
             await refresh();
         } catch (failure) {
             setError(errorText(failure, t("participation.noTeam.createFailed")));

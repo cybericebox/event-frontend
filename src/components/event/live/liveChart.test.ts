@@ -1,25 +1,28 @@
 import {describe, expect, it} from "vitest";
-import {chartSeries, monotonePath, niceMax, spreadLabels} from "./liveChart";
+import {chartSeries, monotonePath, niceMax, spreadLabels, type ChartPoint} from "./liveChart";
 
 // Samples the cubic segments of a path produced by monotonePath.
-function sampleY(path: string): number[] {
+function samplePath(path: string): ChartPoint[] {
     const numbers = path.replace(/[MC]/g, " ").trim().split(/\s+/).map(Number);
-    const ys: number[] = [];
+    const points: ChartPoint[] = [];
     let [x0, y0] = numbers;
     for (let i = 2; i < numbers.length; i += 6) {
-        const [, c1y, , c2y, , y1] = numbers.slice(i, i + 6);
-        for (let t = 0; t <= 1; t += 0.1) ys.push((1 - t) ** 3 * y0 + 3 * (1 - t) ** 2 * t * c1y + 3 * (1 - t) * t ** 2 * c2y + t ** 3 * y1);
-        [x0, y0] = [numbers[i + 4], y1];
+        const [c1x, c1y, c2x, c2y, x1, y1] = numbers.slice(i, i + 6);
+        for (let step = 0; step <= 10; step++) {
+            const t = step / 10;
+            const sample = (a: number, b: number, c: number, d: number) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t ** 2 * c + t ** 3 * d;
+            points.push([sample(x0, c1x, c2x, x1), sample(y0, c1y, c2y, y1)]);
+        }
+        [x0, y0] = [x1, y1];
     }
-    void x0;
-    return ys;
+    return points;
 }
 
 describe("monotonePath", () => {
     it("draws a smooth curve that never dips for a rising score", () => {
         const path = monotonePath([[0, 100], [10, 100], [20, 60], [30, 60], [40, 10], [50, 10]]);
         expect(path.startsWith("M0 100 C")).toBe(true);
-        const ys = sampleY(path);
+        const ys = samplePath(path).map(point => point[1]);
         // y grows downwards: the line only goes up (y never increases).
         ys.slice(1).forEach((value, index) => expect(value).toBeLessThanOrEqual(ys[index] + 1e-6));
     });
@@ -27,6 +30,7 @@ describe("monotonePath", () => {
     it("merges points on the same x", () => {
         expect(monotonePath([[0, 90], [0, 50], [10, 50]])).toBe("M0 50 C3.3 50 6.7 50 10 50");
         expect(monotonePath([[5, 5]])).toBe("M5 5");
+        expect(monotonePath([])).toBe("");
     });
 });
 
@@ -47,7 +51,7 @@ describe("spreadLabels", () => {
 });
 
 describe("chartSeries", () => {
-    it("holds the score flat and rises only around a solve", () => {
+    it("interpolates smoothly between solve times without narrow steps", () => {
         const team = "01900000-0000-7000-8000-000000000041";
         const results = {
             Revision: 1, GeneratedAt: "", TotalTeams: 1, Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
@@ -60,10 +64,19 @@ describe("chartSeries", () => {
         };
         const {series, max} = chartSeries(results, 5, {left: 0, top: 0, width: 100, height: 300}, 0, 100000);
         expect(max).toBe(300);
-        // The hold point sits 1 s ahead of the first solve at 50 s: flat at 0 until then.
         expect(series[0].path.startsWith("M0 300 ")).toBe(true);
-        expect(series[0].path).toContain(" 49 300 ");
         expect(series[0].path).toContain(" 50 200 ");
+        expect(series[0].path).toContain(" 75 0 ");
+        // Halfway to the first solve, the curve has visibly risen from zero.
+        const middle = samplePath(series[0].path).filter(([x]) => x >= 20 && x <= 30);
+        expect(middle.length).toBeGreaterThan(0);
+        middle.forEach(([, y]) => {
+            expect(y).toBeGreaterThan(200);
+            expect(y).toBeLessThan(300);
+        });
+        const ys = samplePath(series[0].path).map(point => point[1]);
+        ys.slice(1).forEach((value, index) => expect(value).toBeLessThanOrEqual(ys[index] + 1e-6));
+        ys.forEach(value => expect(value).toBeGreaterThanOrEqual(0));
         expect(series[0].endY).toBe(0);
     });
 });

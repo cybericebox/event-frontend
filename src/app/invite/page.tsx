@@ -1,9 +1,11 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useMemo, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
+import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {getCurrentUser, getInvitationInfo} from "@/api/clientAuth";
@@ -33,7 +35,7 @@ export default function InvitePage() {
     const actionable = !!invitation && invitation.Invited && invitation.Status === ParticipationStatusEnum.PendingParticipationStatus && !invitation.InvitationExpired && !invitation.TeamUnavailable;
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!event && actionable, retry: false});
     // Answers an organizer prefilled (CSV import) show up first; the person's own edits win, except locked ones.
-    const [edits, setAnswers] = useState<ParticipantAnswers>({});
+    const [edits, setAnswers] = useSessionDraftState<ParticipantAnswers>("invitation-answers", {});
     const stored = form.data?.Answers;
     const locked = useMemo(() => lockedFieldKeys(form.data, stored), [form.data, stored]);
     const answers = useMemo(() => ({...stored, ...edits}), [stored, edits]);
@@ -72,6 +74,7 @@ export default function InvitePage() {
             if (collected.send) await submitSelfParticipantForm(event.EventID, collected.answers);
             const result = await acceptSelfInvitation();
             await refreshStatus(result.Status);
+            setAnswers({});
             router.push(Date.parse(event.StartTime) <= Date.now() ? "/challenges" : "/");
         } catch (failure) {
             const code = failure instanceof ParticipantJoinError ? failure.code : undefined;
@@ -87,6 +90,7 @@ export default function InvitePage() {
         try {
             await declineSelfInvitation();
             await refreshStatus(ParticipationStatusEnum.NoParticipationStatus);
+            setAnswers({});
             router.push("/");
         } catch (failure) {
             setDeclineError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("invite.declineFailed")));

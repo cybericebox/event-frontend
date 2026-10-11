@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {Fragment, useState, type KeyboardEvent, type MouseEvent} from "react";
 import Link from "next/link";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
@@ -70,7 +72,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         const qs = params.toString();
         router.replace(qs ? `${pathname}?${qs}` : pathname, {scroll: false});
     }
-    const [inviteOpen, setInviteOpen] = useState(false);
+    const [inviteOpen, setInviteOpen] = useSessionDraftState("invite-participants-open", false, {dirty: () => false});
     const showAnswers = tab !== "invitations";
     const formQuery = useQuery({queryKey: ["event-management-participant-form", eventID], queryFn: () => getManageParticipantForm(eventID), refetchOnWindowFocus: false});
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});

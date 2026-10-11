@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useRef, useState, type FormEvent} from "react";
 import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -33,9 +35,10 @@ function StageRow({eventID, stage, canManage, onPatch}: {
 }) {
     const queryClient = useQueryClient();
     const locks = stageLocks(stage);
-    const [edit, setEdit] = useState<{stageID: string; value: StageDraft} | null>(null);
+    const [edit, setEdit] = useSessionDraftState<{stageID: string; value: StageDraft} | null>(`stage-${stage.ID}`, null);
     const draft = edit?.stageID === stage.ID ? edit.value : draftOfStage(stage);
     const dirty = stageDirty(stage, draft);
+    useDraftDirty(`stage-${stage.ID}`, dirty);
     const [saving, setSaving] = useState(false);
     const [dialog, setDialog] = useState<"close" | "delete" | null>(null);
     const [busy, setBusy] = useState(false);
@@ -121,9 +124,9 @@ function StageRow({eventID, stage, canManage, onPatch}: {
 
 function AddStage({eventID, lifecycle, first, canManage}: {eventID: string; lifecycle: ManageLifecycle; first: boolean; canManage: boolean}) {
     const queryClient = useQueryClient();
-    const [name, setName] = useState("");
-    const [opens, setOpens] = useState("");
-    const [returnable, setReturnable] = useState(false);
+    const [name, setName] = useSessionDraftState("new-stage-name", "");
+    const [opens, setOpens] = useSessionDraftState("new-stage-opens", "");
+    const [returnable, setReturnable] = useSessionDraftState("new-stage-returnable", false);
     const [saving, setSaving] = useState(false);
     const start = lifecycle.StartAt ?? "";
     const finish = lifecycle.FinishAt ?? "";

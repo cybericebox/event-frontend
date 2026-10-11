@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useMemo, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight} from "lucide-react";
@@ -30,13 +32,14 @@ export default function ManageLandingPage() {
         queryFn: () => getManageContentVariables(eventID),
         refetchInterval: false, refetchOnWindowFocus: false,
     });
-    const [edited, setEdited] = useState<{eventID: string; draft: ContentDocument} | null>(null);
+    const [edited, setEdited] = useSessionDraftState<{eventID: string; draft: ContentDocument} | null>("landing", null);
     const [busy, setBusy] = useState<"save" | "publish" | "discard" | null>(null);
 
     // The editor starts from the saved draft; the site keeps the published landing.
     const saved = content.data ? content.data.LandingDraft ?? content.data.Landing : null;
     const draft = edited?.eventID === eventID ? edited.draft : saved;
     const dirty = !!draft && !!saved && !sameValue(draft, saved);
+    useDraftDirty("landing", saved ? dirty : undefined);
     const catalog = useMemo(() => (variables.data ?? []).filter(variable => variable.audience === 0), [variables.data]);
     const validation = useMemo(() => draft && variables.data ? validateLanding(draft, catalog, event.PreviewPicture ?? "") : null, [draft, variables.data, catalog, event.PreviewPicture]);
     const publicValues = useMemo(() => Object.fromEntries(catalog.map(variable => [variable.name, content.data?.Variables[variable.name] ?? null])), [content.data?.Variables, catalog]);

@@ -1,7 +1,9 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState} from "react";
-import {useRouter} from "next/navigation";
+import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {
@@ -51,7 +53,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     const subscriptions = useQuery({queryKey: ["event-manage-notification-subscriptions", eventID], queryFn: () => getManageNotificationSubscriptions(eventID), refetchOnWindowFocus: false});
     const templates = useQuery({queryKey: ["event-manage-in-app-templates", eventID], queryFn: () => getManageInAppTemplates(eventID), refetchOnWindowFocus: false});
     const types = useQuery({queryKey: ["event-manage-notification-types", eventID], queryFn: () => getManageNotificationTypes(eventID), refetchOnWindowFocus: false});
-    const [drafts, setDrafts] = useState<Record<string, ManageInAppTemplateInput>>({});
+    const [drafts, setDrafts] = useSessionDraftState<Record<string, ManageInAppTemplateInput>>(`in-app-templates-${signal}`, {});
     const [busy, setBusy] = useState(false);
     const [saving, setSaving] = useState(false);
     const href = (id?: string) => `${BASE}/${encodeURIComponent(signal)}${id ? `?id=${id}` : ""}`;
@@ -65,6 +67,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     const saved = template ? inputOf(template) : null;
     const draft = template ? drafts[template.ID] ?? saved : null;
     const dirty = !!(saved && draft && !sameValue(saved, draft));
+    useDraftDirty(`in-app-templates-${signal}`, Object.entries(drafts).some(([id, value]) => {const original = templates.data?.find(item => item.ID === id); return !original || !sameValue(value, inputOf(original));}));
     const validation = draft ? inAppValidation(draft) : "";
     const editable = !!(canManage && mode === "edit");
     const ownVersions = versions.filter(item => item.Source === "event");
