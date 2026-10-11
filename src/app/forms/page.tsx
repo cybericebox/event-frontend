@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {notFound} from "next/navigation";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -37,8 +39,8 @@ function FormsPage() {
     const eventID = context?.event.EventID ?? "";
     const queryClient = useQueryClient();
     const pending = useQuery({queryKey: ["event-pending-forms", eventID], queryFn: () => getPendingEventForms(eventID), enabled: !!eventID, retry: false});
-    const [selectedID, setSelectedID] = useState<string | null>(null);
-    const [drafts, setDrafts] = useState<Record<string, EventFormAnswers>>({});
+    const [selectedID, setSelectedID] = useSessionDraftState<string | null>("form-selection", null, {dirty: () => false});
+    const [drafts, setDrafts] = useSessionDraftState<Record<string, EventFormAnswers>>("form-answers", {});
     const [working, setWorking] = useState(false);
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -66,6 +68,7 @@ function FormsPage() {
         try {
             await submitEventForm(eventID, selected.Form.ID, selected.FormVersionID, values);
             await queryClient.invalidateQueries({queryKey: ["event-pending-forms", eventID]});
+            setDrafts(current => {if (current[selected.Form.ID] !== answers) return current; const next = {...current}; delete next[selected.Form.ID]; return next;});
             setSelectedID(null);
             toast.success(t("forms.submitted"));
         } catch {setError(t("forms.submitFailed"));}

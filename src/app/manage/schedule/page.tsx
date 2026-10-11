@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useMemo, useState, type FormEvent} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -64,10 +66,10 @@ export default function ManageSchedulePage() {
         refetchInterval: false, refetchOnWindowFocus: false,
     });
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchInterval: false, refetchOnWindowFocus: false});
-    const [edited, setEdited] = useState<{eventID: string; value: ScheduleDraft} | null>(null);
+    const [edited, setEdited] = useSessionDraftState<{eventID: string; value: ScheduleDraft} | null>("schedule", null);
     const [saving, setSaving] = useState(false);
 
-    const [countdownEdited, setCountdownEdited] = useState<{eventID: string; value: CountdownDraft} | null>(null);
+    const [countdownEdited, setCountdownEdited] = useSessionDraftState<{eventID: string; value: CountdownDraft} | null>("countdown", null);
     const [countdownSaving, setCountdownSaving] = useState(false);
 
     const draft = edited?.eventID === eventID ? edited.value : lifecycle.data ? toDraft(lifecycle.data) : null;
@@ -91,6 +93,7 @@ export default function ManageSchedulePage() {
     const scheduleValue = (value: ScheduleDraft) => ({...value, FinishAt: value.ScheduledEnd ? value.FinishAt : "", WithdrawAt: value.ScheduledEnd ? value.WithdrawAt : ""});
     const dirty = !!draft && !!lifecycle.data && JSON.stringify(scheduleValue(draft)) !== JSON.stringify(scheduleValue(toDraft(lifecycle.data)));
 
+    useDraftDirty("schedule", lifecycle.data ? dirty : undefined);
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (!draft || validation || !canManage || saving || (lifecycle.data?.Configured && !dirty) || config.data?.Participation === null) return;
@@ -119,6 +122,8 @@ export default function ManageSchedulePage() {
     const countdown = countdownEdited?.eventID === eventID ? countdownEdited.value : savedCountdown;
     const setCountdown = (value: CountdownDraft) => setCountdownEdited({eventID, value});
     const countdownDirty = !!countdown && JSON.stringify(countdown) !== JSON.stringify(savedCountdown);
+
+    useDraftDirty("countdown", savedCountdown ? countdownDirty : undefined);
 
     async function saveCountdown(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();

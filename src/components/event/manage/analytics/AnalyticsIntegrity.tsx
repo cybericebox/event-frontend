@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import Link from "next/link";
 import {Fragment, useId, useState} from "react";
 import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query";
@@ -162,8 +164,8 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
     // manager shell waits for its access check), so storage is readable here.
     const [thresholds, setThresholds] = useState<IntegrityThresholds | null>(() => loadThresholds(eventID));
     const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-    const [draft, setDraft] = useState<ReviewDraft | null>(null);
-    const [dismiss, setDismiss] = useState<DismissDraft | null>(null);
+    const [draft, setDraft] = useSessionDraftState<ReviewDraft | null>("integrity-review", null, {serialize: value => value && {...value, busy: false, error: null}, dirty: value => !!value?.note.trim()});
+    const [dismiss, setDismiss] = useSessionDraftState<DismissDraft | null>("integrity-dismiss", null, {dirty: value => !!value && (!!value.note.trim() || value.scope !== "event"), serialize: value => value && {...value, busy: false, error: null}});
     const [view, setView] = useState<"solves" | "dismissals">("solves");
     const allowed = access.data?.Sensitive === true;
     const query = useQuery({

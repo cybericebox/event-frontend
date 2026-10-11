@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -48,7 +50,7 @@ export function StaffFieldsPanel({eventID, scope, subjectID, form, answers, canM
     const queryClient = useQueryClient();
     const queryKey = ["event-staff-fields", eventID, scope, subjectID];
     const query = useQuery({queryKey, queryFn: () => getManageStaffFields(eventID, scope, subjectID), refetchOnWindowFocus: false});
-    const [edited, setEdited] = useState<ParticipantAnswers | null>(null);
+    const [edited, setEdited] = useSessionDraftState<ParticipantAnswers | null>(`staff-fields-${scope}-${subjectID}`, null, {reconcile: true, dirty: value => !query.data ? undefined : !!value && Object.keys(changedStaffValues(query.data.Values as ParticipantAnswers, value, formFields(form.Document.blocks).filter(field => field.staffOnly).map(field => field.key), formFields(form.Document.blocks))).length > 0});
     const [busy, setBusy] = useState(false);
     const keys = formFields(form.Document.blocks).filter(field => field.staffOnly).map(field => field.key);
     const staffForm = {...form, Enabled: true, Required: false};

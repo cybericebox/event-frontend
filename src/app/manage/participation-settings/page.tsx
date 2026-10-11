@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {AlertTriangle} from "lucide-react";
@@ -19,11 +21,12 @@ export default function ParticipationSettingsPage() {
     const queryClient = useQueryClient();
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const lifecycleQuery = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useState<{eventID: string; value: ManageConfigInput} | null>(null);
+    const [edit, setEdit] = useSessionDraftState<{eventID: string; value: ManageConfigInput} | null>("participation", null);
     const [saving, setSaving] = useState(false);
     const config = edit?.eventID === eventID ? edit.value : configQuery.data ? manageConfigInput(configQuery.data) : null;
     const update = (patch: Partial<ManageConfigInput>) => {if (config) setEdit({eventID, value: {...config, ...patch}});};
     const dirty = !!config && !!configQuery.data && JSON.stringify(config) !== JSON.stringify(manageConfigInput(configQuery.data));
+    useDraftDirty("participation", configQuery.data ? dirty : undefined);
     const locked = !!lifecycleQuery.data?.Configured && lifecycleQuery.data.Status !== "not_published";
     const valid = !!config && config.Participation !== null && (config.Participation !== 1 || (config.MaxTeamSize >= 1 && (!config.MinTeamSize || config.MinTeamSize <= config.MaxTeamSize)));
     const disabled = !canManage;

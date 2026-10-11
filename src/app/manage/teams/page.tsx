@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {FirstSolveBadge} from "@/components/event/challenges/FirstSolveBadge";
 import {Fragment, useState} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
@@ -76,11 +78,11 @@ export default function ManageTeamsPage() {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const teamMode = event.Participation === 1;
-    const [managedID, setManagedID] = useState<string | null>(null);
-    const [createOpen, setCreateOpen] = useState(false);
-    const [inviteTeam, setInviteTeam] = useState<{ID: string; Name: string; InitialEmails?: string[]} | null>(null);
-    const [editing, setEditing] = useState<{id: string; name: string; hidden: boolean; fields: ParticipantAnswers} | null>(null);
-    const [answersTeam, setAnswersTeam] = useState<ManageTeam | null>(null);
+    const [managedID, setManagedID] = useSessionDraftState<string | null>("managed-team-open", null, {dirty: () => false});
+    const [createOpen, setCreateOpen] = useSessionDraftState("create-team-open", false, {dirty: () => false});
+    const [inviteTeam, setInviteTeam] = useSessionDraftState<{ID: string; Name: string; InitialEmails?: string[]} | null>("invite-team-open", null, {dirty: () => false});
+    const [editing, setEditing] = useSessionDraftState<{id: string; name: string; hidden: boolean; fields: ParticipantAnswers} | null>("team-details", null);
+    const [answersTeam, setAnswersTeam] = useSessionDraftState<ManageTeam | null>("team-answers-open", null, {dirty: () => false});
     const [memberChoices, setMemberChoices] = useState<Record<string, string>>({});
     // Only the team being saved is locked; the other rows and teams stay usable.
     const [busyTeams, setBusyTeams] = useState<string[]>([]);
@@ -156,6 +158,8 @@ export default function ManageTeamsPage() {
         return editing?.id === team.ID && (editing.name.trim() !== team.Name.trim() || editing.hidden !== team.Hidden
             || fields.some(field => !field.staffOnly && !sameAnswer(field, team.ExtraFields[field.key] as ParticipantAnswers[string], editing.fields[field.key])));
     }
+
+    useDraftDirty("team-details", !!editing && (teamsQuery.data?.Items.find(team => team.ID === editing.id) ? teamDirty(teamsQuery.data.Items.find(team => team.ID === editing.id)!) : true), {preserveInput: true});
 
     async function saveTeam(team: ManageTeam) {
         if (!canManage || isBusy(team.ID) || editing?.id !== team.ID || !editing.name.trim() || !teamDirty(team)) return;

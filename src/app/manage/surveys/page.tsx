@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {notFound} from "next/navigation";
 import {EVENT_FORMS_ENABLED} from "@/utils/features";
 import {useState} from "react";
@@ -60,8 +62,8 @@ function SurveysPage() {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const query = useQuery({queryKey: ["event-management-generic-forms", eventID], queryFn: () => getManageGenericForms(eventID), refetchOnWindowFocus: false});
-    const [formID, setFormID] = useState("new");
-    const [drafts, setDrafts] = useState<Record<string, ManageGenericFormInput>>({});
+    const [formID, setFormID] = useSessionDraftState("survey-selection", "new", {dirty: () => false});
+    const [drafts, setDrafts] = useSessionDraftState<Record<string, ManageGenericFormInput>>("survey-forms", {});
     const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [sending, setSending] = useState(false);
@@ -70,6 +72,7 @@ function SurveysPage() {
     const draft = drafts[formID] ?? saved;
     const blocks = draft.Document.blocks;
     const dirty = !sameValue(draft, saved);
+    useDraftDirty("survey-forms", query.data ? Object.entries(drafts).some(([id, value]) => {const original = query.data?.find(item => item.ID === id); const saved = original ? {Title: original.Title, Enabled: original.Enabled, Required: original.Required, Document: original.Document} : emptyForm; return !sameValue(value, saved);}) : undefined);
     const validation = !draft.Title.trim() ? t("manage.surveys.validation.title") : !blocks.some(isFormField) ? t("manage.surveys.validation.question") : validateParticipantForm(draft.Document);
     const selectedID = selectedBlock && blocks.some(block => block.id === selectedBlock) ? selectedBlock : null;
 

@@ -13,3 +13,7 @@ export const siteBannerDismissedKey = (id: string | number, version: string | nu
 export const boardViewKey = (userID: string | undefined): string => `${BOARD_VIEW}_${userID ?? "guest"}`;
 export const manageSetsOpenKey = (eventID: string): string => `${MANAGE_SETS_OPEN}_${eventID}`;
 export const integrityThresholdsKey = (eventID: string): string => `${INTEGRITY_THRESHOLDS}_${eventID}`;
+
+export const STORAGE_MANUAL_DRAFT_PREFIX = "cib_manual_draft_";
+export const manualDraftPagePrefix = (userID: string, eventID: string, pathname: string): string => `${STORAGE_MANUAL_DRAFT_PREFIX}${encodeURIComponent(JSON.stringify([userID, eventID, pathname]))}_`;
+export const manualDraftKey = (userID: string, eventID: string, pathname: string, slot: string): string => `${manualDraftPagePrefix(userID, eventID, pathname)}${encodeURIComponent(slot)}`;

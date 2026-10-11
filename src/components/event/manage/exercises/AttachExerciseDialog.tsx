@@ -1,6 +1,7 @@
 "use client";
 
-import {useState, type FormEvent} from "react";
+import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
+import {useSessionDraftState} from "../manualDraft";
 import Link from "next/link";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery} from "@tanstack/react-query";
@@ -43,9 +44,14 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const [attachError, setAttachError] = useState("");
     // 72508: the reservation cannot hold the set for all teams; the organizer can ask for an extension.
     const [needsExtension, setNeedsExtension] = useState(false);
-    const [selected, setSelected] = useState<PublishedExerciseChoice | null>(null);
-    const [variant, setVariant] = useState(0);
-    const [variantMode, setVariantMode] = useState<0 | 1>(0);
+    const [draft, setDraft] = useSessionDraftState<{selected: PublishedExerciseChoice; variant: number; variantMode: 0 | 1} | null>("exercise-attachment", null);
+    const latestDraft = useRef(draft);
+    useLayoutEffect(() => {latestDraft.current = draft;}, [draft]);
+    const selected = draft?.selected ?? null;
+    const variant = draft?.variant ?? 0;
+    const variantMode = draft?.variantMode ?? 0;
+    const setVariant = (value: number) => setDraft(current => current && {...current, variant: value});
+    const setVariantMode = (value: 0 | 1) => setDraft(current => current && {...current, variantMode: value});
     const [busy, setBusy] = useState(false);
     const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags], queryFn: () => getPublishedExerciseChoices(eventID, search, infrastructure, tags), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
     const preview = useQuery({
@@ -60,14 +66,12 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     function select(choice: PublishedExerciseChoice) {
         setAttachError("");
         setNeedsExtension(false);
-        setSelected(current => current?.ID === choice.ID ? null : choice);
-        setVariant(0);
-        setVariantMode(0);
+        setDraft(current => current?.selected.ID === choice.ID ? null : {selected: choice, variant: 0, variantMode: 0});
     }
 
     function close() {
         if (busy) return;
-        setSelected(null);
+        setDraft(null);
         setAttachError("");
         setNeedsExtension(false);
         onClose();
@@ -75,13 +79,13 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
 
     async function attach() {
         if (!selected || selected.Attached || unavailable(selected) || busy) return;
+        const submitted = draft;
         setBusy(true);
         try {
             await attachEventExercise(eventID, selected.PublishedVersionID, variantMode, variantMode === 1 ? variant : null);
             await onAttached();
             toast.success(t("manage.exercises.attachDialog.done"));
-            setSelected(null);
-            onClose();
+            if (latestDraft.current === submitted) {setDraft(null); onClose();}
         } catch (error) {
             // Shown in the dialog: the organizer picks another set.
             setAttachError(attachmentActionError(error, t("manage.exercises.attachDialog.failed")));

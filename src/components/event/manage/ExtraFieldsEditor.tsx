@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Eye, EyeOff, Plus} from "lucide-react";
@@ -56,7 +58,7 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
     const draftKey = `${eventID}:${scope}`;
     const queryKey = [scope === "team" ? "event-management-team-fields" : "event-management-participant-form", eventID];
     const query = useQuery({queryKey, queryFn: () => scope === "team" ? getManageTeamFields(eventID) : getManageParticipantForm(eventID), refetchOnWindowFocus: false});
-    const [edited, setEdited] = useState<Record<string, ParticipantFormInput>>({});
+    const [edited, setEdited] = useSessionDraftState<Record<string, ParticipantFormInput>>(`extra-fields-${scope}`, {});
     const [selected, setSelected] = useState<Record<string, string | null>>({});
     const [saving, setSaving] = useState(false);
     // Open cards by block id (per form), so moving a card keeps its state.
@@ -71,6 +73,7 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
     const selectedID = blocks.some(block => block.id === selected[draftKey]) ? selected[draftKey] : null;
     const dirty = !sameValue(draft, saved);
     const problem = participantFormProblem(draft.Document);
+    useDraftDirty(`extra-fields-${scope}`, query.isSuccess || query.data !== undefined ? dirty : undefined);
     const validation = problem?.message ?? null;
     const openIDs = openBlocks.key === draftKey ? openBlocks.ids : [];
     // A card with a new validation error opens once; the author may close it

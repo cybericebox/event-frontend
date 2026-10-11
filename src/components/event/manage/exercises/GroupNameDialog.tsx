@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useEffect, useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {DialogModal} from "@/components/event/DialogModal";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
@@ -9,16 +11,19 @@ import {groupNameMax, groupNameProblem} from "./groupName";
 
 // Create or rename a group: one required name field. Enter submits, Esc
 // closes, the field gets focus on open.
-export function GroupNameDialog({open, mode, initialName, otherNames, busy, onClose, onSubmit}: {
-    open: boolean; mode: "create" | "rename"; initialName: string; otherNames: string[]; busy: boolean;
+export function GroupNameDialog({open, mode, initialName, draftID, otherNames, busy, onClose, onSubmit}: {
+    open: boolean; mode: "create" | "rename"; initialName: string; draftID?: string | number; otherNames: string[]; busy: boolean;
     onClose: () => void; onSubmit: (name: string) => void | Promise<boolean | void>;
 }) {
-    const [name, setName] = useState(initialName);
+    const slot = `group-name-${mode}-${draftID ?? initialName}`;
+    const [nameEdit, setName] = useSessionDraftState<string | null>(slot, null);
+    const name = nameEdit ?? initialName;
     const [touched, setTouched] = useState(false);
     const input = useRef<HTMLInputElement>(null);
     const latestName = useRef(name);
     useLayoutEffect(() => {latestName.current = name;}, [name]);
     const dirty = mode === "create" || name.trim() !== initialName.trim();
+    useDraftDirty(slot, name.trim() !== initialName.trim(), {preserveInput: true});
     const problem = groupNameProblem(name, otherNames);
 
     useEffect(() => {
@@ -33,7 +38,7 @@ export function GroupNameDialog({open, mode, initialName, otherNames, busy, onCl
         setTouched(true);
         if (problem || busy || !dirty) return;
         const saved = await onSubmit(name.trim());
-        if (saved && latestName.current === name) onClose();
+        if (saved && latestName.current === name) {setName(null); onClose();}
     }
 
     const shownProblem = touched || name !== initialName ? problem : "";

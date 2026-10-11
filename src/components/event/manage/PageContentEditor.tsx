@@ -1,9 +1,11 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useId, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {EmptyState} from "@/components/ui/EmptyState";
-import {useRouter} from "next/navigation";
+import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, ChevronDown, Trash2} from "lucide-react";
 import toast from "react-hot-toast";
@@ -53,7 +55,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), retry: false, refetchOnWindowFocus: false});
     const content = useQuery({queryKey: ["event-management-content", eventID], queryFn: () => getManageContent(eventID), retry: false, refetchOnWindowFocus: false});
     const definitions = useQuery({queryKey: ["event-management-content-variables", eventID], queryFn: () => getManageContentVariables(eventID), retry: false, refetchOnWindowFocus: false});
-    const [edited, setEdited] = useState<{key: string; value: ManagePageInput} | null>(null);
+    const [edited, setEdited] = useSessionDraftState<{key: string; value: ManagePageInput} | null>(`content-page-${key}`, null);
     const latestEdit = useRef(edited);
     useLayoutEffect(() => {latestEdit.current = edited;}, [edited]);
     const [detailsOpen, setDetailsOpen] = useState(true);
@@ -78,6 +80,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const titleError = !draft.Title.trim() || draft.Title.length > 255 ? t("manage.content.page.titleInvalid") : null;
     const validation = slugError ?? titleError ?? documentError;
     const dirty = isNew || !sameValue({...saved, Navigation: saved.Visibility === 2 ? 0 : saved.Navigation}, payload());
+    useDraftDirty(`content-page-${key}`, isNew ? !!edited && !sameValue(draft, saved) : page.data ? !!edited && dirty : undefined);
     const published = !!page.data?.PublishedAt;
 
     function change(next: ManagePageInput) {

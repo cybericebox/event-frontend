@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useLayoutEffect, useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -27,13 +29,14 @@ import {useParticipationStats} from "./useParticipationStats";
 
 function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: string}) {
     const queryClient = useQueryClient();
-    const [editing, setEditing] = useState(false);
-    const [valueEdit, setValue] = useState<string | null>(null);
+    const [editing, setEditing] = useSessionDraftState("profile-editing", false, {dirty: () => false});
+    const [valueEdit, setValue] = useSessionDraftState<string | null>("profile-pseudonym", null);
     const value = valueEdit ?? info.Pseudonym ?? "";
     const [busy, setBusy] = useState(false);
     const latestValue = useRef(value);
     useLayoutEffect(() => {latestValue.current = value;}, [value]);
     const dirty = (value.trim() || null) !== (info.Pseudonym?.trim() || null);
+    useDraftDirty("profile-pseudonym", dirty);
     const save = async (next: string | null) => {
         if (busy || next === (info.Pseudonym?.trim() || null)) return;
         const submitted = value;
@@ -41,7 +44,7 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
         try {
             await putSelfPseudonym(next);
             await queryClient.invalidateQueries({queryKey: ["event-participant-info", eventID]});
-            if (latestValue.current === submitted) setEditing(false);
+            if (latestValue.current === submitted) {setValue(null); setEditing(false);}
             toast.success(next ? t("participation.pseudonym.saved") : t("participation.pseudonym.removed"));
         } catch (error) {
             toast.error(errorText(error, t("participation.pseudonym.saveFailed")));
@@ -55,7 +58,7 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
     return <div className="event-pp-rename">
         <span className="event-pp-hero__sub">{t("participation.pseudonym.line", {value: info.Pseudonym || t("participation.pseudonym.notSet")})}</span>
         {info.PseudonymEditable
-            ? <><button type="button" className="ib-btn ib-btn--sm" onClick={() => { setValue(null); setEditing(true); }}>{info.Pseudonym ? t("participation.pseudonym.change") : t("common.add")}</button>
+            ? <><button type="button" className="ib-btn ib-btn--sm" onClick={() => { setEditing(true); }}>{info.Pseudonym ? t("participation.pseudonym.change") : t("common.add")}</button>
                 {info.Pseudonym && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" disabled={busy} onClick={() => void save(null)}>{t("participation.pseudonym.remove")}</button>}</>
             : <EventTooltip content={t("participation.pseudonym.locked")}>{id => <span className="event-pp-field__lock" tabIndex={0} aria-describedby={id} aria-label={t("participation.pseudonym.locked")}><Lock aria-hidden="true" /></span>}</EventTooltip>}
     </div>;

@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -32,8 +34,8 @@ export function MailSettingsPanel() {
     const queryClient = useQueryClient();
     const queryKey = ["event-manage-mail", eventID];
     const query = useQuery({queryKey, queryFn: () => getEventMailSettings(eventID), refetchOnWindowFocus: false});
-    const [identityDraft, setIdentityDraft] = useState<IdentityForm | null>(null);
-    const [smtpDraft, setSMTPDraft] = useState<SMTPForm | null>(null);
+    const [identityDraft, setIdentityDraft] = useSessionDraftState<IdentityForm | null>("mail-identity", null, {reconcile: "storage", dirty: value => !query.data ? undefined : !!value && JSON.stringify(identityInput(value)) !== JSON.stringify(identityInput(identityForm(query.data.Identity)))});
+    const [smtpDraft, setSMTPDraft] = useSessionDraftState<SMTPForm | null>("mail-smtp", null, {reconcile: "storage", dirty: value => !query.data ? undefined : !!value && (smtpError(value) ? JSON.stringify(value) !== JSON.stringify(smtpForm(query.data.SMTP)) : JSON.stringify(smtpInput(value)) !== JSON.stringify(smtpInput(smtpForm(query.data.SMTP))))});
     // Each action busies only its own button: a pending save never disables a field
     // or another action, so editing carries on while the server answers.
     const [busy, setBusyState] = useState({identity: false, smtp: false, test: false, reset: false});

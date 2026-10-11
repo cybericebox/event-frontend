@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -38,16 +40,16 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     initialEmails?: string[];
 }) {
     const id = useId();
-    const [mode, setMode] = useState<"manual" | "csv">("manual");
-    const [chips, setChips] = useState<EmailChip[]>(() => addChips([], initialEmails.map(email => ({email}))));
-    const [csvChips, setCsvChips] = useState<EmailChip[]>([]);
+    const [mode, setMode] = useSessionDraftState<"manual" | "csv">(`invite-${team?.ID ?? "participants"}-mode`, "manual", {dirty: () => false});
+    const [chips, setChips] = useSessionDraftState<EmailChip[]>(`invite-${team?.ID ?? "participants"}-chips`, () => addChips([], initialEmails.map(email => ({email}))));
+    const [csvChips, setCsvChips] = useSessionDraftState<EmailChip[]>(`invite-${team?.ID ?? "participants"}-csv`, []);
     // The CSV carries the participant form's fields, so the template follows the form as it is now.
     const queryClient = useQueryClient();
     const formKey = ["event-management-participant-form", eventID];
     const formQuery = useQuery({queryKey: formKey, queryFn: () => getManageParticipantForm(eventID), enabled: open && mode === "csv", refetchOnWindowFocus: false});
     const schema = useMemo(() => buildSchema(formQuery.data, null, inviteColumns), [formQuery.data]);
-    const [fileName, setFileName] = useState<string | null>(null);
-    const [csvIssues, setCsvIssues] = useState<CsvIssue[]>([]);
+    const [fileName, setFileName] = useSessionDraftState<string | null>(`invite-${team?.ID ?? "participants"}-file`, null, {dirty: () => false});
+    const [csvIssues, setCsvIssues] = useSessionDraftState<CsvIssue[]>(`invite-${team?.ID ?? "participants"}-issues`, [], {dirty: () => false});
     const [failures, setFailures] = useState<InvitationResult[]>([]);
     const [busy, setBusy] = useState(false);
     const csvPicker = useRef<FilePickerHandle | null>(null);
@@ -118,7 +120,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     }
 
     const title = team ? t("manage.teams.invite.title", {name: team.Name}) : t("manage.participants.invite.title");
-    return <ManageDialog open={open} onOpenChange={next => {if (!busy) {if (!next) reset(); onOpenChange(next);}}} title={title}
+    return <ManageDialog open={open} onOpenChange={next => {if (!busy) {onOpenChange(next);}}} title={title}
         description={team ? t("manage.invites.teamDescription") : t("manage.invites.description")} onSubmit={submit}
         fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: dropCsv, disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => {reset(); onOpenChange(false);}}>{t("common.cancel")}</button>
@@ -129,7 +131,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
         </div>
         {mode === "manual" ? <div className="ib-field">
             <label className="ib-field__label" htmlFor={`${id}-emails`}>{t("manage.participants.invite.emails")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></label>
-            <EmailChipsInput id={`${id}-emails`} chips={chips} onChange={next => {setChips(next); setFailures([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-hint ${id}-error`} />
+            <EmailChipsInput draftSlot={`invite-${team?.ID ?? "participants"}-pending-email`} id={`${id}-emails`} chips={chips} onChange={next => {setChips(next); setFailures([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-hint ${id}-error`} />
             <p className="ib-field__hint" id={`${id}-hint`}>{t("manage.invites.chips.hintCounter", {count: valid.length, limit: invitationLimit})}</p>
             <p className="ib-field__error" id={`${id}-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : valid.length > invitationLimit ? t("manage.participants.invite.limit") : ""}</p>
         </div> : <>

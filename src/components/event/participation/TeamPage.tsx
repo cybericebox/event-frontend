@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useNow} from "./useNow";
 import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -41,13 +43,14 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
     info: ParticipantEventInfo | null; team: OwnTeam; rosterOpen: boolean; captain: boolean; captainName: string;
     stats: {rank: number; points: number} | null; preview: boolean; onRename: (name: string) => Promise<void>;
 }) {
-    const [renaming, setRenaming] = useState(false);
-    const [nameEdit, setName] = useState<string | null>(null);
+    const [renaming, setRenaming] = useSessionDraftState("team-renaming", false, {dirty: () => false});
+    const [nameEdit, setName] = useSessionDraftState<string | null>("team-name", null);
     const name = nameEdit ?? team.Name;
     const [busy, setBusy] = useState(false);
     const latestName = useRef(name);
     useLayoutEffect(() => {latestName.current = name;}, [name]);
     const dirty = name.trim() !== team.Name.trim();
+    useDraftDirty("team-name", dirty);
     const min = team.MinTeamSize ?? info?.MinTeamSize;
     const max = team.MaxTeamSize ?? info?.MaxTeamSize;
     const missing = missingMembers(team.MemberCount, min);
@@ -56,7 +59,7 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
         submit.preventDefault();
         if (!dirty || busy || !name.trim()) return;
         setBusy(true);
-        try { await onRename(name.trim()); if (latestName.current === name) setRenaming(false); } catch { /* toast shown */ } finally { setBusy(false); }
+        try { await onRename(name.trim()); if (latestName.current === name) {setName(null); setRenaming(false);} } catch { /* toast shown */ } finally { setBusy(false); }
     };
     return <>
         {!admitted && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="warning" title={missing ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title")} message={t("participation.team.notAdmittedMessage")} /></div>}
@@ -69,7 +72,7 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
                         <button type="button" className="ib-btn" disabled={busy} onClick={() => setRenaming(false)}>{t("common.cancel")}</button>
                     </form>
                     : <div className="event-pp-rename"><h2 className="event-pp-hero__name">{team.Name}</h2>
-                        {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm" onClick={() => { setName(null); setRenaming(true); }}>{t("participation.team.rename")}</button>}</div>}
+                        {captain && rosterOpen && <button type="button" className="ib-btn ib-btn--sm" onClick={() => { setRenaming(true); }}>{t("participation.team.rename")}</button>}</div>}
                 <div className="event-pp-hero__tags">
                     {!preview && (admitted ? <span className="ib-tag ib-tag--ok">{t("participation.team.admitted")}</span> : <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>)}
                     <span className="event-pp-hero__sub">{t("participation.team.rosterLine", {line: rosterLine(team.MemberCount, max, min)})}</span>

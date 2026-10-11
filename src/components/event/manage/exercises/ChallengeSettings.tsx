@@ -1,5 +1,7 @@
 "use client";
 
+import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
@@ -54,7 +56,7 @@ export function ChallengeSettings() {
     const scoring = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const lifecycle = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useState<{eventID: string; value: ScoringDraft} | null>(null);
+    const [edit, setEdit] = useSessionDraftState<{eventID: string; value: ScoringDraft} | null>("challenge-scoring", null, {reconcile: true, dirty: current => !scoring.data ? undefined : !!current && JSON.stringify(inputOf(current.value)) !== JSON.stringify(inputOf(draftOf(scoring.data)))});
     const [saving, setSaving] = useState(false);
     // Config saves run one after another; the controls never wait for them.
     const configQueue = useRef<Promise<void>>(Promise.resolve());

@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
@@ -19,18 +21,20 @@ export default function ManageGeneralPage() {
     const queryClient = useQueryClient();
     const nameQuery = useQuery({queryKey: ["event-management-name", eventID], queryFn: () => getManageName(eventID), refetchOnWindowFocus: false});
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
-    const [nameEdit, setNameEdit] = useState<{eventID: string; value: string} | null>(null);
-    const [descriptionEdit, setDescriptionEdit] = useState<{eventID: string; value: string} | null>(null);
+    const [nameEdit, setNameEdit] = useSessionDraftState<{eventID: string; value: string} | null>("general-name", null);
+    const [descriptionEdit, setDescriptionEdit] = useSessionDraftState<{eventID: string; value: string} | null>("general-description", null);
     const [saving, setSaving] = useState(false);
     const name = nameEdit?.eventID === eventID ? nameEdit.value : nameQuery.data?.Name ?? "";
     const description = descriptionEdit?.eventID === eventID ? descriptionEdit.value : configQuery.data?.PreviewDescription ?? "";
     const preview = useBrandDraft(eventID, "preview", configQuery.data?.PreviewPicture ?? "", 5 << 20);
     const dirty = !!nameQuery.data && !!configQuery.data && (name.trim() !== nameQuery.data.Name || description !== configQuery.data.PreviewDescription || preview.dirty);
+    useDraftDirty("general-name", nameQuery.data ? name.trim() !== nameQuery.data.Name : undefined, {preserveInput: true});
+    useDraftDirty("general-description", configQuery.data ? description !== configQuery.data.PreviewDescription : undefined);
     const disabled = !canManage;
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
-        if (!dirty || !name.trim() || preview.uploading || saving || !canManage) return;
+        if (!dirty || !name.trim() || preview.uploading || preview.expired || saving || !canManage) return;
         setSaving(true);
         try {
             const result = await putManageGeneral(eventID, {Name: name.trim(), Description: description, Preview: preview.change});
@@ -56,6 +60,6 @@ export default function ManageGeneralPage() {
             <div className="event-manage-field"><ManageFieldLabel htmlFor="event-description" title={t("manage.settings.description")} help={t("manage.settings.descriptionHelp")} /><textarea id="event-description" className="event-manage-input" value={description} onChange={change => setDescriptionEdit({eventID, value: change.target.value})} maxLength={1000} rows={3} disabled={disabled} /></div>
             <BrandDraftField id="event-preview-picture" title={t("manage.settings.preview")} help={t("manage.settings.previewHelp")} hint={t("manage.settings.previewHint")} kind="preview" draft={preview} disabled={disabled} />
         </section>
-        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !name.trim() || preview.uploading} busy={saving}>{t("common.save")}</EventButton></div>
+        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !name.trim() || preview.uploading || preview.expired} busy={saving}>{t("common.save")}</EventButton></div>
     </form>;
 }

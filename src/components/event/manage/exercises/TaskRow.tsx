@@ -1,5 +1,7 @@
 "use client";
 
+import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
+
 import {useState} from "react";
 import {ChevronRight, Lightbulb, LightbulbOff} from "lucide-react";
 import {toast} from "react-hot-toast";
@@ -53,7 +55,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; scoring: ManageScoring; lifecycle: ManageLifecycle;
     disabled: boolean; onSaved: () => Promise<unknown>;
 }) {
-    const [edit, setDraft] = useState<ScoringDraft | null>(null);
+    const [edit, setDraft] = useSessionDraftState<ScoringDraft | null>(`task-scoring-${attachmentID}-${challenge.ID}`, null);
     const draft = edit ?? scoringDraftOf(challenge);
     const [saving, setSaving] = useState(false);
     const forced = scoring.ForceEventScoring;
@@ -61,6 +63,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
     const changed = draft.kind !== original.kind
         || (draft.kind === "static" && Number(draft.points) !== Number(original.points))
         || (draft.kind === "dynamic" && JSON.stringify(withTimeDecayFloor(draft.profile)) !== JSON.stringify(withTimeDecayFloor(original.profile)));
+    useDraftDirty(`task-scoring-${attachmentID}-${challenge.ID}`, changed);
     const problem = draft.kind === "dynamic" ? decayProblem(draft.profile.Mode, lifecycle) : "";
     const valid = draft.kind === "static" ? staticPointsValid(draft.points, true) : draft.kind === "dynamic" ? dynamicValid(draft.profile) : true;
     const locked = disabled || forced;
@@ -122,9 +125,10 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
 function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, onSaved, onHintsEnabled}: {
     eventID: string; attachmentID: string; challenge: EventBoardChallenge; hintsDisabled: boolean; disabled: boolean; onSaved: () => Promise<unknown>; onHintsEnabled: (enabled: boolean) => void;
 }) {
-    const [drafts, setDrafts] = useState<Record<string, string>>({});
+    const [drafts, setDrafts] = useSessionDraftState<Record<string, string>>(`task-hints-${attachmentID}-${challenge.ID}`, {});
     const [saving, setSaving] = useState(false);
     const changes = hintCostChanges(challenge.Hints, drafts);
+    useDraftDirty(`task-hints-${attachmentID}-${challenge.ID}`, changes.length > 0);
     const valid = Object.values(drafts).every(hintCostDraftValid);
     const locked = disabled;
 
@@ -197,7 +201,7 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
     hintsDisabled: boolean; stand: StandReadiness | null; canManage: boolean; eventAttempts: number | null; onSaved: () => Promise<unknown>;
     onHintsEnabled: (challengeID: string, enabled: boolean) => void; onMaxAttempts: (challengeID: string, limit: number | null) => void;
 }) {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useSessionDraftState(`task-open-${attachment.ID}-${challenge.ID}`, false, {dirty: () => false});
     const toggle = () => setOpen(current => !current);
     const hints = hintIndicator(challenge, hintsDisabled);
     const line = descriptionFirstLine(challenge.Snapshot.description, challenge.Snapshot.placeholders);
@@ -216,8 +220,8 @@ export function TaskRow({eventID, attachment, challenge, scoring, lifecycle, hin
             </span>
         </div>
         {open && <div className="event-task__panel" id={panelID}>
-            <TaskScoring key={`${challenge.Points}:${JSON.stringify(challenge.ScoringOverride)}`} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} scoring={scoring} lifecycle={lifecycle} disabled={!canManage} onSaved={onSaved} />
-            <TaskHints key={challenge.Hints.map(hint => `${hint.ID}:${hint.Cost}`).join("|")} eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} onHintsEnabled={enabled => onHintsEnabled(challenge.ID, enabled)} />
+            <TaskScoring eventID={eventID} attachmentID={attachment.ID} challenge={challenge} scoring={scoring} lifecycle={lifecycle} disabled={!canManage} onSaved={onSaved} />
+            <TaskHints eventID={eventID} attachmentID={attachment.ID} challenge={challenge} hintsDisabled={hintsDisabled} disabled={!canManage} onSaved={onSaved} onHintsEnabled={enabled => onHintsEnabled(challenge.ID, enabled)} />
             <TaskAttempts challenge={challenge} eventAttempts={eventAttempts} disabled={!canManage} onMaxAttempts={limit => onMaxAttempts(challenge.ID, limit)} />
         </div>}
     </li>;
