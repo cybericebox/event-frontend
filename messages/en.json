@@ -1881,7 +1881,7 @@
   "manage.setup.summary.complete": "The event is ready",
   "manage.setup.summary.completeText": "All required steps are done and the event is published.",
   "manage.setup.open": "Open",
-  "manage.setup.fix": "Fix",
+  "manage.setup.fix": "Configure",
   "manage.setup.status.done": "Done",
   "manage.setup.status.todo": "Required",
   "manage.setup.status.review": "Review",

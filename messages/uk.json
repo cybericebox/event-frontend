@@ -1881,7 +1881,7 @@
   "manage.setup.summary.complete": "Захід готовий",
   "manage.setup.summary.completeText": "Усі обовʼязкові кроки виконано, а захід опубліковано.",
   "manage.setup.open": "Відкрити",
-  "manage.setup.fix": "Виправити",
+  "manage.setup.fix": "Налаштувати",
   "manage.setup.status.done": "Готово",
   "manage.setup.status.todo": "Потрібно",
   "manage.setup.status.review": "Перевірте",
