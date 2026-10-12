@@ -27,18 +27,18 @@ describe("acknowledged event settings", () => {
     it.each([General, Appearance, Schedule])("never submits a clean form with Enter (%s)", async Component => {
         const {container} = mount(Component);
         await waitFor(() => expect(container.querySelectorAll("form").length).toBeGreaterThan(0));
-        expect(screen.queryByRole("button", {name: /^Зберегти/})).toBeNull();
+        for (const button of screen.getAllByRole("button", {name: /^Зберегти/})) expect(button).toHaveProperty("disabled", true);
         container.querySelectorAll("form").forEach(form => fireEvent.submit(form));
         Object.values(api).forEach(mock => expect(mock).not.toHaveBeenCalled());
     });
 
-    it("hides Save after reverting the effective name", async () => {
+    it("disables Save after reverting the effective name", async () => {
         mount(General);
         const name = await screen.findByDisplayValue("Event") as HTMLInputElement;
         fireEvent.change(name, {target: {value: "New Event"}});
         expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy();
         fireEvent.change(name, {target: {value: " Event "}});
-        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
         fireEvent.submit(name.closest("form")!);
         expect(api.general).not.toHaveBeenCalled();
     });
@@ -48,14 +48,14 @@ describe("acknowledged event settings", () => {
         await screen.findByDisplayValue("Event");
         act(() => client.setQueryData(["event-management-name", "e"], {Name: "Fresh Event"}));
         await screen.findByDisplayValue("Fresh Event");
-        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     });
 
     it("compares colors without case or surrounding-space differences", async () => {
         mount(Appearance);
         const brand = await screen.findByRole("textbox", {name: /^Брендовий колір/});
         fireEvent.change(brand, {target: {value: " #211a52 "}});
-        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
         fireEvent.submit(brand.closest("form")!);
         expect(api.appearance).not.toHaveBeenCalled();
     });

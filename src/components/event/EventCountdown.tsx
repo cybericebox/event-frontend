@@ -13,12 +13,11 @@ const MAX_TIMEOUT = 2_000_000_000;
 // second while a time is shown and otherwise sleeps until the next boundary.
 // `hint` is the line under the start label; `showFinished` = false leaves the
 // end state to the page (the challenges page has its own finished banner).
-// `finishFrom` holds the finish countdown back on an event with stages (see countdownPhase).
-export function EventCountdown({event, hint, showFinished = true, finishFrom}: {event: CountdownSchedule; hint?: string; showFinished?: boolean; finishFrom?: number}) {
+export function EventCountdown({event, hint, showFinished = true}: {event: CountdownSchedule; hint?: string; showFinished?: boolean}) {
     const [now, setNow] = useState(() => Date.now());
-    const phase = countdownPhase(event, now, finishFrom);
+    const phase = countdownPhase(event, now);
     const kind = phase?.kind;
-    const next = nextPhaseChange(event, now, finishFrom);
+    const next = nextPhaseChange(event, now);
     useEffect(() => {
         if (kind === "start" || kind === "finish") {
             const id = setInterval(() => setNow(Date.now()), 1000);

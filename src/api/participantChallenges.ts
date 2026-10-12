@@ -89,8 +89,8 @@ const boardStageSchema = z.object({
     ID: id, Name: z.string(), OpensAt: z.string(), ClosesAt: z.string(), Returnable: z.boolean().default(false),
     State: z.enum(["open", "closed"]).catch("closed"),
 });
-// The stage that is open now. EndsAt is sent only while its countdown is visible (never for the last stage, which ends
-// with the event); Last: the stage ends with the event.
+// The open stage with its own closing countdown when visible. Last is its place in the order,
+// and does not imply that closing the stage finishes the event.
 const currentStageSchema = z.object({
     ID: id, Name: z.string(), OpensAt: z.string(),
     EndsAt: z.string().nullish().transform(value => value ?? null), Last: z.boolean().default(false),

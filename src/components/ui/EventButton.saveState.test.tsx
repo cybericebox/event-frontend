@@ -7,13 +7,13 @@ vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => <span
 afterEach(cleanup);
 
 describe("explicit save action", () => {
-    it("reserves space but removes a clean action from interaction and accessibility", () => {
+    it("keeps a clean Save visible and disabled, then enables it for changes", () => {
         const save = vi.fn();
         const {container, rerender} = render(<EventButton saveDirty={false} onClick={save}>Save</EventButton>);
         const button = container.querySelector("button")!;
-        expect(button.style.visibility).toBe("hidden");
+        expect(button.style.visibility).toBe("");
         expect(button.disabled).toBe(true);
-        expect(screen.queryByRole("button", {name: "Save"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Save"})).toBe(button);
         fireEvent.click(button);
         expect(save).not.toHaveBeenCalled();
         rerender(<EventButton saveDirty onClick={save}>Save</EventButton>);
@@ -21,5 +21,6 @@ describe("explicit save action", () => {
         expect(save).toHaveBeenCalledOnce();
         rerender(<EventButton saveDirty={false} busy>Save</EventButton>);
         expect(screen.getByRole("button", {name: "Save"}).getAttribute("aria-busy")).toBe("true");
+        expect(screen.getByRole("button", {name: "Save"})).toHaveProperty("disabled", true);
     });
 });

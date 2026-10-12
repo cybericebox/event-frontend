@@ -95,11 +95,11 @@ it("does not offer a team Save until effective values change", async () => {
     await screen.findByText("Blue Team");
     fireEvent.click(screen.getByRole("button", {name: "Керувати командою Blue Team"}));
     fireEvent.click(screen.getByRole("button", {name: "Змінити"}));
-    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     const name = screen.getByRole("textbox", {name: "Назва"});
     fireEvent.change(name, {target: {value: "New Blue Team"}});
     expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy();
     fireEvent.change(name, {target: {value: " Blue Team "}});
-    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     expect(update).not.toHaveBeenCalled();
 });

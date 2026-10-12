@@ -133,7 +133,7 @@ it("does not show or submit SMTP Save for equivalent normalized values", async (
     const username = await screen.findByLabelText(/^Користувач/);
     fireEvent.change(username, {target: {value: " mailer "}});
     fireEvent.change(screen.getByLabelText("Ліміт листів на добу"), {target: {value: "10.0"}});
-    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    for (const save of screen.getAllByRole("button", {name: "Зберегти"})) expect(save).toHaveProperty("disabled", true);
     fireEvent.submit(username.closest("form")!);
     expect(puts).toHaveLength(0);
 });

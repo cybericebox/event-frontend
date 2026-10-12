@@ -37,9 +37,9 @@ describe("GroupNameDialog", () => {
         render(<GroupNameDialog open mode="rename" initialName="Веб" otherNames={[]} busy={false} onClose={vi.fn()} onSubmit={vi.fn()} />);
         expect(screen.getByRole("heading", {name: "Перейменувати групу"})).toBeTruthy();
         expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("Веб");
-        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
         fireEvent.change(screen.getByRole("textbox"), {target: {value: " Веб "}});
-        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
         fireEvent.change(screen.getByRole("textbox"), {target: {value: "Крипто"}});
         expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy();
     });
@@ -71,5 +71,5 @@ it("keeps a newer name editable when an older rename finishes", async () => {
     await waitFor(() => expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy());
     expect(field.value).toBe("Нові задачі");
     fireEvent.change(field, {target: {value: "Крипто"}});
-    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
 });

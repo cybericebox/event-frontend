@@ -4,13 +4,13 @@ import {draftOfStage, isoOf, localDateTime, shortBreaks, stageDirty, stageLocks}
 
 const stage = (extra: Partial<ManageStage> = {}): ManageStage => ({
     ID: "11111111-1111-4111-8111-111111111111", Name: "Етап", OpensAt: "2026-10-01T10:00:00Z", ClosesAt: "2026-10-01T12:00:00Z", Returnable: false,
-    LabRetentionMinutes: null, State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
+    LabRetentionMinutes: null, OpensWithEvent: false, ClosesWithEvent: false, State: "upcoming", First: false, Last: false, DeployLeadMinutes: 0, ...extra,
 });
 
 describe("stage locks", () => {
-    it("upcoming: everything except the event's own anchors", () => {
+    it("upcoming: both dates edit even on the first and last stage", () => {
         expect(stageLocks(stage())).toEqual({name: false, opens: false, closes: false, returnable: false, canClose: false, canDelete: true});
-        expect(stageLocks(stage({First: true, Last: true}))).toMatchObject({opens: true, closes: true});
+        expect(stageLocks(stage({First: true, Last: true}))).toMatchObject({opens: false, closes: false});
     });
     it("open: the start is locked, the rest edits, «Закрити зараз» is offered, it is never deletable", () => {
         expect(stageLocks(stage({State: "open"}))).toEqual({name: false, opens: true, closes: false, returnable: false, canClose: true, canDelete: false});

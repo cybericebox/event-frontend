@@ -70,7 +70,7 @@ describe("Сторінка листа", () => {
         const subject = await screen.findByRole("textbox", {name: "Тема листа"});
         expect(subject.closest("[inert]")).toBeNull();
         expect(screen.getByRole("button", {name: "Опублікувати"})).toBeTruthy();
-        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти чернетку"})).toHaveProperty("disabled", true);
         subject.textContent = "Нова тема";
         fireEvent.input(subject);
         expect(screen.queryByRole("button", {name: "Опублікувати"})).toBeNull();
@@ -106,7 +106,7 @@ describe("Сторінка листа", () => {
         await waitFor(() => expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(false));
         expect(subject.textContent).toBe("Later subject");
         subject.textContent = "Sent subject"; fireEvent.input(subject);
-        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти чернетку"})).toHaveProperty("disabled", true);
     });
 
     it("returns to the standard template only after a confirmation", async () => {

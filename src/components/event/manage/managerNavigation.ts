@@ -9,7 +9,7 @@ const sections: {group: () => string; pages: string[]}[] = [
     {group: () => t("manage.nav.group.event"), pages: ["/manage/settings", "/manage/appearance", "/manage/participation-settings", "/manage/schedule"]},
     {group: () => t("manage.nav.group.participation"), pages: ["/manage/registration", "/manage/participants", "/manage/teams"]},
     {group: () => t("manage.nav.group.challenges"), pages: ["/manage/challenge-settings", "/manage/exercise-groups", "/manage/exercises", "/manage/labs", "/manage/resources", "/manage/submissions"]},
-    {group: () => t("manage.nav.group.results"), pages: ["/manage/results-settings", "/manage/results", "/manage/live"]},
+    {group: () => t("manage.nav.group.results"), pages: ["/manage/results", "/manage/live", "/manage/results-settings"]},
     {group: () => t("manage.nav.group.notifications"), pages: ["/manage/banners", "/manage/notifications", "/manage/email", "/manage/mail", "/manage/mail-journal"]},
 ];
 
