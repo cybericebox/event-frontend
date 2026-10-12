@@ -18,6 +18,7 @@ import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventSelect} from "@/components/ui/EventSelect";
+import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {StagesManager} from "@/components/event/manage/StagesManager";
 
 type ScheduleDraft = {
@@ -56,6 +57,12 @@ function asTimestamp(value: string): number | null {
     return Number.isNaN(time) ? null : time;
 }
 
+function lifecycleDateTime(value: string, saved: string | null): string | null {
+    if (!value) return null;
+    // The picker edits minutes; an unchanged field keeps the saved seconds.
+    return value === localDateTime(saved) ? saved : new Date(value).toISOString();
+}
+
 export default function ManageSchedulePage() {
     const {event, canManage} = useManager();
     const queryClient = useQueryClient();
@@ -84,9 +91,9 @@ export default function ManageSchedulePage() {
         if (publish === null || start === null) return t("manage.schedule.validation.publishAndStart");
         if (start < publish) return t("manage.schedule.validation.startAfterPublish");
         if (draft.ScheduledEnd) {
-            if (finish === null || withdraw === null) return t("manage.schedule.validation.bothEndTimes");
+            if (finish === null) return t("manage.schedule.validation.finishRequired");
             if (finish <= start) return t("manage.schedule.validation.finishAfterStart");
-            if (withdraw <= finish) return t("manage.schedule.validation.withdrawAfterFinish");
+            if (draft.WithdrawAt && (withdraw === null || withdraw <= finish)) return t("manage.schedule.validation.withdrawAfterFinish");
         }
         return "";
     }, [draft]);
@@ -101,13 +108,13 @@ export default function ManageSchedulePage() {
         try {
             const updated = await putManageLifecycle(eventID, {
                 JoinPolicy: lifecycle.data!.JoinPolicy,
-                PublishAt: new Date(draft.PublishAt).toISOString(),
-                StartAt: new Date(draft.StartAt).toISOString(),
-                FinishAt: draft.ScheduledEnd ? new Date(draft.FinishAt).toISOString() : null,
-                WithdrawAt: draft.ScheduledEnd ? new Date(draft.WithdrawAt).toISOString() : null,
+                PublishAt: lifecycleDateTime(draft.PublishAt, lifecycle.data!.PublishAt),
+                StartAt: lifecycleDateTime(draft.StartAt, lifecycle.data!.StartAt),
+                FinishAt: draft.ScheduledEnd ? lifecycleDateTime(draft.FinishAt, lifecycle.data!.FinishAt) : null,
+                WithdrawAt: draft.ScheduledEnd ? lifecycleDateTime(draft.WithdrawAt, lifecycle.data!.WithdrawAt) : null,
             });
             queryClient.setQueryData(["event-management-lifecycle", eventID], updated);
-            // The first stage opens and the last closes with the event: they moved with it.
+            // Refresh stages after the event's schedule changes.
             void queryClient.invalidateQueries({queryKey: ["event-management-stages", eventID]});
             setEdited(current => current?.value === draft ? null : current);
             toast.success(t("manage.schedule.saved"));
@@ -162,7 +169,10 @@ export default function ManageSchedulePage() {
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.scheduledEnd")} help={t("manage.schedule.scheduledEndHelp")} /><EventSwitch className="event-manage-form__switch" checked={draft.ScheduledEnd} onCheckedChange={checked => setDraft({...draft, ScheduledEnd: checked})} disabled={!canManage} label={t("manage.schedule.scheduleEnd")} /></div>
             {draft.ScheduledEnd && <div className="event-manage-fields-two">
                 <ManageDateField id="finish-at" title={t("manage.schedule.finish")} help={t("manage.schedule.finishHelp")} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
-                <ManageDateField id="withdraw-at" title={t("manage.schedule.withdraw")} help={t("manage.schedule.withdrawHelp")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
+                <div className="event-manage-field">
+                    <ManageFieldLabel htmlFor="withdraw-at" title={t("manage.schedule.withdraw")} help={t("manage.schedule.withdrawHelp")} />
+                    <EventDateTimePicker id="withdraw-at" ariaLabel={t("manage.schedule.withdraw")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage} allowClear />
+                </div>
             </div>}
             {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><EventButton saveDirty={!lifecycle.data.Configured || dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving}>{t("manage.schedule.save")}</EventButton></div>

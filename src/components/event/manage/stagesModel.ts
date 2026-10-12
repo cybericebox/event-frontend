@@ -8,28 +8,29 @@ export function localDateTime(iso: string | null): string {
     return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 
-export type StageDraft = {Name: string; OpensAt: string; ClosesAt: string};
+export type StageDraft = {Name: string; OpensAt: string; ClosesAt: string; OpensWithEvent: boolean; ClosesWithEvent: boolean};
 
-export const draftOfStage = (stage: ManageStage): StageDraft => ({Name: stage.Name, OpensAt: localDateTime(stage.OpensAt), ClosesAt: localDateTime(stage.ClosesAt)});
+export const draftOfStage = (stage: ManageStage): StageDraft => ({Name: stage.Name, OpensAt: localDateTime(stage.OpensAt), ClosesAt: localDateTime(stage.ClosesAt), OpensWithEvent: stage.OpensWithEvent, ClosesWithEvent: stage.ClosesWithEvent});
 
 export function stageDirty(stage: ManageStage, draft: StageDraft): boolean {
     const saved = draftOfStage(stage);
     const locks = stageLocks(stage);
-    return draft.Name.trim() !== saved.Name.trim() || !locks.opens && draft.OpensAt !== saved.OpensAt || !locks.closes && draft.ClosesAt !== saved.ClosesAt;
+    return draft.Name.trim() !== saved.Name.trim()
+        || !locks.opens && (!!draft.OpensWithEvent !== saved.OpensWithEvent || !draft.OpensWithEvent && draft.OpensAt !== saved.OpensAt)
+        || !locks.closes && (!!draft.ClosesWithEvent !== saved.ClosesWithEvent || !draft.ClosesWithEvent && draft.ClosesAt !== saved.ClosesAt);
 }
 
 // What a stage allows by its state (the server enforces the same): upcoming everything; open its name, the
-// returnable switch and the closing time; closed only the name. The first stage's opening and the last stage's
-// closing are the event's own.
+// returnable switch and the closing time; closed only the name. Every stage has its own explicit dates.
 export type StageLocks = {name: boolean; opens: boolean; closes: boolean; returnable: boolean; canClose: boolean; canDelete: boolean};
 
-export function stageLocks(stage: Pick<ManageStage, "State" | "First" | "Last">): StageLocks {
+export function stageLocks(stage: Pick<ManageStage, "State">): StageLocks {
     const closed = stage.State === "closed";
     const opened = stage.State !== "upcoming";
     return {
         name: false,
-        opens: opened || stage.First,
-        closes: closed || stage.Last,
+        opens: opened,
+        closes: closed,
         returnable: closed,
         canClose: stage.State === "open",
         canDelete: stage.State === "upcoming",

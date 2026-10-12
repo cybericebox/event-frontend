@@ -15,7 +15,7 @@ describe("manage stages API", () => {
         fetchMock.mockResolvedValue(reply({Data: [stage]}));
         const list = await getManageStages("e1");
         expect(fetchMock.mock.calls[0][0]).toBe("https://api.test/api/events/e1/manage/stages");
-        expect(list[0]).toMatchObject({State: "open", DeployLeadMinutes: 0});
+        expect(list[0]).toMatchObject({State: "open", DeployLeadMinutes: 0, OpensWithEvent: false, ClosesWithEvent: false});
         fetchMock.mockResolvedValue(reply({Data: null}));
         expect(await getManageStages("e1")).toEqual([]);
     });

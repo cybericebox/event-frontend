@@ -204,11 +204,8 @@ export function ChallengesBoard() {
         const title = missing > 0 ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title");
         return <Page banners={<EventBanner tone="warning" title={title} message={t("challenges.notAdmitted.message")} action={<Link className="ib-btn ib-btn--sm" href="/participation">{t("challenges.myParticipation")}</Link>} />} />;
     }
-    // On an event with stages the event's own countdown belongs to the last stage; the other stages have their own timers.
-    const lastStage = board?.CurrentStage?.Last ? Date.parse(board.CurrentStage.OpensAt) : Infinity;
-    const finishFrom = board && board.Stages.length > 0 ? lastStage : undefined;
     const countdown = <div className="event-challenges__timers">
-        <EventCountdown event={event} hint={t("countdown.start.challenges")} showFinished={false} finishFrom={finishFrom} />
+        <EventCountdown event={event} hint={t("countdown.start.challenges")} showFinished={false} />
         {board && <StageTimers board={board} offset={offset} onZero={() => void refetchBoard()} />}
     </div>;
     if (!started) return <Page countdown={countdown}><EmptyState message={t("challenges.beforeStart")} /></Page>;

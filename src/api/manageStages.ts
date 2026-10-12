@@ -5,10 +5,10 @@ import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 
-// A stage of the event: computed state, and which boundary of the event window it is anchored to
-// (the first opens with the event, the last closes with it: those two times are the event's own).
+// A stage with its own dates and computed state. First and Last describe its place in the order.
 export const StageSchema = z.object({
     ID: id, Name: z.string(), OpensAt: z.string(), ClosesAt: z.string(), Returnable: z.boolean(),
+    OpensWithEvent: z.boolean().default(false), ClosesWithEvent: z.boolean().default(false),
     LabRetentionMinutes: z.number().int().min(0).max(10080).nullish().transform(value => value ?? null),
     State: z.enum(["upcoming", "open", "closed"]),
     First: z.boolean().default(false), Last: z.boolean().default(false),
@@ -17,8 +17,8 @@ export const StageSchema = z.object({
 });
 export type ManageStage = z.infer<typeof StageSchema>;
 export type StageState = ManageStage["State"];
-export type StageCreateInput = {Name: string; OpensAt: string; ClosesAt: string; Returnable: boolean};
-export type StageUpdateInput = Partial<{Name: string; OpensAt: string; ClosesAt: string; Returnable: boolean; LabRetentionMinutes: number | null; CloseNow: boolean}>;
+export type StageCreateInput = {Name: string; OpensAt: string; ClosesAt: string; Returnable: boolean; OpensWithEvent?: boolean; ClosesWithEvent?: boolean};
+export type StageUpdateInput = Partial<{Name: string; OpensAt: string; ClosesAt: string; Returnable: boolean; OpensWithEvent: boolean; ClosesWithEvent: boolean; LabRetentionMinutes: number | null; CloseNow: boolean}>;
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {
     const response = await fetch(`${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {

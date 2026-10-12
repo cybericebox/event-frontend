@@ -3,6 +3,7 @@
 import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
 
 import {useRef, useState, type FormEvent} from "react";
+import {CircleHelp} from "lucide-react";
 import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
@@ -19,6 +20,7 @@ import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import {draftOfStage, isoOf, localDateTime, shortBreaks, stageDirty, stageLocks, type StageDraft} from "./stagesModel";
 import "./stagesManage.css";
@@ -30,13 +32,39 @@ const failureText = (failure: unknown, fallback: string) => failure instanceof M
 
 const stateTag = (state: ManageStage["State"]) => <span className={`ib-tag ib-tag--sm${state === "open" ? " ib-tag--ok" : ""}`}>{t(`manage.stages.state.${state}`)}</span>;
 
-function StageRow({eventID, stage, canManage, onPatch}: {
-    eventID: string; stage: ManageStage; canManage: boolean; onPatch: (stage: ManageStage, patch: Partial<Pick<ManageStage, "Returnable" | "LabRetentionMinutes">>) => void;
+function ReturnableSwitch({checked, disabled, onCheckedChange}: {checked: boolean; disabled: boolean; onCheckedChange: (checked: boolean) => void}) {
+    const title = t("manage.stages.returnable");
+    return <div className="event-stage__returnable-control">
+        <EventSwitch className="event-manage-form__switch" checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} label={title} />
+        <EventTooltip content={<span className="event-brand-tooltip-copy">{t("manage.stages.returnableHelp")}</span>}>
+            {id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={15} /></button>}
+        </EventTooltip>
+    </div>;
+}
+
+function StageBoundaryField({id, title, help, value, bound, eventDate, disabled, opening, onChange, onBoundChange}: {
+    id: string; title: string; help: string; value: string; bound: boolean; eventDate: string | null;
+    disabled: boolean; opening: boolean; onChange: (value: string) => void; onBoundChange: (bound: boolean) => void;
+}) {
+    const missingFinish = !opening && !eventDate && !disabled;
+    return <div className="event-stage__boundary">
+        <ManageDateField id={id} title={title} help={help} value={value} onChange={onChange} disabled={disabled || bound} required />
+        <div className="event-stage__date-source" role="radiogroup" aria-label={t(opening ? "manage.stages.opensSource" : "manage.stages.closesSource")} aria-describedby={missingFinish ? `${id}-unavailable` : undefined}>
+            <label><input type="radio" name={`${id}-source`} checked={!bound} disabled={disabled} onChange={() => onBoundChange(false)} /><span>{t("manage.stages.source.custom")}</span></label>
+            <label><input type="radio" name={`${id}-source`} checked={bound} disabled={disabled || !eventDate} onChange={() => onBoundChange(true)} /><span>{t(opening ? "manage.stages.source.eventStart" : "manage.stages.source.eventFinish")}</span></label>
+        </div>
+        {missingFinish && <p className="event-stage__lead" id={`${id}-unavailable`}>{t("manage.stages.boundFinishUnavailable")}</p>}
+    </div>;
+}
+
+function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
+    eventID: string; stage: ManageStage; lifecycle: ManageLifecycle; canManage: boolean; onPatch: (stage: ManageStage, patch: Partial<Pick<ManageStage, "Returnable" | "LabRetentionMinutes">>) => void;
 }) {
     const queryClient = useQueryClient();
     const locks = stageLocks(stage);
     const [edit, setEdit] = useSessionDraftState<{stageID: string; value: StageDraft} | null>(`stage-${stage.ID}`, null);
-    const draft = edit?.stageID === stage.ID ? edit.value : draftOfStage(stage);
+    // Drafts saved before source selection existed inherit the server's migrated source choices.
+    const draft = edit?.stageID === stage.ID ? {...draftOfStage(stage), ...edit.value} : draftOfStage(stage);
     const dirty = stageDirty(stage, draft);
     useDraftDirty(`stage-${stage.ID}`, dirty);
     const [saving, setSaving] = useState(false);
@@ -44,21 +72,25 @@ function StageRow({eventID, stage, canManage, onPatch}: {
     const [busy, setBusy] = useState(false);
     const [dialogError, setDialogError] = useState("");
 
-    const apply = (saved: ManageStage) => queryClient.setQueryData<ManageStage[]>(stagesKey(eventID), current => (current ?? []).map(item => item.ID === saved.ID ? saved : item));
+    const apply = (saved: ManageStage) => queryClient.setQueryData<ManageStage[]>(stagesKey(eventID), current => (current ?? []).map(item => item.ID === saved.ID ? saved : item).sort((a, b) => Date.parse(a.OpensAt) - Date.parse(b.OpensAt)));
     const refresh = () => queryClient.invalidateQueries({queryKey: stagesKey(eventID), exact: true});
 
     async function save(submitEvent: FormEvent) {
         submitEvent.preventDefault();
         if (!canManage || !dirty || saving) return;
         const input: StageUpdateInput = {Name: draft.Name.trim()};
-        if (!locks.opens) input.OpensAt = isoOf(draft.OpensAt) ?? undefined;
-        if (!locks.closes) input.ClosesAt = isoOf(draft.ClosesAt) ?? undefined;
+        if (!locks.opens) {
+            input.OpensWithEvent = !!draft.OpensWithEvent;
+            if (!draft.OpensWithEvent) input.OpensAt = draft.OpensAt === localDateTime(stage.OpensAt) ? stage.OpensAt : isoOf(draft.OpensAt) ?? undefined;
+        }
+        if (!locks.closes) {
+            input.ClosesWithEvent = !!draft.ClosesWithEvent;
+            if (!draft.ClosesWithEvent) input.ClosesAt = draft.ClosesAt === localDateTime(stage.ClosesAt) ? stage.ClosesAt : isoOf(draft.ClosesAt) ?? undefined;
+        }
         setSaving(true);
         try {
             apply(await updateManageStage(eventID, stage.ID, input));
-            // Another stage may have moved with it (the neighbours keep to the order): reread them all.
-            void refresh();
-            setEdit(current => current?.value === draft ? null : current);
+            setEdit(current => current === edit ? null : current);
             toast.success(t("manage.stages.saved"));
         } catch (failure) {toast.error(failureText(failure, t("manage.stages.saveFailed")));}
         finally {setSaving(false);}
@@ -93,10 +125,12 @@ function StageRow({eventID, stage, canManage, onPatch}: {
                 {stateTag(stage.State)}
             </div>
             <div className="event-manage-fields-two">
-                <ManageDateField id={`stage-opens-${stage.ID}`} title={t("manage.stages.opens")} help={stage.First ? t("manage.stages.anchoredStart") : stage.State === "upcoming" ? t("manage.stages.help") : t("manage.stages.openedLocked")}
-                    value={locks.opens ? localDateTime(stage.OpensAt) : draft.OpensAt} onChange={value => setEdit({stageID: stage.ID, value: {...draft, OpensAt: value}})} disabled={disabled || locks.opens} required />
-                <ManageDateField id={`stage-closes-${stage.ID}`} title={t("manage.stages.closes")} help={stage.Last ? t("manage.stages.anchoredFinish") : stage.State === "closed" ? t("manage.stages.closedLocked") : t("manage.stages.help")}
-                    value={locks.closes ? localDateTime(stage.ClosesAt) : draft.ClosesAt} onChange={value => setEdit({stageID: stage.ID, value: {...draft, ClosesAt: value}})} disabled={disabled || locks.closes} required />
+                <StageBoundaryField id={`stage-opens-${stage.ID}`} title={t("manage.stages.opens")} help={stage.State === "upcoming" ? t("manage.stages.windowHelp") : t("manage.stages.openedLocked")}
+                    value={locks.opens ? localDateTime(stage.OpensAt) : draft.OpensWithEvent ? localDateTime(lifecycle.StartAt) : draft.OpensAt} bound={!!draft.OpensWithEvent} eventDate={lifecycle.StartAt} opening
+                    onChange={value => setEdit({stageID: stage.ID, value: {...draft, OpensAt: value}})} onBoundChange={bound => setEdit({stageID: stage.ID, value: {...draft, OpensWithEvent: bound}})} disabled={disabled || locks.opens} />
+                <StageBoundaryField id={`stage-closes-${stage.ID}`} title={t("manage.stages.closes")} help={stage.State === "closed" ? t("manage.stages.closedLocked") : t("manage.stages.windowHelp")}
+                    value={locks.closes ? localDateTime(stage.ClosesAt) : draft.ClosesWithEvent ? localDateTime(lifecycle.FinishAt) : draft.ClosesAt} bound={!!draft.ClosesWithEvent} eventDate={lifecycle.FinishAt} opening={false}
+                    onChange={value => setEdit({stageID: stage.ID, value: {...draft, ClosesAt: value}})} onBoundChange={bound => setEdit({stageID: stage.ID, value: {...draft, ClosesWithEvent: bound}})} disabled={disabled || locks.closes} />
             </div>
             <LabPolicyNumberField id={`stage-retention-${stage.ID}`} title={t("manage.labs.policy.retention")} value={stage.LabRetentionMinutes ?? null}
                 min={0} max={10080} nullable placeholder={t("manage.labs.policy.inherit")} disabled={disabled}
@@ -104,9 +138,10 @@ function StageRow({eventID, stage, canManage, onPatch}: {
             <p className="event-stage__lead">{t("manage.labs.group.prepareHelp")}</p>
             <div className="event-stage__foot">
                 <div className="event-stage__returnable">
-                    <EventSwitch className="event-manage-form__switch" checked={stage.Returnable} disabled={disabled || locks.returnable}
-                        onCheckedChange={checked => onPatch(stage, {Returnable: checked})} label={t("manage.stages.returnable")} />
-                    <p>{stage.State === "closed" ? t("manage.stages.closedLocked") : t("manage.stages.returnableHelp")}</p>
+                    <ReturnableSwitch checked={stage.Returnable} disabled={disabled || locks.returnable}
+                        onCheckedChange={checked => onPatch(stage, {Returnable: checked})} />
+                    <p>{t(stage.Returnable ? "manage.stages.returnableOn" : "manage.stages.returnableOff")}</p>
+                    {locks.returnable && <p>{t("manage.stages.returnableLocked")}</p>}
                 </div>
                 {canManage && <div className="event-stage__actions">
                     {locks.canClose && <button className="ib-btn" type="button" onClick={() => {setDialogError(""); setDialog("close");}}>{t("manage.stages.closeNow")}</button>}
@@ -122,26 +157,31 @@ function StageRow({eventID, stage, canManage, onPatch}: {
     </li>;
 }
 
-function AddStage({eventID, lifecycle, first, canManage}: {eventID: string; lifecycle: ManageLifecycle; first: boolean; canManage: boolean}) {
+function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean}) {
     const queryClient = useQueryClient();
     const [name, setName] = useSessionDraftState("new-stage-name", "");
     const [opens, setOpens] = useSessionDraftState("new-stage-opens", "");
+    const [closes, setCloses] = useSessionDraftState("new-stage-closes", "");
+    const [opensWithEvent, setOpensWithEvent] = useSessionDraftState("new-stage-opens-with-event", false);
+    const [closesWithEvent, setClosesWithEvent] = useSessionDraftState("new-stage-closes-with-event", false);
     const [returnable, setReturnable] = useSessionDraftState("new-stage-returnable", false);
     const [saving, setSaving] = useState(false);
-    const start = lifecycle.StartAt ?? "";
-    const finish = lifecycle.FinishAt ?? "";
-    const opensISO = first ? start : isoOf(opens);
-    const valid = !!name.trim() && !!opensISO && !!finish;
+    const opensISO = opensWithEvent ? lifecycle.StartAt : isoOf(opens);
+    const closesISO = closesWithEvent ? lifecycle.FinishAt : isoOf(closes);
+    const valid = !!name.trim() && !!opensISO && !!closesISO && Date.parse(opensISO) < Date.parse(closesISO);
 
     async function submit(submitEvent: FormEvent) {
         submitEvent.preventDefault();
-        if (!valid || !canManage || saving || !opensISO) return;
+        if (!valid || !canManage || saving || !opensISO || !closesISO) return;
         setSaving(true);
         try {
-            await createManageStage(eventID, {Name: name.trim(), OpensAt: opensISO, ClosesAt: finish, Returnable: returnable});
+            await createManageStage(eventID, {Name: name.trim(), OpensAt: opensISO, ClosesAt: closesISO, Returnable: returnable, OpensWithEvent: opensWithEvent, ClosesWithEvent: closesWithEvent});
             await queryClient.invalidateQueries({queryKey: stagesKey(eventID), exact: true});
             setName("");
             setOpens("");
+            setCloses("");
+            setOpensWithEvent(false);
+            setClosesWithEvent(false);
             setReturnable(false);
             toast.success(t("manage.stages.created"));
         } catch (failure) {toast.error(failureText(failure, t("manage.stages.saveFailed")));}
@@ -149,17 +189,19 @@ function AddStage({eventID, lifecycle, first, canManage}: {eventID: string; life
     }
 
     return <form className="event-stage event-stage--new" onSubmit={submit} aria-label={t("manage.stages.addTitle")}>
-        <p className="event-stage__lead">{first ? t("manage.stages.firstHelp") : t("manage.stages.nextHelp")}</p>
-        <div className="event-manage-fields-two">
-            <div className="event-manage-field"><ManageFieldLabel htmlFor="new-stage-name" title={t("manage.stages.name")} help={t("manage.stages.help")} required />
+        <p className="event-stage__lead">{t("manage.stages.newHelp")}</p>
+        <div className="event-manage-field"><ManageFieldLabel htmlFor="new-stage-name" title={t("manage.stages.name")} help={t("manage.stages.help")} required />
                 <input id="new-stage-name" className="event-manage-input" value={name} maxLength={100} required disabled={!canManage || saving} onChange={change => setName(change.target.value)} /></div>
-            <ManageDateField id="new-stage-opens" title={t("manage.stages.opens")} help={first ? t("manage.stages.anchoredStart") : t("manage.stages.nextHelp")}
-                value={first ? localDateTime(start) : opens} onChange={setOpens} disabled={!canManage || saving || first} required />
+        <div className="event-manage-fields-two">
+            <StageBoundaryField id="new-stage-opens" title={t("manage.stages.opens")} help={t("manage.stages.windowHelp")}
+                value={opensWithEvent ? localDateTime(lifecycle.StartAt) : opens} bound={opensWithEvent} eventDate={lifecycle.StartAt} opening onChange={setOpens} onBoundChange={setOpensWithEvent} disabled={!canManage || saving} />
+            <StageBoundaryField id="new-stage-closes" title={t("manage.stages.closes")} help={t("manage.stages.windowHelp")}
+                value={closesWithEvent ? localDateTime(lifecycle.FinishAt) : closes} bound={closesWithEvent} eventDate={lifecycle.FinishAt} opening={false} onChange={setCloses} onBoundChange={setClosesWithEvent} disabled={!canManage || saving} />
         </div>
         <div className="event-stage__foot">
             <div className="event-stage__returnable">
-                <EventSwitch className="event-manage-form__switch" checked={returnable} disabled={!canManage || saving} onCheckedChange={setReturnable} label={t("manage.stages.returnable")} />
-                <p>{t("manage.stages.returnableHelp")}</p>
+                <ReturnableSwitch checked={returnable} disabled={!canManage || saving} onCheckedChange={setReturnable} />
+                <p>{t(returnable ? "manage.stages.returnableOn" : "manage.stages.returnableOff")}</p>
             </div>
             <div className="event-stage__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving}>{t("manage.stages.add")}</EventButton></div>
         </div>
@@ -233,7 +275,7 @@ export function StagesManager({eventID, lifecycle, canManage}: {eventID: string;
                 queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {
                     ...saved,
                     // Keep schedule/name/state updates published after this control command started.
-                    ...Object.fromEntries((["Name", "OpensAt", "ClosesAt", "State", "First", "Last", "DeployLeadMinutes"] as const)
+                    ...Object.fromEntries((["Name", "OpensAt", "ClosesAt", "OpensWithEvent", "ClosesWithEvent", "State", "First", "Last", "DeployLeadMinutes"] as const)
                         .filter(field => item[field] !== before[field]).map(field => [field, item[field]])),
                     ...(operation.pending ? operation.desired : {}),
                 } : item));
@@ -252,15 +294,15 @@ export function StagesManager({eventID, lifecycle, canManage}: {eventID: string;
     if (stages.isError && !stages.data) return <section className="event-manage-section event-stages"><EventLoadError compact message={t("manage.stages.loadFailed")} error={stages.error} onRetry={() => void stages.refetch()} /></section>;
 
     const items = stages.data ?? [];
-    const hasSchedule = lifecycle.Configured && !!lifecycle.FinishAt;
+    const hasSchedule = lifecycle.Configured && !!lifecycle.StartAt;
     const breaks = shortBreaks(items);
     return <section className="event-manage-section event-stages" aria-labelledby="stages-title">
         <div className="event-manage-section__head"><h2 id="stages-title">{t("manage.stages.title")}</h2><p>{t("manage.stages.help")}</p></div>
-        {!hasSchedule && <p className="event-manage-feedback" role="status">{t("manage.stages.needsFinish")}</p>}
+        {!hasSchedule && <p className="event-manage-feedback" role="status">{t("manage.stages.needsSchedule")}</p>}
         {items.length === 0 ? <EmptyState compact message={t("manage.stages.empty")} /> : <ol className="event-stage-list">
-            {items.map(stage => <StageRow key={stage.ID} eventID={eventID} stage={stage} canManage={canManage} onPatch={saveStagePatch} />)}
+            {items.map(stage => <StageRow key={stage.ID} eventID={eventID} stage={stage} lifecycle={lifecycle} canManage={canManage} onPatch={saveStagePatch} />)}
         </ol>}
         {breaks.map(item => <p className="event-manage-feedback" role="status" key={item.name}>{t("manage.stages.shortBreak", {name: item.name, minutes: item.minutes})}</p>)}
-        {hasSchedule && canManage && <AddStage eventID={eventID} lifecycle={lifecycle} first={items.length === 0} canManage={canManage} />}
+        {hasSchedule && canManage && <AddStage eventID={eventID} lifecycle={lifecycle} canManage={canManage} />}
     </section>;
 }

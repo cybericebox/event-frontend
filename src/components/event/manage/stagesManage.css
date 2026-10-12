@@ -7,6 +7,12 @@
 .event-stage__name{flex:1;min-width:0}
 .event-stage__foot{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--ib-3)}
 .event-stage__returnable{display:grid;gap:var(--ib-1);max-width:520px}
+.event-stage__returnable-control{display:flex;align-items:center;gap:var(--ib-2)}
+.event-stage__boundary{display:grid;gap:var(--ib-2);align-content:start}
+.event-stage__date-source{display:flex;flex-wrap:wrap;gap:var(--ib-3);font-size:var(--ib-fs-13)}
+.event-stage__date-source label{display:flex;align-items:center;gap:var(--ib-2);cursor:pointer}
+.event-stage__date-source input{accent-color:var(--ib-action);margin:0}
+.event-stage__date-source label:has(input:disabled){color:var(--ib-dim);cursor:default}
 .event-stage__returnable p,.event-stage__lead{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-stage__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);margin-left:auto}
 .event-stage--new{border-style:dashed}

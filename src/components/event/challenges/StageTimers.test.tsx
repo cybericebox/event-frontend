@@ -27,7 +27,7 @@ describe("stage timers", () => {
         expect(screen.getByRole("timer")).toBeTruthy();
     });
 
-    it("shows nothing without a stage countdown (no stages, the last stage, a hidden countdown)", () => {
+    it("shows nothing without a stage countdown (no stages or a hidden countdown)", () => {
         vi.setSystemTime(T);
         const {container} = render(<StageTimers board={{CurrentStage: {...stage, EndsAt: null, Last: true}, NextOpensAt: null}} offset={0} onZero={() => {}} />);
         expect(container.textContent).toBe("");
@@ -48,4 +48,10 @@ describe("stage timers", () => {
         act(() => {vi.advanceTimersByTime(10_000);});
         expect(zero).toHaveBeenCalledTimes(1);
     });
+});
+
+it("the last stage counts down to its own closing time while the event can continue", () => {
+    vi.setSystemTime(T);
+    render(<StageTimers board={{CurrentStage: {...stage, Last: true}, NextOpensAt: null}} offset={0} onZero={() => {}} />);
+    expect(screen.getByRole("timer").getAttribute("aria-label")).toContain("01 хвилина, 05 секунд");
 });
