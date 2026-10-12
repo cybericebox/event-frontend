@@ -37,7 +37,7 @@ describe("StaffFieldsPanel", () => {
         expect(screen.getByText("Був на заході")).toBeTruthy();
         expect(screen.queryByText("Місто")).toBeNull();
         expect(screen.getByText(/Востаннє змінено: Олена Коваль/)).toBeTruthy();
-        expect(screen.queryByRole("button", {name: "Зберегти службові поля"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти службові поля"})).toHaveProperty("disabled", true);
     });
 
     it("says when nothing was ever changed", async () => {
@@ -55,7 +55,7 @@ describe("StaffFieldsPanel", () => {
         await waitFor(() => expect(put).toHaveBeenCalledWith("e1", "participant", "u1", {came: true}));
         await waitFor(() => expect(onSaved).toHaveBeenCalledOnce());
         expect(await screen.findByText(/Востаннє змінено: Я/)).toBeTruthy();
-        expect(screen.queryByRole("button", {name: "Зберегти службові поля"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти службові поля"})).toHaveProperty("disabled", true);
     });
 
     it("is read-only without the manage permission", async () => {

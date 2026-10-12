@@ -163,16 +163,16 @@ describe("Банери заходу", () => {
     });
 });
 
-it("keeps existing banner Save hidden when clean or reverted to equivalent text", async () => {
+it("keeps existing banner Save disabled when clean or reverted to equivalent text", async () => {
     const calls = mockServer([banner(1)]);
     wrap();
     await screen.findByText("Банер 1");
     fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
-    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     const text = screen.getByRole("textbox", {name: /Текст/});
     fireEvent.change(text, {target: {value: "Інший банер"}});
     expect(screen.getByRole("button", {name: "Зберегти"})).toBeTruthy();
     fireEvent.change(text, {target: {value: " Банер 1 "}});
-    expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     expect(calls.filter(call => call.method === "PUT")).toHaveLength(0);
 });

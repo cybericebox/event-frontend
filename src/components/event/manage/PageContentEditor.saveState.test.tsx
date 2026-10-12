@@ -23,10 +23,11 @@ function mount() {
 
 describe("page draft save state", () => {
     it("keeps a clean Save slot inactive", async () => {
-        const {container} = mount();
+        mount();
         await screen.findByRole("textbox", {name: "Назва сторінки"});
-        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
-        fireEvent.click(container.querySelector<HTMLButtonElement>(".event-draft-bar__actions > button[aria-hidden='true']")!);
+        const save = screen.getByRole("button", {name: "Зберегти"});
+        expect(save).toHaveProperty("disabled", true);
+        fireEvent.click(save);
         expect(api.save).not.toHaveBeenCalled();
     });
 
@@ -45,6 +46,6 @@ describe("page draft save state", () => {
         expect(title.value).toBe("Later title");
         expect(api.replace).not.toHaveBeenCalled();
         fireEvent.change(title, {target: {value: "Page"}});
-        expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     });
 });

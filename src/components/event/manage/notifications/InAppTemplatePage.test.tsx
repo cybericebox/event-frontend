@@ -70,7 +70,7 @@ describe("Сторінка сповіщення на сайті", () => {
         globalThis.fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => init?.method === "PUT" ? pending : fetch(input, init)) as typeof fetch;
         renderPage();
         const title = await screen.findByRole("textbox", {name: "Заголовок"});
-        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти чернетку"})).toHaveProperty("disabled", true);
         title.textContent = "Sent title"; fireEvent.input(title);
         fireEvent.click(screen.getByRole("button", {name: "Зберегти чернетку"}));
         expect(title.closest("[inert]")).toBeNull();
@@ -79,6 +79,6 @@ describe("Сторінка сповіщення на сайті", () => {
         await waitFor(() => expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(false));
         expect(title.textContent).toBe("Later title");
         title.textContent = "Sent title"; fireEvent.input(title);
-        expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Зберегти чернетку"})).toHaveProperty("disabled", true);
     });
 });
