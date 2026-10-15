@@ -54,6 +54,7 @@ describe("manage table pagination", () => {
         const onPrevious = vi.fn();
         render(<ManageTablePagination event={event} page={2} pageSize={25} total={60} hasNext onPrevious={onPrevious} onNext={onNext} onPageSize={vi.fn()} />);
         expect(screen.getByText("Усього: 60")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "На сторінці"}).textContent).toBe("25");
         expect(screen.getByText("Сторінка 2 з 3")).toBeTruthy();
         fireEvent.click(screen.getByRole("button", {name: "Далі"}));
         fireEvent.click(screen.getByRole("button", {name: "Назад"}));

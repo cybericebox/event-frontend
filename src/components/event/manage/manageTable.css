@@ -45,6 +45,7 @@ tr.is-locked{background:var(--ib-soft)}
   .event-manage-table__footer{grid-template-columns:1fr}
   .event-manage-table__size{justify-content:flex-start}
 }
+@media(max-width:640px){.event-manage-table__size>span{display:none}}
 .event-manage-team-details{display:grid;gap:var(--ib-4)}
 /* Toolbar popovers: «Колонки» and «Фільтри». DS surface, 1px line, no shadow. */
 .event-manage-table__tool{gap:var(--ib-2)}
