@@ -3,10 +3,10 @@
    (--event-manage-table-fill), never below --event-manage-table-min. The
    scroll area owns vertical and horizontal scroll, so loading → empty → data
    never changes the block size. */
-.event-manage-table{display:flex;flex-direction:column;height:max(var(--event-manage-table-min,360px),var(--event-manage-table-fill,calc(100dvh - var(--event-manage-table-offset,300px))));min-height:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:hidden}
+.event-manage-table{min-width:0;max-width:100%;display:flex;flex-direction:column;height:max(var(--event-manage-table-min,360px),var(--event-manage-table-fill,calc(100dvh - var(--event-manage-table-offset,300px))));min-height:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:hidden}
 .event-manage-table__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-3);padding:var(--ib-4);border-bottom:1px solid var(--ib-line)}
-.event-manage-table__search{flex:1 1 240px;max-width:360px}
-.event-manage-table__toolbar .event-select{width:auto;min-width:180px}
+.event-manage-table__search{min-width:0;flex:1 1 240px;max-width:360px}
+.event-manage-table__toolbar .event-select{width:auto;min-width:min(180px,100%);max-width:100%}
 .event-manage-table__scroll{position:relative;flex:1 1 auto;min-height:0;overflow:auto}
 .event-manage-table__scroll>table{width:100%;min-width:760px;border-collapse:separate;border-spacing:0;font-size:var(--ib-fs-13);font-variant-numeric:tabular-nums}
 .event-manage-table__scroll:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
@@ -39,12 +39,14 @@ tr.is-locked{background:var(--ib-soft)}
 .event-manage-table__busy .event-loading-logo{width:16px;height:16px}
 .event-manage-table__pager{display:flex;gap:var(--ib-2)}
 .event-manage-table__size{display:flex;align-items:center;justify-content:flex-end;gap:var(--ib-2)}
-.event-manage-table__size .event-select{width:84px;min-height:32px}
+.event-manage-table__size .event-select{width:84px}
+.event-manage-table__pager .ib-btn,.event-manage-table__size .event-select{height:var(--ib-control-h-lg);min-height:var(--ib-control-h-lg);border-radius:var(--ib-r);font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium)}
 @media(max-width:760px){
   .event-manage-table__search{max-width:none}
   .event-manage-table__footer{grid-template-columns:1fr}
   .event-manage-table__size{justify-content:flex-start}
 }
+@media(max-width:640px){.event-manage-table__size>span{display:none}}
 .event-manage-team-details{display:grid;gap:var(--ib-4)}
 /* Toolbar popovers: «Колонки» and «Фільтри». DS surface, 1px line, no shadow. */
 .event-manage-table__tool{gap:var(--ib-2)}

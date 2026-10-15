@@ -4895,5 +4895,9 @@
   "manage.email.viewport.desktop": "Desktop",
   "manage.email.viewport.tablet": "Tablet",
   "manage.email.viewport.mobile": "Mobile",
-  "manage.email.viewport.width": "{width} px viewport"
+  "manage.email.viewport.width": "{width} px viewport",
+  "theme.menuLabel": "Theme",
+  "theme.current.light": "Light",
+  "theme.current.dark": "Dark",
+  "theme.current.system": "System"
 }

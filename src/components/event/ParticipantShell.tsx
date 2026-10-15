@@ -29,6 +29,6 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
         <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <SiteBannerBar eventID={event.EventID} />
         <main id="main" tabIndex={-1} className="event-guest-main"><div className="event-page-content"><MissingFieldsNotice eventID={event.EventID} ownTeam={ownTeam} />{children}</div></main>
-        <EventFooter eventName={event.Name} />
+        <EventFooter eventName={event.Name} showTheme={false} />
     </div></EventVpnProvider></ParticipantContext.Provider>;
 }

@@ -40,3 +40,19 @@
 /* Footer: the theme switch sits at the right end of the row, after the links. */
 .ib-footer__end{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-3) var(--ib-6)}
 @media(max-width:760px){.ib-footer--event .ib-footer__end{justify-content:flex-start}}
+
+/* One collapsed theme row in the account menu at every width. */
+.event-account__menu .event-account__theme{display:block;padding:0;border:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-account__theme>summary{display:flex;align-items:center;gap:var(--ib-2);min-height:40px;padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);list-style:none;cursor:pointer}
+.event-account__theme>summary::-webkit-details-marker{display:none}
+.event-account__theme>summary:hover{background:var(--ib-soft);color:var(--ib-ink)}
+.event-account__theme>summary:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}
+.event-account__theme>summary>span{flex:1}
+.event-account__theme>summary>small{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-account__theme[open]>summary>svg:last-child{transform:rotate(180deg)}
+.event-account__theme .event-theme-toggle--menu{display:grid;width:100%;gap:2px;padding:var(--ib-1);border:0;background:none}
+.event-account__theme .event-theme-toggle--menu button{justify-content:flex-start;width:100%;height:auto;min-height:40px;padding:var(--ib-2) var(--ib-3);gap:var(--ib-2);font:inherit}
+.event-account__theme .event-theme-toggle--menu button[aria-checked="true"]{background:var(--ib-soft);color:var(--ib-ink)}
+
+/* Long account menus stay inside short phone viewports, including expanded theme choices. */
+.event-account__menu{max-height:min(calc(100dvh - 24px),var(--radix-popover-content-available-height,calc(100dvh - 24px)));overflow-y:auto;overscroll-behavior:contain}

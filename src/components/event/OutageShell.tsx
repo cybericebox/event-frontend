@@ -2,7 +2,6 @@
 
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {EventBrandLogo} from "./EventBrandLogo";
-import {ThemeToggle} from "./ThemeToggle";
 import {t} from "@/i18n/t";
 
 // The shell frame without data, shown while the API is unreachable: the guest
@@ -21,7 +20,7 @@ export function OutageShell({manage = false, event = null}: {manage?: boolean; e
                         </div>
                     </aside>
                     <div className="ib-admin-shell__main">
-                        <header className="ib-topbar"><div className="ib-topbar__actions"><ThemeToggle /></div></header>
+                        <header className="ib-topbar" />
                         <main id="main" tabIndex={-1} className="ib-admin-shell__scroll" />
                     </div>
                 </div>
@@ -33,7 +32,7 @@ export function OutageShell({manage = false, event = null}: {manage?: boolean; e
             <div className="ib-navbar__bar">
                 <span className="ib-navbar__brand"><EventBrandLogo event={event} className="ib-navbar__crest" /><span className="ib-navbar__name">{name}</span></span>
                 <nav className="ib-navbar__nav" aria-label={t("nav.sections")} />
-                <div className="ib-navbar__actions"><div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div></div>
+                <div className="ib-navbar__actions" />
             </div>
         </header>
         <main id="main" tabIndex={-1} className="event-guest-main" />
