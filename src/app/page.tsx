@@ -1,6 +1,8 @@
 import {notFound} from "next/navigation";
 import type {Metadata} from "next";
 import {getPublicEventInfo} from "@/api/publicEventInfo";
+import {getCommonPage} from "@/api/commonPage";
+import {CommonPageWatcher} from "@/components/event/common/CommonPageWatcher";
 import {getLandingContent} from "@/api/eventContent";
 import {LiveContentBlocks} from "@/components/event/content/LiveContentBlocks";
 import {PrivateLanding} from "@/components/event/content/PrivateLanding";
@@ -17,6 +19,7 @@ export default async function LandingPage() {
     if (!content) notFound();
 
     return <div className="event-landing ib-blocks">
+        <CommonPageWatcher revision={(await getCommonPage())!.Revision} />
         <LiveContentBlocks eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} title={event.Name} coverImage={event.PreviewPicture} />
     </div>;
 }

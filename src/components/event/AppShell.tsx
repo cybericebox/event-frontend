@@ -27,6 +27,7 @@ import {t} from "@/i18n/t";
 type Props = {
     children: ReactNode;
     event: PublicEventInfo | null;
+    privateEvent?: PublicEventInfo;
     unavailable: boolean;
     // The server read of the event failed with an error of our backend: the 500 page, not the outage overlay.
     failure?: {status: number; requestId?: string};
@@ -43,7 +44,7 @@ export function AppShell(props: Props) {
     </>;
 }
 
-function ShellContent({children, event, unavailable, failure}: Props) {
+function ShellContent({children, event, privateEvent, unavailable, failure}: Props) {
     const pathname = usePathname();
     const router = useRouter();
     const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
@@ -88,7 +89,7 @@ function ShellContent({children, event, unavailable, failure}: Props) {
         // Server reads are anonymous, so an unpublished event is absent here. Every other route
         // retries in the browser with the session; the bootstrap shows the one
         // «not found or no access» screen when the browser answer is no either.
-        return <PrivateEventBootstrap>{children}</PrivateEventBootstrap>;
+        return <PrivateEventBootstrap key={privateEvent ? "verified" : "browser"} initialEvent={privateEvent}>{children}</PrivateEventBootstrap>;
     }
     if (isLive) return children;
     // A session page of a visible event opened without a session goes to the sign-in at once.

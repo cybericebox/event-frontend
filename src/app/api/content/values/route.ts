@@ -1,3 +1,4 @@
+import {getCommonManifest, getCommonPage} from "@/api/commonPage";
 import {z} from "zod";
 import {ContentValueSchema} from "@/types/eventContent";
 import {apiHost} from "@/utils/origins";
@@ -14,9 +15,16 @@ export async function GET(request: Request) {
     }
     const host = request.headers.get("host");
     if (!host || !apiHost) return Response.json({error: "Event host unavailable"}, {status: 503});
+    // Permission is hard-revalidated before any values can be read, including a warmed old URL.
+    const manifest = await getCommonManifest(slug ?? "");
+    if (!manifest || manifest.Event.EventID !== eventID.data) return new Response(null, {status: 404, headers: {"Cache-Control": "no-store"}});
+    if (manifest.Audience === "staff") {
+        const bundle = await getCommonPage(slug ?? "");
+        return bundle ? Response.json({Variables: bundle.Variables}, {headers: {"Cache-Control": "no-store"}}) : new Response(null, {status: 404});
+    }
     const internalOrigin = process.env.INTERNAL_API_ORIGIN;
     const path = `/api/events/${eventID.data}/content${slug ? `/pages/${encodeURIComponent(slug)}` : ""}/values`;
-    // The same 30 s stale-while-revalidate read as the server render, one fetch per replica at a time.
+    // Counts remain separate from the revision-bound published document.
     const response = await fetchPublic(`${internalOrigin ?? `https://${apiHost}`}${path}`, {
         Accept: "application/json",
         Origin: `https://${host}`,

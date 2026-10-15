@@ -68,6 +68,9 @@ import {getPublicEventInfo, PublicEventError} from "@/api/publicEventInfo";
 import {loadFailure} from "@/utils/loadFailure";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 import {EventBrandProvider} from "@/components/event/EventBrandLogo";
+import {getCommonManifest, readContext, RenderReadError} from "@/api/commonPage";
+import {commonPageSlug} from "@/utils/commonPagePath";
+import {EventReadSession} from "@/components/event/common/EventReadSession";
 import {apiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 
@@ -109,19 +112,28 @@ export default async function RootLayout({
                                    }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const nonce = (await headers()).get("x-nonce") ?? undefined;
+    const requestHeaders = await headers();
+    const nonce = requestHeaders.get("x-nonce") ?? undefined;
+    const commonRoute = commonPageSlug(requestHeaders.get("x-event-pathname") ?? "/") !== null;
+    let privateEvent: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
+    let hasGrant = false;
     let event: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
     let unavailable = false;
     let failure: {status: number; requestId?: string} | undefined;
     try {
         event = await getPublicEventInfo();
+        if (commonRoute) {
+            const manifest = await getCommonManifest();
+            if (manifest?.Audience === "staff") {privateEvent = event; event = null;}
+            hasGrant = !!(await readContext())?.claims;
+        }
     } catch (error) {
         // Our backend answered with an error (it carries X-Request-ID): the 500 page. Anything else (network
         // failure, timeout, a proxy 502/503/504) is the backend being unavailable: the outage overlay.
-        if (error instanceof PublicEventError && loadFailure(error) === "error") failure = {status: error.status, requestId: error.requestId};
+        if ((error instanceof PublicEventError || error instanceof RenderReadError) && loadFailure(error) === "error") failure = {status: error.status, requestId: error.requestId};
         else unavailable = true;
     }
-    const theme = event?.Theme;
+    const theme = (event ?? privateEvent)?.Theme;
     const themeStyle = theme ? {
         "--ev-brand": theme.Brand,
         "--ev-accent-light": theme.AccentLight,
@@ -135,11 +147,12 @@ export default async function RootLayout({
         </head>
         <body className="event-root">
         <Providers>
-            <EventBrandProvider logoURL={event?.LogoURL ?? ""} name={event?.Name ?? ""}>
-            <AppShell event={event} unavailable={unavailable} failure={failure}>
+            <EventBrandProvider logoURL={(event ?? privateEvent)?.LogoURL ?? ""} name={(event ?? privateEvent)?.Name ?? ""}>
+            <AppShell event={event} privateEvent={privateEvent ?? undefined} unavailable={unavailable} failure={failure}>
                 {children}
             </AppShell>
             </EventBrandProvider>
+            {commonRoute && !event && !unavailable && !failure && <EventReadSession hasGrant={hasGrant} />}
             <EventActionToaster />
         </Providers>
         {/* the consent panel is always mounted («Налаштування файлів cookie»); GA loads only when configured */}
