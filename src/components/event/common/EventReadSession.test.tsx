@@ -54,3 +54,55 @@ describe("retained root common-session coordinator",()=>{
         expect(isEventGone()).toBe(false);
     });
 });
+
+function grantResponses(reply:()=>Response|Promise<Response>) {
+    const fetcher=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        if(String(input).includes("/revision"))return new Response(null,{status:404});
+        if(String(input).endsWith("/challenge"))return Response.json({Challenge:"challenge"});
+        if(String(input).endsWith("/render-grant"))return reply();
+        if(init?.method==="POST")return Response.json({ExpiresAt:Math.floor(Date.now()/1000)+60});
+        return new Response(null,{status:204});
+    });
+    vi.stubGlobal("fetch",fetcher);return fetcher;
+}
+function grantCalls(fetcher:ReturnType<typeof grantResponses>) {
+    return fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant"));
+}
+describe("grant retry admission",()=>{
+    it("makes one anonymous 401 attempt in an open minute, then retries on explicit focus",async()=>{
+        vi.useFakeTimers();const fetcher=grantResponses(()=>new Response(null,{status:401}));
+        render(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(60_000);});
+        expect(grantCalls(fetcher)).toHaveLength(1);
+        expect(fetcher.mock.calls.filter(([url])=>String(url).includes("/revision")).length).toBeGreaterThan(1);
+        await act(async()=>{window.dispatchEvent(new Event("focus"));});
+        expect(grantCalls(fetcher)).toHaveLength(2);
+    });
+    it("clears a failed 401 renewal exactly once and stops timer retries",async()=>{
+        vi.useFakeTimers();const fetcher=grantResponses(()=>new Response(null,{status:401}));
+        const view=render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+60} serverPath="/" revision="r1" publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(45_000);});
+        view.rerender(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(60_000);});
+        expect(grantCalls(fetcher)).toHaveLength(1);
+        expect(fetcher.mock.calls.filter(([,init])=>init?.method==="DELETE")).toHaveLength(1);
+    });
+    it.each([403,404])("restrains status %s retries while still discovering new staff entitlement",async status=>{
+        vi.useFakeTimers();let allowed=false;
+        const fetcher=grantResponses(()=>allowed ? Response.json({Data:{Token:"new-staff-grant"}}):new Response(null,{status}));
+        render(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(39_999);});expect(grantCalls(fetcher)).toHaveLength(1);
+        allowed=true;
+        await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(grantCalls(fetcher)).toHaveLength(2);
+        expect(fetcher.mock.calls.some(([url,init])=>String(url)==="/api/event-session" && init?.method==="POST" && JSON.parse(String(init.body)).Token==="new-staff-grant")).toBe(true);
+        expect(navigation.router.refresh).toHaveBeenCalledTimes(1);
+    });
+    it("backs off repeated network failures from five seconds to a forty-second cap",async()=>{
+        vi.useFakeTimers();const fetcher=grantResponses(()=>Promise.reject(new TypeError("offline")));
+        render(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(34_999);});expect(grantCalls(fetcher)).toHaveLength(3);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(grantCalls(fetcher)).toHaveLength(4);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(39_999);});expect(grantCalls(fetcher)).toHaveLength(4);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(grantCalls(fetcher)).toHaveLength(5);
+    });
+});
