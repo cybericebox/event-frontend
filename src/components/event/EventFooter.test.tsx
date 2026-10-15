@@ -19,3 +19,9 @@ it("carries «Надіслати відгук» next to the cookie settings, nam
     expect(link.getAttribute("href")).toContain(encodeURIComponent("«Test»"));
     expect(link.closest("nav")).toBe(screen.getByRole("link", {name: /cookie/}).closest("nav"));
 });
+
+it("omits the external theme selector for authenticated shells", () => {
+    render(<EventFooter showTheme={false} />);
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.getByRole("link", {name: "Надіслати відгук"})).toBeTruthy();
+});

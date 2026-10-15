@@ -22,7 +22,7 @@ export function ResourcePlanSummary({eventID, attachments}: {eventID: string; at
             : query.isError || !plan ? <EventLoadError compact message={t("manage.resources.planFailed")} error={query.error} onRetry={() => void query.refetch()} />
             : <>
                 {plan.NoAgentFits && <p className="event-manage-feedback event-manage-feedback--error" role="alert" data-plan-no-agent>{t("manage.resources.planNoAgentFits")}</p>}
-                <table className="event-resource-plan__table">
+                <div className="event-resource-plan__scroll" role="region" tabIndex={0} aria-label={t("manage.resources.planTitle")}><table className="event-resource-plan__table">
                     <thead><tr><th scope="col">{t("manage.resources.col.task")}</th><th scope="col">{t("manage.resources.col.cpu")}</th><th scope="col">{t("manage.resources.col.memory")}</th><th scope="col">{t("manage.resources.col.blocks")}</th><th scope="col">{t("manage.resources.col.devices")}</th></tr></thead>
                     <tbody>
                         {plan.Tasks.map(task => <tr key={task.EventExerciseID} data-plan-task>
@@ -42,7 +42,7 @@ export function ResourcePlanSummary({eventID, attachments}: {eventID: string; at
                         <tr data-plan-total><th scope="row">{t("manage.resources.total", {teams: plan.Teams})} <span className="event-resource-plan__basis">{t(`manage.resources.basis.${plan.TeamsBasis}`)}</span></th>
                             <td>{formatCpu(plan.Total.CPUMillicores)}</td><td>{formatMemory(plan.Total.MemoryBytes)}</td><td>{plan.Total.Blocks}</td><td>{plan.Total.Devices}</td></tr>
                     </tfoot>
-                </table>
+                </table></div>
                 {plan.Group.TooLarge && <p className="event-resource-plan__note" role="status" data-plan-too-large>{t("manage.resources.tooLarge")}</p>}
             </>}
     </section>;
