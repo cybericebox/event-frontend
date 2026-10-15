@@ -62,3 +62,8 @@ export const getCommonPage=cache(async (slug="") => {
     const context=await readContext();
     return context ? store.page(context,slug):null;
 });
+
+export const getCommonValues=cache(async (slug:string,eventID:string) => {
+    const context=await readContext();
+    return context ? store.values(context,slug,eventID):null;
+});

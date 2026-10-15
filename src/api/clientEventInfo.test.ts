@@ -1,9 +1,10 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 
 vi.mock("@/utils/origins", () => ({requireApiOrigin: () => "https://api.test"}));
+import {resetEventGone} from "@/utils/eventGone";
 import {ClientEventInfoError, getClientEventInfo} from "./clientEventInfo";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {vi.unstubAllGlobals(); resetEventGone();});
 
 describe("getClientEventInfo", () => {
     it("a refused CORS read of a reachable API is a real 404 (unknown event address)", async () => {
