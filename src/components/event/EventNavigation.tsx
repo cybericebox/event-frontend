@@ -102,7 +102,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
             // eslint-disable-next-line @next/next/no-img-element
             <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
         ) : avatarInitials}</span></button></PopoverTrigger>
-        <PopoverContent align="end" sideOffset={8} className="event-account__menu">
+        <PopoverContent align="end" sideOffset={8} collisionPadding={12} className="event-account__menu">
             {profile.data && <div className="event-account__head">
                 <b>{`${profile.data.FirstName} ${profile.data.LastName}`.trim() || profile.data.Email}</b>
                 <span>{profile.data.Email}</span>
