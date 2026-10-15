@@ -7,6 +7,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {t} from "@/i18n/t";
+import {EmailPreviewViewport} from "./EmailPreviewViewport";
 import {emailPreviewDocument} from "./emailPreviewDocument";
 
 // The email as it is sent: subject and preheader, then the rendered message on
@@ -23,11 +24,11 @@ export function EmailPreview({event, input, valid = true}: {event: PublicEventIn
             <div><dt>{t("manage.email.subject")}</dt><dd>{preview.data?.Subject || "—"}</dd></div>
             <div><dt>{t("manage.email.preheader")}</dt><dd>{preview.data?.Preheader || "—"}</dd></div>
         </dl>
-        <div className="event-email-preview__canvas">
+        <EmailPreviewViewport html={input && valid && preview.data && !preview.isError ? emailPreviewDocument(preview.data.HTML) : undefined}>
             {!input || !valid ? <EmptyState message={t("manage.email.previewInvalid")} />
                 : preview.isPending ? <EventLoading event={event} label={t("manage.email.previewLoading")} />
                     : preview.isError ? <EventLoadError message={t("manage.email.previewError")} error={preview.error} onRetry={() => void preview.refetch()} />
-                        : <iframe title={t("manage.email.previewFrame")} sandbox="" srcDoc={emailPreviewDocument(preview.data.HTML)} />}
-        </div>
+                        : null}
+        </EmailPreviewViewport>
     </div>;
 }
