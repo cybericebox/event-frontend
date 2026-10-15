@@ -112,7 +112,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
                     {/* The event context sits right after the platform links. */}
                     {i === contextAt && <>
                         {!pinned && (approved || staff) && <Link href="/participation" onClick={() => setOpen(false)}><User {...ACCOUNT_MENU_ICON_PROPS} />{t("account.participation")}</Link>}
-                        {theme && <div className="event-account__theme"><span>{t("theme.label")}</span><ThemeToggle /></div>}
+                        {theme && <ThemeToggle compact />}
                     </>}
                     <hr className="event-account__sep" />
                 </Fragment>;
@@ -150,15 +150,13 @@ function PinnedLink({href, Icon, label, full}: {href: string; Icon: LucideIcon; 
 }
 
 // pinned: the participant's items sit in the bar (VPN, «Моя участь») instead of the account menu.
-// theme: the switch lives in the footer on the participant site; only the /manage topbar (no footer) keeps it here.
+// Theme selection lives in the account menu on every authenticated page.
 export function EventHeaderActions({event, authenticated, approved = false, pinned = false, theme = true}: Pick<Props, "event" | "authenticated" | "approved"> & {pinned?: boolean; theme?: boolean}) {
     // Managers land on «Запити» in /manage; participants see «Усі».
     const manage = /^\/manage(\/|$)/.test(usePathname() ?? "");
     const items = navigationRight({authenticated, approved, pinned});
     return <>
-        {theme && <div className="event-header-theme event-header-theme--desktop"><ThemeToggle /></div>}
         {authenticated && <>
-            {theme && <span className="event-header-divider" aria-hidden="true" />}
             {items.map(item => {
                 if (item === "vpn") return <VpnHeaderButton key={item} />;
                 if (item === "participation") return <PinnedLink key={item} href="/participation" Icon={UserRound} label={t("nav.pin.participation")} full={t("nav.participation")} />;
@@ -257,7 +255,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
             <div className="ib-navbar__actions">
                 {!pending && <>
                 {authenticated && <ManagerEntry eventID={event.EventID} variant="nav" />}
-                <EventHeaderActions event={event} authenticated={authenticated} approved={approved} pinned={participant} theme={false} />
+                <EventHeaderActions event={event} authenticated={authenticated} approved={approved} pinned={participant} />
                 </>}
                 {!pending && <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>}
             </div>

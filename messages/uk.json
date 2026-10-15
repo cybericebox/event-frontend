@@ -4895,5 +4895,9 @@
   "manage.email.viewport.desktop": "Компʼютер",
   "manage.email.viewport.tablet": "Планшет",
   "manage.email.viewport.mobile": "Телефон",
-  "manage.email.viewport.width": "Область перегляду: {width} пкс"
+  "manage.email.viewport.width": "Область перегляду: {width} пкс",
+  "theme.menuLabel": "Тема",
+  "theme.current.light": "Світла",
+  "theme.current.dark": "Темна",
+  "theme.current.system": "Системна"
 }
