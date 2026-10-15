@@ -6,14 +6,14 @@ import {READ_COOKIE,RenderKeySchema,eventOriginFromHost,verifyRenderGrant} from 
 import {HardCache} from "@/utils/server/commonPageCache";
 import {CommonPageStore,RenderReadError,type ReadContext} from "./commonPageStore";
 import {SERVER_FETCH_TIMEOUT_MS} from "./publicFetch";
+import {serverGet} from "./serverGet";
 
 export {RenderReadError} from "./commonPageStore";
 export async function renderApi(path:string,context:{origin:string;token?:string}) {
     const internal=process.env.INTERNAL_API_ORIGIN;
-    const response=await fetch(`${internal ?? `https://${apiHost}`}${path}`,{
-        cache:"no-store",signal:AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS),
-        headers:{Accept:"application/json",Origin:context.origin,...(internal ? {Host:apiHost}:{}),...(context.token ? {Authorization:`EventRender ${context.token}`}:{})},
-    });
+    const response=await serverGet(`${internal ?? `https://${apiHost}`}${path}`,
+        {Accept:"application/json",Origin:context.origin,...(internal ? {Host:apiHost}:{}),...(context.token ? {Authorization:`EventRender ${context.token}`}:{})},
+        AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS));
     if (!response.ok) return {status:response.status,body:null,requestId:response.headers.get("X-Request-ID") ?? undefined};
     return {status:response.status,body:await response.json() as unknown};
 }

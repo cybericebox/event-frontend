@@ -1,3 +1,5 @@
+import {serverGet} from "./serverGet";
+
 // A server render waits on these reads; a hung API must end in the error or outage
 // state instead of streaming the route loader forever.
 export const SERVER_FETCH_TIMEOUT_MS = 10_000;
@@ -15,11 +17,7 @@ export function fetchPublic(url: string, headers: Record<string, string>): Promi
     if (running) return running;
     if (inflight.size >= 64) return Promise.reject(new Error("Public fetch busy"));
     const request = (async (): Promise<PublicResponse> => {
-        const response = await fetch(url, {
-            headers,
-            cache: "no-store",
-            signal: AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS),
-        });
+        const response = await serverGet(url, headers, AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS));
         if (!response.ok) {
             // A 5xx that carries X-Request-ID came from our backend (it journaled the error); one without is a proxy answer.
             const requestId = response.status >= 500 ? response.headers.get("X-Request-ID") : null;
