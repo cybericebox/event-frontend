@@ -13,6 +13,7 @@ export function proxy(request: NextRequest) {
     });
     const headers = new Headers(request.headers);
     headers.set("x-nonce", nonce);
+    headers.set("x-event-pathname", request.nextUrl.pathname);
     headers.set("Content-Security-Policy", csp);
     const response = NextResponse.next({request: {headers}});
     response.headers.set("Content-Security-Policy", csp);
@@ -22,9 +23,5 @@ export function proxy(request: NextRequest) {
 export const config = {
     matcher: [{
         source: "/((?!api|_next/static|_next/image|favicon.ico|platform-favicon.ico|assets).*)",
-        missing: [
-            {type: "header", key: "next-router-prefetch"},
-            {type: "header", key: "purpose", value: "prefetch"},
-        ],
     }],
 };

@@ -20,6 +20,12 @@ const replace = vi.fn();
 afterEach(() => {cleanup(); replace.mockReset(); currentUser.getCurrentUser.mockResolvedValue(null);});
 beforeEach(() => {Object.defineProperty(window, "location", {configurable: true, value: {href: "https://ev.example.test/challenges", pathname: "/challenges", replace}});});
 describe("PrivateEventBootstrap", () => {
+    it("renders verified server preview immediately without a browser permission roundtrip", () => {
+        const client = new QueryClient();
+        const event = {EventID: "event-1", Name: "SSR preview", LogoURL: "", Theme: {Brand: "#123456", AccentLight: "#123456", AccentDark: "#123456", AccentLive: "#123456"}} as Parameters<typeof PrivateEventBootstrap>[0]["initialEvent"];
+        render(<QueryClientProvider client={client}><PrivateEventBootstrap initialEvent={event}><p>Server document</p></PrivateEventBootstrap></QueryClientProvider>);
+        expect(screen.getByText("Server document")).toBeTruthy();
+    });
     it("reuses manager identity and access for immediate preview navigation", () => {
         const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: 60_000}}});
         client.setQueryData(["event-manager-public-info"], {
