@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {fetchPublic, PUBLIC_REVALIDATE_SECONDS} from "./publicFetch";
+import {fetchPublic} from "./publicFetch";
 
 const headers = {Accept: "application/json", Origin: "https://one.events.test"};
 
@@ -15,14 +15,13 @@ describe("fetchPublic", () => {
     });
     afterEach(() => vi.unstubAllGlobals());
 
-    it("reads through the 30 s stale-while-revalidate fetch cache and sends the event host as Origin", async () => {
+    it("bypasses the Next stale-while-revalidate fetch cache and sends the event host as Origin", async () => {
         fetchMock.mockResolvedValueOnce(json({Data: 1}));
         await expect(fetchPublic("https://api.test/x", headers)).resolves.toEqual({status: 200, body: {Data: 1}});
         const init = fetchMock.mock.calls[0][1] as RequestInit & {next?: {revalidate?: number}};
-        expect(PUBLIC_REVALIDATE_SECONDS).toBe(30);
-        expect(init.next).toEqual({revalidate: 30});
+        expect(init.next).toBeUndefined();
         expect(init.headers).toEqual(headers);
-        expect(init.cache).toBeUndefined();
+        expect(init.cache).toBe("no-store");
         expect(init.signal).toBeDefined();
     });
 

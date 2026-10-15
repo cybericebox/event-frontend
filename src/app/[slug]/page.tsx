@@ -1,5 +1,6 @@
 import type {Metadata} from "next";
 import {getPublicEventInfo} from "@/api/publicEventInfo";
+import {getCommonPage} from "@/api/commonPage";
 import {getEventPageContent} from "@/api/eventContent";
 import {LiveContentBlocks} from "@/components/event/content/LiveContentBlocks";
 import {ClientContentPage} from "@/components/event/content/ClientContentPage";
@@ -19,5 +20,5 @@ export default async function ContentPage({params}: {params: Promise<{slug: stri
     if (!event) return <ClientContentPage slug={slug} />;
     const content = await getEventPageContent(slug);
     if (!content) return <ClientContentPage slug={slug} publicEventID={event.EventID} />;
-    return <LiveContentBlocks eventID={event.EventID} document={content.Page.Document} initialVariables={content.Variables} title={content.Page.Title} coverImage={event.PreviewPicture} page={slug} />;
+    return <LiveContentBlocks revision={(await getCommonPage(slug))!.Revision} eventID={event.EventID} document={content.Page.Document} initialVariables={content.Variables} title={content.Page.Title} coverImage={event.PreviewPicture} page={slug} />;
 }

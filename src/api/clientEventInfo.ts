@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {PublicEventInfoSchema, type PublicEventInfo} from "@/types/publicEventInfo";
+import {markEventGone} from "@/utils/eventGone";
 import {requireApiOrigin} from "@/utils/origins";
 
 export class ClientEventInfoError extends Error {
@@ -33,7 +34,12 @@ export async function getClientEventInfo(): Promise<PublicEventInfo> {
         // The API refuses an unknown event address without CORS headers, which the browser reports as a network
         // error too. An API that still answers (an opaque no-cors answer) means that address: a real 404. One that
         // does not answer at all is an outage.
-        if (error instanceof TypeError && await apiAnswers(api)) throw new ClientEventInfoError(404);
+        if (error instanceof TypeError && await apiAnswers(api)) {
+            // Suppress outage probes for the accepted legacy neutral fallback. A fresh readable
+            // common manifest resets this marker through EventReadSession, including publication recovery.
+            markEventGone();
+            throw new ClientEventInfoError(404);
+        }
         throw error;
     }
     if (!response.ok) throw new ClientEventInfoError(response.status, response.headers.get("X-Request-ID") ?? undefined);

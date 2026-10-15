@@ -9,17 +9,18 @@ import {applyLifecycleBoundaries, nextContentRefreshAt} from "./contentRefresh";
 
 const valuesSchema = z.object({Variables: z.record(z.string(), ContentValueSchema)});
 
-export function LiveContentBlocks({eventID, document, initialVariables, coverImage, title, page}: {
+export function LiveContentBlocks({eventID, document, initialVariables, coverImage, title, page, revision}: {
     eventID: string;
     document: ContentDocument;
     initialVariables: Record<string, ContentValue>;
     coverImage?: string;
     title?: string;
     page?: string;
+    revision?: string;
 }) {
     const [now, setNow] = useState(() => Date.now());
     const values = useQuery({
-        queryKey: ["public-content-values", eventID, page ?? "landing"],
+        queryKey: ["public-content-values", eventID, page ?? "landing", revision],
         queryFn: async () => {
             const params = new URLSearchParams({eventId: eventID});
             if (page) params.set("page", page);

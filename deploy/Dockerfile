@@ -1,4 +1,6 @@
-FROM node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS base
+# The standalone runtime is JavaScript (sharp is excluded in next.config.mjs).
+# Install and compile natively: emulated ARM64 npm can crash QEMU and hang.
+FROM --platform=$BUILDPLATFORM node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS base
 
 FROM base AS deps
 WORKDIR /app
@@ -22,12 +24,19 @@ ENV NEXT_PUBLIC_SHOW_PARTNERS="__NEXT_PUBLIC_SHOW_PARTNERS__"
 ENV NEXT_PUBLIC_WIREGUARD_INSTALL_URL="__NEXT_PUBLIC_WIREGUARD_INSTALL_URL__"
 ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="__NEXT_PUBLIC_GOOGLE_ANALYTICS_ID__"
 
-RUN npm run build
+RUN npm run build \
+    && if find -L .next/standalone -name '*.node' -print -quit | grep -q .; then \
+         echo 'Native addons require target-platform dependency installation; refusing a cross-platform runtime.' >&2; \
+         exit 1; \
+       fi
+
+# The runtime binary must still match the requested output architecture.
+FROM node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS target-node
 
 # The node binary of the base image, without its symbol table and DWARF (about 22 MB); the runtime needs neither.
 FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS node-bin
 RUN apk add --no-cache binutils
-COPY --from=base /usr/local/bin/node /node
+COPY --from=target-node /usr/local/bin/node /node
 RUN strip --strip-all /node && /node -e "process.exit(0)"
 
 # Production image, copy all the files and run next. It is plain alpine plus the node binary of the base image:
