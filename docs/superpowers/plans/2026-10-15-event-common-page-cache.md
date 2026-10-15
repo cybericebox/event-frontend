@@ -73,3 +73,21 @@
 - Reuse verified event read cookies on reload; pass only their expiry to the client and renew 15 seconds before expiration. A current API session and staff rights are required for every new issuance.
 - The root coordinator follows the live pathname across retained layouts. Neutral common routes keep watching the manifest, and fresh readable server verdicts recover the neutral screen.
 - Publication revisions select matching initial variables in the values query without remounting the shell; live counts continue their independent polling.
+
+## Owner-requested capacity assessment (local measurements, not a production capacity claim)
+
+Measured 2026-10-15 on Apple M2 Pro / Node 26.5.0 / Go darwin-arm64, concurrently with development checks:
+
+| Check | Result | Boundary |
+|---|---|---|
+| Actual frontend full grant verifier, 10,000 valid checks | median 0.143ms/check | Includes parse/schema/key construction/signature; no HTTP, DB, TLS |
+| Actual Go grant Issue, two 1s benchmarks | 0.044–0.052ms/token | Crypto/claims serialization only, not authenticated issuance HTTP path |
+| Actual Go grant Verify, two 1s benchmarks | 0.075–0.081ms/token | No HTTP/session/DB |
+| Real Next production revision route, public | 2,500/2,500 HTTP200; ~498req/s; p50 3.6ms, p95 14.3ms | 5s window, fixture API, local HTTP |
+| Same route, signed staff audience | 2,500/2,500 HTTP200; ~500req/s; p50 5.4ms, p95 112.3ms | 5s window, fixture API, local HTTP; shared-machine tail latency |
+
+Model, not measurement: renewing 60s grants 15s before expiry costs active visible common-page visitors /45 API renewals per second: five staff ~0.11/s, 300 future authenticated readers ~6.7/s, 1,000 ~22.2/s. Current ordinary public visitors request no grant. Revision polling is readers /2 event-local requests/s, paused in hidden tabs. Upstream successful and anonymous404 manifest reads coalesce separately by host/page/audience with max1s hard TTL, multiplied by active replicas/pages/audiences rather than visitors. Never cache API5xx/network failures.
+
+The main risks for a future participant-wide hidden mode are synchronized login/renewal bursts, actual primary-session/tenant database work and pool pressure, and event-local HTTP/polling/SSR overhead. Signing cost is small in this local probe. A 5s fixture test does not establish sustained1,000-user production readiness: no full issuance endpoint with real primary sessions/database, production CPU/RAM/TLS/network, large real content, cold-start burst or long soak was measured. Keep participant-wide hidden mode disabled/unimplemented until that separate staging test. Fixed per-request TTL preserves the <=60s personal-right revocation window; increasing TTL would change that security tradeoff.
+
+Evidence: /tmp/cib-hidden-event-local-crypto.json; /tmp/cib-hidden-event-go-crypto-benchmark.log; /tmp/cib-hidden-event-local-route-load.json. Parent real Next functional probe also checks cold/warm/revision/denial/outage/cross-host/expired-grant/challenge binding and client publication/withdrawal/recovery at390px/1366px.
