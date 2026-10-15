@@ -114,18 +114,24 @@ export default async function RootLayout({
 }>) {
     const requestHeaders = await headers();
     const nonce = requestHeaders.get("x-nonce") ?? undefined;
-    const commonRoute = commonPageSlug(requestHeaders.get("x-event-pathname") ?? "/") !== null;
+    const serverPath = requestHeaders.get("x-event-pathname") ?? "/";
+    const commonPage = commonPageSlug(serverPath);
     let privateEvent: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
     let hasGrant = false;
+    let expiresAt: number | undefined;
+    let revision: string | null = null;
     let event: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
     let unavailable = false;
     let failure: {status: number; requestId?: string} | undefined;
     try {
         event = await getPublicEventInfo();
-        if (commonRoute) {
+        if (commonPage !== null) {
+            const context = await readContext();
+            hasGrant = !!context?.claims;
+            expiresAt = context?.claims?.exp;
             const manifest = await getCommonManifest();
             if (manifest?.Audience === "staff") {privateEvent = event; event = null;}
-            hasGrant = !!(await readContext())?.claims;
+            revision = (await getCommonManifest(commonPage))?.Revision ?? null;
         }
     } catch (error) {
         // Our backend answered with an error (it carries X-Request-ID): the 500 page. Anything else (network
@@ -152,7 +158,7 @@ export default async function RootLayout({
                 {children}
             </AppShell>
             </EventBrandProvider>
-            {commonRoute && !event && !unavailable && !failure && <EventReadSession hasGrant={hasGrant} />}
+            <EventReadSession hasGrant={hasGrant} expiresAt={expiresAt} serverPath={serverPath} revision={revision} publicEvent={!!event} />
             <EventActionToaster />
         </Providers>
         {/* the consent panel is always mounted («Налаштування файлів cookie»); GA loads only when configured */}

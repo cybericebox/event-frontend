@@ -17,25 +17,27 @@ export class RenderReadError extends Error {
 }
 
 export class CommonPageStore {
-    private manifests:HardCache<CommonManifest>;
+    private manifests:HardCache<CommonManifest|null>;
     private bundles:HardCache<CommonBundle>;
     constructor(private api:Api, private now = Date.now) {
         this.manifests = new HardCache({maxEntries:2048,maxBytes:8*1024*1024,ttl:1000,now});
         this.bundles = new HardCache({maxEntries:256,maxBytes:64*1024*1024,ttl:300_000,now});
     }
-    private key(context:ReadContext, slug:string) {return JSON.stringify([context.origin,context.claims?.preview ? "staff":"public",slug]);}
+    private key(context:ReadContext, slug:string) {return JSON.stringify([context.origin,context.claims?.preview ? "staff":"public",slug,context.claims ? "granted":"anonymous"]);}
     private alive(context:ReadContext) {return !context.claims || context.claims.exp*1000>this.now();}
     async manifest(context:ReadContext,slug:string):Promise<CommonManifest|null> {
         if (!this.alive(context)) return null;
         try {
             const manifest = await this.manifests.get(this.key(context,slug),async () => {
                 const response = await this.api(`/api/events/self/render-manifest?page=${encodeURIComponent(slug)}`,context);
+                // Only anonymous, normalized absence is briefly reusable; signed denial and errors are never cached.
+                if (response.status === 404 && !context.claims) return {value:null};
                 if (response.status !== 200) throw new RenderReadError(response.status,response.requestId);
                 const value = z.object({Data:manifestSchema}).parse(response.body).Data;
                 if (value.Page.Slug !== slug || value.CacheUntil <= this.now()) throw new RenderReadError(502);
                 return {value,validUntil:value.CacheUntil};
             });
-            if (!this.alive(context) || manifest.CacheUntil<=this.now()) return null;
+            if (!manifest || !this.alive(context) || manifest.CacheUntil<=this.now()) return null;
             if (manifest.Audience !== (context.claims?.preview ? "staff":"public")) return null;
             if (context.claims && context.claims.event_id!==manifest.Event.EventID) return null;
             return manifest;

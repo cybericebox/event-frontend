@@ -131,3 +131,19 @@ describe("a failed session check never leaves the endless loader", () => {
         expect(screen.queryByRole("alertdialog")).toBeNull();
     });
 });
+
+it("recovers the same mounted shell after a fresh readable common verdict", async () => {
+    const {EventReadSession} = await import("./common/EventReadSession");
+    const {markEventGone,resetEventGone} = await import("@/utils/eventGone");
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    const page=(revision:string|null)=><QueryClientProvider client={client}>
+        <AppShell event={revision ? {EventID:"event-1"} as never:null} unavailable={false}><h1>Recovered page</h1></AppShell>
+        <EventReadSession hasGrant={false} publicEvent={!!revision} revision={revision} serverPath="/" />
+    </QueryClientProvider>;
+    act(()=>markEventGone());
+    const view=render(page(null));
+    expect(screen.queryByText("Recovered page")).toBeNull();
+    view.rerender(page("r2"));
+    expect(screen.getByText("Recovered page")).toBeTruthy();
+    resetEventGone();
+});

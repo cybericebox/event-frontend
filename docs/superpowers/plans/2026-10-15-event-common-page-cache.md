@@ -66,3 +66,10 @@
 - [ ] Verify guest and authorized common pages at 390px and desktop in browser with fixture accounts; no private mailbox/session inspection. Check theme initial HTML and ensure personal routes still use client path.
 - [ ] Request a fresh code/security review over both complete diffs, fix important findings through RED->GREEN and rerun affected/full checks.
 - [ ] Document remaining venue-only proposal in chat and give exact verification boundaries. Leave new feature on approved local branches unless owner explicitly asks to integrate/release it.
+
+## Owner clarifications and frontend review fixes (2026-10-15)
+
+- Anonymous normalized 404 manifests may be cached for at most 1000ms in the existing bounded cache/singleflight; all signed denials and API errors remain uncached. Warm guest denial must not block staff preview, and publication is observed after expiry.
+- Reuse verified event read cookies on reload; pass only their expiry to the client and renew 15 seconds before expiration. A current API session and staff rights are required for every new issuance.
+- The root coordinator follows the live pathname across retained layouts. Neutral common routes keep watching the manifest, and fresh readable server verdicts recover the neutral screen.
+- Publication revisions select matching initial variables in the values query without remounting the shell; live counts continue their independent polling.

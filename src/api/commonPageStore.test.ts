@@ -45,3 +45,36 @@ describe("authorized common page store", () => {
         expect(api).toHaveBeenCalledTimes(4);
     });
 });
+
+describe("bounded anonymous neutral manifest cache",()=>{
+    it("coalesces repeated guest denial and observes publication after one second",async()=>{
+        let now=0;
+        const api=vi.fn().mockResolvedValue({status:404,body:null});
+        const store=new CommonPageStore(api,()=>now);
+        for(let i=0;i<5;i++)expect(await store.manifest(context,"")).toBeNull();
+        expect(api).toHaveBeenCalledTimes(1);
+        now=1001;api.mockResolvedValue({status:200,body:{Data:manifest("published",now)}});
+        expect((await store.manifest(context,""))?.Revision).toBe("published");expect(api).toHaveBeenCalledTimes(2);
+    });
+    it("never lets warm anonymous denial hide authorized staff preview",async()=>{
+        const api=vi.fn().mockResolvedValueOnce({status:404,body:null}).mockResolvedValueOnce({status:200,body:{Data:{...manifest("staff",0),Audience:"staff"}}});
+        const store=new CommonPageStore(api,()=>0);
+        expect(await store.manifest(context,"")).toBeNull();
+        const staff={...context,token:"staff",claims:{event_id:event.EventID,preview:true,exp:60}} as Parameters<typeof store.manifest>[0];
+        expect((await store.manifest(staff,""))?.Revision).toBe("staff");expect(api).toHaveBeenCalledTimes(2);
+    });
+    it.each([401,403,503])("never caches anonymous status %s as neutral absence",async status=>{
+        const api=vi.fn().mockResolvedValueOnce({status,body:null}).mockResolvedValueOnce({status:200,body:{Data:manifest("recovered",0)}});
+        const store=new CommonPageStore(api,()=>0);
+        if(status<500)expect(await store.manifest(context,"")).toBeNull();
+        else await expect(store.manifest(context,"")).rejects.toThrow();
+        expect((await store.manifest(context,""))?.Revision).toBe("recovered");expect(api).toHaveBeenCalledTimes(2);
+    });
+    it("never caches a signed reader's denial",async()=>{
+        const api=vi.fn().mockResolvedValueOnce({status:404,body:null}).mockResolvedValueOnce({status:200,body:{Data:{...manifest("staff",0),Audience:"staff"}}});
+        const store=new CommonPageStore(api,()=>0);
+        const staff={...context,token:"staff",claims:{event_id:event.EventID,preview:true,exp:60}} as Parameters<typeof store.manifest>[0];
+        expect(await store.manifest(staff,"")).toBeNull();
+        expect((await store.manifest(staff,""))?.Revision).toBe("staff");expect(api).toHaveBeenCalledTimes(2);
+    });
+});

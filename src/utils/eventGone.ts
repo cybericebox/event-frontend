@@ -59,6 +59,8 @@ export function isNetworkFailure(error: unknown): boolean {
 }
 
 export function resetEventGone(): void {
+    const changed = gone;
     gone = false;
     checking = false;
+    if (changed) listeners.forEach(listener => listener());
 }

@@ -24,7 +24,7 @@ export async function POST(request:Request) {
     const store=await cookies();
     const nonce=store.get(ATTEMPT_COOKIE)?.value;
     if (!nonce || !/^[A-Za-z0-9_-]{43}$/.test(nonce)) return denied();
-    const claims=verifyRenderGrant(token,await getRenderKey(),eventOriginFromHost(request.headers.get("host"))!);
+    const claims=verifyRenderGrant(token,await getRenderKey(token),eventOriginFromHost(request.headers.get("host"))!);
     if (!claims) return denied();
     const expected=createHash("sha256").update(nonce).digest("base64url");
     if (!timingSafeEqual(Buffer.from(expected),Buffer.from(claims.challenge))) return denied();
