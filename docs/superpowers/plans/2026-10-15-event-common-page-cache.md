@@ -28,7 +28,7 @@
 **Files:** daemon/internal/eventrender/{grant.go,grant_test.go}; internal/delivery/controller/http/handler/eventself/render.go; handler/auth render key route or equivalent handler wiring; internal/useCase/event/render.go; corresponding tests; existing HTTP route/CORS registries and swagger. Preserve DDD ownership. New source may use narrower additional files if each has one responsibility.
 **Interfaces:** Exact API/JWS definitions are in the spec. Frontend consumes all four endpoints unchanged.
 
-- [ ] Add failing crypto and HTTP tests before implementation. Core invariants:
+- [x] Add failing crypto and HTTP tests before implementation. Core invariants:
 ```go
 // Fixed clock and key fixture; valid grant succeeds, then
 // changing audience, challenge, algorithm, expiry or event ID fails.
@@ -36,16 +36,16 @@
 // Warm revision r1 -> publication -> manifest r2; old revision request returns 409.
 // Withdrawn logo/favicon/preview/content image reads return not-found for strangers.
 ```
-- [ ] Run focused tests and record expected red failures.
-- [ ] Implement purpose-separated stable signer, exact typed render HTTP contract, current access check, revision and shared published-only projection. Ensure manifest does not compute statistics, grant is not accepted by unrelated endpoints, errors are not cacheable, and media guards match lifecycle withdrawal.
-- [ ] Run focused tests, make vet, make build, full make test; generate swagger if route annotations changed. Commit backend implementation and return contract/test report to primary.
+- [x] Run focused tests and record expected red failures.
+- [x] Implement purpose-separated stable signer, exact typed render HTTP contract, current access check, revision and shared published-only projection. Ensure manifest does not compute statistics, grant is not accepted by unrelated endpoints, errors are not cacheable, and media guards match lifecycle withdrawal.
+- [x] Run focused tests, make vet, make build, full make test; generate swagger if route annotations changed. Commit backend implementation and return contract/test report to primary.
 
 ### Task 2: Event server session and common page cache
 
 **Files:** event-frontend/src/api/commonPage.ts; src/utils/server/commonPageCache.ts; src/utils/server/eventRenderGrant.ts; src/app/api/event-session/{challenge,route}.ts equivalent route directories; src/app/api/event-content/revision/route.ts; src/api/{publicEventInfo,eventContent,publicFetch}.ts; src/app/layout.tsx and common page routes; src/components/event/common/*; src/proxy.ts; corresponding tests.
 **Consumes:** Task 1 HTTP contract. The cache and browser adapters can be tested with fixtures before backend completion.
 
-- [ ] Read installed Next fetch/cookie/route-handler/CSP docs. Add failing cache, session-validation, challenge/origin, and revision-refresh tests first.
+- [x] Read installed Next fetch/cookie/route-handler/CSP docs. Add failing cache, session-validation, challenge/origin, and revision-refresh tests first.
 ```ts
 // load({event:'a',revision:'1'}) twice -> one loader call;
 // same common key with different user grants -> same bundle, access checked independently;
@@ -54,18 +54,18 @@
 // expired/cross-origin JWT -> cookie not installed;
 // tasks/results/team routes -> common SSR loader never called.
 ```
-- [ ] Run targeted Vitest red tests, implement bounded TTL/singleflight cache and grant verifier using cached public key. Authorize before shared cache hit; never key bundle by credential. Cookies are local host-only HttpOnly Secure; API calls carry signed read grant only on new render endpoints.
-- [ ] Integrate root metadata/theme and common page reads with one React request cache. Private grant bootstrap creates challenge, obtains grant through existing API cookie, installs it and refreshes. Leave restricted custom pages and all personal page bodies on existing client path. Public cold entry does not wait for a login.
-- [ ] Add 2-second visible-tab publication polling against event-local manifest cache; refresh only when revision changes. Keep live counts separate.
-- [ ] Run focused tests and full npm test, lint, check:ds, typecheck, production build. Commit frontend implementation.
+- [x] Run targeted Vitest red tests, implement bounded TTL/singleflight cache and grant verifier using cached public key. Authorize before shared cache hit; never key bundle by credential. Cookies are local host-only HttpOnly Secure; API calls carry signed read grant only on new render endpoints.
+- [x] Integrate root metadata/theme and common page reads with one React request cache. Private grant bootstrap creates challenge, obtains grant through existing API cookie, installs it and refreshes. Leave restricted custom pages and all personal page bodies on existing client path. Public cold entry does not wait for a login.
+- [x] Add 2-second visible-tab publication polling against event-local manifest cache; refresh only when revision changes. Keep live counts separate.
+- [x] Run focused tests and full npm test, lint, check:ds, typecheck, production build. Commit frontend implementation.
 
 ### Task 3: Integration verification and independent review
 
 **Files:** temporary probe under /tmp; spec/plan evidence updates only.
-- [ ] Run real Next production-runtime probe with a local fixture API: cold published success; reused common data; change revision; 404 after prior success; TTL expired while API down; second tenant and staff isolation. Verify zero private markers in denied responses.
-- [ ] Verify guest and authorized common pages at 390px and desktop in browser with fixture accounts; no private mailbox/session inspection. Check theme initial HTML and ensure personal routes still use client path.
-- [ ] Request a fresh code/security review over both complete diffs, fix important findings through RED->GREEN and rerun affected/full checks.
-- [ ] Document remaining venue-only proposal in chat and give exact verification boundaries. Leave new feature on approved local branches unless owner explicitly asks to integrate/release it.
+- [x] Run real Next production-runtime probe with a local fixture API: cold published success; reused common data; change revision; 404 after prior success; TTL expired while API down; second tenant and staff isolation. Verify zero private markers in denied responses.
+- [x] Verify guest and authorized common pages at 390px and desktop in browser with fixture accounts; no private mailbox/session inspection. Check theme initial HTML and ensure personal routes still use client path.
+- [x] Request a fresh code/security review over both complete diffs, fix important findings through RED->GREEN and rerun affected/full checks.
+- [x] Document remaining venue-only proposal in chat and give exact verification boundaries. Leave new feature on approved local branches unless owner explicitly asks to integrate/release it.
 
 ## Owner clarifications and frontend review fixes (2026-10-15)
 
@@ -91,3 +91,13 @@ Model, not measurement: renewing 60s grants 15s before expiry costs active visib
 The main risks for a future participant-wide hidden mode are synchronized login/renewal bursts, actual primary-session/tenant database work and pool pressure, and event-local HTTP/polling/SSR overhead. Signing cost is small in this local probe. A 5s fixture test does not establish sustained1,000-user production readiness: no full issuance endpoint with real primary sessions/database, production CPU/RAM/TLS/network, large real content, cold-start burst or long soak was measured. Keep participant-wide hidden mode disabled/unimplemented until that separate staging test. Fixed per-request TTL preserves the <=60s personal-right revocation window; increasing TTL would change that security tradeoff.
 
 Evidence: /tmp/cib-hidden-event-local-crypto.json; /tmp/cib-hidden-event-go-crypto-benchmark.log; /tmp/cib-hidden-event-local-route-load.json. Parent real Next functional probe also checks cold/warm/revision/denial/outage/cross-host/expired-grant/challenge binding and client publication/withdrawal/recovery at390px/1366px.
+
+## Final verification evidence
+
+Final application commits: daemon `f77eb3ed`; event frontend `7d016fe`. Backend full vet/build/test and focused crypto, production middleware, SQL projection/revision/media and admission-race checks passed. Frontend full 276 files/1,989 tests, typecheck, design-system check and production build passed; lint has zero errors and 29 existing warnings. No deployment or production load claim.
+
+Whole-branch review found public live-value cache reuse and staff freshness regressions plus a conditional neutral/outage overlay; one final fix wave addresses them. Values now share an independent bounded 30s cache behind fresh access gates, and neutral fallback remains recoverable. Final scoped re-review approved all three findings as addressed, with no new actionable regression; focused24/24 tests passed. Report: `/tmp/cib-common-page-final-rereview.md`.
+
+Actual final Next production fixture probe: five sequential public values readers caused one values fill (plus one independently refreshed manifest); changed revision replaced values; warm withdrawal rejected values; staff counts changed after31s without a document revision; expired grants could not read warmed values. Prior cold/warm/revision/outage/cross-host/challenge checks also passed, including five warm document reads with zero API calls. Evidence: `/tmp/cib-event-common-postreview-build.log`, `/tmp/cib-final-full-tests.log`, `/tmp/cib-common-page-final-fix-report.md`, `/tmp/cib-common-page-final-review.md`, and `/var/folders/8p/yl0zgzlj5ssdmpskq22wxw540000gn/T/cib-event-common-probe-3nupiglg/results.json`. The first final probe counted a fresh manifest as an extra values fill; its counter was corrected to distinguish those two operations, without an application change.
+
+Limits: local fixture/API and synthetic identities, no real primary-session/database end-to-end capacity test, TLS/replica test, long soak or production deployment. Cold no-read-cookie private first-paint timing remains a browser verification gap; valid-cookie private HTML and reload reuse, common-page recovery and390px/1366px layouts were verified. Future hidden-participant and VPN modes remain notes only.
