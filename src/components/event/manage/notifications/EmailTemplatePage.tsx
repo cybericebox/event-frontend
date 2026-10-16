@@ -32,7 +32,7 @@ import {eventBrandColors} from "./editor/brandColors";
 import type {BlockPreset, EmailBodyBlock, PresetBlock} from "./editor/emailBlocks";
 import {useManager} from "../ManagerShell";
 import {emailRichText} from "../emailBlocks";
-import {EmailPreview} from "./EmailPreview";
+import {NotificationPreview} from "./NotificationPreview";
 import {orderedVersions, sameValue, templateMode, toVariableDefs} from "./notificationModel";
 import {ReminderDaysField} from "./ReminderDaysField";
 import {TemplateActions} from "./TemplateActions";
@@ -81,10 +81,10 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const footer = body.find((block): block is PresetBlock => block.type === "preset" && block.placement === "footer");
     const bodyContent = body.filter(block => !(block.type === "preset" && block.placement === "footer"));
     useDraftDirty(`email-templates-${signal}`, Object.entries(drafts).some(([id, value]) => {const original = templates.data?.find(item => item.ID === id); return !original || !sameValue(value, inputOf(original));}));
-    const validation = !draft?.Subject.trim() ? t("manage.email.validation.subject")
-        : !draft.Body.length || !draft.Body.some(block => block.type === "rich_text" && emailRichText(block).trim() || block.type === "button" || block.type === "image" || block.type === "preset") ? t("manage.email.validation.body")
-        : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.email.validation.buttons")
-        : "";
+    const subjectError = !draft?.Subject.trim() ? t("manage.email.validation.subject") : "";
+    const bodyError = !draft?.Body.length || !draft.Body.some(block => block.type === "rich_text" && emailRichText(block).trim() || block.type === "button" || block.type === "image" || block.type === "preset") ? t("manage.email.validation.body")
+        : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.email.validation.buttons") : "";
+    const validation = subjectError || bodyError;
     const editable = !!(canManage && mode === "edit");
     const livePreview = useDebounced(draft && !validation ? draft : null);
     const ownVersions = versions.filter(item => item.Source === "event");
@@ -176,25 +176,25 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
             <div className="event-template-grid__fields">
                 <div className={`event-manage-field${editable ? "" : " opacity-60"}`} {...(editable ? {} : {inert: true})}>
                     <ManageFieldLabel title={t("manage.email.subject")} help={t("manage.email.subjectHelp")} required />
-                    <VariableRichText key={`subject-${template.ID}`} value={draft.Subject} onChange={Subject => change({...draft, Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted />
+                    <VariableRichText key={`subject-${template.ID}`} value={draft.Subject} onChange={Subject => change({...draft, Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted error={editable ? subjectError : ""} />
                 </div>
                 <div className={`event-manage-field${editable ? "" : " opacity-60"}`} {...(editable ? {} : {inert: true})}>
                     <ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} />
                     <VariableRichText key={`preheader-${template.ID}`} value={draft.Preheader} onChange={Preheader => change({...draft, Preheader})} variables={variables} placeholder={t("manage.email.optional")} dotted />
                 </div>
-                <div className="event-manage-field">
+                <div className="event-manage-field" role="group" aria-label={t("manage.tpl.tpl.body")} aria-invalid={editable && !!bodyError || undefined} aria-describedby={editable && bodyError ? `email-body-error-${template.ID}` : undefined}>
                     <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} />
                     {editable && <BlockEditor key={`body-${template.ID}`} value={bodyContent} onChange={blocks => change({...draft, Body: footer ? [...blocks, footer] : blocks})} variables={variables}
                         presets={(presets.data ?? []) as BlockPreset[]} onUploadImage={uploadImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />}
+                    {editable && bodyError && <p id={`email-body-error-${template.ID}`} className="event-manage-validation" role="alert">{bodyError}</p>}
                 </div>
                 <EmailFooterEditor presetId={footer?.preset_id ?? ""} presets={(presets.data ?? []) as BlockPreset[]} readOnly={!editable}
                     onSelect={id => { const selected = presets.data?.find(preset => preset.ID === id); change({...draft, Body: selected ? [...bodyContent, {type: "preset", preset_id: selected.ID, name: selected.Name, placement: "footer"}] : bodyContent}); }} />
-                {editable && validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 <EmailStylingEditor styling={draft.Styling} disabled={!editable} brand={brand} onChange={styling => change({...draft, Styling: styling})} />
             </div>
             <div className="event-template-grid__preview">
                 <h2>{t("manage.email.previewTitle")}</h2>
-                <EmailPreview event={event} input={livePreview} valid={!validation} />
+                <NotificationPreview email={{event, input: livePreview, valid: !validation}} />
             </div>
         </div> : <EmptyState message={t("manage.email.noTemplate")} />}
     </div>;

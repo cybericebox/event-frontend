@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import DOMPurify from "isomorphic-dompurify"
 import { Bold, Braces, ChevronDown, Italic } from "lucide-react"
 import { t } from "@/i18n/t"
@@ -52,7 +52,7 @@ function variablePill(name: string, invalid = false): HTMLSpanElement {
   pill.className = invalid ? INVALID_PILL_STYLE : VALID_PILL_CLASS
   if (invalid) {
     pill.dataset.invalid = "true"
-    pill.title = unknownVariableHint(name)
+    pill.tabIndex = 0
   }
   pill.textContent = name
   return pill
@@ -87,9 +87,10 @@ function decorateVariables(editor: HTMLElement, variables: VariableDef[]) {
   }
 }
 
-type Props = { value: string; onChange: (value: string) => void; variables: VariableDef[]; disabled?: boolean }
+type Props = { value: string; onChange: (value: string) => void; variables: VariableDef[]; disabled?: boolean; error?: string }
 
-export function InAppBodyEditor({ value, onChange, variables, disabled = false }: Props) {
+export function InAppBodyEditor({ value, onChange, variables, disabled = false, error }: Props) {
+  const errorID = useId()
   const editorRef = useRef<HTMLDivElement>(null)
   const savedRange = useRef<Range | null>(null)
   const lastValue = useRef("")
@@ -159,7 +160,7 @@ export function InAppBodyEditor({ value, onChange, variables, disabled = false }
     emit()
   }
 
-  return <div className="rounded-md border border-(--ib-line) bg-(--ib-surface)">
+  return <HoverTooltip text="" delegate="[data-invalid='true']" textForTarget={target => unknownVariableHint(target.dataset.var ?? "")}><div className="rounded-md border border-(--ib-line) bg-(--ib-surface)">
     <div className="flex flex-wrap items-center gap-1 border-b border-(--ib-line) px-2 py-1.5">
       <HoverTooltip text={t("manage.tpl.editor.bold")}><button type="button" aria-label={t("manage.tpl.editor.bold")} disabled={disabled}
         onMouseDown={(event) => event.preventDefault()} onClick={() => format("strong")}
@@ -180,7 +181,7 @@ export function InAppBodyEditor({ value, onChange, variables, disabled = false }
     <div className="editor-scroll min-h-28 has-focus-visible:ring-2 has-focus-visible:ring-inset has-focus-visible:ring-(--ib-action)">
     <div className="editor-scroll__body">
     <div ref={editorRef} contentEditable={!disabled} suppressContentEditableWarning role="textbox" aria-multiline="true"
-      aria-label={t("manage.tpl.tpl.body")}
+      aria-label={t("manage.tpl.tpl.body")} aria-invalid={!!error || undefined} aria-describedby={error ? errorID : undefined}
       onKeyDown={(event) => {
         const direction = historyDirection(event)
         if (!direction || event.nativeEvent.isComposing || disabled) return
@@ -199,5 +200,6 @@ export function InAppBodyEditor({ value, onChange, variables, disabled = false }
       className="px-3 py-2 text-sm leading-relaxed text-(--ib-ink) outline-none" />
     </div>
     </div>
-  </div>
+    {error && <p className="event-manage-validation" role="alert" id={errorID}>{error}</p>}
+  </div></HoverTooltip>
 }

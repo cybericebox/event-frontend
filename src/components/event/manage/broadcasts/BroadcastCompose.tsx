@@ -25,8 +25,7 @@ import {InAppBodyEditor} from "../notifications/editor/InAppBodyEditor";
 import {VariableRichText} from "../notifications/editor/VariableRichText";
 import {eventBrandColors} from "../notifications/editor/brandColors";
 import type {BlockPreset} from "../notifications/editor/emailBlocks";
-import {EmailPreview} from "../notifications/EmailPreview";
-import {InAppPreview} from "../notifications/InAppPreview";
+import {NotificationPreview} from "../notifications/NotificationPreview";
 import {useDebounced} from "../notifications/useDebounced";
 import {AudiencePicker} from "./AudiencePicker";
 import {TemplateStart} from "./TemplateStart";
@@ -76,6 +75,10 @@ export function BroadcastCompose() {
     const recipients = ready && settled && !count.isError ? count.data : undefined;
     const validation = composeValidation(draft);
     const canSend = canManage && !validation && recipients !== undefined && recipients > 0 && !count.isFetching;
+    const subjectError = !draft.Subject.trim() ? t("manage.broadcasts.validation.subject") : "";
+    const bodyError = !emailBodyFilled(draft.Body) ? t("manage.broadcasts.validation.body") : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.broadcasts.validation.buttons") : "";
+    const titleError = !draft.InAppTitle.trim() ? t("manage.broadcasts.validation.inAppTitle") : "";
+    const audienceError = !ready ? t(draft.Audience.Kind === "teams" ? "manage.broadcasts.validation.teams" : "manage.broadcasts.validation.participants") : "";
     const emailInvalid = !!emailValidation(draft);
     const shown = useMemo(() => previewDraft(draft), [draft]);
     const unsupported = useMemo(() => draftUnsupported(draft), [draft]);
@@ -134,22 +137,24 @@ export function BroadcastCompose() {
                         <EventCheckbox checked={draft.email} onCheckedChange={email => set({email})} label={t("manage.broadcasts.channel.email")} />
                         <EventCheckbox checked={draft.inApp} onCheckedChange={inApp => set({inApp})} label={t("manage.broadcasts.channel.inApp")} />
                     </div>
+                    {!draft.email && !draft.inApp && <p className="event-manage-validation" role="alert">{t("manage.broadcasts.validation.channels")}</p>}
                 </section>
 
                 {draft.email && <section className="event-broadcast-section" aria-label={t("manage.broadcasts.channel.email")}>
                     <h2>{t("manage.broadcasts.channel.email")}</h2>
                     <div className="event-manage-field">
                         <ManageFieldLabel title={t("manage.email.subject")} help={t("manage.broadcasts.subjectHelp")} required />
-                        <VariableRichText value={draft.Subject} onChange={Subject => set({Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted />
+                        <VariableRichText value={draft.Subject} onChange={Subject => set({Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted error={subjectError} />
                     </div>
                     <div className="event-manage-field">
                         <ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} />
                         <VariableRichText value={draft.Preheader} onChange={Preheader => set({Preheader})} variables={variables} placeholder={t("manage.email.optional")} dotted />
                     </div>
-                    <div className="event-manage-field">
+                    <div className="event-manage-field" role="group" aria-label={t("manage.tpl.tpl.body")} aria-invalid={!!bodyError || undefined} aria-describedby={bodyError ? "broadcast-body-error" : undefined}>
                         <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} required />
                         <BlockEditor value={draft.Body} onChange={Body => set({Body})} variables={variables} presets={(presets.data ?? []) as BlockPreset[]}
                             hiddenBlocks={["image"]} onUploadImage={() => Promise.reject(new Error("images are not supported"))} imageURL={() => ""} />
+                        {bodyError && <p id="broadcast-body-error" className="event-manage-validation" role="alert">{bodyError}</p>}
                     </div>
                     <EmailStylingEditor styling={draft.Styling} disabled={false} brand={eventBrandColors(event)} onChange={Styling => set({Styling})} />
                 </section>}
@@ -158,7 +163,7 @@ export function BroadcastCompose() {
                     <h2>{t("manage.broadcasts.channel.inApp")}</h2>
                     <div className="event-manage-field">
                         <ManageFieldLabel title={t("manage.notifications.field.title")} help={t("manage.notifications.field.titleHelp")} required />
-                        <VariableRichText value={draft.InAppTitle} onChange={InAppTitle => set({InAppTitle})} variables={variables} placeholder={t("manage.notifications.field.title")} dotted />
+                        <VariableRichText value={draft.InAppTitle} onChange={InAppTitle => set({InAppTitle})} variables={variables} placeholder={t("manage.notifications.field.title")} dotted error={titleError} />
                     </div>
                     <div className="event-manage-field">
                         <ManageFieldLabel title={t("manage.notifications.field.body")} help={t("manage.notifications.field.bodyHelp")} />
@@ -170,25 +175,24 @@ export function BroadcastCompose() {
                     </div>
                 </section>}
 
-                <section className="event-broadcast-section" aria-label={t("manage.broadcasts.audience.label")}>
+                <section className="event-broadcast-section" role="group" aria-label={t("manage.broadcasts.audience.label")} aria-invalid={!!audienceError || undefined} aria-describedby={audienceError ? "broadcast-audience-error" : undefined}>
                     <AudiencePicker event={event} value={draft.Audience} onChange={Audience => set({Audience})} />
+                    {audienceError && <p id="broadcast-audience-error" className="event-manage-validation" role="alert">{audienceError}</p>}
                     <div className="event-broadcast-count" role="status" aria-live="polite">
                         {ready && (count.isFetching || !settled) && <EventBrandLogo event={event} className="event-loading-logo" size={16} />}
                         {countText && <span>{countText}</span>}
                         {ready && count.isError && <span className="event-manage-validation">{t("manage.broadcasts.countError")}</span>}
                     </div>
                 </section>
-                {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
                 {recipients === 0 && !validation && ready && <p className="event-manage-validation" role="alert">{t("manage.broadcasts.error.emptyAudience")}</p>}
             </div>
             <div className="event-template-grid__preview event-broadcast-preview">
                 {unsupported.length > 0 && <div className="event-manage-warning" role="note">
                     <TriangleAlert size={18} aria-hidden="true" />
-                    <ul>{unsupported.map(name => <li key={name}>{t("manage.broadcasts.template.unsupported", {name})}</li>)}</ul>
+                    <span>{t("manage.broadcasts.template.unsupportedNames", {names: unsupported.join(", ")})}</span>
                 </div>}
-                {draft.email && <div><h2>{t("manage.broadcasts.previewEmail")}</h2><EmailPreview event={event} input={livePreview} valid={!emailInvalid} /></div>}
-                {draft.inApp && <div><h2>{t("manage.broadcasts.previewInApp")}</h2>
-                    <InAppPreview template={inAppPreview} values={broadcastSampleValues(event.Name)} /><small>{t("manage.notifications.previewHint")}</small></div>}
+                <NotificationPreview email={draft.email ? {event, input: livePreview, valid: !emailInvalid} : undefined}
+                    inApp={draft.inApp ? {template: inAppPreview, values: broadcastSampleValues(event.Name)} : undefined} />
                 {!draft.email && !draft.inApp && <EmptyState message={t("manage.broadcasts.validation.channels")} />}
             </div>
         </div>

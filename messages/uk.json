@@ -4972,5 +4972,11 @@
   "siteBanner.moreAnnouncements.one": "Ще {count} оголошення",
   "siteBanner.moreAnnouncements.few": "Ще {count} оголошення",
   "siteBanner.moreAnnouncements.many": "Ще {count} оголошень",
-  "siteBanner.moreAnnouncements.other": "Ще {count} оголошення"
+  "siteBanner.moreAnnouncements.other": "Ще {count} оголошення",
+  "manage.notifications.preview.tabs": "Канал попереднього перегляду",
+  "manage.notifications.preview.email": "Лист",
+  "manage.notifications.preview.inbox": "Стрічка сповіщень",
+  "manage.notifications.preview.toast": "Спливаюче повідомлення",
+  "manage.notifications.preview.expand": "Розгорнути перегляд",
+  "manage.broadcasts.template.unsupportedNames": "Ці змінні недоступні в розсилці й будуть порожніми: {names}."
 }

@@ -48,3 +48,16 @@ describe("InAppBodyEditor", () => {
     expect(field.querySelector('[data-var="event_name"]')).toBeTruthy()
   })
 })
+
+it("keeps custom variable hints outside the saved in-app body", () => {
+ const onChange = vi.fn()
+ render(<InAppBodyEditor value="<strong>{{.ghost}}</strong>" onChange={onChange} variables={[{name: "event_name"}]} />)
+ const field = screen.getByRole("textbox", {name: "Текст"})
+ const pill = field.querySelector('[data-var="ghost"]') as HTMLElement
+ expect(pill.hasAttribute("title")).toBe(false)
+ expect(pill.tabIndex).toBe(0)
+ fireEvent.focus(pill)
+ expect(screen.getByRole("tooltip").textContent).toContain("ghost")
+ fireEvent.input(field)
+ expect(onChange).toHaveBeenLastCalledWith("<strong>{{.ghost}}</strong>")
+})

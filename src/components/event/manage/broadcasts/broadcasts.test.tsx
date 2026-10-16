@@ -193,6 +193,22 @@ describe("Нова розсилка", () => {
         expect(router.push).not.toHaveBeenCalled();
     });
 
+    it("keeps email and in-app errors beside their fields with accessible descriptions", async () => {
+        server();
+        wrap(<BroadcastCompose />);
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        expect(subject.getAttribute("aria-invalid")).toBe("true");
+        const error = document.getElementById(subject.getAttribute("aria-describedby")!);
+        expect(error?.textContent).toBe("Вкажіть тему листа.");
+        expect(subject.closest(".event-manage-field")?.contains(error)).toBe(true);
+        fireEvent.click(screen.getByRole("checkbox", {name: "У застосунку"}));
+        const title = screen.getByRole("textbox", {name: "Заголовок"});
+        const titleError = document.getElementById(title.getAttribute("aria-describedby")!);
+        expect(titleError?.textContent).toBe("Вкажіть заголовок повідомлення в застосунку.");
+        expect(title.closest(".event-manage-field")?.contains(titleError)).toBe(true);
+        expect(screen.getByRole("button", {name: /Надіслати повідомлення/})).toHaveProperty("disabled", true);
+    });
+
     it("offers no image block in the email editor", async () => {
         server();
         wrap(<BroadcastCompose />);
@@ -237,7 +253,7 @@ describe("Нова розсилка", () => {
         expect((await screen.findByRole("textbox", {name: "Тема листа"})).textContent).toContain("Привіт");
         expect((await screen.findByRole("textbox", {name: "Заголовок"})).textContent).toContain("Дякуємо");
         expect(screen.queryByText("Замінити вміст розсилки шаблоном?")).toBeNull();
-        expect(await screen.findByText("Змінна team_name недоступна в розсилці — буде порожньою")).toBeTruthy();
+        expect(await screen.findByText("Ці змінні недоступні в розсилці й будуть порожніми: team_name.")).toBeTruthy();
         expect(screen.queryByText(/Змінна user_name недоступна/)).toBeNull();
         // The preview is asked for with the unsupported variable already empty.
         await waitFor(() => {
@@ -247,6 +263,16 @@ describe("Нова розсилка", () => {
         }, {timeout: 3000});
         // The template itself is never written.
         expect(calls.some(call => call.method !== "GET" && call.path.includes("notification-templates") && !call.path.endsWith("/preview"))).toBe(false);
+    });
+
+    it("groups all unavailable variables into one warning without changing the draft", async () => {
+        server(call => call.path.endsWith("/notification-templates/email") ? emailTemplates.map(item => ({...(item as Record<string, unknown>), Subject: "{{.team_name}} {{.invite_url}} {{.team_url}}"})) : undefined);
+        wrap(<BroadcastCompose />);
+        await pickTemplate();
+        const note = await screen.findByText("Ці змінні недоступні в розсилці й будуть порожніми: team_name, invite_url, team_url.");
+        expect(note.closest("[role=note]")?.querySelectorAll("li")).toHaveLength(0);
+        const subject = screen.getByRole("textbox", {name: "Тема листа"});
+        expect([...subject.querySelectorAll("[data-var]")].map(pill => pill.getAttribute("data-var"))).toEqual(["team_name", "invite_url", "team_url"]);
     });
 
     it("asks before replacing content that is already there", async () => {
