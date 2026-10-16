@@ -6,6 +6,7 @@ import {DialogModal} from "@/components/event/DialogModal";
 import {t} from "@/i18n/t";
 import {EmailPreview} from "./EmailPreview";
 import {InAppPreview} from "./InAppPreview";
+import type {EmailPreviewDevice} from "./EmailPreviewViewport";
 
 type Props = {email?: ComponentProps<typeof EmailPreview>; inApp?: ComponentProps<typeof InAppPreview>};
 type Channel = "email" | "inbox" | "toast";
@@ -14,6 +15,7 @@ type Channel = "email" | "inbox" | "toast";
 export function NotificationPreview({email, inApp}: Props) {
     const [selected, setSelected] = useState<Channel>(email ? "email" : "inbox");
     const [expanded, setExpanded] = useState(false);
+    const [emailDevice, setEmailDevice] = useState<EmailPreviewDevice | null>(null);
     const id = useId();
     const channels: Channel[] = [...(email ? ["email" as const] : []), ...(inApp ? ["inbox" as const, "toast" as const] : [])];
     const active = channels.includes(selected) ? selected : channels[0];
@@ -33,7 +35,7 @@ export function NotificationPreview({email, inApp}: Props) {
             {!expanded && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setExpanded(true)}><Maximize2 size={15} aria-hidden="true" />{t("manage.notifications.preview.expand")}</button>}
         </div>
         {channels.map(channel => <div key={channel} id={`${prefix}-${channel}-panel`} role="tabpanel" aria-labelledby={`${prefix}-${channel}-tab`} hidden={active !== channel} tabIndex={0} className="event-notification-preview__panel">
-            {channel === "email" && email ? <EmailPreview {...email} /> : inApp ? <InAppPreview {...inApp} surface={channel === "inbox" ? "inbox" : "toast"} /> : null}
+            {channel === "email" && email ? <EmailPreview {...email} viewport={{device: emailDevice, onDeviceChange: setEmailDevice}} /> : inApp ? <InAppPreview {...inApp} surface={channel === "inbox" ? "inbox" : "toast"} /> : null}
         </div>)}
     </div>;
     if (channels.length === 0) return null;

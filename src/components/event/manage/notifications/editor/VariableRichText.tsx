@@ -190,9 +190,9 @@ export function VariableRichText({
   );
 
   // Pasted or edited tokens that never passed through typing get their pills on blur.
-  const normalizeOnBlur = () => {
+  const normalizeOnBlur = (event: React.FocusEvent<HTMLDivElement>) => {
     const div = divRef.current;
-    if (!div || variables.length === 0) return;
+    if (!div || variables.length === 0 || (event.relatedTarget instanceof Node && div.contains(event.relatedTarget))) return;
     const html = rawToHtml(htmlToRawSingleLine(div.innerHTML, { dotted }), variables.map((variable) => variable.name), { dotted });
     if (html !== div.innerHTML) div.innerHTML = html;
   };

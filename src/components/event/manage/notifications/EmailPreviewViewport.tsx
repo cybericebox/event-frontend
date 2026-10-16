@@ -10,6 +10,9 @@ const viewports = [
     {key: "mobile", width: 390, icon: Smartphone},
 ] as const;
 
+export type EmailPreviewDevice = (typeof viewports)[number]["key"];
+export type EmailViewportControl = {device: EmailPreviewDevice | null; onDeviceChange: (device: EmailPreviewDevice) => void};
+
 function subscribeViewport(onChange: () => void) {
     window.addEventListener("resize", onChange);
     return () => window.removeEventListener("resize", onChange);
@@ -18,10 +21,11 @@ const narrowViewport = () => window.innerWidth <= 680;
 
 // Scale the sheet, not its viewport: media queries and wrapping still see the
 // selected device width, while the iframe scrolls inside the available canvas.
-export function EmailPreviewViewport({html, children}: {html?: string; children?: ReactNode}) {
+export function EmailPreviewViewport({html, children, viewport}: {html?: string; children?: ReactNode; viewport?: EmailViewportControl}) {
     const narrow = useSyncExternalStore(subscribeViewport, narrowViewport, () => false);
-    const [selected, setDevice] = useState<(typeof viewports)[number]["key"] | null>(null);
-    const device = selected ?? (narrow ? "mobile" : "desktop");
+    const [selected, setSelected] = useState<EmailPreviewDevice | null>(null);
+    const device = (viewport ? viewport.device : selected) ?? (narrow ? "mobile" : "desktop");
+    const setDevice = viewport?.onDeviceChange ?? setSelected;
     const canvas = useRef<HTMLDivElement>(null);
     const [box, setBox] = useState({width: 0, height: 0});
     useEffect(() => {

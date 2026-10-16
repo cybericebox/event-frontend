@@ -36,6 +36,31 @@ describe("notification preview channels", () => {
   fireEvent.click(within(dialog).getByRole("button", {name: "Закрити"}));
   expect(screen.getByRole("tab", {name: "Стрічка сповіщень"}).getAttribute("aria-selected")).toBe("true");
  });
+ it("keeps the chosen phone viewport on desktop across expansion, closing and channel changes", () => {
+  const previousWidth = window.innerWidth;
+  Object.defineProperty(window, "innerWidth", {configurable: true, value: 1440});
+  try {
+   const input = {NotificationType: "broadcast", Subject: "Subject", Preheader: "", Body: [{type: "divider"}], Styling: {}};
+   const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
+   client.setQueryData(["event-manage-email-preview", event.EventID, JSON.stringify(input)], {Subject: "Subject", Preheader: "", HTML: "<p>Letter</p>"});
+   render(<QueryClientProvider client={client}><NotificationPreview email={{event, input}} inApp={{template, values: {}}} /></QueryClientProvider>);
+   fireEvent.click(screen.getByRole("button", {name: /Телефон/}));
+   fireEvent.click(screen.getByRole("button", {name: "Розгорнути перегляд"}));
+   const dialog = screen.getByRole("dialog");
+   expect(within(dialog).getByRole("button", {name: /Телефон/}).getAttribute("aria-pressed")).toBe("true");
+   expect((within(dialog).getByTitle("Попередній вигляд електронного листа") as HTMLIFrameElement).style.width).toBe("390px");
+   fireEvent.click(within(dialog).getByRole("tab", {name: "Стрічка сповіщень"}));
+   fireEvent.click(within(dialog).getByRole("tab", {name: "Лист"}));
+   expect(within(dialog).getByRole("button", {name: /Телефон/}).getAttribute("aria-pressed")).toBe("true");
+   fireEvent.click(within(dialog).getByRole("button", {name: /Планшет/}));
+   fireEvent.click(within(dialog).getByRole("button", {name: "Закрити"}));
+   expect(screen.getByRole("button", {name: /Планшет/}).getAttribute("aria-pressed")).toBe("true");
+   expect((screen.getByTitle("Попередній вигляд електронного листа") as HTMLIFrameElement).style.width).toBe("768px");
+   fireEvent.click(screen.getByRole("tab", {name: "Спливаюче повідомлення"}));
+   fireEvent.click(screen.getByRole("tab", {name: "Лист"}));
+   expect(screen.getByRole("button", {name: /Планшет/}).getAttribute("aria-pressed")).toBe("true");
+  } finally {Object.defineProperty(window, "innerWidth", {configurable: true, value: previousWidth});}
+ });
  it("limits channels to the data and recovers selection when a channel is removed", () => {
   const {rerender} = wrap(<NotificationPreview email={{event, input: null}} inApp={{template, values: {}}} />);
   fireEvent.click(screen.getByRole("tab", {name: "Спливаюче повідомлення"}));
