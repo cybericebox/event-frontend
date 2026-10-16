@@ -74,7 +74,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     function dropCsv(files: File[]) {
         if (mode === "csv") {csvPicker.current?.take(files); return;}
         droppedCsv.current = files;
-        setMode("csv"); setServerIssues([]);
+        setMode("csv"); setServerIssues([]); setManualIssues([]);
     }
     const [name, setName] = useSessionDraftState("create-team-name", "");
     const [chips, setChips] = useSessionDraftState<EmailChip[]>("create-team-chips", []);
@@ -86,6 +86,11 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     const [csvTeams, setCsvTeams] = useSessionDraftState<TeamDraft[]>("create-team-csvTeams", []);
     const [preview, setPreview] = useSessionDraftState<BatchTeamsResult | null>("create-team-preview", null, {dirty: () => false});
     const [serverIssues, setServerIssues] = useState<string[]>([]);
+    const [manualIssues, setManualIssues] = useState<BatchTeamIssue[]>([]);
+    const issueField = (code: string) => code === "team_name" || code === "team_exists" ? "name" : code === "captain_invalid" ? "captain" : code === "team_fields_invalid" ? "fields" : ["team_too_small", "team_too_large", "too_many_people", "email_invalid", "email_repeated", "already_in_team", "already_participant", "account_unavailable", "staff_cannot_participate", "member_fields_invalid"].includes(code) ? "members" : null;
+    const fieldIssues = (field: string) => manualIssues.filter(issue => issueField(issue.Code) === field);
+    const fieldIssue = (field: string) => fieldIssues(field).length > 0 && <ul className="event-modal__issues" id={`${id}-${field}-server-error`} role="alert">{fieldIssues(field).map((issue, index) => <li key={index}>{issueMessage(issue, name.trim())}</li>)}</ul>;
+    const fieldProps = (field: string) => ({"aria-invalid": fieldIssues(field).length > 0 || undefined, "aria-describedby": fieldIssues(field).length > 0 ? `${id}-${field}-server-error` : undefined});
     const [busy, setBusy] = useState(false);
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: open, refetchOnWindowFocus: false});
     // The CSV carries the team and participant form fields: the template follows the forms as they are now.
@@ -110,7 +115,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
 
     function reset() {
         setMode("manual"); setName(""); setChips([]); setCaptain(""); setPick(""); setFieldAnswers({});
-        setFileName(null); setCsvIssues([]); setCsvTeams([]); setPreview(null); setServerIssues([]);
+        setFileName(null); setCsvIssues([]); setCsvTeams([]); setPreview(null); setServerIssues([]); setManualIssues([]);
     }
 
     function close() {
@@ -125,7 +130,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     }
 
     async function readFile(file: File | null) {
-        setPreview(null); setServerIssues([]);
+        setPreview(null); setServerIssues([]); setManualIssues([]);
         if (!file) {setFileName(null); setCsvIssues([]); setCsvTeams([]); return;}
         setFileName(file.name);
         let parsed: ReturnType<typeof parseTeamCsv>;
@@ -165,7 +170,8 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             const result = await createManageTeams(eventID, teams, false, mode === "csv");
             if (result.Issues.length) {
                 setPreview(mode === "csv" ? result : null);
-                setServerIssues(result.Issues.map(issue => mode === "csv" ? csvIssueText(issue, csvTeams) : issueMessage(issue, name.trim())));
+                setManualIssues(mode === "manual" ? result.Issues : []);
+                setServerIssues(result.Issues.filter(issue => mode === "csv" || !issueField(issue.Code)).map(issue => mode === "csv" ? csvIssueText(issue, csvTeams) : issueMessage(issue, name.trim())));
                 return;
             }
             toast.success(doneText(result));
@@ -182,39 +188,41 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={mode === "manual" ? !canCreateManual : !canCreateCsv} busy={busy}>{mode === "manual" ? t("manage.teams.create") : t("manage.teams.batch.createAll", {count: csvTeams.length})}</EventButton></>}>
         <div className="ib-seg event-modal__modes" role="group" aria-label={t("manage.teams.batch.mode")}>
-            <button type="button" aria-pressed={mode === "manual"} disabled={busy} onClick={() => {setMode("manual"); setServerIssues([]);}}>{t("manage.teams.batch.modeManual")}</button>
-            <button type="button" aria-pressed={mode === "csv"} disabled={busy} onClick={() => {setMode("csv"); setServerIssues([]);}}>{t("manage.teams.batch.modeCsv")}</button>
+            <button type="button" aria-pressed={mode === "manual"} disabled={busy} onClick={() => {setMode("manual"); setServerIssues([]); setManualIssues([]);}}>{t("manage.teams.batch.modeManual")}</button>
+            <button type="button" aria-pressed={mode === "csv"} disabled={busy} onClick={() => {setMode("csv"); setServerIssues([]); setManualIssues([]);}}>{t("manage.teams.batch.modeCsv")}</button>
         </div>
         {mode === "manual" ? <>
             <div className="ib-field">
                 <label className="ib-field__label" htmlFor={`${id}-name`}>{t("manage.teams.name")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></label>
-                <input id={`${id}-name`} className="ib-input" value={name} onChange={event => {setName(event.target.value); setServerIssues([]);}} minLength={3} maxLength={64} required disabled={busy} placeholder={t("manage.teams.namePlaceholder")} />
+                <input {...fieldProps("name")} id={`${id}-name`} className="ib-input" value={name} onChange={event => {setName(event.target.value); setServerIssues([]); setManualIssues([]);}} minLength={3} maxLength={64} required disabled={busy} placeholder={t("manage.teams.namePlaceholder")} />{fieldIssue("name")}
             </div>
-            <div className="ib-field">
+            <div className="ib-field" role="group" aria-label={t("manage.teams.batch.members")} {...fieldProps("members")}>
                 <label className="ib-field__label" htmlFor={`${id}-members`}>{t("manage.teams.batch.members")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></label>
-                <EmailChipsInput draftSlot="create-team-pending-email" id={`${id}-members`} chips={chips} onChange={next => {setChips(next); setServerIssues([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-members-hint ${id}-members-error`} />
+                <EmailChipsInput draftSlot="create-team-pending-email" id={`${id}-members`} chips={chips} onChange={next => {setChips(next); setServerIssues([]); setManualIssues([]);}} disabled={busy} required placeholder={t("manage.invites.chips.placeholder")} describedBy={`${id}-members-hint ${id}-members-error`} />
                 <p className="ib-field__hint" id={`${id}-members-hint`}>{t("manage.teams.batch.membersHint")}</p>
                 <p className="ib-field__error" id={`${id}-members-error`} role="alert">{invalidCount > 0 ? t("manage.invites.chips.invalid", {count: invalidCount}) : ""}</p>
+                {fieldIssue("members")}
                 {available.length > 0 && <EventSelect ariaLabel={t("manage.teams.batch.pickParticipant")} value={pick} placeholder={t("manage.teams.batch.pickParticipant")} options={available.map(person => ({value: person.UserID, label: person.Name ? `${person.Name} · ${person.Email}` : person.Email}))} onValueChange={addParticipant} disabled={busy} />}
             </div>
-            <div className="ib-field">
+            <div className="ib-field" role="group" aria-label={t("manage.teams.captain")} {...fieldProps("captain")}>
                 <span className="ib-field__label" id={`${id}-captain`}>{t("manage.teams.captain")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></span>
-                <EventSelect ariaLabel={t("manage.teams.captain")} value={captainValue} placeholder={members.length ? t("manage.teams.batch.chooseCaptain") : t("manage.teams.batch.addMembersFirst")} options={members.map(chip => ({value: chip.email, label: chipName(chip) ? `${chipName(chip)} · ${chip.email}` : chip.email}))} onValueChange={setCaptain} disabled={busy || members.length === 0} />
+                <EventSelect ariaLabel={t("manage.teams.captain")} value={captainValue} placeholder={members.length ? t("manage.teams.batch.chooseCaptain") : t("manage.teams.batch.addMembersFirst")} options={members.map(chip => ({value: chip.email, label: chipName(chip) ? `${chipName(chip)} · ${chip.email}` : chip.email}))} onValueChange={value => {setCaptain(value); setManualIssues(current => current.filter(issue => issueField(issue.Code) !== "captain"));}} disabled={busy || members.length === 0} />
+                {fieldIssue("captain")}
                 <p className="ib-field__hint">{t("manage.teams.batch.pendingNote")}</p>
             </div>
-            {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => setFieldAnswers(current => ({...current, [key]: value}))} disabled={busy} />}
+            {fieldsQuery.data?.Enabled && <div role="group" aria-label={t("manage.staffFields.title")} {...fieldProps("fields")}><TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => {setFieldAnswers(current => ({...current, [key]: value})); setManualIssues(current => current.filter(issue => issueField(issue.Code) !== "fields"));}} disabled={busy} />{fieldIssue("fields")}</div>}
         </> : <>
             <CsvField label={t("manage.teams.batch.csv")} columns={teamColumns} required={["team", "email", "captain"]} header={templateHeader(schema, "team")} fieldLines={fieldHelp(schema)}
                 examples={[
                     [t("manage.invites.template.team"), ...exampleRow(schema.team, true), t("manage.invites.template.email"), t("manage.invites.template.firstName"), t("manage.invites.template.lastName"), t("manage.invites.template.captain"), ...exampleRow(schema.participant, true)],
                     [t("manage.invites.template.team"), ...exampleRow(schema.team, false), t("manage.invites.template.email2"), t("manage.invites.template.firstName2"), t("manage.invites.template.lastName2"), "", ...exampleRow(schema.participant, true)],
                 ]}
-                templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} disabled={busy || participantFormQuery.isError || fieldsQuery.isError} templateDisabled={participantFormQuery.isPending || fieldsQuery.isPending} />
+                templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} serverIssues={serverIssues} disabled={busy || participantFormQuery.isError || fieldsQuery.isError} templateDisabled={participantFormQuery.isPending || fieldsQuery.isPending} />
             {(participantFormQuery.isError || fieldsQuery.isError) && <EventLoadError compact message={t("manage.invites.csv.formsFailed")} error={participantFormQuery.error ?? fieldsQuery.error} onRetry={() => {void participantFormQuery.refetch(); void fieldsQuery.refetch();}} />}
             <p className="ib-field__hint">{t("manage.teams.batch.captainMarks")}</p>
             {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}
             {preview && preview.Issues.length === 0 && <MissingFieldsSummary rows={[...csvTeams.map(team => ({name: team.name, missing: team.missing})), ...csvTeams.flatMap(team => team.members.map(member => ({name: member.email, missing: member.missing ?? []})))]} />}
         </>}
-        {serverIssues.length > 0 && <ul className="event-modal__issues" role="alert">{serverIssues.map((text, index) => <li key={index}>{text}</li>)}</ul>}
+        {mode === "manual" && serverIssues.length > 0 && <ul className="event-modal__issues" role="alert">{serverIssues.map((text, index) => <li key={index}>{text}</li>)}</ul>}
     </ManageDialog>;
 }

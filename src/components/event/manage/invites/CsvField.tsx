@@ -23,7 +23,7 @@ function download(fileName: string, content: string) {
 
 // CSV upload field: a (?) tooltip lists the columns, «Завантажити шаблон»
 // downloads a template, and the parse issues are listed with file rows.
-export function CsvField({label, columns, required, header = columns, fieldLines = [], examples, templateName, fileName, onFile, issues, disabled = false, templateDisabled = false, pickerRef}: {
+export function CsvField({label, columns, required, header = columns, fieldLines = [], examples, templateName, fileName, onFile, issues, serverIssues = [], disabled = false, templateDisabled = false, pickerRef}: {
     label: string;
     // The fixed columns, listed in the (?) help.
     columns: readonly string[];
@@ -38,6 +38,7 @@ export function CsvField({label, columns, required, header = columns, fieldLines
     fileName: string | null;
     onFile: (file: File | null) => void;
     issues: CsvIssue[];
+    serverIssues?: string[];
     disabled?: boolean;
     // The template waits for the forms its columns come from.
     templateDisabled?: boolean;
@@ -49,9 +50,10 @@ export function CsvField({label, columns, required, header = columns, fieldLines
     return <div className="ib-field">
         <span className="event-field-help"><label className="ib-field__label" htmlFor={id}>{label}</label><HelpTooltip label={t("manage.invites.csv.columnsLabel")} text={help} /></span>
         <div className="event-csv-row">
-            <EventFilePicker id={id} pickerRef={pickerRef} compact fileName={fileName} onFile={onFile} accept=".csv,text/csv" hint={t("manage.invites.csv.fileHint")} disabled={disabled} describedBy={issues.length ? `${id}-issues` : undefined} />
+            <EventFilePicker id={id} pickerRef={pickerRef} compact fileName={fileName} onFile={onFile} accept=".csv,text/csv" hint={t("manage.invites.csv.fileHint")} disabled={disabled} describedBy={[issues.length ? `${id}-issues` : "", serverIssues.length ? `${id}-server-issues` : ""].filter(Boolean).join(" ") || undefined} />
             <button className="ib-link ib-link--standalone event-csv-template" type="button" disabled={templateDisabled} onClick={() => download(templateName, csvTemplate(header, examples))}>{t("manage.invites.csv.template")}</button>
         </div>
         {issues.length > 0 && <ul className="event-modal__issues" id={`${id}-issues`} role="alert">{issues.slice(0, 50).map((issue, index) => <li key={index}>{csvIssueText(issue)}</li>)}{issues.length > 50 && <li>{t("manage.invites.csv.more", {count: issues.length - 50})}</li>}</ul>}
+        {serverIssues.length > 0 && <ul className="event-modal__issues" id={`${id}-server-issues`} role="alert">{serverIssues.map((message, index) => <li key={index}>{message}</li>)}</ul>}
     </div>;
 }

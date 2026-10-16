@@ -4,6 +4,7 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 
 import {useParticipantPreview, participantPreviewForm} from "../ParticipantPreview";
 import {getManageTeamFields} from "@/api/manageTeamFields";
+import {ApiErrorCode} from "@/api/apiErrors";
 import {useNow} from "./useNow";
 import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -49,6 +50,7 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
     const [nameEdit, setName] = useSessionDraftState<string | null>("team-name", null);
     const name = nameEdit ?? team.Name;
     const [busy, setBusy] = useState(false);
+    const [fieldError, setFieldError] = useState("");
     const latestName = useRef(name);
     useLayoutEffect(() => {latestName.current = name;}, [name]);
     const dirty = name.trim() !== team.Name.trim();
@@ -61,7 +63,11 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
         submit.preventDefault();
         if (!dirty || busy || !name.trim()) return;
         setBusy(true);
-        try { await onRename(name.trim()); if (latestName.current === name) {setName(null); setRenaming(false);} } catch { /* toast shown */ } finally { setBusy(false); }
+        setFieldError("");
+        try { await onRename(name.trim()); if (latestName.current === name) {setName(null); setRenaming(false);} } catch (failure) {
+            const code = failure && typeof failure === "object" && "code" in failure ? failure.code : undefined;
+            if (code === ApiErrorCode.TeamNameInvalid || code === ApiErrorCode.TeamExists || code === ApiErrorCode.NameInvalidCharacters) setFieldError(errorText(failure, t("participation.team.renameFailed")));
+        } finally { setBusy(false); }
     };
     return <>
         {!admitted && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="warning" title={missing ? tPlural("team.notAdmitted.missing", missing) : t("team.notAdmitted.title")} message={t("participation.team.notAdmittedMessage")} /></div>}
@@ -69,7 +75,7 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
             <div className="event-pp-hero__who">
                 {renaming
                     ? <form className="event-pp-rename" onSubmit={submit => void rename(submit)}>
-                        <input className="ib-input" value={name} onChange={submit => setName(submit.target.value.trim() === team.Name.trim() ? null : submit.target.value)} minLength={3} maxLength={64} required aria-label={t("participation.team.name")} autoFocus />
+                        <div className="ib-field"><input className="ib-input" aria-invalid={!!fieldError || undefined} aria-describedby={fieldError ? "participant-team-name-error" : undefined} value={name} onChange={submit => {setFieldError(""); setName(submit.target.value.trim() === team.Name.trim() ? null : submit.target.value);}} minLength={3} maxLength={64} required aria-label={t("participation.team.name")} autoFocus />{fieldError && <p className="ib-field__error" id="participant-team-name-error" role="alert">{fieldError}</p>}</div>
                         <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
                         <button type="button" className="ib-btn" disabled={busy} onClick={() => setRenaming(false)}>{t("common.cancel")}</button>
                     </form>
@@ -153,7 +159,8 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
             toast.success(done);
         } catch (error) {
             if (inline) throw new Error(errorText(error, fallback), {cause: error});
-            toast.error(errorText(error, fallback));
+            const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+            if (!(done === t("participation.team.renamed") && (code === ApiErrorCode.TeamNameInvalid || code === ApiErrorCode.TeamExists || code === ApiErrorCode.NameInvalidCharacters))) toast.error(errorText(error, fallback));
             throw error;
         }
     };

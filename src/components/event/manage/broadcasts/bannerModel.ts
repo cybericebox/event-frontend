@@ -24,16 +24,23 @@ export function bannerFormInput(form: BannerForm): ManageBannerInput {
     };
 }
 
-// The first reason the banner cannot be saved; empty when it can.
-export function bannerValidation(form: BannerForm): string {
+export type BannerErrors = Partial<Record<"Text" | "LinkURL" | "LinkLabel" | "ActiveTo", string>>;
+
+// Keep every field's reason, so independent mistakes stay beside their controls.
+export function bannerFieldErrors(form: BannerForm): BannerErrors {
+    const errors: BannerErrors = {};
     const text = form.Text.trim();
-    if (!text) return t("manage.banners.validation.text");
-    if ([...text].length > BANNER_TEXT_MAX) return t("manage.banners.validation.textLong", {max: BANNER_TEXT_MAX});
+    if (!text) errors.Text = t("manage.banners.validation.text");
+    else if ([...text].length > BANNER_TEXT_MAX) errors.Text = t("manage.banners.validation.textLong", {max: BANNER_TEXT_MAX});
     const link = form.LinkURL.trim();
-    if (link && !safeBannerLink(link)) return t("manage.banners.validation.link");
-    if ([...form.LinkLabel.trim()].length > BANNER_LABEL_MAX) return t("manage.banners.validation.label", {max: BANNER_LABEL_MAX});
+    if (link && !safeBannerLink(link)) errors.LinkURL = t("manage.banners.validation.link");
+    if ([...form.LinkLabel.trim()].length > BANNER_LABEL_MAX) errors.LinkLabel = t("manage.banners.validation.label", {max: BANNER_LABEL_MAX});
     const from = localToISO(form.ActiveFrom);
     const to = localToISO(form.ActiveTo);
-    if (from && to && new Date(to) <= new Date(from)) return t("manage.banners.validation.window");
-    return "";
+    if (from && to && new Date(to) <= new Date(from)) errors.ActiveTo = t("manage.banners.validation.window");
+    return errors;
+}
+
+export function bannerValidation(form: BannerForm): string {
+    return Object.values(bannerFieldErrors(form))[0] ?? "";
 }

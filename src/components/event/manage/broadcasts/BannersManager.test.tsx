@@ -45,7 +45,9 @@ describe("Банери заходу", () => {
         mockServer([banner(1), banner(2, {Level: "critical", IsActive: false, Audience: "participants", ActiveFrom: "2026-10-01T08:00:00Z"})]);
         const {container} = wrap();
         expect(await screen.findByText("Банер 1")).toBeTruthy();
-        expect(container.querySelector(".ib-banner--danger")).not.toBeNull();
+        expect(container.querySelector("table")).not.toBeNull();
+        expect(container.querySelector(".ib-banner")).toBeNull();
+        expect(screen.getByText("Важливо")).toBeTruthy();
         expect(screen.getByText("Вимкнено")).toBeTruthy();
         expect(screen.getByText("Учасникам заходу")).toBeTruthy();
         expect(screen.getByText("Без обмеження за часом")).toBeTruthy();
@@ -175,4 +177,56 @@ it("keeps existing banner Save disabled when clean or reverted to equivalent tex
     fireEvent.change(text, {target: {value: " Банер 1 "}});
     expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     expect(calls.filter(call => call.method === "PUT")).toHaveLength(0);
+});
+
+it("keeps every banner validation error beside its source control before the preview", async () => {
+    mockServer([banner(1, {Text: "", LinkURL: "javascript:alert(1)", ActiveFrom: "2026-10-02T10:00:00Z", ActiveTo: "2026-10-01T10:00:00Z"})]);
+    wrap();
+    await screen.findByRole("button", {name: "Редагувати"});
+    fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
+    const dialog = screen.getByRole("dialog");
+    const text = within(dialog).getByRole("textbox", {name: /Текст/});
+    const link = within(dialog).getByRole("textbox", {name: /^Посилання/});
+    for (const control of [text, link, dialog.querySelector("#event-banner-to")!]) {
+        expect(control.getAttribute("aria-invalid")).toBe("true");
+        const error = document.getElementById(control.getAttribute("aria-describedby")!);
+        expect(error?.getAttribute("role")).toBe("alert");
+        expect(control.closest(".event-manage-field")?.contains(error)).toBe(true);
+        expect(error!.compareDocumentPosition(dialog.querySelector(".event-banner-preview")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    fireEvent.change(text, {target: {value: "Виправлений текст"}});
+    expect(text.getAttribute("aria-invalid")).toBeNull();
+    expect(link.getAttribute("aria-invalid")).toBe("true");
+    expect(within(dialog).getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
+});
+
+it.each([
+    [400, 20224, "Banner text is required", true],
+    [400, 20224, "Unrecognized banner problem", false],
+    [500, 0, "Banner text is required", false],
+])("keeps known banner fields inline and ambiguous/request failures global (%s %s %s)", async (status, code, message, fieldSpecific) => {
+    const api = mockServer([]);
+    const successfulFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => init?.method === "POST"
+        ? new Response(JSON.stringify({Status: {Code: code, Message: message}}), {status})
+        : successfulFetch(input, init)) as typeof fetch;
+    wrap();
+    await screen.findByText("Банерів ще немає.");
+    fireEvent.click(screen.getByRole("button", {name: /Створити банер/}));
+    const dialog = screen.getByRole("dialog");
+    const text = within(dialog).getByRole("textbox", {name: /Текст/});
+    fireEvent.change(text, {target: {value: "Valid banner text"}});
+    fireEvent.click(within(dialog).getByRole("button", {name: "Зберегти"}));
+    const issue = await within(dialog).findByRole("alert");
+    if (fieldSpecific) {
+        expect(text.getAttribute("aria-invalid")).toBe("true");
+        expect(text.closest(".event-manage-field")?.contains(issue)).toBe(true);
+        fireEvent.change(text, {target: {value: "Corrected banner text"}});
+        expect(text.getAttribute("aria-invalid")).toBeNull();
+        expect(within(dialog).queryByRole("alert")).toBeNull();
+    } else {
+        expect(text.getAttribute("aria-invalid")).toBeNull();
+        expect(issue.closest(".event-manage-field")).toBeNull();
+    }
+    expect(api.filter(call => call.method === "GET").length).toBeGreaterThan(0);
 });

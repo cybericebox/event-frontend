@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useId, useRef, useState, type KeyboardEvent} from "react";
+import {type AriaAttributes, useEffect, useId, useRef, useState, type KeyboardEvent} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import {CalendarDays, ChevronLeft, ChevronRight} from "lucide-react";
 import {calendarDays, datePart, formatLocal, monthStart, moveDay, parseLocal, parseLocalDate, stepTime, timePart, zoneLabel} from "./dateTimePicker";
@@ -25,11 +25,11 @@ const partMax: Record<Part, number> = {hour: 23, minute: 59, second: 59};
 // dateOnly picks a calendar day: the value is "YYYY-MM-DD", with no time row
 // and no time zone. timeOnly is the time row alone: a local "HH:MM".
 export function EventDateTimePicker({timeOnly = false, ...props}: Parameters<typeof DateTimePicker>[0] & {timeOnly?: boolean}) {
-    if (timeOnly) return <EventTimePicker value={props.value} onChange={props.onChange} ariaLabel={props.ariaLabel} id={props.id} disabled={props.disabled} allowClear={props.allowClear} />;
+    if (timeOnly) return <EventTimePicker value={props.value} onChange={props.onChange} ariaLabel={props.ariaLabel} id={props.id} disabled={props.disabled} allowClear={props.allowClear} aria-invalid={props["aria-invalid"]} aria-describedby={props["aria-describedby"]} />;
     return <DateTimePicker {...props} />;
 }
 
-function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false, dateOnly = false, placeholder}: {
+function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allowClear = false, showSeconds = false, dateOnly = false, placeholder, ...aria}: {
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
@@ -39,7 +39,7 @@ function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allow
     showSeconds?: boolean;
     dateOnly?: boolean;
     placeholder?: string;
-}) {
+} & Pick<AriaAttributes, "aria-invalid" | "aria-describedby">) {
     const chosen = dateOnly ? parseLocalDate(value) : parseLocal(value);
     const [open, setOpen] = useState(false);
     const [focused, setFocused] = useState<Date>(() => chosen ?? new Date());
@@ -135,7 +135,7 @@ function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allow
     const today = datePart(new Date());
 
     return <Popover.Root open={open} onOpenChange={openChange}>
-        <Popover.Trigger ref={triggerRef} id={id} type="button" className="event-manage-input event-date-picker__trigger" aria-label={ariaLabel} aria-haspopup="dialog" disabled={disabled}>
+        <Popover.Trigger {...aria} ref={triggerRef} id={id} type="button" className="event-manage-input event-date-picker__trigger" aria-label={ariaLabel} aria-haspopup="dialog" disabled={disabled}>
             <span className={chosen ? "event-date-picker__value" : "event-date-picker__placeholder"}>{chosen ? dateOnly ? dateLabel(chosen) : t("ui.datePicker.value", {date: dateLabel(chosen), time: `${pad(time.hour)}:${pad(time.minute)}${showSeconds ? `:${pad(time.second)}` : ""}`}) : placeholder ?? t("ui.datePicker.placeholder")}</span>
             {chosen && !dateOnly && <EventTooltip content={zone} silent>{() => <span className="event-date-picker__zone">{offset}</span>}</EventTooltip>}
             <CalendarDays size={17} aria-hidden="true" />

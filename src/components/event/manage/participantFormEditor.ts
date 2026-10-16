@@ -188,58 +188,72 @@ export function duplicateBlock(blocks: FormBlock[], index: number): {blocks: For
 }
 
 // The first problem of the form and the position of the block it is about.
-export function participantFormProblem(document: FormDocument): {message: string; index: number} | null {
+export type ParticipantFormProblem = {message: string; index: number; field: string};
+
+export function participantFormProblems(document: FormDocument): ParticipantFormProblem[] {
+    const problems: ParticipantFormProblem[] = [];
     const ids = new Set<string>();
     const keys = new Set<string>();
     const previous = new Map<string, FormField>();
     for (const [index, block] of document.blocks.entries()) {
-        if (!block.id || ids.has(block.id)) return {index, message: t("manage.fields.validation.duplicateBlockID", {n: index + 1})};
+        if (!block.id || ids.has(block.id)) problems.push({index, field: "block", message: t("manage.fields.validation.duplicateBlockID", {n: index + 1})});
         ids.add(block.id);
         if (!isFormField(block)) {
-            if (block.type === "section" && !block.label?.trim()) return {index, message: t("manage.fields.validation.sectionTitle", {n: index + 1})};
-            if (block.type === "text" && !richTextHasContent(block.richText)) return {index, message: t("manage.fields.validation.textContent", {n: index + 1})};
+            if (block.type === "section" && !block.label?.trim()) problems.push({index, field: "label", message: t("manage.fields.validation.sectionTitle", {n: index + 1})});
+            if (block.type === "text" && !richTextHasContent(block.richText)) problems.push({index, field: "richText", message: t("manage.fields.validation.textContent", {n: index + 1})});
             continue;
         }
-        if (!block.key.trim() || keys.has(block.key)) return {index, message: t("manage.fields.validation.key", {n: index + 1})};
-        if (!block.label.trim()) return {index, message: t("manage.fields.validation.label", {n: index + 1})};
+        if (!block.key.trim() || keys.has(block.key)) problems.push({index, field: "block", message: t("manage.fields.validation.key", {n: index + 1})});
+        if (!block.label.trim()) problems.push({index, field: "label", message: t("manage.fields.validation.label", {n: index + 1})});
         if (isChoiceInput(block.input)) {
             const options = block.options ?? [];
-            if (!options.length) return {index, message: t("manage.fields.validation.optionsMissing", {n: index + 1})};
+            if (!options.length) problems.push({index, field: "options", message: t("manage.fields.validation.optionsMissing", {n: index + 1})});
             const emptyAt = options.findIndex(option => !option.trim());
-            if (emptyAt >= 0) return {index, message: t("manage.fields.validation.optionEmpty", {n: index + 1, option: emptyAt + 1})};
-            if (invalidOptions(options).size) return {index, message: t("manage.fields.validation.optionDuplicate", {n: index + 1})};
+            if (emptyAt >= 0) problems.push({index, field: "options", message: t("manage.fields.validation.optionEmpty", {n: index + 1, option: emptyAt + 1})});
+            if (invalidOptions(options).size) problems.push({index, field: "options", message: t("manage.fields.validation.optionDuplicate", {n: index + 1})});
         }
-        if (block.staffOnly && block.input === "file") return {index, message: t("manage.fields.validation.staffFile", {n: index + 1})};
+        if (block.staffOnly && block.input === "file") problems.push({index, field: "input", message: t("manage.fields.validation.staffFile", {n: index + 1})});
         if (block.input === "file") {
-            if (!block.fileTypes?.length) return {index, message: t("manage.fields.validation.fileTypes", {n: index + 1})};
+            if (!block.fileTypes?.length) problems.push({index, field: "fileTypes", message: t("manage.fields.validation.fileTypes", {n: index + 1})});
             const size = block.maxSizeMB ?? defaultFileMB;
-            if (!Number.isInteger(size) || size < 1 || size > maxFileMB) return {index, message: t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB})};
+            if (!Number.isInteger(size) || size < 1 || size > maxFileMB) problems.push({index, field: "maxSizeMB", message: t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB})});
         }
         if (block.input === "date") {
-            if (block.dateMode === "none") return {index, message: t("manage.fields.validation.dateParts", {n: index + 1})};
+            if (block.dateMode === "none") problems.push({index, field: "dateMode", message: t("manage.fields.validation.dateParts", {n: index + 1})});
             const mode = dateModeOf(block);
             const min = block.minDate ? parseDateAnswer(mode, block.minDate) : undefined;
             const max = block.maxDate ? parseDateAnswer(mode, block.maxDate) : undefined;
-            if (min === null || max === null) return {index, message: t("manage.fields.validation.dateLimit", {n: index + 1})};
-            if (min !== undefined && max !== undefined && max < min) return {index, message: t("manage.fields.validation.dateRange", {n: index + 1})};
+            if (min === null) problems.push({index, field: "minDate", message: t("manage.fields.validation.dateLimit", {n: index + 1})});
+            if (max === null) problems.push({index, field: "maxDate", message: t("manage.fields.validation.dateLimit", {n: index + 1})});
+            if (min != null && max != null && max < min) problems.push({index, field: "maxDate", message: t("manage.fields.validation.dateRange", {n: index + 1})});
         }
         if (block.condition) {
             const source = previous.get(block.condition.fieldKey);
-            if (!source) return {index, message: t("manage.fields.validation.conditionSource", {n: index + 1})};
-            if (!comparableInput(source.input)) return {index, message: t("manage.fields.validation.conditionSingle", {n: index + 1})};
-            if (source.staffOnly && !block.staffOnly) return {index, message: t("manage.fields.validation.conditionStaff", {n: index + 1})};
+            if (!source) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionSource", {n: index + 1})});
+            if (source && !comparableInput(source.input)) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionSingle", {n: index + 1})});
+            if (source && source.staffOnly && !block.staffOnly) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionStaff", {n: index + 1})});
             const value = block.condition.value;
-            if (!conditionOperators(source).includes(block.condition.operator)) return {index, message: t("manage.fields.validation.conditionOperator", {n: index + 1})};
-            if (source.input === "date" && parseDateAnswer(dateModeOf(source), value) === null) return {index, message: t("manage.fields.validation.conditionDate", {n: index + 1})};
-            if (source.input === "number" && (typeof value !== "number" || !Number.isFinite(value))) return {index, message: t("manage.fields.validation.conditionNumber", {n: index + 1})};
-            if (source.input === "checkbox" && typeof value !== "boolean") return {index, message: t("manage.fields.validation.conditionValue", {n: index + 1})};
-            if (source.input === "select" && !source.options?.includes(String(value))) return {index, message: t("manage.fields.validation.conditionOption", {n: index + 1})};
-            if ((source.input === "text" || source.input === "long_text") && (typeof value !== "string" || !value.trim())) return {index, message: t("manage.fields.validation.conditionValue", {n: index + 1})};
+            if (source && !conditionOperators(source).includes(block.condition.operator)) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionOperator", {n: index + 1})});
+            if (source && source.input === "date" && parseDateAnswer(dateModeOf(source), value) === null) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionDate", {n: index + 1})});
+            if (source && source.input === "number" && (typeof value !== "number" || !Number.isFinite(value))) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionNumber", {n: index + 1})});
+            if (source && source.input === "checkbox" && typeof value !== "boolean") problems.push({index, field: "condition", message: t("manage.fields.validation.conditionValue", {n: index + 1})});
+            if (source && source.input === "select" && !source.options?.includes(String(value))) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionOption", {n: index + 1})});
+            if (source && (source.input === "text" || source.input === "long_text") && (typeof value !== "string" || !value.trim())) problems.push({index, field: "condition", message: t("manage.fields.validation.conditionValue", {n: index + 1})});
         }
         keys.add(block.key);
         previous.set(block.key, block);
     }
-    return null;
+    return problems;
+}
+
+// Existing callers that only need a save gate keep the first reason.
+export function participantFormProblem(document: FormDocument): {message: string; index: number} | null {
+    const problem = participantFormProblems(document)[0];
+    return problem ? {index: problem.index, message: problem.message} : null;
+}
+
+export function formBlockErrors(blocks: FormBlock[], index: number): Record<string, string> {
+    return Object.fromEntries(participantFormProblems({blocks}).filter(problem => problem.index === index).map(problem => [problem.field, problem.message]));
 }
 
 export function validateParticipantForm(document: FormDocument): string | null {

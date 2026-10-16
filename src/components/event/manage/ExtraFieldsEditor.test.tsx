@@ -111,6 +111,10 @@ describe("invalid cards", () => {
         fireEvent.click(chevron(bad));
         expect(chevron(card("Питання 2")).getAttribute("aria-expanded")).toBe("false");
         expect(card("Питання 2").className).toContain("is-invalid");
-        expect(screen.getByText("Питання 2: додайте текст питання.")).toBeTruthy();
+        expect(screen.queryByText("Питання 2: додайте текст питання.")).toBeNull();
+        fireEvent.click(chevron(card("Питання 2")));
+        const label = within(card("Питання 2")).getByPlaceholderText("Введіть питання");
+        expect(label.getAttribute("aria-invalid")).toBe("true");
+        expect(document.getElementById(label.getAttribute("aria-describedby")!)?.textContent).toBe("Питання 2: додайте текст питання.");
     });
 });

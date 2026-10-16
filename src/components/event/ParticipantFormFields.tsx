@@ -19,18 +19,20 @@ function present(value: ParticipantAnswers[string] | undefined): boolean {
 
 // Answers to send with the registration form: only visible, filled fields.
 // `send` is false when the form is off or optional and left empty.
-export function collectFormAnswers(form: ParticipantForm | null | undefined, answers: ParticipantAnswers): {send: boolean; answers: ParticipantAnswers; error?: string; errorKey?: string} {
+export function collectFormAnswers(form: ParticipantForm | null | undefined, answers: ParticipantAnswers): {send: boolean; answers: ParticipantAnswers; error?: string; errorKey?: string; errors?: Record<string, string>} {
     const send = !!form?.Enabled && (form.Required || Object.values(answers).some(present));
     const sent: ParticipantAnswers = {};
     if (!send || !form) return {send: false, answers: sent};
     const shown = visibleFieldKeys(form.Document.blocks, answers);
+    const errors: Record<string, string> = {};
     for (const block of form.Document.blocks) {
         if (!isFormField(block) || !shown.has(block.key)) continue;
         const answer = answers[block.key];
-        if (block.required && !present(answer)) return {send, answers: sent, error: t("forms.field.requiredMissing", {label: block.label}), errorKey: block.key};
+        if (block.required && !present(answer)) errors[block.key] = t("forms.field.requiredMissing", {label: block.label});
         if (present(answer)) sent[block.key] = answer!;
     }
-    return {send, answers: sent};
+    const first = Object.keys(errors)[0];
+    return first ? {send, answers: sent, errors, error: errors[first], errorKey: first} : {send, answers: sent};
 }
 
 // Questions the participant cannot change: not editable and already answered

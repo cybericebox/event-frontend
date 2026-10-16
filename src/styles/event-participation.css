@@ -111,3 +111,5 @@
 .event-pp-choice{display:grid;grid-template-columns:1fr 1fr;gap:var(--ib-4)}
 @media(max-width:640px){.event-pp-choice{grid-template-columns:minmax(0,1fr)}}
 .event-pp-state{display:flex;flex-direction:column;flex:1 1 auto;min-height:var(--event-block-state-h,240px)}
+
+.event-pp-rename>.ib-field{flex:1 1 220px;min-width:0}

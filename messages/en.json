@@ -4978,5 +4978,11 @@
   "manage.notifications.preview.inbox": "Notification feed",
   "manage.notifications.preview.toast": "Toast notification",
   "manage.notifications.preview.expand": "Expand preview",
-  "manage.broadcasts.template.unsupportedNames": "These variables are unavailable in broadcasts and will be empty: {names}."
+  "manage.broadcasts.template.unsupportedNames": "These variables are unavailable in broadcasts and will be empty: {names}.",
+  "manage.banners.table.window": "Display window",
+  "manage.banners.table.status": "Status",
+  "manage.banners.table.actions": "Actions",
+  "manage.field.required": "Fill in this field.",
+  "manage.field.positiveInteger": "Enter a whole number of at least 1.",
+  "manage.field.teamMinimum": "Enter a whole number from 1 to the maximum team size."
 }

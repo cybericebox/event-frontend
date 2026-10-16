@@ -6,6 +6,7 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 import {useLayoutEffect, useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import {ApiErrorCode} from "@/api/apiErrors";
 import {Lock} from "lucide-react";
 import {getOwnParticipantAnswers, putOwnParticipantAnswers, putSelfPseudonym, type ParticipantAnswers} from "@/api/participantForm";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -34,6 +35,7 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
     const [valueEdit, setValue] = useSessionDraftState<string | null>("profile-pseudonym", null);
     const value = valueEdit ?? info.Pseudonym ?? "";
     const [busy, setBusy] = useState(false);
+    const [fieldError, setFieldError] = useState("");
     const latestValue = useRef(value);
     useLayoutEffect(() => {latestValue.current = value;}, [value]);
     const dirty = (value.trim() || null) !== (info.Pseudonym?.trim() || null);
@@ -42,17 +44,21 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
         if (busy || next === (info.Pseudonym?.trim() || null)) return;
         const submitted = value;
         setBusy(true);
+        setFieldError("");
         try {
             await putSelfPseudonym(next);
             await queryClient.invalidateQueries({queryKey: ["event-participant-info", eventID]});
             if (latestValue.current === submitted) {setValue(null); setEditing(false);}
             toast.success(next ? t("participation.pseudonym.saved") : t("participation.pseudonym.removed"));
         } catch (error) {
-            toast.error(errorText(error, t("participation.pseudonym.saveFailed")));
+            const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+            const message = errorText(error, t("participation.pseudonym.saveFailed"));
+            if (editing && (code === ApiErrorCode.PseudonymInvalid || code === ApiErrorCode.PseudonymTaken || code === ApiErrorCode.NameInvalidCharacters)) setFieldError(message);
+            else toast.error(message);
         } finally { setBusy(false); }
     };
     if (editing) return <form className="event-pp-rename" onSubmit={event => { event.preventDefault(); void save(value.trim() || null); }}>
-        <input className="ib-input" value={value} onChange={event => setValue((event.target.value.trim() || null) === (info.Pseudonym?.trim() || null) ? null : event.target.value)} maxLength={32} minLength={2} aria-label={t("participation.pseudonym.label")} autoFocus />
+        <div className="ib-field"><input className="ib-input" aria-invalid={!!fieldError || undefined} aria-describedby={fieldError ? "participant-pseudonym-error" : undefined} value={value} onChange={event => {setFieldError(""); setValue((event.target.value.trim() || null) === (info.Pseudonym?.trim() || null) ? null : event.target.value);}} maxLength={32} minLength={2} aria-label={t("participation.pseudonym.label")} autoFocus />{fieldError && <p className="ib-field__error" id="participant-pseudonym-error" role="alert">{fieldError}</p>}</div>
         <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary ib-btn--sm" busy={busy}>{t("common.save")}</EventButton>
         <button type="button" className="ib-btn ib-btn--sm" disabled={busy} onClick={() => setEditing(false)}>{t("common.cancel")}</button>
     </form>;

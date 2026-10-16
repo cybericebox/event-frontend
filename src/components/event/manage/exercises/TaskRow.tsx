@@ -159,13 +159,13 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
                     <label className="event-exercise-hints__cost">
                         <span className="event-manage-visually-hidden">{t("manage.exercises.hints.costLabel", {number: index + 1})}</span>
                         <input className="event-manage-input" type="number" inputMode="numeric" min={0} max={10000} step={1} value={value} placeholder="0"
-                            aria-invalid={!hintCostDraftValid(value)} disabled={locked}
+                            aria-invalid={!hintCostDraftValid(value)} aria-describedby={!hintCostDraftValid(value) ? `hint-cost-${hint.ID}-error` : undefined} disabled={locked}
                             onChange={changeEvent => setDrafts(current => ({...current, [hint.ID]: changeEvent.target.value}))} />
                         <span className="event-exercise-hints__unit">{t("manage.exercises.hints.points")}</span>
+                        {!hintCostDraftValid(value) && <span id={`hint-cost-${hint.ID}-error`} className="event-manage-validation" role="alert">{t("manage.exercises.hints.invalid")}</span>}
                     </label>
                 </li>;
             })}</ol>
-            {!valid && <p className="event-manage-validation" role="alert">{t("manage.exercises.hints.invalid")}</p>}
             <EventButton saveDirty={changes.length > 0} busy={saving} className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid} onClick={() => void saveCosts()}>{t("manage.exercises.hints.save")}</EventButton>
         </>}
     </section>;

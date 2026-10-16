@@ -8,8 +8,8 @@ import {toast} from "react-hot-toast";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {
-    defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityForm, identityInput,
-    mailTransportLabel, maxMailNameLength, withLimitSource, withSource, putEventMailIdentity, putEventMailSMTP, smtpError, smtpForm, smtpInput,
+    defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityFieldErrors, identityForm, identityInput,
+    mailTransportLabel, maxMailNameLength, withLimitSource, withSource, putEventMailIdentity, putEventMailSMTP, smtpError, smtpFieldErrors, smtpForm, smtpInput,
     testEventMailSMTP, tlsModeOptions, type EventMailSettings, type IdentityForm, type MailTestResult,
     type MailTLSMode, type SMTPForm,
 } from "@/api/manageMail";
@@ -52,11 +52,13 @@ export function MailSettingsPanel() {
     const idForm = identityDraft ?? savedIdentity;
     const identityDirty = JSON.stringify(identityInput(idForm)) !== JSON.stringify(identityInput(savedIdentity));
     const identityInvalid = identityError(idForm);
+    const identityErrors = identityDirty ? identityFieldErrors(idForm) : {};
     const inherited = settings.Inherited;
     const savedSMTP = smtpForm(settings.SMTP);
     const form = smtpDraft ?? savedSMTP;
     const smtpDirty = smtpError(form) ? JSON.stringify(form) !== JSON.stringify(savedSMTP) : JSON.stringify(smtpInput(form)) !== JSON.stringify(smtpInput(savedSMTP));
     const smtpValidation = smtpError(form);
+    const smtpErrors = smtpDirty ? smtpFieldErrors(form) : {};
     const disabled = !canManage;
     const canTest = canManage && ((!smtpDirty && !!settings.SMTP) || !smtpValidation);
 
@@ -142,27 +144,30 @@ export function MailSettingsPanel() {
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-sender-name" title={t("manage.mail.identity.name")} help={withSource(t("manage.mail.sender.nameHelp"), settings.InheritedSources.SenderName)} />
-                    <input id="mail-sender-name" className="event-manage-input" value={idForm.senderName} placeholder={inherited.Sender.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={identityInvalid === "senderName"} onChange={change => setIdentityDraft({...idForm, senderName: change.target.value})} />
+                    <input id="mail-sender-name" className="event-manage-input" value={idForm.senderName} placeholder={inherited.Sender.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={!!identityErrors.senderName || undefined} aria-describedby={identityErrors.senderName ? "mail-sender-name-error" : undefined} onChange={change => setIdentityDraft({...idForm, senderName: change.target.value})} />
+                    {identityErrors.senderName && <p id="mail-sender-name-error" className="event-manage-validation" role="alert">{identityErrors.senderName}</p>}
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-sender-address" title={t("manage.mail.identity.address")} help={withSource(t("manage.mail.sender.addressHelp"), settings.InheritedSources.SenderAddress)} />
-                    <input id="mail-sender-address" className="event-manage-input" type="email" value={idForm.senderAddress} placeholder={inherited.Sender.Address} disabled={disabled} maxLength={254} aria-invalid={identityInvalid === "senderAddress"} onChange={change => setIdentityDraft({...idForm, senderAddress: change.target.value})} />
+                    <input id="mail-sender-address" className="event-manage-input" type="email" value={idForm.senderAddress} placeholder={inherited.Sender.Address} disabled={disabled} maxLength={254} aria-invalid={!!identityErrors.senderAddress || undefined} aria-describedby={identityErrors.senderAddress ? "mail-sender-address-error" : undefined} onChange={change => setIdentityDraft({...idForm, senderAddress: change.target.value})} />
+                    {identityErrors.senderAddress && <p id="mail-sender-address-error" className="event-manage-validation" role="alert">{identityErrors.senderAddress}</p>}
                 </div>
             </div>
             <div className="event-manage-section__head"><h2 id="mail-replyto-title">{t("manage.mail.replyTo.title")}</h2><p>{t("manage.mail.replyTo.intro")}</p></div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-replyto-name" title={t("manage.mail.identity.name")} help={withSource(t("manage.mail.replyTo.nameHelp"), settings.InheritedSources.ReplyToName)} />
-                    <input id="mail-replyto-name" className="event-manage-input" value={idForm.replyToName} placeholder={inherited.ReplyTo.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={identityInvalid === "replyToName"} onChange={change => setIdentityDraft({...idForm, replyToName: change.target.value})} />
+                    <input id="mail-replyto-name" className="event-manage-input" value={idForm.replyToName} placeholder={inherited.ReplyTo.Name} disabled={disabled} maxLength={maxMailNameLength} aria-invalid={!!identityErrors.replyToName || undefined} aria-describedby={identityErrors.replyToName ? "mail-replyto-name-error" : undefined} onChange={change => setIdentityDraft({...idForm, replyToName: change.target.value})} />
+                    {identityErrors.replyToName && <p id="mail-replyto-name-error" className="event-manage-validation" role="alert">{identityErrors.replyToName}</p>}
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-replyto-address" title={t("manage.mail.identity.address")} help={withSource(t("manage.mail.replyTo.addressHelp"), settings.InheritedSources.ReplyToAddress)} />
-                    <input id="mail-replyto-address" className="event-manage-input" type="email" value={idForm.replyToAddress} placeholder={inherited.ReplyTo.Address} disabled={disabled} maxLength={254} aria-invalid={identityInvalid === "replyToAddress"} onChange={change => setIdentityDraft({...idForm, replyToAddress: change.target.value})} />
+                    <input id="mail-replyto-address" className="event-manage-input" type="email" value={idForm.replyToAddress} placeholder={inherited.ReplyTo.Address} disabled={disabled} maxLength={254} aria-invalid={!!identityErrors.replyToAddress || undefined} aria-describedby={identityErrors.replyToAddress ? "mail-replyto-address-error" : undefined} onChange={change => setIdentityDraft({...idForm, replyToAddress: change.target.value})} />
+                    {identityErrors.replyToAddress && <p id="mail-replyto-address-error" className="event-manage-validation" role="alert">{identityErrors.replyToAddress}</p>}
                 </div>
             </div>
             <small>{t("manage.mail.identity.inheritHint")}</small>
             {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
-            {identityDirty && identityInvalid && <p className="event-manage-validation" role="alert">{t(`manage.mail.validation.${identityInvalid}`)}</p>}
             {canManage && <div className="event-manage-section__actions"><EventButton saveDirty={identityDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity}>{t("common.save")}</EventButton></div>}
         </form>
 
@@ -171,11 +176,13 @@ export function MailSettingsPanel() {
             <div className="event-manage-mail__smtp">
                 <div className="event-manage-field event-manage-mail__host">
                     <ManageFieldLabel htmlFor="mail-smtp-host" title={t("manage.mail.smtp.host")} help={t("manage.mail.smtp.hostHelp")} required />
-                    <input id="mail-smtp-host" className="event-manage-input" value={form.host} placeholder="smtp.example.com" autoComplete="off" spellCheck={false} disabled={disabled} onChange={change => changeSMTP({host: change.target.value})} />
+                    <input id="mail-smtp-host" aria-invalid={!!smtpErrors.host || undefined} aria-describedby={smtpErrors.host ? "mail-smtp-host-error" : undefined} className="event-manage-input" value={form.host} placeholder="smtp.example.com" autoComplete="off" spellCheck={false} disabled={disabled} onChange={change => changeSMTP({host: change.target.value})} />
+                    {smtpErrors.host && <p id="mail-smtp-host-error" className="event-manage-validation" role="alert">{smtpErrors.host}</p>}
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-smtp-port" title={t("manage.mail.smtp.port")} help={t("manage.mail.smtp.portHelp")} required />
-                    <input id="mail-smtp-port" className="event-manage-input" type="number" inputMode="numeric" min={1} max={65535} value={form.port} disabled={disabled} onChange={change => changeSMTP({port: change.target.value})} />
+                    <input id="mail-smtp-port" aria-invalid={!!smtpErrors.port || undefined} aria-describedby={smtpErrors.port ? "mail-smtp-port-error" : undefined} className="event-manage-input" type="number" inputMode="numeric" min={1} max={65535} value={form.port} disabled={disabled} onChange={change => changeSMTP({port: change.target.value})} />
+                    {smtpErrors.port && <p id="mail-smtp-port-error" className="event-manage-validation" role="alert">{smtpErrors.port}</p>}
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel title={t("manage.mail.smtp.encryption")} help={t("manage.mail.smtp.encryptionHelp")} />
@@ -199,15 +206,16 @@ export function MailSettingsPanel() {
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-smtp-max-per-second" title={t("manage.mail.smtp.maxPerSecond")} help={withLimitSource(t("manage.mail.smtp.maxPerSecondHelp"), settings.Limits.PerSecondSource)} />
-                    <EventNumberInput id="mail-smtp-max-per-second" decimal value={form.maxPerSecond} placeholder={t("manage.mail.smtp.limitPlaceholder")} disabled={disabled} onChange={value => changeSMTP({maxPerSecond: value})} />
+                    <EventNumberInput id="mail-smtp-max-per-second" aria-invalid={!!smtpErrors.maxPerSecond || undefined} aria-describedby={smtpErrors.maxPerSecond ? "mail-smtp-max-per-second-error" : undefined} decimal value={form.maxPerSecond} placeholder={t("manage.mail.smtp.limitPlaceholder")} disabled={disabled} onChange={value => changeSMTP({maxPerSecond: value})} />
+                    {smtpErrors.maxPerSecond && <p id="mail-smtp-max-per-second-error" className="event-manage-validation" role="alert">{smtpErrors.maxPerSecond}</p>}
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="mail-smtp-daily-quota" title={t("manage.mail.smtp.dailyQuota")} help={withLimitSource(t("manage.mail.smtp.dailyQuotaHelp"), settings.Limits.DailyQuotaSource)} />
-                    <EventNumberInput id="mail-smtp-daily-quota" value={form.dailyQuota} placeholder={t("manage.mail.smtp.limitPlaceholder")} disabled={disabled} onChange={value => changeSMTP({dailyQuota: value})} />
+                    <EventNumberInput id="mail-smtp-daily-quota" aria-invalid={!!smtpErrors.dailyQuota || undefined} aria-describedby={smtpErrors.dailyQuota ? "mail-smtp-daily-quota-error" : undefined} value={form.dailyQuota} placeholder={t("manage.mail.smtp.limitPlaceholder")} disabled={disabled} onChange={value => changeSMTP({dailyQuota: value})} />
+                    {smtpErrors.dailyQuota && <p id="mail-smtp-daily-quota-error" className="event-manage-validation" role="alert">{smtpErrors.dailyQuota}</p>}
                     {settings.Limits.DailyQuota > 0 && <small data-testid="mail-quota-used">{t("manage.mail.smtp.quotaUsed", {used: settings.Limits.Used24h, limit: settings.Limits.DailyQuota})}</small>}
                 </div>
             </div>
-            {smtpDirty && smtpValidation && <p className="event-manage-validation" role="alert">{smtpValidation}</p>}
             {test && <div className={`event-manage-mail__result${test.Sent ? "" : " is-error"}`} role="status">
                 <strong>{t(test.Sent ? "manage.mail.smtp.testOk" : "manage.mail.smtp.testFailed")}</strong>
                 <span>{test.Sent ? (test.Transport ? t("manage.mail.smtp.testSentVia", {recipient: test.Recipient, transport: mailTransportLabel(test.Transport)}) : t("manage.mail.smtp.testSent", {recipient: test.Recipient})) : test.Error || t("manage.mail.smtp.testRejected")}</span>

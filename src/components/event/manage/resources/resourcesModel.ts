@@ -44,6 +44,24 @@ function amountOf(cpu: string, memory: string): Amount | null | "invalid" {
     return {CPUMillicores: millicores, MemoryBytes: mebibytes * MIB};
 }
 
+export function changeRequestErrors(draft: ChangeDraft): Partial<Record<keyof ChangeDraft | "empty", DraftIssue>> {
+    const errors: Partial<Record<keyof ChangeDraft | "empty", DraftIssue>> = {};
+    const size = amountOf(draft.sizeCpu, draft.sizeMemory);
+    const dynamic = amountOf(draft.dynamicCpu, draft.dynamicMemory);
+    for (const [cpu, memory, issue] of [["sizeCpu", "sizeMemory", "size"], ["dynamicCpu", "dynamicMemory", "dynamic"]] as const) {
+        if (!draft[cpu].trim() && !draft[memory].trim()) continue;
+        if ((wholeNumber(draft[cpu]) ?? 0) <= 0) errors[cpu] = issue;
+        if ((wholeNumber(draft[memory]) ?? 0) <= 0) errors[memory] = issue;
+    }
+    const start = draft.windowStart ? localToISO(draft.windowStart) : null;
+    const end = draft.windowEnd ? localToISO(draft.windowEnd) : null;
+    if (draft.windowStart && !start) errors.windowStart = "window";
+    if (draft.windowEnd && !end || start && end && new Date(end).getTime() <= new Date(start).getTime()) errors.windowEnd = "window";
+    if (!size && !dynamic && !start && !end) errors.empty = "empty";
+    if (!draft.reason.trim()) errors.reason = "reason";
+    return errors;
+}
+
 // At least one of size, dynamic estimate, window start or end, plus a reason (the backend's 22507).
 export function buildChangeRequest(draft: ChangeDraft): {input: ChangeRequestInput} | {issue: DraftIssue} {
     const size = amountOf(draft.sizeCpu, draft.sizeMemory);
