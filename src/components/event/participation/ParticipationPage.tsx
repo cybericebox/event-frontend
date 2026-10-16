@@ -1,5 +1,8 @@
 "use client";
 
+import {useParticipantPreview} from "../ParticipantPreview";
+import {JoinResultCard} from "../join/JoinResultCard";
+import {PreviewParticipation} from "./PreviewParticipation";
 import {useNow} from "./useNow";
 import {useState} from "react";
 import Link from "next/link";
@@ -34,6 +37,7 @@ export function ParticipationPage() {
     const now = useNow();
     const [selected, setSelected] = useState<string | null>(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("tab"));
     const event = access?.event ?? guest;
+    const simulation = useParticipantPreview(event?.EventID);
     const teamMode = event?.Participation === 1;
     const info = access?.participantInfo;
     const team = access?.ownTeam ?? null;
@@ -47,6 +51,7 @@ export function ParticipationPage() {
     const members = useQuery({queryKey: ["event-team-members", event?.EventID, team?.ID], queryFn: () => getOwnTeamMembers(event!.EventID), enabled: !!event && !!team && captain && !explicit, retry: false, refetchOnWindowFocus: false});
     const answers = useQuery({queryKey: ["event-own-answers", event?.EventID], queryFn: () => getOwnParticipantAnswers(), enabled: !!access, retry: false, refetchOnWindowFocus: false});
     if (!event) return <EventLoading label={t("participation.loading")} />;
+    if (simulation.active) return simulation.state!.status === 2 ? <PreviewParticipation event={event} selected={selected} onSelect={setSelected} /> : <div className="event-participation"><Heading /><JoinResultCard outcome={simulation.state!.status === 3 ? "rejected" : "pending"} title={t(simulation.state!.status === 3 ? "joinPreview.result.rejected.title" : simulation.state!.status === 1 ? "joinPreview.result.pending.title" : "join.title")} text={t(simulation.state!.status === 3 ? "shell.join.rejected" : simulation.state!.status === 1 ? "join.pending" : "shell.join.prompt")} action={simulation.state!.status === 0 ? <Link className="ib-btn ib-btn--primary" href="/join">{t("shell.join.action")}</Link> : undefined} /></div>;
     if (!access && !previewing) {
         if (staff.pending) return <EventLoading label={t("participation.loading")} />;
         return <div className="event-participation">

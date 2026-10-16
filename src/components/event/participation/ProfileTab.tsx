@@ -1,5 +1,6 @@
 "use client";
 
+import {useParticipantPreview} from "../ParticipantPreview";
 import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
 
 import {useLayoutEffect, useRef, useState} from "react";
@@ -78,10 +79,11 @@ function VpnCard() {
 export function ProfileTab({event, info, team, finished, preview, now, onOpenTeam}: {
     event: PublicEventInfo; info: ParticipantEventInfo | null; team: OwnTeam | null; finished: boolean; preview: boolean; now: number; onOpenTeam: () => void;
 }) {
+    const simulation = useParticipantPreview(event.EventID);
     const queryClient = useQueryClient();
     const accent = useEventAccent();
     // The organizers' preview reads the real moderators team, so it is always a team.
-    const teamMode = event.Participation === 1 || preview;
+    const teamMode = event.Participation === 1 || preview && !simulation.active;
     const stats = useParticipationStats(event.EventID, {preview, enabled: true});
     const answers = useQuery({queryKey: ["event-own-answers", event.EventID], queryFn: () => getOwnParticipantAnswers(), enabled: !preview, retry: false, refetchOnWindowFocus: false});
     const data = stats.stats;
@@ -111,16 +113,16 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
     });
     const shownTiles = tiles.map(tile => data ? tile : {...tile, value: "—", note: undefined});
     const admitted = team?.Admitted !== false;
-    const teamName = preview ? t("participation.team.moderatorsName") : team?.Name;
+    const teamName = simulation.active ? simulation.state?.team?.Name : preview ? t("participation.team.moderatorsName") : team?.Name;
     const name = info?.DisplayName || info?.RealName || me?.Name || "—";
     return <div className="event-pp">
-        {preview && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
+        {preview && !simulation.active && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
         <section className="event-pp-card event-pp-hero" aria-label={t("participation.self.title")}>
             <div className="event-pp-hero__who">
                 <h2 className="event-pp-hero__name">{name}</h2>
                 {info?.AllowPseudonyms && info.RealName && info.DisplayName && info.DisplayName !== info.RealName && <span className="event-pp-hero__sub">{t("participation.self.realName", {name: info.RealName})}</span>}
                 <div className="event-pp-hero__tags">
-                    {preview
+                    {preview && !simulation.active
                         ? me && <span className="ib-tag ib-tag--role">{me.Role === 0 ? eventRoleLabel(0) : t("participation.team.member")}</span>
                         : <span className="ib-tag ib-tag--ok">{t("participation.self.confirmed")}</span>}
                     {teamMode && teamName && <>
@@ -147,7 +149,7 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
             <CategoryChartCard event={event} state={scopeState} solves={mine} color={accent} error={stats.error} onRetry={stats.retry} />
         </div>
         <SolvesTable event={event} state={scopeState} solves={mine} now={now} showSolver={false} error={stats.error} onRetry={stats.retry} title={t("participation.solves.title")} />
-        {preview && <Card title={t("participation.form.cardTitle")}><EmptyState message={t("participation.preview.noForm")} compact /></Card>}
+        {preview && !simulation.active && <Card title={t("participation.form.cardTitle")}><EmptyState message={t("participation.preview.noForm")} compact /></Card>}
         {answers.isPending && !preview && <Card title={t("participation.form.cardTitle")}><EventLoading event={event} label={t("participation.loading")} /></Card>}
         {answers.isError && <Card title={t("participation.form.cardTitle")}><EventLoadError message={t("participation.fields.loadFailed")} error={answers.error} onRetry={() => void answers.refetch()} /></Card>}
         {answers.data && answers.data.Form.Enabled && <AnswersCard scope="participant" title={t("participation.form.cardTitle")} note={t("participation.self.note")} form={answers.data.Form} answers={answers.data.Answers}

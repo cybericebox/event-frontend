@@ -71,9 +71,12 @@ function GrantSynchronizer({hasGrant,expiresAt}:{hasGrant:boolean;expiresAt?:num
                 if (!installed.ok) return;
                 const data=await installed.json() as {ExpiresAt:number};
                 if (!stopped) {
+                    const firstGrant=!installedGrant;
                     installedGrant=true;expiry=data.ExpiresAt;failures=0;
                     retryAfter=Math.max(5000,expiry*1000-Date.now()-15_000);
-                    router.refresh();
+                    // A renewal changes permission lifetime, not the rendered source.
+                    // Revision polling still observes content edits and access denial.
+                    if (firstGrant) router.refresh();
                 }
             } catch { /* Failed renewal cannot extend the signed cookie's lifetime. */ }
             finally {

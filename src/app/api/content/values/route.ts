@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     try {
         // Current visibility and event binding gate every short-lived shared values read.
         const values = await getCommonValues(slug ?? "", eventID.data);
-        return values ? Response.json({Variables: values}, {headers}) : new Response(null, {status: 404, headers});
+        return values ? Response.json(values, {headers}) : new Response(null, {status: 404, headers});
     } catch {
         return Response.json({error: "Values unavailable"}, {status: 502, headers});
     }

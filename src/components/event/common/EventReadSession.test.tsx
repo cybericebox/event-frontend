@@ -106,3 +106,19 @@ describe("grant retry admission",()=>{
         await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(grantCalls(fetcher)).toHaveLength(5);
     });
 });
+
+it("renews an existing grant without refreshing unchanged page content",async()=>{
+    vi.useFakeTimers();
+    const fetcher=browser();
+    fetcher.mockImplementation(async(input,init)=>{
+        if(String(input).includes("/revision"))return Response.json({Revision:"r1"});
+        if(String(input).endsWith("/challenge"))return Response.json({Challenge:"challenge"});
+        if(String(input).endsWith("/render-grant"))return Response.json({Data:{Token:"renewed"}});
+        if(init?.method==="POST")return Response.json({ExpiresAt:Math.floor(Date.now()/1000)+60});
+        return new Response(null,{status:204});
+    });
+    render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+60} serverPath="/" revision="r1" publicEvent={false} />);
+    await act(async()=>{await vi.advanceTimersByTimeAsync(45_000);});
+    expect(fetcher.mock.calls.some(([url])=>String(url).endsWith("/render-grant"))).toBe(true);
+    expect(navigation.router.refresh).not.toHaveBeenCalled();
+});

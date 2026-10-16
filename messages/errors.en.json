@@ -221,6 +221,7 @@
   "1220": "Finish countdown minutes must be between 1 and 1440",
   "1221": "Task reveal mode must be all_ready or as_ready",
   "1222": "The task reveal mode cannot be changed after the event starts",
+  "1223": "Website footer signature is invalid",
   "1301": "Registration for this event is closed.",
   "1302": "Registration after the event has started is not allowed",
   "1303": "You are already taking part in this event.",

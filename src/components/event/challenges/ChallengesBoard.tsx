@@ -12,6 +12,7 @@ import {applySubmission, applyModeratorSubmission, reconcileBoard, reconcileChal
 import {getManageAccess} from "@/api/manage";
 import {getCurrentUser} from "@/api/clientAuth";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
+import {useParticipantPreview} from "@/components/event/ParticipantPreview";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
@@ -107,7 +108,8 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
         : t("challenges.filter.empty");
     const solved = challenges.filter(item => item.SolvedAt);
     const points = solved.reduce((sum, item) => sum + item.Points, 0);
-    const sub = mode === "moderators"
+    const preview = useParticipantPreview(eventID);
+    const sub = mode === "moderators" && !preview.active
         ? tPlural("challenges.sub.moderators", challenges.length)
         : richMessage(t("challenges.sub.progress"), {solved: <span className="ib-num">{solved.length}</span>, total: <span className="ib-num">{challenges.length}</span>, points: <span className="ib-num">{formatPoints(points)}</span>});
     const changeView = (next: BoardView) => {
@@ -130,6 +132,7 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
 }
 
 function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: boolean}) {
+    const preview = useParticipantPreview(event.EventID);
     const queryClient = useQueryClient();
     const access = useQuery({queryKey: ["event-management-access", event.EventID], queryFn: () => getManageAccess(event.EventID), retry: false, refetchOnWindowFocus: false});
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
@@ -137,18 +140,18 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
         const response = await getModeratorsBoard(event.EventID);
         signal.throwIfAborted();
         return reconcileChallenges(queryClient, "moderators", event.EventID, response);
-    }, enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
+    }, select: data => preview.active ? data.filter(item => item.BoardPublished !== false) : data, enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (access.isPending) return <EventLoading label={t("challenges.loading")} />;
     if (!access.data?.CanManage) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
-    const banner = <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
+    const banner = preview.active ? undefined : <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
     if (!board.data) {
         return <Page banners={banner}>{board.isPending
             ? <EventLoading label={t("challenges.loading")} />
             : <EventLoadError message={t("challenges.moderators.unavailableTitle")} error={board.error} onRetry={() => void board.refetch()} />}</Page>;
     }
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
-        <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode finished={finished} showDifficulty showHints
+        <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode={event.Participation === 1} finished={finished} showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={!(preview.config?.HintsDisabled ?? false)} hintChargeMode={preview.config?.HintChargeMode}
             userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner}
             onSolved={(id, result) => applyModeratorSubmission(queryClient, event.EventID, id, result, new Date().toISOString())} />
     </EventVpnProvider>;
@@ -160,6 +163,7 @@ export function ChallengesBoard() {
     const guestEvent = useGuestEvent();
     const privateEvent = usePrivateEvent();
     const event = participant?.event ?? guestEvent ?? privateEvent;
+    const preview = useParticipantPreview(event?.EventID);
     const {started, finished} = useClock(event);
     const info = participant?.participantInfo;
     const ownTeam = participant?.ownTeam ?? null;
@@ -172,7 +176,7 @@ export function ChallengesBoard() {
             signal.throwIfAborted();
             return reconcileBoard(queryClient, "participant", event!.EventID, response);
         },
-        enabled: !!participant && !!event && started && !!ownTeam && admitted && !!ownTeam.Formed,
+        enabled: !preview.active && !!participant && !!event && started && !!ownTeam && admitted && !!ownTeam.Formed,
         retry: false,
         refetchInterval: 30000,
     });
@@ -192,6 +196,12 @@ export function ChallengesBoard() {
 
     useRefreshFailedToast(challenges.isError && !!challenges.data, challenges.errorUpdatedAt);
     if (!event) return <EventLoading label={t("challenges.loading")} />;
+    if (preview.active) {
+        if (preview.state!.status !== 2) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
+        if (event.Participation === 1 && !preview.state!.team) return <Page banners={<EventBanner title={t("challenges.noTeam.title")} message={t("challenges.noTeam.message")} action={<Link className="ib-btn ib-btn--sm ib-btn--primary" href="/participation?tab=team">{t("challenges.noTeam.action")}</Link>} />} />;
+        if (event.Participation === 1 && !preview.state!.team?.Formed) return <Page><EmptyState message={t("challenges.teamNotFormed")} action={<Link className="ib-btn ib-btn--primary" href="/participation?tab=team">{t("challenges.myParticipation")}</Link>} /></Page>;
+        return <ModeratorsBoard event={event} finished={finished} />;
+    }
     if (!participant) return <ModeratorsBoard event={event} finished={finished} />;
 
     const finishedBanner = finished && <EventBanner title={t("challenges.finished.title")} message={t("challenges.finished.message")} />;

@@ -1,5 +1,6 @@
 "use client";
 
+import {useParticipantPreview, previewAnswerFile} from "../ParticipantPreview";
 import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
 
 import {useLayoutEffect, useRef, useState, type FormEvent, type ReactNode} from "react";
@@ -62,7 +63,8 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
         setEdited(current => ({...(current ?? saved), [key]: value}));
         setInvalid(current => current.filter(item => item !== key));
     };
-    const upload = (key: string, file: File) => uploadSelfAnswerFile(scope, key, file);
+    const preview = useParticipantPreview();
+    const upload = (key: string, file: File) => preview.active ? previewAnswerFile(file) : uploadSelfAnswerFile(scope, key, file);
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         if (!dirty || busy) return;

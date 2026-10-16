@@ -1,5 +1,6 @@
 "use client";
 
+import {useParticipantPreview} from "../ParticipantPreview";
 import {useQuery} from "@tanstack/react-query";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {z} from "zod";
@@ -26,9 +27,15 @@ async function getVisiblePage(eventID: string, slug: string): Promise<EventPageC
 export function ClientContentPage({slug, publicEventID}: {slug: string; publicEventID?: string}) {
     const privateEvent = usePrivateEvent();
     const eventID = publicEventID ?? privateEvent?.EventID;
+    const preview = useParticipantPreview(eventID);
     const page = useQuery({
-        queryKey: ["event-client-page", eventID, slug],
+        queryKey: ["event-client-page", eventID, slug, preview.active ? preview.state!.status === 2 ? "preview-participant" : "preview-guest" : "session"],
         queryFn: async () => {
+            if (preview.active) {
+                const [managed, content] = await Promise.all([getManagePage(eventID!, slug), getManageContent(eventID!)]);
+                if (!managed.PublishedAt || managed.Slug !== slug || managed.Visibility === 2 || managed.Visibility === 1 && preview.state!.status !== 2) throw new ManageApiError(404);
+                return {Page: managed, Variables: content.Variables};
+            }
             const visible = await getVisiblePage(eventID!, slug);
             if (visible) return visible;
             // A manager-only page has no public response. Manager access is

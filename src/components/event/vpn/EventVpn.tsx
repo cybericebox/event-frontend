@@ -1,5 +1,6 @@
 "use client";
 
+import {useParticipantPreview} from "../ParticipantPreview";
 import {eventVpnFileName} from "@/utils/wireguard";
 import {createContext, useContext, useMemo, useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
@@ -41,6 +42,7 @@ function downloadText(text: string, name: string) {
 }
 
 function VpnModal({eventID, eventTag, moderators, status, open, onClose}: {eventID: string; eventTag: string; moderators: boolean; status: StandStatus | null; open: boolean; onClose: () => void}) {
+    const preview = useParticipantPreview(eventID);
     const [issuing, setIssuing] = useState(false);
     const [error, setError] = useState("");
     const probe = useQuery({queryKey: ["event-vpn-status", eventID], queryFn: () => getVPNStatus(eventID), enabled: open && !moderators && status === "ready", retry: false, refetchOnWindowFocus: false});
@@ -56,7 +58,7 @@ function VpnModal({eventID, eventTag, moderators, status, open, onClose}: {event
             setIssuing(false);
         }
     };
-    return <DialogModal open={open} onClose={onClose} title={t("vpn.modal.title")} description={moderators ? t("vpn.modal.descriptionModerators") : t("vpn.modal.description")}
+    return <DialogModal open={open} onClose={onClose} title={t("vpn.modal.title")} description={moderators && !preview.active ? t("vpn.modal.descriptionModerators") : t("vpn.modal.description")}
         footer={<><button type="button" className="ib-btn" onClick={onClose}>{t("common.close")}</button><EventButton type="button" className="ib-btn ib-btn--primary" disabled={issuing} onClick={() => void download()} busy={issuing}><Download aria-hidden="true" />{t("vpn.modal.download")}</EventButton></>}>
         <div className={`event-vpn-stand is-${status ?? "unknown"}`} role="status">
             <StandStatusIcon status={status} />

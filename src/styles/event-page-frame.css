@@ -32,3 +32,27 @@
   .ib-footer--event .ib-footer__inner{padding-inline:var(--ib-4)}
 }
 @media(max-width:600px){.event-join-banner{margin:0 0 var(--ib-4)}.event-join-page{padding:0}.event-join-card{padding:var(--ib-5)}}
+
+/* Event-specific signature and service-link spacing; the shared DS footer stays unchanged. */
+.ib-footer--event .ib-footer__org{min-width:0}
+.ib-footer--event .ib-footer__org span{margin-left:0}
+.ib-footer__signature{overflow-wrap:anywhere}
+.ib-footer__signature a{color:var(--ib-ink);font-weight:var(--ib-w-medium)}
+.ib-footer__signature a:hover{color:var(--ib-accent)}
+.ib-footer__signature a:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+@container ib-footer (max-width:639px){
+  .ib-footer--event .ib-footer__org>span{margin:0}
+  .ib-footer--event .ib-footer__end{justify-content:flex-start;gap:var(--ib-3)}
+  .ib-footer--event .ib-footer__links{row-gap:0;column-gap:var(--ib-4)}
+}
+
+/* A compact site-wide test-mode bar; optional registration choices live in its one menu. */
+.event-private-preview-banner.event-participant-preview{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:var(--ib-3);padding-block:var(--ib-2);min-height:48px}
+.event-participant-preview__title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-participant-preview__trigger{flex:none;color:inherit}
+.event-participant-preview__menu{min-width:min(240px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:var(--radix-dropdown-menu-content-available-height);overflow:auto;z-index:100}
+.event-participant-preview__option{display:flex;align-items:center;gap:var(--ib-2)}
+.event-participant-preview__option>svg,.event-participant-preview__indicator{width:16px;height:16px;flex:none}
+.event-participant-preview__option>svg{visibility:visible;margin-left:0}
+.event-participant-preview__label{padding:var(--ib-2) var(--ib-3);font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.event-participant-preview__separator{height:1px;margin:var(--ib-1) 0;background:var(--ib-line)}

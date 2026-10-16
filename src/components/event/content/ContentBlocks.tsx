@@ -1,3 +1,4 @@
+import type {ContentImageDimensions} from "@/types/contentImages";
 import {Plus} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import type {CSSProperties} from "react";
@@ -84,7 +85,7 @@ function bannerImageURL(source: string | undefined): string | undefined {
 }
 
 // `title` is never shown: it is a visually hidden h1 used only when no block has a heading.
-export function ContentBlocks({document, variables, title, selectedBlockId, coverImage, eventID, preview, previewViewer}: {
+export function ContentBlocks({document, variables, title, selectedBlockId, coverImage, eventID, preview, previewViewer, imageDimensions}: {
     document: ContentDocument;
     variables: Record<string, Value>;
     title?: string;
@@ -93,6 +94,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
     eventID?: string;
     preview?: boolean;
     previewViewer?: PreviewViewer;
+    imageDimensions?: ContentImageDimensions;
 }) {
     const blocks = document.blocks.filter(block => contentBlockVisible(block, variables));
     const primaryID = headingBlockID(blocks, coverImage);
@@ -111,7 +113,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 const imageURL = bannerImageURL(block.imageSource === "custom" ? block.imageURL : coverImage);
                 return <section className={`ib-block ib-block-banner${block.variant === "frame" ? " ib-block-banner--frame" : ""}${block.layout === "center" ? " ib-block-banner--caption-center" : block.layout === "right" ? " ib-block-banner--caption-right" : ""}`} key={block.id} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined}>
                 <div className="ib-block-banner__inner" style={{"--ib-banner-width": `${block.widthPercent ?? 100}%`} as CSSProperties}>
-                    {imageURL ? <ProportionalBannerImage src={imageURL} alt={render(block.title, "title") || t("content.banner.alt")} eager={blockIndex === 0} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title, "title") || String(variables["event.name"] ?? "")}</strong></div>}
+                    {imageURL ? <ProportionalBannerImage src={imageURL} dimensions={imageDimensions?.[block.imageSource === "custom" ? block.imageURL ?? "" : coverImage ?? ""]} alt={render(block.title, "title") || t("content.banner.alt")} eager={blockIndex === 0} /> : <div className="ib-block-banner__placeholder"><strong>{render(block.title, "title") || String(variables["event.name"] ?? "")}</strong></div>}
                     {imageURL && block.title && <div className="ib-block-banner__caption"><Heading>{render(block.title, "title")}</Heading></div>}
                 </div>
             </section>;

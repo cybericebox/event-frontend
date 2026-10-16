@@ -19,6 +19,10 @@ import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {t} from "@/i18n/t";
+import {EventRichTextField} from "@/components/event/manage/EventRichTextField";
+import {emptyRichText, richTextHasContent, type ContentRichText} from "@/components/event/content/richTextState";
+import {EventRichTextView} from "@/components/event/content/EventRichTextView";
+import {PlatformCredit} from "@/components/event/PlatformCredit";
 import {EventButton} from "@/components/ui/EventButton";
 
 const defaultBrand = "#211A52";
@@ -40,6 +44,10 @@ export default function ManageAppearancePage() {
     const queryClient = useQueryClient();
     const configQuery = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
     const [edit, setEdit] = useSessionDraftState<{eventID: string; brand: string; accent: string} | null>("appearance-colors", null);
+    const [footerEdit, setFooterEdit] = useSessionDraftState<{eventID: string; value: ContentRichText} | null>("appearance-footer", null);
+    const footer = footerEdit?.eventID === eventID ? footerEdit.value : configQuery.data?.FooterSignature ?? emptyRichText();
+    const footerDirty = !!configQuery.data && JSON.stringify(richTextHasContent(footer) ? footer : null) !== JSON.stringify(configQuery.data.FooterSignature ?? null);
+    useDraftDirty("appearance-footer", configQuery.data ? footerDirty : undefined);
     const [suggestion, setSuggestion] = useState<{brand: string; accent: string} | null>(null);
     const [saving, setSaving] = useState(false);
     const brand = edit?.eventID === eventID ? edit.brand : configQuery.data?.Theme.Brand ?? defaultBrand;
@@ -49,7 +57,7 @@ export default function ManageAppearancePage() {
     const theme = useMemo(() => deriveTheme(brand, accent, configQuery.data?.Theme.Version ?? 1), [brand, accent, configQuery.data?.Theme.Version]);
     const invalidFormat = !colorPattern.test(brand.trim()) || (accent.trim() !== "" && !colorPattern.test(accent.trim()));
     const lowContrast = !invalidFormat && (whiteTextContrast(brand) ?? 0) < 4.5;
-    const dirty = !!configQuery.data && (brand.trim().toUpperCase() !== configQuery.data.Theme.Brand.trim().toUpperCase() || accent.trim().toUpperCase() !== configQuery.data.Theme.Accent.trim().toUpperCase() || logo.dirty || favicon.dirty);
+    const dirty = !!configQuery.data && (brand.trim().toUpperCase() !== configQuery.data.Theme.Brand.trim().toUpperCase() || accent.trim().toUpperCase() !== configQuery.data.Theme.Accent.trim().toUpperCase() || logo.dirty || favicon.dirty || footerDirty);
     useDraftDirty("appearance-colors", configQuery.data ? brand.trim().toUpperCase() !== (configQuery.data?.Theme.Brand ?? defaultBrand).trim().toUpperCase() || accent.trim().toUpperCase() !== (configQuery.data?.Theme.Accent ?? "").trim().toUpperCase() : undefined);
     const disabled = !canManage;
     const previewStyle = theme ? {"--ev-brand": theme.Brand, "--ev-accent-light": theme.AccentLight, "--ev-accent-dark": theme.AccentDark, "--ev-accent-live": theme.AccentLive} as CSSProperties : undefined;
@@ -66,11 +74,12 @@ export default function ManageAppearancePage() {
         if (!dirty || !theme || logo.uploading || favicon.uploading || logo.expired || favicon.expired || saving || !canManage) return;
         setSaving(true);
         try {
-            const result = await putManageAppearance(eventID, {Brand: brand.trim(), Accent: accent.trim(), Logo: logo.change, Favicon: favicon.change});
+            const result = await putManageAppearance(eventID, {Brand: brand.trim(), Accent: accent.trim(), Logo: logo.change, Favicon: favicon.change, FooterSignature: richTextHasContent(footer) ? footer : null});
             queryClient.setQueryData(["event-management-config", eventID], result.Config);
             queryClient.setQueryData<PublicEventInfo>(["event-manager-public-info"], current =>
-                current?.EventID === eventID ? {...current, LogoURL: result.LogoURL, FaviconURL: result.FaviconURL, Theme: result.Config.Theme} : current
+                current?.EventID === eventID ? {...current, LogoURL: result.LogoURL, FaviconURL: result.FaviconURL, Theme: result.Config.Theme, FooterSignature: result.Config.FooterSignature} : current
             );
+            const sentFooter = footerEdit; setFooterEdit(current => current === sentFooter ? null : current);
             const sent = edit; setEdit(current => current === sent ? null : current); logo.saved(resolveEventLogoURL(result.LogoURL) ?? ""); favicon.saved(resolveEventLogoURL(result.FaviconURL) ?? ""); setSuggestion(null);
             const root = document.documentElement;
             root.style.setProperty("--ev-brand", result.Config.Theme.Brand);
@@ -100,6 +109,11 @@ export default function ManageAppearancePage() {
                     <div className="event-manage-section__head event-brand-section-head"><div><h2>{t("manage.appearance.colors")}</h2><p>{t("manage.appearance.colorsLead")}</p></div>{(brand.toUpperCase() !== defaultBrand || accent) && !disabled && <EventTooltip content={t("manage.appearance.resetAll")}>{id => <button className="event-brand-reset-icon" type="button" aria-label={t("manage.appearance.resetAll")} aria-describedby={id} onClick={() => setEdit({eventID, brand: defaultBrand, accent: ""})}><RotateCcw size={16} /></button>}</EventTooltip>}</div>
                     <div className="event-manage-fields-two"><ColorField title={t("manage.appearance.brand")} help={t("manage.appearance.brandHelp")} value={brand} fallback={defaultBrand} onChange={changeBrand} disabled={disabled} /><ColorField title={t("manage.appearance.accent")} help={t("manage.appearance.accentHelp")} value={accent} fallback="#FFFFFF" onChange={changeAccent} disabled={disabled} optional /></div>
                     {invalidFormat ? <p className="event-manage-validation" role="alert">{t("manage.appearance.invalidColor")}</p> : lowContrast ? <p className="event-manage-validation event-manage-validation--warning" role="status">{t("manage.appearance.lowContrast")}</p> : null}
+                </section>
+                <section className="event-manage-section">
+                    <div className="event-manage-section__head"><h2>{t("manage.appearance.footerTitle")}</h2><p>{t("manage.appearance.footerHelp")}</p></div>
+                    <EventRichTextField eventID={eventID} label={t("manage.appearance.footerLabel")} required={false} value={footer} onChange={value => setFooterEdit({eventID, value})} catalog={[]} values={{}} disabled={disabled} />
+                    <div className="ib-footer__signature" aria-label={t("manage.appearance.footerPreview")}>{richTextHasContent(footer) ? <EventRichTextView value={footer} /> : <PlatformCredit />}</div>
                 </section>
             </div>
             <aside className="event-manage-preview" aria-label={t("manage.appearance.previewLabel")}>

@@ -1,9 +1,9 @@
 import Image from "next/image";
 
-// The image sizes the banner itself (width 100%, natural height), so there is no
-// guessed 2:1 box that shows through and then jumps when the image arrives.
-export function ProportionalBannerImage({src, alt, eager = false}: {src: string; alt: string; eager?: boolean}) {
+// Intrinsic dimensions come from the admitted server snapshot and reserve the
+// real aspect ratio while the image downloads. Unknown legacy media stays natural.
+export function ProportionalBannerImage({src, alt, eager = false, dimensions}: {src: string; alt: string; eager?: boolean; dimensions?: {Width:number;Height:number}}) {
     return <div className="ib-block-banner__media">
-        <Image className="ib-block-banner__image" src={src} alt={alt} width={0} height={0} sizes="(max-width: 700px) 100vw, 1200px" unoptimized loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} />
+        <Image className="ib-block-banner__image" src={src} alt={alt} width={dimensions?.Width ?? 0} height={dimensions?.Height ?? 0} sizes="(max-width: 700px) 100vw, 1200px" unoptimized loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} />
     </div>;
 }

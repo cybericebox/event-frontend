@@ -20,5 +20,6 @@ export default async function ContentPage({params}: {params: Promise<{slug: stri
     if (!event) return <ClientContentPage slug={slug} />;
     const content = await getEventPageContent(slug);
     if (!content) return <ClientContentPage slug={slug} publicEventID={event.EventID} />;
-    return <LiveContentBlocks revision={(await getCommonPage(slug))!.Revision} eventID={event.EventID} document={content.Page.Document} initialVariables={content.Variables} title={content.Page.Title} coverImage={event.PreviewPicture} page={slug} />;
+    const bundle = (await getCommonPage(slug))!;
+    return <LiveContentBlocks imageDimensions={bundle.Images} revision={bundle.Revision} eventID={event.EventID} document={content.Page.Document} initialVariables={content.Variables} title={content.Page.Title} coverImage={event.PreviewPicture} page={slug} />;
 }

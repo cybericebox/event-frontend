@@ -24,6 +24,7 @@ import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {SkipLink} from "@/components/ui/SkipLink";
 
+import {ParticipantPreviewEntry} from "../ParticipantPreview";
 import {ManualDraftProvider} from "./manualDraft";
 
 const ManagerContext = createContext<{event: PublicEventInfo; canManage: boolean} | null>(null);
@@ -92,7 +93,7 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
                     <ol className="ib-topbar__crumbs">{(crumbs ?? [{label: t("manage.nav.eventManagement")}]).map((crumb, index, all) => index === all.length - 1
                         ? <li key={index} aria-current="page">{crumb.label}</li>
                         : <li key={index}>{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : crumb.label}</li>)}</ol>
-                    <div className="ib-topbar__actions"><SetupChip eventID={event.EventID} />{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
+                    <div className="ib-topbar__actions"><SetupChip eventID={event.EventID} />{access.data.CanManage && <ParticipantPreviewEntry eventID={event.EventID} registration={event.Registration} />}{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
                 <main id="main" tabIndex={-1} className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
             </div>

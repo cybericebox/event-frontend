@@ -147,3 +147,25 @@ it("recovers the same mounted shell after a fresh readable common verdict", asyn
     expect(screen.getByText("Recovered page")).toBeTruthy();
     resetEventGone();
 });
+
+it("keeps the same public document nodes when approval and team identity arrive", () => {
+    const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
+    render(<QueryClientProvider client={client}><AppShell event={{EventID: "event-1"} as never} unavailable={false}><h1>Stable document</h1></AppShell></QueryClientProvider>);
+    const heading = screen.getByRole("heading", {name: "Stable document"});
+    act(() => {
+        client.setQueryData(["event-current-user"], {ID: "u1"});
+        client.setQueryData(["event-join-status", "event-1"], 2);
+        client.setQueryData(["event-participant-info", "event-1"], {EventID: "event-1"});
+        client.setQueryData(["event-own-team", "event-1"], null);
+    });
+    expect(screen.getByRole("heading", {name: "Stable document"})).toBe(heading);
+});
+
+it("does not remount a private document when the server render grant becomes verified", () => {
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    const page = (privateEvent?: never) => <QueryClientProvider client={client}><AppShell event={null} privateEvent={privateEvent} unavailable={false}><h1>Private stable document</h1></AppShell></QueryClientProvider>;
+    const view = render(page());
+    const heading = screen.getByRole("heading", {name: "Private stable document"});
+    view.rerender(page({EventID: "event-1"} as never));
+    expect(screen.getByRole("heading", {name: "Private stable document"})).toBe(heading);
+});
