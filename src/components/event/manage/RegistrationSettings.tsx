@@ -34,6 +34,7 @@ export function RegistrationSettings() {
     const registrationDirty = config !== undefined && (registration !== config.Registration || maxTeams !== config.MaxTeams || allowPseudonyms !== config.AllowPseudonyms);
     const joinDirty = lifecycle !== undefined && joinPolicy !== lifecycle.JoinPolicy;
     const dirty = registrationDirty || joinDirty;
+    const maxTeamsError = dirty && maxTeams != null && (!Number.isInteger(maxTeams) || maxTeams < 1) ? t("manage.field.positiveInteger") : "";
 
     useDraftDirty("registration", config && lifecycle ? dirty : undefined);
     function update(patch: Partial<{registration: 0 | 1 | 2; joinPolicy: 0 | 1; maxTeams: number | null; allowPseudonyms: boolean}>) {
@@ -81,7 +82,7 @@ export function RegistrationSettings() {
                 </div>
                 {!lifecycle.Configured && <small>{scheduleHint[0]}<Link href="/manage/schedule">{t("manage.registration.scheduleLink")}</Link>{scheduleHint[1]}</small>}
             </div>
-            {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title={t("manage.registration.maxTeams")} help={t("manage.registration.maxTeamsHelp")} /><input id="max-teams" className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage} placeholder={t("manage.registration.noLimit")} /></div>}
+            {config.Participation === 1 && <div className="event-manage-field"><ManageFieldLabel htmlFor="max-teams" title={t("manage.registration.maxTeams")} help={t("manage.registration.maxTeamsHelp")} /><input id="max-teams" aria-invalid={!!maxTeamsError || undefined} aria-describedby={maxTeamsError ? "max-teams-error" : undefined} className="event-manage-input" type="number" min={1} value={maxTeams ?? ""} onChange={change => update({maxTeams: change.target.value ? Number(change.target.value) : null})} disabled={!canManage} placeholder={t("manage.registration.noLimit")} />{maxTeamsError && <p id="max-teams-error" className="event-manage-validation" role="alert">{maxTeamsError}</p>}</div>}
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.registration.pseudonyms")} help={t("manage.registration.pseudonymsHelp")} /><EventSwitch className="event-manage-form__switch" checked={!!allowPseudonyms} onCheckedChange={checked => update({allowPseudonyms: checked})} disabled={!canManage} label={t("manage.registration.allowPseudonyms")} /></div>
         </section>
         <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || (maxTeams !== null && maxTeams !== undefined && (!Number.isInteger(maxTeams) || maxTeams < 1))} busy={saving}>{t("common.save")}</EventButton></div>

@@ -4978,5 +4978,11 @@
   "manage.notifications.preview.inbox": "Стрічка сповіщень",
   "manage.notifications.preview.toast": "Спливаюче повідомлення",
   "manage.notifications.preview.expand": "Розгорнути перегляд",
-  "manage.broadcasts.template.unsupportedNames": "Ці змінні недоступні в розсилці й будуть порожніми: {names}."
+  "manage.broadcasts.template.unsupportedNames": "Ці змінні недоступні в розсилці й будуть порожніми: {names}.",
+  "manage.banners.table.window": "Період показу",
+  "manage.banners.table.status": "Статус",
+  "manage.banners.table.actions": "Дії",
+  "manage.field.required": "Заповніть це поле.",
+  "manage.field.positiveInteger": "Вкажіть ціле число, не менше 1.",
+  "manage.field.teamMinimum": "Вкажіть ціле число від 1 до максимального розміру команди."
 }

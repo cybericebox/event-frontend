@@ -8,7 +8,7 @@ import type {ContentBlock, ContentDocument, ContentValue, PageBlockType} from "@
 import type {ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 import {PageBlockEditor} from "./PageBlockEditor";
 import {blockPalette, createPageBlock, duplicatePageBlock} from "./blockPalette";
-import {blockValidationIndex} from "./validatePageBlocks";
+import {blockValidationIndex, landingProblems} from "./validatePageBlocks";
 import {EditedDocumentContext} from "./useEventLinkOptions";
 import {t, tPlural} from "@/i18n/t";
 import {currentPreviewPhase, defaultPreviewRegistration, previewPageAccess, previewPhases, previewRegistrations, previewValues, previewViewers, type PreviewPhase, type PreviewRegistration, type PreviewViewer} from "./previewScenario";
@@ -53,6 +53,7 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
     const previewRef = useRef<HTMLDivElement>(null);
     const selectedBlockID = selected?.key === editorKey && document.blocks.some(block => block.id === selected.blockID) ? selected.blockID : null;
     const blockOrder = document.blocks.map(block => block.id).join("|");
+    const problems = validation ? landingProblems(document, catalog, coverImage) : [];
     const invalidBlockIndex = blockValidationIndex(validation);
     const openIDs = openBlocks.key === editorKey ? openBlocks.ids : [];
     // A block with a new validation error opens once; the author may close it
@@ -136,7 +137,7 @@ export function BlockStackEditor({editorKey, eventID, coverImage, document, cata
             <div className="event-content-editor__top"><div><h2>{t("manage.blocks.stack.title")}</h2><p>{t("manage.blocks.stack.hint")}</p></div><span>{tPlural("manage.blocks.count", document.blocks.length)}</span></div>
             {document.blocks.length === 0 && <EmptyState message={t("manage.blocks.stack.emptyMessage")} />}
             <Sortable ids={document.blocks.map(block => block.id)} itemName={id => {const type = document.blocks.find(block => block.id === id)?.type; return blockPalette.find(item => item.type === type)?.label ?? type ?? "";}} onMove={(from, to) => {moveBlock(from, to); select(document.blocks[from].id);}} onDragStateChange={setDragging}>
-            <div className="event-content-editor__stack">{document.blocks.map((block, index) => <PageBlockEditor key={block.id} eventID={eventID} coverImage={coverImage} block={block} index={index} count={document.blocks.length} anchorsInUse={document.blocks.filter(item => item.id !== block.id).flatMap(item => [item.id, item.anchor ?? ""])} values={values} catalog={catalog} canEdit={canEdit} selected={selectedBlockID === block.id} open={!dragging && openIDs.includes(block.id)} error={invalidBlockIndex === index ? validation ?? undefined : undefined}
+            <div className="event-content-editor__stack">{document.blocks.map((block, index) => <PageBlockEditor key={block.id} eventID={eventID} coverImage={coverImage} block={block} index={index} count={document.blocks.length} anchorsInUse={document.blocks.filter(item => item.id !== block.id).flatMap(item => [item.id, item.anchor ?? ""])} values={values} catalog={catalog} canEdit={canEdit} selected={selectedBlockID === block.id} open={!dragging && openIDs.includes(block.id)} error={problems.find(problem => problem.index === index)?.message ?? (invalidBlockIndex === index ? validation ?? undefined : undefined)} errors={Object.fromEntries(problems.filter(problem => problem.index === index && problem.field).map(problem => [problem.field!, problem.message]))}
                 onSelect={() => select(block.id)} onToggle={() => setBlockOpen(block.id, !openIDs.includes(block.id))} onUpdate={value => updateBlock(block.id, value)} onMove={direction => moveBlock(index, index + direction)} onDuplicate={() => duplicateBlock(block)} onDelete={() => deleteBlock(block, index)} />)}</div>
             </Sortable>
             {canEdit && <div className="event-content-editor__add" aria-label={t("manage.blocks.stack.add")}>{blockPalette.filter(item => item.type !== "hero" || !document.blocks.some(block => block.type === "hero")).map(item => <button className="ib-btn" type="button" key={item.type} onClick={() => addBlock(item.type)}><Plus size={16} /> {item.label}</button>)}</div>}

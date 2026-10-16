@@ -82,9 +82,9 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const bodyContent = body.filter(block => !(block.type === "preset" && block.placement === "footer"));
     useDraftDirty(`email-templates-${signal}`, Object.entries(drafts).some(([id, value]) => {const original = templates.data?.find(item => item.ID === id); return !original || !sameValue(value, inputOf(original));}));
     const subjectError = !draft?.Subject.trim() ? t("manage.email.validation.subject") : "";
-    const bodyError = !draft?.Body.length || !draft.Body.some(block => block.type === "rich_text" && emailRichText(block).trim() || block.type === "button" || block.type === "image" || block.type === "preset") ? t("manage.email.validation.body")
-        : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.email.validation.buttons") : "";
-    const validation = subjectError || bodyError;
+    const bodyError = !draft?.Body.length || !draft.Body.some(block => block.type === "rich_text" && emailRichText(block).trim() || block.type === "button" || block.type === "image" || block.type === "preset") ? t("manage.email.validation.body") : "";
+    const buttonError = draft?.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.email.validation.buttons") : "";
+    const validation = subjectError || bodyError || buttonError;
     const editable = !!(canManage && mode === "edit");
     const livePreview = useDebounced(draft && !validation ? draft : null);
     const ownVersions = versions.filter(item => item.Source === "event");

@@ -79,7 +79,7 @@ function TimerFields({widget, event, disabled, onProp}: {widget: LiveWidget; eve
                     disabled: value === "freeze" && !freezeAvailable, disabledReason: value === "freeze" && !freezeAvailable ? t("manage.live.prop.timerFreezeOff") : undefined}))} />}
         </LiveField>
         {source === "custom" && <LiveField label={t("manage.live.prop.timerTarget")} help={t("manage.live.prop.timerTargetHelp")} required
-            warning={target ? null : t("manage.live.prop.timerTargetMissing")}>
+            error={target ? null : t("manage.live.prop.timerTargetMissing")}>
             {id => <EventDateTimePicker id={id} ariaLabel={t("manage.live.prop.timerTarget")} value={localFromISO(target)} disabled={disabled}
                 onChange={value => {const iso = localToISO(value); if (iso) onProp("target", iso);}} />}
         </LiveField>}
@@ -147,7 +147,7 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             </LiveField>}
             {widget.type === "qr" && <>
                 <LiveField label={t("manage.live.prop.qrValue")} help={t("manage.live.prop.qrValueHelp")} required
-                    warning={qrProblem(textProp(widget, "value") || textProp(widget, "url"))}>
+                    error={qrProblem(textProp(widget, "value") || textProp(widget, "url"))}>
                     {id => <input id={id} className="event-manage-input" maxLength={500} placeholder={t("manage.live.prop.qrValuePlaceholder")} value={textProp(widget, "value") || textProp(widget, "url")} disabled={disabled} onChange={change => onProp("value", change.target.value)} />}
                 </LiveField>
                 <LiveField label={t("manage.live.prop.qrCaption")} help={t("manage.live.prop.qrCaptionHelp")}>

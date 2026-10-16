@@ -4,20 +4,17 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 
 import {useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {CircleHelp, Plus} from "lucide-react";
+import {CircleHelp, Pencil, Plus, Power, PowerOff, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {apiErrorMessage, ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {
-    bannerAudiences, bannerInput, bannerLevels, BANNER_LABEL_MAX, BANNER_TEXT_MAX, createManageBanner, deleteManageBanner, getManageBanners, updateManageBanner,
+    ManageBannerFieldError, bannerAudiences, bannerInput, bannerLevels, BANNER_LABEL_MAX, BANNER_TEXT_MAX, createManageBanner, deleteManageBanner, getManageBanners, updateManageBanner,
     type ManageBanner,
 } from "@/api/manageBanners";
 import {DialogModal} from "@/components/event/DialogModal";
-import {EventLoading} from "@/components/event/EventLoading";
-import {EventLoadError} from "@/components/event/EventLoadError";
 import {SiteBanner} from "@/components/event/SiteBanners";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
-import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -25,9 +22,10 @@ import {EventSwitch} from "@/components/ui/EventSwitch";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import {sameValue} from "../notifications/notificationModel";
+import {ManageTable} from "../ManageTable";
 import {ManageFieldLabel} from "../ManageFieldLabel";
 import {useManager} from "../ManagerShell";
-import {bannerFormInput, bannerToForm, bannerValidation, emptyBannerForm, type BannerForm} from "./bannerModel";
+import {bannerFormInput, bannerToForm, bannerFieldErrors, emptyBannerForm, type BannerForm, type BannerErrors} from "./bannerModel";
 import {formatBroadcastTime} from "./BroadcastHistory";
 import "./broadcasts.css";
 
@@ -38,7 +36,7 @@ function saveErrorMessage(error: unknown): string {
 
 // The live preview and the fields of one banner. The preview is the very
 // component the site renders.
-function BannerFormFields({form, onChange, disabled}: {form: BannerForm; onChange: (form: BannerForm) => void; disabled: boolean}) {
+function BannerFormFields({form, onChange, disabled, errors}: {form: BannerForm; onChange: (form: BannerForm) => void; disabled: boolean; errors: BannerErrors}) {
     const set = (patch: Partial<BannerForm>) => onChange({...form, ...patch});
     const levelOptions = bannerLevels.map(level => ({value: level, label: t(`manage.banners.level.${level}`)}));
     const audienceOptions = bannerAudiences.map(audience => ({value: audience, label: t(`manage.banners.audience.${audience}`)}));
@@ -46,17 +44,20 @@ function BannerFormFields({form, onChange, disabled}: {form: BannerForm; onChang
         <p className="event-manage-table__dim">{t("manage.banners.scopeHint")}</p>
         <div className="event-manage-field">
             <ManageFieldLabel title={t("manage.banners.field.text")} help={t("manage.banners.field.textHelp", {max: BANNER_TEXT_MAX})} htmlFor="event-banner-text" required />
-            <textarea id="event-banner-text" className="event-manage-input" rows={3} maxLength={BANNER_TEXT_MAX} value={form.Text} disabled={disabled} onChange={event => set({Text: event.target.value})} />
+            <textarea id="event-banner-text" aria-invalid={!!errors.Text || undefined} aria-describedby={errors.Text ? "event-banner-text-error" : undefined} className="event-manage-input" rows={3} maxLength={BANNER_TEXT_MAX} value={form.Text} disabled={disabled} onChange={event => set({Text: event.target.value})} />
+                {errors.Text && <p id="event-banner-text-error" className="event-manage-validation" role="alert">{errors.Text}</p>}
             <small className="event-manage-table__dim">{t("manage.banners.field.textCount", {count: [...form.Text].length, max: BANNER_TEXT_MAX})}</small>
         </div>
         <div className="event-banner-form__two">
             <div className="event-manage-field">
                 <ManageFieldLabel title={t("manage.banners.field.linkUrl")} help={t("manage.banners.field.linkUrlHelp")} htmlFor="event-banner-link" />
-                <input id="event-banner-link" className="event-manage-input" value={form.LinkURL} disabled={disabled} placeholder="/faq" onChange={event => set({LinkURL: event.target.value})} />
+                <input id="event-banner-link" aria-invalid={!!errors.LinkURL || undefined} aria-describedby={errors.LinkURL ? "event-banner-link-error" : undefined} className="event-manage-input" value={form.LinkURL} disabled={disabled} placeholder="/faq" onChange={event => set({LinkURL: event.target.value})} />
+                {errors.LinkURL && <p id="event-banner-link-error" className="event-manage-validation" role="alert">{errors.LinkURL}</p>}
             </div>
             <div className="event-manage-field">
                 <ManageFieldLabel title={t("manage.banners.field.linkLabel")} help={t("manage.banners.field.linkLabelHelp")} htmlFor="event-banner-label" />
-                <input id="event-banner-label" className="event-manage-input" value={form.LinkLabel} maxLength={BANNER_LABEL_MAX} disabled={disabled || !form.LinkURL.trim()} placeholder={t("siteBanner.more")} onChange={event => set({LinkLabel: event.target.value})} />
+                <input id="event-banner-label" aria-invalid={!!errors.LinkLabel || undefined} aria-describedby={errors.LinkLabel ? "event-banner-label-error" : undefined} className="event-manage-input" value={form.LinkLabel} maxLength={BANNER_LABEL_MAX} disabled={disabled || !form.LinkURL.trim()} placeholder={t("siteBanner.more")} onChange={event => set({LinkLabel: event.target.value})} />
+                {errors.LinkLabel && <p id="event-banner-label-error" className="event-manage-validation" role="alert">{errors.LinkLabel}</p>}
             </div>
         </div>
         <div className="event-banner-form__two">
@@ -76,7 +77,8 @@ function BannerFormFields({form, onChange, disabled}: {form: BannerForm; onChang
             </div>
             <div className="event-manage-field">
                 <ManageFieldLabel title={t("manage.banners.field.to")} help={t("manage.banners.field.toHelp")} htmlFor="event-banner-to" />
-                <EventDateTimePicker id="event-banner-to" ariaLabel={t("manage.banners.field.to")} value={form.ActiveTo} onChange={ActiveTo => set({ActiveTo})} disabled={disabled} allowClear />
+                <EventDateTimePicker id="event-banner-to" aria-invalid={!!errors.ActiveTo || undefined} aria-describedby={errors.ActiveTo ? "event-banner-to-error" : undefined} ariaLabel={t("manage.banners.field.to")} value={form.ActiveTo} onChange={ActiveTo => set({ActiveTo})} disabled={disabled} allowClear />
+                {errors.ActiveTo && <p id="event-banner-to-error" className="event-manage-validation" role="alert">{errors.ActiveTo}</p>}
             </div>
         </div>
         <EventSwitch checked={form.Dismissible} disabled={disabled} onCheckedChange={Dismissible => set({Dismissible})} label={t("manage.banners.field.dismissible")} />
@@ -100,17 +102,20 @@ export function BannersManager() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const queryClient = useQueryClient();
-    const query = useQuery({queryKey: ["event-manage-banners", eventID], queryFn: () => getManageBanners(eventID), refetchOnWindowFocus: false});
+    const query = useQuery({queryKey: ["event-manage-banners", eventID], queryFn: () => getManageBanners(eventID), refetchOnWindowFocus: false, placeholderData: previous => previous});
     const [editing, setEditing] = useSessionDraftState<{banner: ManageBanner | null; form: BannerForm} | null>("banner-edit", null);
     const [removing, setRemoving] = useState<ManageBanner | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const [serverErrors, setServerErrors] = useState<{form: BannerForm; errors: BannerErrors} | null>(null);
     const toggleQueue = useRef<Promise<void>>(Promise.resolve());
     const toggling = useRef(0);
     const banners = query.data ?? [];
     const dirty = !!editing && (!editing.banner || !sameValue(bannerFormInput(editing.form), bannerFormInput(bannerToForm(editing.banner))));
     useDraftDirty("banner-edit", !!editing && !sameValue(bannerFormInput(editing.form), bannerFormInput(editing.banner ? bannerToForm(editing.banner) : emptyBannerForm())), {preserveInput: true});
-    const validation = editing ? bannerValidation(editing.form) : "";
+    const applicableServerErrors = editing && serverErrors ? Object.fromEntries(Object.entries(serverErrors.errors).filter(([field]) => editing.form[field as keyof BannerForm] === serverErrors.form[field as keyof BannerForm] && (field !== "ActiveTo" || editing.form.ActiveFrom === serverErrors.form.ActiveFrom))) : {};
+    const fieldErrors = editing ? {...applicableServerErrors, ...bannerFieldErrors(editing.form)} : {};
+    const validation = Object.values(fieldErrors).some(Boolean);
 
     async function run(action: () => Promise<unknown>, success: string, failure: (error: unknown) => string): Promise<boolean> {
         if (!canManage || busy) return false;
@@ -132,7 +137,12 @@ export function BannersManager() {
         const input = bannerFormInput(editing.form);
         const target = editing.banner;
         let saved: ManageBanner | undefined;
-        const done = await run(async () => {saved = await (target ? updateManageBanner(eventID, target.ID, input) : createManageBanner(eventID, input));}, t("manage.banners.saved"), saveErrorMessage);
+        const done = await run(async () => {saved = await (target ? updateManageBanner(eventID, target.ID, input) : createManageBanner(eventID, input));}, t("manage.banners.saved"), failed => {
+            if (!(failed instanceof ManageBannerFieldError)) return saveErrorMessage(failed);
+            const messages = {Text: t("manage.banners.validation.text"), LinkURL: t("manage.banners.validation.link"), LinkLabel: t("manage.banners.validation.label", {max: BANNER_LABEL_MAX}), ActiveTo: t("manage.banners.validation.window")};
+            setServerErrors({form: editing.form, errors: {[failed.field]: messages[failed.field]}});
+            return "";
+        });
         if (done) setEditing(current => current === editing ? null : current ? {...current, banner: saved ?? current.banner} : null);
     }
 
@@ -167,7 +177,7 @@ export function BannersManager() {
     }
 
     const create = canManage
-        ? <button className="ib-btn ib-btn--primary" type="button" onClick={() => {setError(""); setEditing({banner: null, form: emptyBannerForm()});}}><Plus size={15} aria-hidden="true" /> {t("manage.banners.create")}</button>
+        ? <button className="ib-btn ib-btn--primary" type="button" onClick={() => {setError(""); setServerErrors(null); setEditing({banner: null, form: emptyBannerForm()});}}><Plus size={15} aria-hidden="true" /> {t("manage.banners.create")}</button>
         : <span className="event-broadcast-heading-actions">
             <button className="ib-btn ib-btn--primary" type="button" disabled><Plus size={15} aria-hidden="true" /> {t("manage.banners.create")}</button>
             <EventTooltip content={t("manage.banners.viewerCannotEdit")}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.banners.viewerCannotEditLabel")} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
@@ -175,32 +185,30 @@ export function BannersManager() {
 
     return <div className="event-manage-settings">
         <header className="event-manage-heading"><div><h1>{t("manage.banners.title")}</h1><p>{t("manage.banners.subtitle")}</p></div>{create}</header>
-        <div className="event-banner-block" aria-busy={query.isPending}>
-            {query.isPending ? <EventLoading event={event} label={t("manage.banners.loading")} />
-                : query.isError ? <EventLoadError message={t("manage.banners.loadError")} error={query.error} onRetry={() => void query.refetch()} />
-                    : banners.length === 0 ? <EmptyState message={t("manage.banners.empty")} />
-                        : <ul className="event-banner-list">{banners.map(banner => <li key={banner.ID} className="event-banner-list__item">
-                            <SiteBanner banner={banner} />
-                            <div className="event-banner-list__meta">
-                                <span className={`ib-tag ${banner.IsActive ? "ib-tag--ok" : ""}`.trim()}>{t(banner.IsActive ? "manage.banners.status.active" : "manage.banners.status.inactive")}</span>
-                                <span>{t(`manage.banners.audience.${banner.Audience}`)}</span>
-                                <span>{bannerWindow(banner)}</span>
-                            </div>
-                            {canManage && <div className="event-banner-list__actions">
-                                <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => {setError(""); setEditing({banner, form: bannerToForm(banner)});}}>{t("manage.banners.edit")}</button>
-                                <button className="ib-btn ib-btn--sm" type="button" onClick={() => toggle(banner)}>{t(banner.IsActive ? "manage.banners.deactivate" : "manage.banners.activate")}</button>
-                                <button className="ib-btn ib-btn--sm" type="button" disabled={busy} onClick={() => {setError(""); setRemoving(banner);}}>{t("manage.banners.delete")}</button>
-                            </div>}
-                        </li>)}</ul>}
-        </div>
+        <ManageTable event={event} state={query.isPending ? "loading" : query.isError && !query.data ? "error" : banners.length ? "ready" : "empty"}
+            label={t("manage.banners.title")} loadingLabel={t("manage.banners.loading")} emptyMessage={t("manage.banners.empty")} errorMessage={t("manage.banners.loadError")}
+            error={query.error} onRetry={() => void query.refetch()}
+            head={<tr><th>{t("manage.banners.field.text")}</th><th>{t("manage.banners.field.level")}</th><th>{t("manage.banners.table.window")}</th><th>{t("manage.banners.field.audience")}</th><th>{t("manage.banners.table.status")}</th>{canManage && <th className="event-manage-table__actions-col">{t("manage.banners.table.actions")}</th>}</tr>}>
+            <tbody>{banners.map(banner => <tr key={banner.ID}>
+                <td className="event-banner-table__text">{banner.Text}</td>
+                <td><span className={`ib-tag${banner.Level === "critical" ? " ib-tag--danger" : banner.Level === "warning" ? " ib-tag--warn" : ""}`}>{t(`manage.banners.level.${banner.Level}`)}</span></td>
+                <td>{bannerWindow(banner)}</td>
+                <td>{t(`manage.banners.audience.${banner.Audience}`)}</td>
+                <td><span className={`ib-tag ${banner.IsActive ? "ib-tag--ok" : ""}`.trim()}>{t(banner.IsActive ? "manage.banners.status.active" : "manage.banners.status.inactive")}</span></td>
+                {canManage && <td><div className="event-manage-table__actions">
+                    <EventTooltip content={t("manage.banners.edit")}>{id => <button className="ib-icon-btn" type="button" aria-label={t("manage.banners.edit")} aria-describedby={id} disabled={busy} onClick={() => {setError(""); setServerErrors(null); setEditing({banner, form: bannerToForm(banner)});}}><Pencil size={16} strokeWidth={2} aria-hidden="true" /></button>}</EventTooltip>
+                    <EventTooltip content={t(banner.IsActive ? "manage.banners.deactivate" : "manage.banners.activate")}>{id => <button className="ib-icon-btn" type="button" aria-label={t(banner.IsActive ? "manage.banners.deactivate" : "manage.banners.activate")} aria-describedby={id} onClick={() => toggle(banner)}>{banner.IsActive ? <PowerOff size={16} strokeWidth={2} aria-hidden="true" /> : <Power size={16} strokeWidth={2} aria-hidden="true" />}</button>}</EventTooltip>
+                    <EventTooltip content={t("manage.banners.delete")}>{id => <button className="ib-icon-btn" type="button" aria-label={t("manage.banners.delete")} aria-describedby={id} disabled={busy} onClick={() => {setError(""); setRemoving(banner);}}><Trash2 size={16} strokeWidth={2} aria-hidden="true" /></button>}</EventTooltip>
+                </div></td>}
+            </tr>)}</tbody>
+        </ManageTable>
         <DialogModal open={editing !== null} onClose={() => {if (!busy) setEditing(null);}} size="md" title={editing?.banner ? t("manage.banners.editTitle") : t("manage.banners.createTitle")}
             footer={<>
                 <button className="ib-btn" type="button" disabled={busy} onClick={() => setEditing(null)}>{t("common.cancel")}</button>
                 <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" busy={busy} disabled={!!validation} onClick={() => void save()}>{t("common.save")}</EventButton>
             </>}>
             {editing && <>
-                <BannerFormFields form={editing.form} disabled={!canManage} onChange={form => setEditing({...editing, form})} />
-                {validation && <p className="event-manage-validation" role="alert">{validation}</p>}
+                <BannerFormFields form={editing.form} errors={fieldErrors} disabled={!canManage} onChange={form => setEditing({...editing, form})} />
                 {error && !validation && <p className="event-manage-validation" role="alert">{error}</p>}
             </>}
         </DialogModal>

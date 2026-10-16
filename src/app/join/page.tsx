@@ -75,7 +75,7 @@ export default function JoinPage() {
         const collected = collectFormAnswers(form.data, answers);
         if (collected.error) {
             if (collected.errorKey) {
-                setFieldErrors({[collected.errorKey]: collected.error});
+                setFieldErrors(collected.errors ?? {[collected.errorKey]: collected.error});
                 requestAnimationFrame(() => focusFirstInvalid(formRef.current));
             } else setError(collected.error);
             return;

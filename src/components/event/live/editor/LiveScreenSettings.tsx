@@ -61,6 +61,7 @@ export function LiveScreenSettings({eventID, event, layout, results, sample, can
     canManage: boolean; disabled: boolean; onChange: (next: LiveLayout) => void;
 }) {
     const scale = Math.round(layout.screen.textScale * 100);
+    const screenError = layout.screen.width < 320 || layout.screen.width > 7680 || layout.screen.height < 240 || layout.screen.height > 4320 || layout.screen.width <= layout.screen.height ? t("manage.live.validation.screen") : "";
     return <div className="event-live-settings">
         <h3>{t("manage.live.screen")}</h3>
         <LiveField label={t("manage.live.theme")} help={t("manage.live.themeHelp")}>
@@ -96,10 +97,10 @@ export function LiveScreenSettings({eventID, event, layout, results, sample, can
                 options={[{value: "full", label: t("manage.live.anchorFull")}, {value: "top-left", label: t("manage.live.anchorTopLeft")}]} />}
         </LiveField>
         {layout.screen.anchor === "top-left" && <div className="event-live-settings__cells event-live-settings__cells--two">
-            <LiveField label={t("manage.live.areaWidth")} help={t("manage.live.areaWidthHelp")} required>
+            <LiveField error={screenError} label={t("manage.live.areaWidth")} help={t("manage.live.areaWidthHelp")} required>
                 {id => <LiveNumberInput id={id} value={layout.screen.width} min={320} max={7680} disabled={disabled} onChange={width => onChange({...layout, aspect: "custom", screen: {...layout.screen, width}})} />}
             </LiveField>
-            <LiveField label={t("manage.live.areaHeight")} help={t("manage.live.areaHeightHelp")} required>
+            <LiveField error={screenError} label={t("manage.live.areaHeight")} help={t("manage.live.areaHeightHelp")} required>
                 {id => <LiveNumberInput id={id} value={layout.screen.height} min={240} max={4320} disabled={disabled} onChange={height => onChange({...layout, aspect: "custom", screen: {...layout.screen, height}})} />}
             </LiveField>
         </div>}

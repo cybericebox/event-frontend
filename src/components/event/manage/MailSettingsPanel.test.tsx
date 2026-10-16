@@ -137,3 +137,23 @@ it("does not show or submit SMTP Save for equivalent normalized values", async (
     fireEvent.submit(username.closest("form")!);
     expect(puts).toHaveLength(0);
 });
+
+it("links simultaneous SMTP errors to their own fields and clears only corrected errors", async () => {
+    mockApi(settings());
+    renderPanel();
+    const host = await screen.findByLabelText(/^Хост/);
+    const port = screen.getByLabelText(/^Порт/);
+    const quota = screen.getByLabelText("Ліміт листів на добу");
+    fireEvent.change(host, {target: {value: "bad host"}});
+    fireEvent.change(port, {target: {value: "0"}});
+    fireEvent.change(quota, {target: {value: "0"}});
+    for (const control of [host, port, quota]) {
+        expect(control.getAttribute("aria-invalid")).toBe("true");
+        const issue = document.getElementById(control.getAttribute("aria-describedby")!);
+        expect(issue?.getAttribute("role")).toBe("alert");
+        expect(control.closest(".event-manage-field")?.contains(issue)).toBe(true);
+    }
+    fireEvent.change(host, {target: {value: "smtp.example.test"}});
+    expect(host.getAttribute("aria-invalid")).toBeNull();
+    expect(port.getAttribute("aria-invalid")).toBe("true");
+});

@@ -173,3 +173,5 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-vpn-instructions__body{display:grid;gap:var(--ib-3);padding:var(--ib-1) 0 var(--ib-4);text-wrap:pretty}
 
 .event-vpn-instructions[open]>.ib-accordion__q .ib-accordion__icon{transform:rotate(180deg)}
+
+.event-part__inline>.ib-field{flex:1 1 220px;min-width:0}

@@ -32,10 +32,11 @@ export function DateVariableFormatControls({field, value, block, catalog, values
         const preview = typeof date === "string" && !Number.isNaN(Date.parse(date)) && (format !== "custom" || validDatePattern(display?.pattern ?? ""))
             ? formatDateTime(date, format, display?.pattern) : "";
         const invalid = format === "custom" && !validDatePattern(display?.pattern ?? "");
+        const errorID = `date-format-${block.id}-${field}-${name}-error`;
         const label = catalog.find(variable => variable.name === name)?.label ?? name;
         return <div className="event-content-editor__date-display" key={name}>
             <div className="event-manage-field"><FieldLabel label={t("manage.editor.dateFormat.label", {label})} help={t("manage.editor.dateFormat.help")} /><EventSelect ariaLabel={t("manage.editor.dateFormat.selectLabel", {label, field})} value={format} options={[...dateDisplayOptions]} disabled={disabled} onValueChange={next => setDisplay(name, {format: next as typeof format})} /></div>
-            {format === "custom" && <div className="event-manage-field"><FieldLabel label={t("manage.editor.dateFormat.custom")} required help={t("manage.editor.dateFormat.customHelp")} /><input className={`event-manage-input${invalid ? " is-invalid" : ""}`} aria-label={t("manage.editor.dateFormat.customLabel", {label, field})} value={display?.pattern ?? ""} placeholder="dd.MM.yyyy HH:mm" disabled={disabled} onChange={event => setDisplay(name, {pattern: event.target.value})} />{invalid && <p className="event-content-editor__field-error" role="alert">{t("manage.validation.dateFormatField")}</p>}</div>}
+            {format === "custom" && <div className="event-manage-field"><FieldLabel label={t("manage.editor.dateFormat.custom")} required help={t("manage.editor.dateFormat.customHelp")} /><input aria-invalid={invalid || undefined} aria-describedby={invalid ? errorID : undefined} className={`event-manage-input${invalid ? " is-invalid" : ""}`} aria-label={t("manage.editor.dateFormat.customLabel", {label, field})} value={display?.pattern ?? ""} placeholder="dd.MM.yyyy HH:mm" disabled={disabled} onChange={event => setDisplay(name, {pattern: event.target.value})} />{invalid && <p id={errorID} className="event-content-editor__field-error" role="alert">{t("manage.validation.dateFormatField")}</p>}</div>}
             {preview && <small className="event-content-editor__hint">{t("manage.editor.dateFormat.preview", {preview})}</small>}
         </div>;
     })}</div>;

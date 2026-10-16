@@ -53,17 +53,14 @@ function FormsPage() {
     async function submit() {
         if (!selected || !form.data || working) return;
         const values: EventFormAnswers = {};
+        const errors: Record<string, string> = {};
         for (const block of form.data.Document.blocks) {
             if (!isFormField(block) || !visible(block.condition, values)) continue;
             const value = answers[block.key];
-            if (block.required && !present(value)) {
-                setError("");
-                setFieldErrors({[block.key]: t("forms.field.requiredMissing", {label: block.label})});
-                requestAnimationFrame(() => focusFirstInvalid(formRef.current));
-                return;
-            }
+            if (block.required && !present(value)) errors[block.key] = t("forms.field.requiredMissing", {label: block.label});
             if (present(value)) values[block.key] = value!;
         }
+        if (Object.keys(errors).length) {setError(""); setFieldErrors(errors); requestAnimationFrame(() => focusFirstInvalid(formRef.current)); return;}
         setWorking(true); setError(""); setFieldErrors({});
         try {
             await submitEventForm(eventID, selected.Form.ID, selected.FormVersionID, values);

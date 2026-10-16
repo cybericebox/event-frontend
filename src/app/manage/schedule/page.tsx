@@ -82,21 +82,25 @@ export default function ManageSchedulePage() {
     const draft = edited?.eventID === eventID ? edited.value : lifecycle.data ? toDraft(lifecycle.data) : null;
     const setDraft = (value: ScheduleDraft) => setEdited({eventID, value});
 
-    const validation = useMemo(() => {
-        if (!draft) return "";
+    const fieldErrors = useMemo(() => {
+        const errors: Partial<Record<keyof ScheduleDraft, string>> = {};
+        if (!draft) return errors;
         const publish = asTimestamp(draft.PublishAt);
         const start = asTimestamp(draft.StartAt);
         const finish = asTimestamp(draft.FinishAt);
         const withdraw = asTimestamp(draft.WithdrawAt);
-        if (publish === null || start === null) return t("manage.schedule.validation.publishAndStart");
-        if (start < publish) return t("manage.schedule.validation.startAfterPublish");
+        if (publish === null) errors.PublishAt = t("manage.schedule.validation.publishAndStart");
+        if (start === null) errors.StartAt = t("manage.schedule.validation.publishAndStart");
+        else if (publish !== null && start < publish) errors.StartAt = t("manage.schedule.validation.startAfterPublish");
         if (draft.ScheduledEnd) {
-            if (finish === null) return t("manage.schedule.validation.finishRequired");
-            if (finish <= start) return t("manage.schedule.validation.finishAfterStart");
-            if (draft.WithdrawAt && (withdraw === null || withdraw <= finish)) return t("manage.schedule.validation.withdrawAfterFinish");
+            if (finish === null) errors.FinishAt = t("manage.schedule.validation.finishRequired");
+            else if (start !== null && finish <= start) errors.FinishAt = t("manage.schedule.validation.finishAfterStart");
+            if (draft.WithdrawAt && (withdraw === null || (finish !== null && withdraw <= finish))) errors.WithdrawAt = t("manage.schedule.validation.withdrawAfterFinish");
         }
-        return "";
+        return errors;
     }, [draft]);
+    const validation = Object.values(fieldErrors).some(Boolean);
+    const showValidation = !!draft && !!(draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt);
     const scheduleValue = (value: ScheduleDraft) => ({...value, FinishAt: value.ScheduledEnd ? value.FinishAt : "", WithdrawAt: value.ScheduledEnd ? value.WithdrawAt : ""});
     const dirty = !!draft && !!lifecycle.data && JSON.stringify(scheduleValue(draft)) !== JSON.stringify(scheduleValue(toDraft(lifecycle.data)));
 
@@ -163,18 +167,18 @@ export default function ManageSchedulePage() {
         <form className="event-manage-section" onSubmit={save}>
             <div className="event-manage-section__head"><h2>{t("manage.schedule.keyDates")}</h2><p>{t("manage.schedule.keyDatesHelp")}</p></div>
             <div className="event-manage-fields-two">
-                <ManageDateField id="publish-at" title={t("manage.schedule.publish")} help={lifecycle.data.Status === "not_published" ? t("manage.schedule.publishHelp") : t("manage.schedule.publishedHelp")} value={draft.PublishAt} onChange={value => setDraft({...draft, PublishAt: value})} disabled={!canManage || lifecycle.data.Status !== "not_published"} required />
-                <ManageDateField id="start-at" title={t("manage.schedule.start")} help={t("manage.schedule.startHelp")} value={draft.StartAt} onChange={value => setDraft({...draft, StartAt: value})} disabled={!canManage} required />
+                <ManageDateField id="publish-at" error={showValidation ? fieldErrors.PublishAt : undefined} title={t("manage.schedule.publish")} help={lifecycle.data.Status === "not_published" ? t("manage.schedule.publishHelp") : t("manage.schedule.publishedHelp")} value={draft.PublishAt} onChange={value => setDraft({...draft, PublishAt: value})} disabled={!canManage || lifecycle.data.Status !== "not_published"} required />
+                <ManageDateField id="start-at" error={showValidation ? fieldErrors.StartAt : undefined} title={t("manage.schedule.start")} help={t("manage.schedule.startHelp")} value={draft.StartAt} onChange={value => setDraft({...draft, StartAt: value})} disabled={!canManage} required />
             </div>
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.scheduledEnd")} help={t("manage.schedule.scheduledEndHelp")} /><EventSwitch className="event-manage-form__switch" checked={draft.ScheduledEnd} onCheckedChange={checked => setDraft({...draft, ScheduledEnd: checked})} disabled={!canManage} label={t("manage.schedule.scheduleEnd")} /></div>
             {draft.ScheduledEnd && <div className="event-manage-fields-two">
-                <ManageDateField id="finish-at" title={t("manage.schedule.finish")} help={t("manage.schedule.finishHelp")} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
+                <ManageDateField id="finish-at" error={showValidation ? fieldErrors.FinishAt : undefined} title={t("manage.schedule.finish")} help={t("manage.schedule.finishHelp")} value={draft.FinishAt} onChange={value => setDraft({...draft, FinishAt: value})} disabled={!canManage || !draft.ScheduledEnd} required={draft.ScheduledEnd} />
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="withdraw-at" title={t("manage.schedule.withdraw")} help={t("manage.schedule.withdrawHelp")} />
-                    <EventDateTimePicker id="withdraw-at" ariaLabel={t("manage.schedule.withdraw")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage} allowClear />
+                    <EventDateTimePicker id="withdraw-at" aria-invalid={showValidation && !!fieldErrors.WithdrawAt || undefined} aria-describedby={showValidation && fieldErrors.WithdrawAt ? "withdraw-at-error" : undefined} ariaLabel={t("manage.schedule.withdraw")} value={draft.WithdrawAt} onChange={value => setDraft({...draft, WithdrawAt: value})} disabled={!canManage} allowClear />
+                    {showValidation && fieldErrors.WithdrawAt && <p id="withdraw-at-error" className="event-manage-validation" role="alert">{fieldErrors.WithdrawAt}</p>}
                 </div>
             </div>}
-            {validation && (draft.PublishAt || draft.StartAt || draft.FinishAt || draft.WithdrawAt) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-manage-section__actions"><EventButton saveDirty={!lifecycle.data.Configured || dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving}>{t("manage.schedule.save")}</EventButton></div>
         </form>
         <StagesManager eventID={eventID} lifecycle={lifecycle.data} canManage={canManage} />
@@ -184,8 +188,8 @@ export default function ManageSchedulePage() {
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showFinish")} help={t("manage.schedule.countdown.showFinishHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowFinish} onCheckedChange={checked => setCountdown({...countdown, ShowFinish: checked})} disabled={!canManage} label={t("manage.schedule.countdown.finishSwitch")} /></div>
             {countdown.ShowFinish && <div className="event-manage-field">
                 <ManageFieldLabel htmlFor="countdown-finish-minutes" title={t("manage.schedule.countdown.minutes")} help={t("manage.schedule.countdown.minutesHelp")} required />
-                <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage} aria-invalid={!validMinutes(countdown.Minutes)} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
-                {!validMinutes(countdown.Minutes) && <small className="event-manage-validation" role="alert">{t("manage.schedule.countdown.minutesRange")}</small>}
+                <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage} aria-invalid={!validMinutes(countdown.Minutes)} aria-describedby={!validMinutes(countdown.Minutes) ? "countdown-finish-minutes-error" : undefined} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
+                {!validMinutes(countdown.Minutes) && <small id="countdown-finish-minutes-error" className="event-manage-validation" role="alert">{t("manage.schedule.countdown.minutesRange")}</small>}
             </div>}
             {countdown.ShowFinish && <div className="event-manage-field">
                 <ManageFieldLabel title={t("manage.schedule.countdown.mode")} help={t("manage.schedule.countdown.modeHelp")} />

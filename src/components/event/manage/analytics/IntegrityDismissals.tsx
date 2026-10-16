@@ -26,7 +26,7 @@ export function integrityErrorMessage(error: unknown, fallback: string): string 
     return error instanceof ManageApiError && error.code !== undefined && knownErrors.includes(error.code) ? apiErrorMessage(error.code, fallback) : fallback;
 }
 
-export type DismissDraft = {item: IntegrityItem; kind: IntegrityKind; keyValue: string; scope: DismissScope; note: string; busy: boolean; error: string | null};
+export type DismissDraft = {item: IntegrityItem; kind: IntegrityKind; keyValue: string; scope: DismissScope; note: string; busy: boolean; error: string | null; noteError?: string | null};
 
 export function DismissDialog({draft, onChange, onClose, onDone}: {draft: DismissDraft | null; onChange: (patch: Partial<DismissDraft>) => void; onClose: () => void; onDone: () => void}) {
     const {event} = useManager();
@@ -37,7 +37,7 @@ export function DismissDialog({draft, onChange, onClose, onDone}: {draft: Dismis
     async function confirm() {
         if (!draft || draft.busy) return;
         const current = draft;
-        onChange({busy: true, error: null});
+        onChange({busy: true, error: null, noteError: null});
         try {
             await dismissIntegrityPattern(event.EventID, {TeamChallengeID: current.item.TeamChallengeID, Kind: current.kind, Key: current.keyValue, Scope: current.scope, Note: current.note.trim()});
             await Promise.all([
@@ -48,7 +48,8 @@ export function DismissDialog({draft, onChange, onClose, onDone}: {draft: Dismis
             onDone();
             toast.success(t("manage.analytics.integrity.dismiss.done"));
         } catch (error) {
-            onChange({busy: false, error: integrityErrorMessage(error, t("manage.analytics.integrity.dismiss.failed"))});
+            const message = integrityErrorMessage(error, t("manage.analytics.integrity.dismiss.failed"));
+            onChange(error instanceof ManageApiError && error.code === ApiErrorCode.EventAnalyticsReviewNoteTooLong ? {busy: false, noteError: message} : {busy: false, error: message});
         }
     }
 
@@ -67,8 +68,9 @@ export function DismissDialog({draft, onChange, onClose, onDone}: {draft: Dismis
             </fieldset>
             <div className="event-manage-field">
                 <label htmlFor={`${id}-note`}>{t("manage.analytics.integrity.review.note")}</label>
-                <textarea id={`${id}-note`} className="event-manage-input" value={draft.note} maxLength={maxReviewNoteLength} disabled={draft.busy}
-                    placeholder={t("manage.analytics.integrity.dismiss.notePlaceholder")} onChange={event => onChange({note: event.target.value, error: null})} />
+                <textarea id={`${id}-note`} aria-invalid={!!draft.noteError || undefined} aria-describedby={draft.noteError ? `${id}-note-error` : undefined} className="event-manage-input" value={draft.note} maxLength={maxReviewNoteLength} disabled={draft.busy}
+                    placeholder={t("manage.analytics.integrity.dismiss.notePlaceholder")} onChange={event => onChange({note: event.target.value, error: null, noteError: null})} />
+                {draft.noteError && <p id={`${id}-note-error`} className="event-manage-validation" role="alert">{draft.noteError}</p>}
                 <small className="event-integrity__counter">{t("manage.analytics.integrity.review.counter", {count: draft.note.length, max: maxReviewNoteLength})}</small>
             </div>
         </>}

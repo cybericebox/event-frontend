@@ -3,7 +3,6 @@
 import {useSessionDraftState} from "./manualDraft";
 import {useEffect, useRef, useState, type ChangeEvent, type DragEvent} from "react";
 import {ImagePlus, Pencil, Trash2} from "lucide-react";
-import {toast} from "react-hot-toast";
 import {uploadManageBrandDraft, type BrandAssetChange} from "@/api/manage";
 import {imageUploadMessage} from "@/api/apiErrors";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -34,7 +33,7 @@ export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, m
             setDraft({action: "replace", fileID, fileName: file.name, uploadedAt: Date.now(), previewURL: URL.createObjectURL(file)});
             return true;
         } catch (error) {
-            toast.error(imageUploadMessage(error, t("manage.appearance.brand.uploadFailed")));
+            setError(imageUploadMessage(error, t("manage.appearance.brand.uploadFailed")));
             return false;
         } finally {
             setUploading(false);
@@ -73,7 +72,7 @@ export function BrandDraftField({id, title, help, hint, kind, draft, disabled, o
         const file = event.dataTransfer.files?.[0];
         if (!disabled && !draft.uploading && file) void draft.select(file).then(accepted => {if (accepted) onFileSelected?.(file);});
     }
-    return <div className="event-brand-field">
+    return <div className="event-brand-field" role="group" aria-label={title} aria-invalid={!!draft.error || undefined} aria-describedby={draft.error ? `${id}-error` : undefined}>
         <ManageFieldLabel title={title} help={[help, hint.replace(" · ", "\n")].join("\n\n")} />
         <input ref={inputRef} id={id} type="file" hidden accept={kind === "favicon" ? "image/png" : "image/png,image/jpeg,image/webp"} onChange={handleChange} disabled={disabled || draft.uploading} />
         {draft.source ? <div className={`event-brand-current event-brand-current--${kind}`}>
@@ -88,6 +87,6 @@ export function BrandDraftField({id, title, help, hint, kind, draft, disabled, o
             <span className="event-brand-drop__action"><strong>{t("manage.appearance.brand.attach")}</strong><small>{t("manage.appearance.brand.drop")}</small></span>
         </EventButton>}
         {draft.fileName && !draft.source && !draft.expired && <small>{t("manage.appearance.brand.pending", {name: draft.fileName})}</small>}
-        {draft.error && <small className="event-brand-field__error" role="alert">{draft.error}</small>}
+        {draft.error && <small id={`${id}-error`} className="event-brand-field__error" role="alert">{draft.error}</small>}
     </div>;
 }

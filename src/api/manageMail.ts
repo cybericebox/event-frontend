@@ -118,14 +118,19 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // The first invalid field, or "" when the form can be saved. Empty fields
 // inherit the platform values, so they are always valid.
-export function identityError(form: IdentityForm): IdentityError {
-    if (form.senderName.trim().length > maxMailNameLength) return "senderName";
+export function identityFieldErrors(form: IdentityForm): Partial<Record<keyof IdentityForm, string>> {
+    const errors: Partial<Record<keyof IdentityForm, string>> = {};
+    if (form.senderName.trim().length > maxMailNameLength) errors.senderName = t("manage.mail.validation.senderName");
     const sender = form.senderAddress.trim();
-    if (sender && !emailPattern.test(sender)) return "senderAddress";
-    if (form.replyToName.trim().length > maxMailNameLength) return "replyToName";
+    if (sender && !emailPattern.test(sender)) errors.senderAddress = t("manage.mail.validation.senderAddress");
+    if (form.replyToName.trim().length > maxMailNameLength) errors.replyToName = t("manage.mail.validation.replyToName");
     const reply = form.replyToAddress.trim();
-    if (reply && !emailPattern.test(reply)) return "replyToAddress";
-    return "";
+    if (reply && !emailPattern.test(reply)) errors.replyToAddress = t("manage.mail.validation.replyToAddress");
+    return errors;
+}
+
+export function identityError(form: IdentityForm): IdentityError {
+    return (Object.keys(identityFieldErrors(form))[0] ?? "") as IdentityError;
 }
 
 export function identityInput(form: IdentityForm): IdentityInput {
@@ -144,14 +149,19 @@ export function smtpForm(smtp: EventMailSMTP | null): SMTPForm {
         maxPerSecond: smtp?.MaxPerSecond != null ? String(smtp.MaxPerSecond) : "", dailyQuota: smtp?.DailyQuota != null ? String(smtp.DailyQuota) : ""};
 }
 
-export function smtpError(form: SMTPForm): string {
-    if (!form.host.trim()) return t("manage.mail.validation.hostRequired");
-    if (/\s/.test(form.host.trim())) return t("manage.mail.validation.hostSpaces");
+export function smtpFieldErrors(form: SMTPForm): Partial<Record<keyof SMTPForm, string>> {
+    const errors: Partial<Record<keyof SMTPForm, string>> = {};
+    if (!form.host.trim()) errors.host = t("manage.mail.validation.hostRequired");
+    else if (/\s/.test(form.host.trim())) errors.host = t("manage.mail.validation.hostSpaces");
     const port = form.port.trim();
-    if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) return t("manage.mail.validation.port");
-    if (Number.isNaN(parseNumberInput(form.maxPerSecond))) return t("manage.mail.validation.maxPerSecond");
-    if (Number.isNaN(parseNumberInput(form.dailyQuota, true))) return t("manage.mail.validation.dailyQuota");
-    return "";
+    if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) errors.port = t("manage.mail.validation.port");
+    if (Number.isNaN(parseNumberInput(form.maxPerSecond))) errors.maxPerSecond = t("manage.mail.validation.maxPerSecond");
+    if (Number.isNaN(parseNumberInput(form.dailyQuota, true))) errors.dailyQuota = t("manage.mail.validation.dailyQuota");
+    return errors;
+}
+
+export function smtpError(form: SMTPForm): string {
+    return Object.values(smtpFieldErrors(form))[0] ?? "";
 }
 
 // Empty Password keeps the stored one; ClearPassword removes it and wins over

@@ -7,6 +7,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import {useParticipantPreview, participantPreviewForm} from "../ParticipantPreview";
+import {ApiErrorCode} from "@/api/apiErrors";
 import {createEventTeam, getSelfTeamFields, joinEventTeam} from "@/api/eventTeams";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -30,6 +31,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
     const [createOpen, setCreateOpen] = useSessionDraftState("create-team-open", false, {dirty: () => false});
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const [fieldError, setFieldError] = useState<{field: "name" | "code"; message: string} | null>(null);
     const fieldsQuery = useQuery({queryKey: [simulation.active ? "event-management-team-fields" : "event-team-fields", event.EventID], queryFn: () => simulation.active ? getManageTeamFields(event.EventID) : getSelfTeamFields(), select: simulation.active ? participantPreviewForm : undefined, enabled: createOpen && (!preview || simulation.active), refetchOnWindowFocus: false});
     const refresh = () => Promise.all([
         queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]}),
@@ -42,6 +44,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
         if (preview) { toast(t("participation.preview.noChanges")); return; }
         setBusy(true);
         setError("");
+        setFieldError(null);
         try {
             await joinEventTeam(event.EventID, parseJoinCode(code));
             setCode(linkCode);
@@ -49,7 +52,10 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
             await refresh();
         } catch (failure) {
             // JoinTeam: 404 = unknown link; 409 = full team, expired link or closed roster.
-            setError(errorText(failure, t("participation.noTeam.joinFailed")));
+            const code = failure && typeof failure === "object" && "code" in failure ? failure.code : undefined;
+            const message = errorText(failure, t("participation.noTeam.joinFailed"));
+            if (code === ApiErrorCode.TeamNotFound || code === ApiErrorCode.TeamInvitationUnavailable || code === ApiErrorCode.InvitationExpired) setFieldError({field: "code", message});
+            else setError(message);
         } finally { setBusy(false); }
     };
     const create = async (submit: FormEvent) => {
@@ -58,12 +64,16 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
         if (preview) { toast(t("participation.preview.noChanges")); return; }
         setBusy(true);
         setError("");
+        setFieldError(null);
         try {
             await createEventTeam(event.EventID, name.trim(), fields);
             setName(""); setFields({}); setCreateOpen(false);
             await refresh();
         } catch (failure) {
-            setError(errorText(failure, t("participation.noTeam.createFailed")));
+            const code = failure && typeof failure === "object" && "code" in failure ? failure.code : undefined;
+            const message = errorText(failure, t("participation.noTeam.createFailed"));
+            if (code === ApiErrorCode.TeamNameInvalid || code === ApiErrorCode.TeamExists || code === ApiErrorCode.NameInvalidCharacters) setFieldError({field: "name", message});
+            else setError(message);
         } finally { setBusy(false); }
     };
     return <>
@@ -72,16 +82,16 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
             <Card title={t("participation.noTeam.create")}><p className="event-pp-invite__note">{t("participation.noTeam.createNote")}</p><div className="event-part__actions"><button type="button" className="ib-btn ib-btn--primary" disabled={!!createReason} onClick={() => { setError(""); setCreateOpen(true); }}>{t("participation.noTeam.create")}</button></div>{createReason && <p className="event-part__note">{createReason}</p>}</Card>
             <Card title={t("participation.noTeam.joinTitle")}><p className="event-pp-invite__note">{t("participation.noTeam.joinNote")}</p>
                 <form className="event-part__inline" onSubmit={event => void join(event)}>
-                    <input className="ib-input ib-input--mono" value={code} onChange={event => setCode(event.target.value)} aria-label={t("participation.noTeam.code")} placeholder={t("participation.noTeam.code")} required autoComplete="off" disabled={busy} />
+                    <div className="ib-field"><input className="ib-input ib-input--mono" aria-invalid={fieldError?.field === "code" || undefined} aria-describedby={fieldError?.field === "code" ? "team-join-code-error" : undefined} value={code} onChange={event => {setCode(event.target.value); setFieldError(null);}} aria-label={t("participation.noTeam.code")} placeholder={t("participation.noTeam.code")} required autoComplete="off" disabled={busy} />{fieldError?.field === "code" && <p className="ib-field__error" id="team-join-code-error" role="alert">{fieldError.message}</p>}</div>
                     <button type="submit" className="ib-btn" disabled={busy || !!joinReason || !parseJoinCode(code)}>{t("participation.noTeam.join")}</button>
                 </form>
+                {error && !createOpen && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
                 {joinReason && <p className="event-part__note">{joinReason}</p>}
             </Card>
         </div>
-        {error && !createOpen && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
         <DialogModal open={createOpen} onClose={() => { if (!busy) setCreateOpen(false); }} title={t("participation.noTeam.create")} description={t("participation.noTeam.createDescription")}>
             <form className="event-part__form" onSubmit={event => void create(event)}>
-                <label className="ib-field"><span className="ib-field__label">{t("participation.team.name")}</span><input className="ib-input" value={name} onChange={event => setName(event.target.value)} required minLength={3} maxLength={64} disabled={busy} autoFocus /></label>
+                <label className="ib-field"><span className="ib-field__label">{t("participation.team.name")}</span><input className="ib-input" aria-invalid={fieldError?.field === "name" || undefined} aria-describedby={fieldError?.field === "name" ? "create-team-name-error" : undefined} value={name} onChange={event => {setName(event.target.value); setFieldError(null);}} required minLength={3} maxLength={64} disabled={busy} autoFocus />{fieldError?.field === "name" && <span className="ib-field__error" id="create-team-name-error" role="alert">{fieldError.message}</span>}</label>
                 {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fields} onChange={(key, value) => setFields(current => ({...current, [key]: value}))} disabled={busy} />}
                 {fieldsQuery.isError && <EventLoadError compact message={t("participation.noTeam.fieldsFailed")} error={fieldsQuery.error} onRetry={() => void fieldsQuery.refetch()} />}
                 {error && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}

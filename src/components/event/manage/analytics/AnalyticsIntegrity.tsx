@@ -2,6 +2,8 @@
 
 import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 
+import {ApiErrorCode} from "@/api/apiErrors";
+import {ManageApiError} from "@/api/manage";
 import Link from "next/link";
 import {Fragment, useId, useState} from "react";
 import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query";
@@ -100,7 +102,7 @@ function ExportButton({eventID, period, filters, thresholds, disabled}: {eventID
     return <EventButton className="ib-btn" type="button" disabled={disabled || busy} busy={busy} onClick={() => void download()}><Download size={16} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;
 }
 
-type ReviewDraft = {mode: "review" | "unreview"; item: IntegrityItem; note: string; busy: boolean; error: string | null};
+type ReviewDraft = {mode: "review" | "unreview"; item: IntegrityItem; note: string; busy: boolean; error: string | null; noteError?: string | null};
 
 function ReviewDialog({draft, onChange, onClose, onConfirm}: {draft: ReviewDraft | null; onChange: (patch: Partial<ReviewDraft>) => void; onClose: () => void; onConfirm: () => void}) {
     const id = useId();
@@ -112,8 +114,9 @@ function ReviewDialog({draft, onChange, onClose, onConfirm}: {draft: ReviewDraft
         subject={subject} confirmLabel={t(review ? "manage.analytics.integrity.review.confirm" : "manage.analytics.integrity.unreview.confirm")} onConfirm={onConfirm}>
         {review && draft && <div className="event-manage-field">
             <label htmlFor={`${id}-note`}>{t("manage.analytics.integrity.review.note")}</label>
-            <textarea id={`${id}-note`} className="event-manage-input" value={draft.note} maxLength={maxReviewNoteLength} disabled={draft.busy}
-                placeholder={t("manage.analytics.integrity.review.notePlaceholder")} onChange={event => onChange({note: event.target.value, error: null})} />
+            <textarea id={`${id}-note`} aria-invalid={!!draft.noteError || undefined} aria-describedby={draft.noteError ? `${id}-note-error` : undefined} className="event-manage-input" value={draft.note} maxLength={maxReviewNoteLength} disabled={draft.busy}
+                placeholder={t("manage.analytics.integrity.review.notePlaceholder")} onChange={event => onChange({note: event.target.value, error: null, noteError: null})} />
+            {draft.noteError && <p id={`${id}-note-error`} className="event-manage-validation" role="alert">{draft.noteError}</p>}
             <small className="event-integrity__counter">{t("manage.analytics.integrity.review.counter", {count: draft.note.length, max: maxReviewNoteLength})}</small>
         </div>}
     </ConfirmDialog>;
@@ -188,7 +191,7 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
     async function confirm() {
         if (!draft || draft.busy) return;
         const current = draft;
-        setDraft({...current, busy: true, error: null});
+        setDraft({...current, busy: true, error: null, noteError: null});
         try {
             if (current.mode === "review") await putIntegrityReview(eventID, current.item.TeamChallengeID, current.note.trim());
             else await deleteIntegrityReview(eventID, current.item.TeamChallengeID);
@@ -197,7 +200,7 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
             toast.success(t(current.mode === "review" ? "manage.analytics.integrity.review.done" : "manage.analytics.integrity.unreview.done"));
         } catch (error) {
             const message = integrityErrorMessage(error, t(current.mode === "review" ? "manage.analytics.integrity.review.failed" : "manage.analytics.integrity.unreview.failed"));
-            setDraft({...current, busy: false, error: message});
+            setDraft(error instanceof ManageApiError && error.code === ApiErrorCode.EventAnalyticsReviewNoteTooLong ? {...current, busy: false, error: null, noteError: message} : {...current, busy: false, error: message});
         }
     }
 

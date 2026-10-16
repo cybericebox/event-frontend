@@ -23,8 +23,8 @@ export function ReminderDaysField({days, disabled, onCommit}: {days: number; dis
     return <div className="event-manage-field event-manage-notifications__narrow">
         <ManageFieldLabel title={t("manage.notifications.reminder.days")} help={t("manage.notifications.reminder.daysHelp", {min: REMINDER_MIN_DAYS, max: REMINDER_MAX_DAYS})} htmlFor="event-reminder-days" required />
         <input className={`event-manage-input${invalid ? " is-invalid" : ""}`} id="event-reminder-days" type="number" inputMode="numeric" min={REMINDER_MIN_DAYS} max={REMINDER_MAX_DAYS} step={1}
-            value={text} disabled={disabled} aria-invalid={invalid} onChange={event => setText(event.target.value)} onBlur={commit}
+            value={text} disabled={disabled} aria-invalid={invalid} aria-describedby={invalid ? "event-reminder-days-error" : undefined} onChange={event => setText(event.target.value)} onBlur={commit}
             onKeyDown={event => {if (event.key === "Enter") {event.preventDefault(); commit();}}} />
-        {invalid && <p className="event-content-editor__field-error" role="alert">{t("manage.notifications.reminder.daysRange", {min: REMINDER_MIN_DAYS, max: REMINDER_MAX_DAYS})}</p>}
+        {invalid && <p id="event-reminder-days-error" className="event-content-editor__field-error" role="alert">{t("manage.notifications.reminder.daysRange", {min: REMINDER_MIN_DAYS, max: REMINDER_MAX_DAYS})}</p>}
     </div>;
 }
