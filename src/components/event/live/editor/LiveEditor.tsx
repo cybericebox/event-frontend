@@ -366,16 +366,16 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             {customGrid && <div className="event-live-editor__tool event-live-editor__custom-grid">
                 <ManageFieldLabel title={t("manage.live.gridCells")} help={t("manage.live.gridCellsHelp", liveGridLimits)} required />
                 <div>
-                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.cols")} min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={customGrid.cols || ""} disabled={locked}
+                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.cols")} aria-invalid={!liveGridValid(customGrid.cols, customGrid.rows) || undefined} aria-describedby={!liveGridValid(customGrid.cols, customGrid.rows) ? "live-custom-grid-error" : undefined} min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={customGrid.cols || ""} disabled={locked}
                         onChange={changeEvent => setCustomGrid({...customGrid, cols: changeEvent.target.valueAsNumber || 0})} onBlur={applyCustomGrid} onKeyDown={keyEvent => {if (keyEvent.key === "Enter") applyCustomGrid();}} />
                     <span aria-hidden="true">×</span>
-                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.rows")} min={liveGridLimits.minRows} max={liveGridLimits.maxRows} value={customGrid.rows || ""} disabled={locked}
+                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.rows")} aria-invalid={!liveGridValid(customGrid.cols, customGrid.rows) || undefined} aria-describedby={!liveGridValid(customGrid.cols, customGrid.rows) ? "live-custom-grid-error" : undefined} min={liveGridLimits.minRows} max={liveGridLimits.maxRows} value={customGrid.rows || ""} disabled={locked}
                         onChange={changeEvent => setCustomGrid({...customGrid, rows: changeEvent.target.valueAsNumber || 0})} onBlur={applyCustomGrid} onKeyDown={keyEvent => {if (keyEvent.key === "Enter") applyCustomGrid();}} />
                 </div>
-                {!liveGridValid(customGrid.cols, customGrid.rows) && <small>{t("manage.live.validation.grid", liveGridLimits)}</small>}
+                {!liveGridValid(customGrid.cols, customGrid.rows) && <small id="live-custom-grid-error" className="event-manage-validation" role="alert">{t("manage.live.validation.grid", liveGridLimits)}</small>}
             </div>}
         </div>
-        {(error || validation) && <div className="event-live-editor__error" role="alert">{error || validation}</div>}
+        {(error || formatProblem(layout) || layoutConflicts(layout).size > 0) && <div className="event-live-editor__error" role="alert">{error || formatProblem(layout) || t("manage.live.validation.conflicts", {widgets: layout.widgets.filter(item => layoutConflicts(layout).has(item.id)).map(item => t("manage.live.validation.widgetName", {name: liveWidgetName(item)})).join(", ")})}</div>}
         {warnings.length > 0 && <section className="event-live-editor__warnings" aria-label={t("manage.live.warnings")}>
             <h2>{t("manage.live.warningsTitle", {width: view.screen.width, height: view.screen.height})}</h2>
             <ul>{warnings.map((warning, index) => <li key={`${warning.id}-${index}`}><button type="button" onClick={() => setSelectedID(warning.id)}>{warning.text}</button></li>)}</ul>

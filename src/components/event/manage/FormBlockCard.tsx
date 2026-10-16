@@ -5,7 +5,7 @@ import {ArrowDown, ArrowUp, ChevronDown, Copy, EyeOff, GitBranch, GripVertical, 
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {EventRichTextEditor} from "@/components/event/manage/EventLexicalEditor";
 import {emptyRichText, richTextPlainText} from "@/components/event/content/richTextState";
-import {changeInput, isChoiceInput, isFormField, setStaffOnly} from "@/components/event/manage/participantFormEditor";
+import {changeInput, formBlockErrors, isChoiceInput, isFormField, setStaffOnly} from "@/components/event/manage/participantFormEditor";
 import {FieldLabel} from "@/components/event/manage/FieldLabel";
 import {FormConditionEditor, FormDateSettings, FormFileSettings, FormOptionsEditor} from "@/components/event/manage/FormFieldControls";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -78,6 +78,9 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
     onDelete: () => void;
 }) {
     const block = blocks[index];
+    const errors = formBlockErrors(blocks, index);
+    const fieldError = (field: string) => errors[field] && <span className="event-content-editor__field-error" id={`${block.id}-${field}-error`} role="alert">{errors[field]}</span>;
+    const errorProps = (field: string) => ({"aria-invalid": !!errors[field] || undefined, "aria-describedby": errors[field] ? `${block.id}-${field}-error` : undefined});
     const sortable = useSortableItem(block.id, disabled);
     const n = index + 1;
     const bodyID = `form-block-body-${block.id}`;
@@ -101,11 +104,11 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
             </div>}
             <EventTooltip content={toggleLabel} silent>{() => <button type="button" className="event-content-editor__block-toggle" aria-expanded={open} aria-controls={bodyID} aria-label={toggleLabel}><ChevronDown size={18} aria-hidden="true" /></button>}</EventTooltip>
         </div>
-        {error && open && <p className="event-content-editor__block-error" role="alert">{error}</p>}
+        {errors.block && <p className="event-content-editor__block-error" role="alert">{errors.block}</p>}
         {open && <div className="event-content-editor__block-body" id={bodyID}>{isFormField(block) ? <>
             <div className="event-form-card__main">
-                <label className="event-manage-field"><span>{t("manage.fields.block.question")}<span className="event-field-required">*</span></span><input className="event-manage-input" value={block.label} onChange={e => update({...block, label: e.target.value})} disabled={disabled} placeholder={t("manage.fields.editor.questionPlaceholder")} /></label>
-                <div className="event-manage-field"><span>{t("manage.fields.editor.answerType")}</span><EventSelect ariaLabel={t("manage.fields.editor.answerTypeFor", {n})} value={block.input} options={block.staffOnly ? inputOptions.filter(option => option.value !== "file") : inputOptions} disabled={disabled} onValueChange={value => onChange(changeInput(blocks, index, value as FormField["input"]))} /></div>
+                <label className="event-manage-field"><span>{t("manage.fields.block.question")}<span className="event-field-required">*</span></span><input {...errorProps("label")} className="event-manage-input" value={block.label} onChange={e => update({...block, label: e.target.value})} disabled={disabled} placeholder={t("manage.fields.editor.questionPlaceholder")} />{fieldError("label")}</label>
+                <div className="event-manage-field" role={errors.input ? "group" : undefined} aria-label={errors.input ? t("manage.fields.editor.answerTypeFor", {n}) : undefined} {...errorProps("input")}><span>{t("manage.fields.editor.answerType")}</span><EventSelect ariaLabel={t("manage.fields.editor.answerTypeFor", {n})} value={block.input} options={block.staffOnly ? inputOptions.filter(option => option.value !== "file") : inputOptions} disabled={disabled} onValueChange={value => onChange(changeInput(blocks, index, value as FormField["input"]))} />{fieldError("input")}</div>
                 <div className="event-form-card__switches">
                     {!block.staffOnly && <EventSwitch className="event-manage-form__switch" checked={!!block.required} onCheckedChange={checked => update({...block, required: checked})} disabled={disabled} label={t("manage.fields.editor.answerRequired")} />}
                     {!block.staffOnly && <EventSwitch className="event-manage-form__switch" checked={!!block.editable} onCheckedChange={checked => update({...block, editable: checked || undefined})} disabled={disabled} label={scope === "team" ? t("manage.fields.editor.editableTeam") : t("manage.fields.editor.editableParticipant")} />}
@@ -118,8 +121,8 @@ export function FormBlockCard({blocks, index, scope, canEdit, disabled, open, se
             {block.input === "file" && <FormFileSettings blocks={blocks} index={index} disabled={disabled} onChange={onChange} />}
             {block.input === "date" && <FormDateSettings blocks={blocks} index={index} disabled={disabled} onChange={onChange} />}
             <FormConditionEditor blocks={blocks} index={index} disabled={disabled} onChange={onChange} />
-        </> : block.type === "section" ? <label className="event-manage-field"><span>{t("manage.fields.block.section")}<span className="event-field-required">*</span></span><input className="event-manage-input" value={block.label ?? ""} onChange={e => update({...block, label: e.target.value})} disabled={disabled} /></label>
-            : block.type === "text" ? <div className="event-manage-field"><span>{t("manage.fields.block.text")}<span className="event-field-required">*</span></span><EventRichTextEditor value={block.richText ?? emptyRichText()} onChange={value => update({...block, richText: value})} variables={[]} values={{}} disabled={disabled} ariaLabel={t("manage.fields.block.text")} /></div>
+        </> : block.type === "section" ? <label className="event-manage-field"><span>{t("manage.fields.block.section")}<span className="event-field-required">*</span></span><input {...errorProps("label")} className="event-manage-input" value={block.label ?? ""} onChange={e => update({...block, label: e.target.value})} disabled={disabled} />{fieldError("label")}</label>
+            : block.type === "text" ? <div className="event-manage-field" role="group" aria-label={t("manage.fields.block.text")} {...errorProps("richText")}><span>{t("manage.fields.block.text")}<span className="event-field-required">*</span></span><EventRichTextEditor value={block.richText ?? emptyRichText()} onChange={value => update({...block, richText: value})} variables={[]} values={{}} disabled={disabled} ariaLabel={t("manage.fields.block.text")} />{fieldError("richText")}</div>
                 : block.type === "divider" ? <p>{t("manage.fields.editor.dividerNote")}</p> : <p>{t("manage.fields.editor.unsupported")}</p>}</div>}
     </section>;
 }

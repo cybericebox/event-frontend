@@ -76,7 +76,7 @@ export function BroadcastCompose() {
     const validation = composeValidation(draft);
     const canSend = canManage && !validation && recipients !== undefined && recipients > 0 && !count.isFetching;
     const subjectError = !draft.Subject.trim() ? t("manage.broadcasts.validation.subject") : "";
-    const bodyError = !emailBodyFilled(draft.Body) ? t("manage.broadcasts.validation.body") : draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim())) ? t("manage.broadcasts.validation.buttons") : "";
+    const bodyError = !emailBodyFilled(draft.Body) ? t("manage.broadcasts.validation.body") : "";
     const titleError = !draft.InAppTitle.trim() ? t("manage.broadcasts.validation.inAppTitle") : "";
     const audienceError = !ready ? t(draft.Audience.Kind === "teams" ? "manage.broadcasts.validation.teams" : "manage.broadcasts.validation.participants") : "";
     const emailInvalid = !!emailValidation(draft);

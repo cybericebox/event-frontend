@@ -4,7 +4,7 @@ import {useState} from "react";
 import {ArrowDown, ArrowUp, Plus, Trash2, X} from "lucide-react";
 import type {ConditionOperator, FileKind, FormBlock, FormField} from "@/api/manageParticipantForm";
 import {DateAnswerInput, formatDateAnswer} from "@/components/event/DateAnswerInput";
-import {addOption, conditionOperators, conditionSources, dateModeFor, dateModeOf, defaultFileMB, fileKinds, maxFileMB, officeFileKinds, defaultCondition, initialConditionValue, invalidOptions, isFormField, moveOption, removeOption, renameOption} from "@/components/event/manage/participantFormEditor";
+import {addOption, conditionOperators, conditionSources, dateModeFor, dateModeOf, defaultFileMB, fileKinds, maxFileMB, officeFileKinds, defaultCondition, initialConditionValue, formBlockErrors, invalidOptions, isFormField, moveOption, removeOption, renameOption} from "@/components/event/manage/participantFormEditor";
 import {FieldLabel} from "@/components/event/manage/FieldLabel";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -23,9 +23,11 @@ export function FormOptionsEditor({blocks, index, disabled, onChange}: Props) {
     const field = fieldAt(blocks, index);
     if (!field) return null;
     const options = field.options ?? [];
+    const optionError = !options.length ? formBlockErrors(blocks, index).options : undefined;
     const invalid = invalidOptions(options);
-    return <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.optionsFor", {n: index + 1})}>
+    return <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.optionsFor", {n: index + 1})} aria-invalid={!!optionError || undefined} aria-describedby={optionError ? `${field.id}-options-error` : undefined}>
         <span>{t("manage.fields.editor.options")}<span className="event-field-required">*</span></span>
+        {optionError && <p id={`${field.id}-options-error`} className="event-content-editor__field-error" role="alert">{optionError}</p>}
         <div className="event-form-options">{options.map((option, position) => {
             const problem = invalid.has(position) ? option.trim() ? t("manage.fields.editor.optionRepeated") : t("manage.fields.editor.optionEmpty") : null;
             const errorID = `${field.id}-option-${position}-error`;
@@ -57,7 +59,7 @@ export function FormFileSettings({blocks, index, disabled, onChange}: Props) {
     const setKinds = (kinds: FileKind[], checked: boolean) => update({fileTypes: fileKinds.filter(kind => kinds.includes(kind) ? checked : types.includes(kind))});
     const kindBox = (kind: FileKind) => <EventCheckbox key={kind} checked={types.includes(kind)} disabled={disabled} label={t(`manage.fields.fileKind.${kind}`)} onCheckedChange={checked => setKinds([kind], checked)} />;
     return <div className="event-form-file-settings">
-        <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.fileTypesFor", {n: index + 1})}>
+        <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.fileTypesFor", {n: index + 1})} aria-invalid={!types.length || undefined} aria-describedby={!types.length ? `${field.id}-file-types-error` : undefined}>
             <span>{t("manage.fields.editor.fileTypes")}<span className="event-field-required">*</span></span>
             <div className="event-form-file-settings__types">
                 {(["pdf", "image"] as FileKind[]).map(kind => kindBox(kind))}
@@ -67,11 +69,12 @@ export function FormFileSettings({blocks, index, disabled, onChange}: Props) {
                 </div>
                 {(["text", "archive"] as FileKind[]).map(kind => kindBox(kind))}
             </div>
-            {!types.length && <p className="event-content-editor__field-error">{t("manage.fields.editor.fileTypesEmpty")}</p>}
+            {!types.length && <p id={`${field.id}-file-types-error`} className="event-content-editor__field-error" role="alert">{t("manage.fields.editor.fileTypesEmpty")}</p>}
         </div>
         <div className="event-manage-field"><label htmlFor={sizeID}>{t("manage.fields.editor.fileSize")}</label>
-            <input id={sizeID} className="event-manage-input event-form-file-settings__size" type="number" min={1} max={maxFileMB} step={1} value={Number.isNaN(size) ? "" : size} aria-invalid={sizeInvalid} disabled={disabled} onChange={e => update({maxSizeMB: e.target.value === "" ? Number.NaN : Number(e.target.value)})} />
+            <input id={sizeID} className="event-manage-input event-form-file-settings__size" type="number" min={1} max={maxFileMB} step={1} value={Number.isNaN(size) ? "" : size} aria-invalid={sizeInvalid} aria-describedby={sizeInvalid ? `${sizeID}-error` : undefined} disabled={disabled} onChange={e => update({maxSizeMB: e.target.value === "" ? Number.NaN : Number(e.target.value)})} />
             <small>{t("manage.fields.editor.fileSizeHint", {max: maxFileMB})}</small>
+            {sizeInvalid && <p id={`${sizeID}-error`} className="event-content-editor__field-error" role="alert">{t("manage.fields.validation.fileSize", {n: index + 1, max: maxFileMB})}</p>}
         </div>
     </div>;
 }
@@ -82,17 +85,18 @@ export function FormDateSettings({blocks, index, disabled, onChange}: Props) {
     const field = fieldAt(blocks, index);
     if (!field) return null;
     const mode = dateModeOf(field);
+    const errors = formBlockErrors(blocks, index);
     const parts = {date: field.dateMode !== "time" && field.dateMode !== "none", time: field.dateMode === "time" || field.dateMode === "datetime"};
     const update = (patch: Partial<FormField>) => onChange(blocks.map((block, position) => position === index ? {...field, ...patch} : block));
     const n = index + 1;
     return <div className="event-form-date-settings">
-        <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.datePartsFor", {n})}><span>{t("manage.fields.editor.dateParts")}<span className="event-field-required">*</span></span>
+        <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.datePartsFor", {n})} aria-invalid={field.dateMode === "none" || undefined} aria-describedby={field.dateMode === "none" ? `${field.id}-date-parts-error` : undefined}><span>{t("manage.fields.editor.dateParts")}<span className="event-field-required">*</span></span>
             <div className="event-form-date-settings__parts">{(["date", "time"] as const).map(part => <EventCheckbox key={part} checked={parts[part]} disabled={disabled} label={t(`manage.fields.editor.dateParts.${part}`)} onCheckedChange={checked => update({dateMode: dateModeFor({...parts, [part]: checked}), minDate: undefined, maxDate: undefined})} />)}</div>
-            {field.dateMode === "none" && <p className="event-content-editor__field-error">{t("manage.fields.editor.datePartsEmpty")}</p>}
+            {field.dateMode === "none" && <p id={`${field.id}-date-parts-error`} className="event-content-editor__field-error" role="alert">{t("manage.fields.editor.datePartsEmpty")}</p>}
         </div>
         {field.dateMode !== "none" && <>
-            <div className="event-manage-field"><span>{t("manage.fields.editor.minDate")}</span><DateAnswerInput mode={mode} value={field.minDate ?? ""} onChange={value => update({minDate: value || undefined})} ariaLabel={t("manage.fields.editor.minDateFor", {n})} disabled={disabled} /></div>
-            <div className="event-manage-field"><span>{t("manage.fields.editor.maxDate")}</span><DateAnswerInput mode={mode} value={field.maxDate ?? ""} onChange={value => update({maxDate: value || undefined})} ariaLabel={t("manage.fields.editor.maxDateFor", {n})} disabled={disabled} /></div>
+            <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.minDate")} aria-invalid={!!errors.minDate || undefined} aria-describedby={errors.minDate ? `${field.id}-minDate-error` : undefined}><span>{t("manage.fields.editor.minDate")}</span><DateAnswerInput mode={mode} value={field.minDate ?? ""} onChange={value => update({minDate: value || undefined})} ariaLabel={t("manage.fields.editor.minDateFor", {n})} disabled={disabled} />{errors.minDate && <p id={`${field.id}-minDate-error`} className="event-content-editor__field-error" role="alert">{errors.minDate}</p>}</div>
+            <div className="event-manage-field" role="group" aria-label={t("manage.fields.editor.maxDate")} aria-invalid={!!errors.maxDate || undefined} aria-describedby={errors.maxDate ? `${field.id}-maxDate-error` : undefined}><span>{t("manage.fields.editor.maxDate")}</span><DateAnswerInput mode={mode} value={field.maxDate ?? ""} onChange={value => update({maxDate: value || undefined})} ariaLabel={t("manage.fields.editor.maxDateFor", {n})} disabled={disabled} />{errors.maxDate && <p id={`${field.id}-maxDate-error`} className="event-content-editor__field-error" role="alert">{errors.maxDate}</p>}</div>
         </>}
     </div>;
 }
@@ -121,11 +125,13 @@ export function FormConditionEditor({blocks, index, disabled, onChange}: Props) 
     if (!field) return null;
     const sources = conditionSources(blocks, index);
     const condition = field.condition;
+    const conditionError = formBlockErrors(blocks, index).condition;
     const source = condition ? sources.find(item => item.key === condition.fieldKey) : undefined;
     const n = index + 1;
     const update = (next: FormField["condition"]) => onChange(blocks.map((block, position) => position === index ? {...field, condition: next} : block));
-    return <div className="event-manage-form__condition" role="group" aria-label={t("manage.fields.editor.visibilityFor", {n})}>
+    return <div className="event-manage-form__condition" role="group" aria-label={t("manage.fields.editor.visibilityFor", {n})} aria-invalid={!!conditionError || undefined} aria-describedby={conditionError ? `${field.id}-condition-error` : undefined}>
         <div className="event-content-editor__tools"><FieldLabel label={t("manage.fields.editor.visibility")} help={t("manage.fields.editor.visibilityHelp")} /><button className="event-content-editor__rules-toggle" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>{condition ? conditionSummary(condition, source) : t("manage.fields.editor.visibilityAlways")}</button></div>
+        {conditionError && <p id={`${field.id}-condition-error`} className="event-content-editor__field-error" role="alert">{conditionError}</p>}
         {open && <div className="event-content-editor__rules">
             <p>{sources.length || condition ? t("manage.fields.editor.visibilityNote") : t("manage.fields.editor.visibilityNoSource")}</p>
             {condition && <div className="event-content-editor__rule">

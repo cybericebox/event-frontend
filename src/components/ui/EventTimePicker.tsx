@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, type KeyboardEvent} from "react";
+import {type AriaAttributes, useState, type KeyboardEvent} from "react";
 import {X} from "lucide-react";
 import {stepTime, timePart} from "./dateTimePicker";
 import {t} from "@/i18n/t";
@@ -12,14 +12,14 @@ const pad = (value: number) => String(value).padStart(2, "0");
 
 // The time row of EventDateTimePicker on its own: a local time of day as
 // "HH:MM" ("" for none). Typing two digits applies a part; the arrows step it.
-export function EventTimePicker({value, onChange, ariaLabel, id, disabled = false, allowClear = false}: {
+export function EventTimePicker({value, onChange, ariaLabel, id, disabled = false, allowClear = false, ...aria}: {
     value: string;
     onChange: (value: string) => void;
     ariaLabel: string;
     id?: string;
     disabled?: boolean;
     allowClear?: boolean;
-}) {
+} & Pick<AriaAttributes, "aria-invalid" | "aria-describedby">) {
     const match = /^(\d{2}):(\d{2})$/.exec(value);
     const time = match ? {hour: Number(match[1]), minute: Number(match[2])} : null;
     const [drafts, setDrafts] = useState<Record<Part, string> | null>(null);
@@ -52,7 +52,7 @@ export function EventTimePicker({value, onChange, ariaLabel, id, disabled = fals
         }
     }
 
-    return <div className="event-date-picker__time event-time-picker" role="group" aria-label={ariaLabel} id={id}>
+    return <div {...aria} className="event-date-picker__time event-time-picker" role="group" aria-label={ariaLabel} id={id}>
         {(["hour", "minute"] as Part[]).map((part, index) => <span className="event-date-picker__part" key={part}>
             {index > 0 && <span aria-hidden="true">:</span>}
             <input aria-label={t(`ui.datePicker.${part}`)} inputMode="numeric" autoComplete="off" maxLength={2} placeholder="--" value={shown[part]} disabled={disabled}

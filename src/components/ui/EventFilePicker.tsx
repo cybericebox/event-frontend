@@ -106,7 +106,7 @@ export function EventFilePicker({id, fileName, fileSize, onFile, accept, maxByte
                 {busy ? <span className="event-file-drop__busy" role="status" aria-label={t("ui.filePicker.busy")}><BusyMark /></span>
                     : <button className="ib-icon-btn ib-icon-btn--sm" type="button" disabled={disabled} aria-label={t("ui.filePicker.clear", {name: fileName})} onClick={() => {setProblem(null); onFile(null);}}><X size={16} /></button>}
             </div>
-            : <div className={zoneClass} role="button" tabIndex={inactive ? -1 : 0} aria-disabled={inactive || undefined} aria-label={label ?? t("ui.filePicker.choose")} aria-describedby={describe}
+            : <div className={zoneClass} role="button" tabIndex={inactive ? -1 : 0} aria-disabled={inactive || undefined} aria-label={label ?? t("ui.filePicker.choose")} aria-invalid={!!shownError || undefined} aria-describedby={describe}
                 onClick={open} onKeyDown={key} onDragOver={dragOver} onDragEnter={dragOver} onDragLeave={dragLeave} onDrop={drop}>
                 {busy ? <span className="event-file-drop__busy" role="status" aria-label={t("ui.filePicker.busy")}><BusyMark /></span> : <Upload className="event-file-drop__icon" size={compact ? 18 : 22} aria-hidden="true" />}
                 <span className="event-file-drop__prompt">{prompt ?? <>{t("ui.filePicker.drop")} <span className="ib-btn ib-btn--sm" aria-hidden="true">{t("ui.filePicker.choose")}</span></>}</span>

@@ -154,3 +154,5 @@
 .event-live-links__status{margin:0;color:var(--ib-ink);font-size:var(--ib-fs-13)}
 .event-live-links__hidden{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-live-links__actions{display:flex;gap:var(--ib-2);flex-wrap:wrap}
+
+.event-live-logo-row>.event-manage-validation{grid-column:1/-1;min-width:0}

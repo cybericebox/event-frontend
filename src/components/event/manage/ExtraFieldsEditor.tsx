@@ -14,7 +14,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {useManager} from "@/components/event/manage/ManagerShell";
-import {createFormField, dateModeOf, duplicateBlock, isFormField, participantFormProblem, removeBlock} from "@/components/event/manage/participantFormEditor";
+import {createFormField, dateModeOf, duplicateBlock, isFormField, participantFormProblems, removeBlock} from "@/components/event/manage/participantFormEditor";
 import {FormBlockCard, type FieldsScope} from "@/components/event/manage/FormBlockCard";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {fileRulesText} from "@/components/event/AnswerFileInput";
@@ -72,7 +72,8 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
     const blocks = draft.Document.blocks;
     const selectedID = blocks.some(block => block.id === selected[draftKey]) ? selected[draftKey] : null;
     const dirty = !sameValue(draft, saved);
-    const problem = participantFormProblem(draft.Document);
+    const problems = participantFormProblems(draft.Document);
+    const problem = problems[0];
     useDraftDirty(`extra-fields-${scope}`, query.isSuccess || query.data !== undefined ? dirty : undefined);
     const validation = problem?.message ?? null;
     const openIDs = openBlocks.key === draftKey ? openBlocks.ids : [];
@@ -134,12 +135,11 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
             {blocks.length === 0 && <EmptyState message={t("manage.fields.editor.empty")} />}
             <Sortable ids={blocks.map(block => block.id)} itemName={id => {const block = blocks.find(item => item.id === id); return block && isFormField(block) ? block.label.trim() || t("manage.fields.editor.untitledQuestion") : block?.type === "section" ? t("manage.fields.block.section") : block?.type === "text" ? t("manage.fields.block.text") : t("manage.fields.block.divider");}}
                 onMove={(from, to) => {setBlocks(moveItem(blocks, from, to)); setSelected(current => ({...current, [draftKey]: blocks[from].id}));}} onDragStateChange={setDragging}>
-            <div className="event-content-editor__stack">{blocks.map((block, index) => <FormBlockCard key={block.id} blocks={blocks} index={index} scope={scope} canEdit={canManage} disabled={!canManage} open={!dragging && openIDs.includes(block.id)} selected={selectedID === block.id} error={problem?.index === index ? validation ?? undefined : undefined}
+            <div className="event-content-editor__stack">{blocks.map((block, index) => <FormBlockCard key={block.id} blocks={blocks} index={index} scope={scope} canEdit={canManage} disabled={!canManage} open={!dragging && openIDs.includes(block.id)} selected={selectedID === block.id} error={problems.find(problem => problem.index === index)?.message}
                 onSelect={() => setSelected(current => ({...current, [draftKey]: block.id}))} onToggle={() => setBlockOpen(block.id, !openIDs.includes(block.id))}
                 onChange={setBlocks} onMove={direction => setBlocks(moveItem(blocks, index, index + direction))} onDuplicate={() => duplicate(index)} onDelete={() => remove(index)} />)}</div>
             </Sortable>
             {canManage && <div className="event-content-editor__add" aria-label={t("manage.fields.editor.addBlock")}><button className="ib-btn" type="button" onClick={() => add(createFormField())}><Plus size={16} /> {t("manage.fields.editor.addField")}</button><button className="ib-btn" type="button" onClick={() => add({id: `section-${crypto.randomUUID()}`, type: "section", label: ""})}><Plus size={16} /> {t("manage.fields.block.section")}</button><button className="ib-btn" type="button" onClick={() => add({id: `text-${crypto.randomUUID()}`, type: "text", richText: emptyRichText()})}><Plus size={16} /> {t("manage.fields.block.text")}</button><button className="ib-btn" type="button" onClick={() => add({id: `divider-${crypto.randomUUID()}`, type: "divider"})}><Plus size={16} /> {t("manage.fields.block.divider")}</button></div>}
-            {validation && (!invalidID || dragging || !openIDs.includes(invalidID)) && <p className="event-manage-validation" role="alert">{validation}</p>}
             <div className="event-content-editor__footer"><span style={{visibility: dirty || saving ? undefined : "hidden"}}>{t("manage.fields.unsavedChanges")}</span><div><button className="ib-btn" style={{visibility: dirty || saving ? undefined : "hidden"}} type="button" onClick={discard} disabled={saving || !dirty}>{t("common.cancel")}</button><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" disabled={!canManage || saving || !!validation} onClick={save} busy={saving}>{t("manage.fields.save")}</EventButton></div></div>
         </div>{askPolicy && <RequiredFieldsPolicyDialog scope={scope} fields={newRequired} answered={query.data?.Answered ?? 0} busy={saving} onCancel={() => setAskPolicy(false)} onConfirm={choice => void submit(choice)} />}
         <aside className="event-manage-content__preview" aria-label={t("manage.fields.preview.label")}><div className="event-manage-content__preview-head"><Eye size={17} /><div><h2>{t("manage.fields.preview.title")}</h2><p>{t("manage.fields.preview.subtitle")}</p></div></div><div className="event-manage-content__preview-window"><FormPreview blocks={blocks} selectedID={selectedID} scope={scope} /></div></aside></div>

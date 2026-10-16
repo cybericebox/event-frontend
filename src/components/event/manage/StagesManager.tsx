@@ -6,7 +6,7 @@ import {useRef, useState, type FormEvent} from "react";
 import {CircleHelp} from "lucide-react";
 import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorMessage, ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError, type ManageLifecycle} from "@/api/manage";
 import {
     createManageStage, deleteManageStage, getManageStages, updateManageStage, type ManageStage, type StageUpdateInput,
@@ -30,6 +30,14 @@ const stagesKey = (eventID: string) => ["event-management-stages", eventID];
 // The server's reason for a refused stage change, else the caller's text.
 const failureText = (failure: unknown, fallback: string) => failure instanceof ManageApiError ? apiErrorMessage(failure.code, fallback) : fallback;
 
+type StageFieldErrors = {name?: string; opens?: string; closes?: string};
+function stageFailureFields(failure: unknown): StageFieldErrors | null {
+    if (!(failure instanceof ManageApiError)) return null;
+    if (failure.code === ApiErrorCode.StageNameExists || failure.code === ApiErrorCode.NameInvalidCharacters) return {name: apiErrorMessage(failure.code)};
+    if (failure.code === ApiErrorCode.StageOverlap) return {opens: apiErrorMessage(failure.code), closes: apiErrorMessage(failure.code)};
+    return null;
+}
+
 const stateTag = (state: ManageStage["State"]) => <span className={`ib-tag ib-tag--sm${state === "open" ? " ib-tag--ok" : ""}`}>{t(`manage.stages.state.${state}`)}</span>;
 
 function ReturnableSwitch({checked, disabled, onCheckedChange}: {checked: boolean; disabled: boolean; onCheckedChange: (checked: boolean) => void}) {
@@ -42,13 +50,13 @@ function ReturnableSwitch({checked, disabled, onCheckedChange}: {checked: boolea
     </div>;
 }
 
-function StageBoundaryField({id, title, help, value, bound, eventDate, disabled, opening, onChange, onBoundChange}: {
+function StageBoundaryField({id, title, help, value, bound, eventDate, disabled, opening, onChange, onBoundChange, error}: {
     id: string; title: string; help: string; value: string; bound: boolean; eventDate: string | null;
-    disabled: boolean; opening: boolean; onChange: (value: string) => void; onBoundChange: (bound: boolean) => void;
+    disabled: boolean; opening: boolean; error?: string; onChange: (value: string) => void; onBoundChange: (bound: boolean) => void;
 }) {
     const missingFinish = !opening && !eventDate && !disabled;
     return <div className="event-stage__boundary">
-        <ManageDateField id={id} title={title} help={help} value={value} onChange={onChange} disabled={disabled || bound} required />
+        <ManageDateField id={id} title={title} help={help} value={value} onChange={onChange} disabled={disabled || bound} required error={error} />
         <div className="event-stage__date-source" role="radiogroup" aria-label={t(opening ? "manage.stages.opensSource" : "manage.stages.closesSource")} aria-describedby={missingFinish ? `${id}-unavailable` : undefined}>
             <label><input type="radio" name={`${id}-source`} checked={!bound} disabled={disabled} onChange={() => onBoundChange(false)} /><span>{t("manage.stages.source.custom")}</span></label>
             <label><input type="radio" name={`${id}-source`} checked={bound} disabled={disabled || !eventDate} onChange={() => onBoundChange(true)} /><span>{t(opening ? "manage.stages.source.eventStart" : "manage.stages.source.eventFinish")}</span></label>
@@ -71,6 +79,7 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
     const [dialog, setDialog] = useState<"close" | "delete" | null>(null);
     const [busy, setBusy] = useState(false);
     const [dialogError, setDialogError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<StageFieldErrors>({});
 
     const apply = (saved: ManageStage) => queryClient.setQueryData<ManageStage[]>(stagesKey(eventID), current => (current ?? []).map(item => item.ID === saved.ID ? saved : item).sort((a, b) => Date.parse(a.OpensAt) - Date.parse(b.OpensAt)));
     const refresh = () => queryClient.invalidateQueries({queryKey: stagesKey(eventID), exact: true});
@@ -88,11 +97,12 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
             if (!draft.ClosesWithEvent) input.ClosesAt = draft.ClosesAt === localDateTime(stage.ClosesAt) ? stage.ClosesAt : isoOf(draft.ClosesAt) ?? undefined;
         }
         setSaving(true);
+        setFieldErrors({});
         try {
             apply(await updateManageStage(eventID, stage.ID, input));
             setEdit(current => current === edit ? null : current);
             toast.success(t("manage.stages.saved"));
-        } catch (failure) {toast.error(failureText(failure, t("manage.stages.saveFailed")));}
+        } catch (failure) {const fields = stageFailureFields(failure); if (fields) setFieldErrors(fields); else toast.error(failureText(failure, t("manage.stages.saveFailed")));}
         finally {setSaving(false);}
     }
 
@@ -120,17 +130,17 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
         <form className="event-stage__form" onSubmit={save}>
             <div className="event-stage__head">
                 <div className="event-manage-field event-stage__name"><ManageFieldLabel htmlFor={`stage-name-${stage.ID}`} title={t("manage.stages.name")} help={t("manage.stages.help")} required />
-                    <input id={`stage-name-${stage.ID}`} className="event-manage-input" value={draft.Name} maxLength={100} required disabled={disabled}
-                        onChange={change => setEdit({stageID: stage.ID, value: {...draft, Name: change.target.value}})} /></div>
+                    <input id={`stage-name-${stage.ID}`} aria-invalid={!!fieldErrors.name || undefined} aria-describedby={fieldErrors.name ? `stage-name-${stage.ID}-error` : undefined} className="event-manage-input" value={draft.Name} maxLength={100} required disabled={disabled}
+                        onChange={change => {setFieldErrors(current => ({...current, name: undefined})); setEdit({stageID: stage.ID, value: {...draft, Name: change.target.value}});}} />{fieldErrors.name && <p id={`stage-name-${stage.ID}-error`} className="event-manage-validation" role="alert">{fieldErrors.name}</p>}</div>
                 {stateTag(stage.State)}
             </div>
             <div className="event-manage-fields-two">
-                <StageBoundaryField id={`stage-opens-${stage.ID}`} title={t("manage.stages.opens")} help={stage.State === "upcoming" ? t("manage.stages.windowHelp") : t("manage.stages.openedLocked")}
+                <StageBoundaryField error={fieldErrors.opens} id={`stage-opens-${stage.ID}`} title={t("manage.stages.opens")} help={stage.State === "upcoming" ? t("manage.stages.windowHelp") : t("manage.stages.openedLocked")}
                     value={locks.opens ? localDateTime(stage.OpensAt) : draft.OpensWithEvent ? localDateTime(lifecycle.StartAt) : draft.OpensAt} bound={!!draft.OpensWithEvent} eventDate={lifecycle.StartAt} opening
-                    onChange={value => setEdit({stageID: stage.ID, value: {...draft, OpensAt: value}})} onBoundChange={bound => setEdit({stageID: stage.ID, value: {...draft, OpensWithEvent: bound}})} disabled={disabled || locks.opens} />
-                <StageBoundaryField id={`stage-closes-${stage.ID}`} title={t("manage.stages.closes")} help={stage.State === "closed" ? t("manage.stages.closedLocked") : t("manage.stages.windowHelp")}
+                    onChange={value => {setFieldErrors(current => ({...current, opens: undefined})); setEdit({stageID: stage.ID, value: {...draft, OpensAt: value}});}} onBoundChange={bound => setEdit({stageID: stage.ID, value: {...draft, OpensWithEvent: bound}})} disabled={disabled || locks.opens} />
+                <StageBoundaryField error={fieldErrors.closes} id={`stage-closes-${stage.ID}`} title={t("manage.stages.closes")} help={stage.State === "closed" ? t("manage.stages.closedLocked") : t("manage.stages.windowHelp")}
                     value={locks.closes ? localDateTime(stage.ClosesAt) : draft.ClosesWithEvent ? localDateTime(lifecycle.FinishAt) : draft.ClosesAt} bound={!!draft.ClosesWithEvent} eventDate={lifecycle.FinishAt} opening={false}
-                    onChange={value => setEdit({stageID: stage.ID, value: {...draft, ClosesAt: value}})} onBoundChange={bound => setEdit({stageID: stage.ID, value: {...draft, ClosesWithEvent: bound}})} disabled={disabled || locks.closes} />
+                    onChange={value => {setFieldErrors(current => ({...current, closes: undefined})); setEdit({stageID: stage.ID, value: {...draft, ClosesAt: value}});}} onBoundChange={bound => setEdit({stageID: stage.ID, value: {...draft, ClosesWithEvent: bound}})} disabled={disabled || locks.closes} />
             </div>
             <LabPolicyNumberField id={`stage-retention-${stage.ID}`} title={t("manage.labs.policy.retention")} value={stage.LabRetentionMinutes ?? null}
                 min={0} max={10080} nullable placeholder={t("manage.labs.policy.inherit")} disabled={disabled}
@@ -166,6 +176,7 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
     const [closesWithEvent, setClosesWithEvent] = useSessionDraftState("new-stage-closes-with-event", false);
     const [returnable, setReturnable] = useSessionDraftState("new-stage-returnable", false);
     const [saving, setSaving] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<StageFieldErrors>({});
     const opensISO = opensWithEvent ? lifecycle.StartAt : isoOf(opens);
     const closesISO = closesWithEvent ? lifecycle.FinishAt : isoOf(closes);
     const valid = !!name.trim() && !!opensISO && !!closesISO && Date.parse(opensISO) < Date.parse(closesISO);
@@ -174,6 +185,7 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
         submitEvent.preventDefault();
         if (!valid || !canManage || saving || !opensISO || !closesISO) return;
         setSaving(true);
+        setFieldErrors({});
         try {
             await createManageStage(eventID, {Name: name.trim(), OpensAt: opensISO, ClosesAt: closesISO, Returnable: returnable, OpensWithEvent: opensWithEvent, ClosesWithEvent: closesWithEvent});
             await queryClient.invalidateQueries({queryKey: stagesKey(eventID), exact: true});
@@ -184,19 +196,19 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
             setClosesWithEvent(false);
             setReturnable(false);
             toast.success(t("manage.stages.created"));
-        } catch (failure) {toast.error(failureText(failure, t("manage.stages.saveFailed")));}
+        } catch (failure) {const fields = stageFailureFields(failure); if (fields) setFieldErrors(fields); else toast.error(failureText(failure, t("manage.stages.saveFailed")));}
         finally {setSaving(false);}
     }
 
     return <form className="event-stage event-stage--new" onSubmit={submit} aria-label={t("manage.stages.addTitle")}>
         <p className="event-stage__lead">{t("manage.stages.newHelp")}</p>
         <div className="event-manage-field"><ManageFieldLabel htmlFor="new-stage-name" title={t("manage.stages.name")} help={t("manage.stages.help")} required />
-                <input id="new-stage-name" className="event-manage-input" value={name} maxLength={100} required disabled={!canManage || saving} onChange={change => setName(change.target.value)} /></div>
+                <input aria-invalid={!!fieldErrors.name || undefined} aria-describedby={fieldErrors.name ? "new-stage-name-error" : undefined} id="new-stage-name" className="event-manage-input" value={name} maxLength={100} required disabled={!canManage || saving} onChange={change => {setName(change.target.value); setFieldErrors(current => ({...current, name: undefined}));}} />{fieldErrors.name && <p id="new-stage-name-error" className="event-manage-validation" role="alert">{fieldErrors.name}</p>}</div>
         <div className="event-manage-fields-two">
-            <StageBoundaryField id="new-stage-opens" title={t("manage.stages.opens")} help={t("manage.stages.windowHelp")}
-                value={opensWithEvent ? localDateTime(lifecycle.StartAt) : opens} bound={opensWithEvent} eventDate={lifecycle.StartAt} opening onChange={setOpens} onBoundChange={setOpensWithEvent} disabled={!canManage || saving} />
-            <StageBoundaryField id="new-stage-closes" title={t("manage.stages.closes")} help={t("manage.stages.windowHelp")}
-                value={closesWithEvent ? localDateTime(lifecycle.FinishAt) : closes} bound={closesWithEvent} eventDate={lifecycle.FinishAt} opening={false} onChange={setCloses} onBoundChange={setClosesWithEvent} disabled={!canManage || saving} />
+            <StageBoundaryField error={fieldErrors.opens} id="new-stage-opens" title={t("manage.stages.opens")} help={t("manage.stages.windowHelp")}
+                value={opensWithEvent ? localDateTime(lifecycle.StartAt) : opens} bound={opensWithEvent} eventDate={lifecycle.StartAt} opening onChange={value => {setOpens(value); setFieldErrors(current => ({...current, opens: undefined}));}} onBoundChange={setOpensWithEvent} disabled={!canManage || saving} />
+            <StageBoundaryField error={fieldErrors.closes} id="new-stage-closes" title={t("manage.stages.closes")} help={t("manage.stages.windowHelp")}
+                value={closesWithEvent ? localDateTime(lifecycle.FinishAt) : closes} bound={closesWithEvent} eventDate={lifecycle.FinishAt} opening={false} onChange={value => {setCloses(value); setFieldErrors(current => ({...current, closes: undefined}));}} onBoundChange={setClosesWithEvent} disabled={!canManage || saving} />
         </div>
         <div className="event-stage__foot">
             <div className="event-stage__returnable">

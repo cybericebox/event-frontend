@@ -10,15 +10,16 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 // One setting of the Live editor in the /manage form style: the label with
 // its (?) help and the required mark, the control, then an optional note
 // (a recommendation) or warning under it.
-export function LiveField({label, help, required = false, note, warning, children}: {
-    label: string; help: string; required?: boolean; note?: ReactNode; warning?: ReactNode;
+export function LiveField({label, help, required = false, note, warning, error, children}: {
+    label: string; help: string; required?: boolean; note?: ReactNode; warning?: ReactNode; error?: string | null;
     children: (id: string) => ReactNode;
 }) {
     const id = useId();
-    return <div className="event-live-field">
+    return <div className="event-live-field" role={error ? "group" : undefined} aria-label={error ? label : undefined} aria-invalid={!!error || undefined} aria-describedby={error ? `${id}-error` : undefined}>
         <ManageFieldLabel title={label} help={help} htmlFor={id} required={required} />
         {children(id)}
         {note && <small>{note}</small>}
+        {error && <small id={`${id}-error`} className="event-manage-validation" role="alert">{error}</small>}
         {warning && <small className="event-live-field__warning" role="status">{warning}</small>}
     </div>;
 }

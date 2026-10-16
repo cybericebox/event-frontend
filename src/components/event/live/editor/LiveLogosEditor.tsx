@@ -1,7 +1,6 @@
 "use client";
 
 import {useId, useRef, useState} from "react";
-import {toast} from "react-hot-toast";
 import {GripVertical, Moon, X} from "lucide-react";
 import {imageUploadMessage} from "@/api/apiErrors";
 import {liveLogoAccept, liveLogoMaxBytes, uploadLiveLogo} from "@/api/manageLive";
@@ -16,15 +15,16 @@ import type {LiveLogoItem} from "../LiveCanvas";
 
 const maxLogos = 32;
 
-function LogoRow({item, index, disabled, busy, onDark, onClearDark, onRemove}: {
+function LogoRow({item, index, disabled, busy, onDark, onClearDark, onRemove, error, errorID}: {
     item: LiveLogoItem & {key: string}; index: number; disabled: boolean; busy: boolean;
+    error?: string; errorID: string;
     onDark: () => void; onClearDark: () => void; onRemove: () => void;
 }) {
     const sortable = useSortableItem(item.key, disabled);
     const src = liveLogoURL(item.src);
     const dark = item.dark ? liveLogoURL(item.dark) : null;
     const name = t("manage.live.logos.file", {number: index + 1});
-    return <li className={`event-live-logo-row${sortable.dragging ? " is-dragging" : ""}`} {...sortable.itemProps}>
+    return <li className={`event-live-logo-row${sortable.dragging ? " is-dragging" : ""}`} {...sortable.itemProps} role={error ? "group" : undefined} aria-label={error ? name : undefined} aria-invalid={!!error || undefined} aria-describedby={error ? errorID : undefined}>
         <EventTooltip content={t("manage.live.logos.move")} silent>{() => <button className="event-live-logo-row__grip" type="button" aria-label={t("manage.live.logos.moveNamed", {name})} disabled={disabled} {...sortable.handleProps}><GripVertical size={16} /></button>}</EventTooltip>
         <span className="event-live-logo-row__preview is-light">{src && <img src={src} alt="" />}</span>
         <span className="event-live-logo-row__preview is-dark">{(dark ?? src) && <img src={dark ?? src!} alt="" />}</span>
@@ -33,6 +33,7 @@ function LogoRow({item, index, disabled, busy, onDark, onClearDark, onRemove}: {
             ? <EventTooltip content={t("manage.live.logos.clearDark")} silent>{() => <button type="button" aria-label={t("manage.live.logos.clearDarkNamed", {name})} disabled={disabled || busy} onClick={onClearDark}><Moon size={14} /><X size={10} /></button>}</EventTooltip>
             : <EventTooltip content={t("manage.live.logos.addDark")} silent>{() => <button type="button" aria-label={t("manage.live.logos.addDarkNamed", {name})} disabled={disabled || busy} onClick={onDark}><Moon size={14} /></button>}</EventTooltip>}
         <EventTooltip content={t("manage.live.logos.remove")} silent>{() => <button type="button" aria-label={t("manage.live.logos.removeNamed", {name})} disabled={disabled} onClick={onRemove}><X size={14} /></button>}</EventTooltip>
+        {error && <p id={errorID} className="event-manage-validation" role="alert">{error}</p>}
     </li>;
 }
 
@@ -43,6 +44,7 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
     const pickerID = useId();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [errorTarget, setErrorTarget] = useState<string | null>(null);
     const darkFor = useRef<number | null>(null);
     const darkInput = useRef<HTMLInputElement>(null);
     // Keys follow the file, so they survive reordering; the same file twice
@@ -54,11 +56,12 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
         return {...item, key: `${item.src}#${count}`};
     });
 
-    async function upload(file: File): Promise<string | null> {
+    async function upload(file: File, target: string | null = null): Promise<string | null> {
         setBusy(true);
         setError(null);
+        setErrorTarget(target);
         try {return await uploadLiveLogo(eventID, file);}
-        catch (failure) {const text = imageUploadMessage(failure, t("manage.live.logos.uploadError")); setError(text); toast.error(text); return null;}
+        catch (failure) {const text = imageUploadMessage(failure, t("manage.live.logos.uploadError")); setError(text); return null;}
         finally {setBusy(false);}
     }
     async function add(file: File | null) {
@@ -71,7 +74,7 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
         const file = files?.[0];
         if (darkInput.current) darkInput.current.value = "";
         if (index === null || !file) return;
-        const dark = await upload(file);
+        const dark = await upload(file, keyed[index]?.key ?? null);
         if (dark) onChange(items.map((item, other) => other === index ? {...item, dark} : item));
     }
     function move(from: number, to: number) {
@@ -83,13 +86,13 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
     return <div className="event-live-field event-live-logos-editor">
         <ManageFieldLabel title={t("manage.live.logos.title")} help={t("manage.live.logos.help")} htmlFor={pickerID} />
         {items.length ? <Sortable ids={keyed.map(item => item.key)} itemName={key => t("manage.live.logos.file", {number: keyed.findIndex(item => item.key === key) + 1})} onMove={move}>
-            <ul className="event-live-logo-list">{keyed.map((item, index) => <LogoRow key={item.key} item={item} index={index} disabled={disabled} busy={busy}
+            <ul className="event-live-logo-list">{keyed.map((item, index) => <LogoRow key={item.key} item={item} index={index} disabled={disabled} busy={busy} error={errorTarget === item.key ? error ?? undefined : undefined} errorID={`${pickerID}-dark-${index}-error`}
                 onDark={() => {darkFor.current = index; darkInput.current?.click();}}
                 onClearDark={() => onChange(items.map((other, position) => position === index ? {src: other.src} : other))}
                 onRemove={() => onChange(items.filter((_, position) => position !== index))} />)}</ul>
         </Sortable> : <EmptyState compact message={t("manage.live.logos.empty")} />}
         <EventFilePicker id={pickerID} fileName={null} accept={liveLogoAccept} maxBytes={liveLogoMaxBytes} busy={busy} disabled={disabled || items.length >= maxLogos}
-            prompt={t("manage.live.logos.pickerPrompt")} label={t("manage.live.logos.pickerLabel")} hint={t("manage.live.logos.pickerHint")} error={error} onFile={file => void add(file)} />
+            prompt={t("manage.live.logos.pickerPrompt")} label={t("manage.live.logos.pickerLabel")} hint={t("manage.live.logos.pickerHint")} error={errorTarget === null ? error : null} onFile={file => void add(file)} />
         <input ref={darkInput} type="file" accept={liveLogoAccept} hidden onChange={event => void addDark(event.target.files)} />
     </div>;
 }

@@ -25,12 +25,13 @@ import {AnswerValue} from "./participationParts";
 
 const asText = (value: ParticipantAnswer | undefined) => typeof value === "string" || typeof value === "number" ? String(value) : "";
 
-function Control({field, id, value, onChange, disabled, upload}: {field: FormField; id: string; value: ParticipantAnswer | undefined; onChange: (value: ParticipantAnswer) => void; disabled: boolean; upload: (key: string, file: File) => Promise<AnswerFile>}) {
+function Control({field, id, value, onChange, disabled, upload, invalid}: {field: FormField; id: string; value: ParticipantAnswer | undefined; onChange: (value: ParticipantAnswer) => void; disabled: boolean; upload: (key: string, file: File) => Promise<AnswerFile>; invalid?: boolean}) {
+    const aria = {"aria-invalid": invalid || undefined, "aria-describedby": invalid ? `${id}-error` : undefined};
     switch (field.input) {
         case "file": return <AnswerFileInput id={id} field={field} value={isFileAnswer(value) ? value : undefined} upload={file => upload(field.key, file)} onChange={next => onChange(next ?? "")} disabled={disabled} />;
         case "date": return <DateAnswerInput id={id} mode={dateModeOf(field)} value={typeof value === "string" ? value : ""} onChange={onChange} ariaLabel={field.label} disabled={disabled} />;
-        case "long_text": return <textarea id={id} className="event-manage-input" rows={4} value={asText(value)} onChange={event => onChange(event.target.value)} disabled={disabled} />;
-        case "number": return <input id={id} className="event-manage-input" type="number" value={asText(value)} onChange={event => onChange(event.target.value === "" ? "" : Number(event.target.value))} disabled={disabled} />;
+        case "long_text": return <textarea {...aria} id={id} className="event-manage-input" rows={4} value={asText(value)} onChange={event => onChange(event.target.value)} disabled={disabled} />;
+        case "number": return <input {...aria} id={id} className="event-manage-input" type="number" value={asText(value)} onChange={event => onChange(event.target.value === "" ? "" : Number(event.target.value))} disabled={disabled} />;
         case "checkbox": return <EventCheckbox id={id} checked={value === true} onCheckedChange={onChange} disabled={disabled} label={t("common.yes")} />;
         case "select": return <EventSelect value={asText(value)} ariaLabel={field.label} disabled={disabled} onValueChange={onChange}
             options={[{value: "", label: t("common.chooseOption")}, ...(field.options ?? []).map(option => ({value: option, label: option}))]} />;
@@ -39,11 +40,11 @@ function Control({field, id, value, onChange, disabled, upload}: {field: FormFie
             return <span className="event-pp-field__options" id={id}>{(field.options ?? []).map(option => <EventCheckbox key={option} checked={current.includes(option)} disabled={disabled} label={option}
                 onCheckedChange={checked => onChange(checked ? [...current, option] : current.filter(item => item !== option))} />)}</span>;
         }
-        default: return <input id={id} className="event-manage-input" type="text" value={asText(value)} onChange={event => onChange(event.target.value)} disabled={disabled} />;
+        default: return <input {...aria} id={id} className="event-manage-input" type="text" value={asText(value)} onChange={event => onChange(event.target.value)} disabled={disabled} />;
     }
 }
 
-const groupedInput = (input: FormField["input"]) => input === "checkbox" || input === "multi_select" || input === "file" || input === "date";
+const groupedInput = (input: FormField["input"]) => ["checkbox", "multi_select", "file", "date", "select"].includes(input);
 
 function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
     form: ParticipantForm; saved: ParticipantAnswers; fillable: readonly string[]; scope: "participant" | "team"; error: string;
@@ -84,16 +85,16 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
                 const editable = isChangeable(block, fillable);
                 const wide = block.input === "long_text" || block.input === "multi_select" || block.input === "file";
                 const failed = invalid.includes(block.key);
-                return <div key={block.id} className={`event-pp-field${wide ? " is-wide" : ""}${failed ? " is-invalid" : ""}`} role={groupedInput(block.input) ? "group" : undefined} aria-label={groupedInput(block.input) ? block.label : undefined}>
+                return <div key={block.id} className={`event-pp-field${wide ? " is-wide" : ""}${failed ? " is-invalid" : ""}`} role={groupedInput(block.input) ? "group" : undefined} aria-label={groupedInput(block.input) ? block.label : undefined} aria-invalid={failed || undefined} aria-describedby={failed ? `${id}-error` : undefined}>
                     <span className="event-pp-field__label">
                         <label htmlFor={id}>{block.label}</label>
                         {block.required && <span className="event-field-required" aria-hidden="true">*</span>}
                         {block.help && <EventTooltip content={block.help}>{tip => <button type="button" className="event-brand-help" aria-label={t("manage.fields.aboutField", {title: block.label})} aria-describedby={tip}><CircleHelp size={14} /></button>}</EventTooltip>}
                         {!editable && <EventTooltip content={t("participation.form.locked")}>{tip => <button type="button" className="event-pp-field__lock" aria-label={t("participation.form.lockedAria", {title: block.label})} aria-describedby={tip}><Lock aria-hidden="true" /></button>}</EventTooltip>}
                     </span>
-                    {editable ? <Control field={block} id={id} value={draft[block.key]} onChange={value => change(block.key, value)} disabled={false} upload={upload} />
+                    {editable ? <Control invalid={failed} field={block} id={id} value={draft[block.key]} onChange={value => change(block.key, value)} disabled={false} upload={upload} />
                         : <div className="event-pp-field__value" id={id}><AnswerValue field={block} value={saved[block.key]} /></div>}
-                    {failed && <span className="event-pp-field__error" role="alert">{t("participation.form.required", {title: block.label})}</span>}
+                    {failed && <span id={`${id}-error`} className="event-pp-field__error" role="alert">{t("participation.form.required", {title: block.label})}</span>}
                 </div>;
             })}</div>
         </section>)}

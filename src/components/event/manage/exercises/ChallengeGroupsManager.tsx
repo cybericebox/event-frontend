@@ -46,6 +46,7 @@ export function ChallengeGroupsManager() {
     const [removeError, setRemoveError] = useState("");
     const [moving, setMoving] = useState<{task: GroupTask; target: string} | null>(null);
     const [busy, setBusy] = useState(false);
+    const [nameError, setNameError] = useState("");
     // Optimistic orders while the server saves them.
     const [groupOrder, setGroupOrder] = useState<string[] | null>(null);
     const [taskOrder, setTaskOrder] = useState<{groupID: string | null; ids: string[]} | null>(null);
@@ -69,12 +70,14 @@ export function ChallengeGroupsManager() {
 
     async function run(action: () => Promise<unknown>, success: string | null, failure: string | ((error: unknown) => string)) {
         setBusy(true);
+        setNameError("");
         try {
             await action();
             if (success) toast.success(success);
             return true;
         } catch (error) {
-            toast.error(typeof failure === "string" ? failure : failure(error));
+            const message = typeof failure === "string" ? failure : failure(error);
+            if (error instanceof ManageApiError && error.status === 409) setNameError(message); else toast.error(message);
             return false;
         } finally {setBusy(false);}
     }
@@ -183,7 +186,7 @@ export function ChallengeGroupsManager() {
                         })} />}
             </section>
         </div>
-        {naming && <GroupNameDialog key={naming.key} draftID={naming.group?.ID ?? "new"} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
+        {naming && <GroupNameDialog error={nameError} onClearError={() => setNameError("")} key={naming.key} draftID={naming.group?.ID ?? "new"} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
             otherNames={sorted.filter(group => group.ID !== naming.group?.ID).map(group => group.Name)}
             onClose={() => setNaming(null)} onSubmit={name => naming.group ? rename(naming.group, name) : create(name)} />}
         <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} error={removeError} title={t("manage.challenges.groups.deleteTitle")}

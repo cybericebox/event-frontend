@@ -195,13 +195,15 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
               <div className="space-y-3">
                 <div className="event-manage-field">
                   <ManageFieldLabel title={t("manage.email.blocks.buttonText")} help={t("manage.email.blocks.buttonTextHelp")} htmlFor={`event-block-${stableKey}-label`} required />
-                  <input id={`event-block-${stableKey}-label`} className="event-manage-input" disabled={disabled} value={(block as ButtonBlock).label}
+                  <input id={`event-block-${stableKey}-label`} aria-invalid={!disabled && !String((block as ButtonBlock).label ?? "").trim() || undefined} aria-describedby={!disabled && !String((block as ButtonBlock).label ?? "").trim() ? `event-block-${stableKey}-label-error` : undefined} className="event-manage-input" disabled={disabled} value={(block as ButtonBlock).label}
                     onChange={(e) => updateBlock(i, { ...(block as ButtonBlock), label: e.target.value })} placeholder={t("manage.tpl.editor.buttonLabelPlaceholder")} />
+                  {!disabled && !String((block as ButtonBlock).label ?? "").trim() && <p id={`event-block-${stableKey}-label-error`} className="event-manage-validation" role="alert">{t("manage.field.required")}</p>}
                 </div>
                 <div className="event-manage-field">
                   <ManageFieldLabel title={t("manage.email.blocks.link")} help={t("manage.email.blocks.linkHelp")} htmlFor={`event-block-${stableKey}-url`} required />
-                  <input id={`event-block-${stableKey}-url`} className="event-manage-input" disabled={disabled} value={(block as ButtonBlock).url}
+                  <input id={`event-block-${stableKey}-url`} aria-invalid={!disabled && !String((block as ButtonBlock).url ?? "").trim() || undefined} aria-describedby={!disabled && !String((block as ButtonBlock).url ?? "").trim() ? `event-block-${stableKey}-url-error` : undefined} className="event-manage-input" disabled={disabled} value={(block as ButtonBlock).url}
                     onChange={(e) => updateBlock(i, { ...(block as ButtonBlock), url: e.target.value })} placeholder="https://…" />
+                  {!disabled && !String((block as ButtonBlock).url ?? "").trim() && <p id={`event-block-${stableKey}-url-error`} className="event-manage-validation" role="alert">{t("manage.field.required")}</p>}
                 </div>
                 <div className="event-manage-field">
                   <ManageFieldLabel title={t("manage.tpl.editor.alignment")} help={t("manage.email.blocks.buttonAlignHelp")} />
@@ -221,7 +223,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
                   <input id={`event-block-${stableKey}-image`} className="event-manage-input" disabled={disabled} value={(block as ImageBlock).url ?? ""}
                     onChange={(e) => updateBlock(i, { ...(block as ImageBlock), url: e.target.value, file_id: undefined })} placeholder="https://example.com/image.png" />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" role="group" aria-label={t("manage.tpl.editor.imageUrl")} aria-invalid={!!uploadState[stableKey]?.error || undefined} aria-describedby={uploadState[stableKey]?.error ? `event-block-${stableKey}-upload-error` : undefined}>
                   <input ref={(el) => { fileInputRefs.current[stableKey] = el; }} type="file" accept="image/png,image/jpeg,image/gif" data-testid="image-file-input" className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -236,7 +238,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
                     <Image unoptimized width={40} height={40} src={imageURL((block as ImageBlock).file_id!)} alt="" className="h-10 w-10 rounded-md border border-(--ib-line) object-cover" />
                   )}
                 </div>
-                {uploadState[stableKey]?.error && <p className="text-xs text-(--ib-danger)">{uploadState[stableKey]?.error}</p>}
+                {uploadState[stableKey]?.error && <p id={`event-block-${stableKey}-upload-error`} className="text-xs text-(--ib-danger)" role="alert">{uploadState[stableKey]?.error}</p>}
                 <div className="event-manage-field">
                   <ManageFieldLabel title={t("manage.email.blocks.imageAlt")} help={t("manage.email.blocks.imageAltHelp")} htmlFor={`event-block-${stableKey}-alt`} />
                   <input id={`event-block-${stableKey}-alt`} className="event-manage-input" disabled={disabled} value={(block as ImageBlock).alt ?? ""}

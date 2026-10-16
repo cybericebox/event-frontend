@@ -1,5 +1,6 @@
 import {z} from "zod";
-import {manageApiError} from "@/api/manage";
+import {ManageApiError, manageApiError} from "@/api/manage";
+import {ApiErrorCode} from "@/api/apiErrors";
 import {requireApiOrigin} from "@/utils/origins";
 
 // Site banners of an event (docs/BROADCASTS.md, «Банери»).
@@ -29,6 +30,20 @@ export function bannerInput(banner: ManageBanner): ManageBannerInput {
     };
 }
 
+const bannerServerFields = {
+    "Banner text is required": "Text",
+    "Banner link label is too long": "LinkLabel",
+    "Banner link must be an https address or a site path": "LinkURL",
+    "Banner end must be after its start": "ActiveTo",
+} as const;
+
+// Read only stable server validation identifiers; raw response text is never UI copy.
+export class ManageBannerFieldError extends ManageApiError {
+    constructor(error: ManageApiError, readonly field: typeof bannerServerFields[keyof typeof bannerServerFields]) {
+        super(error.status, error.code, error.retryAfter, error.context, error.requestId);
+    }
+}
+
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", body?: unknown): Promise<T> {
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/banners${path}`, {
@@ -36,7 +51,14 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         headers: {Accept: "application/json", ...(body === undefined ? {} : {"Content-Type": "application/json"})},
         ...(body === undefined ? {} : {body: JSON.stringify(body)}),
     });
-    if (!response.ok) throw await manageApiError(response);
+    if (!response.ok) {
+        const body: unknown = await response.clone().json().catch(() => null);
+        const parsed = z.object({Status: z.object({Message: z.string().optional()})}).safeParse(body);
+        const error = await manageApiError(response);
+        const field = parsed.success ? bannerServerFields[parsed.data.Status.Message as keyof typeof bannerServerFields] : undefined;
+        if (error.code === ApiErrorCode.BannerInvalid && field) throw new ManageBannerFieldError(error, field);
+        throw error;
+    }
     if (response.status === 204) return schema.parse(undefined);
     const raw: unknown = await response.json().catch(() => null);
     return z.object({Data: schema}).parse(raw ?? {Data: undefined}).Data;
