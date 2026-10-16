@@ -4988,5 +4988,9 @@
   "vpn.steps.app": "In the app",
   "vpn.steps.terminal": "Or in the terminal",
   "vpn.steps.terminalFolder": "In the folder containing the downloaded file, run:",
-  "vpn.steps.command": "sudo wg-quick up ./{filename}"
+  "vpn.steps.command": "sudo wg-quick up ./{filename}",
+  "vpn.copy.action": "Copy command: {command}",
+  "vpn.copy.done": "Copied",
+  "vpn.copy.failed": "Could not copy. Select the command and copy it manually.",
+  "vpn.steps.pingCommand": "ping {gateway}"
 }

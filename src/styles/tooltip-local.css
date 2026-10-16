@@ -10,3 +10,8 @@
 @media (hover:hover){.ib-tip:hover>.ib-tip__bubble{scale:1}}
 .ib-tip:not(.ib-tip--help):has(:focus-visible)>.ib-tip__bubble,.ib-tip.is-open>.ib-tip__bubble{scale:1}
 .ib-tip.is-dismissed>.ib-tip__bubble{scale:0}
+
+/* Optional top-layer bubbles for controls inside clipped native dialogs. */
+.ib-tip--floating>.ib-tip__bubble[popover]{position:fixed;inset:auto;margin:0;transform:none;scale:1;max-width:min(280px,calc(100vw - 24px))}
+.ib-tip--floating>.ib-tip__bubble[popover]:not(:popover-open){display:none}
+.ib-tip--floating>.ib-tip__bubble[popover]:popover-open{opacity:1;visibility:visible;pointer-events:auto;transition:none}

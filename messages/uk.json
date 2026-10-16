@@ -4988,5 +4988,9 @@
   "vpn.steps.app": "У застосунку",
   "vpn.steps.terminal": "Або через термінал",
   "vpn.steps.terminalFolder": "У папці із завантаженим файлом виконайте:",
-  "vpn.steps.command": "sudo wg-quick up ./{filename}"
+  "vpn.steps.command": "sudo wg-quick up ./{filename}",
+  "vpn.copy.action": "Скопіювати команду: {command}",
+  "vpn.copy.done": "Скопійовано",
+  "vpn.copy.failed": "Не вдалося скопіювати. Виділіть команду та скопіюйте вручну.",
+  "vpn.steps.pingCommand": "ping {gateway}"
 }
