@@ -60,3 +60,6 @@
 
 /* Long account menus stay inside short phone viewports, including expanded theme choices. */
 .event-account__menu{max-height:min(calc(100dvh - 24px),var(--radix-popover-content-available-height,calc(100dvh - 24px)));overflow-y:auto;overscroll-behavior:contain}
+
+/* Keep sign-in directly available on phones when there are no event sections to open. */
+.event-navbar--no-menu .ib-navbar__signin{display:inline-flex}
