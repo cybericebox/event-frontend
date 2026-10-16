@@ -233,7 +233,11 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     // The participant's own pages sit on the right; organizers see them to try them out.
     const participant = approved || !preview.active && !!managementAccess.data;
     const overflow = links.slice(visibleCount);
-    return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`} aria-busy={pending || undefined}>
+    const showParticipation = authenticated && participant;
+    const showManagement = authenticated && !preview.active && !!managementAccess.data;
+    const hasMobileMenu = !pending && (links.length > 0 || showParticipation || showManagement);
+    const menuExpanded = hasMobileMenu && open;
+    return <header className={`ib-navbar event-navbar${hasMobileMenu ? "" : " event-navbar--no-menu"}${menuExpanded ? " is-open" : ""}`} aria-busy={pending || undefined}>
         <div className="ib-navbar__bar">
             <Link className="ib-navbar__brand" href="/" aria-label={t("nav.brand", {name: event.Name})} onClick={() => setOpen(false)}>
                 <EventBrandLogo event={event} className="ib-navbar__crest" />
@@ -250,16 +254,16 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
                 {authenticated && !preview.active && <ManagerEntry eventID={event.EventID} variant="nav" />}
                 <EventHeaderActions event={event} authenticated={authenticated} approved={approved} pinned={participant} />
                 </>}
-                {!pending && <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>}
+                {hasMobileMenu && <button className="ib-navbar__toggle" type="button" aria-expanded={menuExpanded} aria-controls="event-menu" aria-label={menuExpanded ? t("nav.closeMenu") : t("nav.openMenu")} onClick={() => setOpen(value => !value)}>{menuExpanded ? <X size={20} /> : <Menu size={20} />}</button>}
             </div>
         </div>
-        <nav className="ib-navbar__panel" id="event-menu" aria-label={t("nav.mobile")}>
+        {hasMobileMenu && <nav className="ib-navbar__panel" id="event-menu" aria-label={t("nav.mobile")}>
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
-            {authenticated && participant && <>
+            {showParticipation && <>
                                 <Link href="/participation" aria-current={path === "/participation" ? "page" : undefined} onClick={() => setOpen(false)}>{t("nav.participation")}</Link>
             </>}
-            {authenticated && !preview.active && <ManagerEntry eventID={event.EventID} variant="panel" />}
+            {showManagement && <ManagerEntry eventID={event.EventID} variant="panel" />}
             {!authenticated && !pending && <a className="event-navbar__panel-signin" href={identityHref("/sign-in", event)}>{t("account.signIn")}</a>}
-        </nav>
+        </nav>}
     </header>;
 }
