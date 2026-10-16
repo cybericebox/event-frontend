@@ -85,7 +85,7 @@ function bannerImageURL(source: string | undefined): string | undefined {
 }
 
 // `title` is never shown: it is a visually hidden h1 used only when no block has a heading.
-export function ContentBlocks({document, variables, title, selectedBlockId, coverImage, eventID, preview, previewViewer, imageDimensions}: {
+export function ContentBlocks({document, variables, title, selectedBlockId, coverImage, eventID, preview, previewViewer, imageDimensions, initialNow}: {
     document: ContentDocument;
     variables: Record<string, Value>;
     title?: string;
@@ -95,6 +95,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
     preview?: boolean;
     previewViewer?: PreviewViewer;
     imageDimensions?: ContentImageDimensions;
+    initialNow?: number;
 }) {
     const blocks = document.blocks.filter(block => contentBlockVisible(block, variables));
     const primaryID = headingBlockID(blocks, coverImage);
@@ -130,7 +131,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                         <div className="ib-block-hero__row">
                             <dl className="ib-block-hero__facts">{(block.items ?? []).map((item, index) => <div key={index}><dt>{render(item.label, `item:${index}:label`)}</dt><dd>{render(item.value, `item:${index}:value`)}</dd></div>)}</dl>
                             <div className="ib-block-hero__aside">
-                                {(block.targetVariable || block.targetDate) && (!gap || preview) && <CountdownValue target={target} display={block.timerDisplay} />}
+                                {(block.targetVariable || block.targetDate) && (!gap || preview) && <CountdownValue initialNow={initialNow} target={target} display={block.timerDisplay} />}
                                 {block.note && <p className="ib-block-hero__note">{render(block.note, "note")}</p>}
                             </div>
                         </div>
@@ -165,7 +166,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                 const gap = !!blockDataGap(block, variables);
                 if (gap && !preview) return null;
                 const showFrom = block.showFromSource === "custom" ? block.showFromDate : block.showFromSource === "event" ? variables[block.showFromVariable ?? ""] : null;
-                return <CountdownWindow key={block.id} showFrom={typeof showFrom === "string" ? showFrom : null} target={typeof target === "string" ? target : null} hideAfterFinish={block.hideAfterFinish}><section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}${!block.title && !block.text ? " ib-block-countdown--timer-only" : ""}${block.timerSize === "xl" ? " ib-block-countdown--timer-xl" : ""}${block.surface === "frame" ? " ib-block-countdown--frame" : ""} ib-block-countdown--text-${block.verticalAlignment ?? "center"}`} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined} data-preview-gap={gap || undefined}><div className="ib-block__in"><div>{block.title && <Heading className="ib-block-countdown__title">{render(block.title, "title")}</Heading>}{block.text && <p className="ib-block-countdown__text">{render(block.text, "text")}</p>}</div><div className="ib-block-countdown__side"><CountdownValue target={typeof target === "string" ? target : null} display={block.timerDisplay} /></div></div></section></CountdownWindow>;
+                return <CountdownWindow initialNow={initialNow} key={block.id} showFrom={typeof showFrom === "string" ? showFrom : null} target={typeof target === "string" ? target : null} hideAfterFinish={block.hideAfterFinish}><section className={`ib-block ib-block-countdown${block.variant === "center" ? " ib-block-countdown--center" : ""}${!block.title && !block.text ? " ib-block-countdown--timer-only" : ""}${block.timerSize === "xl" ? " ib-block-countdown--timer-xl" : ""}${block.surface === "frame" ? " ib-block-countdown--frame" : ""} ib-block-countdown--text-${block.verticalAlignment ?? "center"}`} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined} data-preview-gap={gap || undefined}><div className="ib-block__in"><div>{block.title && <Heading className="ib-block-countdown__title">{render(block.title, "title")}</Heading>}{block.text && <p className="ib-block-countdown__text">{render(block.text, "text")}</p>}</div><div className="ib-block-countdown__side"><CountdownValue initialNow={initialNow} target={typeof target === "string" ? target : null} display={block.timerDisplay} /></div></div></section></CountdownWindow>;
             }
             if (block.type === "partners") return <PartnersBlock key={block.id} id={blockElementID(block)} selected={selectedBlockId === block.id} heading={heading} text={render(block.text, "text")} groups={(block.groups ?? []).map((group, groupIndex) => ({
                 title: render(group.title, `group:${groupIndex}:title`),

@@ -12,7 +12,10 @@ export async function EventLanding() {
     if (!content) notFound();
 
     const bundle = (await getCommonPage())!;
+    // This server-only request snapshot becomes the client's deterministic initial clock.
+    // eslint-disable-next-line react-hooks/purity
+    const initialNow = Date.now();
     return <div className="event-landing ib-blocks">
-        <LiveContentBlocks imageDimensions={bundle.Images} revision={bundle.Revision} eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} title={event.Name} coverImage={event.PreviewPicture} />
+        <LiveContentBlocks initialNow={initialNow} imageDimensions={bundle.Images} revision={bundle.Revision} eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} title={event.Name} coverImage={event.PreviewPicture} />
     </div>;
 }
