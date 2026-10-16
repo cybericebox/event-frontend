@@ -1,3 +1,4 @@
+import {EventLanding} from "@/components/event/content/EventLanding";
 import type {Metadata} from "next";
 import {eventPageMetadata} from "@/utils/pageMetadata";
 import {t} from "@/i18n/t";
@@ -7,5 +8,5 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Layout({children}: {children: React.ReactNode}) {
-    return children;
+    return <><EventLanding />{children}</>;
 }

@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {cleanup, render, screen} from "@testing-library/react";
+import {cleanup, render, screen, act} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {ReactNode} from "react";
 import JoinPage from "./page";
 import {consumeJoinIntent, createJoinIntent} from "@/utils/joinIntent";
 
-const api = vi.hoisted(() => ({join: vi.fn(async () => 2), push: vi.fn()}));
+const api = vi.hoisted(() => ({join: vi.fn(async () => 2), push: vi.fn(), replace: vi.fn(), invitation:vi.fn()}));
 const state = vi.hoisted(() => ({
     status: 0,
     participation: null as unknown,
@@ -15,7 +15,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
-vi.mock("next/navigation", () => ({useRouter: () => ({push: api.push, replace: vi.fn()})}));
+vi.mock("next/navigation", () => ({useRouter: () => ({push: api.push, replace: api.replace})}));
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event-1", Name: "Олімпіада", Registration: 2})}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => null}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
@@ -24,7 +24,7 @@ vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {labe
 vi.mock("@/api/clientAuth", () => ({
     getCurrentUser: async () => ({ID: "u", FirstName: "", LastName: "", Email: ""}),
     getJoinStatus: async () => state.status,
-    getInvitationInfo: async () => ({Status: state.status, Invited: false}),
+    getInvitationInfo: () => api.invitation(),
     getParticipation: async () => state.participation,
 }));
 vi.mock("@/api/participantForm", async importOriginal => ({
@@ -40,7 +40,7 @@ function view() {
     return render(<QueryClientProvider client={client}><JoinPage /></QueryClientProvider>);
 }
 
-beforeEach(() => { state.status = 0; state.participation = null; state.staff = false; state.form = false; api.join.mockClear(); window.history.replaceState(null, "", "/join"); sessionStorage.clear(); });
+beforeEach(() => { HTMLDialogElement.prototype.showModal=function(){this.open=true;}; HTMLDialogElement.prototype.close=function(){this.open=false;}; api.replace.mockReset(); api.invitation.mockReset(); api.invitation.mockImplementation(async()=>({Status:state.status,Invited:false})); state.status = 0; state.participation = null; state.staff = false; state.form = false; api.join.mockClear(); window.history.replaceState(null, "", "/join"); sessionStorage.clear(); });
 afterEach(cleanup);
 
 describe("join page", () => {
@@ -145,4 +145,25 @@ describe("join page", () => {
         await screen.findByRole("button", {name: "Приєднатися"});
         expect(api.join).not.toHaveBeenCalled();
     });
+});
+
+it("keeps invitation checks visible instead of claiming an application was submitted", async()=>{
+ state.status=1;state.participation=block({Allowed:false,Reason:""});
+ let resolve!: (value:unknown)=>void;
+ api.invitation.mockImplementation(()=>new Promise(r=>{resolve=r;}));
+ view();await vi.waitFor(()=>expect(api.invitation).toHaveBeenCalled());
+ expect(screen.queryByRole("dialog",{name:"Заявку подано"})).toBeNull();
+ await act(async()=>resolve({Status:1,Invited:true}));
+ await vi.waitFor(()=>expect(api.replace).toHaveBeenCalledWith("/invite"));
+ expect(screen.queryByRole("dialog",{name:"Заявку подано"})).toBeNull();
+});
+it("does not mask an invitation load error as a submitted application",async()=>{
+ state.status=1;state.participation=block({Allowed:false,Reason:""});api.invitation.mockRejectedValue(new Error("unavailable"));
+ view();await screen.findByRole("button",{name:"Спробувати ще раз"});
+ expect(screen.queryByRole("dialog",{name:"Заявку подано"})).toBeNull();
+});
+it("offers an approved individual the participation page, never team setup",async()=>{
+ state.status=2;state.participation=block({Allowed:false,Reason:""});view();
+ const link=await screen.findByRole("link",{name:"Участь"});expect(link.getAttribute("href")).toBe("/participation");
+ expect(screen.queryByRole("link",{name:"Перейти до команди"})).toBeNull();
 });

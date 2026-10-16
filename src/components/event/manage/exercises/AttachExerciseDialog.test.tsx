@@ -136,3 +136,40 @@ describe("AttachExerciseDialog", () => {
         expect(screen.getByRole("button", {name: /Tagged/})).toBeTruthy();
     });
 });
+
+it("uses the ordinary picker for preview selections without mutating competition attachments", async () => {
+    const web = {...choice("22222222-2222-4222-8222-222222222222", "Web", false), Attached: true};
+    api.choices.mockResolvedValue([web]);
+    api.preview.mockResolvedValue({ID: web.ID, Name: "Web", Description: "", VersionID: "v", VariantCount: 2, Variant: 0, Tasks: []});
+    const select = vi.fn(async () => undefined);
+    render(<QueryClientProvider client={new QueryClient()}><AttachExerciseDialog eventID="e" infrastructureAllowed open onClose={vi.fn()} onAttached={vi.fn(async () => undefined)} selectionAdapter={{attachedVersionIDs: [], onSelect: select}} /></QueryClientProvider>);
+    const item = await screen.findByRole("button", {name: /Web/});
+    expect(item).toHaveProperty("disabled", false);
+    fireEvent.click(item);
+    expect(await screen.findByLabelText(t("manage.exercises.attachDialog.previewVariant"))).toBeTruthy();
+    expect(screen.queryByRole("radio")).toBeNull();
+    fireEvent.click(screen.getByRole("button", {name: t("common.add")}));
+    await waitFor(() => expect(select).toHaveBeenCalledWith(expect.objectContaining({ID: web.ID}), 0));
+    expect(api.attach).not.toHaveBeenCalled();
+});
+
+it("limits preview catalog and variant choices to event-eligible availability", async () => {
+    const eligible = choice("eligible", "Eligible", true);
+    api.choices.mockResolvedValue([eligible, choice("dynamic", "Dynamic", true), choice("unavailable", "Unavailable", false)]);
+    api.preview.mockResolvedValue({ID: eligible.ID, Name: "Eligible", Description: "", VersionID: "v", VariantCount: 3, Variant: 2, Tasks: []});
+    const select = vi.fn(async () => undefined);
+    render(<QueryClientProvider client={new QueryClient()}><AttachExerciseDialog eventID="e" infrastructureAllowed={false} open onClose={vi.fn()} onAttached={vi.fn(async () => undefined)} selectionAdapter={{availableVariants: {[eligible.PublishedVersionID]: [2]}, attachedVersionIDs: [], onSelect: select}} /></QueryClientProvider>);
+    fireEvent.click(await screen.findByRole("button", {name: /Eligible/}));
+    expect(api.choices).toHaveBeenCalledWith("e", "", "all", []);
+    expect(screen.getByRole("button", {name: /Eligible/})).toHaveProperty("disabled", false);
+    expect(screen.queryByRole("button", {name: /Dynamic/})).toBeNull();
+    expect(screen.queryByRole("button", {name: /Unavailable/})).toBeNull();
+    await waitFor(() => expect(api.preview).toHaveBeenCalledWith("e", eligible.PublishedVersionID, 2));
+    const variant = await screen.findByLabelText(t("manage.exercises.attachDialog.previewVariant"));
+    expect(variant.textContent).toContain("3");
+    expect(variant.textContent).not.toContain("1");
+    expect(variant.textContent).not.toContain("2");
+    fireEvent.click(screen.getByRole("button", {name: t("common.add")}));
+    await waitFor(() => expect(select).toHaveBeenCalledWith(expect.objectContaining({ID: eligible.ID}), 2));
+    expect(api.attach).not.toHaveBeenCalled();
+});

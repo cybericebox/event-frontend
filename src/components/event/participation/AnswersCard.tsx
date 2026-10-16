@@ -98,13 +98,12 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
             })}</div>
         </section>)}
         {error && <p className="event-pp-field__error" role="alert">{error}</p>}
-        {<div className="event-pp-savebar" role={dirty || busy ? "region" : undefined} aria-label={dirty || busy ? t("participation.form.saveBar") : undefined}>
-            <div className="event-pp-savebar__text" style={{visibility: dirty || busy ? undefined : "hidden"}}><strong>{t("participation.form.dirty")}</strong><small>{t("participation.form.dirtyNote")}</small></div>
+        <div className="event-pp-savebar" role={dirty || busy ? "region" : undefined} aria-label={dirty || busy ? t("participation.form.saveBar") : undefined}>
             <div className="event-pp-savebar__actions">
                 <button type="button" className="ib-btn" disabled={busy} onClick={() => dirty ? setDiscard(true) : onCancel()}>{t(dirty ? "common.cancel" : "participation.form.close")}</button>
                 <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
             </div>
-        </div>}
+        </div>
         <ConfirmDialog open={discard} onCancel={() => setDiscard(false)} title={t("participation.form.discardTitle")} description={t("participation.form.discardText")}
             cancelLabel={t("participation.form.keepEditing")} confirmLabel={t("participation.form.discard")} tone="danger" onConfirm={() => { setEdited(null); setDiscard(false); onCancel(); }} />
     </form>;

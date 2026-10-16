@@ -22,6 +22,6 @@ export function NotificationIcon({icon = "bell", tone = "neutral", accentColor =
     const Icon = icons[icon] ?? Bell;
     return <span className={`event-notification-icon${compact ? " is-compact" : ""}`} aria-hidden="true"
         style={{color: accent, backgroundColor: `color-mix(in srgb, ${accent} 12%, var(--ib-surface))`}}>
-        <Icon size={compact ? 16 : 20} strokeWidth={1.8} />
+        <Icon size={compact ? 16 : 20} strokeWidth={2} />
     </span>;
 }

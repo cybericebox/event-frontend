@@ -24,7 +24,7 @@ vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => null}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: false, pending: false})}));
 vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => null}));
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: false}), StandStatusIcon: () => null, standStatusText: () => ({title: "", note: ""})}));
-vi.mock("@/api/clientAuth", () => ({getParticipation: async () => ({Phase: "started", Staff: false, RosterOpen: true, RosterReason: ""})}));
+vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({FirstName: "Олена", LastName: "Коваль", Email: "test@example.test"}), getParticipation: async () => ({Phase: "started", Staff: false, RosterOpen: true, RosterReason: ""})}));
 vi.mock("@/api/participantForm", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/participantForm")>()),
     getOwnParticipantAnswers: async () => state.answers,
@@ -79,6 +79,17 @@ beforeEach(() => {
     sessionStorage.clear();
 });
 afterEach(cleanup);
+
+it.each([
+    ["profile", true, false], ["profile", false, true], ["profile", undefined, false],
+    ["team", true, false], ["team", false, true], ["team", undefined, false],
+])("shows hints only when allowed: tab=%s disabled=%s", async (tab, disabled, visible) => {
+    window.history.replaceState(null, "", `/participation?tab=${tab}`);
+    state.participant = {event, participantInfo: {...info, HintsDisabled: disabled}, ownTeam: team(TeamRole.Member)};
+    view();
+    await screen.findByText(tab === "team" ? "Сині" : "Олена Коваль");
+    expect(!!screen.queryByText("Підказки", {selector: ".event-analytics-stat__label span"})).toBe(visible);
+});
 
 it("shows the participant their place, own figures and only their own solves, never the wrong answers", async () => {
     state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member)};
@@ -140,7 +151,8 @@ it("gives the captain the roster with contributions, pending invitees, the link 
     expect(within(roster).getByText("Очікує підтвердження")).toBeTruthy();
     expect(within(roster).getByText("300")).toBeTruthy();
     expect(within(roster).getAllByRole("button", {name: /^Виключити /})).toHaveLength(1);
-    expect((screen.getByLabelText("Посилання для запрошення") as HTMLInputElement).value).toContain("join=secret");
+    expect(screen.queryByLabelText("Посилання для запрошення")).toBeNull();
+    expect(screen.getByRole("button", {name: "Копіювати запрошення"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Перевипустити"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Розпустити команду"})).toBeTruthy();
     expect(screen.getByText("Розвʼязав")).toBeTruthy();

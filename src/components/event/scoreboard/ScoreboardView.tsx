@@ -22,6 +22,9 @@ import {ScoreTable, type ScoreTableState} from "./ScoreTable";
 import "@/components/event/manage/manageTable.css";
 import "./scoreboard.css";
 
+import {getPreviewBoard} from "@/api/participantPreview";
+import {previewProgress, previewResults} from "../participation/previewProgress";
+
 const deniedMessages = {hidden: "scoreboard.hidden", participants_only: "scoreboard.participantsOnly"} as const;
 
 // The participant and guest «Результати»: a chart of the leaders (plus the
@@ -37,7 +40,7 @@ export function ScoreboardView() {
     const base = participant ? resultsAvailability(participant.participantInfo) : event ? resultsAvailability(event) : "hidden";
     const [now, setNow] = useState(() => Date.now());
     const [search, setSearch] = useState("");
-    const started = !!event && Date.parse(event.StartTime) <= now;
+    const started = preview.active || !!event && Date.parse(event.StartTime) <= now;
     const view = scoreboardAccess(preview.active ? previewResultsAvailability(base, preview.state!.status, preview.config) : base, !preview.active && access.staff);
     const readable = view.fetch;
     useEffect(() => {
@@ -45,11 +48,14 @@ export function ScoreboardView() {
         return () => clearInterval(id);
     }, [started]);
     const queryClient = useQueryClient();
-    const queryKey = ["event-public-results", event?.EventID];
+    const queryKey = [preview.active ? "event-preview-results" : "event-public-results", event?.EventID];
     const results = useQuery({
         queryKey,
-        queryFn: () => getManageResults(event!.EventID),
-        enabled: !!event && readable && !access.pending,
+        queryFn: async () => preview.active ? previewResults(previewProgress((await getPreviewBoard(event!.EventID)).Challenges, {
+            userID: preview.state!.userID, name: t("participantPreview.you"), teamID: preview.state?.team?.ID, teamName: preview.state?.team?.Name,
+        })) : getManageResults(event!.EventID),
+        enabled: !!event && readable && (preview.active || !access.pending),
+        refetchInterval: preview.active ? 10000 : false,
         retry: false,
         refetchOnWindowFocus: false,
     });
@@ -73,7 +79,7 @@ export function ScoreboardView() {
             if (step.reload) await queryClient.invalidateQueries({queryKey});
             return step.cursor.since;
         },
-        enabled: !!event && readable && snapshotRevision !== undefined,
+        enabled: !preview.active && !!event && readable && snapshotRevision !== undefined,
         initialData: () => snapshotRevision, initialDataUpdatedAt: () => snapshotAt,
         staleTime: RESULTS_POLL_SECONDS * 1000 * 0.8,
         retry: false,
@@ -92,9 +98,9 @@ export function ScoreboardView() {
         return () => clearTimeout(id);
     }, [freeze, refetch]);
 
-    if (!event || access.pending) return <EventLoading event={event} label={t("scoreboard.loadingRanking")} />;
+    if (!event || !preview.active && access.pending) return <EventLoading event={event} label={t("scoreboard.loadingRanking")} />;
     const teamMode = event.Participation === 1;
-    const ownTeamID = participant?.ownTeam?.ID;
+    const ownTeamID = preview.active ? preview.state?.team?.ID ?? preview.state?.userID : participant?.ownTeam?.ID;
     // A reply that closes the board (the setting changed meanwhile) wins.
     const denied = results.error instanceof ResultsUnavailableError ? deniedMessages[results.error.reason as keyof typeof deniedMessages] ?? "scoreboard.hidden" : view.message;
     const data = !denied ? results.data : undefined;
@@ -110,7 +116,7 @@ export function ScoreboardView() {
     const ownRow = !!data && !!ownTeamID && data.Scoreboard.some(entry => entry.TeamID === ownTeamID);
     const frozen = !!data?.Freeze.Applied;
     const finished = !!event.FinishTime && Date.parse(event.FinishTime) <= now;
-    const startAt = Date.parse(event.StartTime);
+    const startAt = preview.active ? Math.min(Date.parse(event.StartTime), data?.Timeline[0] ? Date.parse(data.Timeline[0].SolvedAt) : now) : Date.parse(event.StartTime);
     const finishAt = event.FinishTime ? Date.parse(event.FinishTime) : null;
     // Before the start the axes span the planned event (or two hours).
     const chartEnd = !started ? finishAt ?? startAt + 2 * 3_600_000 : Math.max(startAt + 60000, Math.min(finishAt ?? Number.POSITIVE_INFINITY, now));

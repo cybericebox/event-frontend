@@ -108,8 +108,8 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     const windowOpen = registrationOpen && timeWindowOpen;
     const staff = useStaffAccess(eventID, hasJoin && !viewer);
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: hasJoin && !viewer, retry: false, refetchInterval: false});
-    const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !!eventID && !!identity.data, retry: false, refetchInterval: false});
-    const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !viewer && join.data === 1, retry: false, refetchInterval: false});
+    const join = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, enabled: hasJoin && !viewer && !participantPreview.active && !!eventID && !!identity.data, retry: false, refetchInterval: false});
+    const invitation = useQuery({queryKey: ["event-invitation-status", eventID], queryFn: () => getInvitationInfo(), enabled: hasJoin && !viewer && !participantPreview.active && join.data === 1, retry: false, refetchInterval: false});
     const participation = useParticipation(eventID, hasJoin && !viewer && join.data === 0);
     // A guest goes to /join like everyone else: the session page sends them to the sign-in and
     // remembers, in this browser, that the registration was asked for (joinIntent.ts).
@@ -119,7 +119,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
         registerAllowed: participantPreview.active ? true : participation.isPending ? "loading" : participation.data ? participation.data.Register.Allowed : undefined,
         identity: participantPreview.active ? "user" : identity.isPending ? "loading" : identity.data ? "user" : "guest",
         status: participantPreview.active ? participantPreview.state!.status : join.isPending ? "loading" : join.isError ? "error" : join.data,
-        invitation: invitation.isPending ? "loading" : invitation.data,
+        invitation: participantPreview.active ? {Invited:false,InvitationExpired:false} : invitation.isPending ? "loading" : invitation.data,
     }) : {kind: "hidden" as const};
     const visible = actions.flatMap((action, index): {index: number; label: string; href?: string; status?: "loading" | "static"}[] => {
         if (action.kind !== "join_event") {
