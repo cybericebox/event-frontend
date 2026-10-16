@@ -21,7 +21,6 @@ import {useDrawerContract} from "./useDrawerContract";
 import {managerCrumbs} from "./managerNavigation";
 import {loadFailure} from "@/utils/loadFailure";
 import {t} from "@/i18n/t";
-import {EventTooltip} from "@/components/ui/EventTooltip";
 import {SkipLink} from "@/components/ui/SkipLink";
 
 import {ParticipantPreviewEntry} from "../ParticipantPreview";
@@ -89,7 +88,7 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
             <ManagerSidebar asideRef={sidebarRef} drawerOpen={drawerOpen} event={event} pathname={pathname} pages={pages.data} pagesError={pages.isError} canManage={access.data.CanManage} platformStaff={platformStaff} infrastructureAllowed={access.data.InfrastructureAllowed} analytics={analytics.data} onRetryPages={() => void pages.refetch()} onNavigate={closeDrawer} />
             <div ref={mainRef} className="ib-admin-shell__main">
                 <header className="ib-topbar">
-                    <EventTooltip content={t("manage.shell.openMenu")} silent>{() => <button ref={menuRef} className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>}</EventTooltip>
+                    <button ref={menuRef} className="ib-topbar__icon-btn ib-topbar__menu" type="button" aria-label={t("manage.shell.openMenu")} aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Menu size={20} /></button>
                     <ol className="ib-topbar__crumbs">{(crumbs ?? [{label: t("manage.nav.eventManagement")}]).map((crumb, index, all) => index === all.length - 1
                         ? <li key={index} aria-current="page">{crumb.label}</li>
                         : <li key={index}>{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : crumb.label}</li>)}</ol>
