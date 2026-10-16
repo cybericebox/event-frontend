@@ -74,7 +74,12 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
         <ol className="event-vpn-steps">
             <li>{richMessage(t("vpn.steps.install"), {link: <a className="ib-link" href={wireguardInstallUrl} target="_blank" rel="noopener noreferrer">{t("vpn.software")}</a>})}</li>
             <li>{t("vpn.steps.download")}</li>
-            <li>{t("vpn.steps.import")}</li>
+            <li><div className="event-vpn-methods">
+                <div><strong>{t("vpn.steps.app")}</strong><p>{t("vpn.steps.import")}</p></div>
+                <div><strong>{t("vpn.steps.terminal")}</strong><p>{t("vpn.steps.terminalFolder")}</p>
+                    <pre className="event-vpn-start-command"><code>{t("vpn.steps.command", {filename: eventVpnFileName(eventTag)})}</code></pre>
+                </div>
+            </div></li>
             {probeData && <li>{richMessage(t("vpn.steps.checkProbe"), {
                 link: <a className="ib-link" href={probeData.ProbeURL} target="_blank" rel="noopener noreferrer">{t("vpn.steps.probePage")} <ArrowUpRight className="event-inline-icon" aria-hidden="true" /></a>,
                 ping: probeData.GatewayIP ? <code>ping {probeData.GatewayIP}</code> : null,

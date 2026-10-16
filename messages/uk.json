@@ -4984,5 +4984,9 @@
   "manage.banners.table.actions": "Дії",
   "manage.field.required": "Заповніть це поле.",
   "manage.field.positiveInteger": "Вкажіть ціле число, не менше 1.",
-  "manage.field.teamMinimum": "Вкажіть ціле число від 1 до максимального розміру команди."
+  "manage.field.teamMinimum": "Вкажіть ціле число від 1 до максимального розміру команди.",
+  "vpn.steps.app": "У застосунку",
+  "vpn.steps.terminal": "Або через термінал",
+  "vpn.steps.terminalFolder": "У папці із завантаженим файлом виконайте:",
+  "vpn.steps.command": "sudo wg-quick up ./{filename}"
 }

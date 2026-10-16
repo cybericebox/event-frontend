@@ -4984,5 +4984,9 @@
   "manage.banners.table.actions": "Actions",
   "manage.field.required": "Fill in this field.",
   "manage.field.positiveInteger": "Enter a whole number of at least 1.",
-  "manage.field.teamMinimum": "Enter a whole number from 1 to the maximum team size."
+  "manage.field.teamMinimum": "Enter a whole number from 1 to the maximum team size.",
+  "vpn.steps.app": "In the app",
+  "vpn.steps.terminal": "Or in the terminal",
+  "vpn.steps.terminalFolder": "In the folder containing the downloaded file, run:",
+  "vpn.steps.command": "sudo wg-quick up ./{filename}"
 }

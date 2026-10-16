@@ -81,6 +81,9 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-vpn-stand span{display:block;margin-top:2px;font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .event-vpn-steps{list-style:decimal;margin:0;padding-left:20px;display:grid;gap:var(--ib-2);color:var(--ib-body);line-height:var(--ib-lh-body)}
 .event-vpn-steps code{font:var(--ib-fs-13) var(--ib-mono);color:var(--ib-ink)}
+.event-vpn-methods{display:grid;gap:var(--ib-3)}
+.event-vpn-methods p{margin:var(--ib-1) 0 0}
+.event-vpn-start-command{margin:var(--ib-2) 0 0;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);white-space:pre-wrap;overflow-wrap:anywhere}
 .event-vpn-note{font-size:var(--ib-fs-12);color:var(--ib-dim)}
 .event-inline-icon{display:inline-block;width:14px;height:14px;vertical-align:-2px}
 
