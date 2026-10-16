@@ -42,7 +42,7 @@
 @media(max-width:760px){.ib-footer--event .ib-footer__end{justify-content:flex-start}}
 
 /* One collapsed theme row in the account menu at every width. */
-.event-account__menu .event-account__theme{display:block;padding:0;border:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-account__menu .event-account__theme{display:block;padding:0;border:0;color:var(--ib-body);font-size:var(--ib-fs-13)}
 .event-account__theme>summary{display:flex;align-items:center;gap:var(--ib-2);min-height:40px;padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);list-style:none;cursor:pointer}
 .event-account__theme>summary::-webkit-details-marker{display:none}
 .event-account__theme>summary:hover{background:var(--ib-soft);color:var(--ib-ink)}
