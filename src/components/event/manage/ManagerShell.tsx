@@ -9,6 +9,7 @@ import {Menu} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getCurrentUser} from "@/api/clientAuth";
 import {getManageAccess, getManagePages, ManageApiError} from "@/api/manage";
+import {SiteBannerBar} from "../SiteBanners";
 import {EventLoading} from "../EventLoading";
 import {EventHeaderActions} from "../EventNavigation";
 import {OutageShell} from "../OutageShell";
@@ -82,6 +83,7 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
     if (profile.isError && !profile.data) return <EventErrorScreen title={t("manage.shell.loadFailedTitle")} body={t("manage.shell.loadFailedBody")} error={profile.error} onRetry={() => void profile.refetch()} page />;
 
     return <ManualDraftProvider userID={profile.data?.ID ?? ""} eventID={event.EventID}><div className="event-manage-frame">
+        <SiteBannerBar eventID={event.EventID} />
         <div className={`ib-admin-shell event-manage-shell${drawerOpen ? " is-drawer-open" : ""}`}>
         <SkipLink />
         <div className="ib-admin-shell__layout">

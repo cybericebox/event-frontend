@@ -2,7 +2,7 @@
 
 import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {Plus, X} from "lucide-react";
+import {Plus, RotateCcw, X} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {getPreviewCatalog, getPreviewSettings, previewSettingsIdentity, previewSettingsKey, savePreviewSettings, type PreviewSettingsDraft} from "@/api/managePreviewSettings";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -48,21 +48,22 @@ export function PreviewSettingsPage() {
     if (query.isPending) return <EventLoading event={event} />;
     if (query.isError || !query.data || !model) return <EventLoadError message={t("manage.previewSettings.loadFailed")} error={query.error} onRetry={() => void query.refetch()} />;
     const selected = model.Inherit ? query.data.DefaultSelections : model.Selections;
+    const groupName = model.GroupNameOverride ?? (query.data.DefaultGroupName || t("manage.previewSettings.defaultGroup"));
+    const customDraft = (changes: Partial<PreviewSettingsDraft>): PreviewSettingsDraft => ({
+        Inherit: false, GroupNameOverride: groupName, Selections: [...selected], ...changes,
+    });
     return <><form className="event-manage-settings" onSubmit={save}>
-        <header className="event-manage-heading"><div><h1>{t("manage.previewSettings.title")}</h1><p>{t("manage.previewSettings.description")}</p></div></header>
+        <header className="event-manage-heading"><div><h1>{t("manage.previewSettings.title")}</h1><p>{t("manage.previewSettings.description")}</p></div>
+            {canManage && (!model.Inherit || model.GroupNameOverride !== null) && <div className="event-manage-heading__actions"><button type="button" className="ib-btn event-preview-restore" onClick={() => update({Inherit: true, Selections: [], GroupNameOverride: null})}><RotateCcw aria-hidden="true" />{t("manage.previewSettings.restore")}</button></div>}
+        </header>
         <section className="event-manage-section">
-            <label className="event-manage-field"><span>{t("manage.previewSettings.groupName")}</span><input className="event-manage-input" value={model.GroupNameOverride ?? (query.data.DefaultGroupName || t("manage.previewSettings.defaultGroup"))} readOnly={!canManage} required maxLength={100} onChange={change => update({...model, GroupNameOverride: change.target.value})} /></label>
-            {canManage && model.GroupNameOverride !== null && <button className="ib-btn" type="button" onClick={() => update({...model, GroupNameOverride: null})}>{t("manage.previewSettings.resetName")}</button>}
-            <div className="event-part__actions event-preview-heading"><h2>{t(model.Inherit ? "manage.previewSettings.platformSet" : "manage.previewSettings.eventSet")}</h2>
-                {canManage && <button type="button" className="ib-btn" onClick={() => update({...model, Inherit: !model.Inherit, Selections: model.Inherit ? [...query.data!.DefaultSelections] : []})}>{t(model.Inherit ? "manage.previewSettings.customize" : "manage.previewSettings.restore")}</button>}
-            </div>
+            <label className="event-manage-field"><span>{t("manage.previewSettings.groupName")}</span><input className="event-manage-input" value={groupName} readOnly={!canManage} required maxLength={100} onChange={change => update(customDraft({GroupNameOverride: change.target.value}))} /></label>
+            <div className="event-part__actions event-preview-heading"><h2>{t(model.Inherit ? "manage.previewSettings.platformSet" : "manage.previewSettings.eventSet")}</h2></div>
             {selected.length === 0 ? <EmptyState compact className="event-preview-selection-empty" message={t("manage.previewSettings.empty")} /> : <ul className="event-preview-selection">{selected.map(item => <li key={item.ExerciseVersionID}>
                 <PreviewExerciseDetails eventID={eventID} item={item} />
-                {!model.Inherit && canManage && <button type="button" className="ib-icon-btn" aria-label={t("manage.previewSettings.remove", {name: item.Name || item.ExerciseVersionID})} onClick={() => update({...model, Inherit: false, Selections: selected.filter(x => x.ExerciseVersionID !== item.ExerciseVersionID)})}><X aria-hidden="true" /></button>}
+                {canManage && <button type="button" className="ib-icon-btn" aria-label={t("manage.previewSettings.remove", {name: item.Name || item.ExerciseVersionID})} onClick={() => update(customDraft({Selections: selected.filter(x => x.ExerciseVersionID !== item.ExerciseVersionID)}))}><X aria-hidden="true" /></button>}
             </li>)}</ul>}
-            {!model.Inherit && canManage && <button className="ib-btn" type="button" onClick={() => setPickerOpen(true)}><Plus aria-hidden="true" />{t("manage.exercises.attach")}</button>}
-
-
+            {canManage && <button className="ib-btn" type="button" onClick={() => setPickerOpen(true)}><Plus aria-hidden="true" />{t("manage.exercises.attach")}</button>}
         </section>
         {saveError && <p role="alert" className="event-pp-field__error">{t("manage.previewSettings.saveFailed")}</p>}
         {canManage && <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={!dirty} busy={saving}>{t("common.save")}</EventButton></div>}
@@ -77,7 +78,7 @@ export function PreviewSettingsPage() {
                     setDraft(current => {
                         const currentModel = current?.eventID === eventID ? current.value : model;
                         const currentSelections = currentModel.Inherit ? query.data!.DefaultSelections : currentModel.Selections;
-                        return {eventID, value: {...currentModel, Inherit: false, Selections: [...currentSelections.filter(item => item.ExerciseVersionID !== choice.PublishedVersionID), {ExerciseVersionID: choice.PublishedVersionID, VariantID: chosen.ID, VariantIndex: chosen.Index, VariantPosition: variant, Name: choice.Name}]}};
+                        return {eventID, value: {...currentModel, Inherit: false, GroupNameOverride: currentModel.GroupNameOverride ?? (query.data!.DefaultGroupName || t("manage.previewSettings.defaultGroup")), Selections: [...currentSelections.filter(item => item.ExerciseVersionID !== choice.PublishedVersionID), {ExerciseVersionID: choice.PublishedVersionID, VariantID: chosen.ID, VariantIndex: chosen.Index, VariantPosition: variant, Name: choice.Name}]}};
                     });
                 }}} />}
     </>;

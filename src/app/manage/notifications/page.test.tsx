@@ -19,7 +19,7 @@ describe("Сповіщення на сайті, список", () => {
         const link = await screen.findByRole("link", {name: "Захід завершено"});
         expect(link.getAttribute("href")).toBe(`/manage/notifications/${FINISHED}`);
         const row = link.closest("tr")!;
-        expect(within(row).getByText("Типовий шаблон платформи")).toBeTruthy();
+        expect(within(row).getByText("Шаблон за замовчуванням")).toBeTruthy();
         fireEvent.click(within(row).getByRole("switch"));
         await waitFor(() => expect(calls.some(call => call.method === "PUT")).toBe(true));
         expect(calls.find(call => call.method === "PUT")!.body).toEqual({SignalType: FINISHED, Channel: "in_app", Enabled: false, Audience: {kind: "all_participants"}});

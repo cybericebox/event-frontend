@@ -32,7 +32,7 @@ describe("Електронні листи, список", () => {
         expect(within(reminder).getByText("Опублікована", {selector: ".ib-tag"})).toBeTruthy();
         expect(within(reminder).getByText("Чернетка очікує")).toBeTruthy();
         const finished = within(table).getByRole("link", {name: "Захід завершено"}).closest("tr")!;
-        expect(within(finished).getByText("Типовий шаблон платформи")).toBeTruthy();
+        expect(within(finished).getByText("Шаблон за замовчуванням")).toBeTruthy();
         expect((within(finished).getByRole("switch") as HTMLInputElement).checked).toBe(true);
         expect((within(reminder).getByRole("switch") as HTMLInputElement).checked).toBe(false);
     });

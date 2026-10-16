@@ -35,11 +35,11 @@ describe("Сторінка листа", () => {
         expect(screen.getByRole("textbox", {name: "Тема листа", hidden: true}).closest("[inert]")).not.toBeNull();
         // Only the top orange notice: no second «Тільки перегляд» box in the body.
         expect(screen.queryByTestId("body-readonly")).toBeNull();
-        expect(screen.getByTestId("template-notice").textContent).toContain("стандартний шаблон платформи");
+        expect(screen.getByTestId("template-notice").textContent).toContain("шаблон за замовчуванням");
         expect(screen.queryByText(/Натисніть «Редагувати»/)).toBeNull();
         expect(screen.getByRole("button", {name: "Налаштувати для заходу"})).toBeTruthy();
         expect(screen.queryByRole("button", {name: "Зберегти чернетку"})).toBeNull();
-        expect(screen.queryByRole("button", {name: /Повернути стандартний/})).toBeNull();
+        expect(screen.queryByRole("button", {name: /Відновити шаблон за замовчуванням/})).toBeNull();
     });
 
     it("shows the read-only notice on a published event copy and none on a draft", async () => {
@@ -112,9 +112,9 @@ describe("Сторінка листа", () => {
     it("returns to the standard template only after a confirmation", async () => {
         const calls = fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "draft"})]);
         renderPage();
-        fireEvent.click(await screen.findByRole("button", {name: "Повернути стандартний"}));
+        fireEvent.click(await screen.findByRole("button", {name: "Відновити шаблон за замовчуванням"}));
         expect(calls.some(call => call.method === "DELETE")).toBe(false);
-        fireEvent.click(within(screen.getByText("Повернути стандартний шаблон?").closest("dialog")!).getByRole("button", {name: "Повернути стандартний", hidden: true}));
+        fireEvent.click(within(screen.getByText("Відновити шаблон за замовчуванням?").closest("dialog")!).getByRole("button", {name: "Відновити шаблон за замовчуванням", hidden: true}));
         await waitFor(() => expect(calls.some(call => call.method === "DELETE" && call.path.endsWith(`email/type/${FINISHED}`))).toBe(true));
         await waitFor(() => expect(router.replace).toHaveBeenCalledWith(`/manage/email/${FINISHED}`));
     });
