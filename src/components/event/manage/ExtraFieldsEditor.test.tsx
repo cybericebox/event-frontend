@@ -118,3 +118,14 @@ describe("invalid cards", () => {
         expect(document.getElementById(label.getAttribute("aria-describedby")!)?.textContent).toBe("Питання 2: додайте текст питання.");
     });
 });
+
+it("keeps a restored staff-only file-type error at its answer-type control", async () => {
+    form.Document.blocks = [question("staff-file", {label: "Документ", staffOnly: true, input: "file", fileTypes: ["pdf"], maxSizeMB: 10})];
+    render(<QueryClientProvider client={new QueryClient()}><ExtraFieldsEditor scope="participant" /></QueryClientProvider>);
+    const card = await screen.findByRole("group", {name: "Тип відповіді питання 1"});
+    expect(card.getAttribute("aria-invalid")).toBe("true");
+    const message = document.getElementById(card.getAttribute("aria-describedby")!);
+    expect(card.contains(message)).toBe(true);
+    expect(message?.getAttribute("role")).toBe("alert");
+    expect(message?.textContent).toContain("Питання 1");
+});
