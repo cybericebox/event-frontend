@@ -38,6 +38,7 @@ export function InviteCard({team, captain, captainName, participation, rosterOpe
 }) {
     const [regenerating, setRegenerating] = useState(false);
     const rosterLine = rosterStatusLine(participation, rosterOpen);
+    if (team.Formed || participation?.TeamFormed || !rosterOpen) return null;
     if (!captain) return <Card title={t("participation.invite.title")}>
         <div className="event-pp-invite">
             <p className="event-pp-invite__note">{captainName ? t("participation.invite.memberNote", {name: captainName}) : t("participation.invite.memberNoteAnon")}</p>
@@ -52,19 +53,15 @@ export function InviteCard({team, captain, captainName, participation, rosterOpe
             toast.success(t("participation.team.link.copied"));
         } catch { toast.error(t("participation.team.link.copyFailed")); }
     };
-    return <Card title={t("participation.invite.title")} note={t("participation.invite.note")}>
+    return <Card title={t("participation.invite.title")}>
         <div className="event-pp-invite">
             <div className="event-pp-invite__row">
-                <input className="ib-input ib-input--mono" readOnly value={link} aria-label={t("participation.team.link.label")} onFocus={event => event.currentTarget.select()} />
-                <button type="button" className="ib-btn" onClick={() => void copy()}><Copy aria-hidden="true" />{t("participation.team.link.copy")}</button>
+                <button type="button" className="ib-btn" disabled={!team.JoinCode || validity.expired} onClick={() => void copy()}><Copy aria-hidden="true" />{t("participation.team.link.copy")}</button>
                 {canManage && (preview
                     ? <EventTooltip content={t("participation.preview.unavailable")}>{id => <span style={{display: "inline-flex"}} tabIndex={0} aria-describedby={id}><button type="button" className="ib-btn ib-btn--ghost" disabled style={{pointerEvents: "none"}}>{t("participation.team.link.regenerate")}</button></span>}</EventTooltip>
                     : <button type="button" className="ib-btn ib-btn--ghost" onClick={() => setRegenerating(true)}>{t("participation.team.link.regenerate")}</button>)}
             </div>
-            <div className="event-pp-invite__meta">
-                <div className={validity.expired ? "is-warn" : undefined}>{validity.text}</div>
-                <div>{rosterLine}</div>
-            </div>
+            {team.JoinCodeExpiresAt && <div className="event-pp-invite__meta"><div className={validity.expired ? "is-warn" : undefined}>{validity.text}</div></div>}
         </div>
         <RegenerateLinkDialog open={regenerating} onClose={() => setRegenerating(false)} onRegenerate={async expiry => {
             if (preview) { toast(t("participation.preview.noChanges")); return; }

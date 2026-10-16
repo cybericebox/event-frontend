@@ -33,11 +33,13 @@ describe("FormationCard", () => {
         expect(screen.getByText(t("participation.team.statusOpen"))).toBeTruthy();
     });
 
-    it("shows when the roster was formed, or that the start formed it", () => {
-        const {rerender} = render(<FormationCard team={{...team, Formed: true, FormedAt: "2026-09-30T10:00:00Z"}} captain formed form={undefined} onForm={vi.fn()} />);
-        expect(screen.queryByRole("button")).toBeNull();
-        expect(screen.queryByText(t("participation.team.statusFormedAtStart"))).toBeNull();
-        rerender(<FormationCard team={{...team, Formed: true}} captain formed form={undefined} onForm={vi.fn()} />);
-        expect(screen.getByText(t("participation.team.statusFormedAtStart"))).toBeTruthy();
+    it("omits an already-formed denial instead of repeating the team status", () => {
+        const {container} = render(<FormationCard team={team} captain formed={false} form={{Allowed: false, Reason: "team_formed"}} onForm={vi.fn()} />);
+        expect(container.textContent).toBe("");
+    });
+
+    it("omits a separate confirmation card once the roster is fixed",()=>{
+        const {container}=render(<FormationCard team={{...team,Formed:true}} captain formed form={undefined} onForm={vi.fn()}/>);
+        expect(container.textContent).toBe("");
     });
 });

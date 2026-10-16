@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {cleanup, fireEvent, render, screen, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {ReactNode} from "react";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
@@ -39,7 +39,7 @@ function view(info: PublicEventInfo, warm = false) {
 function ActivePreview({event}: {event: PublicEventInfo}) {const preview = useParticipantPreview(event.EventID); return preview.active ? <JoinPreview event={event} /> : null;}
 
 async function chooseOutcome(name: string) {
-    fireEvent.pointerDown(screen.getByRole("button", {name: "Дії тестового режиму"}), {button: 0, ctrlKey: false});
+    fireEvent.pointerDown(within(screen.getByRole("dialog")).getByRole("button", {name: "Дії тестового режиму"}), {button: 0, ctrlKey: false});
     fireEvent.click(await screen.findByRole("menuitemradio", {name}));
 }
 
@@ -48,40 +48,33 @@ const writes = () => fetchMock.mock.calls.filter(([, init]) => ["POST", "PUT", "
 beforeEach(() => { sessionStorage.clear(); HTMLDialogElement.prototype.showModal = function () {this.open = true;}; HTMLDialogElement.prototype.close = function () {this.open = false;}; fetchMock.mockReset(); vi.stubGlobal("fetch", fetchMock); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-it("walks form, validation and result without any network write", async () => {
+it("shows a pending result in a dialog without offering team access or writing to the server", async () => {
     view(event());
     fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
-    expect(await screen.findByText("Режим тестового учасника")).toBeTruthy();
     const input = await screen.findByLabelText(/Школа/);
     fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
     expect(screen.getByRole("alert").textContent).toContain("Школа");
     fireEvent.change(input, {target: {value: "Ліцей"}});
     fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
-    expect(screen.getByText("Заявку подано")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", {name: "Далі"}));
-    expect(screen.getByRole("link", {name: "Відкрити «Моя участь»"}).getAttribute("href")).toBe("/participation");
+    expect(screen.getByRole("dialog", {name: "Заявку подано"})).toBeTruthy();
+    expect(screen.getByRole("button", {name: "Гаразд"})).toBeTruthy();
+    expect(screen.queryByRole("link", {name: "Перейти до команди"})).toBeNull();
+    expect(screen.queryByRole("button", {name: "Далі"})).toBeNull();
     expect(writes()).toEqual([]);
 });
 
-it("switches the outcome and offers the team step to an approved team participant", async () => {
+it("offers team access only for an approved application, with no intermediate completion screen", async () => {
     view(event({Participation: 1, Registration: 2}));
     fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
-    const input = await screen.findByLabelText(/Школа/);
-    fireEvent.change(input, {target: {value: "Ліцей"}});
+    fireEvent.change(await screen.findByLabelText(/Школа/), {target: {value: "Ліцей"}});
     await chooseOutcome("Відхилено");
     fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
-    expect(screen.getByText("Заявку відхилено")).toBeTruthy();
+    expect(screen.getByRole("dialog", {name: "Заявку відхилено"})).toBeTruthy();
+    expect(screen.queryByRole("link", {name: "Перейти до команди"})).toBeNull();
     await chooseOutcome("Схвалено");
-    expect(screen.getByText("Ви зареєстровані")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", {name: "Далі"}));
-    expect(screen.getByText("Створити команду", {selector: "h2, h3, span, div"})).toBeTruthy();
-    expect((screen.getByRole("button", {name: "Далі"}) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole("button", {name: "Створити команду"}));
-    fireEvent.change(screen.getByRole("textbox", {name: "Назва команди"}), {target: {value: "Локальна команда"}});
-    fireEvent.submit(screen.getByRole("textbox", {name: "Назва команди"}).closest("form")!);
-    expect(screen.getByText("Локальна команда")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", {name: "Далі"}));
-    expect(screen.getByRole("link", {name: "Відкрити «Моя участь»"})).toBeTruthy();
+    expect(screen.getByRole("dialog", {name: "Ви зареєстровані"})).toBeTruthy();
+    expect(screen.getByRole("link", {name: "Перейти до команди"}).getAttribute("href")).toBe("/participation?tab=team");
+    expect(screen.queryByRole("button", {name: "Далі"})).toBeNull();
     expect(writes()).toEqual([]);
 });
 

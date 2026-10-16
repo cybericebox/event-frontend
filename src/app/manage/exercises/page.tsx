@@ -1,3 +1,5 @@
+import {ExercisesTabs} from "@/components/event/manage/exercises/ExercisesTabs";
+import {PreviewSettingsPage} from "@/components/event/manage/exercises/PreviewSettingsPage";
 import {redirect} from "next/navigation";
 import {ExercisesSection} from "@/components/event/manage/exercises/ExercisesSection";
 
@@ -5,5 +7,5 @@ export default async function ExercisesPage({searchParams}: {searchParams: Promi
     const {tab} = await searchParams;
     // The hint-unlock log moved to «Журнал спроб».
     if (tab === "unlocks") redirect("/manage/submissions?tab=hints");
-    return <ExercisesSection />;
+    return <ExercisesTabs test={tab === "test"}>{tab === "test" ? <PreviewSettingsPage /> : <ExercisesSection />}</ExercisesTabs>;
 }

@@ -4,7 +4,6 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
-import Link from "next/link";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {apiErrorMessage} from "@/api/apiErrors";
@@ -19,7 +18,7 @@ import {consumeJoinIntent} from "@/utils/joinIntent";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
-import {JoinResultCard} from "@/components/event/join/JoinResultCard";
+import {JoinDialog} from "@/components/event/join/JoinDialog";
 import {EventButton} from "@/components/ui/EventButton";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {focusFirstInvalid} from "@/components/event/FormQuestion";
@@ -91,7 +90,7 @@ export default function JoinPage() {
                 void queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]});
             }
             setAnswers({});
-            router.push("/");
+
         } catch (failure) {
             setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("join.failed")));
         } finally {setWorking(false);}
@@ -100,20 +99,17 @@ export default function JoinPage() {
     // Staff cannot join their own event: they walk through the registration as a preview instead.
     if (event && preview.active) return <JoinPreview event={event} />;
     const status = join.data;
-    return <div className="event-join-page"><div className="event-join-card">
-        <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>
-        <h1>{t("join.title")}</h1>
-        {!event || identity.isPending || staff.pending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited ? <EventLoading event={event} label={t("join.loading")} />
-            : identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError) ? <EventLoadError message={t("join.loadFailed")} error={identity.error ?? join.error ?? registration.error ?? invitation.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
+    const checking = !event || identity.isPending || staff.pending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited;
+    const failed = identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError);
+    return <JoinDialog outcome={!checking && !failed ? status === 2 ? "approved" : status === 1 ? "pending" : status === 3 ? "rejected" : undefined : undefined} teamMode={event?.Participation === 1} onClose={() => router.push("/")}>
+        {checking ? <EventLoading event={event} label={t("join.loading")} />
+            : failed ? <EventLoadError message={t("join.loadFailed")} error={identity.error ?? join.error ?? registration.error ?? invitation.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
             : !identity.data ? <SignInRedirect event={event} />
-            : status === ParticipationStatusEnum.ApprovedParticipationStatus ? <JoinResultCard outcome="approved" title={t("joinPreview.result.approved.title")} text={t("invite.already")} />
-            : status === ParticipationStatusEnum.PendingParticipationStatus ? <JoinResultCard outcome="pending" title={t("joinPreview.result.pending.title")} text={t("join.pending")} />
-            : status === ParticipationStatusEnum.RejectedParticipationStatus ? <JoinResultCard outcome="rejected" title={t("joinPreview.result.rejected.title")} text={t("shell.join.rejected")} />
             : !register?.Allowed ? <EmptyState message={reasonText(register?.Reason ?? "") || t("join.closed")} />
             : <form ref={formRef} className="ib-form" noValidate onSubmit={event => {event.preventDefault(); void submit();}}>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} />}
                 {error && <p className="ib-form__error" role="alert">{error}</p>}
                 <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working}>{t("shell.join.action")}</EventButton>
             </form>}
-    </div></div>;
+    </JoinDialog>;
 }

@@ -24,7 +24,7 @@
 .ib-tile__upd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid var(--ib-brand-line);border-radius:var(--ib-r-sm);
   font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-on-brand-2);white-space:nowrap}
 .ib-tile__solved{display:none;align-items:center;gap:var(--ib-1);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-ok);white-space:nowrap}
-.ib-tile__solved svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ib-tile__solved svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* solved */
 .ib-tile.is-solved{background:var(--ib-ok-bg);border-color:transparent;color:var(--ib-ink)}
@@ -44,7 +44,7 @@
 .ib-tile__closed{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);
   font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-dim);white-space:nowrap}
 .ib-tile__practice{display:inline-flex;align-items:center;gap:var(--ib-1);min-width:0;font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);color:var(--ib-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ib-tile__practice svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ib-tile__practice svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* just accepted: one ok ring that fades (outline, not a shadow) */
 .ib-tile.is-accepted{animation:ib-tile-ok 1.6s ease-out}

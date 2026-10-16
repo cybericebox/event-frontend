@@ -5,7 +5,9 @@ import {focusManager, QueryClient, QueryClientProvider} from "@tanstack/react-qu
 import {ScoreboardView} from "./ScoreboardView";
 import {apiReadable, audiences, freezeApplied, infoAvailability, phases, visibilities, type Phase} from "./scoreboardMatrix.fixture";
 
-const state = vi.hoisted(() => ({staff: false, event: null as Record<string, unknown> | null, participant: null as Record<string, unknown> | null, getResults: vi.fn(), getChanges: vi.fn()}));
+const state = vi.hoisted(() => ({preview: false, previewBoard: vi.fn(), staff: false, event: null as Record<string, unknown> | null, participant: null as Record<string, unknown> | null, getResults: vi.fn(), getChanges: vi.fn()}));
+vi.mock("@/components/event/ParticipantPreview", async importOriginal => ({...await importOriginal<typeof import("@/components/event/ParticipantPreview")>(), useParticipantPreview: () => ({active: state.preview, state: {userID: "preview-user", status: 2, team: {ID: "preview-team", Name: "Own preview team"}}, config: {ScoreboardVisibility: 2}})}));
+vi.mock("@/api/participantPreview", async importOriginal => ({...await importOriginal<typeof import("@/api/participantPreview")>(), getPreviewBoard: state.previewBoard}));
 
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.event}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => state.participant}));
@@ -25,6 +27,8 @@ function renderView() {
 }
 
 beforeEach(() => {
+    state.preview = false;
+    state.previewBoard.mockReset();
     state.staff = false;
     state.participant = null;
     state.getResults.mockReset();
@@ -36,6 +40,18 @@ beforeEach(() => {
         Display: {ChartEnabled: false, ChartTeams: 10, RowsLimit: null}});
 });
 afterEach(cleanup);
+
+it("uses only the caller's preview progress for results, chart and polls", async () => {
+    state.preview = true;
+    state.event = event(-hour, "available");
+    state.previewBoard.mockResolvedValue({Challenges: []});
+    renderView();
+    expect(await screen.findByText("Own preview team")).toBeTruthy();
+    expect(state.previewBoard).toHaveBeenCalledWith("event-1");
+    expect(state.getResults).not.toHaveBeenCalled();
+    expect(state.getChanges).not.toHaveBeenCalled();
+    expect(screen.getByTestId("chart-plot").getAttribute("data-lines")).toBe("1");
+});
 
 function snapshot(points: number, chart: boolean, freeze: Record<string, unknown> = {}, teams = [{Rank: 1, TeamID: "00000000-0000-4000-8000-000000000001", TeamName: "Альфа", Points: points, Solved: points ? 2 : 0, LastSolveAt: null}]) {
     return {Revision: 1, GeneratedAt: new Date().toISOString(), TotalTeams: teams.length, Timeline: [], Scoreboard: teams,

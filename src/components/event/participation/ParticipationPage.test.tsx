@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
-import {cleanup, render, screen} from "@testing-library/react";
+import {cleanup, render, screen, fireEvent} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {ReactNode} from "react";
 import {TeamRole, type TeamMember} from "@/api/eventTeams";
@@ -25,7 +25,7 @@ vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: ()
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.guest}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
-vi.mock("@/api/clientAuth", () => ({getParticipation: async () => ({Phase: "started", Staff: state.staff, RosterOpen: state.rosterOpen, RosterReason: state.rosterOpen ? "" : "roster_frozen_at_start"})}));
+vi.mock("@/api/clientAuth", () => ({getCurrentUser:async()=>({FirstName:"Олена",LastName:"Коваль",Email:"test@example.test"}),getParticipation: async () => ({Phase: "started", Staff: state.staff, RosterOpen: state.rosterOpen, RosterReason: state.rosterOpen ? "" : "roster_frozen_at_start"})}));
 vi.mock("@/api/participantForm", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/participantForm")>()),
     getOwnParticipantAnswers: async () => ({Form: {Fields: []}, Answers: {}, Editable: true, Missing: state.missing, Blocking: false}),
@@ -68,9 +68,12 @@ it("gives the captain the join link with copy and reissue", async () => {
     state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Captain, {JoinCode: "secret-code"})};
     state.members = [member("1", "Олена", TeamRole.Captain, true), member("2", "Іван", TeamRole.Member, false), member("3", "Марія", TeamRole.Member, false, true)];
     view();
-    const link = await screen.findByLabelText<HTMLInputElement>("Посилання для запрошення");
-    expect(link.value).toBe(`${window.location.origin}/participation?tab=team&join=secret-code`);
-    expect(screen.getByRole("button", {name: "Копіювати"})).toBeTruthy();
+    const writeText=vi.fn(async()=>{});
+    Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText}});
+    const copy=await screen.findByRole("button",{name:"Копіювати запрошення"});
+    expect(screen.queryByRole("textbox",{name:"Посилання для запрошення"})).toBeNull();
+    fireEvent.click(copy);
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/participation?tab=team&join=secret-code`);
     expect(screen.getByRole("button", {name: "Перевипустити"})).toBeTruthy();
     expect(await screen.findByText("Очікує підтвердження")).toBeTruthy();
     expect(screen.getAllByRole("button", {name: /^Виключити /})).toHaveLength(1);
@@ -92,12 +95,13 @@ it("hides the roster management once the roster is closed", async () => {
     state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Captain, {JoinCode: "secret-code"})};
     state.members = [member("1", "Олена", TeamRole.Captain, true), member("2", "Іван", TeamRole.Member, false)];
     view();
-    expect(await screen.findByLabelText("Посилання для запрошення")).toBeTruthy();
+    await screen.findByText("Капітан: Олена (ви)");
+    expect(screen.queryByRole("button",{name:"Копіювати запрошення"})).toBeNull();
     expect(screen.queryByRole("button", {name: "Перевипустити"})).toBeNull();
     expect(screen.queryByRole("button", {name: /^Виключити /})).toBeNull();
     expect(screen.queryByRole("button", {name: "Розпустити команду"})).toBeNull();
     // The server's reason is what the section says, not a generic «closed».
-    expect(screen.getByText(/Склад команд заморожено зі стартом заходу/)).toBeTruthy();
+    expect(screen.queryByRole("heading",{name:"Запрошення"})).toBeNull();
 });
 
 it("tells a participant without a team why the roster is closed instead of offering to create or join", async () => {
@@ -203,7 +207,8 @@ it("opens the team tab by default for a captain whose team is below the minimum"
     state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Captain, {MemberCount: 1, JoinCode: "code"})};
     state.members = [member("1", "Олена", TeamRole.Captain, true)];
     view();
-    expect(await screen.findByLabelText("Посилання для запрошення")).toBeTruthy();
+    await screen.findByText("Капітан: Олена (ви)");
+    expect(screen.getByRole("button", {name: "Копіювати запрошення"})).toBeTruthy();
     expect(screen.getByRole("tab", {name: "Команда"}).getAttribute("aria-selected")).toBe("true");
 });
 
@@ -239,4 +244,17 @@ it("marks a tab whose section has missing fields", async () => {
     await screen.findByRole("tab", {name: /Профіль/});
     expect((await screen.findByRole("tab", {name: /Профіль/})).textContent).toContain("Заповніть");
     expect(screen.getByRole("tab", {name: /Команда/}).textContent).toContain("Заповніть");
+});
+
+it("does not expose invitations or duplicate locked-roster cards once formed",async()=>{
+ state.participant={event,participantInfo:info,ownTeam:team(TeamRole.Captain,{Formed:true,FormedAt:"2026-10-16T10:00:00Z",JoinCode:"closed-secret"})};
+ state.members=[member("1","Олена",TeamRole.Captain,true),member("2","Іван",TeamRole.Member,false)];
+ view();await screen.findByText("Капітан: Олена (ви)");
+ expect(screen.queryByRole("button",{name:"Копіювати запрошення"})).toBeNull();
+ expect(screen.queryByRole("heading",{name:"Запрошення"})).toBeNull();
+ expect(screen.queryByRole("region",{name:"Підтвердити склад команди?"})).toBeNull();
+ expect(screen.queryByRole("region",{name:"Розпустити команду"})).toBeNull();
+ expect(screen.getByRole("cell",{name:"Олена (ви)"})).toBeTruthy();
+ expect(screen.getAllByText(/^Склад сформовано /)).toHaveLength(1);
+ expect(screen.queryByText(/Склад команди вже зафіксовано/)).toBeNull();
 });

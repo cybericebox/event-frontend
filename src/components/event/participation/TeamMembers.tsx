@@ -27,7 +27,7 @@ export function MembersCard({event, roster, error, onRetry, stats, actions, rost
                 <th className="is-num">{t("participation.team.points")}</th><th className="is-num">{t("participation.team.solves")}</th><th className="is-nowrap">{t("participation.team.joined")}</th>
                 <th><span className="ib-sr">{t("participation.team.actions")}</span></th>
             </tr></thead><tbody>{memberRows(roster, stats).map(({member, stats: share}) => <tr key={member.UserID} className={member.Own ? "is-own" : undefined}>
-                <td>{member.DisplayName}{member.Own && <span className="event-part__muted"> · {t("participation.team.you")}</span>}</td>
+                <td>{member.Own ? t("participation.person.self",{name:member.DisplayName}) : member.DisplayName}</td>
                 <td>{roleLabels?.has(member.UserID) ? <span className="ib-tag ib-tag--role">{roleLabels.get(member.UserID)}</span> : member.Pending ? <span className="ib-tag ib-tag--warn">{t("participation.team.pending")}</span>
                     : member.Role === TeamRole.Captain ? <span className="ib-tag ib-tag--role">{t("participation.team.captain")}</span> : <span className="event-part__muted">{t("participation.team.member")}</span>}</td>
                 <td className="is-num">{share ? formatNumber(share.Points) : "—"}</td>

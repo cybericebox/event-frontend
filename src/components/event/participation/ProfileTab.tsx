@@ -14,7 +14,7 @@ import type {ParticipantEventInfo} from "@/types/participantEventInfo";
 import {EventBanner} from "@/components/event/EventBanner";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
-import {StandStatusIcon, standStatusText, useEventVpn} from "@/components/event/vpn/EventVpn";
+import {VpnConnectionStatus, useEventVpn} from "@/components/event/vpn/EventVpn";
 import {EventButton} from "@/components/ui/EventButton";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -68,15 +68,14 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
 function VpnCard() {
     const vpn = useEventVpn();
     if (!vpn.available) return null;
-    const text = vpn.status ? standStatusText(vpn.status) : null;
-    return <Card title={t("participation.vpn.title")} note={t("participation.vpn.note")}>
-        <div className={`event-vpn-stand is-${vpn.status ?? "unknown"}`} role="status"><StandStatusIcon status={vpn.status} /><div><b>{text?.title ?? t("vpn.modal.checkingStand")}</b>{text && <span>{text.note}</span>}</div></div>
+    return <Card title={t("participation.vpn.title")}>
+        <VpnConnectionStatus ready={vpn.ready} connected={vpn.connected} />
         <div className="event-part__actions"><button type="button" className="ib-btn ib-btn--primary" onClick={vpn.openVpn}>{t("participation.vpn.setup")}</button></div>
     </Card>;
 }
 
 // The participant's own page: who they are, how they do and what they answered.
-export function ProfileTab({event, info, team, finished, preview, now, onOpenTeam}: {
+export function ProfileTab({event, info, team, finished, preview, now}: {
     event: PublicEventInfo; info: ParticipantEventInfo | null; team: OwnTeam | null; finished: boolean; preview: boolean; now: number; onOpenTeam: () => void;
 }) {
     const simulation = useParticipantPreview(event.EventID);
@@ -109,38 +108,34 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
     };
     const tiles = statTiles({
         solves: data ? (teamMode ? data.Me.Solves : data.Solved) : 0, points, firstBloods: me?.FirstBloods ?? 0, hints: me?.Hints ?? 0,
+        hintsEnabled: (simulation.active ? simulation.config?.HintsDisabled : info?.HintsDisabled) === false,
         attempts: me?.Attempts ?? 0, correct: me?.CorrectAttempts ?? 0, scope: "me",
     });
     const shownTiles = tiles.map(tile => data ? tile : {...tile, value: "—", note: undefined});
     const admitted = team?.Admitted !== false;
-    const teamName = simulation.active ? simulation.state?.team?.Name : preview ? t("participation.team.moderatorsName") : team?.Name;
+    const allowPseudonym = !teamMode && !!info?.AllowPseudonyms;
     const name = info?.DisplayName || info?.RealName || me?.Name || "—";
     return <div className="event-pp">
         {preview && !simulation.active && <div className="event-participation__banners ib-banner-stack"><EventBanner tone="info" title={t("participation.preview.title")} message={t("participation.preview.message")} /></div>}
         <section className="event-pp-card event-pp-hero" aria-label={t("participation.self.title")}>
             <div className="event-pp-hero__who">
                 <h2 className="event-pp-hero__name">{name}</h2>
-                {info?.AllowPseudonyms && info.RealName && info.DisplayName && info.DisplayName !== info.RealName && <span className="event-pp-hero__sub">{t("participation.self.realName", {name: info.RealName})}</span>}
+                {allowPseudonym && info?.RealName && info.DisplayName && info.DisplayName !== info.RealName && <span className="event-pp-hero__sub">{t("participation.self.realName", {name: info.RealName})}</span>}
                 <div className="event-pp-hero__tags">
                     {preview && !simulation.active
                         ? me && <span className="ib-tag ib-tag--role">{me.Role === 0 ? eventRoleLabel(0) : t("participation.team.member")}</span>
                         : <span className="ib-tag ib-tag--ok">{t("participation.self.confirmed")}</span>}
-                    {teamMode && teamName && <>
-                        <button type="button" className="ib-tag ib-tag--role" onClick={onOpenTeam} aria-label={t("participation.self.openTeam", {name: teamName})}>{teamName}</button>
-                        {!admitted && <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>}
-                    </>}
+                    {teamMode && !admitted && <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>}
                 </div>
-                {info?.AllowPseudonyms && !preview && <PseudonymEditor info={info} eventID={event.EventID} />}
+                {allowPseudonym && info && !preview && <PseudonymEditor info={info} eventID={event.EventID} />}
             </div>
             <dl className="event-pp-hero__score">
                 {!preview && <div><dt>{teamMode ? t("participation.stats.teamPlace") : t("participation.stats.myPlace")}</dt><dd>{data ? placeText(data.Rank) : "—"}</dd></div>}
                 <div><dt>{teamMode ? t("participation.stats.myPoints") : t("participation.stats.points")}</dt><dd>{data ? formatNumber(points) : "—"}</dd></div>
             </dl>
-            <dl className="event-pp-dates">
-                {me && <div><dt>{t("participation.dates.joined")}</dt><dd>{shortTime(me.JoinedAt)}</dd></div>}
-                <div><dt>{t("participation.dates.start")}</dt><dd>{shortTime(event.StartTime)}</dd></div>
-                {event.FinishTime && <div><dt>{t("participation.dates.finish")}</dt><dd>{shortTime(event.FinishTime)}</dd></div>}
-            </dl>
+            {me && <dl className="event-pp-dates">
+                <div><dt>{t("participation.dates.joined")}</dt><dd>{shortTime(me.JoinedAt)}</dd></div>
+            </dl>}
         </section>
         <StatTiles label={t("participation.stats.title")} tiles={shownTiles} />
         <div className="event-pp-charts">
@@ -152,7 +147,7 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
         {preview && !simulation.active && <Card title={t("participation.form.cardTitle")}><EmptyState message={t("participation.preview.noForm")} compact /></Card>}
         {answers.isPending && !preview && <Card title={t("participation.form.cardTitle")}><EventLoading event={event} label={t("participation.loading")} /></Card>}
         {answers.isError && <Card title={t("participation.form.cardTitle")}><EventLoadError message={t("participation.fields.loadFailed")} error={answers.error} onRetry={() => void answers.refetch()} /></Card>}
-        {answers.data && answers.data.Form.Enabled && <AnswersCard scope="participant" title={t("participation.form.cardTitle")} note={t("participation.self.note")} form={answers.data.Form} answers={answers.data.Answers}
+        {answers.data && answers.data.Form.Enabled && <AnswersCard scope="participant" title={t("participation.form.cardTitle")} form={answers.data.Form} answers={answers.data.Answers}
             missing={answers.data.Missing ?? []} canEdit={answers.data.Editable && !finished} whyReadOnly={finished ? t("participation.form.finished") : t("participation.form.readOnly")} onSave={save} />}
         {!preview && <VpnCard />}
     </div>;

@@ -65,7 +65,7 @@ export function knownQuestionLab(client: QueryClient, mode: BoardMode, eventID: 
 }
 
 export function rememberRuntimeQuestionLab(client: QueryClient, mode: BoardMode, eventID: string, questionID: string, lab: LabLifecycle) {
-    const board = client.getQueryData<OwnBoard | OwnChallenge[]>([mode === "participant" ? "event-own-challenges" : "event-moderators-board", eventID]);
+    const board = client.getQueryData<OwnBoard | OwnChallenge[]>([mode === "preview" ? "event-participant-preview-board" : mode === "participant" ? "event-own-challenges" : "event-moderators-board", eventID]);
     const rows = Array.isArray(board) ? board : board?.Challenges;
     const question = rows?.find(row => row.EventChallengeID === questionID);
     if (rows && !question) return;

@@ -6,6 +6,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {getPreviewBoard, previewBoardKey} from "@/api/participantPreview";
 import {getOwnBoard, type BoardStage, type OwnBoard, type OwnChallenge, type ChallengeSubmission} from "@/api/participantChallenges";
 import {getModeratorsBoard, type ModeratorSubmission} from "@/api/moderatorsBoard";
 import {applySubmission, applyModeratorSubmission, reconcileBoard, reconcileChallenges} from "./labLifecycleCache";
@@ -131,6 +132,24 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
     </Page>;
 }
 
+function PreviewBoard({event}: {event: PublicEventInfo}) {
+    const preview = useParticipantPreview(event.EventID);
+    const queryClient = useQueryClient();
+    const board = useQuery({queryKey: previewBoardKey(event.EventID), queryFn: () => getPreviewBoard(event.EventID), retry: false, refetchInterval: 10000});
+    useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
+    if (!board.data) return <Page>{board.isPending ? <EventLoading label={t("challenges.loading")} /> : <EventLoadError message={t("challenges.loadFailed.title")} error={board.error} onRetry={() => void board.refetch()} />}</Page>;
+    return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={board.data.Challenges.some(item => item.Infrastructure)}>
+        <Board eventID={event.EventID} mode="preview" challenges={board.data.Challenges} teamMode={event.Participation === 1} finished={false}
+            showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={preview.config?.HintsDisabled === false} hintChargeMode={preview.config?.HintChargeMode}
+            userID={preview.state?.userID} onRefresh={() => void board.refetch()}
+            onSolved={(id, result) => {
+                if (!result.Correct) return;
+                const at = new Date().toISOString();
+                queryClient.setQueryData<OwnBoard>(previewBoardKey(event.EventID), current => current && ({...current, Challenges: current.Challenges.map(task => task.EventChallengeID === id ? {...task, SolvedAt: at, AwardedPoints: task.Points, SolveCount: 1} : task)}));
+            }} />
+    </EventVpnProvider>;
+}
+
 function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: boolean}) {
     const preview = useParticipantPreview(event.EventID);
     const queryClient = useQueryClient();
@@ -200,7 +219,7 @@ export function ChallengesBoard() {
         if (preview.state!.status !== 2) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
         if (event.Participation === 1 && !preview.state!.team) return <Page banners={<EventBanner title={t("challenges.noTeam.title")} message={t("challenges.noTeam.message")} action={<Link className="ib-btn ib-btn--sm ib-btn--primary" href="/participation?tab=team">{t("challenges.noTeam.action")}</Link>} />} />;
         if (event.Participation === 1 && !preview.state!.team?.Formed) return <Page><EmptyState message={t("challenges.teamNotFormed")} action={<Link className="ib-btn ib-btn--primary" href="/participation?tab=team">{t("challenges.myParticipation")}</Link>} /></Page>;
-        return <ModeratorsBoard event={event} finished={finished} />;
+        return <PreviewBoard event={event} />;
     }
     if (!participant) return <ModeratorsBoard event={event} finished={finished} />;
 

@@ -10,6 +10,10 @@ import {ApiErrorCode} from "@/api/apiErrors";
 import {openLabLink, ParticipantChallengeError, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
 import {t} from "@/i18n/t";
 
+import {useParticipantPreview} from "../ParticipantPreview";
+import {openPreviewLabLink} from "@/api/participantPreview";
+import type {BoardMode} from "./ChallengeModal";
+
 export type LabLinkState = {status: "idle" | "pending"} | {status: "error"; error: unknown};
 
 export class PopupBlockedError extends Error {}
@@ -30,29 +34,34 @@ export function labLinkErrorMessage(error: unknown): string {
 // short-lived and single use), so no session is kept here. The tab is opened
 // synchronously inside the click, before the request, so the browser treats it as
 // user-initiated; its location is set once the link arrives.
-export function useLabLink(eventID: string, challengeID: string | undefined, moderators = false, lifecycle?: LabLifecycle, withdrawn = false): {
+export function useLabLink(eventID: string, challengeID: string | undefined, moderators = false, lifecycle?: LabLifecycle, withdrawn = false, previewSelectionID?: string): {
     state: LabLinkState; busyKey: string | null; open: (device: string, port: number) => void; retry: () => void;
 } {
     const client = useQueryClient();
+    const preview = useParticipantPreview(eventID).active || previewSelectionID !== undefined;
+    const mode: BoardMode = preview ? "preview" : moderators ? "moderators" : "participant";
     const [state, setState] = useState<LabLinkState>({status: "idle"});
     const [busyKey, setBusyKey] = useState<string | null>(null);
     const last = useRef<{device: string; port: number} | null>(null);
-    const current = useRef({eventID, challengeID, moderators, lifecycle, withdrawn});
-    const pending = useRef<{tab: Window; cancelled: boolean} | null>(null);
+    const current = useRef({eventID, challengeID, moderators, lifecycle, withdrawn, previewSelectionID, mode});
+    const pending = useRef<{tab: Window; cancelled: boolean; previewRunID?: string | null} | null>(null);
 
     const latestScope = useCallback(() => {
         const latest = current.current;
-        const mode = latest.moderators ? "moderators" : "participant";
+        const mode = latest.mode;
         const raw = client.getQueryData<LabRuntime>(["event-challenge-lab", mode, latest.eventID, latest.challengeID]);
         const board = client.getQueryData<OwnBoard | OwnChallenge[]>(taskBoardKey(mode, latest.eventID));
         const task = board && !Array.isArray(board) ? board.Challenges.find(item => item.EventChallengeID === latest.challengeID) : undefined;
         const boardWithdrawn = !latest.moderators && !!task && (task.Closed || (board && !Array.isArray(board) && board.Stages.some(stage => stage.ID === task.StageID && stage.State === "closed")));
-        return {...latest, withdrawn: latest.withdrawn || !!boardWithdrawn, ...labAccessScope(client, mode, latest.eventID, latest.challengeID, latest.lifecycle, raw)};
+        const previewExpired = mode === "preview" && !!task?.PreviewExpiresAt && Date.parse(task.PreviewExpiresAt) <= Date.now();
+        return {...latest, previewRunID: mode === "preview" ? task?.PreviewRunID : undefined,
+            withdrawn: latest.withdrawn || !!boardWithdrawn || previewExpired || (mode === "preview" && (!!board && !task?.PreviewRunID || raw?.Ready !== true)),
+            ...labAccessScope(client, mode, latest.eventID, latest.challengeID, latest.lifecycle, raw)};
     }, [client]);
 
     useLayoutEffect(() => {
-        current.current = {eventID, challengeID, moderators, lifecycle, withdrawn};
-    }, [eventID, challengeID, moderators, lifecycle, withdrawn]);
+        current.current = {eventID, challengeID, moderators, lifecycle, withdrawn, previewSelectionID, mode};
+    }, [eventID, challengeID, moderators, lifecycle, withdrawn, previewSelectionID, mode]);
 
     useLayoutEffect(() => {
         function cancel() {
@@ -68,7 +77,7 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
         // Read the current task attachment synchronously, before React's board observer rerenders.
         const unsubscribe = client.getQueryCache().subscribe(event => {
             const key = event.query.queryKey;
-            const mode = moderators ? "moderators" : "participant";
+
             const boardKey = taskBoardKey(mode, eventID);
             const boardEvent = key[0] === boardKey[0] && key[1] === eventID;
             const scopeEvent = key[1] === mode && key[2] === eventID && (
@@ -78,12 +87,13 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
             if (event.type === "removed") {
                 if (boardEvent || key[0] === "event-challenge-lab" || key[3] === current.current.lifecycle?.ID) cancel();
             } else if (event.type === "updated" && (observed.withdrawn || observed.identityMismatch
+                || (mode === "preview" && pending.current && observed.previewRunID !== pending.current.previewRunID)
                 || observed.lifecycle?.ID !== current.current.lifecycle?.ID
                 || observed.lifecycle?.Revision !== current.current.lifecycle?.Revision
                 || observed.lifecycle?.LogicalClosed || (observed.lifecycle && observed.lifecycle.RuntimeState !== "ready"))) cancel();
         });
         return () => {unsubscribe(); cancel();};
-    }, [client, latestScope, eventID, challengeID, moderators, lifecycle?.ID, lifecycle?.Revision, lifecycle?.LogicalClosed, lifecycle?.RuntimeState, withdrawn]);
+    }, [client, latestScope, eventID, challengeID, moderators, lifecycle?.ID, lifecycle?.Revision, lifecycle?.LogicalClosed, lifecycle?.RuntimeState, withdrawn, mode]);
 
     function open(device: string, port: number) {
         const latest = latestScope();
@@ -96,22 +106,23 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
             return;
         }
         tab.opener = null;
-        const request = {tab, cancelled: false};
+        const request = {tab, cancelled: false, previewRunID: latest.previewRunID};
         pending.current = request;
         const cache = client.getQueryCache();
         const scope = cache.find({queryKey: latest.lifecycle
-            ? labLifecycleKey(moderators ? "moderators" : "participant", eventID, latest.lifecycle.ID)
-            : ["event-challenge-lab", moderators ? "moderators" : "participant", eventID, latest.challengeID], exact: true});
+            ? labLifecycleKey(mode, eventID, latest.lifecycle.ID)
+            : ["event-challenge-lab", mode, eventID, latest.challengeID], exact: true});
         const active = () => !request.cancelled && pending.current === request
             && (!scope || cache.find({queryKey: scope.queryKey, exact: true}) === scope);
         setState({status: "pending"});
         setBusyKey(`${device}:${port}`);
-        const fetchLink = latest.lifecycle
+        const fetchLink = preview ? openPreviewLabLink(eventID, previewSelectionID ?? "", device, port) : latest.lifecycle
             ? openLabLink(eventID, latest.challengeID, device, port, moderators, latest.lifecycle)
             : openLabLink(eventID, latest.challengeID, device, port, moderators);
         fetchLink.then(link => {
             const latest = latestScope();
             const unsafe = !active() || latest.withdrawn || latest.identityMismatch || latest.eventID !== requested.eventID || latest.moderators !== requested.moderators
+                || latest.previewRunID !== requested.previewRunID
                 || latest.challengeID !== requested.challengeID || (requested.revision === null
                     ? !!latest.lifecycle
                     : !latest.lifecycle || latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"
@@ -129,8 +140,8 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
             if (!active()) return;
             setState({status: "error", error});
             if (error instanceof ParticipantChallengeError && (error.status === 403 || error.status === 409)) {
-                void client.refetchQueries({queryKey: [moderators ? "event-moderators-board" : "event-own-challenges", eventID], exact: true});
-                void client.refetchQueries({queryKey: ["event-challenge-lab", moderators ? "moderators" : "participant", eventID, challengeID], exact: true});
+                void client.refetchQueries({queryKey: taskBoardKey(mode, eventID), exact: true});
+                void client.refetchQueries({queryKey: ["event-challenge-lab", mode, eventID, challengeID], exact: true});
             }
         }).finally(() => {
             if (pending.current !== request) return;

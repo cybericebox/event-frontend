@@ -22,9 +22,9 @@ export function PreviewParticipation({event, selected, onSelect}: {event: Public
         {event.Participation === 1 && <div className="event-manage-participants__filters event-participation__tabs" role="tablist" aria-label={t("participation.tabs")}>
             {(["profile", "team"] as const).map(value => <button key={value} className="event-manage-participants__filter" type="button" role="tab" aria-selected={value === tab} onClick={() => change(value)}>{t(`participation.tab.${value}`)}</button>)}
         </div>}
-        <div role={event.Participation === 1 ? "tabpanel" : undefined}>{tab === "team" ? <TeamTab /> : <>
+        <div className="event-pp" role={event.Participation === 1 ? "tabpanel" : undefined}>{tab === "team" ? <TeamTab /> : <>
             <ProfileTab event={event} info={null} team={preview.state!.team} finished={false} preview now={now} onOpenTeam={() => change("team")} />
-            {form.data?.Enabled && <AnswersCard scope="participant" title={t("participation.form.cardTitle")} note={t("participation.self.note")} form={form.data} answers={preview.state!.answers} missing={[]} canEdit whyReadOnly="" onSave={async answers => preview.update({answers})} />}
+            {form.data?.Enabled && <AnswersCard scope="participant" title={t("participation.form.cardTitle")} form={form.data} answers={preview.state!.answers} missing={[]} canEdit whyReadOnly="" onSave={async answers => preview.update({answers})} />}
         </>}</div>
     </div>;
 }

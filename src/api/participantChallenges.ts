@@ -46,6 +46,14 @@ const snapshotSchema = z.object({
 const fileSchema = z.object({FileID: id, Name: z.string(), Size: z.number().int().default(0)});
 const prerequisiteSchema = z.object({EventChallengeID: id, Name: z.string(), Solved: z.boolean()});
 export const challengeSchema = z.object({
+    PreviewSelectionID: z.string().optional(),
+    PreviewTaskID: z.string().optional(),
+    PreviewRunID: z.string().nullish(),
+    PreviewDynamic: z.boolean().optional(),
+    PreviewCanStart: z.boolean().optional(),
+    PreviewExpiresAt: z.string().nullish(),
+    PreviewAttempts: z.number().int().optional(),
+    PreviewCorrectAttempts: z.number().int().optional(),
     ID: id,
     EventChallengeID: id,
     // Every new question has its pinned attachment identity, including static ones.
@@ -106,13 +114,13 @@ export const ownBoardSchema = z.object({
     NextOpensAt: optionalTime,
     NextChangeAt: optionalTime,
 });
-const submissionSchema = z.object({
+export const submissionSchema = z.object({
     Correct: z.boolean(), FirstSolve: z.boolean().default(false), Practice: z.boolean().default(false),
     Lab: LabLifecycleSchema.nullish().transform(value => value ?? null),
 });
 const solveSchema = z.object({TeamName: z.string(), NameHidden: z.boolean().optional(), SolvedAt: z.string(), Own: z.boolean(), FirstBlood: z.boolean().default(false)})
     .transform(row => row.NameHidden ? {...row, TeamName: t("scoreboard.nameHidden")} : row);
-const solvesPageSchema = z.object({
+export const solvesPageSchema = z.object({
     Total: z.number().int().default(0),
     Items: z.array(solveSchema).nullish().transform(value => value ?? []),
     NextCursor: id.nullish().transform(value => value ?? null),

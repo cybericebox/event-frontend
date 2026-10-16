@@ -6,7 +6,7 @@
 .ib-select{position:relative;display:inline-flex;width:100%}
 .ib-select>select.ib-input{appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer}
 .ib-select>svg{position:absolute;right:10px;top:50%;width:16px;height:16px;margin-top:-8px;color:var(--ib-dim);pointer-events:none;
-  stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ib-select--sm>select.ib-input{height:var(--ib-control-h);font-size:var(--ib-fs-13)}
 .ib-select--inline{width:auto}
 .ib-select>select:disabled{cursor:not-allowed}
@@ -16,14 +16,14 @@
 .ib-select__trigger{display:flex;align-items:center;gap:var(--ib-2);text-align:left;cursor:pointer;padding-right:10px}
 .ib-select__trigger>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ib-select__trigger>.ib-select__ph{color:var(--ib-faint)}
-.ib-select__trigger>svg{width:16px;height:16px;flex:none;color:var(--ib-dim);stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-select__trigger>svg{width:16px;height:16px;flex:none;color:var(--ib-dim);stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ib-select__trigger[aria-expanded="true"]{outline:2px solid var(--ib-action);outline-offset:-1px;border-color:var(--ib-action)}
 
 .ib-listbox{list-style:none;margin:var(--ib-1) 0 0;padding:var(--ib-1);min-width:200px;max-height:264px;overflow:auto;
   background:var(--ib-raised);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);box-shadow:var(--ib-shadow-overlay)}
 .ib-listbox__opt{display:flex;align-items:center;gap:var(--ib-2);height:var(--ib-control-h);padding:0 var(--ib-2) 0 10px;border-radius:var(--ib-r-sm);
   color:var(--ib-ink);font-size:var(--ib-fs-14);cursor:pointer}
-.ib-listbox__opt>svg{width:16px;height:16px;margin-left:auto;flex:none;visibility:hidden;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib-listbox__opt>svg{width:16px;height:16px;margin-left:auto;flex:none;visibility:hidden;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ib-listbox__opt:hover,.ib-listbox__opt.is-active,.ib-listbox__opt[data-highlighted]{background:var(--ib-soft)}
 .ib-listbox__opt[aria-selected="true"],.ib-listbox__opt[data-state="checked"]{font-weight:var(--ib-w-semibold)}
 .ib-listbox__opt[aria-selected="true"]>svg,.ib-listbox__opt[data-state="checked"]>svg{visibility:visible}

@@ -4,7 +4,9 @@ import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ParticipantPreviewProvider, ParticipantPreviewEntry, previewAnswerFile, useParticipantPreview} from "./ParticipantPreview";
 
-const api = vi.hoisted(() => ({pathname: "/join", push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
+const api = vi.hoisted(() => ({pathname: "/join", reset: vi.fn(), toastError: vi.fn(), push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
+vi.mock("@/api/participantPreview", () => ({resetPreviewRuns: api.reset}));
+vi.mock("react-hot-toast", () => ({default: {error: api.toastError}}));
 vi.mock("next/navigation", () => ({usePathname: () => api.pathname, useRouter: () => ({push: api.push})}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "user-1"})}));
 vi.mock("@/api/manage", () => ({getManageAccess: api.access, getManageConfig: async () => ({ScoreboardVisibility: 1})}));
@@ -27,10 +29,10 @@ async function openMenu() {
     return screen.findByRole("menu");
 }
 
-beforeEach(() => {sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.access.mockResolvedValue({CanManage: true});});
+beforeEach(() => {sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.reset.mockResolvedValue(undefined); api.access.mockResolvedValue({CanManage: true});});
 afterEach(cleanup);
 
-it("persists local state across page remounts, resets only local registration, and exits to management", async () => {
+it("persists local state, clears owned server runs before resetting registration, and exits to management", async () => {
     const first = view();
     fireEvent.click(screen.getByRole("button", {name: "Тестувати як учасник"}));
     fireEvent.click(screen.getByRole("button", {name: "Update local answers"}));
@@ -40,7 +42,8 @@ it("persists local state across page remounts, resets only local registration, a
     expect(screen.getByTestId("state").textContent).toContain("Edited");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toMatchObject({status: 0, team: null, answers: {}});
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toMatchObject({status: 0, team: null, answers: {}}));
+    expect(api.reset).toHaveBeenCalledWith("event-1");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Вийти з тестування"}));
     expect(sessionStorage.getItem(storageKey)).toBeNull();
@@ -57,6 +60,36 @@ it("does not replace auth, join status or own-team caches with simulated state",
     expect(client.getQueryData(["event-current-user"])).toEqual({ID: "user-1"});
     expect(client.getQueryData(["event-join-status", "event-1"])).toBe(0);
     expect(client.getQueryData(["event-own-team", "event-1"])).toBeNull();
+});
+
+it("waits for owned cleanup, keeps other actions enabled, and clears only preview caches", async () => {
+    let finish!: () => void;
+    api.reset.mockReturnValue(new Promise<void>(resolve => {finish = resolve;}));
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    const {client} = view();
+    client.setQueryData(["event-participant-preview-board", "event-1"], {Challenges: ["old"]});
+    client.setQueryData(["event-own-challenges", "event-1"], {Challenges: ["competition"]});
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
+    expect(screen.getByRole("menuitem", {name: "Почати спочатку"}).getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByRole("menuitem", {name: "Вийти з тестування"}).getAttribute("aria-disabled")).toBeNull();
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(2);
+    await act(async () => {finish();});
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(0));
+    expect(client.getQueryData(["event-participant-preview-board", "event-1"])).toBeUndefined();
+    expect(client.getQueryData(["event-own-challenges", "event-1"])).toEqual({Challenges: ["competition"]});
+});
+
+it("preserves browser state and progress if owned cleanup fails", async () => {
+    api.reset.mockRejectedValue(new Error("cleanup failed"));
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    const {client} = view();
+    client.setQueryData(["event-participant-preview-board", "event-1"], {Challenges: ["old"]});
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
+    await waitFor(() => expect(api.toastError).toHaveBeenCalled());
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(state);
+    expect(client.getQueryData(["event-participant-preview-board", "event-1"])).toEqual({Challenges: ["old"]});
 });
 
 it("hides saved test state when the account changes or management rights are revoked", async () => {

@@ -9,8 +9,11 @@
   border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-raised);color:var(--ib-body);box-shadow:var(--ib-shadow-overlay)}
 dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal::backdrop{background:var(--ib-backdrop)}
-.ib-cmodal[open]{animation:ib-cmodal-in var(--ib-dur-move) var(--ib-ease)}
-@keyframes ib-cmodal-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ib-cmodal[open]{animation:ib-cmodal-in 180ms cubic-bezier(.16,1,.3,1) both}
+.ib-cmodal[open]::backdrop{animation:ib-cmodal-fade 140ms cubic-bezier(.16,1,.3,1) both}
+@keyframes ib-cmodal-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes ib-cmodal-fade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.ib-cmodal[open],.ib-cmodal[open]::backdrop{animation:none}}
 /* preview / inline: the same box without top-layer positioning */
 .ib-cmodal--static{position:static;margin:0;max-height:none;animation:none}
 
@@ -40,7 +43,7 @@ dialog.ib-cmodal:not([open]){display:none}
   color:var(--ib-action);font-weight:var(--ib-w-medium);text-decoration:none}
 .ib-cmodal__file:hover{background:var(--ib-soft);text-decoration:none}
 .ib-cmodal__file[role="button"]{cursor:pointer}
-.ib-cmodal__file svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-cmodal__file svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ib-cmodal__size{flex:none;margin-left:auto;font:var(--ib-fs-12) var(--ib-mono);color:var(--ib-dim);font-weight:var(--ib-w-regular)}
 .ib-cmodal__hint{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:var(--ib-fs-12);color:var(--ib-dim)}
 
@@ -54,7 +57,7 @@ dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal__msg.is-warn{color:var(--ib-warn)}
 .ib-cmodal__ok{display:flex;align-items:center;gap:10px;margin-top:18px;padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);
   background:var(--ib-ok-bg);color:var(--ib-ok);font-weight:var(--ib-w-semibold)}
-.ib-cmodal__ok svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ib-cmodal__ok svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ib-cmodal__ok .ib-num{margin-left:auto;font-weight:var(--ib-w-medium)}
 
 /* Solves tab: fixed height, windowed rows of a fixed height. */
