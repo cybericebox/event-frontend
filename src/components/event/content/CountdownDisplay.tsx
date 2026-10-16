@@ -9,8 +9,8 @@ const unit = (value: number, name: Unit) => tPlural(`content.countdown.${name}`,
 
 export type CountdownDisplay = "segments" | "compact" | "tiles" | "focus" | "dial" | "ledger" | "poster" | "tracks" | "flip" | "ticker" | "stairs" | "orbits" | "matrix" | "ribbon" | "rings";
 
-export function CountdownValue({target, display = "segments"}: {target: string | null; display?: CountdownDisplay}) {
-    const [now, setNow] = useState(0);
+export function CountdownValue({target, display = "segments", initialNow = 0}: {target: string | null; display?: CountdownDisplay; initialNow?: number}) {
+    const [now, setNow] = useState(initialNow);
     useEffect(() => {
         const frame = requestAnimationFrame(() => setNow(Date.now()));
         const timer = window.setInterval(() => setNow(Date.now()), 1000);

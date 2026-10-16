@@ -8,20 +8,20 @@
 .ib-footer__row{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-6);padding:var(--ib-8) 0}
 .ib-footer__row+.ib-footer__row{padding:var(--ib-5) 0 var(--ib-6);border-top:1px solid var(--ib-line);font-size:var(--ib-fs-13)}
 .ib-footer__brand{display:flex;align-items:center;gap:var(--ib-3);color:var(--ib-ink);font-size:var(--ib-fs-16);font-weight:var(--ib-w-semibold);letter-spacing:-.015em;text-decoration:none}
-.ib-footer__brand:hover{text-decoration:none}
+@media (hover:hover) and (pointer:fine){.ib-footer__brand:hover{text-decoration:none}}
 .ib-footer__brand img{width:32px;height:32px;object-fit:contain}
 .ib-footer__links{display:flex;flex-wrap:wrap;gap:var(--ib-2) var(--ib-6)}
-.ib-footer__links a{display:inline-flex;align-items:center;min-height:24px;color:var(--ib-dim);font-size:var(--ib-fs-14);font-weight:var(--ib-w-regular)}   /* 14px, 24px target (44px rows on phones) */
+.ib-footer__links a{display:inline-flex;align-items:center;min-height:24px;color:var(--ib-dim);font-size:var(--ib-fs-14);font-weight:var(--ib-w-regular);text-decoration:none}   /* 14px, 24px target (44px rows on phones) */
 @media (pointer:coarse){.ib-footer__links a{min-height:44px}}
-.ib-footer__links a:hover{color:var(--ib-ink)}
+@media (hover:hover) and (pointer:fine){.ib-footer__links a:hover{color:var(--ib-ink)}}
 .ib-footer__legal{color:var(--ib-dim)}
 :is(.ib-footer__legal,.ib-footer__support) a{color:var(--ib-ink);font-weight:var(--ib-w-medium);text-decoration:none;border-radius:2px}
-:is(.ib-footer__legal,.ib-footer__support) a:hover{color:var(--ib-accent)}
+@media (hover:hover) and (pointer:fine){:is(.ib-footer__legal,.ib-footer__support) a:hover{color:var(--ib-accent)}}
 :is(.ib-footer__legal,.ib-footer__support) a:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
 /* platform credit «Cyber ICE Box · ХНУРЕ»: platform colours, never the event's (crest ice on hover) */
 .ib-footer__credit a{color:var(--ib-ink);font-weight:var(--ib-w-medium);text-decoration:none;border-radius:2px}
-.ib-footer__credit a:hover{color:#1070A0}
-[data-theme="dark"] .ib-footer__credit a:hover{color:#7FD0FA}
+@media (hover:hover) and (pointer:fine){.ib-footer__credit a:hover{color:#1070A0}}
+@media (hover:hover) and (pointer:fine){[data-theme="dark"] .ib-footer__credit a:hover{color:#7FD0FA}}
 .ib-footer__credit a:focus-visible{outline:2px solid var(--ib-ink);outline-offset:2px}
 
 /* event footer: one row, organizer line left, links right */

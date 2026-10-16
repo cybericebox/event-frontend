@@ -21,5 +21,8 @@ export default async function ContentPage({params}: {params: Promise<{slug: stri
     const content = await getEventPageContent(slug);
     if (!content) return <ClientContentPage slug={slug} publicEventID={event.EventID} />;
     const bundle = (await getCommonPage(slug))!;
-    return <LiveContentBlocks imageDimensions={bundle.Images} revision={bundle.Revision} eventID={event.EventID} document={content.Page.Document} initialVariables={content.Variables} title={content.Page.Title} coverImage={event.PreviewPicture} page={slug} />;
+    // This server-only request snapshot becomes the client's deterministic initial clock.
+    // eslint-disable-next-line react-hooks/purity
+    const initialNow = Date.now();
+    return <LiveContentBlocks initialNow={initialNow} imageDimensions={bundle.Images} revision={bundle.Revision} eventID={event.EventID} document={content.Page.Document} initialVariables={content.Variables} title={content.Page.Title} coverImage={event.PreviewPicture} page={slug} />;
 }

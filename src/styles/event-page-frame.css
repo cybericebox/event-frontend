@@ -37,8 +37,8 @@
 .ib-footer--event .ib-footer__org{min-width:0}
 .ib-footer--event .ib-footer__org span{margin-left:0}
 .ib-footer__signature{overflow-wrap:anywhere}
-.ib-footer__signature a{color:var(--ib-ink);font-weight:var(--ib-w-medium)}
-.ib-footer__signature a:hover{color:var(--ib-accent)}
+.ib-footer__signature a{color:var(--ib-ink);font-weight:var(--ib-w-medium);text-decoration:underline;text-underline-offset:3px}
+@media (hover:hover) and (pointer:fine){.ib-footer__signature a:hover{color:var(--ib-accent)}}
 .ib-footer__signature a:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
 @container ib-footer (max-width:639px){
   .ib-footer--event .ib-footer__org>span{margin:0}
