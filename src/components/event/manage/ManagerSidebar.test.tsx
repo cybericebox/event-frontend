@@ -54,14 +54,14 @@ describe("participation navigation", () => {
         expect(screen.getByRole("link", {name: "Стенди"})).toBeTruthy();
     });
 
-    it("orders the challenges group: settings, groups, tasks, stands, journal", () => {
+    it("orders the challenges group: tasks, groups, settings, stands, resources, journal", () => {
         renderSidebar(1, true);
         fireEvent.click(screen.getByRole("button", {name: "Завдання"}));
         const links = Array.from(document.getElementById("event-manage-group-challenges")!.querySelectorAll("a"));
         expect(links.map(link => [link.textContent?.trim(), link.getAttribute("href")])).toEqual([
-            ["Налаштування", "/manage/challenge-settings"],
+            ["Перелік завдань", "/manage/exercises"],
             ["Групи й порядок", "/manage/exercise-groups"],
-            ["Завдання", "/manage/exercises"],
+            ["Налаштування", "/manage/challenge-settings"],
             ["Стенди", "/manage/labs"],
             ["Ресурси", "/manage/resources"],
             ["Журнал спроб", "/manage/submissions"],

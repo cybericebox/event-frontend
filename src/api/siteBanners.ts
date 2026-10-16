@@ -12,7 +12,7 @@ export type VisibleBanner = z.infer<typeof visibleBannerSchema>;
 
 export async function getSiteBanners(eventID: string): Promise<VisibleBanner[]> {
     if (!apiOrigin) return [];
-    const response = await fetch(`${apiOrigin}/api/banners?event=${encodeURIComponent(eventID)}`, {
+    const response = await fetch(`${apiOrigin}/api/banners?site=event&event=${encodeURIComponent(eventID)}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (!response.ok) throw new Error(`Banners request failed: ${response.status}`);

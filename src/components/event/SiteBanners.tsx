@@ -1,13 +1,15 @@
 "use client";
 
-import {useState} from "react";
+import {useId, useRef, useState, type ReactNode} from "react";
 import Link from "next/link";
+import * as Popover from "@radix-ui/react-popover";
 import {useQuery} from "@tanstack/react-query";
 import {CircleAlert, Info, TriangleAlert, X} from "lucide-react";
 import {getSiteBanners, type VisibleBanner} from "@/api/siteBanners";
 import {EventTooltip} from "@/components/ui/EventTooltip";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 import { keepBrand } from "@/i18n/brand";
+import "@/styles/event-site-banners.css";
 import {siteBannerDismissedKey} from "@/utils/storageKeys";
 
 export type SiteBannerData = Pick<VisibleBanner, "Text" | "LinkURL" | "LinkLabel" | "Level" | "Dismissible">;
@@ -21,20 +23,21 @@ export function safeBannerLink(url: string): boolean {
     return (value.startsWith("/") && !value.startsWith("//")) || /^https?:\/\//i.test(value);
 }
 
-// The banner row of the site: a calm tinted line under the navbar with the text,
+// The banner row of the site: a calm tinted line above the navbar with the text,
 // one optional link and (when dismissible) a close button. Purely presentational:
 // the shared ds-v2 banner (no left accent border, no shadow), used both by the
 // site and by the live preview in the banner editor.
-export function SiteBanner({banner, onDismiss}: {banner: SiteBannerData; onDismiss?: () => void}) {
+export function SiteBanner({banner, onDismiss, actions}: {banner: SiteBannerData; onDismiss?: () => void; actions?: ReactNode}) {
     const Icon = icons[banner.Level];
     const link = banner.LinkURL.trim();
     const label = keepBrand(banner.LinkLabel.trim() || t("siteBanner.more"));
     return <div className={`ib-banner ib-banner--${tones[banner.Level]}`} role={banner.Level === "critical" ? "alert" : "status"} data-level={banner.Level}>
         <span className="ib-banner__icon"><Icon aria-hidden="true" /></span>
         <div className="ib-banner__text"><span className="ib-banner__msg">{keepBrand(banner.Text)}</span></div>
-        {link && safeBannerLink(link) && <div className="ib-banner__action">
-            {link.startsWith("/") ? <Link className="ib-link ib-link--standalone" href={link}>{label}</Link>
-                : <a className="ib-link ib-link--standalone" href={link} target="_blank" rel="noopener noreferrer">{label}<span className="ib-sr"> {t("siteBanner.newTab")}</span></a>}
+        {(link && safeBannerLink(link) || actions) && <div className="ib-banner__action">
+            {link && safeBannerLink(link) && (link.startsWith("/") ? <Link className="ib-link ib-link--standalone" href={link}>{label}</Link>
+                : <a className="ib-link ib-link--standalone" href={link} target="_blank" rel="noopener noreferrer">{label}<span className="ib-sr"> {t("siteBanner.newTab")}</span></a>)}
+            {actions}
         </div>}
         {banner.Dismissible && onDismiss && <EventTooltip content={t("siteBanner.dismiss")} silent>{() =>
             <button className="ib-icon-btn ib-icon-btn--sm ib-banner__close" type="button" aria-label={t("siteBanner.dismiss")} onClick={onDismiss}><X aria-hidden="true" /></button>}</EventTooltip>}
@@ -64,10 +67,26 @@ export function SiteBannerBar({eventID}: {eventID: string}) {
     const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
     const visible = (query.data ?? []).filter(banner => !(banner.Dismissible && (hidden.has(bannerDismissKey(banner)) || isDismissed(banner))));
     if (visible.length === 0) return null;
+    const dismiss = (banner: VisibleBanner) => {
+        rememberDismissal(banner);
+        setHidden(current => new Set(current).add(bannerDismissKey(banner)));
+    };
     return <div className="ib-banner-stack" data-testid="site-banners">
-        {visible.map(banner => <SiteBanner key={bannerDismissKey(banner)} banner={banner} onDismiss={() => {
-            rememberDismissal(banner);
-            setHidden(current => new Set(current).add(bannerDismissKey(banner)));
-        }} />)}
+        <SiteBanner banner={visible[0]} onDismiss={() => dismiss(visible[0])}
+            actions={visible.length > 1 ? <OtherAnnouncements banners={visible.slice(1)} onDismiss={dismiss} /> : undefined} />
     </div>;
+}
+
+function OtherAnnouncements({banners, onDismiss}: {banners: VisibleBanner[]; onDismiss: (banner: VisibleBanner) => void}) {
+    const titleID = useId();
+    const titleRef = useRef<HTMLHeadingElement>(null);
+    return <Popover.Root modal={false}>
+        <Popover.Trigger className="event-announcements-trigger" type="button">{tPlural("siteBanner.moreAnnouncements", banners.length)}</Popover.Trigger>
+        <Popover.Portal>
+            <Popover.Content className="event-announcements-panel" align="end" side="bottom" sideOffset={8} collisionPadding={16} aria-labelledby={titleID} onOpenAutoFocus={event => {event.preventDefault(); titleRef.current?.focus();}}>
+                <h2 ref={titleRef} id={titleID} tabIndex={-1}>{t("siteBanner.others")}</h2>
+                {banners.map(banner => <SiteBanner key={bannerDismissKey(banner)} banner={banner} onDismiss={() => onDismiss(banner)} />)}
+            </Popover.Content>
+        </Popover.Portal>
+    </Popover.Root>;
 }

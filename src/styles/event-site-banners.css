@@ -1,0 +1,8 @@
+.event-announcements-trigger{min-height:32px;max-width:100%;padding:var(--ib-1) var(--ib-2);border:0;background:transparent;color:var(--ib-body);font:inherit;font-weight:var(--ib-w-medium);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.event-announcements-trigger:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}
+@media(hover:hover) and (pointer:fine){.event-announcements-trigger:hover{color:var(--ib-action)}}
+.event-announcements-panel{z-index:100;width:min(640px,calc(100vw - 32px));max-height:min(60dvh,480px,var(--radix-popover-content-available-height));overflow:auto;overscroll-behavior:contain;border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-body);box-shadow:var(--ib-shadow-overlay)}
+.event-announcements-panel>h2{margin:0;padding:var(--ib-3) var(--ib-4);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.event-announcements-panel .ib-banner{--ib-banner-px:var(--ib-4)}
+.event-announcements-panel .ib-banner:last-child{border-bottom:0}
+.event-manage-frame>.ib-banner-stack{flex:none}
