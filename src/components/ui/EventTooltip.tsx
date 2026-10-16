@@ -1,10 +1,58 @@
 "use client";
 
-import {useId, useRef, useState, type CSSProperties, type ReactNode} from "react";
+import {useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode} from "react";
 
 // truncated shows the hint only while the trigger's text is actually cut off by an ellipsis;
 // silent keeps a purely visual bubble out of the accessibility tree (its text is read elsewhere).
-export function EventTooltip({content, children, placement = "top", className, truncated = false, silent = truncated}: {content: ReactNode; children: (id: string) => ReactNode; placement?: "top" | "bottom"; className?: string; truncated?: boolean; silent?: boolean}) {
+type EventTooltipProps = {content: ReactNode; children: (id: string) => ReactNode; placement?: "top" | "bottom"; className?: string; truncated?: boolean; silent?: boolean; floating?: boolean};
+
+export function EventTooltip(props: EventTooltipProps) {
+    return props.floating ? <FloatingEventTooltip {...props} /> : <InlineEventTooltip {...props} />;
+}
+
+// A native popover shares the dialog's top layer, escaping its scroll/overflow clipping.
+function FloatingEventTooltip({content, children, className, silent = false, placement = "top"}: EventTooltipProps) {
+    const id = useId();
+    const anchor = useRef<HTMLSpanElement>(null);
+    const bubble = useRef<HTMLSpanElement>(null);
+    const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const dismissed = useRef(false);
+    const [open, setOpen] = useState(false);
+    const clearTimer = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
+    const close = () => { clearTimer(); setOpen(false); };
+    useEffect(() => clearTimer, []);
+    useLayoutEffect(() => {
+        const node = bubble.current;
+        const trigger = anchor.current;
+        if (!node || !trigger) return;
+        if (!open) { node.hidePopover?.(); return; }
+        node.showPopover?.();
+        const rect = trigger.getBoundingClientRect();
+        const box = node.getBoundingClientRect();
+        const below = placement === "bottom" || rect.top - box.height - 8 < 12;
+        node.style.left = `${Math.max(12, Math.min(window.innerWidth - box.width - 12, rect.left + (rect.width - box.width) / 2))}px`;
+        node.style.top = `${Math.max(12, Math.min(window.innerHeight - box.height - 12, below ? rect.bottom + 8 : rect.top - box.height - 8))}px`;
+    }, [open, content, placement]);
+    useEffect(() => {
+        if (!open) return;
+        const hide = () => setOpen(false);
+        window.addEventListener("scroll", hide, true);
+        window.addEventListener("resize", hide);
+        window.addEventListener("blur", hide);
+        return () => { window.removeEventListener("scroll", hide, true); window.removeEventListener("resize", hide); window.removeEventListener("blur", hide); };
+    }, [open]);
+    return <span ref={anchor} className={`ib-tip ib-tip--floating${className ? ` ${className}` : ""}`}
+        onPointerEnter={event => { if (event.pointerType === "touch" || dismissed.current) return; clearTimer(); timer.current = setTimeout(() => setOpen(true), 300); }}
+        onPointerLeave={() => { dismissed.current = false; close(); }}
+        onPointerDownCapture={event => { if (event.pointerType === "touch") { dismissed.current = true; close(); } }}
+        onFocusCapture={() => { if (!dismissed.current) { clearTimer(); setOpen(true); } }}
+        onBlurCapture={() => { dismissed.current = false; close(); }}
+        onKeyDown={event => { if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); dismissed.current = true; close(); } }}>
+        {children(id)}<span ref={bubble} id={id} className="ib-tip__bubble" popover="manual" role={silent ? undefined : "tooltip"} aria-hidden={silent || undefined}>{content}</span>
+    </span>;
+}
+
+function InlineEventTooltip({content, children, placement = "top", className, truncated = false, silent = truncated}: EventTooltipProps) {
     const id = useId();
     const [dismissed, setDismissed] = useState(false);
     const [cut, setCut] = useState(false);

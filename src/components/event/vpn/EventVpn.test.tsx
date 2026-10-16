@@ -49,3 +49,33 @@ it("explains preview VPN availability without promising an exact minute",async()
  expect(api.probe).not.toHaveBeenCalled();
  expect(api.stand).not.toHaveBeenCalled();
 });
+
+
+it.each([false,true])("uses the approved guide and matching config filename in participant preview=%s",async preview=>{
+ api.preview=preview;
+ api.stand.mockResolvedValue({Status:"ready",VPNReady:true});
+ api.probe.mockResolvedValue({Connected:false});
+ api.previewBoard.mockResolvedValue({Challenges:[{PreviewDynamic:true,PreviewRunID:"run1",PreviewSelectionID:"selection1"}]});
+ api.previewLab.mockResolvedValue({Ready:true,VPNConnected:false});
+ api.config.mockResolvedValue("[Interface]");
+ api.previewConfig.mockResolvedValue("[Interface]");
+ const objectURL=vi.fn(()=>"blob:config");
+ const NativeURL=URL;
+ vi.stubGlobal("URL",class extends NativeURL{static createObjectURL=objectURL;static revokeObjectURL=vi.fn();});
+ const downloaded:string[]=[];
+ const anchorClick=vi.spyOn(HTMLAnchorElement.prototype,"click").mockImplementation(function(this:HTMLAnchorElement){downloaded.push(this.download);});
+ try{
+  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+  render(<QueryClientProvider client={client}><EventVpnProvider eventID="e1" eventTag="autumnctf" enabled><VpnHeaderButton/></EventVpnProvider></QueryClientProvider>);
+  await vi.waitFor(()=>expect(client.getQueryData(preview?["event-preview-vpn-lab","e1","selection1"]:["event-vpn-status","e1",false])).toBeTruthy());
+  fireEvent.click(await screen.findByRole("button",{name:/VPN:/}));
+  expect(screen.getByRole("link",{name:"WireGuard"}).getAttribute("href")).toBe("https://www.wireguard.com/install/");
+  expect(screen.getByText("У застосунку")).toBeTruthy();
+  expect(screen.getByText("Або через термінал")).toBeTruthy();
+  expect(screen.getByText("sudo wg-quick up ./autumnctf.conf")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button",{name:"Завантажити файл"}));
+  await vi.waitFor(()=>expect(downloaded).toEqual(["autumnctf.conf"]));
+  if(preview){expect(api.previewConfig).toHaveBeenCalledWith("e1","selection1");expect(api.config).not.toHaveBeenCalled();}
+  else{expect(api.config).toHaveBeenCalledWith("e1");expect(api.previewConfig).not.toHaveBeenCalled();}
+ }finally{anchorClick.mockRestore();vi.unstubAllGlobals();}
+});
