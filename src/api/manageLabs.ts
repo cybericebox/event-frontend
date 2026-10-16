@@ -74,6 +74,7 @@ export const ManageLabsSchema = z.object({
     TeardownDelayMinutes: z.number().int(),
     // When the first labs start deploying: the start minus the lead the platform computes from the workload.
     DeployAt: optionalTime, TeardownAt: optionalTime, ChallengesOpened: z.boolean(),
+    ModeratorVPNReady: z.boolean().default(false),
     Summary: summarySchema,
     Prewarm: prewarmSchema.nullish().transform(value => value ?? null),
     Items: z.array(standSchema).nullish().transform(value => value ?? []),
@@ -109,7 +110,7 @@ export const LabRuntimeSchema = z.object({
 export type LabRuntime = z.infer<typeof LabRuntimeSchema>;
 
 const vpnSchema = z.object({Config: z.string().min(1)});
-const ownStandSchema = z.object({Status: StandStatusSchema});
+const ownStandSchema = z.object({Status: StandStatusSchema, VPNReady: z.boolean().default(false)});
 
 export const TEARDOWN_DELAY_RANGE = {min: 0, max: 10080} as const;
 
@@ -200,6 +201,10 @@ export async function getModeratorVPNConfig(eventID: string): Promise<string> {
 }
 
 // Participant view of the own team's stand (no failure reason) for the VPN modal.
-export async function getOwnStandStatus(eventID: string): Promise<StandStatus> {
-    return (await request(eventID, "/stand", ownStandSchema, "GET", undefined, "teams/labs")).Status;
+export async function getOwnStandStatus(eventID: string): Promise<z.infer<typeof ownStandSchema>> {
+    return request(eventID, "/stand", ownStandSchema, "GET", undefined, "teams/labs");
+}
+
+export async function getModeratorVPNStatus(eventID:string):Promise<{GatewayIP:string;ProbeURL:string;Connected?:boolean|null}> {
+    return request(eventID,"/moderators/vpn/status",z.object({GatewayIP:z.ipv4(),ProbeURL:z.url(),Connected:z.boolean().nullable().optional()}));
 }

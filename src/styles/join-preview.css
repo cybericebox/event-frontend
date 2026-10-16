@@ -10,3 +10,9 @@
 .event-join-result--approved{--join-tone:var(--ib-ok);--join-tone-bg:var(--ib-ok-bg)}
 .event-join-result--pending{--join-tone:var(--ib-warn);--join-tone-bg:var(--ib-warn-bg)}
 .event-join-result--rejected{--join-tone:var(--ib-danger);--join-tone-bg:var(--ib-danger-bg)}
+
+.event-join-dialog__status{display:flex;align-items:flex-start;gap:var(--ib-3)}
+.event-join-dialog__status>svg{flex:none;color:var(--join-tone)}
+.event-join-dialog__status>p{margin:0;color:var(--ib-body);line-height:var(--ib-lh-body);white-space:pre-line;text-wrap:pretty}
+
+.ib-modal__head>.event-dialog__actions{display:flex;align-items:center;gap:var(--ib-2);flex:none;margin-left:auto}

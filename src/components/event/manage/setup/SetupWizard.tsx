@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {ArrowUpRight, Bell, CalendarDays, Check, FileText, Gauge, Layers3, Rocket, Server, SlidersHorizontal, Trophy, TriangleAlert, UserRound, UsersRound, type LucideIcon} from "lucide-react";
+import {ArrowUpRight, Bell, CalendarDays, Check, FileText, FlaskConical, Gauge, Layers3, Rocket, Server, SlidersHorizontal, Trophy, TriangleAlert, UserRound, UsersRound, type LucideIcon} from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
 import {getManageConfig, getManageLifecycle} from "@/api/manage";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -16,6 +16,7 @@ import "./setup.css";
 const icons: Record<SetupStepID, LucideIcon> = {
     participation: UsersRound, registration: UserRound, schedule: CalendarDays, challenges: Layers3, scoring: SlidersHorizontal,
     pages: FileText, mail: Bell, results: Trophy, resources: Gauge, stands: Server, publish: Rocket,
+    testMode: FlaskConical,
 };
 
 // «Підготовка заходу»: the step-by-step checklist to run the event. Always

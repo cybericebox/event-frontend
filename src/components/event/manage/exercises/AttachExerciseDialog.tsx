@@ -34,8 +34,9 @@ function difficultyLabel(value: string): string {
 // Catalog picker: own event exercises first, preview per variant, variant mode.
 // Without event infrastructure, sets that need it are listed but disabled
 // (the filter starts at «Немає»).
-export function AttachExerciseDialog({eventID, infrastructureAllowed, published = false, open, onClose, onAttached}: {
+export function AttachExerciseDialog({eventID, infrastructureAllowed, published = false, open, onClose, onAttached, selectionAdapter}: {
     eventID: string; infrastructureAllowed: boolean; published?: boolean; open: boolean; onClose: () => void; onAttached: () => Promise<unknown>;
+    selectionAdapter?: {variantInfrastructure?: Record<string, Record<number, boolean>>; availableVariants?: Record<string, number[]>; attachedVersionIDs: string[]; onSelect: (choice: PublishedExerciseChoice, variant: number) => Promise<unknown>};
 }) {
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
@@ -44,7 +45,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const [attachError, setAttachError] = useState("");
     // 72508: the reservation cannot hold the set for all teams; the organizer can ask for an extension.
     const [needsExtension, setNeedsExtension] = useState(false);
-    const [draft, setDraft] = useSessionDraftState<{selected: PublishedExerciseChoice; variant: number; variantMode: 0 | 1} | null>("exercise-attachment", null);
+    const [draft, setDraft] = useSessionDraftState<{selected: PublishedExerciseChoice; variant: number; variantMode: 0 | 1} | null>(selectionAdapter ? "preview-exercise-attachment" : "exercise-attachment", null);
     const latestDraft = useRef(draft);
     useLayoutEffect(() => {latestDraft.current = draft;}, [draft]);
     const selected = draft?.selected ?? null;
@@ -53,7 +54,11 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const setVariant = (value: number) => setDraft(current => current && {...current, variant: value});
     const setVariantMode = (value: 0 | 1) => setDraft(current => current && {...current, variantMode: value});
     const [busy, setBusy] = useState(false);
-    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags], queryFn: () => getPublishedExerciseChoices(eventID, search, infrastructure, tags), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
+    const eligiblePositions = (choice: PublishedExerciseChoice) => (selectionAdapter?.availableVariants?.[choice.PublishedVersionID] ?? []).filter(position => {
+        const dynamic = selectionAdapter?.variantInfrastructure?.[choice.PublishedVersionID]?.[position] ?? (infrastructureAllowed && choice.Infrastructure);
+        return infrastructure === "all" || (infrastructure === "yes" ? dynamic : !dynamic);
+    });
+    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags, selectionAdapter?.attachedVersionIDs, selectionAdapter?.availableVariants, selectionAdapter?.variantInfrastructure], queryFn: async () => (await getPublishedExerciseChoices(eventID, search, selectionAdapter?.availableVariants ? "all" : infrastructure, tags)).filter(choice => !selectionAdapter?.availableVariants || eligiblePositions(choice).length > 0).map(choice => selectionAdapter ? {...choice, Attached: selectionAdapter.attachedVersionIDs.includes(choice.PublishedVersionID)} : choice), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
     const preview = useQuery({
         queryKey: ["event-exercise-preview", eventID, selected?.PublishedVersionID, variant],
         queryFn: () => getPublishedExercisePreview(eventID, selected!.PublishedVersionID, variant),
@@ -61,12 +66,15 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     });
     const variantCount = preview.data?.ID === selected?.ID ? preview.data?.VariantCount ?? 1 : 1;
 
-    const unavailable = (choice: PublishedExerciseChoice) => choice.Infrastructure && !infrastructureAllowed;
+    const variantPositions = selectionAdapter?.availableVariants && selected ? eligiblePositions(selected) : Array.from({length: variantCount}, (_, index) => index);
+    const variantAvailable = !selectionAdapter?.availableVariants || variantPositions.includes(variant);
+
+    const unavailable = (choice: PublishedExerciseChoice) => selectionAdapter?.availableVariants ? eligiblePositions(choice).length === 0 : choice.Infrastructure && !infrastructureAllowed;
 
     function select(choice: PublishedExerciseChoice) {
         setAttachError("");
         setNeedsExtension(false);
-        setDraft(current => current?.selected.ID === choice.ID ? null : {selected: choice, variant: 0, variantMode: 0});
+        setDraft(current => current?.selected.ID === choice.ID ? null : {selected: choice, variant: eligiblePositions(choice)[0] ?? 0, variantMode: 0});
     }
 
     function close() {
@@ -78,11 +86,12 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     }
 
     async function attach() {
-        if (!selected || selected.Attached || unavailable(selected) || busy) return;
+        if (!selected || selected.Attached || unavailable(selected) || !variantAvailable || busy) return;
         const submitted = draft;
         setBusy(true);
         try {
-            await attachEventExercise(eventID, selected.PublishedVersionID, variantMode, variantMode === 1 ? variant : null);
+            if (selectionAdapter) await selectionAdapter.onSelect(selected, variant);
+            else await attachEventExercise(eventID, selected.PublishedVersionID, variantMode, variantMode === 1 ? variant : null);
             await onAttached();
             toast.success(t("manage.exercises.attachDialog.done"));
             if (latestDraft.current === submitted) {setDraft(null); onClose();}
@@ -95,7 +104,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
 
     return <DialogModal open={open} onClose={close} size="md" title={t("manage.exercises.attach")} description={t("manage.exercises.attachDialog.description")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
-            <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached || unavailable(selected)} onClick={() => void attach()} busy={busy}>{t("common.add")}</EventButton></>}>
+            <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached || unavailable(selected) || !variantAvailable} onClick={() => void attach()} busy={busy}>{t("common.add")}</EventButton></>}>
         <div className="event-exercise-picker">
             <form className="event-exercise-editor__search" onSubmit={(submitEvent: FormEvent<HTMLFormElement>) => {submitEvent.preventDefault(); setSearch(searchInput.trim());}}>
                 <label className="event-manage-field" htmlFor="exercise-search">{t("manage.exercises.attachDialog.search")}<input id="exercise-search" className="event-manage-input" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder={t("manage.exercises.attachDialog.searchPlaceholder")} maxLength={100} /></label>
@@ -131,11 +140,11 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
             {selected && <div className="event-exercise-editor__preview" aria-live="polite">
                 {preview.isPending ? <EventLoading compact /> : preview.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.previewFailed")} error={preview.error} onRetry={() => void preview.refetch()} /> : <>
                     <div className="event-exercise-editor__preview-head"><h3>{preview.data.Name}</h3>
-                        {variantCount > 1 && <EventSelect ariaLabel={t("manage.exercises.attachDialog.previewVariant")} value={String(variant)} options={Array.from({length: variantCount}, (_, index) => ({value: String(index), label: t("manage.exercises.attachDialog.variant", {number: index + 1})}))} onValueChange={value => setVariant(Number(value))} />}
+                        {variantCount > 1 && <EventSelect ariaLabel={t("manage.exercises.attachDialog.previewVariant")} value={String(variant)} options={variantPositions.map(index => ({value: String(index), label: t("manage.exercises.attachDialog.variant", {number: index + 1})}))} onValueChange={value => setVariant(Number(value))} />}
                     </div>
                     <p>{tPlural("manage.exercises.meta.challenges", preview.data.Tasks.length)}{variantCount > 1 ? ` · ${tPlural("manage.exercises.meta.variants", variantCount)}` : ""}</p>
                     <ol>{preview.data.Tasks.map((task, index) => <li key={`${index}-${task.Name}`}><strong>{task.Name}</strong><span>{difficultyLabel(task.Difficulty)}</span>{task.HintCount > 0 && <span>{tPlural("manage.exercises.attachDialog.hints", task.HintCount)}</span>}</li>)}</ol>
-                    {variantCount > 1 && <fieldset className="event-exercise-picker__variants">
+                    {variantCount > 1 && !selectionAdapter && <fieldset className="event-exercise-picker__variants">
                         <legend>{t("manage.exercises.attachDialog.variants")}</legend>
                         <label className="event-exercise-editor__check"><input type="radio" name="variant-mode" checked={variantMode === 0} onChange={() => setVariantMode(0)} />{t("manage.exercises.attachDialog.variantPerTeam")}</label>
                         <label className="event-exercise-editor__check"><input type="radio" name="variant-mode" checked={variantMode === 1} onChange={() => setVariantMode(1)} />{t("manage.exercises.attachDialog.variantForAll", {number: variant + 1})}</label>

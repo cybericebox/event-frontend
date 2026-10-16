@@ -45,5 +45,5 @@
   background:none;color:var(--ib-dim);cursor:help}
 .ib-help:hover,.ib-help[aria-expanded="true"],.ib-tip.is-open>.ib-help{color:var(--ib-ink);background:var(--ib-hover)}
 .ib-help:focus-visible{outline:2px solid var(--ib-action);outline-offset:0}
-.ib-help svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-help svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 @media (pointer:coarse){.ib-help{width:32px;height:32px}}

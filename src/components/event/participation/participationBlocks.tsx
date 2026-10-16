@@ -45,14 +45,14 @@ export function StatTiles({label, tiles}: {label: string; tiles: Tile[]}) {
 const numberFormat = new Intl.NumberFormat("uk-UA");
 export const formatNumber = (value: number) => numberFormat.format(value);
 
-// The five counters of the participant, or the team's: solves, points, first bloods, hints and attempts with the success rate.
-export function statTiles({solves, points, firstBloods, hints, attempts, correct, scope}: {solves: number; points: number; firstBloods: number; hints: number; attempts: number; correct: number; scope: "me" | "team"} ): Tile[] {
+// Event settings decide whether the hints counter is relevant.
+export function statTiles({solves, points, firstBloods, hints, hintsEnabled, attempts, correct, scope}: {solves: number; points: number; firstBloods: number; hints: number; hintsEnabled: boolean; attempts: number; correct: number; scope: "me" | "team"} ): Tile[] {
     const rate = successRate(correct, attempts);
     return [
         {key: "solves", label: t("participation.stats.solves"), value: formatNumber(solves), hint: t(`participation.stats.solves.hint.${scope}`)},
         {key: "points", label: t("participation.stats.points"), value: formatNumber(points), hint: t(`participation.stats.points.hint.${scope}`)},
         {key: "firstBloods", label: t("participation.stats.firstBloods"), value: formatNumber(firstBloods), hint: t("participation.stats.firstBloods.hint")},
-        {key: "hints", label: t("participation.stats.hints"), value: formatNumber(hints), hint: t("participation.stats.hints.hint")},
+        ...(hintsEnabled ? [{key: "hints", label: t("participation.stats.hints"), value: formatNumber(hints), hint: t("participation.stats.hints.hint")}] : []),
         {key: "attempts", label: t("participation.stats.attempts"), value: formatNumber(attempts), note: rate === null ? undefined : t("participation.stats.attempts.rate", {rate}), hint: t("participation.stats.attempts.hint")},
     ];
 }
@@ -106,8 +106,8 @@ export function SolvesTable({event, state, solves, now, showSolver, error, onRet
     const [shown, setShown] = useState(PAGE);
     const rows = [...solves].sort((a, b) => Date.parse(b.SolvedAt) - Date.parse(a.SolvedAt));
     return <Card title={title} note={state === "ready" ? t("participation.solves.count", {count: solves.length}) : undefined} flush>
-        {state !== "ready" ? <BlockStates state={state} event={event} loadingLabel={t("participation.solves.loading")} errorMessage={t("participation.solves.failed")} emptyMessage={t("participation.solves.empty")} onRetry={onRetry} error={error} height={280} /> : <>
-            <div className="event-pp-table__scroll"><table className="event-pp-table"><thead><tr>
+        {state !== "ready" ? <BlockStates state={state} event={event} loadingLabel={t("participation.solves.loading")} errorMessage={t("participation.solves.failed")} emptyMessage={t("participation.solves.empty")} onRetry={onRetry} error={error} height={300} /> : <>
+            <div className="event-pp-table__scroll event-pp-table__scroll--solves"><table className="event-pp-table"><thead><tr>
                 <th>{t("participation.solves.task")}</th><th>{t("participation.solves.category")}</th><th className="is-num">{t("participation.solves.points")}</th>
                 {showSolver && <th>{t("participation.solves.solver")}</th>}<th className="is-nowrap">{t("participation.solves.time")}</th>
             </tr></thead><tbody>{rows.slice(0, shown).map(solve => <tr key={`${solve.EventChallengeID}-${solve.SolvedAt}`}>

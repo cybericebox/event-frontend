@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {requireApiOrigin} from "@/utils/origins";
 
-const statusSchema = z.object({GatewayIP: z.ipv4(), ProbeURL: z.url()});
+const statusSchema = z.object({GatewayIP: z.ipv4(), ProbeURL: z.url(), Connected: z.boolean().nullable().optional()});
 const configSchema = z.object({Config: z.string().min(1)});
 export type VPNStatus = z.infer<typeof statusSchema>;
 

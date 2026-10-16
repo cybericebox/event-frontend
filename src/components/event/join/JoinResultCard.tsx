@@ -9,7 +9,7 @@ export const joinResultIcons: Record<JoinOutcome, LucideIcon> = {approved: Circl
 export function JoinResultCard({outcome, title, text, action}: {outcome: JoinOutcome; title: string; text: string; action?: ReactNode}) {
     const Icon = joinResultIcons[outcome];
     return <div className={`event-join-result event-join-result--${outcome}`} data-outcome={outcome}>
-        <span className="event-join-result__icon" aria-hidden="true"><Icon size={36} strokeWidth={1.75} /></span>
+        <span className="event-join-result__icon" aria-hidden="true"><Icon size={36} strokeWidth={2} /></span>
         <h2>{title}</h2>
         <p>{text}</p>
         {action && <div className="event-join-result__acts">{action}</div>}

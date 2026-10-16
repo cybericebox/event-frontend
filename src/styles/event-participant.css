@@ -69,7 +69,8 @@ dialog.ib-modal::backdrop{background:var(--ib-backdrop)}
 dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 
 /* ── VPN ─────────────────────────────────────────────────────────────────── */
-.event-vpn-button.is-ready{--_fg:var(--ib-ok)}
+.event-vpn-button.is-connected{--_fg:var(--ib-ok)}
+.event-vpn-button.is-available{--_fg:var(--ib-info)}
 .event-vpn-button.is-failed{--_fg:var(--ib-danger)}
 .event-vpn-stand{display:flex;align-items:flex-start;gap:var(--ib-3);padding:var(--ib-3) 14px;border-radius:var(--ib-r-lg);background:var(--ib-soft)}
 .event-vpn-stand>svg{width:20px;height:20px;flex:none;margin-top:1px;color:var(--ib-dim)}
@@ -78,7 +79,7 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-vpn-stand.is-creating>svg,.event-vpn-stand.is-not_deployed>svg{color:var(--ib-warn)}
 .event-vpn-stand b{display:block;color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
 .event-vpn-stand span{display:block;margin-top:2px;font-size:var(--ib-fs-13);color:var(--ib-dim)}
-.event-vpn-steps{margin:0;padding-left:20px;display:grid;gap:var(--ib-2);color:var(--ib-body);line-height:var(--ib-lh-body)}
+.event-vpn-steps{list-style:decimal;margin:0;padding-left:20px;display:grid;gap:var(--ib-2);color:var(--ib-body);line-height:var(--ib-lh-body)}
 .event-vpn-steps code{font:var(--ib-fs-13) var(--ib-mono);color:var(--ib-ink)}
 .event-vpn-note{font-size:var(--ib-fs-12);color:var(--ib-dim)}
 .event-inline-icon{display:inline-block;width:14px;height:14px;vertical-align:-2px}
@@ -160,3 +161,15 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-cmodal__solved{align-items:flex-start}
 .event-cmodal__solved-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-width:0}
 .event-cmodal__solved-main small{flex-basis:100%;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+
+/* VPN keeps readiness distinct from the caller's connection. */
+.event-vpn-connection-state{display:flex;align-items:center;gap:var(--ib-2);color:var(--ib-dim)}
+.event-vpn-connection-state svg{width:24px;height:24px;flex:none}
+.event-vpn-connection-state strong{font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold);color:var(--ib-ink)}
+.event-vpn-connection-state.is-available{color:var(--ib-info)}
+.event-vpn-connection-state.is-connected{color:var(--ib-ok)}
+.event-vpn-wait{display:grid;gap:var(--ib-2);line-height:var(--ib-lh-body);text-wrap:pretty}
+.event-vpn-wait p{margin:0}
+.event-vpn-instructions__body{display:grid;gap:var(--ib-3);padding:var(--ib-1) 0 var(--ib-4);text-wrap:pretty}
+
+.event-vpn-instructions[open]>.ib-accordion__q .ib-accordion__icon{transform:rotate(180deg)}

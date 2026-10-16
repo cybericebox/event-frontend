@@ -1,7 +1,10 @@
 "use client";
 
-import {createContext, useContext, useMemo, useSyncExternalStore, type ReactNode} from "react";
-import {useQuery} from "@tanstack/react-query";
+import {createContext, useContext, useMemo, useSyncExternalStore, useRef, useState, type ReactNode} from "react";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import {resetPreviewRuns} from "@/api/participantPreview";
+import {BusyMark} from "@/components/ui/EventButton";
 import {usePathname, useRouter} from "next/navigation";
 import {getCurrentUser} from "@/api/clientAuth";
 import {ownTeamSchema} from "@/types/ownTeam";
@@ -48,20 +51,23 @@ type PreviewContextValue = {
     state: ParticipantPreviewState | null;
     config: ManageConfig | null;
     active: boolean;
+    resetting: boolean;
     start: (eventID: string, registration?: number) => void;
     update: (patch: Partial<Pick<ParticipantPreviewState, "status" | "outcome" | "answers" | "team">>) => void;
-    reset: () => void; exit: () => void;
+    reset: () => void | Promise<boolean>; exit: () => void;
 };
 const noop = () => {};
-const PreviewContext = createContext<PreviewContextValue>({state: null, config: null, active: false, start: noop, update: noop, reset: noop, exit: noop});
+const PreviewContext = createContext<PreviewContextValue>({state: null, config: null, active: false, resetting: false, start: noop, update: noop, reset: noop, exit: noop});
 export function useParticipantPreview(eventID?: string) {
     const context = useContext(PreviewContext);
     return {...context, active: context.active && !!context.state && (!eventID || context.state.eventID === eventID)};
 }
 
 // This is UI-only state. Never seed auth, participant or team query caches from it.
-// Actual task operations keep the real session and the hidden moderators team's API.
+// Actual task operations use isolated per-user preview APIs with the real session.
 export function ParticipantPreviewProvider({children}: {children: ReactNode}) {
+    const queryClient = useQueryClient();
+    const [resetting, setResetting] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
@@ -71,37 +77,32 @@ export function ParticipantPreviewProvider({children}: {children: ReactNode}) {
     const state = saved && identity.isSuccess && saved.userID === identity.data?.ID && access.isSuccess && access.data.CanManage ? saved : null;
     const config = useQuery({queryKey: ["event-management-config", state?.eventID], queryFn: () => getManageConfig(state!.eventID), enabled: !!state, retry: false, refetchOnWindowFocus: false});
     const exit = () => {persist(null); router.push("/manage");};
-    const reset = () => {
-        if (!state) return;
-        persist({...state, status: 0, answers: {}, team: null});
-        router.push("/");
+    const reset = async () => {
+        if (!state || resetting) return false;
+        setResetting(true);
+        try {
+            await resetPreviewRuns(state.eventID);
+            const current = parseSnapshot(snapshot());
+            if (current?.eventID !== state.eventID || current.userID !== state.userID) return false;
+            const belongsToPreview = (key: readonly unknown[]) =>
+                (["event-participant-preview-board", "event-preview-results", "event-preview-vpn-lab"].includes(String(key[0])) && key[1] === state.eventID)
+                || (key[1] === "preview" && key[2] === state.eventID);
+            await queryClient.cancelQueries({predicate: query => belongsToPreview(query.queryKey)});
+            queryClient.removeQueries({predicate: query => belongsToPreview(query.queryKey)});
+            persist({...current, status: 0, answers: {}, team: null});
+            router.push("/");
+            return true;
+        } catch {toast.error(t("participantPreview.resetFailed")); return false;}
+        finally {setResetting(false);}
     };
-    return <PreviewContext.Provider value={{state, config: config.data ?? null, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
+    return <PreviewContext.Provider value={{state, config: config.data ?? null, resetting, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
         if (!identity.data) return;
         persist({eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null});
         router.push("/");
     }, update: patch => {const current = parseSnapshot(snapshot()); if (state && current?.userID === state.userID && current.eventID === state.eventID) persist({...current, ...patch, ...(patch.team ? {team: {...patch.team, Admitted: patch.team.MemberCount >= (patch.team.MinTeamSize ?? 1)}} : {})});}, reset, exit}}>
         {state && !pathname.startsWith("/manage") && <div className="event-private-preview-banner event-participant-preview" role="region" aria-label={t("participantPreview.title")}>
             <b className="event-participant-preview__title">{t("participantPreview.title")}</b>
-            <DropdownMenu.Root>
-                <DropdownMenu.Trigger className="ib-icon-btn ib-icon-btn--sm event-participant-preview__trigger" type="button" aria-label={t("participantPreview.options")}><MoreHorizontal size={20} aria-hidden="true" /></DropdownMenu.Trigger>
-                <DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-participant-preview__menu" sideOffset={6} align="end" collisionPadding={16}>
-                    {(pathname === "/join" || state.status === 1) && <>
-                        <DropdownMenu.Label className="event-participant-preview__label">{t("joinPreview.outcome")}</DropdownMenu.Label>
-                        <DropdownMenu.RadioGroup value={state.outcome} aria-label={t("joinPreview.outcome")} onValueChange={value => {
-                            const outcome = value as JoinOutcome;
-                            persist({...state, outcome, status: state.status === 0 ? 0 : outcome === "approved" ? 2 : outcome === "pending" ? 1 : 3});
-                        }}>
-                            {(["approved", "pending", "rejected"] as const).map(outcome => <DropdownMenu.RadioItem className="ib-listbox__opt event-participant-preview__option" key={outcome} value={outcome}>
-                                <span className="event-participant-preview__indicator"><DropdownMenu.ItemIndicator><Check size={16} aria-hidden="true" /></DropdownMenu.ItemIndicator></span>{t(`joinPreview.outcome.${outcome}`)}
-                            </DropdownMenu.RadioItem>)}
-                        </DropdownMenu.RadioGroup>
-                        <DropdownMenu.Separator className="event-participant-preview__separator" />
-                    </>}
-                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" onSelect={reset}><RotateCcw size={16} aria-hidden="true" />{t("participantPreview.reset")}</DropdownMenu.Item>
-                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" onSelect={exit}><LogOut size={16} aria-hidden="true" />{t("participantPreview.exit")}</DropdownMenu.Item>
-                </DropdownMenu.Content></DropdownMenu.Portal>
-            </DropdownMenu.Root>
+            <ParticipantPreviewMenu />
         </div>}
         {children}
     </PreviewContext.Provider>;
@@ -125,4 +126,35 @@ export function previewResultsAvailability(base: import("@/types/resultsAvailabi
     if (config?.ScoreboardVisibility === 0) return "hidden" as const;
     if (config?.ScoreboardVisibility === 1) return status === 2 ? "available" as const : "participants_only" as const;
     return base === "participants_only" && status === 2 ? "available" as const : base;
+}
+
+// Also rendered inside registration's native dialog: global controls outside
+// the top layer are inert. The dropdown must portal into that same dialog.
+export function ParticipantPreviewMenu() {
+    const preview = useContext(PreviewContext);
+    const pathname = usePathname();
+    const trigger = useRef<HTMLButtonElement>(null);
+    const [container, setContainer] = useState<HTMLElement | null>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const state = preview.state;
+    if (!state) return null;
+    return <DropdownMenu.Root open={menuOpen} onOpenChange={open => {setMenuOpen(open); if (open) setContainer(trigger.current?.closest("dialog") ?? null);}}>
+                <DropdownMenu.Trigger ref={trigger} className="ib-icon-btn ib-icon-btn--sm event-participant-preview__trigger" type="button" aria-label={t("participantPreview.options")}><MoreHorizontal size={20} aria-hidden="true" /></DropdownMenu.Trigger>
+                <DropdownMenu.Portal container={container}><DropdownMenu.Content className="ib-listbox event-participant-preview__menu" sideOffset={6} align="end" collisionPadding={16}>
+                    {(pathname === "/join" || state.status === 1) && <>
+                        <DropdownMenu.Label className="event-participant-preview__label">{t("joinPreview.outcome")}</DropdownMenu.Label>
+                        <DropdownMenu.RadioGroup value={state.outcome} aria-label={t("joinPreview.outcome")} onValueChange={value => {
+                            const outcome = value as JoinOutcome;
+                            preview.update({outcome, status: state.status === 0 ? 0 : outcome === "approved" ? 2 : outcome === "pending" ? 1 : 3});
+                        }}>
+                            {(["approved", "pending", "rejected"] as const).map(outcome => <DropdownMenu.RadioItem className="ib-listbox__opt event-participant-preview__option" key={outcome} value={outcome}>
+                                <span className="event-participant-preview__indicator"><DropdownMenu.ItemIndicator><Check size={16} aria-hidden="true" /></DropdownMenu.ItemIndicator></span>{t(`joinPreview.outcome.${outcome}`)}
+                            </DropdownMenu.RadioItem>)}
+                        </DropdownMenu.RadioGroup>
+                        <DropdownMenu.Separator className="event-participant-preview__separator" />
+                    </>}
+                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" disabled={preview.resetting} aria-busy={preview.resetting || undefined} onSelect={event => {event.preventDefault(); void Promise.resolve(preview.reset()).then(success => {if (success) setMenuOpen(false);});}}>{preview.resetting ? <BusyMark /> : <RotateCcw size={16} aria-hidden="true" />}{t("participantPreview.reset")}</DropdownMenu.Item>
+                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" onSelect={preview.exit}><LogOut size={16} aria-hidden="true" />{t("participantPreview.exit")}</DropdownMenu.Item>
+                </DropdownMenu.Content></DropdownMenu.Portal>
+            </DropdownMenu.Root>;
 }

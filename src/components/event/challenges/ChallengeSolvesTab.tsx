@@ -11,6 +11,9 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import {exactTime, relativeTime} from "@/components/event/participation/participationStatsModel";
 import {FirstSolveBadge} from "./FirstSolveBadge";
 import {t} from "@/i18n/t";
+import {getPreviewSolves} from "@/api/participantPreview";
+import type {OwnChallenge} from "@/api/participantChallenges";
+import {useParticipantPreview} from "../ParticipantPreview";
 
 // Fixed row and viewport height: the list is windowed, so a long list renders a
 // screenful of rows, and the tab never changes size between loading, empty and data.
@@ -49,10 +52,11 @@ function SolveRow({row, index, now}: {row: ChallengeSolve; index: number; now: n
 
 // «Розвʼязання» tab of the challenge modal: who solved it, first solves on top.
 // Pages load as the list reaches its end (IntersectionObserver on a sentinel).
-export function ChallengeSolvesTab({eventID, challengeID, moderators, enabled}: {eventID: string; challengeID: string; moderators: boolean; enabled: boolean}) {
+export function ChallengeSolvesTab({eventID, challengeID, moderators, enabled, previewTask}: {eventID: string; challengeID: string; moderators: boolean; enabled: boolean; previewTask?: OwnChallenge}) {
+    const preview = useParticipantPreview(eventID);
     const query = useInfiniteQuery({
-        queryKey: ["event-challenge-solves", moderators ? "moderators" : "participant", eventID, challengeID],
-        queryFn: ({pageParam}) => getChallengeSolves(eventID, challengeID, pageParam, moderators),
+        queryKey: ["event-challenge-solves", previewTask ? "preview" : moderators ? "moderators" : "participant", eventID, challengeID, previewTask?.PreviewSelectionID],
+        queryFn: ({pageParam}) => previewTask ? getPreviewSolves(eventID, previewTask) : getChallengeSolves(eventID, challengeID, pageParam, moderators),
         initialPageParam: null as string | null,
         getNextPageParam: page => page.NextCursor,
         enabled, retry: false, refetchOnWindowFocus: false,
@@ -61,7 +65,7 @@ export function ChallengeSolvesTab({eventID, challengeID, moderators, enabled}: 
     const sentinel = useRef<HTMLDivElement>(null);
     const [scrollTop, setScrollTop] = useState(0);
     const [now] = useState(() => Date.now());
-    const rows = query.data?.pages.flatMap(page => page.Items) ?? [];
+    const rows = query.data?.pages.flatMap(page => page.Items).map(row => previewTask ? {...row, TeamName: preview.state?.team?.Name || t("participantPreview.you")} : row) ?? [];
     const {hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage} = query;
     const loadMore = hasNextPage && !isFetchingNextPage && !isFetchNextPageError;
 

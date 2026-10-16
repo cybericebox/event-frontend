@@ -6,7 +6,7 @@ import type {BoardMode} from "./ChallengeModal";
 import {knownQuestionLab, labLifecycleKey, newestLab} from "./labLifecycleCache";
 
 export const taskBoardKey = (mode: BoardMode, eventID: string) =>
-    [mode === "moderators" ? "event-moderators-board" : "event-own-challenges", eventID] as const;
+    [mode === "preview" ? "event-participant-preview-board" : mode === "moderators" ? "event-moderators-board" : "event-own-challenges", eventID] as const;
 
 // The task attachment chooses the Lab identity. Revisions order only observations of that Lab.
 export function labAccessScope(client: QueryClient, mode: BoardMode, eventID: string, challengeID: string | undefined,

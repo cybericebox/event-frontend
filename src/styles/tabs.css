@@ -29,7 +29,7 @@
 .ib-tabs>[role="tab"][aria-selected="true"]{color:var(--ib-ink);font-weight:var(--ib-w-semibold);border-bottom-color:var(--ib-action)}
 .ib-tabs>[role="tab"]:disabled,.ib-tabs>[role="tab"][aria-disabled="true"]{color:var(--ib-faint);cursor:not-allowed;border-bottom-color:transparent;opacity:.7}
 .ib-tabs>[role="tab"] .ib-num{font-size:var(--ib-fs-12);color:var(--ib-faint);font-weight:var(--ib-w-regular)}
-.ib-tabs>[role="tab"]>svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-tabs>[role="tab"]>svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 .ib-tabs--page{gap:var(--ib-6)}
 .ib-tabs--page>[role="tab"]{padding:0}   /* same 44px height; kept as the page-level hook */

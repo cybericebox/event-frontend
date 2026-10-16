@@ -25,7 +25,7 @@
 }
 .ib-btn:hover,.ib-btn.is-hover{background:var(--_hover);text-decoration:none}
 .ib-btn:focus-visible,.ib-btn.is-focus{outline:2px solid var(--ib-action);outline-offset:2px}
-.ib-btn svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-btn svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* sizes */
 .ib-btn--sm{height:var(--ib-control-h);padding:0 var(--ib-3);font-size:var(--ib-fs-13);gap:6px}

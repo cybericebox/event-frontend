@@ -40,7 +40,7 @@
 /* wrappers */
 .ib-input-wrap{position:relative;display:block;width:100%}
 .ib-input-wrap>svg{position:absolute;left:10px;top:50%;width:16px;height:16px;margin-top:-8px;color:var(--ib-faint);pointer-events:none;
-  stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 .ib-input-wrap--search .ib-input{padding-left:34px;padding-right:36px}
 .ib-input-wrap--search .ib-kbd{position:absolute;right:10px;top:50%;margin-top:-9px;pointer-events:none}

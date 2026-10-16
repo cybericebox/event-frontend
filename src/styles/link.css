@@ -17,7 +17,7 @@
 
 .ib-link--standalone,.ib-link--external{display:inline-flex;align-items:center;gap:var(--ib-1);text-decoration-color:transparent}
 .ib-link--standalone:hover,.ib-link--standalone.is-hover,.ib-link--external:hover,.ib-link--external.is-hover{text-decoration-color:currentColor}
-.ib-link>svg{width:14px;height:14px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib-link>svg{width:14px;height:14px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 .ib-link--dim{color:var(--ib-dim);font-weight:var(--ib-w-regular)}
 .ib-link--dim:hover,.ib-link--dim.is-hover{color:var(--ib-ink)}

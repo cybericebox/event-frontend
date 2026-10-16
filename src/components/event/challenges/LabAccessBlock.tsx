@@ -13,7 +13,7 @@ import {t} from "@/i18n/t";
 import {hasCurrentRuntime} from "./descriptionValues";
 import {labLinkErrorMessage, type LabLinkState} from "./useLabLink";
 
-const svg = (path: React.ReactNode) => <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{path}</svg>;
+const svg = (path: React.ReactNode) => <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">{path}</svg>;
 const ICON = {
     x: svg(<path d="M6 6l12 12M18 6L6 18" />),
     dl: svg(<path d="M12 4v11M7 10l5 5 5-5M5 20h14" />),
@@ -61,7 +61,7 @@ export function LabAccessBlock({lab, lifecycle, pending, error, link, busyKey, o
             const value = item.URL || (/^tcp$/i.test(item.Protocol) ? `nc ${item.Device} ${item.Port}` : `${item.Device}:${item.Port}`);
             return <CopyField key={`${item.Device}-${item.Port}`} value={value} onOpen={item.URL ? () => onOpen(item.Device, item.Port) : undefined} linkPending={busyKey === `${item.Device}:${item.Port}`} />;
         })}</div> : <div className="event-cmodal__access-state">
-            {error || lifecycle?.RuntimeState === "unavailable"
+            {error || lifecycle?.RuntimeState === "unavailable" || lab?.Phase === "failed"
                 ? <EventLoadError error={error} message={t("challenges.host.loadFailed")} onRetry={onReload} />
                 : <EventLoading compact message={pending ? t("challenges.host.checking") : queueLine(lab?.Queue) ?? t("challenges.host.preparing")} />}
         </div>}

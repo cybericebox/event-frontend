@@ -27,7 +27,7 @@
 .ib-field__hint{font-size:var(--ib-fs-13);color:var(--ib-dim);line-height:var(--ib-lh-ui)}
 .ib-field__error{display:flex;gap:6px;align-items:flex-start;font-size:var(--ib-fs-13);color:var(--ib-danger);font-weight:var(--ib-w-medium);line-height:var(--ib-lh-ui)}
 .ib-field__error:empty{display:none}
-.ib-field__error>svg{width:16px;height:16px;flex:none;margin-top:0;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-field__error>svg{width:16px;height:16px;flex:none;margin-top:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ib-field.is-disabled .ib-field__label{color:var(--ib-faint)}
 
 .ib-field--inline{display:grid;grid-template-columns:minmax(120px,200px) 1fr;column-gap:var(--ib-4);align-items:center}
@@ -37,4 +37,4 @@
 .ib-form__error{display:flex;gap:6px;align-items:flex-start;padding:var(--ib-3);border:1px solid var(--ib-danger);border-radius:var(--ib-r);background:var(--ib-danger-bg);
   font-size:var(--ib-fs-14);color:var(--ib-ink);line-height:var(--ib-lh-ui)}
 .ib-form__error:empty{display:none}
-.ib-form__error>svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--ib-danger);stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib-form__error>svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--ib-danger);stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}

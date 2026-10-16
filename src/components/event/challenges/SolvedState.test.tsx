@@ -9,7 +9,8 @@ import {runningLab, completedLab} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {markSolved} from "./challengeBoardModel";
 
-const api = vi.hoisted(() => ({preview: false, submit: vi.fn(), moderator: vi.fn(), board: vi.fn(), runtime: vi.fn()}));
+const api = vi.hoisted(() => ({preview: false, previewSubmit: vi.fn(), submit: vi.fn(), moderator: vi.fn(), board: vi.fn(), runtime: vi.fn()}));
+vi.mock("@/api/participantPreview", async importOriginal => ({...await importOriginal<typeof import("@/api/participantPreview")>(), submitPreviewFlag: (...args: unknown[]) => api.previewSubmit(...args)}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "u1"})}));
 vi.mock("@/components/event/EventCountdown", () => ({EventCountdown: () => null}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => ({
@@ -236,14 +237,15 @@ describe("a correct answer turns the card solved at once", () => {
         expect(document.querySelector(`[data-challenge-id="${uuid(2)}"]`)!.classList.contains("is-solved")).toBe(true);
         expect(screen.getAllByText("1 / 2").length).toBeGreaterThan(0);
     });
-    it("participant test mode keeps the participant task UI and submits only to the hidden moderators team", async () => {
+    it("participant test mode keeps the participant task UI and submits only to its isolated run", async () => {
         api.preview = true;
-        api.moderator.mockResolvedValue({Correct: true});
+        api.previewSubmit.mockResolvedValue({Correct: true});
         render(<Harness mode="moderators" />);
         fireEvent.click(screen.getByRole("button", {name: /^Завдання 2/}));
         expect(document.querySelector(".event-cmodal__mods")).toBeNull();
         await send();
-        expect(api.moderator).toHaveBeenCalled();
+        expect(api.previewSubmit).toHaveBeenCalled();
+        expect(api.moderator).not.toHaveBeenCalled();
         expect(api.submit).not.toHaveBeenCalled();
     });
 

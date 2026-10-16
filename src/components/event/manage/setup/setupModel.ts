@@ -9,7 +9,7 @@ import {infrastructureMismatch} from "../exercises/attachmentModel";
 // blocked: a required step that cannot finish until something is fixed.
 // optional: nothing is required; the default is fine, the page is there to tune it.
 export type SetupStatus = "done" | "todo" | "review" | "blocked" | "optional";
-export type SetupStepID = "participation" | "registration" | "schedule" | "challenges" | "scoring" | "pages" | "mail" | "results" | "resources" | "stands" | "publish";
+export type SetupStepID = "participation" | "registration" | "schedule" | "challenges" | "scoring" | "testMode" | "pages" | "mail" | "results" | "resources" | "stands" | "publish";
 type SetupVars = Record<string, string | number>;
 // warning: an informational note under the step; it never changes the status.
 export type SetupStep = {id: SetupStepID; status: SetupStatus; href: string; detail: string; vars?: SetupVars; warning?: {detail: string; vars?: SetupVars}};
@@ -67,6 +67,7 @@ export function buildSetupSteps({config, lifecycle, attachments, content, mail, 
     }
 
     steps.push({id: "scoring", status: "optional", href: "/manage/challenge-settings", detail: "scoringDefault"});
+    steps.push({id: "testMode", status: "optional", href: "/manage/test-mode", detail: "testModeDefault"});
 
     if (content) {
         // A new event has an empty home page nobody has built yet: only a saved draft or published blocks mean the organizer prepared it.
