@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import {
+  unknownVariableHint,
   convertTypedToken,
   htmlToRawSingleLine,
   insertVariablePill,
   rawToHtml,
   type VariableDef,
 } from "./variableUtils";
+import { HoverTooltip } from "./HoverTooltip";
 import { cn } from "@/utils/cn";
 import { t } from "@/i18n/t";
 import { Braces, ChevronDown } from "lucide-react";
@@ -26,6 +28,7 @@ interface Props {
   dotted?: boolean;
   /** Accessible name of the field (defaults to the placeholder). */
   ariaLabel?: string;
+  error?: string;
 }
 
 export function VariableRichText({
@@ -36,7 +39,9 @@ export function VariableRichText({
   className,
   dotted = false,
   ariaLabel,
+  error,
 }: Props) {
+  const errorID = useId();
   const divRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Track the last raw value we emitted so we avoid re-syncing innerHTML on
@@ -185,9 +190,9 @@ export function VariableRichText({
   );
 
   // Pasted or edited tokens that never passed through typing get their pills on blur.
-  const normalizeOnBlur = () => {
+  const normalizeOnBlur = (event: React.FocusEvent<HTMLDivElement>) => {
     const div = divRef.current;
-    if (!div || variables.length === 0) return;
+    if (!div || variables.length === 0 || (event.relatedTarget instanceof Node && div.contains(event.relatedTarget))) return;
     const html = rawToHtml(htmlToRawSingleLine(div.innerHTML, { dotted }), variables.map((variable) => variable.name), { dotted });
     if (html !== div.innerHTML) div.innerHTML = html;
   };
@@ -198,7 +203,7 @@ export function VariableRichText({
   };
 
   return (
-    <div className="relative" ref={containerRef}>
+    <HoverTooltip text="" delegate="[data-invalid='true']" textForTarget={target => unknownVariableHint(target.dataset.var ?? "")}><div className="relative" ref={containerRef}>
       <div
         ref={divRef}
         contentEditable
@@ -221,7 +226,10 @@ export function VariableRichText({
         role="textbox"
         aria-label={ariaLabel ?? placeholder}
         aria-multiline="false"
+        aria-invalid={!!error || undefined}
+        aria-describedby={error ? errorID : undefined}
       />
+      {error && <p className="event-manage-validation" role="alert" id={errorID}>{error}</p>}
       {variables.length > 0 && <button type="button" aria-label={t("manage.tpl.editor.insertVariable")}
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => { setFilter(""); setShowDropdown((open) => !open) }}
@@ -235,7 +243,7 @@ export function VariableRichText({
           className="absolute left-0 top-full mt-1"
         />
       )}
-    </div>
+    </div></HoverTooltip>
   );
 }
 

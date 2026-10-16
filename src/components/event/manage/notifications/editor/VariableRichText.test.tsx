@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { VariableRichText } from "./VariableRichText"
 
 afterEach(cleanup)
@@ -64,4 +64,38 @@ describe("VariableRichText", () => {
     expect(field.querySelector('[data-var="event_name"]')?.getAttribute("data-invalid")).toBeNull()
     expect(field.querySelector('[data-var="ghost"]')?.getAttribute("data-invalid")).toBe("true")
   })
+})
+
+it("uses a custom tooltip for unknown pills by keyboard and touch without serializing its text", () => {
+  const onChange = vi.fn()
+  render(<VariableRichText value="{{.ghost}}" onChange={onChange} variables={variables} dotted ariaLabel="Тема" />)
+  const field = screen.getByRole("textbox", {name: "Тема"})
+  const pill = field.querySelector('[data-var="ghost"]') as HTMLElement
+  expect(pill.hasAttribute("title")).toBe(false)
+  expect(pill.tabIndex).toBe(0)
+  fireEvent.focus(pill)
+  const tooltip = screen.getByRole("tooltip")
+  expect(tooltip.textContent).toContain("ghost")
+  expect(pill.getAttribute("aria-describedby")).toBe(tooltip.id)
+  fireEvent.keyDown(pill, {key: "Escape"})
+  expect(screen.queryByRole("tooltip")).toBeNull()
+  fireEvent.click(pill)
+  expect(screen.getByRole("tooltip").textContent).toContain("ghost")
+  fireEvent.input(field)
+  expect(onChange).toHaveBeenLastCalledWith("{{.ghost}}")
+})
+
+it("keeps consecutive unknown pills connected and focused while tabbing inside the editor", () => {
+  const onChange = vi.fn()
+  render(<VariableRichText value="{{.first_unknown}} {{.second_unknown}}" onChange={onChange} variables={variables} dotted ariaLabel="Тема" />)
+  const field = screen.getByRole("textbox", {name: "Тема"})
+  const first = field.querySelector('[data-var="first_unknown"]') as HTMLElement
+  const second = field.querySelector('[data-var="second_unknown"]') as HTMLElement
+  act(() => first.focus())
+  expect(first.hasAttribute("aria-describedby")).toBe(true)
+  act(() => second.focus())
+  expect(second.isConnected).toBe(true)
+  expect(document.activeElement).toBe(second)
+  expect(field.querySelector('[data-var="second_unknown"]')).toBe(second)
+  expect(onChange).not.toHaveBeenCalled()
 })

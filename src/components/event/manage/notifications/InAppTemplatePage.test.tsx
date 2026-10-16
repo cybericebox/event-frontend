@@ -57,7 +57,11 @@ describe("Сторінка сповіщення на сайті", () => {
         expect(screen.getByRole("button", {name: "Відновити шаблон за замовчуванням"})).toBeTruthy();
         title.textContent = "";
         fireEvent.input(title);
-        expect(screen.getByRole("alert").textContent).toBe("Заповніть заголовок.");
+        const problem = screen.getByRole("alert");
+        expect(problem.textContent).toBe("Заповніть заголовок.");
+        expect(title.getAttribute("aria-describedby")).toBe(problem.id);
+        expect(title.getAttribute("aria-invalid")).toBe("true");
+        expect(title.closest(".event-manage-field")?.contains(problem)).toBe(true);
         expect((screen.getByRole("button", {name: "Зберегти чернетку"}) as HTMLButtonElement).disabled).toBe(true);
     });
 

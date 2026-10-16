@@ -34,6 +34,8 @@ describe("responsive email preview", () => {
         expect(screen.getByTitle("Попередній вигляд електронного листа")).toBe(iframe);
         expect(iframe.getAttribute("srcdoc")).toBe(document);
         expect(iframe.getAttribute("sandbox")).toBe("");
+        expect(iframe.getAttribute("scrolling")).toBe("yes");
+        expect(iframe.tabIndex).toBe(0);
     });
     it("fits narrow and resized containers while preserving each device's real layout width", () => {
         const {unmount} = render(<EmailPreviewViewport html={document} />);
@@ -47,6 +49,15 @@ describe("responsive email preview", () => {
         expect(iframe.parentElement?.style.width).toBe("1024px");
         unmount();
         expect(disconnect).toHaveBeenCalledOnce();
+    });
+    it("starts with a readable phone viewport on a narrow device", () => {
+        const previous = window.innerWidth;
+        Object.defineProperty(window, "innerWidth", {configurable: true, value: 390});
+        try {
+            render(<EmailPreviewViewport html={document} />);
+            expect(screen.getByRole("button", {name: /Телефон/}).getAttribute("aria-pressed")).toBe("true");
+            expect((screen.getByTitle("Попередній вигляд електронного листа") as HTMLIFrameElement).style.width).toBe("390px");
+        } finally {Object.defineProperty(window, "innerWidth", {configurable: true, value: previous});}
     });
     it("preserves the selected device across loading and content updates", () => {
         const {rerender} = render(<EmailPreviewViewport><div>Event loading state</div></EmailPreviewViewport>);
