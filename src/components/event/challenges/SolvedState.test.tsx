@@ -9,7 +9,7 @@ import {runningLab, completedLab} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {markSolved} from "./challengeBoardModel";
 
-const api = vi.hoisted(() => ({submit: vi.fn(), moderator: vi.fn(), board: vi.fn(), runtime: vi.fn()}));
+const api = vi.hoisted(() => ({preview: false, submit: vi.fn(), moderator: vi.fn(), board: vi.fn(), runtime: vi.fn()}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "u1"})}));
 vi.mock("@/components/event/EventCountdown", () => ({EventCountdown: () => null}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => ({
@@ -21,6 +21,7 @@ vi.mock("@/components/event/PrivateEventBootstrap", () => ({usePrivateEvent: () 
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: false, openVpn: () => {}}), EventVpnProvider: ({children}: {children: React.ReactNode}) => children}));
 vi.mock("@/utils/origins", async importOriginal => ({...await importOriginal<typeof import("@/utils/origins")>(), requireApiOrigin: () => "https://api.test"}));
 vi.mock("@/api/taskOpenedBeacon", () => ({reportTaskOpened: () => {}}));
+vi.mock("@/components/event/ParticipantPreview", () => ({useParticipantPreview: () => ({active: api.preview, config: null})}));
 vi.mock("@/api/moderatorsBoard", async importOriginal => ({...await importOriginal<typeof import("@/api/moderatorsBoard")>(), submitModeratorFlag: (...args: unknown[]) => api.moderator(...args)}));
 vi.mock("@/api/participantChallenges", async importOriginal => ({
     ...await importOriginal<typeof import("@/api/participantChallenges")>(),
@@ -37,7 +38,7 @@ beforeAll(() => {
     HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) { this.setAttribute("open", ""); };
     HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) { this.removeAttribute("open"); this.dispatchEvent(new Event("close")); };
 });
-afterEach(() => {cleanup(); api.submit.mockReset(); api.moderator.mockReset(); api.board.mockReset(); api.runtime.mockReset(); window.history.replaceState(null, "", "/challenges");});
+afterEach(() => {api.preview = false; cleanup(); api.submit.mockReset(); api.moderator.mockReset(); api.board.mockReset(); api.runtime.mockReset(); window.history.replaceState(null, "", "/challenges");});
 
 const base: OwnChallenge = {...fixtureChallenge, SolvedAt: null, Infrastructure: false, Practice: false, Points: 100, AttemptsLeft: null};
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -235,4 +236,15 @@ describe("a correct answer turns the card solved at once", () => {
         expect(document.querySelector(`[data-challenge-id="${uuid(2)}"]`)!.classList.contains("is-solved")).toBe(true);
         expect(screen.getAllByText("1 / 2").length).toBeGreaterThan(0);
     });
+    it("participant test mode keeps the participant task UI and submits only to the hidden moderators team", async () => {
+        api.preview = true;
+        api.moderator.mockResolvedValue({Correct: true});
+        render(<Harness mode="moderators" />);
+        fireEvent.click(screen.getByRole("button", {name: /^Завдання 2/}));
+        expect(document.querySelector(".event-cmodal__mods")).toBeNull();
+        await send();
+        expect(api.moderator).toHaveBeenCalled();
+        expect(api.submit).not.toHaveBeenCalled();
+    });
+
 });

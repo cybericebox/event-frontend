@@ -9,7 +9,7 @@ import {ParticipationStatusEnum} from "@/types/event";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {usePathname, useRouter} from "next/navigation";
 import {GuestShell} from "./GuestShell";
-import {ParticipantShell} from "./ParticipantShell";
+import {ParticipantPreviewProvider, useParticipantPreview} from "./ParticipantPreview";
 import {ManagerShell} from "./manage/ManagerShell";
 import {ManagerBootstrap} from "./manage/ManagerBootstrap";
 import {PrivateEventBootstrap} from "./PrivateEventBootstrap";
@@ -38,13 +38,14 @@ export function AppShell(props: Props) {
     // The event was deleted while the site was open: the same screen as for an event that never existed.
     const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
     if (gone) return <EventUnavailableScreen />;
-    return <>
+    return <ParticipantPreviewProvider>
         <div id={APP_ROOT_ID}><ShellContent {...props} /></div>
         <EventServiceStatusGate serverUnavailable={props.unavailable} />
-    </>;
+    </ParticipantPreviewProvider>;
 }
 
 function ShellContent({children, event, privateEvent, unavailable, failure}: Props) {
+    const preview = useParticipantPreview(event?.EventID ?? privateEvent?.EventID);
     const pathname = usePathname();
     const router = useRouter();
     const isManagement = pathname === "/manage" || pathname.startsWith("/manage/");
@@ -75,7 +76,7 @@ function ShellContent({children, event, privateEvent, unavailable, failure}: Pro
         retry: false, refetchInterval: false, refetchOnWindowFocus: false,
     });
 
-    const draftFrame = (content: ReactNode) => <ManualDraftProvider userID={currentUser.data?.ID ?? ""} eventID={event?.EventID ?? ""}>{content}</ManualDraftProvider>;
+    const draftFrame = (content: ReactNode) => <ManualDraftProvider userID={preview.active ? `participant-preview:${currentUser.data?.ID ?? ""}` : currentUser.data?.ID ?? ""} eventID={event?.EventID ?? ""}>{content}</ManualDraftProvider>;
 
     if (failure) return <EventErrorScreen page body={t("error.load.body")} error={failure} onRetry={() => router.refresh()} />;
     if (unavailable) {
@@ -89,12 +90,13 @@ function ShellContent({children, event, privateEvent, unavailable, failure}: Pro
         // Server reads are anonymous, so an unpublished event is absent here. Every other route
         // retries in the browser with the session; the bootstrap shows the one
         // «not found or no access» screen when the browser answer is no either.
-        return <PrivateEventBootstrap key={privateEvent ? "verified" : "browser"} initialEvent={privateEvent}>{children}</PrivateEventBootstrap>;
+        return <PrivateEventBootstrap initialEvent={privateEvent}>{children}</PrivateEventBootstrap>;
     }
     if (isLive) return children;
     // A session page of a visible event opened without a session goes to the sign-in at once.
     if (needsSession(pathname) && currentUser.isSuccess && !currentUser.data) return <SignInRedirect event={event} />;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;
+    if (preview.active) return draftFrame(<GuestShell event={event} authenticated joinStatus={preview.state!.status}>{children}</GuestShell>);
     // Public content is already in the server response. Keep it visible while
     // browser-only account and team requests finish.
     const identityPending = currentUser.isPending || (!!currentUser.data && joinStatus.isPending) || (approved && (participantInfo.isPending || ownTeam.isPending));
@@ -111,7 +113,6 @@ function ShellContent({children, event, privateEvent, unavailable, failure}: Pro
     if (approved && participantInfo.data?.EventID !== event.EventID) {
         return <EventErrorScreen title={t("shell.eventFailed")} onRetry={() => window.location.reload()} page />;
     }
-    return draftFrame(approved && !!participantInfo.data
-        ? <ParticipantShell event={event} participantInfo={participantInfo.data} ownTeam={ownTeam.data ?? null}>{children}</ParticipantShell>
-        : <GuestShell event={event} authenticated={authenticated} joinStatus={joinStatus.data}>{children}</GuestShell>);
+    return draftFrame(<GuestShell event={event} authenticated={authenticated} joinStatus={joinStatus.data}
+        participant={approved && participantInfo.data ? {event, participantInfo: participantInfo.data, ownTeam: ownTeam.data ?? null} : null}>{children}</GuestShell>);
 }

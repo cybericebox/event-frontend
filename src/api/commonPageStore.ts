@@ -7,7 +7,7 @@ import type {PublicResponse} from "./publicFetch";
 
 const pageSchema = z.object({Slug:z.string(),Title:z.string()});
 const manifestSchema = z.object({Event:PublicEventInfoSchema, Revision:z.string().min(1).max(256), Audience:z.enum(["public","staff"]), Page:pageSchema, CacheUntil:z.number().int()});
-const bundleSchema = z.object({Event:PublicEventInfoSchema, Revision:z.string(), Page:pageSchema.extend({Document:ContentDocumentSchema}), Variables:z.record(z.string(),ContentValueSchema)});
+const bundleSchema = z.object({Event:PublicEventInfoSchema, Revision:z.string(), Page:pageSchema.extend({Document:ContentDocumentSchema}), Variables:z.record(z.string(),ContentValueSchema),Images:z.record(z.string(),z.object({Width:z.number().int().positive(),Height:z.number().int().positive()})).default({})});
 export type CommonManifest = z.infer<typeof manifestSchema>;
 export type CommonBundle = z.infer<typeof bundleSchema>;
 export type CommonValues = CommonBundle["Variables"];
@@ -20,7 +20,7 @@ export class RenderReadError extends Error {
 export class CommonPageStore {
     private manifests:HardCache<CommonManifest|null>;
     private bundles:HardCache<CommonBundle>;
-    private liveValues:HardCache<CommonValues>;
+    private liveValues:HardCache<{Revision:string;Variables:CommonValues}>;
     constructor(private api:Api, private now = Date.now) {
         this.manifests = new HardCache({maxEntries:2048,maxBytes:8*1024*1024,ttl:1000,now});
         this.bundles = new HardCache({maxEntries:256,maxBytes:64*1024*1024,ttl:300_000,now});
@@ -52,9 +52,9 @@ export class CommonPageStore {
     page(context:ReadContext,slug:string):Promise<CommonBundle|null> {
         return this.read(context,slug,this.bundles,value=>value);
     }
-    values(context:ReadContext,slug:string,eventID:string):Promise<CommonValues|null> {
+    values(context:ReadContext,slug:string,eventID:string):Promise<{Revision:string;Variables:CommonValues}|null> {
         // Same published PUBLIC projection for both audiences, independent of the document snapshot.
-        return this.read(context,slug,this.liveValues,value=>value.Variables,eventID);
+        return this.read(context,slug,this.liveValues,value=>({Revision:value.Revision,Variables:value.Variables}),eventID);
     }
     private async read<T>(context:ReadContext,slug:string,cache:HardCache<T>,project:(bundle:CommonBundle)=>T,eventID?:string):Promise<T|null> {
         for (let attempt=0;attempt<2;attempt++) {

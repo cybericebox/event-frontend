@@ -12,8 +12,8 @@ import {EventFooter} from "./EventFooter";
 import {MissingFieldsNotice} from "./MissingFieldsNotice";
 import {SkipLink} from "@/components/ui/SkipLink";
 
-type ParticipantContextValue = {event: PublicEventInfo; participantInfo: ParticipantEventInfo; ownTeam: OwnTeam | null};
-const ParticipantContext = createContext<ParticipantContextValue | null>(null);
+export type ParticipantContextValue = {event: PublicEventInfo; participantInfo: ParticipantEventInfo; ownTeam: OwnTeam | null};
+export const ParticipantContext = createContext<ParticipantContextValue | null>(null);
 export const useParticipantContext = () => useContext(ParticipantContext);
 
 export function ParticipantShell({event, participantInfo, ownTeam, children}: {
@@ -29,6 +29,6 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
         <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <SiteBannerBar eventID={event.EventID} />
         <main id="main" tabIndex={-1} className="event-guest-main"><div className="event-page-content"><MissingFieldsNotice eventID={event.EventID} ownTeam={ownTeam} />{children}</div></main>
-        <EventFooter eventName={event.Name} showTheme={false} />
+        <EventFooter signature={event.FooterSignature} eventName={event.Name} showTheme={false} />
     </div></EventVpnProvider></ParticipantContext.Provider>;
 }

@@ -5,6 +5,7 @@ import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {useParticipation} from "@/components/event/participation/participationRules";
+import {useParticipantPreview} from "@/components/event/ParticipantPreview";
 import {t} from "@/i18n/t";
 
 type Action = {label: string; kind?: "link" | "join_event"; href?: string};
@@ -92,6 +93,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     finishAt: string;
     eventID: string;
 }) {
+    const participantPreview = useParticipantPreview(eventID);
     const hasJoin = actions.some(action => action.kind === "join_event");
     const viewer = preview ? previewViewer ?? "guest" : undefined;
     const [now, setNow] = useState(() => Date.now());
@@ -113,10 +115,10 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     // remembers, in this browser, that the registration was asked for (joinIntent.ts).
     const signInHref = "/join";
     const state = hasJoin ? joinState({
-        preview: viewer, staff: staff.staff, windowOpen, timeWindowOpen, signInHref,
-        registerAllowed: participation.isPending ? "loading" : participation.data ? participation.data.Register.Allowed : undefined,
-        identity: identity.isPending ? "loading" : identity.data ? "user" : "guest",
-        status: join.isPending ? "loading" : join.isError ? "error" : join.data,
+        preview: viewer, staff: !participantPreview.active && staff.staff, windowOpen: participantPreview.active || windowOpen, timeWindowOpen, signInHref,
+        registerAllowed: participantPreview.active ? true : participation.isPending ? "loading" : participation.data ? participation.data.Register.Allowed : undefined,
+        identity: participantPreview.active ? "user" : identity.isPending ? "loading" : identity.data ? "user" : "guest",
+        status: participantPreview.active ? participantPreview.state!.status : join.isPending ? "loading" : join.isError ? "error" : join.data,
         invitation: invitation.isPending ? "loading" : invitation.data,
     }) : {kind: "hidden" as const};
     const visible = actions.flatMap((action, index): {index: number; label: string; href?: string; status?: "loading" | "static"}[] => {
@@ -128,7 +130,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
             case "hidden": return [];
             case "loading": return action.label ? [{label: action.label, index, status: "loading"}] : [];
             case "join": return action.label ? [{href: state.href, label: action.label, index}] : [];
-            case "staffPreview": return action.label ? [{href: "/join", label: t("joinPreview.entry"), index}] : [];
+            case "staffPreview": return [];
             case "invite": return [{href: "/invite", label: joinLabel("invite"), index}];
             case "approved": return [{href: "/challenges", label: joinLabel("approved"), index}];
             case "pending": case "rejected": return [{label: joinLabel(state.kind), index, status: "static"}];

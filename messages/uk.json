@@ -1,4 +1,8 @@
 {
+  "manage.appearance.footerTitle": "Підпис у нижній частині сайту",
+  "manage.appearance.footerHelp": "Текст і посилання підпису для цього заходу. Порожній підпис показує стандартну згадку платформи. Налаштування cookie та відгук залишаються доступними.",
+  "manage.appearance.footerLabel": "Підпис сайту",
+  "manage.appearance.footerPreview": "Попередній вигляд підпису сайту",
   "challenges.lab.environment": "Середовище",
   "challenges.lab.closed.solved": "Усі завдання цього середовища виконано. Середовище закрито.",
   "challenges.lab.closed.manual": "Середовище зупинено. Прогрес завдань збережено.",
@@ -4899,5 +4903,16 @@
   "theme.menuLabel": "Тема",
   "theme.current.light": "Світла",
   "theme.current.dark": "Темна",
-  "theme.current.system": "Системна"
+  "theme.current.system": "Системна",
+  "participantPreview.title": "Режим тестового учасника",
+  "participantPreview.description": "Реєстрація й команда зберігаються лише в цьому браузері. Розвʼязання завдань записуються прихованій команді модераторів.",
+  "participantPreview.enter": "Тестувати як учасник",
+  "participantPreview.exit": "Вийти з тестування",
+  "participantPreview.reset": "Почати спочатку",
+  "participantPreview.teamCreated": "Команда готова.",
+  "participantPreview.joinedTeam": "Тестова команда",
+  "participantPreview.you": "Ви",
+  "participantPreview.member": "Тестовий учасник {number}",
+  "participantPreview.addMember": "Додати тестового учасника",
+  "participantPreview.options": "Дії тестового режиму"
 }

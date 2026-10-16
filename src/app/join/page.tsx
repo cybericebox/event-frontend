@@ -23,6 +23,7 @@ import {JoinResultCard} from "@/components/event/join/JoinResultCard";
 import {EventButton} from "@/components/ui/EventButton";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {focusFirstInvalid} from "@/components/event/FormQuestion";
+import {useParticipantPreview} from "@/components/event/ParticipantPreview";
 import {JoinPreview} from "@/components/event/join/JoinPreview";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
 
@@ -32,17 +33,18 @@ export default function JoinPage() {
     const guestEvent = useGuestEvent();
     const participant = useParticipantContext();
     const event = guestEvent ?? participant?.event;
+    const preview = useParticipantPreview(event?.EventID);
     const staff = useStaffAccess(event?.EventID);
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
-    const join = useQuery({queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus, enabled: !!identity.data && !!event, retry: false});
+    const join = useQuery({queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus, enabled: !!identity.data && !!event && !preview.active, retry: false});
     const invitation = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event && join.data === 1, retry: false});
     // Invitations are accepted on /invite; this page only handles own applications.
     const invited = invitation.data?.Invited === true && invitation.data.Status === ParticipationStatusEnum.PendingParticipationStatus;
     // What the caller may do is decided by the server (schedule, registration
     // mode, staff role); the page only shows it and the reason when it is closed.
-    const registration = useParticipation(event?.EventID, !!identity.data && !!event);
+    const registration = useParticipation(event?.EventID, !!identity.data && !!event && !preview.active);
     const register = registration.data?.Register;
-    const canJoin = join.data === 0 && !!register?.Allowed;
+    const canJoin = !preview.active && join.data === 0 && !!register?.Allowed;
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!identity.data && !!event && canJoin, retry: false});
     const [answers, setAnswers] = useSessionDraftState<ParticipantAnswers>("registration-answers", {});
     const [working, setWorking] = useState(false);
@@ -96,7 +98,7 @@ export default function JoinPage() {
     }
 
     // Staff cannot join their own event: they walk through the registration as a preview instead.
-    if (event && staff.staff) return <JoinPreview event={event} />;
+    if (event && preview.active) return <JoinPreview event={event} />;
     const status = join.data;
     return <div className="event-join-page"><div className="event-join-card">
         <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>

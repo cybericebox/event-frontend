@@ -21,6 +21,8 @@ import {EventButton} from "@/components/ui/EventButton";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {JoinResultCard} from "@/components/event/join/JoinResultCard";
 import {focusFirstInvalid} from "@/components/event/FormQuestion";
+import {useParticipantPreview} from "@/components/event/ParticipantPreview";
+import {JoinPreview} from "@/components/event/join/JoinPreview";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 
 export default function InvitePage() {
@@ -29,8 +31,9 @@ export default function InvitePage() {
     const guestEvent = useGuestEvent();
     const participant = useParticipantContext();
     const event = guestEvent ?? participant?.event;
+    const preview = useParticipantPreview(event?.EventID);
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
-    const info = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event, retry: false});
+    const info = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event && !preview.active, retry: false});
     const invitation = info.data;
     const actionable = !!invitation && invitation.Invited && invitation.Status === ParticipationStatusEnum.PendingParticipationStatus && !invitation.InvitationExpired && !invitation.TeamUnavailable;
     const form = useQuery({queryKey: ["event-participant-form", event?.EventID], queryFn: () => getSelfParticipantForm(), enabled: !!event && actionable, retry: false});
@@ -99,6 +102,7 @@ export default function InvitePage() {
 
     const home = <Link className="ib-btn" href="/">{t("common.home")}</Link>;
     const title = invitation?.InvitedTeamName ? t("invite.titleTeam", {team: invitation.InvitedTeamName}) : t("invite.titleEvent", {name: event?.Name ?? ""});
+    if (event && preview.active) return <JoinPreview event={event} />;
     return <div className="event-join-page"><div className="event-join-card">
         <Link className="event-join-back" href="/">{t("common.backHomeArrow")}</Link>
         {!event || identity.isPending || (identity.data && (info.isPending || (actionable && form.isPending))) ? <><h1>{t("invite.title")}</h1><EventLoading event={event} label={t("invite.loading")} /></>

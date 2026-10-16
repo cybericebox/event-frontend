@@ -50,12 +50,12 @@ describe("join page", () => {
         expect(await screen.findByRole("button", {name: "Приєднатися"})).toBeTruthy();
     });
 
-    it("gives event staff the registration preview instead of the refusal", async () => {
+    it("requires staff to enter the global test mode from management", async () => {
         state.staff = true;
         state.participation = block({Allowed: false, Reason: "staff_cannot_participate"}, {Staff: true});
         view();
-        expect(await screen.findByText("join-preview")).toBeTruthy();
-        expect(screen.queryByText(/Власники й модератори заходу не беруть участі як учасники/)).toBeNull();
+        expect(await screen.findByText(/Власники й модератори заходу не беруть участі як учасники/)).toBeTruthy();
+        expect(screen.queryByText("join-preview")).toBeNull();
     });
 
     it("never shows a participant the preview", async () => {

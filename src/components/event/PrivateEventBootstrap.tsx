@@ -7,6 +7,7 @@ import {useQuery} from "@tanstack/react-query";
 import {getClientEventInfo} from "@/api/clientEventInfo";
 import {getManageAccess} from "@/api/manage";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
+import {useParticipantPreview} from "./ParticipantPreview";
 import {GuestShell} from "./GuestShell";
 import {EventErrorScreen} from "./EventErrorScreen";
 import {EventLoading} from "./EventLoading";
@@ -37,6 +38,7 @@ export function PrivateEventBootstrap({children, initialEvent}: {children: React
     });
 
     const verifiedEvent = initialEvent ?? (access.isSuccess ? identity.data : undefined);
+    const preview = useParticipantPreview(verifiedEvent?.EventID);
     useEventFavicon(verifiedEvent?.FaviconURL);
     useEffect(() => {
         if (!verifiedEvent) return;
@@ -65,7 +67,7 @@ export function PrivateEventBootstrap({children, initialEvent}: {children: React
     }
     const event = verifiedEvent!;
     return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>
-        <GuestShell event={event} authenticated notice={<div className="event-private-preview-banner" role="status">
+        <GuestShell event={event} authenticated notice={preview.active ? undefined : <div className="event-private-preview-banner" role="status">
             <span>{t("shell.preview.banner")}</span>
             <Link href={pathname === "/" ? "/manage/content/landing" : "/manage"}>{pathname === "/" ? t("shell.preview.editLanding") : t("shell.preview.manage")}</Link>
         </div>}>

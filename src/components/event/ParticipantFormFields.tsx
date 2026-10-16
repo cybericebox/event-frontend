@@ -1,5 +1,6 @@
 "use client";
 
+import {useParticipantPreview, previewAnswerFile} from "./ParticipantPreview";
 import type {ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
@@ -54,6 +55,7 @@ export function ParticipantFormFields({form, answers, onChange, idPrefix = "join
     locked?: ReadonlySet<string>;
     errors?: Readonly<Record<string, string>>;
 }) {
+    const preview = useParticipantPreview();
     const shown = visibleFieldKeys(form.Document.blocks, answers);
     return <div className="event-join-form"><h2>{t("forms.field.title")}</h2><p>{form.Required ? t("forms.field.requiredHint") : t("forms.field.optionalHint")}</p>
         {form.Document.blocks.map(block => {
@@ -65,7 +67,7 @@ export function ParticipantFormFields({form, answers, onChange, idPrefix = "join
                 const update = (value: ParticipantAnswers[string]) => onChange({...answers, [key]: value});
                 const control = questionControlProps(id, !!block.required, block.help || undefined, error);
                 return <FormQuestion key={block.id} id={id} label={block.label} required={!!block.required} help={block.help || undefined} error={error} group={GROUP_INPUTS.has(block.input)} locked={locked?.has(key)}>
-                    {block.input === "file" ? <AnswerFileInput id={id} field={block} value={isFileAnswer(answers[key]) ? answers[key] : undefined} upload={file => uploadSelfAnswerFile("participant", key, file)} onChange={value => {const next = {...answers}; if (value) next[key] = value; else delete next[key]; onChange(next);}} />
+                    {block.input === "file" ? <AnswerFileInput id={id} field={block} value={isFileAnswer(answers[key]) ? answers[key] : undefined} upload={file => preview.active ? previewAnswerFile(file) : uploadSelfAnswerFile("participant", key, file)} onChange={value => {const next = {...answers}; if (value) next[key] = value; else delete next[key]; onChange(next);}} />
                         : block.input === "date" ? <DateAnswerInput id={id} mode={dateModeOf(block)} value={typeof answers[key] === "string" ? answers[key] : ""} onChange={value => update(value)} ariaLabel={block.label} />
                         : block.input === "long_text" ? <textarea {...control} className="ib-input event-form-textarea" rows={4} value={String(answers[key] ?? "")} onChange={e => update(e.target.value)} />
                         : block.input === "number" ? <input {...control} className="ib-input" type="number" value={typeof answers[key] === "number" ? answers[key] as number : ""} onChange={e => update(e.target.value === "" ? "" : Number(e.target.value))} />
