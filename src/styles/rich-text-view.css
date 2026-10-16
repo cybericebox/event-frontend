@@ -29,4 +29,6 @@
   white-space:pre;tab-size:4;border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-ink);font-family:var(--ib-mono);font-size:var(--ib-fs-13);line-height:1.5}
 .event-rich-text-view .event-lexical__code code{padding:0;background:none;font:inherit;overflow-wrap:normal}
 .event-rich-text-view .event-lexical__link{overflow-wrap:anywhere}
+/* Keep a fitting lab address together; only addresses wider than the block wrap inside it. */
+.event-rich-text-view a[data-event-variable]{display:inline-block;max-width:100%;vertical-align:baseline;overflow-wrap:anywhere;word-break:normal}
 .event-rich-text-view mark{padding:0 2px;border-radius:2px;background:var(--ib-warn-bg);color:var(--ib-ink)}
