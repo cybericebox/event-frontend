@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {afterEach, describe, expect, it} from "vitest";
+import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen} from "@testing-library/react";
 import {EventTooltip} from "./EventTooltip";
 
@@ -42,4 +42,16 @@ describe("EventTooltip", () => {
         fireEvent.pointerEnter(tip);
         expect(bubble.style.getPropertyValue("--ib-tip-shift")).toBe("-102px");
     });
+});
+
+
+it("opens a floating tooltip in the top layer and closes it on scroll",()=>{
+ const {container}=render(<EventTooltip content="Скопіювати команду" floating>{()=> <button type="button">Копіювати</button>}</EventTooltip>);
+ const bubble=container.querySelector<HTMLElement>("[popover=manual]")!;
+ expect(bubble).not.toBeNull();
+ bubble.showPopover=vi.fn();bubble.hidePopover=vi.fn();
+ fireEvent.focus(screen.getByRole("button"));
+ expect(bubble.showPopover).toHaveBeenCalled();
+ fireEvent.scroll(window);
+ expect(bubble.hidePopover).toHaveBeenCalled();
 });
