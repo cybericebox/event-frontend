@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {PreviewSettingsPage as Page} from "@/components/event/manage/exercises/PreviewSettingsPage";
 
@@ -13,26 +13,30 @@ vi.mock("@/components/event/manage/manualDraft", async () => {
 });
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn()}}));
 const selection = {ExerciseVersionID: "v1", VariantID: "a", Name: "Файл"};
-function view() {return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><Page /></QueryClientProvider>);}
+function view() {
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    return {...render(<QueryClientProvider client={client}><Page /></QueryClientProvider>), client};
+}
 afterEach(cleanup);
 beforeEach(() => {
     vi.clearAllMocks(); api.manage = true;
     api.get.mockResolvedValue({DefaultSelections: [selection], DefaultGroupName: "Платформна група", DynamicAllocated: false, GroupName: "Тестова група", GroupNameOverride: null, Inherit: true, Selections: [], EffectiveSelections: [selection]});
     api.catalog.mockResolvedValue([{ID: "e1", ExerciseVersionID: "v1", Name: "Файл", Infrastructure: false, Variants: [{ID: "a", Index: 0}]}]);
-    api.save.mockImplementation(async (_eventID, draft) => ({...draft, EffectiveSelections: draft.Inherit ? [selection] : draft.Selections}));
+    api.save.mockImplementation(async (_eventID, draft) => ({...await api.get(), ...draft, EffectiveSelections: draft.Inherit ? [selection] : draft.Selections}));
 });
 
 it("inherits defaults without loading the editable catalog", async () => {
     view();
     expect(await screen.findByText("Файл")).toBeTruthy();
-    expect(screen.getByText("Набір платформи")).toBeTruthy();
+    expect(screen.getByText("Набір за замовчуванням")).toBeTruthy();
     expect(api.catalog).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", {name: "Додати завдання"})).toBeTruthy();
+    expect(screen.queryByRole("button", {name: "Відновити налаштування за замовчуванням"})).toBeNull();
 });
 
 it("copies defaults for customization and can save an explicitly empty override", async () => {
     view();
-    fireEvent.click(await screen.findByRole("button", {name: "Змінити для заходу"}));
-    fireEvent.click(screen.getByRole("button", {name: "Прибрати «Файл»"}));
+    fireEvent.click(await screen.findByRole("button", {name: "Прибрати «Файл»"}));
     fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
     await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({Inherit: false, Selections: []})));
 });
@@ -40,7 +44,7 @@ it("copies defaults for customization and can save an explicitly empty override"
 it("restores inheritance rather than saving an empty custom selection", async () => {
     api.get.mockResolvedValue({DefaultSelections: [selection], DefaultGroupName: "Платформна група", DynamicAllocated: false, GroupName: "Тестова група", GroupNameOverride: null, Inherit: false, Selections: [selection], EffectiveSelections: [selection]});
     view();
-    fireEvent.click(await screen.findByRole("button", {name: "Використовувати набір платформи"}));
+    fireEvent.click(await screen.findByRole("button", {name: "Відновити налаштування за замовчуванням"}));
     fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
     await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({GroupNameOverride: null, Inherit: true, Selections: []})));
 });
@@ -48,15 +52,16 @@ it("restores inheritance rather than saving an empty custom selection", async ()
 it("does not offer overrides to read-only event staff", async () => {
     api.manage = false; view();
     expect(await screen.findByText("Файл")).toBeTruthy();
-    expect(screen.queryByRole("button", {name: "Змінити для заходу"})).toBeNull();
+    expect(screen.queryByRole("button", {name: "Прибрати «Файл»"})).toBeNull();
+    expect(screen.queryByRole("button", {name: "Додати завдання"})).toBeNull();
     expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
 });
 
-it("renames the single group while keeping platform selections inherited", async () => {
+it("snapshots platform selections when the group is first edited", async () => {
     view();
     fireEvent.change(await screen.findByRole("textbox", {name: "Назва тестової групи"}), {target: {value: "Моя група"}});
     fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
-    await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({GroupNameOverride: "Моя група", Inherit: true})));
+    await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({GroupNameOverride: "Моя група", Inherit: false, Selections: [selection]})));
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
 });
 
@@ -73,16 +78,38 @@ it("keeps newer edits when an earlier save finishes", async () => {
     expect(name).toHaveProperty("value", "Нова назва");
 });
 
-it("shows platform selections immediately when restoring, and copies them when customizing again", async () => {
+it("restores both the group name and the live platform selection", async () => {
     const custom = {...selection, ExerciseVersionID: "custom", Name: "Власний файл"};
     api.get.mockResolvedValue({DefaultSelections: [selection], DefaultGroupName: "Платформа", DynamicAllocated: false, GroupName: "Власна назва", GroupNameOverride: "Власна назва", Inherit: false, Selections: [custom], EffectiveSelections: [custom]});
     view();
-    fireEvent.click(await screen.findByRole("button", {name: "Використовувати набір платформи"}));
+    fireEvent.click(await screen.findByRole("button", {name: "Відновити налаштування за замовчуванням"}));
     expect(screen.getByRole("button", {name: "Файл"})).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Власний файл"})).toBeNull();
-    fireEvent.click(screen.getByRole("button", {name: "Змінити для заходу"}));
-    fireEvent.click(screen.getByRole("button", {name: "Відновити назву платформи"}));
     expect(screen.getByRole("textbox", {name: "Назва тестової групи"})).toHaveProperty("value", "Платформа");
     fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
-    await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({Inherit: false, Selections: [selection], GroupNameOverride: null})));
+    await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({Inherit: true, Selections: [], GroupNameOverride: null})));
+});
+
+it("keeps inherited data current but freezes a local copy after an edit", async () => {
+    const {client} = view();
+    await screen.findByRole("button", {name: "Файл"});
+    const newer = {...selection, ExerciseVersionID: "v2", Name: "Оновлений файл"};
+    const original = await api.get();
+    await act(async () => {client.setQueryData(["event-preview-settings", "e1"], {...original, DefaultSelections: [newer]});});
+    await screen.findByRole("button", {name: "Оновлений файл"});
+    fireEvent.change(screen.getByRole("textbox", {name: "Назва тестової групи"}), {target: {value: "Мій набір"}});
+    await act(async () => {client.setQueryData(["event-preview-settings", "e1"], original);});
+    expect(screen.getByRole("button", {name: "Оновлений файл"})).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+    await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({Inherit: false, Selections: [newer]})));
+});
+
+it("preserves a local draft if saving fails", async () => {
+    api.save.mockRejectedValue(new Error("offline"));
+    view();
+    fireEvent.click(await screen.findByRole("button", {name: "Прибрати «Файл»"}));
+    fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", {name: "Файл"})).toBeNull();
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", false);
 });

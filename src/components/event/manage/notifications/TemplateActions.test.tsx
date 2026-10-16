@@ -21,7 +21,7 @@ function setup(mode: TemplateMode, onReset = vi.fn().mockResolvedValue(true)) {
 describe("TemplateActions", () => {
     it("offers only «Налаштувати для заходу» on the platform template", () => {
         const handlers = setup("platform");
-        expect(screen.queryByRole("button", {name: /Повернути стандартний/})).toBeNull();
+        expect(screen.queryByRole("button", {name: /Відновити шаблон за замовчуванням/})).toBeNull();
         fireEvent.click(screen.getByRole("button", {name: "Налаштувати для заходу"}));
         expect(handlers.onCustomize).toHaveBeenCalled();
     });
@@ -45,17 +45,17 @@ describe("TemplateActions", () => {
 
     it("returns to the standard template only after a confirmation", async () => {
         const handlers = setup("edit");
-        fireEvent.click(screen.getByRole("button", {name: /Повернути стандартний/}));
+        fireEvent.click(screen.getByRole("button", {name: /Відновити шаблон за замовчуванням/}));
         expect(handlers.onReset).not.toHaveBeenCalled();
         const dialog = screen.getByRole("alertdialog", {hidden: true});
-        expect(dialog.textContent).toContain("Повернути стандартний шаблон?");
-        fireEvent.click(screen.getAllByRole("button", {name: "Повернути стандартний", hidden: true}).at(-1)!);
+        expect(dialog.textContent).toContain("Відновити шаблон за замовчуванням?");
+        fireEvent.click(screen.getAllByRole("button", {name: "Відновити шаблон за замовчуванням", hidden: true}).at(-1)!);
         await waitFor(() => expect(handlers.onReset).toHaveBeenCalledTimes(1));
     });
 
     it("keeps the template when the confirmation is cancelled", () => {
         const handlers = setup("edit");
-        fireEvent.click(screen.getByRole("button", {name: /Повернути стандартний/}));
+        fireEvent.click(screen.getByRole("button", {name: /Відновити шаблон за замовчуванням/}));
         fireEvent.click(screen.getByRole("button", {name: "Скасувати", hidden: true}));
         expect(handlers.onReset).not.toHaveBeenCalled();
     });

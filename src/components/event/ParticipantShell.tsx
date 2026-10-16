@@ -26,8 +26,8 @@ export function ParticipantShell({event, participantInfo, ownTeam, children}: {
     const vpn = participantInfo.HasInfrastructureChallenges && !!ownTeam && ownTeam.Admitted !== false;
     return <ParticipantContext.Provider value={{event, participantInfo, ownTeam}}><EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={vpn}><div className="event-guest-shell">
         <SkipLink />
-        <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <SiteBannerBar eventID={event.EventID} />
+        <EventNavbar event={event} authenticated approved canViewResults={resultsLinkVisible(resultsAvailability(participantInfo))} />
         <main id="main" tabIndex={-1} className="event-guest-main"><div className="event-page-content"><MissingFieldsNotice eventID={event.EventID} ownTeam={ownTeam} />{children}</div></main>
         <EventFooter signature={event.FooterSignature} eventName={event.Name} showTheme={false} />
     </div></EventVpnProvider></ParticipantContext.Provider>;

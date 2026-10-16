@@ -30,8 +30,8 @@ export function GuestShell({event, authenticated, pending = false, notice, child
     const approved = !!participant || preview.active && preview.state!.status === ParticipationStatusEnum.ApprovedParticipationStatus;
     return <GuestEventContext.Provider value={event}><ParticipantContext.Provider value={participant}><EventVpnProvider eventID={event.EventID} eventTag={event.Tag} moderators={preview.active} enabled={preview.active ? approved && !!preview.config?.InfrastructureAllowed && (event.Participation !== 1 || !!preview.state?.team?.Formed) : !!participant?.participantInfo.HasInfrastructureChallenges && !!participant.ownTeam && participant.ownTeam.Admitted !== false}><div className="event-guest-shell">
         <SkipLink />
-        <EventNavbar event={event} authenticated={authenticated} approved={approved} canViewResults={preview.active ? resultsLinkVisible(previewResultsAvailability(resultsAvailability(event), preview.state!.status, preview.config)) : !!participant && resultsLinkVisible(resultsAvailability(participant.participantInfo))} pending={pending} />
         <SiteBannerBar eventID={event.EventID} />
+        <EventNavbar event={event} authenticated={authenticated} approved={approved} canViewResults={preview.active ? resultsLinkVisible(previewResultsAvailability(resultsAvailability(event), preview.state!.status, preview.config)) : !!participant && resultsLinkVisible(resultsAvailability(participant.participantInfo))} pending={pending} />
         <main id="main" tabIndex={-1} className="event-guest-main">{notice}<div className="event-page-content">{participant && <MissingFieldsNotice eventID={event.EventID} ownTeam={participant.ownTeam} />}{children}</div></main>
         <EventFooter signature={event.FooterSignature} eventName={event.Name} showTheme={!authenticated && !pending} />
     </div></EventVpnProvider></ParticipantContext.Provider></GuestEventContext.Provider>;

@@ -43,10 +43,7 @@ function BannerFormFields({form, onChange, disabled}: {form: BannerForm; onChang
     const levelOptions = bannerLevels.map(level => ({value: level, label: t(`manage.banners.level.${level}`)}));
     const audienceOptions = bannerAudiences.map(audience => ({value: audience, label: t(`manage.banners.audience.${audience}`)}));
     return <div className="event-banner-form">
-        <div className="event-banner-preview">
-            <ManageFieldLabel title={t("manage.banners.preview")} help={t("manage.banners.previewHelp")} />
-            <SiteBanner banner={{Text: form.Text.trim() || t("manage.banners.previewText"), LinkURL: form.LinkURL, LinkLabel: form.LinkLabel, Level: form.Level, Dismissible: form.Dismissible}} onDismiss={() => undefined} />
-        </div>
+        <p className="event-manage-table__dim">{t("manage.banners.scopeHint")}</p>
         <div className="event-manage-field">
             <ManageFieldLabel title={t("manage.banners.field.text")} help={t("manage.banners.field.textHelp", {max: BANNER_TEXT_MAX})} htmlFor="event-banner-text" required />
             <textarea id="event-banner-text" className="event-manage-input" rows={3} maxLength={BANNER_TEXT_MAX} value={form.Text} disabled={disabled} onChange={event => set({Text: event.target.value})} />
@@ -84,6 +81,10 @@ function BannerFormFields({form, onChange, disabled}: {form: BannerForm; onChang
         </div>
         <EventSwitch checked={form.Dismissible} disabled={disabled} onCheckedChange={Dismissible => set({Dismissible})} label={t("manage.banners.field.dismissible")} />
         <EventSwitch checked={form.IsActive} disabled={disabled} onCheckedChange={IsActive => set({IsActive})} label={t("manage.banners.field.active")} />
+        <div className="event-banner-preview">
+            <ManageFieldLabel title={t("manage.banners.preview")} help={t("manage.banners.previewHelp")} />
+            <SiteBanner banner={{Text: form.Text.trim() || t("manage.banners.previewText"), LinkURL: form.LinkURL, LinkLabel: form.LinkLabel, Level: form.Level, Dismissible: form.Dismissible}} onDismiss={() => undefined} />
+        </div>
     </div>;
 }
 

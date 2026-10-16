@@ -27,7 +27,7 @@ describe("Сторінка сповіщення на сайті", () => {
         expect(container.querySelector(".event-notification-popin strong")?.textContent).toBe("CTF 2027");
         expect(screen.getByRole("textbox", {name: "Заголовок", hidden: true}).closest("[inert]")).not.toBeNull();
         expect(screen.getByRole("button", {name: "Налаштувати для заходу"})).toBeTruthy();
-        expect(screen.getByTestId("template-notice").textContent).toContain("стандартний шаблон платформи");
+        expect(screen.getByTestId("template-notice").textContent).toContain("шаблон за замовчуванням");
     });
 
     it("shows the read-only notice on a published copy and none on a draft", async () => {
@@ -54,7 +54,7 @@ describe("Сторінка сповіщення на сайті", () => {
         renderPage();
         const title = await screen.findByRole("textbox", {name: "Заголовок"});
         for (const name of ["Про поле «Заголовок»", "Про поле «Текст»", "Про поле «Посилання»", /^Про поле «.*вигляд/i, "Про поле «Час показу спливаючого повідомлення, секунди»", "Про поле «Кнопка»"]) expect(screen.getByRole("button", {name})).toBeTruthy();
-        expect(screen.getByRole("button", {name: "Повернути стандартний"})).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Відновити шаблон за замовчуванням"})).toBeTruthy();
         title.textContent = "";
         fireEvent.input(title);
         expect(screen.getByRole("alert").textContent).toBe("Заповніть заголовок.");

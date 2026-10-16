@@ -80,8 +80,8 @@ describe("mail journal", () => {
 
     it("labels transports in Ukrainian", () => {
         expect(mailTransportLabel("event")).toBe("SMTP заходу");
-        expect(mailTransportLabel("platform")).toBe("Платформа");
-        expect(mailTransportLabel("env")).toBe("Платформа");
+        expect(mailTransportLabel("platform")).toBe("За замовчуванням");
+        expect(mailTransportLabel("env")).toBe("За замовчуванням");
         expect(mailTransportLabel("")).toBe("—");
     });
 });
@@ -95,8 +95,8 @@ describe("event mail transports", () => {
 
 describe("placeholder sources", () => {
     it("appends where the inherited value comes from to the field help", () => {
-        expect(withSource("Help.", "derived")).toBe("Help. Зараз: тег заходу та домен відправлення платформи.");
-        expect(withSource("Help.", "platform")).toBe("Help. Зараз: береться з налаштувань платформи.");
+        expect(withSource("Help.", "derived")).toBe("Help. Зараз: тег заходу та домен відправлення за замовчуванням.");
+        expect(withSource("Help.", "platform")).toBe("Help. Зараз: значення за замовчуванням.");
     });
 });
 

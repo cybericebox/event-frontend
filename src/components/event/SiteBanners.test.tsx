@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
@@ -47,9 +47,29 @@ describe("Банери сайту", () => {
         const urls = mockBanners([banner(), banner({ID: "b2", Text: "Попередження", Level: "warning"})]);
         const {container} = renderBar();
         expect(await screen.findByText("Сервери недоступні до 18:00")).toBeTruthy();
-        expect(screen.getByText("Попередження")).toBeTruthy();
-        expect(container.querySelector(".ib-banner--warning")).not.toBeNull();
-        expect(urls[0]).toBe(`https://api.test/api/banners?event=${EVENT_ID}`);
+        expect(screen.queryByText("Попередження")).toBeNull();
+        expect(container.querySelectorAll(".ib-banner")).toHaveLength(1);
+        fireEvent.click(screen.getByRole("button", {name: "Ще 1 оголошення"}));
+        const others = await screen.findByRole("dialog", {name: "Інші оголошення"});
+        expect(within(others).getByText("Попередження")).toBeTruthy();
+        expect(urls[0]).toBe(`https://api.test/api/banners?site=event&event=${EVENT_ID}`);
+    });
+
+    it("bounds ten announcements to one and promotes the next after dismissal", async () => {
+        mockBanners(Array.from({length: 10}, (_, index) => banner({ID: `b${index}`, Text: `Оголошення ${index}`})));
+        const {container} = renderBar();
+        await screen.findByText("Оголошення 0");
+        expect(container.querySelectorAll(".ib-banner")).toHaveLength(1);
+        expect(screen.queryByText("Оголошення 1")).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Закрити банер"}));
+        expect(await screen.findByText("Оголошення 1")).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "Ще 8 оголошень"}));
+        const others = await screen.findByRole("dialog", {name: "Інші оголошення"});
+        expect(within(others).getByText("Оголошення 9")).toBeTruthy();
+        fireEvent.click(within(others).getAllByRole("button", {name: "Закрити банер"})[0]);
+        expect(screen.queryByText("Оголошення 2")).toBeNull();
+        expect(screen.getByText("Оголошення 1")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Ще 7 оголошень"})).toBeTruthy();
     });
 
     it("renders nothing without banners or when the request fails", async () => {
