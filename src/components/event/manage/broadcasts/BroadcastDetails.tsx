@@ -11,8 +11,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {t} from "@/i18n/t";
 import {useManager} from "../ManagerShell";
 import {ManageTable} from "../ManageTable";
-import {EmailPreview} from "../notifications/EmailPreview";
-import {InAppPreview} from "../notifications/InAppPreview";
+import {NotificationPreview} from "../notifications/NotificationPreview";
 import {audienceLabel, broadcastSampleValues, broadcastTitle, channelLabel, channelsLabel, inAppPreviewInput} from "./broadcastModel";
 import {BroadcastStatus, formatBroadcastTime} from "./BroadcastHistory";
 import "./broadcasts.css";
@@ -100,9 +99,8 @@ export function BroadcastDetails({broadcastID}: {broadcastID: string}) {
                 </section>
             </div>
             <div className="event-template-grid__preview event-broadcast-preview">
-                {emailInput ? <div><h2>{t("manage.broadcasts.previewEmail")}</h2><EmailPreview event={event} input={emailInput} valid /></div> : null}
-                {item.Channels.includes("in_app") ? <div><h2>{t("manage.broadcasts.previewInApp")}</h2>
-                    <InAppPreview template={inAppPreviewInput(item)} values={broadcastSampleValues(event.Name)} /></div> : null}
+                <NotificationPreview email={emailInput ? {event, input: emailInput, valid: true} : undefined}
+                    inApp={item.Channels.includes("in_app") ? {template: inAppPreviewInput(item), values: broadcastSampleValues(event.Name)} : undefined} />
                 {!emailInput && !item.Channels.includes("in_app") && <EmptyState message={t("manage.broadcasts.noMessage")} />}
             </div>
         </div>

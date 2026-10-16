@@ -49,8 +49,7 @@ export function unknownVariableHint(name: string): string {
 function pillHtml(name: string, invalid = false): string {
   // data-var holds the canonical name (no dot); pill text is just the name.
   if (invalid) {
-    const hint = escapeHtml(unknownVariableHint(name))
-    return `<span class="var-pill ${INVALID_PILL_CLASS}" data-var="${name}" data-invalid="true" title="${hint}">${name}</span>`
+    return `<span class="var-pill ${INVALID_PILL_CLASS}" data-var="${name}" data-invalid="true" tabindex="0" contenteditable="false">${name}</span>`
   }
   return `<span class="var-pill" data-var="${name}">${name}</span>`
 }
@@ -225,7 +224,7 @@ export function convertTypedToken(known: string[]): boolean {
   pill.setAttribute('contenteditable', 'false')
   if (invalid) {
     pill.setAttribute('data-invalid', 'true')
-    pill.setAttribute('title', unknownVariableHint(name))
+    pill.tabIndex = 0
   }
   pill.textContent = name
 

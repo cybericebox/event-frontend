@@ -22,7 +22,7 @@ import {useSubscriptionToggle} from "./useSubscriptionToggle";
 import {t} from "@/i18n/t";
 import {useManager} from "../ManagerShell";
 import {InAppEditor} from "./InAppEditor";
-import {InAppPreview} from "./InAppPreview";
+import {NotificationPreview} from "./NotificationPreview";
 import {inAppValidation} from "./inAppValidation";
 import {orderedVersions, sameValue, sampleValues, templateMode, toVariableDefs} from "./notificationModel";
 import {TemplateActions} from "./TemplateActions";
@@ -137,11 +137,10 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
         {template && draft ? <div className="event-template-grid">
             <div className="event-template-grid__fields">
                 <InAppEditor draft={draft} disabled={!editable} variables={toVariableDefs(type?.Variables ?? [])} onChange={next => setDrafts(current => ({...current, [template.ID]: next}))} />
-                {editable && validation && <p className="event-manage-validation" role="alert">{validation}</p>}
             </div>
             <div className="event-template-grid__preview">
                 <h2>{t("manage.notifications.preview")}</h2>
-                <InAppPreview template={draft} values={sampleValues(type, event.Name)} />
+                <NotificationPreview inApp={{template: draft, values: sampleValues(type, event.Name)}} />
                 <small>{t("manage.notifications.previewHint")}</small>
             </div>
         </div> : <EmptyState message={t("manage.notifications.noTemplate")} />}

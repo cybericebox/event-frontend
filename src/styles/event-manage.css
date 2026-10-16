@@ -953,3 +953,33 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-preview-catalog__list label{display:flex;align-items:center;gap:var(--ib-3);flex:1;min-width:min(240px,100%);overflow-wrap:anywhere}
 .event-preview-catalog__list input[type="checkbox"]{width:16px;height:16px;flex:none;accent-color:var(--ib-action)}
 .event-preview-catalog__list select{width:auto;max-width:100%;flex:none}
+
+/* A bounded, independently scrollable preview shared by all notification editors. */
+.event-notification-preview{display:grid;gap:var(--ib-3);min-width:0}
+.event-notification-preview__head{display:flex;align-items:start;justify-content:space-between;gap:var(--ib-2);flex-wrap:wrap;min-width:0}
+.event-notification-preview__tabs{display:flex;flex-wrap:wrap;max-width:100%;height:auto}
+.event-notification-preview__tabs [role=tab]{white-space:normal;text-align:center;min-height:36px}
+.event-notification-preview__tabs [aria-selected=true]{background:var(--ib-raised);border-color:var(--ib-line);color:var(--ib-ink);font-weight:var(--ib-w-semibold)}
+.event-notification-preview__panel{min-width:0;max-height:min(70dvh,720px);overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-color:var(--ib-control) transparent}
+.event-notification-preview__panel[hidden]{display:none}
+.event-notification-preview__panel:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.event-notification-preview__panel .event-manage-notifications__stage{min-height:260px;align-content:center;padding:var(--ib-3)}
+.event-notification-preview__panel .event-email-preview__canvas{height:min(56dvh,560px);min-height:260px}
+@media(max-width:680px){.event-notification-preview__tabs{width:100%}.event-notification-preview__tabs [role=tab]{flex:1;min-width:0;min-height:44px}.event-notification-preview__panel{max-height:65dvh}.event-notification-preview__panel .event-email-preview__canvas{height:50dvh}}
+
+.event-variable-tooltip{display:contents}
+.event-variable-tooltip__portal{position:fixed;left:0;top:0;width:0;height:0;z-index:1000}
+.event-variable-tooltip__portal .ib-tip__bubble{z-index:1000;max-width:min(280px,calc(100vw - 24px))}
+[data-invalid=true]:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+
+/* Only the sandboxed letter scrolls; its controls never form a second scrollbox. */
+.event-notification-preview__panel:has(.event-email-preview__frame){max-height:none;overflow:visible;scrollbar-gutter:auto}
+.event-dialog:has(> .ib-modal__body > .event-notification-preview){width:min(1200px,calc(100vw - 32px));max-width:none;height:min(900px,calc(100dvh - 32px))}
+.event-dialog:has(> .ib-modal__body > .event-notification-preview)>.ib-modal__body{flex:1;overflow:hidden}
+.event-dialog .event-notification-preview{display:flex;flex-direction:column;flex:1;min-height:0}
+.event-dialog .event-notification-preview__head{flex:none}
+.event-dialog .event-notification-preview__panel:not([hidden]){display:flex;flex-direction:column;flex:1;min-height:0;max-height:none}
+.event-dialog .event-notification-preview__panel:has(.event-email-preview__frame){overflow:hidden}
+.event-dialog .event-email-preview__frame{display:flex;flex-direction:column;flex:1;min-height:0}
+.event-dialog .event-email-preview__meta,.event-dialog .event-email-preview__toolbar{flex:none}
+.event-dialog .event-notification-preview__panel .event-email-preview__canvas{flex:1;height:auto;min-height:0}

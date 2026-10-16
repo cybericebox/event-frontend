@@ -159,3 +159,13 @@ describe("Сторінка листа", () => {
         expect(await screen.findByText("Такого шаблону для цього заходу немає.")).toBeTruthy();
     });
 });
+
+it("associates a missing subject error with its editor instead of the page footer", async () => {
+ fakeServer("email", subs, [emailTemplate(2, FINISHED, {Source: "event", Status: "draft", Subject: ""})]);
+ renderPage();
+ const field = await screen.findByRole("textbox", {name: "Тема листа"});
+ await waitFor(() => expect(field.getAttribute("aria-invalid")).toBe("true"));
+ const error = document.getElementById(field.getAttribute("aria-describedby")!);
+ expect(error?.textContent).toContain("Додайте тему листа.");
+ expect(field.closest(".event-manage-field")?.contains(error)).toBe(true);
+});

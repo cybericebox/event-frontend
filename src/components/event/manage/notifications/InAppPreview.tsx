@@ -15,7 +15,7 @@ function safeHref(value: string): boolean {
 // A read-only preview of an in-app notification, drawn like the real ones: the
 // row of the inbox list (text only, like the list shows it) and the pop-in
 // banner (with its formatting and button), with the sample variable values.
-export function InAppPreview({template, values}: {template: ManageInAppTemplateInput; values: Record<string, string>}) {
+export function InAppPreview({template, values, surface}: {template: ManageInAppTemplateInput; values: Record<string, string>; surface?: "inbox" | "toast"}) {
     const title = fillSamples(template.Title, values);
     const body = fillSamples(template.Body, values, true);
     const link = fillSamples(template.Link, values);
@@ -23,23 +23,23 @@ export function InAppPreview({template, values}: {template: ManageInAppTemplateI
     const inboxAction = safeHref(link) && link.trim() ? t("inbox.open") : null;
     const seconds = popInDuration(template.AutoDismissMs) / 1000;
     return <div className="event-manage-notifications__stage">
-        <div className="event-manage-notifications__stage-item">
-            <h3>{t("manage.notifications.previewInbox")}</h3>
+        {surface !== "toast" && <div className="event-manage-notifications__stage-item">
+            {!surface && <h3>{t("manage.notifications.previewInbox")}</h3>}
             <ul className="event-notifications__list event-manage-notifications__inbox">
                 <li><NotificationMessageCard icon={template.Icon} tone={template.Tone} accentColor={template.AccentColor} title={title} unread compact
                     body={body ? <span dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []})}} /> : undefined}
                     timestamp={<span className="event-notifications__meta">{t("manage.notifications.previewJustNow")}</span>}
                     actions={inboxAction ? <button type="button" tabIndex={-1}>{inboxAction}</button> : undefined} /></li>
             </ul>
-        </div>
-        <div className="event-manage-notifications__stage-item">
-            <h3>{t("manage.notifications.previewPopIn")}</h3>
+        </div>}
+        {surface !== "inbox" && <div className="event-manage-notifications__stage-item">
+            {!surface && <h3>{t("manage.notifications.previewPopIn")}</h3>}
             <div className="event-notification-popin">
                 <div className="event-notification-popin__content"><NotificationMessageCard icon={template.Icon} tone={template.Tone} accentColor={template.AccentColor} title={title}
                     body={body ? <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(body)}} /> : undefined}
                     actions={action ? <button type="button" tabIndex={-1}>{action.label}</button> : undefined} /></div>
             </div>
             <small>{t("manage.notifications.previewPopInTime", {seconds})}</small>
-        </div>
+        </div>}
     </div>;
 }

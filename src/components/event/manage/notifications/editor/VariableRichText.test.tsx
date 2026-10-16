@@ -65,3 +65,22 @@ describe("VariableRichText", () => {
     expect(field.querySelector('[data-var="ghost"]')?.getAttribute("data-invalid")).toBe("true")
   })
 })
+
+it("uses a custom tooltip for unknown pills by keyboard and touch without serializing its text", () => {
+  const onChange = vi.fn()
+  render(<VariableRichText value="{{.ghost}}" onChange={onChange} variables={variables} dotted ariaLabel="Тема" />)
+  const field = screen.getByRole("textbox", {name: "Тема"})
+  const pill = field.querySelector('[data-var="ghost"]') as HTMLElement
+  expect(pill.hasAttribute("title")).toBe(false)
+  expect(pill.tabIndex).toBe(0)
+  fireEvent.focus(pill)
+  const tooltip = screen.getByRole("tooltip")
+  expect(tooltip.textContent).toContain("ghost")
+  expect(pill.getAttribute("aria-describedby")).toBe(tooltip.id)
+  fireEvent.keyDown(pill, {key: "Escape"})
+  expect(screen.queryByRole("tooltip")).toBeNull()
+  fireEvent.click(pill)
+  expect(screen.getByRole("tooltip").textContent).toContain("ghost")
+  fireEvent.input(field)
+  expect(onChange).toHaveBeenLastCalledWith("{{.ghost}}")
+})

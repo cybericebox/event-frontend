@@ -32,3 +32,9 @@ describe("InAppPreview", () => {
         expect(container.querySelector(".event-notification-popin")!.textContent).not.toContain("Ой");
     });
 });
+
+it("renders only the requested notification surface", () => {
+ const {container} = render(<InAppPreview template={template} values={values} surface="inbox" />);
+ expect(container.querySelector(".event-notifications__list")).toBeTruthy();
+ expect(container.querySelector(".event-notification-popin")).toBeNull();
+});

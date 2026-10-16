@@ -9,12 +9,16 @@ export function validActionHref(href: string): boolean {
     return /^(https:\/\/\S+|\/(?![/\\]).*)$/i.test(value) && !/\s/.test(value) && !value.includes("{{");
 }
 
-// The first reason an in-app draft cannot be saved; empty when it can.
+export function inAppFieldErrors(draft: ManageInAppTemplateInput) {
+    return {
+        title: !draft.Title.trim() ? t("manage.notifications.validation.title") : "",
+        body: !draft.Body.replace(/<[^>]*>/g, "").trim() ? t("manage.notifications.validation.body") : "",
+        action: draft.Actions.length > 1 ? t("manage.notifications.validation.actions") : draft.Actions.some(action => !action.label.trim() || !validActionHref(action.href)) ? t("manage.notifications.validation.action") : "",
+        popIn: draft.AutoDismissMs !== null && (draft.AutoDismissMs < POP_IN_MIN_SECONDS * 1000 || draft.AutoDismissMs > POP_IN_MAX_SECONDS * 1000) ? t("manage.notifications.validation.popIn", {min: POP_IN_MIN_SECONDS, max: POP_IN_MAX_SECONDS}) : "",
+    };
+}
+
+// Keep the existing save gate and its first-error order.
 export function inAppValidation(draft: ManageInAppTemplateInput): string {
-    if (!draft.Title.trim()) return t("manage.notifications.validation.title");
-    if (!draft.Body.replace(/<[^>]*>/g, "").trim()) return t("manage.notifications.validation.body");
-    if (draft.Actions.length > 1) return t("manage.notifications.validation.actions");
-    if (draft.Actions.some(action => !action.label.trim() || !validActionHref(action.href))) return t("manage.notifications.validation.action");
-    if (draft.AutoDismissMs !== null && (draft.AutoDismissMs < POP_IN_MIN_SECONDS * 1000 || draft.AutoDismissMs > POP_IN_MAX_SECONDS * 1000)) return t("manage.notifications.validation.popIn", {min: POP_IN_MIN_SECONDS, max: POP_IN_MAX_SECONDS});
-    return "";
+    return Object.values(inAppFieldErrors(draft)).find(Boolean) ?? "";
 }

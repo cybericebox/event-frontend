@@ -4972,5 +4972,11 @@
   "siteBanner.moreAnnouncements.one": "{count} more announcement",
   "siteBanner.moreAnnouncements.few": "{count} more announcements",
   "siteBanner.moreAnnouncements.many": "{count} more announcements",
-  "siteBanner.moreAnnouncements.other": "{count} more announcements"
+  "siteBanner.moreAnnouncements.other": "{count} more announcements",
+  "manage.notifications.preview.tabs": "Preview channel",
+  "manage.notifications.preview.email": "Email",
+  "manage.notifications.preview.inbox": "Notification feed",
+  "manage.notifications.preview.toast": "Toast notification",
+  "manage.notifications.preview.expand": "Expand preview",
+  "manage.broadcasts.template.unsupportedNames": "These variables are unavailable in broadcasts and will be empty: {names}."
 }
