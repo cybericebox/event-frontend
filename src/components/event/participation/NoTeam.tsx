@@ -5,6 +5,8 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import {getManageTeamFields} from "@/api/manageTeamFields";
+import {useParticipantPreview, participantPreviewForm} from "../ParticipantPreview";
 import {createEventTeam, getSelfTeamFields, joinEventTeam} from "@/api/eventTeams";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -20,6 +22,7 @@ import {errorText} from "./participationParts";
 
 // No team yet: create one or join with a link or a code.
 export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, createReason = "", joinReason = ""}: {event: PublicEventInfo; rosterOpen: boolean; closedReason: string; linkCode: string; preview: boolean; createReason?: string; joinReason?: string}) {
+    const simulation = useParticipantPreview(event.EventID);
     const queryClient = useQueryClient();
     const [code, setCode] = useSessionDraftState("team-join-code", linkCode);
     const [name, setName] = useSessionDraftState("create-team-name", "");
@@ -27,7 +30,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
     const [createOpen, setCreateOpen] = useSessionDraftState("create-team-open", false, {dirty: () => false});
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
-    const fieldsQuery = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(), enabled: createOpen && !preview, refetchOnWindowFocus: false});
+    const fieldsQuery = useQuery({queryKey: [simulation.active ? "event-management-team-fields" : "event-team-fields", event.EventID], queryFn: () => simulation.active ? getManageTeamFields(event.EventID) : getSelfTeamFields(), select: simulation.active ? participantPreviewForm : undefined, enabled: createOpen && (!preview || simulation.active), refetchOnWindowFocus: false});
     const refresh = () => Promise.all([
         queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]}),
         queryClient.invalidateQueries({queryKey: ["event-participant-info", event.EventID]}),
@@ -35,6 +38,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
     if (!rosterOpen) return <p className="event-part__note">{closedReason || t("participation.noTeam.frozen")}</p>;
     const join = async (submit: FormEvent) => {
         submit.preventDefault();
+        if (simulation.active) { simulation.update({team: {ID: crypto.randomUUID(), Name: t("participantPreview.joinedTeam"), Role: 1, MemberCount: 2, MinTeamSize: simulation.config?.MinTeamSize, MaxTeamSize: simulation.config?.MaxTeamSize, CaptainID: crypto.randomUUID(), JoinCode: "", JoinCodeExpiresAt: null, ExtraFields: {}, Admitted: true, Formed: false}}); return; }
         if (preview) { toast(t("participation.preview.noChanges")); return; }
         setBusy(true);
         setError("");
@@ -50,6 +54,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
     };
     const create = async (submit: FormEvent) => {
         submit.preventDefault();
+        if (simulation.active) { simulation.update({team: {ID: crypto.randomUUID(), Name: name.trim(), Role: 0, CaptainID: simulation.state!.userID, MemberCount: 1, MinTeamSize: simulation.config?.MinTeamSize, MaxTeamSize: simulation.config?.MaxTeamSize, JoinCode: `preview-${crypto.randomUUID()}`, JoinCodeExpiresAt: null, ExtraFields: fields, Admitted: true, Formed: false}}); setName(""); setFields({}); setCreateOpen(false); return; }
         if (preview) { toast(t("participation.preview.noChanges")); return; }
         setBusy(true);
         setError("");
@@ -80,7 +85,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
                 {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fields} onChange={(key, value) => setFields(current => ({...current, [key]: value}))} disabled={busy} />}
                 {fieldsQuery.isError && <EventLoadError compact message={t("participation.noTeam.fieldsFailed")} error={fieldsQuery.error} onRetry={() => void fieldsQuery.refetch()} />}
                 {error && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
-                <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy || (fieldsQuery.isPending && !preview)} busy={busy}>{t("participation.noTeam.createAction")}</EventButton></div>
+                <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy || (fieldsQuery.isPending && (!preview || simulation.active))} busy={busy}>{t("participation.noTeam.createAction")}</EventButton></div>
             </form>
         </DialogModal>
     </>;

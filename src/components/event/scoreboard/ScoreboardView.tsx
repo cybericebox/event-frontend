@@ -6,6 +6,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {getManageResults, getResultsChanges, ResultsUnavailableError} from "@/api/manageResults";
 import {resultsAvailability} from "@/types/resultsAvailability";
 import {useGuestEvent} from "@/components/event/GuestShell";
+import {useParticipantPreview, previewResultsAvailability} from "@/components/event/ParticipantPreview";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -31,12 +32,13 @@ export function ScoreboardView() {
     const participant = useParticipantContext();
     const guestEvent = useGuestEvent();
     const event = participant?.event ?? guestEvent;
+    const preview = useParticipantPreview(event?.EventID);
     const access = useStaffAccess(event?.EventID);
     const base = participant ? resultsAvailability(participant.participantInfo) : event ? resultsAvailability(event) : "hidden";
     const [now, setNow] = useState(() => Date.now());
     const [search, setSearch] = useState("");
     const started = !!event && Date.parse(event.StartTime) <= now;
-    const view = scoreboardAccess(base, access.staff);
+    const view = scoreboardAccess(preview.active ? previewResultsAvailability(base, preview.state!.status, preview.config) : base, !preview.active && access.staff);
     const readable = view.fetch;
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), started ? 30000 : 1000);

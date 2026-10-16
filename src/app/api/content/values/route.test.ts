@@ -39,28 +39,28 @@ afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
 const read=(eventId=event.EventID,page="")=>GET(new Request(`https://${browser.host}/api/content/values?eventId=${eventId}${page ? `&page=${page}`:""}`,{headers:{host:browser.host}}));
 
 it("shares staggered and concurrent public reads for 30 seconds, then refreshes values",async()=>{
-    for(let i=0;i<5;i++)expect(await (await read()).json()).toEqual({Variables:{teams:1}});
+    for(let i=0;i<5;i++)expect(await (await read()).json()).toEqual({Revision:revision,Variables:{teams:1}});
     expect(contentReads).toBe(1);
     count=2;vi.setSystemTime(150_001);
     const readers=await Promise.all(Array.from({length:20},()=>read()));
-    for(const response of readers)expect(await response.json()).toEqual({Variables:{teams:2}});
+    for(const response of readers)expect(await response.json()).toEqual({Revision:revision,Variables:{teams:2}});
     expect(contentReads).toBe(2);
 });
 it("refreshes staff values independently of the five-minute document bundle",async()=>{
     browser.token=staffToken();
     const {getCommonPage}=await import("@/api/commonPage");
     expect((await getCommonPage())?.Variables).toEqual({teams:1});
-    expect(await (await read()).json()).toEqual({Variables:{teams:1}});
+    expect(await (await read()).json()).toEqual({Revision:revision,Variables:{teams:1}});
     count=7;vi.setSystemTime(151_000);
-    expect(await (await read()).json()).toEqual({Variables:{teams:7}});
+    expect(await (await read()).json()).toEqual({Revision:revision,Variables:{teams:7}});
     expect((await getCommonPage())?.Variables).toEqual({teams:1});
 });
 it("uses a new revision immediately and separates page, host and audience values",async()=>{
     await read();count=2;revision="r2";vi.setSystemTime(121_001);
-    expect(await (await read()).json()).toEqual({Variables:{teams:2}});
-    count=3;expect(await (await read(event.EventID,"rules")).json()).toEqual({Variables:{teams:3}});
-    count=4;browser.host="two.example.test";expect(await (await read()).json()).toEqual({Variables:{teams:4}});
-    count=5;browser.token=staffToken();expect(await (await read()).json()).toEqual({Variables:{teams:5}});
+    expect(await (await read()).json()).toEqual({Revision:revision,Variables:{teams:2}});
+    count=3;expect(await (await read(event.EventID,"rules")).json()).toEqual({Revision:revision,Variables:{teams:3}});
+    count=4;browser.host="two.example.test";expect(await (await read()).json()).toEqual({Revision:revision,Variables:{teams:4}});
+    count=5;browser.token=staffToken();expect(await (await read()).json()).toEqual({Revision:revision,Variables:{teams:5}});
     expect(contentReads).toBe(5);
     expect((await read("44444444-4444-4444-8444-444444444444")).status).toBe(404);
     expect(contentReads).toBe(5);
@@ -75,7 +75,7 @@ it.each([404,503])("rejects warm values after expired visibility gate returns %s
 });
 it("does not cache failed value loads",async()=>{
     valueStatus=503;expect((await read()).status).toBe(502);
-    valueStatus=200;expect(await (await read()).json()).toEqual({Variables:{teams:1}});
+    valueStatus=200;expect(await (await read()).json()).toEqual({Revision:revision,Variables:{teams:1}});
     expect(contentReads).toBe(2);
 });
 it.each(["withdrawal","outage","revision","expiry"])("rechecks a slow value fill after %s",async change=>{
@@ -90,6 +90,6 @@ it.each(["withdrawal","outage","revision","expiry"])("rechecks a slow value fill
     if(change==="revision"){revision="r2";count=8;}
     beforeValue=undefined;release();
     if(change==="outage")expect((await pending).status).toBe(502);
-    else if(change==="revision")expect(await (await pending).json()).toEqual({Variables:{teams:8}});
+    else if(change==="revision")expect(await (await pending).json()).toEqual({Revision:revision,Variables:{teams:8}});
     else expect((await pending).status).toBe(404);
 });

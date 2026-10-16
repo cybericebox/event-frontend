@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {EventThemeSchema} from "@/types/eventTheme";
+import {ContentRichTextSchema} from "@/types/eventContent";
 import {ResultsAvailabilitySchema} from "@/types/resultsAvailability";
 
 export const PublicEventInfoSchema = z.object({
@@ -16,6 +17,7 @@ export const PublicEventInfoSchema = z.object({
     CanViewParticipants: z.boolean(),
     PreviewDescription: z.string(),
     PreviewPicture: z.string(),
+    FooterSignature: ContentRichTextSchema.nullish(),
     LogoURL: z.string().default(""),
     FaviconURL: z.string().default(""),
     Theme: EventThemeSchema,

@@ -29,6 +29,7 @@ import {ACCOUNT_MENU_ICON_PROPS, ACCOUNT_MENU_ICONS, ACCOUNT_MENU_LABELS, accoun
 import {openConsentSettings} from "@/utils/consent";
 import {COOKIE_POLICY_HREF} from "@/components/consent/CookieSettingsLink";
 import {t} from "@/i18n/t";
+import {useParticipantPreview} from "./ParticipantPreview";
 import {initials} from "@/utils/initials";
 
 type Props = {
@@ -63,6 +64,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
     const adminTier = !!profile.data && profile.data.Role !== "user";
     // Organizers open the participant pages too, to try them out.
     const {staff} = useStaffAccess(event.EventID);
+    const preview = useParticipantPreview(event.EventID);
     const catalog = useQuery({
         queryKey: ["event-catalog-access"], queryFn: getCatalogAccess,
         enabled: !!profile.data && !adminTier,
@@ -111,7 +113,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
                 if (entry.kind === "divider") return <Fragment key={i}>
                     {/* The event context sits right after the platform links. */}
                     {i === contextAt && <>
-                        {!pinned && (approved || staff) && <Link href="/participation" onClick={() => setOpen(false)}><User {...ACCOUNT_MENU_ICON_PROPS} />{t("account.participation")}</Link>}
+                        {!pinned && (approved || !preview.active && staff) && <Link href="/participation" onClick={() => setOpen(false)}><User {...ACCOUNT_MENU_ICON_PROPS} />{t("account.participation")}</Link>}
                         {theme && <ThemeToggle compact />}
                     </>}
                     <hr className="event-account__sep" />
@@ -170,6 +172,7 @@ export function EventHeaderActions({event, authenticated, approved = false, pinn
 
 export function EventNavbar({event, authenticated, approved = false, canViewResults = false, pending = false}: Props) {
     const path = usePathname();
+    const preview = useParticipantPreview(event.EventID);
     const [open, setOpen] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
     const [visibleCount, setVisibleCount] = useState(Number.POSITIVE_INFINITY);
@@ -194,17 +197,17 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
         retry: false, refetchOnWindowFocus: false,
     });
     const navigationPages = useMemo(() => managedPages.data
-        ? [...managedPages.data].filter(page => page.PublishedAt && page.Navigation !== 0).sort(comparePageOrder)
-        : pages.data ?? [], [managedPages.data, pages.data]);
+        ? [...managedPages.data].filter(page => page.PublishedAt && page.Navigation !== 0 && (!preview.active || page.Visibility === 0 || approved && page.Visibility === 1)).sort(comparePageOrder)
+        : preview.active ? [] : pages.data ?? [], [managedPages.data, pages.data, preview.active, approved]);
     const links = useMemo(() => pending ? [] : [
         ...navigationPages.filter(page => beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         // Managers check tasks on the same board as the hidden moderators team.
-        ...(approved || managementAccess.data?.CanManage ? [{href: "/challenges", label: t("nav.challenges")}] : []),
+        ...(approved || !preview.active && managementAccess.data?.CanManage ? [{href: "/challenges", label: t("nav.challenges")}] : []),
         ...navigationPages.filter(page => page.NavigationOrder < 0 && !beforeChallenges(page.NavigationOrder)).map(page => ({href: `/${page.Slug}`, label: page.Title})),
         // Staff read the results in every phase; the public info is the guest view.
-        ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) || !!managementAccess.data ? [{href: "/scoreboard", label: t("nav.results")}] : []),
+        ...((approved ? canViewResults : resultsLinkVisible(resultsAvailability(event))) || !preview.active && !!managementAccess.data ? [{href: "/scoreboard", label: t("nav.results")}] : []),
         ...navigationPages.filter(page => page.NavigationOrder >= 0).map(page => ({href: `/${page.Slug}`, label: page.Title})),
-    ], [pending, approved, canViewResults, event, navigationPages, managementAccess.data]);
+    ], [pending, approved, canViewResults, event, navigationPages, managementAccess.data, preview.active]);
 
     useLayoutEffect(() => {
         const nav = navRef.current;
@@ -238,7 +241,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     }, [links]);
 
     // The participant's own pages sit on the right; organizers see them to try them out.
-    const participant = approved || !!managementAccess.data;
+    const participant = approved || !preview.active && !!managementAccess.data;
     const overflow = links.slice(visibleCount);
     return <header className={`ib-navbar event-navbar${open ? " is-open" : ""}`} aria-busy={pending || undefined}>
         <div className="ib-navbar__bar">
@@ -254,7 +257,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
             </nav>
             <div className="ib-navbar__actions">
                 {!pending && <>
-                {authenticated && <ManagerEntry eventID={event.EventID} variant="nav" />}
+                {authenticated && !preview.active && <ManagerEntry eventID={event.EventID} variant="nav" />}
                 <EventHeaderActions event={event} authenticated={authenticated} approved={approved} pinned={participant} />
                 </>}
                 {!pending && <button className="ib-navbar__toggle" type="button" aria-expanded={open} aria-controls="event-menu" aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")} onClick={() => setOpen(value => !value)}>{open ? <X size={20} /> : <Menu size={20} />}</button>}
@@ -263,9 +266,9 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
         <nav className="ib-navbar__panel" id="event-menu" aria-label={t("nav.mobile")}>
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
             {authenticated && participant && <>
-                                <Link className="event-navbar__panel-pin" href="/participation" aria-current={path === "/participation" ? "page" : undefined} onClick={() => setOpen(false)}><UserRound aria-hidden="true" />{t("nav.participation")}</Link>
+                                <Link href="/participation" aria-current={path === "/participation" ? "page" : undefined} onClick={() => setOpen(false)}>{t("nav.participation")}</Link>
             </>}
-            {authenticated && <ManagerEntry eventID={event.EventID} variant="panel" />}
+            {authenticated && !preview.active && <ManagerEntry eventID={event.EventID} variant="panel" />}
             {!authenticated && !pending && <a className="event-navbar__panel-signin" href={identityHref("/sign-in", event)}>{t("account.signIn")}</a>}
         </nav>
     </header>;

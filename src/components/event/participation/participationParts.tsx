@@ -34,6 +34,7 @@ export function TeamConfirm({confirm, onClose}: {confirm: Confirm; onClose: () =
 
 // A file answer downloads, a date reads in the viewer's words; the rest is text.
 export function AnswerValue({field, value}: {field: FormField; value: unknown}) {
+    if (isFileAnswer(value) && value.id.startsWith("preview-")) return <span>{value.name}</span>;
     if (isFileAnswer(value)) return <a className="ib-link" href={selfAnswerFileUrl(value.id)} download>{value.name}</a>;
     if (field.input === "date" && typeof value === "string" && value) return <>{formatDateAnswer(dateModeOf(field), value)}</>;
     return <>{formatAnswer(value)}</>;

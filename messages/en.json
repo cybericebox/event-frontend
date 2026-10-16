@@ -1,4 +1,8 @@
 {
+  "manage.appearance.footerTitle": "Website footer signature",
+  "manage.appearance.footerHelp": "Text and links for this event’s footer. Leave it empty to use the platform credit. Cookie settings and feedback stay available.",
+  "manage.appearance.footerLabel": "Website signature",
+  "manage.appearance.footerPreview": "Website signature preview",
   "challenges.lab.environment": "Environment",
   "challenges.lab.closed.solved": "All tasks in this environment are complete. The environment is closed.",
   "challenges.lab.closed.manual": "The environment is stopped. Task progress is saved.",
@@ -4899,5 +4903,16 @@
   "theme.menuLabel": "Theme",
   "theme.current.light": "Light",
   "theme.current.dark": "Dark",
-  "theme.current.system": "System"
+  "theme.current.system": "System",
+  "participantPreview.title": "Participant test mode",
+  "participantPreview.description": "Registration and team changes stay in this browser. Task attempts are recorded for the hidden moderators team.",
+  "participantPreview.enter": "Test as a participant",
+  "participantPreview.exit": "Exit test mode",
+  "participantPreview.reset": "Restart participant flow",
+  "participantPreview.teamCreated": "Your team is ready.",
+  "participantPreview.joinedTeam": "Test team",
+  "participantPreview.you": "You",
+  "participantPreview.member": "Test participant {number}",
+  "participantPreview.addMember": "Add test participant",
+  "participantPreview.options": "Test mode options"
 }

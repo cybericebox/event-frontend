@@ -2,7 +2,7 @@ import {attemptLimit} from "@/api/attemptLimit";
 import {z} from "zod";
 import {readApiError, readRetryAfter} from "@/api/apiErrors";
 import {EventThemeSchema} from "@/types/eventTheme";
-import {ContentDocumentSchema, ContentValueSchema, type ContentDocument} from "@/types/eventContent";
+import {ContentDocumentSchema, ContentValueSchema, ContentRichTextSchema, type ContentDocument} from "@/types/eventContent";
 import {ContentVariableCatalogSchema} from "@/components/event/content/variableCatalog";
 import {requireApiOrigin} from "@/utils/origins";
 
@@ -25,6 +25,7 @@ export const ManageConfigSchema = z.object({
     ParticipantsVisibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),
     PreviewDescription: z.string(),
     PreviewPicture: z.string(),
+    FooterSignature: ContentRichTextSchema.nullish(),
     MaxTeamSize: z.number().int().positive(),
     MinTeamSize: optionalLimit,
     MaxTeams: optionalLimit,
@@ -53,7 +54,7 @@ export const ManageConfigSchema = z.object({
 export type ManageConfig = z.infer<typeof ManageConfigSchema>;
 type CountdownKey = "ShowStartCountdown" | "ShowFinishCountdown" | "FinishCountdownMinutes" | "FinishCountdownMode";
 // The countdown fields are optional: a PUT without them keeps the saved values.
-export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt" | "InfrastructureAllowed" | "LabPolicy" | CountdownKey> & Partial<Pick<ManageConfig, CountdownKey>> & {LabPolicy?: LabPolicy};
+export type ManageConfigInput = Omit<ManageConfig, "EventID" | "Theme" | "UpdatedAt" | "InfrastructureAllowed" | "LabPolicy" | "FooterSignature" | CountdownKey> & Partial<Pick<ManageConfig, CountdownKey>> & {LabPolicy?: LabPolicy};
 
 // Every config PUT sends the full input so no setting is silently reset.
 export function manageConfigInput(config: ManageConfig): ManageConfigInput {
@@ -70,7 +71,7 @@ export function manageConfigInput(config: ManageConfig): ManageConfigInput {
 export type ManageThemeInput = Pick<ManageConfig["Theme"], "Brand" | "Accent">;
 export type BrandAssetChange = {Action: "keep" | "remove" | "replace"; FileID?: string};
 export type ManageGeneralInput = {Name: string; Description: string; Preview: BrandAssetChange};
-export type ManageAppearanceInput = ManageThemeInput & {Logo: BrandAssetChange; Favicon: BrandAssetChange};
+export type ManageAppearanceInput = ManageThemeInput & {FooterSignature?: ManageConfig["FooterSignature"]; Logo: BrandAssetChange; Favicon: BrandAssetChange};
 
 export const ManageLifecycleSchema = z.object({
     Configured: z.boolean(),

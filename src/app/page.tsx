@@ -17,8 +17,8 @@ export default async function LandingPage() {
     const content = await getLandingContent();
     if (!content) notFound();
 
-    const revision = (await getCommonPage())!.Revision;
+    const bundle = (await getCommonPage())!;
     return <div className="event-landing ib-blocks">
-        <LiveContentBlocks revision={revision} eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} title={event.Name} coverImage={event.PreviewPicture} />
+        <LiveContentBlocks imageDimensions={bundle.Images} revision={bundle.Revision} eventID={event.EventID} document={content.Landing} initialVariables={content.Variables} title={event.Name} coverImage={event.PreviewPicture} />
     </div>;
 }

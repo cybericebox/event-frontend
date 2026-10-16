@@ -2,6 +2,8 @@
 
 import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
 
+import {useParticipantPreview, participantPreviewForm} from "../ParticipantPreview";
+import {getManageTeamFields} from "@/api/manageTeamFields";
 import {useNow} from "./useNow";
 import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -102,10 +104,11 @@ export function moderatorsTeam(stats: ParticipationStats): OwnTeam {
 function TeamSection({event, info, team, participation, rosterOpen, finished, preview, now}: {
     event: PublicEventInfo; info: ParticipantEventInfo | null; team: OwnTeam; participation: Participation | null; rosterOpen: boolean; finished: boolean; preview: boolean; now: number;
 }) {
+    const simulation = useParticipantPreview(event.EventID);
     const queryClient = useQueryClient();
     const accent = useEventAccent();
     const members = useQuery({queryKey: ["event-team-members", event.EventID, team.ID], queryFn: () => getOwnTeamMembers(event.EventID), enabled: !preview, retry: false, refetchOnWindowFocus: false});
-    const fieldsForm = useQuery({queryKey: ["event-team-fields", event.EventID], queryFn: () => getSelfTeamFields(), enabled: !preview, refetchOnWindowFocus: false});
+    const fieldsForm = useQuery({queryKey: [simulation.active ? "event-management-team-fields" : "event-team-fields", event.EventID], queryFn: () => simulation.active ? getManageTeamFields(event.EventID) : getSelfTeamFields(), select: simulation.active ? participantPreviewForm : undefined, enabled: !preview || simulation.active, refetchOnWindowFocus: false});
     const stats = useParticipationStats(event.EventID, {preview, enabled: true});
     const [confirm, setConfirm] = useState<Confirm>(null);
     const captain = team.Role === TeamRole.Captain;
@@ -120,11 +123,17 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     const manageReason = reasonText(participation?.ManageTeam?.Reason ?? "");
     const disbandReason = reasonText(participation?.DisbandTeam?.Reason ?? "");
     const leaveReason = reasonText(participation?.LeaveTeam?.Reason ?? "");
-    const roster: TeamMember[] | undefined = preview ? (stats.stats ? moderatorsRoster(stats.stats) : undefined) : members.data;
+    const roster: TeamMember[] | undefined = simulation.active ? [
+        {UserID: simulation.state!.userID, DisplayName: t("participantPreview.you"), Role: team.Role, Own: true, Pending: false},
+        ...Array.from({length: Math.max(0, team.MemberCount - 1)}, (_, index) => ({
+            UserID: index === 0 && team.Role !== TeamRole.Captain ? team.CaptainID! : `ffffffff-ffff-4fff-8fff-${String(index + 1).padStart(12, "0")}`,
+            DisplayName: t("participantPreview.member", {number: index + 1}), Role: index === 0 && team.Role !== TeamRole.Captain ? TeamRole.Captain : TeamRole.Member, Own: false, Pending: false,
+        })),
+    ] : preview ? (stats.stats ? moderatorsRoster(stats.stats) : undefined) : members.data;
     // Roles are reported as owner / other; only the owner is named.
-    const roleLabels = preview && stats.stats ? new Map(stats.stats.Team.Members.filter(item => item.Role === 0).map(item => [item.UserID, eventRoleLabel(0)])) : undefined;
-    const teamFieldForm = preview ? undefined : fieldsForm.data;
-    const own = !preview && roster?.find(member => member.Own);
+    const roleLabels = preview && !simulation.active && stats.stats ? new Map(stats.stats.Team.Members.filter(item => item.Role === 0).map(item => [item.UserID, eventRoleLabel(0)])) : undefined;
+    const teamFieldForm = preview && !simulation.active ? undefined : fieldsForm.data;
+    const own = (!preview || simulation.active) && roster?.find(member => member.Own);
     const captainName = roster?.find(member => member.Role === TeamRole.Captain)?.DisplayName ?? "";
     const refresh = () => Promise.all([
         queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]}),
@@ -133,10 +142,10 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     ]);
     // inline: a confirmation shows the failure itself, so it gets the text instead of a toast.
     const run = (action: () => Promise<void>, done: string, fallback: string, inline = false) => async () => {
-        if (preview) { toast(t("participation.preview.noChanges")); return; }
+        if (preview && !simulation.active) { toast(t("participation.preview.noChanges")); return; }
         try {
             await action();
-            await refresh();
+            if (!simulation.active) await refresh();
             toast.success(done);
         } catch (error) {
             if (inline) throw new Error(errorText(error, fallback), {cause: error});
@@ -144,9 +153,9 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
             throw error;
         }
     };
-    const memberActions = (member: TeamMember) => !preview && captain && manage && !member.Own && !member.Pending && <>
-        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" aria-label={t("participation.team.makeCaptainFor", {name: member.DisplayName})} onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
-        {remove && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" aria-label={t("participation.team.kickFor", {name: member.DisplayName})} onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>}
+    const memberActions = (member: TeamMember) => (!preview || simulation.active) && captain && manage && !member.Own && !member.Pending && <>
+        <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" aria-label={t("participation.team.makeCaptainFor", {name: member.DisplayName})} onClick={() => setConfirm({title: t("participation.team.transferTitle"), text: t("participation.team.transferText", {name: member.DisplayName}), action: t("participation.team.transferAction"), run: run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, Role: 1, CaptainID: member.UserID}})) : transferEventTeamCaptain(event.EventID, team.ID, member.UserID), t("participation.team.transferred"), t("participation.team.transferFailed"), true)})}>{t("participation.team.makeCaptain")}</button>
+        {remove && <button type="button" className="ib-btn ib-btn--sm ib-btn--ghost" aria-label={t("participation.team.kickFor", {name: member.DisplayName})} onClick={() => setConfirm({title: t("participation.team.kickTitle"), text: t("participation.team.kickText", {name: member.DisplayName}), action: t("participation.team.kickAction"), danger: true, run: run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, MemberCount: Math.max(1, team.MemberCount - 1)}})) : kickEventTeamMember(event.EventID, team.ID, member.UserID), t("participation.team.kicked"), t("participation.team.kickFailed"), true)})}>{t("participation.team.kickAction")}</button>}
     </>;
     const min = team.MinTeamSize ?? info?.MinTeamSize;
     const max = team.MaxTeamSize ?? info?.MaxTeamSize;
@@ -162,14 +171,15 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         attempts: data?.Team.Attempts ?? 0, correct: data?.Team.CorrectAttempts ?? 0, scope: "team",
     }).map(tile => data ? tile : {...tile, value: "—", note: undefined});
     return <div className="event-pp">
-        <TeamHeader info={info} team={team} rosterOpen={manage} captain={captain} captainName={captainName} stats={data ? {rank: data.Rank, points: data.Points} : null} preview={preview}
-            onRename={name => run(() => renameEventTeam(event.EventID, team.ID, name), t("participation.team.renamed"), t("participation.team.renameFailed"))()} />
+        <TeamHeader info={info} team={team} rosterOpen={manage} captain={captain} captainName={captainName} stats={data ? {rank: data.Rank, points: data.Points} : null} preview={preview && !simulation.active}
+            onRename={name => run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, Name: name}})) : renameEventTeam(event.EventID, team.ID, name), t("participation.team.renamed"), t("participation.team.renameFailed"))()} />
+        {simulation.active && captain && manage && team.MemberCount < (team.MaxTeamSize ?? Number.POSITIVE_INFINITY) && <div className="event-part__actions"><button type="button" className="ib-btn" onClick={() => simulation.update({team: {...team, MemberCount: team.MemberCount + 1}})}>{t("participantPreview.addMember")}</button></div>}
         <StatTiles label={t("participation.stats.teamTitle")} tiles={tiles} />
         <MembersCard event={event} roster={roster} error={members.error} onRetry={() => void members.refetch()} stats={data?.Team.Members ?? []} actions={memberActions} rosterLine={rosterLine(team.MemberCount, max, min)} roleLabels={roleLabels} />
-        {!preview && <FormationCard team={team} captain={captain} formed={formed} form={formCap}
-            onForm={() => setConfirm({title: t("participation.team.formTitle"), text: t("participation.team.formText"), action: t("participation.team.formAction"), run: run(() => formEventTeam(event.EventID), t("participation.team.formed"), t("participation.team.formFailed"), true)})} />}
-        {!preview && <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage} preview={false} now={now}
-            onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />}
+        {(!preview || simulation.active) && <FormationCard team={team} captain={captain} formed={formed} form={formCap}
+            onForm={() => setConfirm({title: t("participation.team.formTitle"), text: t("participation.team.formText"), action: t("participation.team.formAction"), run: run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, Formed: true, FormedAt: new Date().toISOString()}})) : formEventTeam(event.EventID), t("participation.team.formed"), t("participation.team.formFailed"), true)})} />}
+        {(!preview || simulation.active) && <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage} preview={false} now={now}
+            onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, JoinCode: `preview-${crypto.randomUUID()}`}})) : regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />}
         <div className="event-pp-charts">
             <PointsChartCard event={event} title={t("participation.chart.points.teamTitle")} state={teamState} error={stats.error} onRetry={stats.retry} window={window}
                 series={[{name: t("participation.chart.points.team"), points: teamSeries, color: accent}, ...(mineSeries.length ? [{name: t("participation.chart.points.mine"), points: mineSeries, color: "var(--ib-faint)", dashed: true}] : [])]} />
@@ -182,12 +192,12 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         {teamFieldForm?.Enabled && <AnswersCard scope="team" title={t("participation.team.fieldsTitle")} note={t("participation.team.fieldsNote")} form={teamFieldForm} answers={team.ExtraFields as ParticipantAnswers}
             missing={team.MissingFields ?? []} canEdit={captain && (participation?.EditAnswers?.Allowed ?? !finished)} whyReadOnly={finished ? t("participation.form.finished") : t("participation.team.fieldsCaptainOnly")}
             onSave={async draft => {
-                await run(() => updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft, team.MissingFields ?? [])).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"), true)();
+                await run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, ExtraFields: draft}})) : updateOwnTeamFields(event.EventID, team.ID, changedEditableAnswers(teamFieldForm, team.ExtraFields as ParticipantAnswers, draft, team.MissingFields ?? [])).then(() => undefined), t("participation.team.fieldsSaved"), t("participation.team.fieldsSaveFailed"), true)();
             }} />}
         {own && <section className="event-pp-card event-pp-danger" aria-label={captain ? t("participation.team.disband") : t("participation.team.leave")}>
             <p>{captain ? (disband ? t("participation.team.disbandNote") : (manage ? disbandReason : manageReason) || t("participation.team.disbandNote")) : formed ? t("participation.team.leaveEventNote") : (leave ? t("participation.team.leaveNote") : leaveReason || t("participation.team.leaveNote"))}</p>
-            {captain && disband && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"), true)})}>{t("participation.team.disband")}</button>}
-            {!captain && leave && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t(formed ? "participation.team.leaveEventTitle" : "participation.team.leaveTitle"), text: t(formed ? "participation.team.leaveEventText" : "participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"), true)})}>{t(formed ? "participation.team.leaveEvent" : "participation.team.leave")}</button>}
+            {captain && disband && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t("participation.team.disbandTitle"), text: t("participation.team.disbandText"), action: t("participation.team.disbandAction"), danger: true, run: run(() => simulation.active ? Promise.resolve(simulation.update({team: null})) : disbandEventTeam(event.EventID, team.ID), t("participation.team.disbanded"), t("participation.team.disbandFailed"), true)})}>{t("participation.team.disband")}</button>}
+            {!captain && leave && <button type="button" className="ib-btn ib-btn--danger" onClick={() => setConfirm({title: t(formed ? "participation.team.leaveEventTitle" : "participation.team.leaveTitle"), text: t(formed ? "participation.team.leaveEventText" : "participation.team.leaveText"), action: t("participation.team.leaveAction"), danger: true, run: run(() => simulation.active ? Promise.resolve(simulation.update({team: null})) : leaveEventTeam(event.EventID), t("participation.team.left"), t("participation.team.leaveFailed"), true)})}>{t(formed ? "participation.team.leaveEvent" : "participation.team.leave")}</button>}
         </section>}
         <TeamConfirm confirm={confirm} onClose={() => setConfirm(null)} />
     </div>;
@@ -215,11 +225,20 @@ export function TeamTab() {
     const staff = useStaffAccess(guest?.EventID);
     const linkCode = useLinkCode();
     const event = access?.event ?? guest;
-    const registration = useParticipation(event?.EventID, !!event);
+    const simulation = useParticipantPreview(event?.EventID);
+    const registration = useParticipation(event?.EventID, !!event && !simulation.active);
     const now = useNow();
     const previewing = !access && staff.staff;
     const previewStats = useParticipationStats(event?.EventID, {preview: previewing, enabled: previewing});
     if (!event) return <EventLoading label={t("participation.loading")} />;
+    if (simulation.active) {
+        const team = simulation.state!.team;
+        const allowed = {Allowed: true, Reason: ""};
+        const roster = {Allowed: !team?.Formed, Reason: team?.Formed ? "team_formed" : ""};
+        const simulatedParticipation = {RosterOpen: !team?.Formed, TeamFormed: !!team?.Formed, ManageTeam: roster, LeaveTeam: allowed, DisbandTeam: roster, RemoveMember: roster, EditAnswers: allowed, FormTeam: {Allowed: !team?.Formed && team?.Admitted !== false, Reason: team?.Admitted === false ? "below_minimum" : ""}} as Participation;
+        return team ? <TeamSection event={event} info={null} team={team} participation={simulatedParticipation} rosterOpen={!team.Formed} finished={false} preview now={now} />
+            : <div className="event-pp"><NoTeam event={event} rosterOpen closedReason="" linkCode={linkCode} preview /></div>;
+    }
     if (registration.isPending) return <EventLoading event={event} label={t("participation.loading")} />;
     if (registration.isError) return <EventLoadError message={t("participation.team.loadFailed")} error={registration.error} onRetry={() => void registration.refetch()} />;
     const participation = registration.data ?? null;
