@@ -17,17 +17,20 @@ const liveVariableNames = new Set([
     "event.challengeCount", "event.availableChallengeCount", "event.solvedChallengeCount", "event.solveCount", "event.registrationUnitCount",
 ]);
 
-export function LiveContentBlocks({eventID, document, initialVariables, coverImage, title, page, revision, imageDimensions}: {
+export function LiveContentBlocks({eventID, document, initialVariables, initialNow, coverImage, title, page, revision, imageDimensions}: {
     eventID: string;
     document: ContentDocument;
     initialVariables: Record<string, ContentValue>;
+    initialNow: number;
     coverImage?: string;
     title?: string;
     page?: string;
     revision?: string;
     imageDimensions?: ContentImageDimensions;
 }) {
-    const [now, setNow] = useState(() => Date.now());
+    // The server serializes this clock with the admitted document. Hydration
+    // starts from the same instant, even when a lifecycle boundary just passed.
+    const [now, setNow] = useState(initialNow);
     const serializedDocument = JSON.stringify(document);
     const hasLiveValues = [...liveVariableNames].some(name => serializedDocument.includes(name));
     const values = useQuery({
@@ -51,6 +54,10 @@ export function LiveContentBlocks({eventID, document, initialVariables, coverIma
     });
 
     useEffect(() => {
+        const frame = requestAnimationFrame(() => setNow(Date.now()));
+        return () => cancelAnimationFrame(frame);
+    }, []);
+    useEffect(() => {
         const next = nextContentRefreshAt(initialVariables, Date.now());
         if (next === null) return;
         let timer: number | undefined;
@@ -66,6 +73,6 @@ export function LiveContentBlocks({eventID, document, initialVariables, coverIma
         return () => { if (timer !== undefined) window.clearTimeout(timer); };
     }, [initialVariables, now]);
     // A failed refresh keeps the last good values: one missed poll must not hide «Приєднатися».
-    const currentValues = applyLifecycleBoundaries({...initialVariables, ...values.data}, now);
-    return <ContentBlocks imageDimensions={imageDimensions} document={document} variables={currentValues} coverImage={coverImage} title={title} eventID={eventID} />;
+    const currentValues = applyLifecycleBoundaries({...initialVariables, ...values.data}, Math.max(initialNow, now));
+    return <ContentBlocks initialNow={initialNow} imageDimensions={imageDimensions} document={document} variables={currentValues} coverImage={coverImage} title={title} eventID={eventID} />;
 }
