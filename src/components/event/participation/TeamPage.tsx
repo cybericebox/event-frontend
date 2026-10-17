@@ -10,6 +10,7 @@ import {useNow} from "./useNow";
 import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {getCurrentUser, type OwnTeam, type Participation} from "@/api/clientAuth";
 import {
     disbandEventTeam, formEventTeam, getOwnTeamMembers, getSelfTeamFields, kickEventTeamMember, leaveEventTeam, regenerateEventTeamCode, renameEventTeam,
@@ -160,7 +161,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         } catch (error) {
             if (inline) throw new Error(errorText(error, fallback), {cause: error});
             const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
-            if (!(done === t("participation.team.renamed") && (code === ApiErrorCode.TeamNameInvalid || code === ApiErrorCode.TeamExists || code === ApiErrorCode.NameInvalidCharacters))) toast.error(errorText(error, fallback));
+            if (!(done === t("participation.team.renamed") && (code === ApiErrorCode.TeamNameInvalid || code === ApiErrorCode.TeamExists || code === ApiErrorCode.NameInvalidCharacters))) toastFailure(error, errorText(error, fallback));
             throw error;
         }
     };

@@ -7,6 +7,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight} from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {discardManageLandingDraft, getManageContent, getManageContentVariables, ManageApiError, publishManageLanding, putManageLanding} from "@/api/manage";
 import {BlockStackEditor} from "@/components/event/manage/BlockStackEditor";
 import {DraftBar} from "@/components/event/manage/DraftBar";
@@ -46,7 +47,7 @@ export default function ManageLandingPage() {
 
     function failure(error: unknown, fallbackKey: string) {
         const status = error instanceof ManageApiError ? error.status : 0;
-        toast.error(status === 403 ? t("manage.content.landing.forbidden") : status === 400 ? t("manage.content.landing.rejected") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+        toastFailure(error, status === 403 ? t("manage.content.landing.forbidden") : status === 400 ? t("manage.content.landing.rejected") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
     }
 
     async function saveDraft(): Promise<boolean> {

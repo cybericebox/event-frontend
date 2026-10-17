@@ -3,6 +3,7 @@
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {Copy, Link2, Power, RefreshCw} from "lucide-react";
 import {getLiveScreenLink, issueLiveScreenLink, liveScreenExpiries, liveScreenURL, regenerateLiveScreenLink, revokeLiveScreenLink, type LiveScreenExpiry, type LiveScreenLink} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -41,14 +42,14 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
             setFresh(issued?.Token ? issued : null);
             queryClient.setQueryData(queryKey, issued ? {...issued, Token: undefined} : null);
             toast.success(success);
-        } catch {toast.error(t("manage.live.links.error"));}
+        } catch (failure) {toastFailure(failure, t("manage.live.links.error"));}
         finally {setBusy(null); setConfirm(null);}
     }
     async function copy(url: string) {
         try {
             await navigator.clipboard.writeText(url);
             toast.success(t("manage.live.links.copied"));
-        } catch {toast.error(t("manage.live.links.copyError"));}
+        } catch (failure) {toastFailure(failure, t("manage.live.links.copyError"));}
     }
     const close = () => {setFresh(null); onClose();};
     const freshURL = fresh?.Token ? liveScreenURL(window.location.origin, fresh.Token) : "";

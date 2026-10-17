@@ -6,6 +6,7 @@ import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {getManageConfig, getManageName, ManageApiError, putManageGeneral} from "@/api/manage";
 import {BrandDraftField, useBrandDraft} from "@/components/event/manage/BrandDraftField";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -46,7 +47,7 @@ export default function ManageGeneralPage() {
             setNameEdit(current => current?.value === name ? null : current); setDescriptionEdit(current => current?.value === description ? null : current); preview.saved(result.Config.PreviewPicture);
             toast.success(t("manage.settings.saved"));
         } catch (error) {
-            toast.error(error instanceof ManageApiError && error.status === 409 ? t("manage.settings.conflict") : t("manage.settings.saveError"));
+            toastFailure(error, error instanceof ManageApiError && error.status === 409 ? t("manage.settings.conflict") : t("manage.settings.saveError"));
         } finally {setSaving(false);}
     }
 

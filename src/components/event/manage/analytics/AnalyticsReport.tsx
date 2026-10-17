@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {Download, Printer} from "lucide-react";
 import {downloadManageFile} from "@/api/csvDownload";
 import {getAnalyticsReport, REPORT_BUNDLE_PATH, reportFileName, type AnalyticsReport as Report, type ReportRank, type ReportTask} from "@/api/manageAnalyticsReport";
@@ -109,7 +109,7 @@ export function AnalyticsReport() {
     async function download() {
         setDownloading(true);
         try {await downloadManageFile(eventID, REPORT_BUNDLE_PATH, reportFileName(), "application/zip");}
-        catch {toast.error(t("manage.analytics.exportFailed"));}
+        catch (failure) {toastFailure(failure, t("manage.analytics.exportFailed"));}
         finally {setDownloading(false);}
     }
 

@@ -2,6 +2,7 @@
 
 import {useState} from "react";
 import toast from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {Copy} from "lucide-react";
 import type {OwnTeam, Participation} from "@/api/clientAuth";
 import {joinLinkExpiries, type JoinLinkExpiry} from "@/api/eventTeams";
@@ -51,7 +52,7 @@ export function InviteCard({team, captain, captainName, participation, rosterOpe
         try {
             await navigator.clipboard.writeText(link);
             toast.success(t("participation.team.link.copied"));
-        } catch { toast.error(t("participation.team.link.copyFailed")); }
+        } catch (failure) { toastFailure(failure, t("participation.team.link.copyFailed")); }
     };
     return <Card title={t("participation.invite.title")}>
         <div className="event-pp-invite">

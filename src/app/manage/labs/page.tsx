@@ -8,6 +8,8 @@ import {Fragment, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {AlertTriangle, ChevronDown, Download, Layers, ListChecks, RotateCcw} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
+import {isOverloadError} from "@/api/retry";
 import {
     TEARDOWN_DELAY_RANGE, getManageLabs, getModeratorChallengeLab, getModeratorChallenges, getModeratorVPNConfig,
     isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage,
@@ -65,7 +67,7 @@ function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: Man
             queryClient.setQueryData(["event-management-labs", eventID], await putManageLabsSettings(eventID, {TeardownDelayMinutes: delay}));
             setEdit(current => current?.delay === delay ? null : current);
             toast.success(t("manage.labs.schedule.saved"));
-        } catch (failure) {toast.error(standErrorMessage(failure, t("manage.labs.schedule.saveFailed")));}
+        } catch (failure) {toastFailure(failure, standErrorMessage(failure, t("manage.labs.schedule.saveFailed")));}
         finally {setSaving(false);}
     }
 
@@ -115,7 +117,7 @@ export default function ManageLabsPage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const queryClient = useQueryClient();
-    const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), refetchInterval: 15_000, refetchOnWindowFocus: false, retry: (count, failure) => !isInfrastructureNotAllowed(failure) && count < 2});
+    const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), refetchInterval: 15_000, refetchOnWindowFocus: false, retry: (count, failure) => !isOverloadError(failure) && !isInfrastructureNotAllowed(failure) && count < 2});
     const [expanded, setExpanded] = useState<string | null>(null);
     const [confirm, setConfirm] = useState<ManageStand | null>(null);
     const [confirmError, setConfirmError] = useState("");
@@ -142,7 +144,7 @@ export default function ManageLabsPage() {
         if (vpnBusy) return;
         setVpnBusy(true);
         try {downloadConfig(await getModeratorVPNConfig(eventID), event.Tag);}
-        catch (failure) {toast.error(standErrorMessage(failure, t("manage.labs.vpnFailed")));}
+        catch (failure) {toastFailure(failure, standErrorMessage(failure, t("manage.labs.vpnFailed")));}
         finally {setVpnBusy(false);}
     }
 

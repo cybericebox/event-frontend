@@ -4,7 +4,7 @@ import {useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode} from "
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowDown, ArrowUp, Columns3, GripVertical} from "lucide-react";
-import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {getManageListColumns, putManageListColumns, type ListColumns, type ManagedList} from "@/api/manageListColumns";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {Sortable, useSortableItem} from "@/components/ui/Sortable";
@@ -27,9 +27,9 @@ export function useTableColumns(eventID: string, list: ManagedList, definitions:
         queryClient.setQueryData<ListColumns>(queryKey, {List: list, Columns: saved});
         try {
             queryClient.setQueryData(queryKey, await putManageListColumns(eventID, list, saved));
-        } catch {
+        } catch (failure) {
             queryClient.setQueryData(queryKey, previous);
-            toast.error(t("manage.table.columns.saveFailed"));
+            toastFailure(failure, t("manage.table.columns.saveFailed"));
         }
     }
 

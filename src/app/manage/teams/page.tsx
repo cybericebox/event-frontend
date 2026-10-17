@@ -7,6 +7,7 @@ import {Fragment, useState} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Eye, EyeOff, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorText} from "@/api/apiErrors";
 import {HiddenMark} from "@/components/event/manage/HiddenMark";
 import {getModeratorsTeam} from "@/api/moderatorsBoard";
@@ -170,7 +171,7 @@ export default function ManageTeamsPage() {
             setEditing(current => sameValue(current, submitted) ? null : current);
             await refresh();
             toast.success(t("manage.teams.updated"));
-        } catch (error) {toast.error(failure(error, t("manage.teams.saveFailed")));}
+        } catch (error) {toastFailure(error, failure(error, t("manage.teams.saveFailed")));}
         finally {setSavingTeamID(null); setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
@@ -231,7 +232,7 @@ export default function ManageTeamsPage() {
             toast.success(action === "add" ? t("manage.teams.memberAdded") : t("manage.teams.memberRemoved"));
         } catch (error) {
             if (action === "remove") setConfirmError(failure(error, t("manage.teams.memberFailed")));
-            else toast.error(failure(error, t("manage.teams.memberFailed")));
+            else toastFailure(error, failure(error, t("manage.teams.memberFailed")));
         }
         finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
@@ -255,7 +256,7 @@ export default function ManageTeamsPage() {
             await setManageTeamHidden(eventID, team.ID, !team.Hidden);
             await refresh();
             toast.success(team.Hidden ? t("manage.teams.shown") : t("manage.teams.hiddenDone"));
-        } catch (error) {toast.error(failure(error, t("manage.teams.hiddenFailed")));}
+        } catch (error) {toastFailure(error, failure(error, t("manage.teams.hiddenFailed")));}
         finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
@@ -266,7 +267,7 @@ export default function ManageTeamsPage() {
             await setManageTeamAdmission(eventID, team.ID, admitted);
             await refresh();
             toast.success(admitted ? t("manage.teams.admittedManually") : t("manage.teams.admissionCancelled"));
-        } catch (error) {toast.error(failure(error, t("manage.teams.admissionFailed")));}
+        } catch (error) {toastFailure(error, failure(error, t("manage.teams.admissionFailed")));}
         finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 

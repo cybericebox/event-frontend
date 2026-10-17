@@ -3,6 +3,7 @@
 import {useRef} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {putManageNotificationSubscription, type ManageNotificationSubscription} from "@/api/manageNotifications";
 
 // The on/off switch of sending a signal. It flips at once in the cache; the
@@ -32,10 +33,10 @@ export function useSubscriptionToggle(eventID: string, canManage: boolean, messa
                 // Apply the answer only when no newer change waits and it differs from what is shown.
                 if (pending.current === 0 && shown && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData<ManageNotificationSubscription[]>(key, current => patch(current, saved));
                 toast.success(messages.success);
-            } catch {
+            } catch (caught) {
                 pending.current -= 1;
                 if (pending.current === 0) await queryClient.invalidateQueries({queryKey: key});
-                toast.error(messages.failure);
+                toastFailure(caught, messages.failure);
             }
         });
     };

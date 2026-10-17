@@ -6,6 +6,7 @@ import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {AlertTriangle} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, manageConfigInput, type ManageConfigInput} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
@@ -43,7 +44,7 @@ export default function ParticipationSettingsPage() {
             queryClient.setQueryData<typeof event>(["event-manager-public-info"], current => current ? {...current, Participation: updated.Participation} : current);
             setEdit(current => current?.value === config ? null : current);
             toast.success(t("manage.participation.saved"));
-        } catch (failure) {toast.error(failure instanceof ManageApiError && failure.status === 409 ? t("manage.participation.locked") : t("manage.participation.saveFailed"));}
+        } catch (failure) {toastFailure(failure, failure instanceof ManageApiError && failure.status === 409 ? t("manage.participation.locked") : t("manage.participation.saveFailed"));}
         finally {setSaving(false);}
     }
 

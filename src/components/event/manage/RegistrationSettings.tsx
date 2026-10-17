@@ -6,6 +6,7 @@ import {useState, type FormEvent} from "react";
 import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, putManageLifecycle, manageConfigInput} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
@@ -64,7 +65,7 @@ export function RegistrationSettings() {
             toast.success(t("manage.registration.saved"));
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
-            toast.error(status === 409 ? t("manage.settingsConflict") : t("manage.registration.saveFailed"));
+            toastFailure(failure, status === 409 ? t("manage.settingsConflict") : t("manage.registration.saveFailed"));
         } finally {setSaving(false);}
     }
 

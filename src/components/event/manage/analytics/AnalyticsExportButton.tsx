@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {Download} from "lucide-react";
 import {analyticsExportPath, type AnalyticsPeriod} from "@/api/manageAnalytics";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
@@ -15,7 +15,7 @@ export function AnalyticsExportButton({eventID, section, period, disabled = fals
     async function download() {
         setBusy(true);
         try {await downloadManageCSV(eventID, analyticsExportPath(section, period), csvFileName(`analytics-${section}`));}
-        catch {toast.error(t("manage.analytics.exportFailed"));}
+        catch (failure) {toastFailure(failure, t("manage.analytics.exportFailed"));}
         finally {setBusy(false);}
     }
     return <EventButton className="ib-btn" type="button" disabled={disabled || busy} busy={busy} onClick={() => void download()}><Download size={16} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;

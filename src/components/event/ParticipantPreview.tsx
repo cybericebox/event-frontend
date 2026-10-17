@@ -2,7 +2,7 @@
 
 import {createContext, useContext, useMemo, useSyncExternalStore, useRef, useState, type ReactNode} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {resetPreviewRuns} from "@/api/participantPreview";
 import {BusyMark} from "@/components/ui/EventButton";
 import {usePathname, useRouter} from "next/navigation";
@@ -92,7 +92,7 @@ export function ParticipantPreviewProvider({children}: {children: ReactNode}) {
             persist({...current, status: 0, answers: {}, team: null});
             router.push("/");
             return true;
-        } catch {toast.error(t("participantPreview.resetFailed")); return false;}
+        } catch (failure) {toastFailure(failure, t("participantPreview.resetFailed")); return false;}
         finally {setResetting(false);}
     };
     return <PreviewContext.Provider value={{state, config: config.data ?? null, resetting, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {

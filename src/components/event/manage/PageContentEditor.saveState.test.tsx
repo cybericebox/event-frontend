@@ -12,7 +12,7 @@ vi.mock("./ManagerShell", () => ({useManager: () => ({event: {EventID: "e", Name
 vi.mock("./BlockStackEditor", () => ({BlockStackEditor: ({before}: {before: ReactNode}) => before}));
 vi.mock("./validatePageBlocks", () => ({validateLanding: () => null}));
 vi.mock("@/components/event/EventBrandLogo", () => ({EventBrandLogo: () => null}));
-vi.mock("react-hot-toast", () => ({default: {success: vi.fn(), error: vi.fn()}}));
+vi.mock("react-hot-toast", () => { const toast = {success: vi.fn(), error: vi.fn()}; return {default: toast, toast}; });
 vi.mock("@/api/manage", async original => ({...await original() as object, getManagePage: async () => page, getManagePages: async () => [page], getManageConfig: async () => ({ScoreboardVisibility: 1}), getManageContent: async () => ({Variables: {}}), getManageContentVariables: async () => [], saveManagePageDraft: (...args: unknown[]) => api.save(...args)}));
 import {CustomPageEditor} from "./PageContentEditor";
 
