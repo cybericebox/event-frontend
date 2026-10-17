@@ -31,9 +31,10 @@ async function post(eventID: string, path: string, payload: unknown): Promise<un
 
 // Invites people to the event (or to a team): names are optional and prefill
 // the pending account the invitation creates for an unknown address.
-export async function sendInvitations(eventID: string, entries: InvitationEntry[], teamID?: string): Promise<InvitationResult[]> {
+// sendEmails false creates the same invitations without any email: people accept on the event site.
+export async function sendInvitations(eventID: string, entries: InvitationEntry[], teamID?: string, sendEmails = true): Promise<InvitationResult[]> {
     const path = teamID ? `teams/${encodeURIComponent(teamID)}/invitations` : "participants/invitations";
-    const data = z.object({Data: z.array(invitationResultSchema)}).parse(await post(eventID, path, {Entries: entries})).Data;
+    const data = z.object({Data: z.array(invitationResultSchema)}).parse(await post(eventID, path, {Entries: entries, SendEmails: sendEmails})).Data;
     return data.map(result => ({Email: result.Email, UserID: result.UserID === nilUUID ? null : result.UserID, Code: invitationCode(result)}));
 }
 
@@ -52,6 +53,6 @@ export type BatchTeamIssue = BatchTeamsResult["Issues"][number];
 // Creates teams with their members in one transaction. With any issue nothing
 // is written and Issues says what to fix; dryRun only validates and counts.
 // csvImport checks form fields by type only: required ones may stay blank.
-export async function createManageTeams(eventID: string, teams: BatchTeam[], dryRun = false, csvImport = false): Promise<BatchTeamsResult> {
-    return z.object({Data: batchResultSchema}).parse(await post(eventID, "teams/batch", {Teams: teams, DryRun: dryRun, Import: csvImport})).Data;
+export async function createManageTeams(eventID: string, teams: BatchTeam[], dryRun = false, csvImport = false, sendEmails = true): Promise<BatchTeamsResult> {
+    return z.object({Data: batchResultSchema}).parse(await post(eventID, "teams/batch", {Teams: teams, DryRun: dryRun, Import: csvImport, SendEmails: sendEmails})).Data;
 }

@@ -16,6 +16,11 @@ type Reason = typeof reasons[number];
 const isReason = (code: string): code is Reason => (reasons as readonly string[]).includes(code);
 
 // The message for a reason code; empty for "no reason" and for codes this site does not know yet.
+// Only a late-join (rolling) event asks the captain to confirm the roster; JoinPolicy 1 is rolling, 0 locks at start.
+export function simulatedNeedsConfirmation(formed: boolean, joinPolicy: number | undefined): boolean {
+    return !formed && joinPolicy === 1;
+}
+
 export function reasonText(code: string): string {
     return isReason(code) ? t(`participation.reason.${code}`) : "";
 }

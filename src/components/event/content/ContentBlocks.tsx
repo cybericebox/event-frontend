@@ -1,7 +1,8 @@
 import type {ContentImageDimensions} from "@/types/contentImages";
 import {Plus} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
-import type {CSSProperties} from "react";
+import {Fragment, type CSSProperties} from "react";
+import {TeamConfirmPrompt} from "@/components/event/participation/TeamConfirmPrompt";
 import type {ContentBlock, ContentDocument} from "@/types/eventContent";
 import {EventRichTextView} from "./EventRichTextView";
 import {CountdownValue} from "./CountdownDisplay";
@@ -99,6 +100,8 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
 }) {
     const blocks = document.blocks.filter(block => contentBlockVisible(block, variables));
     const primaryID = headingBlockID(blocks, coverImage);
+    // The team confirmation prompt shows once, under the first block that carries the join button.
+    const joinPromptBlockID = blocks.find(block => block.type === "cta" && [block.action, block.secondaryAction].some(action => action?.kind === "join_event"))?.id;
     return <div className="ib-blocks">
         {!primaryID && title && <h1 className="ib-visually-hidden">{title}</h1>}
         {!preview && !blocks.length && <EmptyState message={t("content.page.empty")} />}
@@ -159,7 +162,7 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
             if (block.type === "timeline") return <section className={`ib-block ib-block-timeline${block.variant === "list" ? " ib-block-timeline--list" : ""}`} key={block.id} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<ol className="ib-block-timeline__list">{(block.items ?? []).map((item, index) => <li className="ib-block-timeline__step" key={index}><time className="ib-block-timeline__time" dateTime={item.dateSource === "custom" ? item.dateValue : String(variables[item.dateVariable ?? ""] ?? "")}>{formatDateTime(item.dateSource === "custom" ? item.dateValue ?? "" : String(variables[item.dateVariable ?? ""] ?? ""), item.dateFormat, item.datePattern)}</time><p className="ib-block-timeline__label">{render(item.value, `item:${index}:value`)}</p></li>)}</ol></div></section>;
             if (block.type === "faq") return <section className="ib-block ib-block-faq" key={block.id} id={blockElementID(block)} data-preview-selected={selectedBlockId === block.id || undefined}><div className="ib-block__in">{heading}<div className="ib-accordion ib-accordion--lg">{(block.items ?? []).map((item, index) => <details className="ib-accordion__item" key={index} open={index === block.openItem}><summary className="ib-accordion__q">{render(item.label, `item:${index}:label`)}<Plus className="ib-icon ib-accordion__icon" aria-hidden="true" /></summary><div className="ib-accordion__a ib-block-prose"><EventRichTextView value={item.richText} variables={variables} dateDisplays={block.dateDisplays?.[`item:${index}:richText`]} /></div></details>)}</div></div></section>;
             if (block.type === "cta") {
-                return <ActionBlock key={block.id} id={blockElementID(block)} title={render(block.title, "title")} text={render(block.text, "text")} variant={block.variant} alignment={block.actionAlignment} selected={selectedBlockId === block.id} primaryHeading={block.id === primaryID} preview={preview} previewViewer={previewViewer} actions={[block.action, block.secondaryAction].filter(action => !!action).map(action => ({label: render(action.label, action === block.action ? "action:label" : "secondaryAction:label"), kind: action.kind, href: render(action.href, action === block.action ? "action:href" : "secondaryAction:href")}))} registrationOpen={variables["event.registrationOpen"] === true} joinPolicy={String(variables["event.joinPolicy"] ?? "")} startAt={String(variables["event.startAt"] ?? "")} finishAt={String(variables["event.effectiveFinishAt"] ?? "")} eventID={eventID ?? ""} />;
+                return <Fragment key={block.id}><ActionBlock id={blockElementID(block)} title={render(block.title, "title")} text={render(block.text, "text")} variant={block.variant} alignment={block.actionAlignment} selected={selectedBlockId === block.id} primaryHeading={block.id === primaryID} preview={preview} previewViewer={previewViewer} actions={[block.action, block.secondaryAction].filter(action => !!action).map(action => ({label: render(action.label, action === block.action ? "action:label" : "secondaryAction:label"), kind: action.kind, href: render(action.href, action === block.action ? "action:href" : "secondaryAction:href")}))} registrationOpen={variables["event.registrationOpen"] === true} joinPolicy={String(variables["event.joinPolicy"] ?? "")} startAt={String(variables["event.startAt"] ?? "")} finishAt={String(variables["event.effectiveFinishAt"] ?? "")} eventID={eventID ?? ""} />{block.id === joinPromptBlockID && eventID && <TeamConfirmPrompt eventID={eventID} />}</Fragment>;
             }
             if (block.type === "countdown") {
                 const target = countdownTarget(block, variables);
