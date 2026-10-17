@@ -10,6 +10,7 @@ import {ManageApiError} from "@/api/manage";
 import {sendInvitations, type InvitationResult} from "@/api/manageInvites";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {t, tPlural} from "@/i18n/t";
 import {CsvField} from "./invites/CsvField";
@@ -52,6 +53,8 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     const [csvIssues, setCsvIssues] = useSessionDraftState<CsvIssue[]>(`invite-${team?.ID ?? "participants"}-issues`, [], {dirty: () => false});
     const [failures, setFailures] = useState<InvitationResult[]>([]);
     const [busy, setBusy] = useState(false);
+    // One-time choice of this add only: never stored, on again whenever the dialog closes.
+    const [sendEmails, setSendEmails] = useState(true);
     const csvPicker = useRef<FilePickerHandle | null>(null);
     // A CSV dropped in manual mode waits here until the CSV field mounts.
     const droppedCsv = useRef<File[] | null>(null);
@@ -67,7 +70,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     const named = valid.filter(chip => chip.firstName || chip.lastName).length;
 
     function reset() {
-        setMode("manual"); setChips([]); setCsvChips([]); setFileName(null); setCsvIssues([]); setFailures([]);
+        setMode("manual"); setChips([]); setCsvChips([]); setFileName(null); setCsvIssues([]); setFailures([]); setSendEmails(true);
     }
 
     function switchMode(next: "manual" | "csv") { setMode(next); setFailures([]); }
@@ -101,7 +104,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
         if (!canSend) return;
         setBusy(true);
         try {
-            const results = await sendInvitations(eventID, valid.map(chip => ({Email: chip.email, FirstName: chip.firstName, LastName: chip.lastName, ...(chip.fields && Object.keys(chip.fields).length ? {Fields: chip.fields} : {})})), team?.ID);
+            const results = await sendInvitations(eventID, valid.map(chip => ({Email: chip.email, FirstName: chip.firstName, LastName: chip.lastName, ...(chip.fields && Object.keys(chip.fields).length ? {Fields: chip.fields} : {})})), team?.ID, sendEmails);
             const failed = results.filter(result => result.Code);
             const failedEmails = new Set(failed.map(result => result.Email.toLowerCase()));
             const sent = results.length - failed.length;
@@ -109,7 +112,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             const keepFailed = (current: EmailChip[]) => current.filter(chip => failedEmails.has(chip.email));
             if (mode === "manual") setChips(keepFailed); else setCsvChips(keepFailed);
             if (sent) {
-                toast.success(t("manage.participants.invite.sent", {count: sent}));
+                toast.success(t(sendEmails ? "manage.participants.invite.sent" : "manage.participants.invite.added", {count: sent}));
                 try {await onSent();} catch {toast.error(t("manage.participants.refreshFailed"));}
             }
             if (!failed.length) {reset(); onOpenChange(false);}
@@ -120,11 +123,11 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
     }
 
     const title = team ? t("manage.teams.invite.title", {name: team.Name}) : t("manage.participants.invite.title");
-    return <ManageDialog open={open} onOpenChange={next => {if (!busy) {onOpenChange(next);}}} title={title}
-        description={team ? t("manage.invites.teamDescription") : t("manage.invites.description")} onSubmit={submit}
+    return <ManageDialog open={open} onOpenChange={next => {if (!busy) {if (!next) setSendEmails(true); onOpenChange(next);}}} title={title}
+        description={sendEmails ? (team ? t("manage.invites.teamDescription") : t("manage.invites.description")) : (team ? t("manage.invites.teamDescriptionSilent") : t("manage.invites.descriptionSilent"))} onSubmit={submit}
         fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: dropCsv, disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => {reset(); onOpenChange(false);}}>{t("common.cancel")}</button>
-            <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canSend} busy={busy}>{t("manage.participants.invite.send")}</EventButton></>}>
+            <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canSend} busy={busy}>{sendEmails ? t("manage.participants.invite.send") : t("manage.participants.invite.add")}</EventButton></>}>
         <div className="ib-seg event-modal__modes" role="group" aria-label={t("manage.invites.mode")}>
             <button type="button" aria-pressed={mode === "manual"} disabled={busy} onClick={() => switchMode("manual")}>{t("manage.invites.modeManual")}</button>
             <button type="button" aria-pressed={mode === "csv"} disabled={busy} onClick={() => switchMode("csv")}>{t("manage.invites.modeCsv")}</button>
@@ -143,6 +146,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             {fileName && csvIssues.length === 0 && <MissingFieldsSummary rows={valid.map(chip => ({name: chip.email, missing: chip.missing ?? []}))} />}
             {valid.length > invitationLimit && <p className="ib-field__error" role="alert">{t("manage.participants.invite.limit")}</p>}
         </>}
+        <EventCheckbox checked={sendEmails} onCheckedChange={setSendEmails} disabled={busy} label={t("manage.invites.sendEmails")} />
         {failures.length > 0 && <ul className="event-modal__issues" role="status">{failures.map(result => <li key={result.Email}>{invitationFailureText(result)}</li>)}</ul>}
     </ManageDialog>;
 }
