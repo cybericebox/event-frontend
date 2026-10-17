@@ -1,5 +1,6 @@
 import {z} from "zod";
-import {readApiErrorCode} from "@/api/apiErrors";
+import {ApiErrorCode, readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
+import {fetchIdempotentWithRetry} from "@/api/idempotentRetry";
 import {LabRuntimeSchema, type LabRuntime} from "@/api/manageLabs";
 import {LabLifecycleSchema, revisionSchema, type LabLifecycle} from "@/api/labLifecycle";
 import {t} from "@/i18n/t";
@@ -153,8 +154,7 @@ function baseUrl(eventID: string): string {
 }
 
 async function failure(response: Response): Promise<ParticipantChallengeError> {
-    const retry = Number(response.headers.get("Retry-After"));
-    return new ParticipantChallengeError(response.status, await readApiErrorCode(response), Number.isFinite(retry) && retry > 0 ? retry : undefined);
+    return new ParticipantChallengeError(response.status, await readApiErrorCode(response), readRetryAfter(response));
 }
 
 export async function getOwnBoard(eventID: string): Promise<OwnBoard> {
@@ -177,12 +177,14 @@ export async function getChallengeSolves(eventID: string, challengeID: string, c
     return z.object({Data: solvesPageSchema}).parse(await response.json()).Data;
 }
 
+// The server replays a completed answer with the same key instead of counting a new attempt, so an
+// overloaded or still-running answer is sent again with that key (the caller keeps it for a manual retry).
 export async function submitChallenge(eventID: string, challengeID: string, answer: string, idempotencyKey: string): Promise<ChallengeSubmission> {
-    const response = await fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/submit`, {
+    const response = await fetchIdempotentWithRetry(() => fetch(`${baseUrl(eventID)}/${encodeURIComponent(challengeID)}/submit`, {
         method: "POST", credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", "Content-Type": "application/json", "Idempotency-Key": idempotencyKey},
         body: JSON.stringify({Answer: answer}),
-    });
+    }), {inProgressCode: ApiErrorCode.AnswerInProgress});
     if (!response.ok) throw await failure(response);
     return z.object({Data: submissionSchema}).parse(await response.json()).Data;
 }
@@ -230,12 +232,13 @@ export function challengeAttachmentUrl(eventID: string, challengeID: string, fil
 }
 
 // Manual lifecycle commands belong to the authenticated team's Lab, not a question.
+// Deduplicated by the key like an answer, so they are sent again the same way.
 async function changeOwnLab(eventID: string, labID: string, action: "stop" | "restart", revision: string, idempotencyKey: string): Promise<LabLifecycle> {
-    const response = await fetch(`${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/teams/labs/${encodeURIComponent(labID)}/${action}`, {
+    const response = await fetchIdempotentWithRetry(() => fetch(`${requireApiOrigin()}/api/events/${encodeURIComponent(eventID)}/teams/labs/${encodeURIComponent(labID)}/${action}`, {
         method: "POST", credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify({Revision: revision, IdempotencyKey: idempotencyKey}),
-    });
+    }), {inProgressCode: ApiErrorCode.LabCommandInProgress});
     if (!response.ok) throw await failure(response);
     return z.object({Data: z.object({Lab: LabLifecycleSchema.refine(lab => lab.ID === labID)})}).parse(await response.json()).Data.Lab;
 }

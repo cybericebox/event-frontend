@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {readRetryAfter} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {genericFormSchema} from "@/api/manageFormResponses";
 import {requireApiOrigin} from "@/utils/origins";
@@ -17,7 +18,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>): 
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/forms/${path}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
@@ -35,5 +36,5 @@ export async function submitEventForm(eventID: string, formID: string, formVersi
         method: "POST", credentials: "include", cache: "no-store", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({FormVersionID: formVersionID, Answers: answers}),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
 }

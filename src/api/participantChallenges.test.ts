@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {completedLab, exerciseID, runningLab} from "@/test/labLifecycle";
 
 vi.mock("@/utils/origins", () => ({requireApiOrigin: () => "https://api.test"}));
@@ -199,5 +199,72 @@ describe("manual own Lab commands", () => {
         await expect(stopOwnLab("e", runningLab.ID, runningLab.Revision, "key")).rejects.toMatchObject({status: 409, code: 1148});
         fetchMock.mockResolvedValue(reply({Data: {Lab: {...runningLab, Revision: 9007199254740992}}}));
         await expect(stopOwnLab("e", runningLab.ID, runningLab.Revision, "key")).rejects.toThrow();
+    });
+});
+
+describe("idempotent retry of answers and Lab commands", () => {
+    const overloaded = () => new Response(null, {status: 503, headers: {"Retry-After": "1"}});
+    const keys = () => fetchMock.mock.calls.map(call => (call[1] as RequestInit & {headers: Record<string, string>}).headers["Idempotency-Key"]);
+    beforeEach(() => {
+        vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
+        vi.spyOn(Math, "random").mockReturnValue(0);
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    it("sends the answer again with the same Idempotency-Key until the overloaded server answers", async () => {
+        const {submitChallenge} = await import("./participantChallenges");
+        fetchMock.mockResolvedValueOnce(overloaded()).mockResolvedValueOnce(overloaded()).mockResolvedValueOnce(reply({Data: {Correct: true}}));
+        const pending = submitChallenge("e1", "c1", "answer", "key-1");
+        await vi.advanceTimersByTimeAsync(2000);
+        await expect(pending).resolves.toMatchObject({Correct: true});
+        expect(fetchMock).toHaveBeenCalledTimes(3);
+        expect(keys()).toEqual(["key-1", "key-1", "key-1"]);
+    });
+
+    it("waits a second and asks again while the same answer is still being processed", async () => {
+        const {submitChallenge} = await import("./participantChallenges");
+        fetchMock.mockResolvedValueOnce(reply({Status: {Code: 51926}}, 409)).mockResolvedValueOnce(reply({Data: {Correct: false}}));
+        const pending = submitChallenge("e1", "c1", "answer", "key-2");
+        await vi.advanceTimersByTimeAsync(999);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(1);
+        await expect(pending).resolves.toMatchObject({Correct: false});
+        expect(keys()).toEqual(["key-2", "key-2"]);
+    });
+
+    it("gives up after four tries and throws the overload error with its Retry-After", async () => {
+        const {submitChallenge, ParticipantChallengeError} = await import("./participantChallenges");
+        fetchMock.mockImplementation(() => Promise.resolve(overloaded()));
+        const failed = expect(submitChallenge("e1", "c1", "answer", "key-3")).rejects.toSatisfy(error => error instanceof ParticipantChallengeError && error.status === 503 && error.retryAfter === 1);
+        await vi.advanceTimersByTimeAsync(5000);
+        await failed;
+        expect(fetchMock).toHaveBeenCalledTimes(4);
+    });
+
+    it("does not repeat a verdict or another conflict", async () => {
+        const {submitChallenge} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Status: {Code: 51925}}, 409));
+        await expect(submitChallenge("e1", "c1", "answer", "key-4")).rejects.toMatchObject({status: 409, code: 1925});
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("repeats a Lab command with the same key while it is in progress", async () => {
+        const {stopOwnLab} = await import("./participantChallenges");
+        const saved = {...completedLab, CloseReason: "manual", CanRestart: true, SnapshotPolicy: "required"};
+        fetchMock.mockResolvedValueOnce(overloaded()).mockResolvedValueOnce(reply({Status: {Code: 52620}}, 409)).mockResolvedValueOnce(reply({Data: {Lab: saved}}));
+        const pending = stopOwnLab("e", runningLab.ID, runningLab.Revision, "lab-key");
+        await vi.advanceTimersByTimeAsync(2000);
+        await expect(pending).resolves.toMatchObject(saved);
+        expect(fetchMock.mock.calls.map(call => JSON.parse(String((call[1] as RequestInit).body)).IdempotencyKey)).toEqual(["lab-key", "lab-key", "lab-key"]);
+    });
+
+    it("never repeats the other participant actions", async () => {
+        const {unlockChallengeHint} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(overloaded());
+        await expect(unlockChallengeHint("e1", "c1", "h1")).rejects.toMatchObject({status: 503, retryAfter: 1});
+        expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 });

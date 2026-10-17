@@ -5,8 +5,7 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage} from "@/api/apiErrors";
-import {ManageApiError} from "@/api/manage";
+import {apiErrorText} from "@/api/apiErrors";
 import {
     defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityFieldErrors, identityForm, identityInput,
     mailTransportLabel, maxMailNameLength, withLimitSource, withSource, putEventMailIdentity, putEventMailSMTP, smtpError, smtpFieldErrors, smtpForm, smtpInput,
@@ -25,7 +24,7 @@ import {PasswordInput} from "@/components/ui/PasswordInput";
 import {EventNumberInput} from "@/components/ui/EventNumberInput";
 
 function errorText(error: unknown, fallback: string) {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
+    return apiErrorText(error, fallback);
 }
 
 export function MailSettingsPanel() {

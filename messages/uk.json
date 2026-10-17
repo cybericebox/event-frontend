@@ -348,6 +348,8 @@
   "error.generic": "Щось пішло не так",
   "error.rateLimited": "Забагато спроб. Спробуйте трохи згодом.",
   "error.rateLimited.wait": "Забагато спроб. Спробуйте ще раз через {wait}.",
+  "error.overloaded": "Сервер перевантажений, спробуйте за кілька секунд",
+  "error.overloaded.retry": "Спробувати ще раз",
   "error.wait.seconds": "{count} с",
   "error.wait.minutes": "{count} хв",
   "error.wait.hours": "{count} год",

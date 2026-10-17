@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {readRetryAfter} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {apiOrigin, requireApiOrigin} from "@/utils/origins";
 
@@ -32,7 +33,7 @@ export async function uploadManageEmailImage(eventID: string, templateID: string
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/email/${encodeURIComponent(templateID)}/images`, {
         method: "POST", credentials: "include", body,
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return imageUploadSchema.parse(z.object({Data: imageUploadSchema}).parse(await response.json()).Data);
 }
 
@@ -43,7 +44,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         headers: {Accept: "application/json", ...(body === undefined ? {} : {"Content-Type": "application/json"})},
         ...(body === undefined ? {} : {body: JSON.stringify(body)}),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 

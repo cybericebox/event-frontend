@@ -9,7 +9,9 @@ function reply(code: number, retryAfter?: string): Response {
 describe("rate-limit errors", () => {
     it("reads the wait from Retry-After", () => {
         expect(readRetryAfter(reply(0, "30"))).toBe(30);
-        expect(readRetryAfter(reply(0, "0"))).toBeUndefined();
+        // 0 is kept (the overload rule needs to know the header was there); the wait text skips it.
+        expect(readRetryAfter(reply(0, "0"))).toBe(0);
+        expect(readRetryAfter(reply(0, "1.2"))).toBe(2);
         expect(readRetryAfter(reply(0, "soon"))).toBeUndefined();
         expect(readRetryAfter(reply(0))).toBeUndefined();
     });

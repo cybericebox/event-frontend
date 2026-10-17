@@ -10,8 +10,8 @@ import DOMPurify from "isomorphic-dompurify";
 import {Bell, Check, ChevronRight, X} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
-import {getInbox, markInboxAllRead, markInboxRead, pollInbox, resolveInboxRequest, InboxError, type InboxCursor} from "@/api/inbox";
-import {apiErrorMessage} from "@/i18n/apiError";
+import {getInbox, markInboxAllRead, markInboxRead, pollInbox, resolveInboxRequest, type InboxCursor} from "@/api/inbox";
+import {apiErrorText} from "@/i18n/apiError";
 import {t} from "@/i18n/t";
 import {EventLoading} from "./EventLoading";
 import {NotificationMessageCard} from "./NotificationMessageCard";
@@ -319,7 +319,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                 announceRead();
             } catch (err) {
                 // 30217 not found, 20218 not resolvable by hand, 70219 already resolved: show why, then the current state.
-                failure = apiErrorMessage(err instanceof InboxError ? err.code : undefined);
+                failure = apiErrorText(err);
             }
             resolvesPending.current -= 1;
             // The server's answer applies only when no newer change is waiting.

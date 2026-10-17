@@ -5,8 +5,7 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage} from "@/api/apiErrors";
-import {ManageApiError} from "@/api/manage";
+import {apiErrorText} from "@/api/apiErrors";
 import {createManageTeams, type BatchTeam, type BatchTeamIssue, type BatchTeamsResult} from "@/api/manageInvites";
 import {getManageParticipants} from "@/api/manageParticipants";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
@@ -44,7 +43,7 @@ function csvIssueText(issue: BatchTeamIssue, teams: TeamDraft[]): string {
 }
 
 function failure(error: unknown, fallback: string): string {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
+    return apiErrorText(error, fallback);
 }
 
 function doneText(result: BatchTeamsResult, sendEmails: boolean): string {

@@ -5,8 +5,7 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage} from "@/api/apiErrors";
-import {ManageApiError} from "@/api/manage";
+import {toastApiError} from "@/components/ui/toastApiError";
 import type {FormField, ParticipantForm} from "@/api/manageParticipantForm";
 import {getManageStaffFields, putManageStaffFields, type StaffScope} from "@/api/manageStaffFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
@@ -74,7 +73,7 @@ export function StaffFieldsPanel({eventID, scope, subjectID, form, answers, canM
             await onSaved();
             toast.success(t("manage.staffFields.saved"));
         } catch (error) {
-            toast.error(apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, t("manage.staffFields.saveFailed")));
+            toastApiError(error, t("manage.staffFields.saveFailed"), () => void save());
         } finally {setBusy(false);}
     }
 

@@ -348,6 +348,8 @@
   "error.generic": "Something went wrong",
   "error.rateLimited": "Too many attempts. Try again a little later.",
   "error.rateLimited.wait": "Too many attempts. Try again in {wait}.",
+  "error.overloaded": "The server is overloaded, try again in a few seconds",
+  "error.overloaded.retry": "Try again",
   "error.wait.seconds": "{count} s",
   "error.wait.minutes": "{count} min",
   "error.wait.hours": "{count} h",

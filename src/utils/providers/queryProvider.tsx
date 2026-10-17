@@ -13,7 +13,10 @@ export default function QueryProvider({children}: {
                 refetchOnReconnect: true,
                 refetchOnWindowFocus: true,
                 staleTime: 60 * 1000,
-                refetchInterval: 60 * 1000
+                refetchInterval: 60 * 1000,
+                // The browser fetch wrapper (trackApiFetch) already repeats a read the server shed;
+                // a second retry layer here would multiply the requests on a busy server.
+                retry: false,
             },
         }
     }))
