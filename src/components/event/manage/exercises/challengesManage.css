@@ -111,3 +111,6 @@ button.event-sortable__main{cursor:pointer}
 .event-exercise-set__stage-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-exercise-set__stage .event-select{min-width:200px}
 .event-exercise-set__stage-note{flex-basis:100%;margin:0}
+.event-exercise-set__images{flex-wrap:wrap;align-items:flex-start}
+.event-exercise-set__images ul{margin:0;padding:0;list-style:none;display:grid;gap:var(--ib-1);flex:1 1 280px;min-width:0}
+.event-exercise-set__images li{overflow-wrap:anywhere}

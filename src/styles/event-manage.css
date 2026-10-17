@@ -985,3 +985,10 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-dialog .event-email-preview__frame{display:flex;flex-direction:column;flex:1;min-height:0}
 .event-dialog .event-email-preview__meta,.event-dialog .event-email-preview__toolbar{flex:none}
 .event-dialog .event-notification-preview__panel .event-email-preview__canvas{flex:1;height:auto;min-height:0}
+.event-registry-list{display:grid;margin:0;padding:0;list-style:none}
+.event-registry-list__row{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-3);padding:var(--ib-3) 0;border-bottom:1px solid var(--ib-line)}
+.event-registry-list__row:last-child{border-bottom:0}
+.event-registry-list__main{display:grid;gap:var(--ib-1);min-width:0}
+.event-registry-list__main strong,.event-registry-list__main small{overflow-wrap:anywhere}
+.event-registry-list__main small{color:var(--ib-dim)}
+.event-registry-list__actions{display:flex;gap:var(--ib-2);flex:none}
