@@ -2,6 +2,7 @@
 import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {ApiErrorCode} from "@/api/apiErrors";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 
 const api = vi.hoisted(() => ({submit: vi.fn()}));
@@ -92,5 +93,16 @@ describe("answer retry after an overloaded server", () => {
         await send("ICE{a}");
         expect(api.submit.mock.calls.map(call => call[1])).toEqual([open.EventChallengeID, other.EventChallengeID, open.EventChallengeID]);
         expect(new Set(keys()).size).toBe(3);
+    });
+
+    it("offers the retry with the same key when the answer is still being processed", async () => {
+        api.submit.mockRejectedValueOnce(new ParticipantChallengeError(409, ApiErrorCode.AnswerInProgress)).mockResolvedValueOnce({Correct: false, FirstSolve: false});
+        renderModal();
+        await send("ICE{a}");
+        expect(screen.getByText("Сервер перевантажений, спробуйте за кілька секунд")).toBeTruthy();
+        expect(screen.queryByText(/не приймаються/)).toBeNull();
+        await act(async () => {fireEvent.click(screen.getByRole("button", {name: "Спробувати ще раз"}));});
+        expect(api.submit).toHaveBeenCalledTimes(2);
+        expect(keys()[1]).toBe(keys()[0]);
     });
 });

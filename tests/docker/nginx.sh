@@ -200,6 +200,7 @@ fails_to_start "no listener" "Nothing to listen on" -e HTTP_PORT=
 mounts="-v $certs/live:/tls:ro"
 fails_to_start "bad TLS_MIN_VERSION" "TLS_MIN_VERSION must be" -e TLS_MIN_VERSION=1.1
 fails_to_start "bad TLS_CLIENT_AUTH" "TLS_CLIENT_AUTH must be" -e TLS_CLIENT_AUTH=yes
+fails_to_start "NGINX_LIMIT_CONN_PER_IP above 65535" "NGINX_LIMIT_CONN_PER_IP must be a whole number" -e NGINX_LIMIT_CONN_PER_IP=65536
 envs="$site"
 fails_to_start "no domain" "NEXT_PUBLIC_DOMAIN is required"
 envs="$site -e NEXT_PUBLIC_DOMAIN=https://derived.test"

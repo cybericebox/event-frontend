@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
-import {getServiceStatus, reportServiceAvailable, trackApiFetch} from "./serviceStatus";
+import {getServiceStatus, probeService, reportServiceAvailable, trackApiFetch} from "./serviceStatus";
 
 const origin = "https://api.example.com";
 const overloaded = () => new Response(null, {status: 503, headers: {"Retry-After": "1"}});
@@ -84,4 +84,22 @@ it("stops waiting when the caller aborts during the backoff, without an outage",
     await vi.advanceTimersByTimeAsync(5000);
     expect(base).toHaveBeenCalledTimes(1);
     expect(getServiceStatus()).toBe("up");
+});
+
+it("the recovery probe takes an overload answer for a reachable API, a bare 503 not", async () => {
+    const answers = [
+        new Response(null, {status: 503, headers: {"Retry-After": "1"}}),
+        new Response(null, {status: 429}),
+        new Response(null, {status: 503}),
+        new Response(null, {status: 401}),
+    ];
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(answers.shift()!)));
+    try {
+        expect(await probeService(origin)).toBe(true);
+        expect(await probeService(origin)).toBe(true);
+        expect(await probeService(origin)).toBe(false);
+        expect(await probeService(origin)).toBe(true);
+    } finally {
+        vi.unstubAllGlobals();
+    }
 });

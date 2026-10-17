@@ -38,6 +38,15 @@ is_port() {
   case "$1" in '' | *[!0-9]*) return 1 ;; esac
   [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
 }
+# The per-client cap as its nginx directive: 0 (any number of zeros) prints nothing, 1..65535 the line, anything else fails.
+# Leading zeros are dropped first, so "00" is 0 and "0400" is 400.
+limit_conn_directive() {
+  case "$1" in '' | *[!0-9]*) return 1 ;; esac
+  n=$(printf '%s' "$1" | sed 's/^0*//')
+  [ -n "$n" ] || return 0
+  [ "${#n}" -le 5 ] && [ "$n" -le 65535 ] || return 1
+  echo "limit_conn client_conn $n;"
+}
 
 # TLS is on when the certificate and the key exist at their paths (defaults /tls/tls.crt, /tls/tls.key). A path given in the env
 # (non-empty) that does not exist is a start error. Client auth needs the CA file (default /aop/ca.crt).
@@ -86,12 +95,10 @@ fi
 [ "$tls" = false ] || is_port "$HTTPS_PORT" || fail "HTTPS_PORT must be a port number."
 [ -z "$HEALTH_PORT" ] || is_port "$HEALTH_PORT" || fail "HEALTH_PORT must be a port number or empty."
 case "$TLS_RELOAD_INTERVAL" in '' | *[!0-9]*) fail "TLS_RELOAD_INTERVAL must be a number of seconds." ;; esac
-case "$NGINX_LIMIT_CONN_PER_IP" in '' | *[!0-9]*) fail "NGINX_LIMIT_CONN_PER_IP must be a number (0 = no limit)." ;; esac
 [ -n "$HTTP_PORT" ] || [ "$tls" = true ] || fail "Nothing to listen on: set HTTP_PORT or TLS_CERT_FILE and TLS_KEY_FILE."
 export HTTP_PORT HTTPS_PORT HEALTH_PORT HEALTH_BIND TLS_CERT_FILE TLS_KEY_FILE TLS_PROTOCOLS TLS_CLIENT_CA_FILE TLS_CLIENT_VERIFY
 # The whole directive is the value, so 0 leaves no limit_conn line at all.
-NGINX_LIMIT_CONN="limit_conn client_conn $NGINX_LIMIT_CONN_PER_IP;"
-[ "$NGINX_LIMIT_CONN_PER_IP" = 0 ] && NGINX_LIMIT_CONN=
+NGINX_LIMIT_CONN=$(limit_conn_directive "$NGINX_LIMIT_CONN_PER_IP") || fail "NGINX_LIMIT_CONN_PER_IP must be a whole number from 0 (no limit) to 65535."
 export NGINX_LIMIT_CONN
 mode=http
 if [ "$tls" = true ]; then
