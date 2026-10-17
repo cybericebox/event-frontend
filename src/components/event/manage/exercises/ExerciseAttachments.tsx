@@ -175,6 +175,9 @@ export function ExerciseAttachments() {
                             ].filter(Boolean).join(" · ")}
                         </p>
                         <ResourcesLine resources={attachment.Resources} className="event-exercise-set__meta" />
+                        {attachment.FlagsMayRepeat && <div className="event-exercise-set__warning">
+                            <span>{t("manage.exercises.flagsMayRepeat", {name})}</span>
+                        </div>}
                         {mismatch && <div className="event-exercise-set__warning" role="alert">
                             <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t(published ? "manage.challenges.set.infraMissingAfter" : "manage.challenges.set.infraMissingBefore")}</span>
                         </div>}

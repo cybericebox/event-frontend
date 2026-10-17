@@ -1235,6 +1235,7 @@
   "manage.exercises.challenge.saveFailed": "Не вдалося зберегти підзавдання.",
   "manage.exercises.challenge.showOnBoard": "Показувати учасникам",
   "manage.exercises.copyNotUpdated": "Копія заходу її не отримує.",
+  "manage.exercises.flagsMayRepeat": "Флаги завдання «{name}» можуть повторюватися між командами: можливих флагів замало для кількості команд.",
   "manage.exercises.create": "Створити завдання",
   "manage.exercises.detached": "Прибрано",
   "manage.exercises.detachedLabel": "{name} · прибрано",
