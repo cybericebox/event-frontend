@@ -56,6 +56,8 @@ const attachmentSchema = z.object({
     Resources: taskResourcesSchema.nullish().transform(value => value ?? null),
     // No laboratory that is used can run this set.
     NoAgentFits: z.boolean().default(false),
+    // A task has fewer possible flags than the team capacity, or its flags were reused: flags may repeat.
+    FlagsMayRepeat: z.boolean().default(false),
 });
 // Cost is the event's price (0 until set); Overridden says a price is set.
 const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int(), Overridden: z.boolean()});
