@@ -18,7 +18,7 @@ set -e
 #   TLS_CLIENT_AUTH     off | optional | require; default: require when TLS is on and /aop/ca.crt exists, else off;
 #                       optional and require need TLS_CLIENT_CA_FILE
 #   HEALTH_PORT         extra plain listener on HEALTH_BIND (default 0.0.0.0) that serves only /api/health (default 8081; empty = off)
-#   NGINX_LIMIT_CONN_PER_IP concurrent connections per client address (default 50; 0 = no limit); over it nginx answers 429
+#   NGINX_LIMIT_CONN_PER_IP concurrent requests per client address (default 400; 0 = no limit); over it nginx answers 429
 #   TLS_RELOAD_INTERVAL seconds between certificate file checks (default 60; 0 = off)
 # tini is PID 1 (reaps zombies, forwards signals); this script supervises: when either process exits, the other
 # one is stopped and the container exits, so Kubernetes restarts it.
@@ -28,7 +28,7 @@ HEALTH_PORT=${HEALTH_PORT-8081}
 HEALTH_BIND=${HEALTH_BIND:-0.0.0.0}
 TLS_MIN_VERSION=${TLS_MIN_VERSION:-1.2}
 TLS_RELOAD_INTERVAL=${TLS_RELOAD_INTERVAL:-60}
-NGINX_LIMIT_CONN_PER_IP=${NGINX_LIMIT_CONN_PER_IP-50}
+NGINX_LIMIT_CONN_PER_IP=${NGINX_LIMIT_CONN_PER_IP-400}
 
 fail() {
   echo "$1" >&2

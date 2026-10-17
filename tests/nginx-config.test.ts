@@ -31,7 +31,7 @@ describe("nginx limits and timeouts", () => {
 
   it("applies the per-IP cap through a rendered line that the entrypoint can drop", () => {
     expect(server).toContain("${NGINX_LIMIT_CONN}")
-    expect(entrypoint).toMatch(/NGINX_LIMIT_CONN_PER_IP=\$\{NGINX_LIMIT_CONN_PER_IP-50\}/)
+    expect(entrypoint).toMatch(/NGINX_LIMIT_CONN_PER_IP=\$\{NGINX_LIMIT_CONN_PER_IP-400\}/)
     expect(entrypoint).toMatch(/NGINX_LIMIT_CONN=.*limit_conn \w+ \$NGINX_LIMIT_CONN_PER_IP;/)
     expect(entrypoint).toMatch(/\[ "\$NGINX_LIMIT_CONN_PER_IP" = 0 \]/)
   })
