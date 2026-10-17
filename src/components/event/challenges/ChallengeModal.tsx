@@ -57,6 +57,8 @@ function submitMessage(error: unknown): Message {
         if (error.code === ApiErrorCode.AnswerTooLong) return {text: apiErrorMessage(error.code, t("challenges.submit.failed")), tone: "error"};
         if (error.code === ApiErrorCode.AttemptLimitReached) return {text: t("challenges.modal.attemptsExhausted"), tone: "warn"};
         if (error.code === ApiErrorCode.StageClosed) return {text: t("challenges.submit.stageClosed"), tone: "warn"};
+        // The same answer is still being processed after the automatic tries: the server is busy, the same key may be sent again.
+        if (error.code === ApiErrorCode.AnswerInProgress) return {text: t("error.overloaded"), tone: "warn", retry: true};
         if (error.status === 409 || error.status === 403) return {text: t("challenges.submit.notAccepting"), tone: "warn"};
     }
     const overloaded = overloadedMessage(error);
