@@ -150,7 +150,32 @@ describe("Сховища образів заходу", () => {
         await waitFor(() => expect(token.closest(".event-manage-field")!.querySelector("[role=alert]")?.textContent).toContain("Введіть токен ще раз"));
     });
 
-    it("is read-only for viewers", async () => {
+      it("shows the empty-token rejection (2825) next to the token field", async () => {
+        mockApi([secret], {code: 22825});
+        renderPanel();
+        await screen.findByText("ghcr.io");
+        fireEvent.click(screen.getByRole("button", {name: "Додати"}));
+        fireEvent.change(screen.getByLabelText(/^Адреса сховища/), {target: {value: "docker.io"}});
+        fireEvent.change(screen.getByLabelText(/^Користувач/), {target: {value: "bob"}});
+        fireEvent.change(screen.getByLabelText(/^Токен/), {target: {value: "t"}});
+        fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+        const token = screen.getByLabelText(/^Токен/);
+        await waitFor(() => expect(token.closest(".event-manage-field")!.querySelector("[role=alert]")?.textContent).toContain("Введіть токен сховища образів"));
+    });
+
+    it.each([72826, 72827])("shows the missing secrets key (%i) as a form error, not at the token field", async code => {
+        mockApi([secret], {code});
+        renderPanel();
+        await screen.findByText("ghcr.io");
+        fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
+        fireEvent.change(await screen.findByLabelText(/^Токен/), {target: {value: "new"}});
+        fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+        const form = screen.getByLabelText(/^Адреса сховища/).closest("form")!;
+        await waitFor(() => expect(within(form).getByRole("alert").textContent).toContain("Сховище секретів не налаштоване"));
+        expect(screen.getByLabelText(/^Токен/).closest(".event-manage-field")!.querySelector("[role=alert]")).toBeNull();
+    });
+
+  it("is read-only for viewers", async () => {
         canManage = false;
         mockApi([secret]);
         renderPanel();

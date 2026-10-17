@@ -83,7 +83,7 @@ export function RegistrySecretsPanel() {
             setEditing(null);
             setForm(emptyRegistrySecretForm);
             toast.success(t("manage.registries.saved"));
-        } catch (error) {setSaveError({message: errorText(error, t("manage.registries.saveError")), token: error instanceof ManageApiError && error.code === 2815});}
+        } catch (error) {setSaveError({message: errorText(error, t("manage.registries.saveError")), token: error instanceof ManageApiError && (error.code === 2815 || error.code === 2825)});}
         finally {setSaving(false);}
     }
 
