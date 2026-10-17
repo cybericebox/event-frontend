@@ -26,7 +26,7 @@ describe("Образ недоступний", () => {
         ]} canManage />);
         const alert = screen.getByRole("alert");
         expect(alert.textContent).toContain("Образ недоступний");
-        expect(alert.textContent).toContain("acme/web:1");
+        expect(alert.textContent).toContain("acme/web:1 — приватний або не існує");
         expect(alert.textContent).toContain("приватний або не існує");
         expect(alert.textContent).toContain("два різні ключі");
         expect(screen.getByRole("link", {name: "Додати облікові дані"}).getAttribute("href")).toBe("/manage/registries");

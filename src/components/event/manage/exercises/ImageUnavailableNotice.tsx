@@ -9,7 +9,7 @@ export function ImageUnavailableNotice({items, canManage}: {items: UnavailableIm
     if (items.length === 0) return null;
     return <div className="event-exercise-set__warning event-exercise-set__images" role="alert">
         <span><strong>{t("manage.registries.unavailable")}</strong></span>
-        <ul>{items.map(item => <li key={item.Image}><code>{item.Image}</code> {unavailableReasonText(item.Reason)}</li>)}</ul>
+        <ul>{items.map(item => <li key={item.Image}><code>{item.Image}</code> — {unavailableReasonText(item.Reason)}</li>)}</ul>
         {canManage && <Link className="ib-btn ib-btn--sm" href="/manage/registries">{t("manage.registries.addCredentials")}</Link>}
     </div>;
 }

@@ -37,7 +37,11 @@ export function RegistrySecretsPanel() {
     const [touched, setTouched] = useState(false);
     // Only the save button is busy while saving; the fields stay editable.
     const [saving, setSaving] = useState(false);
+    // A rejected save stays in the form: the token one sits at the token field.
+    const [saveError, setSaveError] = useState<{message: string; token: boolean} | null>(null);
     const [removal, setRemoval] = useState<RegistrySecret | null>(null);
+    // The dialog keeps its text while it closes.
+    const [lastRemoval, setLastRemoval] = useState<RegistrySecret | null>(null);
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState("");
 
@@ -53,17 +57,20 @@ export function RegistrySecretsPanel() {
         setEditing(next);
         setForm(registrySecretForm(next && next !== "new" ? next : null));
         setTouched(false);
+        setSaveError(null);
     }
 
     function change(patch: Partial<RegistrySecretForm>) {
         setForm(current => ({...current, ...patch}));
         setTouched(true);
+        setSaveError(null);
     }
 
     async function save(submit: FormEvent<HTMLFormElement>) {
         submit.preventDefault();
         if (!canManage || saving || !editing || invalid) return;
         setSaving(true);
+        setSaveError(null);
         try {
             const input = registrySecretInput(form);
             const result = saved ? await updateRegistrySecret(eventID, saved.ID, input) : await createRegistrySecret(eventID, input);
@@ -76,7 +83,7 @@ export function RegistrySecretsPanel() {
             setEditing(null);
             setForm(emptyRegistrySecretForm);
             toast.success(t("manage.registries.saved"));
-        } catch (error) {toast.error(errorText(error, t("manage.registries.saveError")));}
+        } catch (error) {setSaveError({message: errorText(error, t("manage.registries.saveError")), token: error instanceof ManageApiError && error.code === 2815});}
         finally {setSaving(false);}
     }
 
@@ -110,7 +117,7 @@ export function RegistrySecretsPanel() {
                     </div>
                     {canManage && <div className="event-registry-list__actions">
                         <button className="ib-btn ib-btn--sm" type="button" onClick={() => open(secret)}>{t("common.edit")}</button>
-                        <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" onClick={() => {setRemovalError(""); setRemoval(secret);}}>{t("manage.registries.delete")}</button>
+                        <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" onClick={() => {setRemovalError(""); setRemoval(secret); setLastRemoval(secret);}}>{t("manage.registries.delete")}</button>
                     </div>}
                 </li>)}
             </ul>}
@@ -139,9 +146,10 @@ export function RegistrySecretsPanel() {
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="registry-token" title={t("manage.registries.field.token")} help={t("manage.registries.field.tokenHelp")} required={!saved} />
                     <PasswordInput id="registry-token" value={form.token} autoComplete="new-password" placeholder={saved ? t("manage.registries.field.tokenSaved") : ""} aria-invalid={(!!errors.token && (touched || !!saved)) || undefined} onChange={input => change({token: input.target.value})} />
-                    {errors.token && (touched || saved) ? <p className="event-manage-validation" role="alert">{errors.token}</p> : saved && <small>{t("manage.registries.field.tokenKeep")}</small>}
+                    {saveError?.token ? <p className="event-manage-validation" role="alert">{saveError.message}</p> : errors.token && (touched || saved) ? <p className="event-manage-validation" role="alert">{errors.token}</p> : saved && <small>{t("manage.registries.field.tokenKeep")}</small>}
                 </div>
             </div>
+            {saveError && !saveError.token && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{saveError.message}</p>}
             <div className="event-manage-section__actions">
                 <button className="ib-btn" type="button" onClick={() => setEditing(null)}>{t("common.cancel")}</button>
                 <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || invalid} busy={saving}>{t("common.save")}</EventButton>
@@ -149,8 +157,8 @@ export function RegistrySecretsPanel() {
         </form>}
 
         <ConfirmDialog open={!!removal} onCancel={() => setRemoval(null)} tone="danger" busy={removing} error={removalError}
-            title={t("manage.registries.deleteTitle", {host: removal?.Host ?? ""})} description={t("manage.registries.deleteDescription")}
-            subject={removal ? [removal.RepositoryPrefix, removal.Username].filter(Boolean).join(" · ") : undefined}
+            title={t("manage.registries.deleteTitle", {host: (removal ?? lastRemoval)?.Host ?? ""})} description={t("manage.registries.deleteDescription")}
+            subject={(removal ?? lastRemoval) ? [(removal ?? lastRemoval)!.RepositoryPrefix, (removal ?? lastRemoval)!.Username].filter(Boolean).join(" · ") : undefined}
             confirmLabel={t("manage.registries.delete")} onConfirm={() => void remove()} />
     </div>;
 }

@@ -54,6 +54,16 @@ describe("participation navigation", () => {
         expect(screen.getByRole("link", {name: "Стенди"})).toBeTruthy();
     });
 
+    it("shows image registries only when infrastructure tasks are allowed", () => {
+        renderSidebar(1);
+        fireEvent.click(screen.getByRole("button", {name: "Захід"}));
+        expect(screen.queryByRole("link", {name: "Реєстри образів"})).toBeNull();
+        cleanup();
+        renderSidebar(1, true);
+        fireEvent.click(screen.getByRole("button", {name: "Захід"}));
+        expect(screen.getByRole("link", {name: "Реєстри образів"}).getAttribute("href")).toBe("/manage/registries");
+    });
+
     it("orders the challenges group: tasks, groups, settings, stands, resources, journal", () => {
         renderSidebar(1, true);
         fireEvent.click(screen.getByRole("button", {name: "Завдання"}));

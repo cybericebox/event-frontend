@@ -71,7 +71,7 @@ const groups: Group[] = [
         {href: "/manage/appearance", label: t("manage.nav.appearance"), icon: Palette},
         {href: "/manage/participation-settings", label: t("manage.nav.participationSettings"), icon: UsersRound},
         {href: "/manage/schedule", label: t("manage.nav.schedule"), icon: CalendarDays},
-        {href: "/manage/registries", label: t("manage.nav.registries"), icon: KeyRound},
+        {href: "/manage/registries", label: t("manage.nav.registries"), icon: KeyRound, infrastructureOnly: true},
     ]},
     {id: "participation", label: t("manage.nav.group.participation"), icon: Handshake, items: [
         {href: "/manage/registration", label: t("manage.nav.registration"), icon: FilePenLine},

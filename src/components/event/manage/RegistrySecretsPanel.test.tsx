@@ -109,6 +109,31 @@ describe("Реєстри образів заходу", () => {
         await waitFor(() => expect(screen.getByText("Облікових даних реєстрів ще немає.")).toBeTruthy());
     });
 
+    it("shows a duplicate rejection inline and keeps the form open", async () => {
+        mockApi([secret], {code: 72814});
+        renderPanel();
+        await screen.findByText("ghcr.io");
+        fireEvent.click(screen.getByRole("button", {name: "Додати"}));
+        fireEvent.change(screen.getByLabelText(/^Адреса реєстру/), {target: {value: "ghcr.io"}});
+        fireEvent.change(screen.getByLabelText(/^Користувач/), {target: {value: "bob"}});
+        fireEvent.change(screen.getByLabelText(/^Токен/), {target: {value: "t"}});
+        fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+        const form = screen.getByLabelText(/^Адреса реєстру/).closest("form")!;
+        await waitFor(() => expect(within(form).getByRole("alert").textContent).toContain("вже збережено доступ"));
+        expect((screen.getByLabelText(/^Адреса реєстру/) as HTMLInputElement).value).toBe("ghcr.io");
+    });
+
+    it("shows the token-required rejection next to the token field", async () => {
+        mockApi([secret], {code: 22815});
+        renderPanel();
+        await screen.findByText("ghcr.io");
+        fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
+        fireEvent.change(await screen.findByLabelText(/^Користувач/), {target: {value: "robot2"}});
+        fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+        const token = screen.getByLabelText(/^Токен/);
+        await waitFor(() => expect(token.closest(".event-manage-field")!.querySelector("[role=alert]")?.textContent).toContain("Введіть токен ще раз"));
+    });
+
     it("is read-only for viewers", async () => {
         canManage = false;
         mockApi([secret]);
