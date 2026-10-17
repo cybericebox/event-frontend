@@ -81,3 +81,23 @@ describe("running stage confirmation", () => {
         expect(api.update).toHaveBeenCalledTimes(1);
     });
 });
+
+describe("flag repeat warning", () => {
+    const warning = "Флаги завдання «Web» можуть повторюватися між командами: можливих флагів замало для кількості команд.";
+
+    it("is shown when the set's flags may repeat", async () => {
+        Object.assign(attachment, {FlagsMayRepeat: true});
+        try {
+            setup();
+            expect(await screen.findByText(warning)).toBeTruthy();
+        } finally {
+            Object.assign(attachment, {FlagsMayRepeat: false});
+        }
+    });
+
+    it("is hidden otherwise", async () => {
+        setup();
+        await screen.findByRole("heading", {name: "Web"});
+        expect(screen.queryByText(warning)).toBeNull();
+    });
+});
