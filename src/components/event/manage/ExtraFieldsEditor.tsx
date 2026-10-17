@@ -8,6 +8,7 @@ import {Eye, EyeOff, Plus} from "lucide-react";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {emptyRichText} from "@/components/event/content/richTextState";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {getManageParticipantForm, putManageParticipantForm, type FormBlock, type FormField, type ParticipantFormInput} from "@/api/manageParticipantForm";
 import {getManageTeamFields, putManageTeamFields} from "@/api/manageTeamFields";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -120,7 +121,7 @@ export function ExtraFieldsEditor({scope}: {scope: FieldsScope}) {
             setEdited(current => {if (current[draftKey] !== draft) return current; const next = {...current}; delete next[draftKey]; return next;});
             setAskPolicy(false);
             toast.success(scope === "team" ? t("manage.fields.savedTeam") : t("manage.fields.savedParticipant"));
-        } catch {toast.error(t("manage.fields.saveFailed"));}
+        } catch (failure) {toastFailure(failure, t("manage.fields.saveFailed"));}
         finally {setSaving(false);}
     }
 

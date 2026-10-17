@@ -5,6 +5,7 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 import {useState} from "react";
 import {ChevronRight, Lightbulb, LightbulbOff} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {
     updateEventBoardChallenge, updateEventChallengeHintCosts, updateEventChallengeScoring,
     type EventBoardChallenge, type EventExerciseAttachment,
@@ -86,7 +87,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
             await onSaved();
             setDraft(current => current === draft ? null : current);
             toast.success(t("manage.challenges.scoring.saved"));
-        } catch {toast.error(t("manage.challenges.scoring.saveFailed"));}
+        } catch (failure) {toastFailure(failure, t("manage.challenges.scoring.saveFailed"));}
         finally {setSaving(false);}
     }
 
@@ -140,7 +141,7 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
             await onSaved();
             setDrafts(current => current === drafts ? {} : current);
             toast.success(t("manage.exercises.hints.saved"));
-        } catch (error) {toast.error(attachmentActionError(error, t("manage.exercises.hints.saveFailed")));}
+        } catch (error) {toastFailure(error, attachmentActionError(error, t("manage.exercises.hints.saveFailed")));}
         finally {setSaving(false);}
     }
 

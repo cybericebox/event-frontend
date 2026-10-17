@@ -4,6 +4,7 @@ import {FirstSolveBadge} from "@/components/event/challenges/FirstSolveBadge";
 import {Fragment, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {ChevronRight, Download, ExternalLink, Radio, Snowflake} from "lucide-react";
 import {downloadResultsCSV, getModeratorResults, resultsLiveURL, setResultsOpened, type ModeratorResults, type ModeratorResultsTeam} from "@/api/manageResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -112,14 +113,14 @@ export default function ManageResultsPage() {
             await setResultsOpened(eventID, opened);
             await queryClient.invalidateQueries({queryKey});
             toast.success(opened ? t("manage.results.freeze.openedToast") : t("manage.results.freeze.restoredToast"));
-        } catch {toast.error(t("manage.results.freeze.toggleFailed"));}
+        } catch (failure) {toastFailure(failure, t("manage.results.freeze.toggleFailed"));}
         finally {setBusy(null);}
     }
 
     async function exportCSV() {
         setBusy("export");
         try {await downloadResultsCSV(eventID);}
-        catch {toast.error(t("manage.results.exportFailed"));}
+        catch (failure) {toastFailure(failure, t("manage.results.exportFailed"));}
         finally {setBusy(null);}
     }
 

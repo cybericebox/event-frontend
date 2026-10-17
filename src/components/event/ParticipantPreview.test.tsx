@@ -6,7 +6,7 @@ import {ParticipantPreviewProvider, ParticipantPreviewEntry, previewAnswerFile, 
 
 const api = vi.hoisted(() => ({pathname: "/join", reset: vi.fn(), toastError: vi.fn(), push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
 vi.mock("@/api/participantPreview", () => ({resetPreviewRuns: api.reset}));
-vi.mock("react-hot-toast", () => ({default: {error: api.toastError}}));
+vi.mock("react-hot-toast", () => ({default: {error: api.toastError}, toast: {error: api.toastError}}));
 vi.mock("next/navigation", () => ({usePathname: () => api.pathname, useRouter: () => ({push: api.push})}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "user-1"})}));
 vi.mock("@/api/manage", () => ({getManageAccess: api.access, getManageConfig: async () => ({ScoreboardVisibility: 1})}));

@@ -461,7 +461,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                     <div className="ib-cmodal__row">
                         <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
                             aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer} disabled={exhausted}
-                            onChange={event => { setAnswer(event.target.value); if (message?.tone === "error") setMessage(null); if (moderators) setAccepted(false); }} />
+                            onChange={event => { setAnswer(event.target.value); if (message?.tone === "error" || message?.retry) setMessage(null); if (moderators) setAccepted(false); }} />
                         <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy}>{t("challenges.modal.submit")}</EventButton>
                     </div>
                     {/* While waiting, the visible countdown ticks silently; one status announces the full wait once. */}

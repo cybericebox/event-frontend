@@ -3,6 +3,7 @@
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {CircleHelp, ExternalLink, LayoutTemplate, MonitorUp, Redo2, Send, Undo2} from "lucide-react";
 import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -284,7 +285,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             setPublished(next);
             queryClient.setQueryData<LiveEditorData>(["event-live-editor", eventID], {Published: next, Draft: null});
             toast.success(t("manage.live.published"));
-        } catch (failure) {toast.error(t(failure instanceof LiveDraftInvalidError ? "manage.live.draftInvalid" : "manage.live.publishError"));}
+        } catch (failure) {toastFailure(failure, t(failure instanceof LiveDraftInvalidError ? "manage.live.draftInvalid" : "manage.live.publishError"));}
         finally {setPublishing(false);}
     }
     // Canvas keys: ⌘/Ctrl+Z undo, ⇧⌘Z / Ctrl+Y redo; with a widget selected

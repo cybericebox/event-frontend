@@ -7,6 +7,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {RotateCcw} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {getManageConfig, ManageApiError, putManageAppearance} from "@/api/manage";
 import {BrandDraftField, useBrandDraft} from "@/components/event/manage/BrandDraftField";
 import {paletteFromLogo} from "@/components/event/manage/paletteFromLogo";
@@ -90,7 +91,7 @@ export default function ManageAppearancePage() {
             root.style.setProperty("--ev-accent-live", result.Config.Theme.AccentLive);
             toast.success(t("manage.appearance.saved"));
         } catch (error) {
-            toast.error(error instanceof ManageApiError && error.status === 409 ? t("manage.appearance.conflict") : t("manage.appearance.saveFailed"));
+            toastFailure(error, error instanceof ManageApiError && error.status === 409 ? t("manage.appearance.conflict") : t("manage.appearance.saveFailed"));
         } finally {setSaving(false);}
     }
 

@@ -5,6 +5,7 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorText} from "@/api/apiErrors";
 import {createManageTeams, type BatchTeam, type BatchTeamIssue, type BatchTeamsResult} from "@/api/manageInvites";
 import {getManageParticipants} from "@/api/manageParticipants";
@@ -146,7 +147,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             ]);
             parsed = parseTeamCsv(await file.text(), buildSchema(participantForm, teamForm, teamColumns));
         }
-        catch {toast.error(t("manage.participants.invite.csvFailed")); return;}
+        catch (error) {toastFailure(error, t("manage.participants.invite.csvFailed")); return;}
         setCsvIssues(parsed.issues);
         setCsvTeams(parsed.teams);
         if (parsed.issues.length || parsed.teams.length === 0) return;
@@ -155,7 +156,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             const result = await createManageTeams(eventID, toBatch(parsed.teams), true, true, sendEmails);
             setPreview(result);
             setServerIssues(result.Issues.map(issue => csvIssueText(issue, parsed.teams)));
-        } catch (error) {toast.error(failure(error, t("manage.teams.batch.previewFailed")));}
+        } catch (error) {toastFailure(error, failure(error, t("manage.teams.batch.previewFailed")));}
         finally {setBusy(false);}
     }
 
@@ -180,10 +181,10 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             }
             toast.success(doneText(result, sendEmails));
             if (result.NotSent.length) toast.error(t("manage.teams.batch.notSent", {count: result.NotSent.length}));
-            try {await onCreated();} catch {toast.error(t("manage.teams.createdNoRefresh"));}
+            try {await onCreated();} catch (error) {toastFailure(error, t("manage.teams.createdNoRefresh"));}
             reset();
             onOpenChange(false);
-        } catch (error) {toast.error(failure(error, t("manage.teams.createFailed")));}
+        } catch (error) {toastFailure(error, failure(error, t("manage.teams.createFailed")));}
         finally {setBusy(false);}
     }
 

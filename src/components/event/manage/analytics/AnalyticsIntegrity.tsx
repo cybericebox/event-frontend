@@ -8,6 +8,7 @@ import Link from "next/link";
 import {Fragment, useId, useState} from "react";
 import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {ChevronDown, ChevronRight, Download, RotateCcw, SlidersHorizontal} from "lucide-react";
 import {
     clampThresholds, defaultIntegrityFilters, deleteIntegrityReview, getAnalyticsIntegrity, integrityExportPath, integrityJournalHref, integrityKinds, integrityLevels,
@@ -96,7 +97,7 @@ function ExportButton({eventID, period, filters, thresholds, disabled}: {eventID
     async function download() {
         setBusy(true);
         try {await downloadManageCSV(eventID, integrityExportPath(period, filters, thresholds), csvFileName("analytics-integrity"));}
-        catch {toast.error(t("manage.analytics.exportFailed"));}
+        catch (failure) {toastFailure(failure, t("manage.analytics.exportFailed"));}
         finally {setBusy(false);}
     }
     return <EventButton className="ib-btn" type="button" disabled={disabled || busy} busy={busy} onClick={() => void download()}><Download size={16} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;

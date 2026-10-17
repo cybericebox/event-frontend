@@ -6,6 +6,7 @@ import {useEffect, useState, type FormEvent, type KeyboardEvent} from "react";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import Link from "next/link";
 import {Download, TriangleAlert} from "lucide-react";
 import {annulManageSolve, AttemptsCursorError, attemptsLiveURL, decideManageAttempt, downloadAttemptsCSV, emptyAttemptFilters, getManageAttempts, type AttemptDecision, type AttemptFilters, type ManageAttempt} from "@/api/manageAttempts";
@@ -163,7 +164,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
             await queryClient.invalidateQueries({queryKey: ["event-manage-attempts", eventID]});
             setDraft(current => current === draft ? null : current);
             toast.success(t("manage.attempts.decisionSaved"));
-        } catch {toast.error(t("manage.attempts.decisionSaveFailed"));}
+        } catch (failure) {toastFailure(failure, t("manage.attempts.decisionSaveFailed"));}
         finally {setSaving(false);}
     }
 
@@ -186,7 +187,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
         if (exporting) return;
         setExporting(true);
         try {await downloadAttemptsCSV(eventID, filters);}
-        catch {toast.error(t("manage.attempts.exportFailed"));}
+        catch (failure) {toastFailure(failure, t("manage.attempts.exportFailed"));}
         finally {setExporting(false);}
     }
 

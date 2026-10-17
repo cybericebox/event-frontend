@@ -9,6 +9,7 @@ import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, ChevronDown, Trash2} from "lucide-react";
 import toast from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {createManagePage, deleteManagePage, discardManagePageDraft, editablePage, getManageConfig, getManageContent, getManageContentVariables, getManagePage, getManagePages, ManageApiError, type ManagePage, type ManagePageInput, publishManagePage, saveManagePageDraft} from "@/api/manage";
 import type {ContentDocument} from "@/types/eventContent";
 import {FieldLabel} from "./PageBlockEditor";
@@ -115,7 +116,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
 
     function failure(error: unknown, fallbackKey: string) {
         const status = error instanceof ManageApiError ? error.status : 0;
-        toast.error(status === 400 ? t("manage.content.page.rejected") : status === 409 ? t("manage.content.page.conflict") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+        toastFailure(error, status === 400 ? t("manage.content.page.rejected") : status === 409 ? t("manage.content.page.conflict") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
     }
 
     // Stores the draft; returns the stored page.
@@ -177,8 +178,8 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             ]);
             toast.success(t("manage.content.page.deleted"));
             router.replace("/manage/content/landing");
-        } catch {
-            toast.error(t("manage.content.page.deleteFailed"));
+        } catch (error) {
+            toastFailure(error, t("manage.content.page.deleteFailed"));
             setBusy(null);
         }
     }

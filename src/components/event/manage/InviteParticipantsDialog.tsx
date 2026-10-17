@@ -5,6 +5,7 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useCallback, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorText} from "@/api/apiErrors";
 import {sendInvitations, type InvitationResult} from "@/api/manageInvites";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
@@ -91,10 +92,10 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             const {entries, issues} = parseInviteCsv(await file.text(), buildSchema(form, null, inviteColumns));
             setCsvIssues(issues);
             setCsvChips(addChips([], entries));
-        } catch {
+        } catch (failure) {
             setCsvIssues([]);
             setCsvChips([]);
-            toast.error(t("manage.participants.invite.csvFailed"));
+            toastFailure(failure, t("manage.participants.invite.csvFailed"));
         }
     }
 
@@ -112,11 +113,11 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
             if (mode === "manual") setChips(keepFailed); else setCsvChips(keepFailed);
             if (sent) {
                 toast.success(t(sendEmails ? "manage.participants.invite.sent" : "manage.participants.invite.added", {count: sent}));
-                try {await onSent();} catch {toast.error(t("manage.participants.refreshFailed"));}
+                try {await onSent();} catch (failure) {toastFailure(failure, t("manage.participants.refreshFailed"));}
             }
             if (!failed.length) {reset(); onOpenChange(false);}
         } catch (error) {
-            toast.error(apiErrorText(error, t("manage.participants.invite.sendFailed")));
+            toastFailure(error, apiErrorText(error, t("manage.participants.invite.sendFailed")));
         }
         finally {setBusy(false);}
     }

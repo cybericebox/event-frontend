@@ -7,6 +7,7 @@ import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Send} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {
     customizeManageEmailTemplate, getManageEmailImageURL, getManageEmailPresets, getManageEmailTemplates, publishManageEmailTemplate,
     resetManageEmailTemplate, rollbackManageEmailTemplate, sendManageEmailTemplateTest, updateManageEmailTemplate,
@@ -100,8 +101,8 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
             ]);
             toast.success(success);
             return true;
-        } catch {
-            toast.error(failure);
+        } catch (caught) {
+            toastFailure(caught, failure);
             return false;
         } finally {setBusy(false);}
     }
@@ -132,7 +133,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
         try {
             const result = await sendManageEmailTemplateTest(eventID, template.ID);
             toast.success(t("manage.email.testSent", {recipient: result.Recipient}));
-        } catch {toast.error(t("manage.email.testError"));}
+        } catch (failure) {toastFailure(failure, t("manage.email.testError"));}
         finally {setTesting(false);}
     }
 

@@ -5,6 +5,7 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorText} from "@/api/apiErrors";
 import {
     defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityFieldErrors, identityForm, identityInput,
@@ -88,7 +89,7 @@ export function MailSettingsPanel() {
             // Edits made while the save was pending stay in the form.
             setIdentityDraft(current => current && JSON.stringify(current) !== JSON.stringify(submitted) ? current : null);
             toast.success(t("manage.mail.settings.saved"));
-        } catch (error) {toast.error(errorText(error, t("manage.mail.settings.saveError")));}
+        } catch (error) {toastFailure(error, errorText(error, t("manage.mail.settings.saveError")));}
         finally {setBusy("identity", false);}
     }
 
@@ -106,7 +107,7 @@ export function MailSettingsPanel() {
                     clearPassword: current.clearPassword === submitted.clearPassword ? false : current.clearPassword};
             });
             toast.success(t("manage.mail.smtp.saved"));
-        } catch (error) {toast.error(errorText(error, t("manage.mail.smtp.saveError")));}
+        } catch (error) {toastFailure(error, errorText(error, t("manage.mail.smtp.saveError")));}
         finally {setBusy("smtp", false);}
     }
 
@@ -119,7 +120,7 @@ export function MailSettingsPanel() {
         setBusy("test", true);
         setTest(null);
         try {setTest(await testEventMailSMTP(eventID, input));}
-        catch (error) {toast.error(errorText(error, t("manage.mail.smtp.testError")));}
+        catch (error) {toastFailure(error, errorText(error, t("manage.mail.smtp.testError")));}
         finally {setBusy("test", false);}
     }
 

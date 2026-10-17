@@ -6,6 +6,7 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 import {useLayoutEffect, useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {Lock} from "lucide-react";
 import {getOwnParticipantAnswers, putOwnParticipantAnswers, putSelfPseudonym, type ParticipantAnswers} from "@/api/participantForm";
@@ -54,7 +55,7 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
             const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
             const message = errorText(error, t("participation.pseudonym.saveFailed"));
             if (editing && (code === ApiErrorCode.PseudonymInvalid || code === ApiErrorCode.PseudonymTaken || code === ApiErrorCode.NameInvalidCharacters)) setFieldError(message);
-            else toast.error(message);
+            else toastFailure(error, message);
         } finally { setBusy(false); }
     };
     if (editing) return <form className="event-pp-rename" onSubmit={event => { event.preventDefault(); void save(value.trim() || null); }}>

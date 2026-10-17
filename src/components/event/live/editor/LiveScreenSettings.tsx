@@ -3,6 +3,7 @@
 import {useRef} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {liveRefreshOptions, type LiveLayout} from "@/api/manageLive";
 import type {ManageResultsSnapshot, ResultsSettings} from "@/api/manageResults";
 import {getResultsSettings, putResultsSettings, resultsSettingsInput} from "@/api/manageResults";
@@ -37,10 +38,10 @@ export function LiveFreezeToggle({eventID, canManage}: {eventID: string; canMana
                 if (waiting.current === 0 && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData(queryKey, saved);
                 void queryClient.invalidateQueries({queryKey: ["event-live-results", eventID]});
                 toast.success(t(saved.LiveFreeze ? "manage.live.freeze.on" : "manage.live.freeze.off"));
-            } catch {
+            } catch (failure) {
                 waiting.current -= 1;
                 if (waiting.current === 0) await queryClient.invalidateQueries({queryKey});
-                toast.error(t("manage.live.freeze.error"));
+                toastFailure(failure, t("manage.live.freeze.error"));
             }
         });
     }
