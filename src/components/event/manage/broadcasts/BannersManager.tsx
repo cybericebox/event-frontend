@@ -6,6 +6,7 @@ import {useRef, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CircleHelp, Pencil, Plus, Power, PowerOff, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorMessage, ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {
@@ -162,10 +163,10 @@ export function BannersManager() {
                 const shown = queryClient.getQueryData<ManageBanner[]>(key)?.find(row => row.ID === banner.ID);
                 if (toggling.current === 0 && shown && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData<ManageBanner[]>(key, patch(saved));
                 toast.success(t(active ? "manage.banners.activated" : "manage.banners.deactivated"));
-            } catch {
+            } catch (failure) {
                 toggling.current -= 1;
                 if (toggling.current === 0) await queryClient.invalidateQueries({queryKey: key});
-                toast.error(t("manage.banners.error.save"));
+                toastFailure(failure, t("manage.banners.error.save"));
             }
         });
     }

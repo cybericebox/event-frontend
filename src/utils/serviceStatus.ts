@@ -1,6 +1,6 @@
 import {isEventSelfRequest, reportEventNotFound} from "./eventGone";
 import {apiOrigin} from "./origins";
-import {fetchWithOverloadRetry} from "@/api/retry";
+import {fetchWithOverloadRetry, isOverloadResponse} from "@/api/retry";
 
 // Backend reachability, shared by every browser API call. A network failure or a
 // 5xx marks the service "suspect"; the gate confirms with two probes 15 s apart before it shows
@@ -105,7 +105,8 @@ export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): type
             const stream = response.headers.get("Content-Type")?.includes("text/event-stream") ?? false;
             const requestId = response.status >= 500 ? response.headers.get("X-Request-ID") : null;
             // A 5xx with X-Request-ID is our backend answering with an error (journaled): a 500 page, not an outage.
-            if (!stream && isUnavailableStatus(response.status) && !requestId) reportServiceUnavailable();
+            // An overload answer (429, or 503 with Retry-After) is a busy server that answered: never an outage.
+            if (!stream && isUnavailableStatus(response.status) && !requestId && !isOverloadResponse(response)) reportServiceUnavailable();
             if (requestId) lastServerError = {requestId, at: Date.now()};
             if (response.status === 404 && isEventSelfRequest(requestURL(input), origin)) void reportEventNotFound(origin, fetchImpl);
             return response;

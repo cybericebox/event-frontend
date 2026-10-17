@@ -3,7 +3,7 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
 import toast from "react-hot-toast";
 import {EventActionToaster} from "./EventActionToaster";
-import {toastApiError} from "./toastApiError";
+import {toastApiError, toastFailure} from "./toastApiError";
 
 class TestApiError extends Error {
     constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number) {
@@ -37,5 +37,18 @@ describe("toastApiError", () => {
         expect(await screen.findByText("Не вдалося зберегти")).toBeTruthy();
         expect(screen.getByText("Сервер перевантажений, спробуйте за кілька секунд")).toBeTruthy();
         expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
+    });
+
+    it("toastFailure swaps the caller's text for the overloaded line only on an overload 503", async () => {
+        render(<EventActionToaster />);
+        act(() => {
+            toastFailure(new TestApiError(503, 2608, 1), "Не вдалося видалити");
+            toastFailure(new TestApiError(503), "Не вдалося зберегти");
+            toastFailure(new TestApiError(429, undefined, 1), "Не вдалося надіслати");
+        });
+        expect(await screen.findByText("Сервер перевантажений, спробуйте за кілька секунд")).toBeTruthy();
+        expect(screen.queryByText("Не вдалося видалити")).toBeNull();
+        expect(screen.getByText("Не вдалося зберегти")).toBeTruthy();
+        expect(screen.getByText("Не вдалося надіслати")).toBeTruthy();
     });
 });

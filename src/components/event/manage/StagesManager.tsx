@@ -6,6 +6,7 @@ import {useRef, useState, type FormEvent} from "react";
 import {CircleHelp} from "lucide-react";
 import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorMessage, apiErrorText, ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError, type ManageLifecycle} from "@/api/manage";
 import {
@@ -102,7 +103,7 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
             apply(await updateManageStage(eventID, stage.ID, input));
             setEdit(current => current === edit ? null : current);
             toast.success(t("manage.stages.saved"));
-        } catch (failure) {const fields = stageFailureFields(failure); if (fields) setFieldErrors(fields); else toast.error(failureText(failure, t("manage.stages.saveFailed")));}
+        } catch (failure) {const fields = stageFailureFields(failure); if (fields) setFieldErrors(fields); else toastFailure(failure, failureText(failure, t("manage.stages.saveFailed")));}
         finally {setSaving(false);}
     }
 
@@ -196,7 +197,7 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
             setClosesWithEvent(false);
             setReturnable(false);
             toast.success(t("manage.stages.created"));
-        } catch (failure) {const fields = stageFailureFields(failure); if (fields) setFieldErrors(fields); else toast.error(failureText(failure, t("manage.stages.saveFailed")));}
+        } catch (failure) {const fields = stageFailureFields(failure); if (fields) setFieldErrors(fields); else toastFailure(failure, failureText(failure, t("manage.stages.saveFailed")));}
         finally {setSaving(false);}
     }
 
@@ -297,7 +298,7 @@ export function StagesManager({eventID, lifecycle, canManage}: {eventID: string;
                 // Roll back only the failed final choice; newer queued intent survives its exact refetch.
                 queryClient.setQueryData<ManageStage[]>(key, current => current?.map(item => item.ID === stage.ID ? {...item, ...operation.desired} : item));
                 await queryClient.invalidateQueries({queryKey: key, exact: true});
-                toast.error(failureText(failure, t("manage.stages.saveFailed")));
+                toastFailure(failure, failureText(failure, t("manage.stages.saveFailed")));
             }
         });
     }

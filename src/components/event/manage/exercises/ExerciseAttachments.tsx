@@ -5,6 +5,7 @@ import {useQuery} from "@tanstack/react-query";
 import {ChevronRight} from "lucide-react";
 import Link from "next/link";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {isNotEnoughReserved} from "../resources/resourcesModel";
 import {
     detachEventExercise, forkEventExercise, revertEventExercise, updateEventExercise,
@@ -116,7 +117,7 @@ export function ExerciseAttachments() {
             // 72508: the reservation cannot hold the change for all teams; the dialog offers a change request.
             if (isNotEnoughReserved(error)) setAction({...action, error: attachmentActionError(error, fallback), extension: true});
             else if (error instanceof ManageApiError && error.code === ApiErrorCode.ExerciseTaskHasAttempts) setAction({...action, error: attachmentActionError(error, fallback)});
-            else {setAction(null); toast.error(attachmentActionError(error, fallback));}
+            else {setAction(null); toastFailure(error, attachmentActionError(error, fallback));}
         } finally {setBusy(false);}
     }
 

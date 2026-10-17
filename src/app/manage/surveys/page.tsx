@@ -11,6 +11,7 @@ import {EventRichTextEditor} from "@/components/event/manage/EventLexicalEditor"
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {emptyRichText} from "@/components/event/content/richTextState";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {createManageGenericForm, getManageGenericForms, sendManageGenericForm, updateManageGenericForm, type ManageGenericFormInput} from "@/api/manageFormResponses";
 import type {FormBlock, FormField} from "@/api/manageParticipantForm";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -107,14 +108,14 @@ function SurveysPage() {
             setDrafts(current => {if (current[sentID] !== draft) return current; const next = {...current}; delete next[sentID]; return next;});
             setFormID(current => current === sentID ? result.ID : current);
             toast.success(form ? t("manage.surveys.updated") : t("manage.surveys.created"));
-        } catch {toast.error(t("manage.surveys.saveFailed"));}
+        } catch (failure) {toastFailure(failure, t("manage.surveys.saveFailed"));}
         finally {setSaving(false);}
     }
     async function send() {
         if (!form || !canManage || sending || dirty || !form.Enabled) return;
         setSending(true);
         try {await sendManageGenericForm(eventID, form.ID); toast.success(t("manage.surveys.sent"));}
-        catch {toast.error(t("manage.surveys.sendFailed"));}
+        catch (failure) {toastFailure(failure, t("manage.surveys.sendFailed"));}
         finally {setSending(false);}
     }
 

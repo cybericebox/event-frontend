@@ -5,6 +5,7 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {
     getManageConfig, getManageLifecycle, getManageScoring, manageConfigInput, putManageConfig, putManageScoring,
     type LabPolicy, type ManageConfig, type ManageScoring, type ManageScoringInput,
@@ -86,7 +87,7 @@ export function ChallengeSettings() {
             queryClient.setQueryData(["event-management-scoring", eventID], await putManageScoring(eventID, inputOf(value)));
             setEdit(current => current?.value === value ? null : current);
             toast.success(t("manage.challenges.scoring.saved"));
-        } catch {toast.error(t("manage.challenges.scoring.saveFailed"));}
+        } catch (failure) {toastFailure(failure, t("manage.challenges.scoring.saveFailed"));}
         finally {setSaving(false);}
     }
 
@@ -105,10 +106,10 @@ export function ChallengeSettings() {
                 const saved = await putManageConfig(eventID, manageConfigInput(wanted));
                 const shown = queryClient.getQueryData<ManageConfig>(key);
                 if (version === configVersion.current && JSON.stringify(shown) === JSON.stringify(wanted) && JSON.stringify(saved) !== JSON.stringify(shown)) queryClient.setQueryData(key, saved);
-            } catch {
+            } catch (failure) {
                 await queryClient.invalidateQueries({queryKey: key, exact: true});
                 if (version !== configVersion.current && latestConfig.current) queryClient.setQueryData(key, latestConfig.current);
-                toast.error(t("manage.board.saveFailed"));
+                toastFailure(failure, t("manage.board.saveFailed"));
             }
         });
     }

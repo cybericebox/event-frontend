@@ -7,6 +7,7 @@ import Link from "next/link";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CalendarDays, Info} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorMessage} from "@/api/apiErrors";
 import {getManageConfig, getManageLifecycle, manageConfigInput, ManageApiError, putManageConfig, putManageLifecycle, type ManageLifecycle} from "@/api/manage";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -125,7 +126,7 @@ export default function ManageSchedulePage() {
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
             const code = failure instanceof ManageApiError ? failure.code : undefined;
-            toast.error(status === 409 ? apiErrorMessage(code, t("manage.schedule.error.conflict")) : status === 400 ? apiErrorMessage(code, t("manage.schedule.error.rejected")) : t("manage.schedule.error.saveFailed"));
+            toastFailure(failure, status === 409 ? apiErrorMessage(code, t("manage.schedule.error.conflict")) : status === 400 ? apiErrorMessage(code, t("manage.schedule.error.rejected")) : t("manage.schedule.error.saveFailed"));
         } finally { setSaving(false); }
     }
 
@@ -150,7 +151,7 @@ export default function ManageSchedulePage() {
             toast.success(t("manage.schedule.countdown.saved"));
         } catch (failure) {
             const status = failure instanceof ManageApiError ? failure.status : 0;
-            toast.error(status === 409 ? t("manage.schedule.countdown.error.conflict") : status === 400 ? t("manage.schedule.countdown.error.rejected") : t("manage.schedule.countdown.error.saveFailed"));
+            toastFailure(failure, status === 409 ? t("manage.schedule.countdown.error.conflict") : status === 400 ? t("manage.schedule.countdown.error.rejected") : t("manage.schedule.countdown.error.saveFailed"));
         } finally { setCountdownSaving(false); }
     }
 

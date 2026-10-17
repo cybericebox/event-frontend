@@ -6,6 +6,7 @@ import {useState} from "react";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {
     channelSignals, customizeManageInAppTemplate, getManageInAppTemplates, getManageNotificationSubscriptions,
     getManageNotificationTypes, publishManageInAppTemplate, resetManageInAppTemplate,
@@ -85,7 +86,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
             return true;
         } catch (error) {
             // A refused link or button address has its own message; every other error keeps the generic one.
-            toast.error(error instanceof ManageApiError && error.code === ApiErrorCode.TemplateLinkInvalid ? apiErrorMessage(error.code, failure) : failure);
+            toastFailure(error, error instanceof ManageApiError && error.code === ApiErrorCode.TemplateLinkInvalid ? apiErrorMessage(error.code, failure) : failure);
             return false;
         } finally {setBusy(false);}
     }

@@ -5,6 +5,7 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {Info} from "lucide-react";
 import {getResultsSettings, putResultsSettings, resultsSettingsInput, type ResultsSettingsInput} from "@/api/manageResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -55,7 +56,7 @@ export default function ResultsSettingsPage() {
             void queryClient.invalidateQueries({queryKey: ["event-management-config", eventID]});
             setEdit(current => current?.value === value ? null : current);
             toast.success(t("manage.results.settings.saved"));
-        } catch {toast.error(t("manage.results.settings.saveFailed"));}
+        } catch (failure) {toastFailure(failure, t("manage.results.settings.saveFailed"));}
         finally {setSaving(false);}
     }
 

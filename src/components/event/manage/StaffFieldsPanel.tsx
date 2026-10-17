@@ -73,7 +73,7 @@ export function StaffFieldsPanel({eventID, scope, subjectID, form, answers, canM
             await onSaved();
             toast.success(t("manage.staffFields.saved"));
         } catch (error) {
-            toastApiError(error, t("manage.staffFields.saveFailed"), () => void save());
+            toastApiError(error, t("manage.staffFields.saveFailed"));
         } finally {setBusy(false);}
     }
 

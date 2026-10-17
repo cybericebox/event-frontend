@@ -26,10 +26,12 @@ afterEach(() => {cleanup(); api.submit.mockReset();});
 const open = {...fixtureChallenge, SolvedAt: null, Infrastructure: false, MaxAttempts: null, AttemptsLeft: null};
 const overloaded = () => new ParticipantChallengeError(503, undefined, 1);
 
+const client = new QueryClient();
+const modal = (challenge: typeof open) => <QueryClientProvider client={client}>
+    <ChallengeModal challenge={challenge} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} onRejected={() => {}} />
+</QueryClientProvider>;
 function renderModal() {
-    return render(<QueryClientProvider client={new QueryClient()}>
-        <ChallengeModal challenge={open} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} onRejected={() => {}} />
-    </QueryClientProvider>);
+    return render(modal(open));
 }
 const flag = () => screen.getByLabelText("Прапор") as HTMLInputElement;
 const keys = () => api.submit.mock.calls.map(call => call[3]);
@@ -67,5 +69,28 @@ describe("answer retry after an overloaded server", () => {
         await send("ICE{a}");
         await send("ICE{a}");
         expect(keys()[1]).not.toBe(keys()[0]);
+    });
+
+    it("drops the retry when the answer is edited after the overloaded line", async () => {
+        api.submit.mockRejectedValueOnce(overloaded());
+        renderModal();
+        await send("ICE{a}");
+        expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+        fireEvent.change(flag(), {target: {value: "ICE{b}"}});
+        expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
+        expect(screen.queryByText("Сервер перевантажений, спробуйте за кілька секунд")).toBeNull();
+    });
+
+    it("takes a new key for the same answer on another challenge", async () => {
+        api.submit.mockRejectedValue(overloaded());
+        const view = renderModal();
+        await send("ICE{a}");
+        const other = {...open, ID: "33333333-3333-4333-8333-333333333333", EventChallengeID: "44444444-4444-4444-8444-444444444444"};
+        view.rerender(modal(other));
+        await send("ICE{a}");
+        view.rerender(modal(open));
+        await send("ICE{a}");
+        expect(api.submit.mock.calls.map(call => call[1])).toEqual([open.EventChallengeID, other.EventChallengeID, open.EventChallengeID]);
+        expect(new Set(keys()).size).toBe(3);
     });
 });

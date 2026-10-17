@@ -3,6 +3,7 @@
 import {useState} from "react";
 import {FolderInput, Pencil, Plus, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {
     createEventChallengeGroup, deleteEventChallengeGroup, reorderEventChallengeGroups, reorderGroupChallenges,
     setEventChallengeGroup, updateEventChallengeGroup, type EventChallengeGroup,
@@ -77,7 +78,7 @@ export function ChallengeGroupsManager() {
             return true;
         } catch (error) {
             const message = typeof failure === "string" ? failure : failure(error);
-            if (error instanceof ManageApiError && error.status === 409) setNameError(message); else toast.error(message);
+            if (error instanceof ManageApiError && error.status === 409) setNameError(message); else toastFailure(error, message);
             return false;
         } finally {setBusy(false);}
     }

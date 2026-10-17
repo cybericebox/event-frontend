@@ -2,7 +2,7 @@
 
 import type {ReactNode} from "react";
 import {useState} from "react";
-import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {CircleHelp, Download} from "lucide-react";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import {analyticsTableExportPath, type CommunicationsTable, type ParticipantsTable} from "@/api/manageAnalyticsPeople";
@@ -48,7 +48,7 @@ export function AnalyticsTableExport({eventID, section, table, period, disabled 
     async function download() {
         setBusy(true);
         try {await downloadManageCSV(eventID, analyticsTableExportPath(section, table, period), csvFileName(`analytics-${section}-${table}`));}
-        catch {toast.error(t("manage.analytics.exportFailed"));}
+        catch (failure) {toastFailure(failure, t("manage.analytics.exportFailed"));}
         finally {setBusy(false);}
     }
     return <EventButton className="ib-btn ib-btn--sm" type="button" disabled={disabled || busy} busy={busy} onClick={() => void download()}><Download size={14} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;

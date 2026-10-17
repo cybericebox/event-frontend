@@ -1,7 +1,7 @@
 "use client";
 
 import {useQueryClient} from "@tanstack/react-query";
-import {toast} from "react-hot-toast";
+import {toastFailure} from "@/components/ui/toastApiError";
 import {setEventExerciseVisibility, updateEventBoardChallenge, type EventBoardChallenge} from "@/api/manageChallenges";
 import {t} from "@/i18n/t";
 import {attachmentActionError} from "./attachmentModel";
@@ -33,7 +33,7 @@ export function useBoardMutations(eventID: string) {
             } catch (error) {
                 waiting.set(eventID, (waiting.get(eventID) ?? 1) - 1);
                 if (!waiting.get(eventID)) await queryClient.invalidateQueries({queryKey: boardsKey(eventID)});
-                toast.error(attachmentActionError(error, fallback));
+                toastFailure(error, attachmentActionError(error, fallback));
             }
         });
         queues.set(eventID, run);
