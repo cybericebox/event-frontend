@@ -14,6 +14,7 @@ import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {EventButton} from "@/components/ui/EventButton";
+import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {t} from "@/i18n/t";
@@ -46,7 +47,8 @@ function failure(error: unknown, fallback: string): string {
     return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
 }
 
-function doneText(result: BatchTeamsResult): string {
+function doneText(result: BatchTeamsResult, sendEmails: boolean): string {
+    if (!sendEmails) return t("manage.teams.batch.doneSilent", {teams: result.Teams.length, assigned: result.Assigned, invited: result.Invited});
     return t("manage.teams.batch.done", {teams: result.Teams.length, assigned: result.Assigned, invited: result.Invited});
 }
 
@@ -92,6 +94,8 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     const fieldIssue = (field: string) => fieldIssues(field).length > 0 && <ul className="event-modal__issues" id={`${id}-${field}-server-error`} role="alert">{fieldIssues(field).map((issue, index) => <li key={index}>{issueMessage(issue, name.trim())}</li>)}</ul>;
     const fieldProps = (field: string) => ({"aria-invalid": fieldIssues(field).length > 0 || undefined, "aria-describedby": fieldIssues(field).length > 0 ? `${id}-${field}-server-error` : undefined});
     const [busy, setBusy] = useState(false);
+    // One-time choice of this add only: never stored, on again whenever the dialog closes.
+    const [sendEmails, setSendEmails] = useState(true);
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: open, refetchOnWindowFocus: false});
     // The CSV carries the team and participant form fields: the template follows the forms as they are now.
     const queryClient = useQueryClient();
@@ -115,11 +119,12 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
 
     function reset() {
         setMode("manual"); setName(""); setChips([]); setCaptain(""); setPick(""); setFieldAnswers({});
-        setFileName(null); setCsvIssues([]); setCsvTeams([]); setPreview(null); setServerIssues([]); setManualIssues([]);
+        setFileName(null); setCsvIssues([]); setCsvTeams([]); setPreview(null); setServerIssues([]); setManualIssues([]); setSendEmails(true);
     }
 
     function close() {
         if (busy) return;
+        setSendEmails(true);
         onOpenChange(false);
     }
 
@@ -148,7 +153,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
         if (parsed.issues.length || parsed.teams.length === 0) return;
         setBusy(true);
         try {
-            const result = await createManageTeams(eventID, toBatch(parsed.teams), true, true);
+            const result = await createManageTeams(eventID, toBatch(parsed.teams), true, true, sendEmails);
             setPreview(result);
             setServerIssues(result.Issues.map(issue => csvIssueText(issue, parsed.teams)));
         } catch (error) {toast.error(failure(error, t("manage.teams.batch.previewFailed")));}
@@ -167,14 +172,14 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
             : toBatch(csvTeams);
         setBusy(true);
         try {
-            const result = await createManageTeams(eventID, teams, false, mode === "csv");
+            const result = await createManageTeams(eventID, teams, false, mode === "csv", sendEmails);
             if (result.Issues.length) {
                 setPreview(mode === "csv" ? result : null);
                 setManualIssues(mode === "manual" ? result.Issues : []);
                 setServerIssues(result.Issues.filter(issue => mode === "csv" || !issueField(issue.Code)).map(issue => mode === "csv" ? csvIssueText(issue, csvTeams) : issueMessage(issue, name.trim())));
                 return;
             }
-            toast.success(doneText(result));
+            toast.success(doneText(result, sendEmails));
             if (result.NotSent.length) toast.error(t("manage.teams.batch.notSent", {count: result.NotSent.length}));
             try {await onCreated();} catch {toast.error(t("manage.teams.createdNoRefresh"));}
             reset();
@@ -183,7 +188,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
         finally {setBusy(false);}
     }
 
-    return <ManageDialog open={open} onOpenChange={next => {if (!next) close(); else onOpenChange(true);}} title={t("manage.teams.newTitle")} description={t("manage.teams.batch.description")} onSubmit={submit} size="md"
+    return <ManageDialog open={open} onOpenChange={next => {if (!next) close(); else onOpenChange(true);}} title={t("manage.teams.newTitle")} description={t(sendEmails ? "manage.teams.batch.description" : "manage.teams.batch.descriptionSilent")} onSubmit={submit} size="md"
         fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: dropCsv, disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={mode === "manual" ? !canCreateManual : !canCreateCsv} busy={busy}>{mode === "manual" ? t("manage.teams.create") : t("manage.teams.batch.createAll", {count: csvTeams.length})}</EventButton></>}>
@@ -208,7 +213,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
                 <span className="ib-field__label" id={`${id}-captain`}>{t("manage.teams.captain")}<span className="ib-field__req" aria-label={t("common.required")}>*</span></span>
                 <EventSelect ariaLabel={t("manage.teams.captain")} value={captainValue} placeholder={members.length ? t("manage.teams.batch.chooseCaptain") : t("manage.teams.batch.addMembersFirst")} options={members.map(chip => ({value: chip.email, label: chipName(chip) ? `${chipName(chip)} · ${chip.email}` : chip.email}))} onValueChange={value => {setCaptain(value); setManualIssues(current => current.filter(issue => issueField(issue.Code) !== "captain"));}} disabled={busy || members.length === 0} />
                 {fieldIssue("captain")}
-                <p className="ib-field__hint">{t("manage.teams.batch.pendingNote")}</p>
+                {sendEmails && <p className="ib-field__hint">{t("manage.teams.batch.pendingNote")}</p>}
             </div>
             {fieldsQuery.data?.Enabled && <div role="group" aria-label={t("manage.staffFields.title")} {...fieldProps("fields")}><TeamFieldsInputs form={fieldsQuery.data} answers={fieldAnswers} onChange={(key, value) => {setFieldAnswers(current => ({...current, [key]: value})); setManualIssues(current => current.filter(issue => issueField(issue.Code) !== "fields"));}} disabled={busy} />{fieldIssue("fields")}</div>}
         </> : <>
@@ -220,9 +225,10 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
                 templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} serverIssues={serverIssues} disabled={busy || participantFormQuery.isError || fieldsQuery.isError} templateDisabled={participantFormQuery.isPending || fieldsQuery.isPending} />
             {(participantFormQuery.isError || fieldsQuery.isError) && <EventLoadError compact message={t("manage.invites.csv.formsFailed")} error={participantFormQuery.error ?? fieldsQuery.error} onRetry={() => {void participantFormQuery.refetch(); void fieldsQuery.refetch();}} />}
             <p className="ib-field__hint">{t("manage.teams.batch.captainMarks")}</p>
-            {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}
+            {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{sendEmails ? t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited}) : t("manage.teams.batch.previewSilent", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}
             {preview && preview.Issues.length === 0 && <MissingFieldsSummary rows={[...csvTeams.map(team => ({name: team.name, missing: team.missing})), ...csvTeams.flatMap(team => team.members.map(member => ({name: member.email, missing: member.missing ?? []})))]} />}
         </>}
+        <EventCheckbox checked={sendEmails} onCheckedChange={setSendEmails} disabled={busy} label={t("manage.invites.sendEmails")} />
         {mode === "manual" && serverIssues.length > 0 && <ul className="event-modal__issues" role="alert">{serverIssues.map((text, index) => <li key={index}>{text}</li>)}</ul>}
     </ManageDialog>;
 }

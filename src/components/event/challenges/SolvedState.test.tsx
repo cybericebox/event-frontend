@@ -11,7 +11,7 @@ import {markSolved} from "./challengeBoardModel";
 
 const api = vi.hoisted(() => ({preview: false, previewSubmit: vi.fn(), submit: vi.fn(), moderator: vi.fn(), board: vi.fn(), runtime: vi.fn()}));
 vi.mock("@/api/participantPreview", async importOriginal => ({...await importOriginal<typeof import("@/api/participantPreview")>(), submitPreviewFlag: (...args: unknown[]) => api.previewSubmit(...args)}));
-vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "u1"})}));
+vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "u1"}), getParticipation: async () => null}));
 vi.mock("@/components/event/EventCountdown", () => ({EventCountdown: () => null}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => ({
     event: {EventID: "e", Name: "Захід", Participation: 1, StartTime: "2026-01-01T00:00:00Z", FinishTime: null},

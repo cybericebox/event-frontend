@@ -19,6 +19,8 @@ import {useGuestEvent} from "@/components/event/GuestShell";
 import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
 import {EventCountdown} from "@/components/event/EventCountdown";
 import {StageTimers} from "./StageTimers";
+import {TeamConfirmPrompt} from "@/components/event/participation/TeamConfirmPrompt";
+import {useParticipation} from "@/components/event/participation/participationRules";
 import {BoardFilterBar} from "./BoardFilterBar";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventBanner} from "@/components/event/EventBanner";
@@ -188,6 +190,8 @@ export function ChallengesBoard() {
     const ownTeam = participant?.ownTeam ?? null;
     const teamMode = event?.Participation === 1;
     const admitted = ownTeam ? ownTeam.Admitted !== false : false;
+    const teamParticipation = useParticipation(event?.EventID, !preview.active && !!participant && !!ownTeam && !ownTeam.Formed);
+    const needsConfirmation = teamParticipation.data?.TeamNeedsConfirmation === true;
     const challenges = useQuery({
         queryKey: ["event-own-challenges", event?.EventID],
         queryFn: async ({signal}) => {
@@ -218,7 +222,7 @@ export function ChallengesBoard() {
     if (preview.active) {
         if (preview.state!.status !== 2) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
         if (event.Participation === 1 && !preview.state!.team) return <Page banners={<EventBanner title={t("challenges.noTeam.title")} message={t("challenges.noTeam.message")} action={<Link className="ib-btn ib-btn--sm ib-btn--primary" href="/participation?tab=team">{t("challenges.noTeam.action")}</Link>} />} />;
-        if (event.Participation === 1 && !preview.state!.team?.Formed) return <Page><EmptyState message={t("challenges.teamNotFormed")} action={<Link className="ib-btn ib-btn--primary" href="/participation?tab=team">{t("challenges.myParticipation")}</Link>} /></Page>;
+        if (event.Participation === 1 && !preview.state!.team?.Formed) return <Page><EmptyState message={t("challenges.preparing")} action={<Link className="ib-btn ib-btn--primary" href="/participation?tab=team">{t("challenges.myParticipation")}</Link>} /></Page>;
         return <PreviewBoard event={event} />;
     }
     if (!participant) return <ModeratorsBoard event={event} finished={finished} />;
@@ -238,7 +242,13 @@ export function ChallengesBoard() {
         {board && <StageTimers board={board} offset={offset} onZero={() => void refetchBoard()} />}
     </div>;
     if (!started) return <Page countdown={countdown}><EmptyState message={t("challenges.beforeStart")} /></Page>;
-    if (!ownTeam.Formed) return <Page countdown={countdown}><EmptyState message={t("challenges.teamNotFormed")} /></Page>;
+    // A late-join team waits for its captain: the captain is asked to confirm, the members told to wait. Where
+    // the start forms every team nothing about confirmation is shown.
+    // Until the participation rules are known, the crest loader holds the block: no "preparing" state that swaps.
+    if (!ownTeam.Formed && teamParticipation.isPending) return <Page countdown={countdown}><EventLoading label={t("challenges.loading")} /></Page>;
+    if (!ownTeam.Formed) return needsConfirmation
+        ? <Page banners={<TeamConfirmPrompt eventID={event.EventID} />} countdown={countdown} />
+        : <Page countdown={countdown}><EmptyState message={t("challenges.preparing")} /></Page>;
     if (!challenges.data) {
         return <Page banners={finishedBanner || undefined} countdown={countdown}>{challenges.isPending
             ? <EventLoading label={t("challenges.loading")} />

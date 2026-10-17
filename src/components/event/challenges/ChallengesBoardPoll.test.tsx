@@ -7,7 +7,7 @@ import {challengeSchema} from "@/api/participantChallenges";
 const state = vi.hoisted(() => ({board: vi.fn(), toast: vi.fn()}));
 vi.mock("react-hot-toast", () => ({toast: {error: state.toast}, default: {error: state.toast}}));
 vi.mock("@/api/participantChallenges", async importOriginal => ({...await importOriginal<typeof import("@/api/participantChallenges")>(), getOwnBoard: state.board}));
-vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "u1"})}));
+vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "u1"}), getParticipation: async () => null}));
 vi.mock("@/api/manage", () => ({getManageAccess: async () => ({CanManage: false})}));
 vi.mock("@/api/moderatorsBoard", () => ({getModeratorsBoard: async () => []}));
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: false, openVpn: () => {}}), EventVpnProvider: ({children}: {children: React.ReactNode}) => children}));
