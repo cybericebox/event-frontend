@@ -25,7 +25,7 @@ export const participationSchema = z.object({
     RegistrationWindowOpen: z.boolean().default(false), RosterOpen: z.boolean().default(false),
     RegistrationReason: z.string().default(""), RosterReason: z.string().default(""),
     Register: capabilitySchema, CreateTeam: capabilitySchema, JoinTeam: capabilitySchema, LeaveTeam: capabilitySchema, ManageTeam: capabilitySchema, RemoveMember: capabilitySchema,
-    DisbandTeam: capabilitySchema, FormTeam: capabilitySchema, TeamFormed: z.boolean().default(false),
+    DisbandTeam: capabilitySchema, FormTeam: capabilitySchema, TeamFormed: z.boolean().default(false), TeamNeedsConfirmation: z.boolean().default(false),
     EditAnswers: capabilitySchema, SeeTasks: capabilitySchema, Submit: capabilitySchema,
 });
 export type Participation = z.infer<typeof participationSchema>;

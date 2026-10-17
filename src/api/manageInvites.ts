@@ -31,7 +31,7 @@ async function post(eventID: string, path: string, payload: unknown): Promise<un
 
 // Invites people to the event (or to a team): names are optional and prefill
 // the pending account the invitation creates for an unknown address.
-// sendEmails false is a silent add: people are approved at once and get no email.
+// sendEmails false creates the same invitations without any email: people accept on the event site.
 export async function sendInvitations(eventID: string, entries: InvitationEntry[], teamID?: string, sendEmails = true): Promise<InvitationResult[]> {
     const path = teamID ? `teams/${encodeURIComponent(teamID)}/invitations` : "participants/invitations";
     const data = z.object({Data: z.array(invitationResultSchema)}).parse(await post(eventID, path, {Entries: entries, SendEmails: sendEmails})).Data;

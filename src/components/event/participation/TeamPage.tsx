@@ -30,7 +30,6 @@ import {missingMembers} from "@/components/event/challenges/challengeBoardModel"
 import {eventRoleLabel} from "@/utils/roles";
 import {EventButton} from "@/components/ui/EventButton";
 import {t, tPlural} from "@/i18n/t";
-import {formatDateTime} from "@/utils/dateTime";
 import {AnswersCard} from "./AnswersCard";
 import {NoTeam} from "./NoTeam";
 import {InviteCard} from "./TeamInvite";
@@ -42,9 +41,9 @@ import {chartWindow, cumulativePoints, ownSolves, placeText, solveEntries, timel
 import {useEventAccent} from "./useEventAccent";
 import {useParticipationStats} from "./useParticipationStats";
 
-function TeamHeader({info, team, rosterOpen, captain, captainName, stats, preview, formed, onRename}: {
+function TeamHeader({info, team, rosterOpen, captain, captainName, stats, preview, onRename}: {
     info: ParticipantEventInfo | null; team: OwnTeam; rosterOpen: boolean; captain: boolean; captainName: string;
-    stats: {rank: number; points: number} | null; preview: boolean; formed: boolean; onRename: (name: string) => Promise<void>;
+    stats: {rank: number; points: number} | null; preview: boolean; onRename: (name: string) => Promise<void>;
 }) {
     const [renaming, setRenaming] = useSessionDraftState("team-renaming", false, {dirty: () => false});
     const [nameEdit, setName] = useSessionDraftState<string | null>("team-name", null);
@@ -86,7 +85,6 @@ function TeamHeader({info, team, rosterOpen, captain, captainName, stats, previe
                     <span className="event-pp-hero__sub">{t("participation.team.rosterLine", {line: rosterLine(team.MemberCount, max, min)})}</span>
                 </div>
                 {captainName && <span className="event-pp-hero__sub">{t("participation.team.captainLine", {name: captainName})}</span>}
-                {formed && <span className="event-pp-hero__sub">{team.FormedAt ? t("participation.team.statusFormed",{time:formatDateTime(team.FormedAt)}) : t("participation.team.statusFormedAtStart")}</span>}
             </div>
             <dl className="event-pp-hero__score">
                 {!preview && <div><dt>{t("participation.stats.teamPlace")}</dt><dd>{stats ? placeText(stats.rank) : "—"}</dd></div>}
@@ -183,12 +181,12 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         attempts: data?.Team.Attempts ?? 0, correct: data?.Team.CorrectAttempts ?? 0, scope: "team",
     }).map(tile => data ? tile : {...tile, value: "—", note: undefined});
     return <div className="event-pp">
-        <TeamHeader info={info} team={team} rosterOpen={manage} captain={captain} captainName={captainName} stats={data ? {rank: data.Rank, points: data.Points} : null} preview={preview && !simulation.active} formed={formed}
+        <TeamHeader info={info} team={team} rosterOpen={manage} captain={captain} captainName={captainName} stats={data ? {rank: data.Rank, points: data.Points} : null} preview={preview && !simulation.active}
             onRename={name => run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, Name: name}})) : renameEventTeam(event.EventID, team.ID, name), t("participation.team.renamed"), t("participation.team.renameFailed"))()} />
         {simulation.active && captain && manage && team.MemberCount < (team.MaxTeamSize ?? Number.POSITIVE_INFINITY) && <div className="event-part__actions"><button type="button" className="ib-btn" onClick={() => simulation.update({team: {...team, MemberCount: team.MemberCount + 1}})}>{t("participantPreview.addMember")}</button></div>}
         <StatTiles label={t("participation.stats.teamTitle")} tiles={tiles} />
         <MembersCard event={event} roster={roster} error={members.error} onRetry={() => void members.refetch()} stats={data?.Team.Members ?? []} actions={memberActions} rosterLine={rosterLine(team.MemberCount, max, min)} roleLabels={roleLabels} />
-        {(!preview || simulation.active) && <FormationCard team={team} captain={captain} formed={formed} form={formCap}
+        {(!preview || simulation.active) && <FormationCard team={team} captain={captain} formed={formed} needsConfirmation={simulation.active ? !formed : !!participation?.TeamNeedsConfirmation} form={formCap}
             onForm={() => setConfirm({title: t("participation.team.formTitle"), text: t("participation.team.formText"), action: t("participation.team.formAction"), run: run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, Formed: true, FormedAt: new Date().toISOString()}})) : formEventTeam(event.EventID), t("participation.team.formed"), t("participation.team.formFailed"), true)})} />}
         {(!preview || simulation.active) && <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage} preview={false} now={now}
             onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, JoinCode: `preview-${crypto.randomUUID()}`}})) : regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />}
@@ -215,14 +213,14 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     </div>;
 }
 
-// Team formation: the captain confirms the roster (it closes for good and the tasks open); the others see where it stands.
-// With no late join the start forms every team, so there is nothing to confirm and only the status shows.
-export function FormationCard({captain, formed, form, onForm}: {team: OwnTeam; captain: boolean; formed: boolean; form: Participation["FormTeam"] | undefined; onForm: () => void}) {
-    if (formed || form?.Reason === "team_formed") return null;
+// Team formation: only where the team waits for its captain (late join) does the captain get the confirm action
+// here; the start forms every other team, and nothing about formation is shown.
+export function FormationCard({captain, formed, needsConfirmation, form, onForm}: {team: OwnTeam; captain: boolean; formed: boolean; needsConfirmation: boolean; form: Participation["FormTeam"] | undefined; onForm: () => void}) {
+    if (formed || !captain || !needsConfirmation) return null;
     const reason = form && !form.Allowed ? reasonText(form.Reason) : "";
     return <section className="event-pp-card event-pp-danger" aria-label={t("participation.team.formTitle")}>
-        <p>{captain ? reason || t("participation.team.formNote") : t("participation.team.statusOpen")}</p>
-        {captain && form?.Allowed && <button type="button" className="ib-btn ib-btn--primary" onClick={onForm}>{t("participation.team.form")}</button>}
+        <p>{reason || t("participation.team.formNote")}</p>
+        {form?.Allowed && <button type="button" className="ib-btn ib-btn--primary" onClick={onForm}>{t("participation.team.form")}</button>}
     </section>;
 }
 

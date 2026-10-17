@@ -48,7 +48,7 @@ function failure(error: unknown, fallback: string): string {
 }
 
 function doneText(result: BatchTeamsResult, sendEmails: boolean): string {
-    if (!sendEmails) return t("manage.teams.batch.doneSilent", {teams: result.Teams.length, assigned: result.Assigned});
+    if (!sendEmails) return t("manage.teams.batch.doneSilent", {teams: result.Teams.length, assigned: result.Assigned, invited: result.Invited});
     return t("manage.teams.batch.done", {teams: result.Teams.length, assigned: result.Assigned, invited: result.Invited});
 }
 
@@ -225,7 +225,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
                 templateName={t("manage.invites.template.teamFile")} pickerRef={attachCsvPicker} fileName={fileName} onFile={file => void readFile(file)} issues={csvIssues} serverIssues={serverIssues} disabled={busy || participantFormQuery.isError || fieldsQuery.isError} templateDisabled={participantFormQuery.isPending || fieldsQuery.isPending} />
             {(participantFormQuery.isError || fieldsQuery.isError) && <EventLoadError compact message={t("manage.invites.csv.formsFailed")} error={participantFormQuery.error ?? fieldsQuery.error} onRetry={() => {void participantFormQuery.refetch(); void fieldsQuery.refetch();}} />}
             <p className="ib-field__hint">{t("manage.teams.batch.captainMarks")}</p>
-            {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{sendEmails ? t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited}) : t("manage.teams.batch.previewSilent", {teams: csvTeams.length, people})}</p>}
+            {preview && preview.Issues.length === 0 && <p className="event-modal__summary" role="status">{sendEmails ? t("manage.teams.batch.preview", {teams: csvTeams.length, people, invites: preview.Invited}) : t("manage.teams.batch.previewSilent", {teams: csvTeams.length, people, invites: preview.Invited})}</p>}
             {preview && preview.Issues.length === 0 && <MissingFieldsSummary rows={[...csvTeams.map(team => ({name: team.name, missing: team.missing})), ...csvTeams.flatMap(team => team.members.map(member => ({name: member.email, missing: member.missing ?? []})))]} />}
         </>}
         <EventCheckbox checked={sendEmails} onCheckedChange={setSendEmails} disabled={busy} label={t("manage.invites.sendEmails")} />

@@ -1,5 +1,6 @@
 "use client";
 
+import {TeamConfirmPrompt} from "@/components/event/participation/TeamConfirmPrompt";
 import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
@@ -138,7 +139,7 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     });
     if (!visible.length && !title && !text) return null;
     const branded = variant === "mass";
-    return <section className={`ib-block ib-block-cta${branded ? " ib-mass ib-mass-waves" : ""}${!title && !text ? " ib-block-cta--buttons-only" : ""} ib-block-cta--actions-${alignment ?? "end"}`} id={id} data-preview-selected={selected || undefined}>
+    return <><section className={`ib-block ib-block-cta${branded ? " ib-mass ib-mass-waves" : ""}${!title && !text ? " ib-block-cta--buttons-only" : ""} ib-block-cta--actions-${alignment ?? "end"}`} id={id} data-preview-selected={selected || undefined}>
         <div className="ib-block__in"><div>{title && (primaryHeading ? <h1 className="ib-block-cta__title">{title}</h1> : <h2 className="ib-block-cta__title">{title}</h2>)}{text && <p className="ib-block-cta__text">{text}</p>}</div>
             {visible.length > 0 && <div className="ib-block-cta__acts">{visible.map((action, position) => {
                 const className = `ib-btn${position === 0 ? branded ? " ib-btn--mass" : " ib-btn--primary" : branded ? " ib-btn--mass-outline" : ""}`;
@@ -147,5 +148,5 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
                 return <a key={action.index} className={className} href={action.href}>{action.label}</a>;
             })}</div>}
         </div>
-    </section>;
+    </section>{state.kind === "approved" && <TeamConfirmPrompt eventID={eventID} />}</>;
 }

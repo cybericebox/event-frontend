@@ -255,6 +255,6 @@ it("does not expose invitations or duplicate locked-roster cards once formed",as
  expect(screen.queryByRole("region",{name:"Підтвердити склад команди?"})).toBeNull();
  expect(screen.queryByRole("region",{name:"Розпустити команду"})).toBeNull();
  expect(screen.getByRole("cell",{name:"Олена (ви)"})).toBeTruthy();
- expect(screen.getAllByText(/^Склад сформовано /)).toHaveLength(1);
+ expect(screen.queryByText(/^Склад сформовано /)).toBeNull();
  expect(screen.queryByText(/Склад команди вже зафіксовано/)).toBeNull();
 });
