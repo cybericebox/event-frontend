@@ -18,6 +18,7 @@ set -e
 #   TLS_CLIENT_AUTH     off | optional | require; default: require when TLS is on and /aop/ca.crt exists, else off;
 #                       optional and require need TLS_CLIENT_CA_FILE
 #   HEALTH_PORT         extra plain listener on HEALTH_BIND (default 0.0.0.0) that serves only /api/health (default 8081; empty = off)
+#   NGINX_LIMIT_CONN_PER_IP concurrent connections per client address (default 50; 0 = no limit); over it nginx answers 429
 #   TLS_RELOAD_INTERVAL seconds between certificate file checks (default 60; 0 = off)
 # tini is PID 1 (reaps zombies, forwards signals); this script supervises: when either process exits, the other
 # one is stopped and the container exits, so Kubernetes restarts it.
@@ -27,6 +28,7 @@ HEALTH_PORT=${HEALTH_PORT-8081}
 HEALTH_BIND=${HEALTH_BIND:-0.0.0.0}
 TLS_MIN_VERSION=${TLS_MIN_VERSION:-1.2}
 TLS_RELOAD_INTERVAL=${TLS_RELOAD_INTERVAL:-60}
+NGINX_LIMIT_CONN_PER_IP=${NGINX_LIMIT_CONN_PER_IP-50}
 
 fail() {
   echo "$1" >&2
@@ -84,8 +86,13 @@ fi
 [ "$tls" = false ] || is_port "$HTTPS_PORT" || fail "HTTPS_PORT must be a port number."
 [ -z "$HEALTH_PORT" ] || is_port "$HEALTH_PORT" || fail "HEALTH_PORT must be a port number or empty."
 case "$TLS_RELOAD_INTERVAL" in '' | *[!0-9]*) fail "TLS_RELOAD_INTERVAL must be a number of seconds." ;; esac
+case "$NGINX_LIMIT_CONN_PER_IP" in '' | *[!0-9]*) fail "NGINX_LIMIT_CONN_PER_IP must be a number (0 = no limit)." ;; esac
 [ -n "$HTTP_PORT" ] || [ "$tls" = true ] || fail "Nothing to listen on: set HTTP_PORT or TLS_CERT_FILE and TLS_KEY_FILE."
 export HTTP_PORT HTTPS_PORT HEALTH_PORT HEALTH_BIND TLS_CERT_FILE TLS_KEY_FILE TLS_PROTOCOLS TLS_CLIENT_CA_FILE TLS_CLIENT_VERIFY
+# The whole directive is the value, so 0 leaves no limit_conn line at all.
+NGINX_LIMIT_CONN="limit_conn client_conn $NGINX_LIMIT_CONN_PER_IP;"
+[ "$NGINX_LIMIT_CONN_PER_IP" = 0 ] && NGINX_LIMIT_CONN=
+export NGINX_LIMIT_CONN
 mode=http
 if [ "$tls" = true ]; then
   mode=https
@@ -145,7 +152,7 @@ src=/etc/cybericebox/nginx
 run=/tmp/nginx
 conf=$run/nginx.conf
 mkdir -p "$run"
-vars='${HTTP_PORT} ${HTTPS_PORT} ${HEALTH_PORT} ${HEALTH_BIND} ${TLS_CERT_FILE} ${TLS_KEY_FILE} ${TLS_PROTOCOLS} ${TLS_CLIENT_CA_FILE} ${TLS_CLIENT_VERIFY}'
+vars='${HTTP_PORT} ${HTTPS_PORT} ${HEALTH_PORT} ${HEALTH_BIND} ${TLS_CERT_FILE} ${TLS_KEY_FILE} ${TLS_PROTOCOLS} ${TLS_CLIENT_CA_FILE} ${TLS_CLIENT_VERIFY} ${NGINX_LIMIT_CONN}'
 render() {
   envsubst "$vars" < "$src/$1" > "$run/$1"
 }
