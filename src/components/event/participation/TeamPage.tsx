@@ -4,6 +4,7 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 
 import {useParticipantPreview, participantPreviewForm} from "../ParticipantPreview";
 import {getManageTeamFields} from "@/api/manageTeamFields";
+import {getManageLifecycle} from "@/api/manage";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {useNow} from "./useNow";
 import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
@@ -19,7 +20,7 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import type {ParticipantEventInfo} from "@/types/participantEventInfo";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
-import {reasonText, useParticipation} from "./participationRules";
+import {reasonText, simulatedNeedsConfirmation, useParticipation} from "./participationRules";
 import {useGuestEvent} from "@/components/event/GuestShell";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -115,6 +116,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
     const members = useQuery({queryKey: ["event-team-members", event.EventID, team.ID], queryFn: () => getOwnTeamMembers(event.EventID), enabled: !preview, retry: false, refetchOnWindowFocus: false});
     const fieldsForm = useQuery({queryKey: [simulation.active ? "event-management-team-fields" : "event-team-fields", event.EventID], queryFn: () => simulation.active ? getManageTeamFields(event.EventID) : getSelfTeamFields(), select: simulation.active ? participantPreviewForm : undefined, enabled: !preview || simulation.active, refetchOnWindowFocus: false});
     const stats = useParticipationStats(event.EventID, {preview, enabled: true});
+    const lifecycle = useQuery({queryKey: ["event-management-lifecycle", event.EventID], queryFn: () => getManageLifecycle(event.EventID), enabled: simulation.active, retry: false, refetchOnWindowFocus: false});
     const [confirm, setConfirm] = useState<Confirm>(null);
     const identity = useQuery({queryKey:["event-current-user"],queryFn:getCurrentUser,enabled:simulation.active,retry:false,refetchOnWindowFocus:false});
     const ownName = [identity.data?.FirstName,identity.data?.LastName].filter(Boolean).join(" ") || identity.data?.Email || t("participation.team.member");
@@ -186,7 +188,7 @@ function TeamSection({event, info, team, participation, rosterOpen, finished, pr
         {simulation.active && captain && manage && team.MemberCount < (team.MaxTeamSize ?? Number.POSITIVE_INFINITY) && <div className="event-part__actions"><button type="button" className="ib-btn" onClick={() => simulation.update({team: {...team, MemberCount: team.MemberCount + 1}})}>{t("participantPreview.addMember")}</button></div>}
         <StatTiles label={t("participation.stats.teamTitle")} tiles={tiles} />
         <MembersCard event={event} roster={roster} error={members.error} onRetry={() => void members.refetch()} stats={data?.Team.Members ?? []} actions={memberActions} rosterLine={rosterLine(team.MemberCount, max, min)} roleLabels={roleLabels} />
-        {(!preview || simulation.active) && <FormationCard team={team} captain={captain} formed={formed} needsConfirmation={simulation.active ? !formed : !!participation?.TeamNeedsConfirmation} form={formCap}
+        {(!preview || simulation.active) && <FormationCard team={team} captain={captain} formed={formed} needsConfirmation={simulation.active ? simulatedNeedsConfirmation(formed, lifecycle.data?.JoinPolicy) : !!participation?.TeamNeedsConfirmation} form={formCap}
             onForm={() => setConfirm({title: t("participation.team.formTitle"), text: t("participation.team.formText"), action: t("participation.team.formAction"), run: run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, Formed: true, FormedAt: new Date().toISOString()}})) : formEventTeam(event.EventID), t("participation.team.formed"), t("participation.team.formFailed"), true)})} />}
         {(!preview || simulation.active) && <InviteCard team={team} captain={captain} captainName={captainName} participation={participation} rosterOpen={rosterOpen} canManage={manage} preview={false} now={now}
             onRegenerate={async (expiry: JoinLinkExpiry) => { await run(() => simulation.active ? Promise.resolve(simulation.update({team: {...team, JoinCode: `preview-${crypto.randomUUID()}`}})) : regenerateEventTeamCode(event.EventID, team.ID, expiry), t("participation.team.link.updated"), t("participation.team.link.updateFailed"), true)(); }} />}

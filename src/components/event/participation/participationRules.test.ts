@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {participationSchema} from "@/api/clientAuth";
-import {reasonText} from "./participationRules";
+import {reasonText, simulatedNeedsConfirmation} from "./participationRules";
 
 describe("reasonText", () => {
     it("has a message for every team formation reason", () => {
@@ -33,5 +33,14 @@ describe("participation block", () => {
         const block = participationSchema.parse({Phase: "started"});
         expect(block.TeamFormed).toBe(false);
         expect(block.FormTeam.Allowed).toBe(false);
+    });
+});
+
+describe("simulatedNeedsConfirmation", () => {
+    it("asks only for an unformed team of a rolling event", () => {
+        expect(simulatedNeedsConfirmation(false, 1)).toBe(true);
+        expect(simulatedNeedsConfirmation(false, 0)).toBe(false);
+        expect(simulatedNeedsConfirmation(false, undefined)).toBe(false);
+        expect(simulatedNeedsConfirmation(true, 1)).toBe(false);
     });
 });

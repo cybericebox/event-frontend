@@ -244,6 +244,8 @@ export function ChallengesBoard() {
     if (!started) return <Page countdown={countdown}><EmptyState message={t("challenges.beforeStart")} /></Page>;
     // A late-join team waits for its captain: the captain is asked to confirm, the members told to wait. Where
     // the start forms every team nothing about confirmation is shown.
+    // Until the participation rules are known, the crest loader holds the block: no "preparing" state that swaps.
+    if (!ownTeam.Formed && teamParticipation.isPending) return <Page countdown={countdown}><EventLoading label={t("challenges.loading")} /></Page>;
     if (!ownTeam.Formed) return needsConfirmation
         ? <Page banners={<TeamConfirmPrompt eventID={event.EventID} />} countdown={countdown} />
         : <Page countdown={countdown}><EmptyState message={t("challenges.preparing")} /></Page>;
