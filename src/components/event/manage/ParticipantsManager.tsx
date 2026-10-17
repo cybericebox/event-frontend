@@ -7,7 +7,8 @@ import Link from "next/link";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorText} from "@/api/apiErrors";
+import {toastApiError} from "@/components/ui/toastApiError";
 import {ManageApiError} from "@/api/manage";
 import {getManageConfig} from "@/api/manage";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
@@ -47,7 +48,7 @@ function personName(participant: Pick<ManageParticipant, "Name" | "DisplayName" 
 }
 
 function errorText(error: unknown, fallback: string): string {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
+    return apiErrorText(error, fallback);
 }
 
 export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) {
@@ -144,7 +145,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             await refresh();
             if (openedID === participant.UserID && participant.Status === 1) setOpened(null);
             toast.success(success);
-        } catch (error) {toast.error(errorText(error, failure));}
+        } catch (error) {toastApiError(error, failure, () => void run(participant, action, success, failure));}
         finally {setBusyIDs(ids => ids.filter(id => id !== participant.UserID));}
     }
 

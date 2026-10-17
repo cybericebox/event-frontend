@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {readRetryAfter} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {formDocumentSchema} from "@/api/manageParticipantForm";
 import {requireApiOrigin} from "@/utils/origins";
@@ -24,7 +25,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>): 
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/${path}`, {
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
@@ -38,7 +39,7 @@ async function writeForm(eventID: string, path: string, method: "POST" | "PUT", 
         method, credentials: "include", cache: "no-store", headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify(input),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: genericFormSchema}).parse(await response.json()).Data;
 }
 
@@ -56,7 +57,7 @@ export async function sendManageGenericForm(eventID: string, formID: string): Pr
         method: "POST", credentials: "include", cache: "no-store", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({Rule: {Trigger: "manual", Audience: {kind: "all_participants"}, Presentation: "task", Dismissible: true, Gates: []}, IncludeFuture: false, Enabled: true}),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
 }
 
 export async function getManageGenericFormAnswers(eventID: string, formID: string): Promise<ManageGenericFormAnswer[]> {

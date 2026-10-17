@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
+import {ApiErrorCode, apiErrorText} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {t} from "@/i18n/t";
 import type {EventChallengeHint, EventExerciseAttachment, HintCostInput} from "@/api/manageChallenges";
@@ -84,5 +84,5 @@ export function runningStandTeams(error: unknown): StandTeam[] | null {
 }
 
 export function attachmentActionError(error: unknown, fallback: string): string {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
+    return apiErrorText(error, fallback);
 }

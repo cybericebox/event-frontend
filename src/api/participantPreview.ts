@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {readApiErrorCode} from "@/api/apiErrors";
+import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
 import {LabRuntimeSchema} from "@/api/manageLabs";
 import {hintSchema, ownBoardSchema, ParticipantChallengeError, solvesPageSchema, submissionSchema, type OwnChallenge} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
@@ -24,8 +24,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!response.ok) {
-        const retry = Number(response.headers.get("Retry-After"));
-        throw new ParticipantChallengeError(response.status, await readApiErrorCode(response), retry > 0 ? retry : undefined);
+        throw new ParticipantChallengeError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     }
     if (response.status === 204) return schema.parse(undefined);
     return z.object({Data: schema}).parse(await response.json()).Data;

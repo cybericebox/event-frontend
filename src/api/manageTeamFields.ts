@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {readRetryAfter} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {participantFormSchema, type ParticipantForm, type ParticipantFormInput} from "@/api/manageParticipantForm";
 import {requireApiOrigin} from "@/utils/origins";
@@ -9,7 +10,7 @@ export async function getManageTeamFields(eventID: string): Promise<ParticipantF
         credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
     });
     if (response.status === 404) return null;
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: participantFormSchema}).parse(await response.json()).Data;
 }
 
@@ -19,6 +20,6 @@ export async function putManageTeamFields(eventID: string, input: ParticipantFor
         method: "PUT", credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", "Content-Type": "application/json"}, body: JSON.stringify(input),
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: participantFormSchema}).parse(await response.json()).Data;
 }

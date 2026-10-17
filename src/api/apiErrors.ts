@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {parseRetryAfterSeconds} from "./retry";
 
 // Backend full codes are informCode*10000 + objectCode*100 + detailCode.
 // The UI matches on objectCode*100 + detailCode so a changed HTTP class
@@ -82,6 +83,9 @@ export const ApiErrorCode = {
     StageNotDeletable: 1150,
     StageNeedsFinish: 1151,
     StageClosed: 1940,
+    // The same idempotency key is still being processed (an answer, a Lab command): ask again shortly.
+    AnswerInProgress: 1926,
+    LabCommandInProgress: 2620,
 } as const;
 
 export type ApiErrorCodeValue = typeof ApiErrorCode[keyof typeof ApiErrorCode];
@@ -90,10 +94,11 @@ export function errorDetailCode(code: number | undefined): number | undefined {
     return code === undefined ? undefined : code % 10000;
 }
 
-// Seconds to wait from the Retry-After header of a 429 (the header is exposed by CORS); undefined without it.
+// Seconds to wait from the Retry-After header of a 429 or an overload 503 (the header is exposed by CORS):
+// whole seconds, 0 allowed, an HTTP-date too; undefined without it. Every error class keeps it as `retryAfter`
+// (the port contract of api/retry.ts), so isOverloadError and the overloaded message see it.
 export function readRetryAfter(response: Response): number | undefined {
-    const seconds = Number(response.headers?.get("Retry-After"));
-    return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : undefined;
+    return parseRetryAfterSeconds(response.headers?.get("Retry-After") ?? null);
 }
 
 // The detail code and the public context (what the server marked safe to show, e.g. the teams of a conflict) of an error answer.
@@ -110,7 +115,7 @@ export async function readApiErrorCode(response: Response): Promise<number | und
 
 // Messages live in messages/errors.{uk,en}.json, keyed by detail code.
 import {apiErrorMessage} from "@/i18n/apiError";
-export {apiErrorMessage, waitText} from "@/i18n/apiError";
+export {apiErrorMessage, apiErrorText, overloadedMessage, waitText} from "@/i18n/apiError";
 
 // Picture upload failures that have their own message (too many pixels, unreadable); anything else keeps the caller's text.
 export function imageUploadMessage(error: unknown, fallback: string): string {

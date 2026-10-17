@@ -6,9 +6,9 @@ import {useEffect, useEffectEvent, useRef, useState} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorText} from "@/api/apiErrors";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
-import {getSelfParticipantForm, joinSelfEvent, ParticipantJoinError, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
+import {getSelfParticipantForm, joinSelfEvent, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
 import {reasonText, useParticipation} from "@/components/event/participation/participationRules";
 import {collectFormAnswers, ParticipantFormFields} from "@/components/event/ParticipantFormFields";
 import {ParticipationStatusEnum} from "@/types/event";
@@ -92,7 +92,7 @@ export default function JoinPage() {
             setAnswers({});
 
         } catch (failure) {
-            setError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("join.failed")));
+            setError(apiErrorText(failure, t("join.failed")));
         } finally {setWorking(false);}
     }
 

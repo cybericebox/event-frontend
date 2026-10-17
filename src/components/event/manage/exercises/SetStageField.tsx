@@ -2,7 +2,7 @@
 
 import {useQuery, useQueryClient, type QueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorText} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {getEventExerciseAttachments, type EventExerciseAttachment} from "@/api/manageChallenges";
 import {setExerciseStage, type ManageStage} from "@/api/manageStages";
@@ -65,7 +65,7 @@ export function SetStageField({eventID, attachment: shownAttachment, stages, can
             } catch (failure) {
                 // Roll back just this set to what the server has; the other sets' optimistic choices are left alone.
                 await restore(queryClient, eventID, attachment.ID, key);
-                toast.error(failure instanceof ManageApiError ? apiErrorMessage(failure.code, t("manage.stages.set.saveFailed")) : t("manage.stages.set.saveFailed"));
+                toast.error(failure instanceof ManageApiError ? apiErrorText(failure, t("manage.stages.set.saveFailed")) : t("manage.stages.set.saveFailed"));
             }
         });
     }

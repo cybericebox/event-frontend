@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {readApiErrorCode} from "@/api/apiErrors";
+import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
 import {requireApiOrigin} from "@/utils/origins";
 
 // A «Файл» answer as the backend stores it: the uploaded file's reference and
@@ -14,7 +14,7 @@ export function isFileAnswer(value: unknown): value is AnswerFile {
 }
 
 export class AnswerFileError extends Error {
-    constructor(readonly status: number, readonly code?: number) { super(`Answer file request failed: ${status}`); }
+    constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number) { super(`Answer file request failed: ${status}`); }
 }
 
 async function upload(url: string, scope: AnswerScope, field: string, file: File): Promise<AnswerFile> {
@@ -23,7 +23,7 @@ async function upload(url: string, scope: AnswerScope, field: string, file: File
     body.set("field", field);
     body.set("file", file);
     const response = await fetch(url, {method: "POST", credentials: "include", cache: "no-store", body});
-    if (!response.ok) throw new AnswerFileError(response.status, await readApiErrorCode(response));
+    if (!response.ok) throw new AnswerFileError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     return z.object({Data: answerFileSchema}).parse(await response.json()).Data;
 }
 

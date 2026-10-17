@@ -1,7 +1,7 @@
 import {z} from "zod";
 import type {AnswerFile} from "@/api/answerFiles";
 import {participantFormSchema} from "@/api/manageParticipantForm";
-import {readApiErrorCode} from "@/api/apiErrors";
+import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
 import {joinInfoSchema, type JoinInfo} from "@/api/clientAuth";
 import {requireApiOrigin} from "@/utils/origins";
 
@@ -9,7 +9,7 @@ export type ParticipantAnswer = string | number | boolean | string[] | AnswerFil
 export type ParticipantAnswers = Record<string, ParticipantAnswer>;
 
 export class ParticipantJoinError extends Error {
-    constructor(readonly status: number, readonly code?: number) { super(`Participant join request failed: ${status}`); }
+    constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number) { super(`Participant join request failed: ${status}`); }
 }
 
 function url(path: string): string {
@@ -18,7 +18,7 @@ function url(path: string): string {
 }
 
 async function data<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
-    if (!response.ok) throw new ParticipantJoinError(response.status, await readApiErrorCode(response));
+    if (!response.ok) throw new ParticipantJoinError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
@@ -55,7 +55,7 @@ export async function acceptSelfInvitation(): Promise<JoinInfo> {
 
 export async function declineSelfInvitation(): Promise<void> {
     const response = await fetch(url("invitation/decline"), {method: "POST", credentials: "include", cache: "no-store"});
-    if (!response.ok) throw new ParticipantJoinError(response.status, await readApiErrorCode(response));
+    if (!response.ok) throw new ParticipantJoinError(response.status, await readApiErrorCode(response), readRetryAfter(response));
 }
 
 const pseudonymSchema = z.object({Pseudonym: z.string().nullable(), DisplayName: z.string()});
