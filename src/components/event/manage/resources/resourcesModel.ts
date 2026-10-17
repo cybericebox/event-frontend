@@ -1,6 +1,6 @@
 import {ManageApiError} from "@/api/manage";
 import {ResourceErrorCode, type Amount, type ChangeRequestInput} from "@/api/manageResources";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorText} from "@/api/apiErrors";
 import {localToISO} from "@/components/ui/dateTimePicker";
 import {t} from "@/i18n/t";
 import {formatBytes} from "../analytics/analyticsFormat";
@@ -82,5 +82,5 @@ export const isNotEnoughReserved = (error: unknown) => hasCode(error, ResourceEr
 
 // 72514 (one is pending) and 32513 (no reservation) have their own lines; others use the error catalog.
 export function resourceErrorMessage(error: unknown, fallback: string): string {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback);
+    return apiErrorText(error, fallback);
 }

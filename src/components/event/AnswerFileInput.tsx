@@ -1,9 +1,9 @@
 "use client";
 
 import {useState} from "react";
-import {AnswerFileError, type AnswerFile} from "@/api/answerFiles";
+import type {AnswerFile} from "@/api/answerFiles";
 import type {FileKind, FormField} from "@/api/manageParticipantForm";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorText} from "@/api/apiErrors";
 import {EventFilePicker} from "@/components/ui/EventFilePicker";
 import {defaultFileMB, maxFileMB} from "@/components/event/manage/participantFormEditor";
 import {t} from "@/i18n/t";
@@ -46,7 +46,7 @@ export function AnswerFileInput({id, field, value, onChange, upload, disabled = 
         if (!file) {onChange(undefined); return;}
         setPending(file);
         try {onChange(await upload(file));}
-        catch (failure) {setError(apiErrorMessage(failure instanceof AnswerFileError ? failure.code : undefined, t("forms.file.uploadFailed")));}
+        catch (failure) {setError(apiErrorText(failure, t("forms.file.uploadFailed")));}
         finally {setPending(null);}
     }
 

@@ -7,8 +7,7 @@ import {Fragment, useState} from "react";
 import {useInfiniteQuery, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Eye, EyeOff, Trash2} from "lucide-react";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage} from "@/api/apiErrors";
-import {ManageApiError} from "@/api/manage";
+import {apiErrorText} from "@/api/apiErrors";
 import {HiddenMark} from "@/components/event/manage/HiddenMark";
 import {getModeratorsTeam} from "@/api/moderatorsBoard";
 import {getManageParticipants} from "@/api/manageParticipants";
@@ -70,7 +69,7 @@ function withoutKeys(answers: ParticipantAnswers, keys: ReadonlySet<string>): Pa
 }
 
 function failure(error: unknown, fallback: string): string {
-    return apiErrorMessage(error instanceof ManageApiError ? error.code : undefined, fallback, error instanceof ManageApiError ? error.retryAfter : undefined);
+    return apiErrorText(error, fallback);
 }
 
 export default function ManageTeamsPage() {

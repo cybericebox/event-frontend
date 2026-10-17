@@ -25,6 +25,7 @@ import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
 import {attemptsLeft, awardedPoints, difficultyLabel, formatClock, formatFileSize, NO_SPEND, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
 import {t} from "@/i18n/t";
+import {overloadedMessage} from "@/i18n/apiError";
 import {richMessage} from "./richMessage";
 import {hintConfirmText, hintCostLabel, hintDocument, hintLevelLabel, hintModeNote, hintNeedsConfirm, hintUnlockError, pointsLabel, type HintChargeMode} from "./hintModel";
 import {EventButton} from "@/components/ui/EventButton";
@@ -37,7 +38,8 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 
 export type BoardMode = "participant" | "moderators" | "preview";
-type Message = {text: string; tone: "error" | "warn"} | null;
+// retry: the server was only busy; the message offers to send the same answer again.
+type Message = {text: string; tone: "error" | "warn"; retry?: boolean} | null;
 
 const svg = (path: React.ReactNode) => <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">{path}</svg>;
 const ICON = {
@@ -57,6 +59,8 @@ function submitMessage(error: unknown): Message {
         if (error.code === ApiErrorCode.StageClosed) return {text: t("challenges.submit.stageClosed"), tone: "warn"};
         if (error.status === 409 || error.status === 403) return {text: t("challenges.submit.notAccepting"), tone: "warn"};
     }
+    const overloaded = overloadedMessage(error);
+    if (overloaded) return {text: overloaded, tone: "warn", retry: true};
     return {text: t("challenges.submit.failed"), tone: "warn"};
 }
 
@@ -190,6 +194,9 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const [answer, setAnswer] = useState("");
     const [message, setMessage] = useState<Message>(null);
     const [busy, setBusy] = useState(false);
+    // One idempotency key per answer: a retry of the same answer (automatic or by the user) reuses it, so the
+    // server replays a completed attempt instead of counting another; a changed answer or a verdict ends it.
+    const submitKey = useRef<{answer: string; key: string} | null>(null);
     const [accepted, setAccepted] = useState(false);
     // The accepted answer was a practice one (the stage had already closed): no points are shown for it.
     const [practiceAnswer, setPracticeAnswer] = useState(false);
@@ -285,6 +292,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
         setAccepted(false);
         setPracticeAnswer(false);
         setStartError(undefined);
+        submitKey.current = null;
     }
 
     const waiting = waitUntil > now;
@@ -297,6 +305,10 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
 
     async function submit(event: FormEvent) {
         event.preventDefault();
+        await send();
+    }
+
+    async function send() {
         if (!challenge || busy || waiting) return;
         const value = answer.trim();
         if (!value) {
@@ -309,12 +321,15 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
         const cache = queryClient.getQueryCache();
         const scope = cache.find({queryKey: lifecycleKey, exact: true});
         const currentSession = () => !!scope && cache.find({queryKey: scope.queryKey, exact: true}) === scope;
+        if (submitKey.current?.answer !== value) submitKey.current = {answer: value, key: crypto.randomUUID()};
+        const key = submitKey.current.key;
         setBusy(true);
         setMessage(null);
         try {
             const result = isPreview ? await submitPreviewFlag(eventID, challenge, value) : moderators
                 ? await submitModeratorFlag(eventID, challenge.EventChallengeID, value)
-                : await submitChallenge(eventID, challenge.EventChallengeID, value, crypto.randomUUID());
+                : await submitChallenge(eventID, challenge.EventChallengeID, value, key);
+            if (submitKey.current?.key === key) submitKey.current = null;
             if (!currentSession()) return;
             if (result.Lab) rememberLab(queryClient, cacheMode, eventID, result.Lab);
             const correct = result.Correct;
@@ -345,7 +360,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 setMessage(null);
                 onRejected?.();
             } else if (error instanceof ParticipantChallengeError && error.status === 429) {
-                const seconds = error.retryAfter ?? 30;
+                const seconds = error.retryAfter || 30;
                 setWaitUntil(Date.now() + seconds * 1000);
                 setWaitTotal(seconds);
                 setNow(Date.now());
@@ -453,6 +468,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                     <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role={waiting ? undefined : "alert"}>
                         {waiting ? <span aria-hidden="true">{t("challenges.modal.rateLimited", {seconds: waitSeconds})}</span> : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
                     </p>
+                    {!waiting && !exhausted && message?.retry && <EventButton className="ib-btn ib-btn--sm" onClick={() => void send()}>{t("error.overloaded.retry")}</EventButton>}
                     {waiting && <span className="ib-sr" role="status">{t("challenges.modal.rateLimited", {seconds: waitTotal})}</span>}
                     {left !== null && left > 0 && <p className="ib-cmodal__hint" id={`${id}-left`}>{t("challenges.modal.attemptsLeft", {count: left})}</p>}
                 </form>}

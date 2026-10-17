@@ -57,4 +57,38 @@ describe("fetchPublic", () => {
         await expect(fetchPublic("https://api.test/a", headers)).resolves.toEqual({status: 404, body: null});
         await expect(fetchPublic("https://api.test/b", headers)).resolves.toEqual({status: 200, body: null});
     });
+
+    describe("an overloaded API", () => {
+        beforeEach(() => {
+            vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
+            vi.spyOn(Math, "random").mockReturnValue(0);
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+            vi.restoreAllMocks();
+        });
+
+        it("asks once more after a short Retry-After and returns the second answer", async () => {
+            fetchMock.mockResolvedValueOnce(new Response(null, {status: 503, headers: {"Retry-After": "1"}})).mockResolvedValueOnce(json({Data: 3}));
+            const pending = fetchPublic("https://api.test/busy", headers);
+            await vi.advanceTimersByTimeAsync(1000);
+            await expect(pending).resolves.toEqual({status: 200, body: {Data: 3}});
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
+
+        it("retries a 429 too, but only once", async () => {
+            fetchMock.mockImplementation(() => Promise.resolve(new Response(null, {status: 429, headers: {"Retry-After": "1"}})));
+            const pending = fetchPublic("https://api.test/limited", headers);
+            await vi.advanceTimersByTimeAsync(5000);
+            await expect(pending).resolves.toEqual({status: 429, body: null});
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
+
+        it("does not wait for a long Retry-After or a 503 without one", async () => {
+            fetchMock.mockResolvedValueOnce(new Response(null, {status: 503, headers: {"Retry-After": "3"}})).mockResolvedValueOnce(new Response(null, {status: 503}));
+            await expect(fetchPublic("https://api.test/long", headers)).resolves.toEqual({status: 503, body: null});
+            await expect(fetchPublic("https://api.test/bare", headers)).resolves.toEqual({status: 503, body: null});
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
+    });
 });

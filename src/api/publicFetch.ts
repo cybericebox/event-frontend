@@ -1,8 +1,29 @@
+import {isOverloadResponse, parseRetryAfterSeconds, retryDelayMs} from "./retry";
 import {serverGet} from "./serverGet";
 
 // A server render waits on these reads; a hung API must end in the error or outage
 // state instead of streaming the route loader forever.
 export const SERVER_FETCH_TIMEOUT_MS = 10_000;
+
+// A server render waits for one more try only after a short Retry-After: a longer one ends in the error state at once.
+const MAX_RENDER_RETRY_AFTER_S = 2;
+
+// One more try when the API shed the read (429, or 503 with Retry-After) with a short Retry-After and the
+// wait fits in what is left of the render budget; otherwise the first answer.
+async function getWithOneRetry(url: string, headers: Record<string, string>): Promise<Response> {
+    const deadline = Date.now() + SERVER_FETCH_TIMEOUT_MS;
+    const signal = AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS);
+    const first = await serverGet(url, headers, signal);
+    const header = first.headers.get("Retry-After");
+    const retryAfter = parseRetryAfterSeconds(header);
+    if (!isOverloadResponse(first) || retryAfter === undefined || retryAfter > MAX_RENDER_RETRY_AFTER_S) return first;
+    // The same timeout signal covers both tries, so the retry gets what is left of the budget.
+    const delay = retryDelayMs(0, header);
+    if (delay === null || Date.now() + delay >= deadline) return first;
+    first.body?.cancel().catch(() => undefined);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return serverGet(url, headers, signal);
+}
 
 export type PublicResponse = {status: number; body: unknown; requestId?: string};
 
@@ -17,7 +38,7 @@ export function fetchPublic(url: string, headers: Record<string, string>): Promi
     if (running) return running;
     if (inflight.size >= 64) return Promise.reject(new Error("Public fetch busy"));
     const request = (async (): Promise<PublicResponse> => {
-        const response = await serverGet(url, headers, AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS));
+        const response = await getWithOneRetry(url, headers);
         if (!response.ok) {
             // A 5xx that carries X-Request-ID came from our backend (it journaled the error); one without is a proxy answer.
             const requestId = response.status >= 500 ? response.headers.get("X-Request-ID") : null;

@@ -7,7 +7,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import Link from "next/link";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
+import {ApiErrorCode, apiErrorMessage, apiErrorText} from "@/api/apiErrors";
 import {getCurrentUser, getInvitationInfo} from "@/api/clientAuth";
 import {acceptSelfInvitation, declineSelfInvitation, getSelfParticipantForm, ParticipantJoinError, submitSelfParticipantForm, type ParticipantAnswers} from "@/api/participantForm";
 import {collectFormAnswers, lockedFieldKeys, ParticipantFormFields} from "@/components/event/ParticipantFormFields";
@@ -97,7 +97,7 @@ export default function InvitePage() {
             setAnswers({});
             router.push("/");
         } catch (failure) {
-            setDeclineError(apiErrorMessage(failure instanceof ParticipantJoinError ? failure.code : undefined, t("invite.declineFailed")));
+            setDeclineError(apiErrorText(failure, t("invite.declineFailed")));
         } finally {setWorking(false);}
     }
 

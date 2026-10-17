@@ -1,5 +1,6 @@
 import {isEventSelfRequest, reportEventNotFound} from "./eventGone";
 import {apiOrigin} from "./origins";
+import {fetchWithOverloadRetry} from "@/api/retry";
 
 // Backend reachability, shared by every browser API call. A network failure or a
 // 5xx marks the service "suspect"; the gate confirms with two probes 15 s apart before it shows
@@ -83,7 +84,8 @@ export function isNetworkOutage(error: unknown, signal?: AbortSignal | null): bo
 
 // Wraps fetch so every call to the API feeds the status store. Only normal API
 // calls count: streams, aborted requests and 4xx answers are not outages. A 404 of an event
-// call is passed on to the event-gone check.
+// call is passed on to the event-gone check. A read the server shed (429, or 503 with
+// Retry-After) is asked again with backoff first; only the final answer counts.
 // The request id of the latest 5xx answer (X-Request-ID, which the backend journals with the error), so
 // an error page can show a reference number. Empty when the header is not exposed to the browser (CORS).
 let lastServerError: {requestId: string; at: number} | null = null;
@@ -96,8 +98,10 @@ export function lastServerErrorRequestId(): string | null {
 export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): typeof fetch {
     return async (input, init) => {
         if (!origin || !requestURL(input).startsWith(origin) || isStreamRequest(input, init)) return fetchImpl(input, init);
+        const signal = init?.signal ?? (input instanceof Request ? input.signal : null);
+        const method = init?.method ?? (input instanceof Request ? input.method : "GET");
         try {
-            const response = await fetchImpl(input, init);
+            const response = await fetchWithOverloadRetry(() => fetchImpl(input, init), {method, signal});
             const stream = response.headers.get("Content-Type")?.includes("text/event-stream") ?? false;
             const requestId = response.status >= 500 ? response.headers.get("X-Request-ID") : null;
             // A 5xx with X-Request-ID is our backend answering with an error (journaled): a 500 page, not an outage.
@@ -106,7 +110,7 @@ export function trackApiFetch(fetchImpl: typeof fetch, origin = apiOrigin): type
             if (response.status === 404 && isEventSelfRequest(requestURL(input), origin)) void reportEventNotFound(origin, fetchImpl);
             return response;
         } catch (error) {
-            if (isNetworkOutage(error, init?.signal ?? (input instanceof Request ? input.signal : null))) reportServiceUnavailable();
+            if (isNetworkOutage(error, signal)) reportServiceUnavailable();
             throw error;
         }
     };

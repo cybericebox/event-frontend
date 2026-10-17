@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorText} from "@/api/apiErrors";
 import {EventTeamError} from "@/api/eventTeams";
 import {ParticipantJoinError} from "@/api/participantForm";
 import type {FormField} from "@/api/manageParticipantForm";
@@ -14,7 +14,7 @@ import {dateModeOf} from "@/components/event/manage/participantFormEditor";
 // Pieces shared by «Мій профіль учасника» and «Моя команда».
 
 export function errorText(error: unknown, fallback: string): string {
-    if (error instanceof EventTeamError || error instanceof ParticipantJoinError) return apiErrorMessage(error.code, fallback);
+    if (error instanceof EventTeamError || error instanceof ParticipantJoinError) return apiErrorText(error, fallback);
     return fallback;
 }
 

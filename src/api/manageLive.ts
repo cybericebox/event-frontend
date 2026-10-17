@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {readRetryAfter} from "./apiErrors";
 import {ManageApiError, manageApiError} from "./manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {resultsSnapshotSchema} from "./manageResults";
@@ -64,7 +65,7 @@ async function liveRequest<T>(eventID: string, path: string, schema: z.ZodType<T
         const body = z.object({Status: z.object({Code: z.number()})}).safeParse(await response.json().catch(() => null));
         throw body.success && body.data.Status.Code === 21122 ? new LiveDraftInvalidError() : new ManageApiError(400);
     }
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     if (response.status === 204) return schema.parse(undefined);
     return z.object({Data: schema}).parse(await response.json()).Data;
 }

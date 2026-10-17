@@ -3,7 +3,7 @@
 import {useRef, useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import type {LabLifecycle} from "@/api/labLifecycle";
-import {apiErrorMessage} from "@/api/apiErrors";
+import {apiErrorMessage, overloadedMessage} from "@/api/apiErrors";
 import {ParticipantChallengeError, restartOwnLab, stopOwnLab} from "@/api/participantChallenges";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventButton} from "@/components/ui/EventButton";
@@ -50,7 +50,8 @@ export function LabControls({eventID, lab, onRefresh}: {eventID: string; lab: La
                 onRefresh();
                 setError(apiErrorMessage(failure.code, t("challenges.lab.stateChanged")));
             } else {
-                setError(t("challenges.lab.changeFailed"));
+                // An overloaded server: the same click sends the same operation again.
+                setError(overloadedMessage(failure) ?? t("challenges.lab.changeFailed"));
             }
         } finally {if (currentSession()) setBusy(false);}
     }

@@ -6,7 +6,7 @@ import {useRef, useState, type FormEvent} from "react";
 import {CircleHelp} from "lucide-react";
 import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorMessage, ApiErrorCode} from "@/api/apiErrors";
+import {apiErrorMessage, apiErrorText, ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError, type ManageLifecycle} from "@/api/manage";
 import {
     createManageStage, deleteManageStage, getManageStages, updateManageStage, type ManageStage, type StageUpdateInput,
@@ -28,7 +28,7 @@ import "./stagesManage.css";
 const stagesKey = (eventID: string) => ["event-management-stages", eventID];
 
 // The server's reason for a refused stage change, else the caller's text.
-const failureText = (failure: unknown, fallback: string) => failure instanceof ManageApiError ? apiErrorMessage(failure.code, fallback) : fallback;
+const failureText = (failure: unknown, fallback: string) => failure instanceof ManageApiError ? apiErrorText(failure, fallback) : fallback;
 
 type StageFieldErrors = {name?: string; opens?: string; closes?: string};
 function stageFailureFields(failure: unknown): StageFieldErrors | null {

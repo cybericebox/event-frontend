@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {readRetryAfter} from "@/api/apiErrors";
 import {ManageApiError, manageApiError} from "@/api/manage";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import type {ResultsAvailability} from "@/types/resultsAvailability";
@@ -55,7 +56,7 @@ export async function getManageResults(eventID: string, view: ResultsView = "pag
         const reason = body.success ? deniedReasons[body.data.Status.Code] : undefined;
         throw reason ? new ResultsUnavailableError(reason) : new ManageApiError(403);
     }
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: resultsSnapshotSchema}).parse(await response.json()).Data;
 }
 
@@ -71,7 +72,7 @@ export async function getResultsChanges(eventID: string, since: number, freezeKe
     const response = await fetch(`${apiBase()}/events/${encodeURIComponent(eventID)}/results/changes?${params}`, {
         credentials: "include", cache: "no-cache", headers: {Accept: "application/json"},
     });
-    if (!response.ok) throw new ManageApiError(response.status);
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: changesSchema}).parse(await response.json()).Data;
 }
 

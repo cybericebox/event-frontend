@@ -4,6 +4,7 @@
 // a uk entry fall through to the English catalog until translated.
 import errorsUk from "../../messages/errors.uk.json"
 import errorsEn from "../../messages/errors.en.json"
+import {isOverloadError} from "../api/retry"
 import {t} from "./t"
 
 const uk = errorsUk as Record<string, string>
@@ -29,4 +30,18 @@ export function apiErrorMessage(code: number | undefined, fallback: string = t("
   }
   const key = String(code)
   return uk[key] ?? en[key] ?? fallback
+}
+
+// The overloaded line for the server's overload answer (a 503 with Retry-After); undefined for any other error.
+export function overloadedMessage(error: unknown): string | undefined {
+  return isOverloadError(error) && (error as {status: number}).status === 503 ? t("error.overloaded") : undefined
+}
+
+// The message for an API error object (its numeric `status`, detail `code` and `retryAfter`): the catalog text
+// of its code (a rate limit with its wait), the overloaded line for an overload 503 without one, else the fallback.
+export function apiErrorText(error: unknown, fallback: string = t("error.generic")): string {
+  if (!(error instanceof Error)) return fallback
+  const {code, retryAfter} = error as {code?: unknown; retryAfter?: unknown}
+  const known = apiErrorMessage(typeof code === "number" ? code : undefined, "", typeof retryAfter === "number" ? retryAfter : undefined)
+  return known || (overloadedMessage(error) ?? fallback)
 }

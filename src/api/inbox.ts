@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {requireApiOrigin} from "@/utils/origins";
-import {readApiErrorCode} from "./apiErrors";
+import {readApiErrorCode, readRetryAfter} from "./apiErrors";
 import type {InboxResolution} from "@/components/event/inboxModel";
 
 // Contract: docs/INBOX-DESIGN.md §8.
@@ -38,7 +38,7 @@ export type InboxPoll = z.infer<typeof pollSchema>["Data"];
 
 /** A failed inbox call; `code` is the detail code (errors.{uk,en}.json) when the backend sent one. */
 export class InboxError extends Error {
-    constructor(readonly status: number, readonly code: number | undefined) {
+    constructor(readonly status: number, readonly code: number | undefined, readonly retryAfter?: number) {
         super(`Inbox request failed: ${status}`);
     }
 }
@@ -46,7 +46,7 @@ export class InboxError extends Error {
 // `query` comes from inboxModel.inboxQuery (category, ?event= scope, cursors).
 async function inboxRequest(path: string, method = "GET"): Promise<unknown> {
     const response = await fetch(`${requireApiOrigin()}/api/notifications/inbox${path}`, {method, credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
-    if (!response.ok) throw new InboxError(response.status, await readApiErrorCode(response));
+    if (!response.ok) throw new InboxError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     return response.json().catch(() => null);
 }
 

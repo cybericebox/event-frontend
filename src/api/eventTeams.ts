@@ -2,11 +2,11 @@ import {z} from "zod";
 import {t} from "@/i18n/t";
 import {participantFormSchema, type ParticipantForm} from "@/api/manageParticipantForm";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import {readApiErrorCode} from "@/api/apiErrors";
+import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
 import {requireApiOrigin} from "@/utils/origins";
 
 export class EventTeamError extends Error {
-    constructor(readonly status: number, readonly code?: number) {
+    constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number) {
         super(`Event team request failed: ${status}`);
     }
 }
@@ -20,7 +20,7 @@ async function send(eventID: string, path: string, body: Record<string, unknown>
         headers: {Accept: "application/json", "Content-Type": "application/json"},
         body: JSON.stringify(body),
     });
-    if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response));
+    if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     return response;
 }
 
@@ -35,7 +35,7 @@ export type TeamMember = z.infer<typeof memberSchema>;
 export async function getOwnTeamMembers(eventID: string): Promise<TeamMember[]> {
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/teams/mine/members`, {credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
-    if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response));
+    if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     return z.object({Data: memberSchema.array().nullish().transform(value => value ?? [])}).parse(await response.json()).Data;
 }
 
@@ -80,6 +80,6 @@ export async function getSelfTeamFields(): Promise<ParticipantForm | null> {
     const api = requireApiOrigin();
     const response = await fetch(`${api}/api/events/self/team-fields`, {credentials: "include", cache: "no-store"});
     if (response.status === 404) return null;
-    if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response));
+    if (!response.ok) throw new EventTeamError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     return z.object({Data: participantFormSchema}).parse(await response.json()).Data;
 }
