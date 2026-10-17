@@ -83,7 +83,7 @@ describe("running stage confirmation", () => {
 });
 
 describe("flag repeat warning", () => {
-    const warning = "У завдання «Web» можливих флагів менше, ніж команд: флаги можуть повторюватися.";
+    const warning = "Флаги завдання «Web» можуть повторюватися між командами: можливих флагів замало для кількості команд.";
 
     it("is shown when the set's flags may repeat", async () => {
         Object.assign(attachment, {FlagsMayRepeat: true});

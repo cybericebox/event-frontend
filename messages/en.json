@@ -1235,7 +1235,7 @@
   "manage.exercises.challenge.saveFailed": "Could not save the challenge.",
   "manage.exercises.challenge.showOnBoard": "Show to participants",
   "manage.exercises.copyNotUpdated": "The event copy does not receive it.",
-  "manage.exercises.flagsMayRepeat": "Task “{name}” has fewer possible flags than teams: flags may repeat.",
+  "manage.exercises.flagsMayRepeat": "Flags of task “{name}” may repeat between teams: there are too few possible flags for the number of teams.",
   "manage.exercises.create": "Create challenge",
   "manage.exercises.detached": "Removed",
   "manage.exercises.detachedLabel": "{name} · removed",
