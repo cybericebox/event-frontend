@@ -13,7 +13,7 @@ import {AllocationFacts} from "@/components/event/manage/resources/ResourceObser
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
-import {agoText, deviceStateLabel, failureReasonLabel, queueLine, sizeText} from "@/components/event/labLive";
+import {agoText, deviceStateLabel, failureReasonLabel, queueLine, sizeText, standReasonText} from "@/components/event/labLive";
 import {hasCurrentLabAllocation, hasCurrentLabObservation, labStatusLabel, labStatusTone, standTeamName} from "@/components/event/manage/standStatus";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -123,7 +123,7 @@ export function ManagedLabFacts({lab, stale = false}: {lab: ManagedLabView; stal
             <div><dt>{t("manage.labs.lifecycle.snapshot")}</dt><dd>{t(`manage.labs.lifecycle.snapshot.${current ? lab.SnapshotState : "Unknown"}`)}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.observation")}</dt><dd>{t(current ? "manage.labs.lifecycle.current" : "manage.labs.lifecycle.unknown")}</dd></div>
         </dl>
-        {lab.FailureMessage && <p className="event-stands__error" role="status">{lab.FailureMessage}</p>}
+        {lab.FailureMessage && <p className="event-stands__error" role="status">{standReasonText(lab.FailureMessage)}</p>}
         <AllocationFacts resources={lab.Resources} current={!stale && hasCurrentLabAllocation(lab)} />
     </section>;
 }
@@ -139,7 +139,7 @@ export function ManagedGroupFacts({group, stale = false}: {group: ManagedGroupVi
         </dl>
         <p role="status">{t(group.Ready && current ? "manage.labs.group.ready" : "manage.labs.group.notReady")}</p>
         <p>{t("manage.labs.group.prepareHelp")}</p>
-        {(group.FailureCode || group.FailureMessage) && <p className="event-stands__error">{group.FailureMessage || group.FailureCode}</p>}
+        {(group.FailureCode || group.FailureMessage) && <p className="event-stands__error">{standReasonText(group.FailureMessage || group.FailureCode)}</p>}
         <AllocationFacts resources={group.Resources} current={current} />
     </section>;
 }
@@ -154,7 +154,7 @@ function LabBlock({eventID, teamID, lab, canManage, stale}: {eventID: string; te
         <div className="event-stands__challenge-head"><strong>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</strong><span className={`event-stands__status is-${labStatusTone[lab.Status]}`}>{labStatusLabel[lab.Status]}</span></div>
         {lab.Questions && <ul aria-label={t("manage.labs.lifecycle.questions")}>{lab.Questions.map(question => <li key={question.EventChallengeID}>{question.Name}</li>)}</ul>}
         {lab.Lab && <ManagedLabFacts lab={lab.Lab} stale={stale} />}
-        {lab.Reason && <small className="event-stands__error">{lab.Reason}</small>}
+        {lab.Reason && <small className="event-stands__error">{standReasonText(lab.Reason)}</small>}
         {lab.LiveUnavailable && <small className="event-participants-table__dim">{t("manage.labs.detail.liveUnavailable")}</small>}
         {queue && <small role="status">{queue}</small>}
         {warnings && <small className="event-participants-table__dim">{t("lab.live.imageWarning", {images: warnings})}</small>}
