@@ -57,11 +57,11 @@ describe("participation navigation", () => {
     it("shows image registries only when infrastructure tasks are allowed", () => {
         renderSidebar(1);
         fireEvent.click(screen.getByRole("button", {name: "Захід"}));
-        expect(screen.queryByRole("link", {name: "Реєстри образів"})).toBeNull();
+        expect(screen.queryByRole("link", {name: "Сховища образів"})).toBeNull();
         cleanup();
         renderSidebar(1, true);
         fireEvent.click(screen.getByRole("button", {name: "Захід"}));
-        expect(screen.getByRole("link", {name: "Реєстри образів"}).getAttribute("href")).toBe("/manage/registries");
+        expect(screen.getByRole("link", {name: "Сховища образів"}).getAttribute("href")).toBe("/manage/registries");
     });
 
     it("orders the challenges group: tasks, groups, settings, stands, resources, journal", () => {
