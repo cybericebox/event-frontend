@@ -129,23 +129,23 @@ export function RegistrySecretsPanel() {
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="registry-host" title={t("manage.registries.field.host")} help={t("manage.registries.field.hostHelp")} required />
-                    <input id="registry-host" className="event-manage-input" value={form.host} placeholder="ghcr.io" autoComplete="off" spellCheck={false} aria-invalid={(touched && !!errors.host) || undefined} onChange={input => change({host: input.target.value})} />
+                    <input id="registry-host" className="event-manage-input" value={form.host} placeholder={t("manage.registries.field.hostPlaceholder")} autoComplete="off" spellCheck={false} aria-invalid={(touched && !!errors.host) || undefined} onChange={input => change({host: input.target.value})} />
                     {touched && errors.host && <p className="event-manage-validation" role="alert">{errors.host}</p>}
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="registry-prefix" title={t("manage.registries.field.prefix")} help={t("manage.registries.field.prefixHelp")} />
-                    <input id="registry-prefix" className="event-manage-input" value={form.prefix} placeholder="acme" autoComplete="off" spellCheck={false} onChange={input => change({prefix: input.target.value})} />
+                    <input id="registry-prefix" className="event-manage-input" value={form.prefix} placeholder={t("manage.registries.field.prefixPlaceholder")} autoComplete="off" spellCheck={false} onChange={input => change({prefix: input.target.value})} />
                 </div>
             </div>
             <div className="event-manage-fields-two">
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="registry-username" title={t("manage.registries.field.username")} help={t("manage.registries.field.usernameHelp")} required />
-                    <input id="registry-username" className="event-manage-input" value={form.username} autoComplete="off" spellCheck={false} aria-invalid={(touched && !!errors.username) || undefined} onChange={input => change({username: input.target.value})} />
+                    <input id="registry-username" className="event-manage-input" value={form.username} autoComplete="off" data-1p-ignore data-lpignore="true" spellCheck={false} aria-invalid={(touched && !!errors.username) || undefined} onChange={input => change({username: input.target.value})} />
                     {touched && errors.username && <p className="event-manage-validation" role="alert">{errors.username}</p>}
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="registry-token" title={t("manage.registries.field.token")} help={t("manage.registries.field.tokenHelp")} required={!saved} />
-                    <PasswordInput id="registry-token" value={form.token} autoComplete="new-password" placeholder={saved ? t("manage.registries.field.tokenSaved") : ""} aria-invalid={(!!errors.token && (touched || !!saved)) || undefined} onChange={input => change({token: input.target.value})} />
+                    <PasswordInput id="registry-token" value={form.token} autoComplete="off" data-1p-ignore data-lpignore="true" placeholder={saved ? t("manage.registries.field.tokenSaved") : ""} aria-invalid={(!!errors.token && (touched || !!saved)) || undefined} onChange={input => change({token: input.target.value})} />
                     {saveError?.token ? <p className="event-manage-validation" role="alert">{saveError.message}</p> : errors.token && (touched || saved) ? <p className="event-manage-validation" role="alert">{errors.token}</p> : saved && <small>{t("manage.registries.field.tokenKeep")}</small>}
                 </div>
             </div>

@@ -8,6 +8,7 @@ vi.mock("./ManagerShell", () => ({useManager: () => ({event: {EventID: "01a0d498
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 
+import uk from "../../../../messages/uk.json";
 import {RegistrySecretsPanel} from "./RegistrySecretsPanel";
 
 const secret = {ID: "s1", Host: "ghcr.io", RepositoryPrefix: "acme", Username: "robot", UpdatedAt: "2026-10-01T10:00:00Z"};
@@ -56,6 +57,21 @@ describe("Сховища образів заходу", () => {
         expect(token.value).toBe("");
         expect(token.placeholder).toBe("Токен збережено");
         expect(container.innerHTML).not.toContain("ghp_LEAKED");
+    });
+
+    it("takes the example placeholders from the messages and keeps password managers off the credentials", async () => {
+        mockApi([]);
+        renderPanel();
+        await screen.findByText("Облікових даних сховищ ще немає.");
+        fireEvent.click(screen.getByRole("button", {name: "Додати"}));
+        const messages = uk as Record<string, string>;
+        expect((screen.getByLabelText(/^Адреса сховища/) as HTMLInputElement).placeholder).toBe(messages["manage.registries.field.hostPlaceholder"]);
+        expect((screen.getByLabelText(/^Префікс репозиторію/) as HTMLInputElement).placeholder).toBe(messages["manage.registries.field.prefixPlaceholder"]);
+        for (const field of [screen.getByLabelText(/^Токен/), screen.getByLabelText(/^Користувач/)]) {
+            expect(field.getAttribute("autocomplete")).toBe("off");
+            expect(field.hasAttribute("data-1p-ignore")).toBe(true);
+            expect(field.getAttribute("data-lpignore")).toBe("true");
+        }
     });
 
     it("adds a secret with a write-only token and puts it in the list without refetching", async () => {
