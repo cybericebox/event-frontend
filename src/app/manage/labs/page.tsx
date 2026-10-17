@@ -3,6 +3,7 @@
 import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
 
 import {eventVpnFileName} from "@/utils/wireguard";
+import Link from "next/link";
 import {Fragment, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {AlertTriangle, ChevronDown, Download, Layers, ListChecks, RotateCcw} from "lucide-react";
@@ -10,17 +11,17 @@ import {toast} from "react-hot-toast";
 import {
     TEARDOWN_DELAY_RANGE, getManageLabs, getModeratorChallengeLab, getModeratorChallenges, getModeratorVPNConfig,
     isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage,
-    type LabRuntime, type ManageLabs, type ManageStand,
+    type LabRuntime, type ManageLabs, type ManageStand, type Prewarm,
 } from "@/api/manageLabs";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel, standStatusLabel, standStatusTone, standTeamName, type StatusTone} from "@/components/event/manage/standStatus";
-import {queueLine} from "@/components/event/labLive";
+import {queueLine, standReasonText} from "@/components/event/labLive";
 import {StandDetailDialog} from "@/components/event/manage/StandDetailDialog";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
@@ -164,10 +165,7 @@ export default function ManageLabsPage() {
         {!labs.LaboratoriesAvailable && <div className="event-manage-notice" role="status"><AlertTriangle size={18} aria-hidden="true" />{t("manage.labs.unavailable")}</div>}
         <ScheduleSection key={labs.TeardownDelayMinutes} eventID={eventID} labs={labs} canManage={canManage} />
         <div className="event-stands__summary" role="status">{summary.map(entry => <div key={entry.label}><span>{entry.label}</span><strong>{entry.value}</strong></div>)}</div>
-        {labs.Prewarm && labs.Prewarm.Total > 0 && <p className="event-stands__prewarm" role="status">
-            {t("manage.labs.prewarm.progress", {done: labs.Prewarm.Done, total: labs.Prewarm.Total})}
-            {labs.Prewarm.Failed > 0 && <span className="event-stands__error"> {t("manage.labs.prewarm.failed", {count: labs.Prewarm.Failed})}</span>}
-        </p>}
+        {labs.Prewarm && labs.Prewarm.Total > 0 && <PrewarmLine prewarm={labs.Prewarm} />}
         <section className="event-manage-section event-stands__table">
             <div className="event-participants-table" role="region" tabIndex={0} aria-label={t("manage.labs.title")}><table>
                 <thead><tr><th scope="col">{t("manage.labs.column.team")}</th><th scope="col">{t("manage.labs.column.status")}</th><th scope="col">{t("manage.labs.column.updated", {zone: zoneOffset()})}</th><th scope="col">{t("manage.labs.column.reason")}</th><th scope="col"><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
@@ -178,14 +176,14 @@ export default function ManageLabsPage() {
                             <td><div className="event-participants-table__person"><strong>{standTeamName(stand)}</strong>{stand.Generation > 0 && <small>{t("manage.labs.generation", {count: stand.Generation})}</small>}</div></td>
                             <td><StatusBadge label={standStatusLabel[stand.Status]} tone={standStatusTone[stand.Status]} />{queueLine(stand.Queue) && <small className="event-stands__queue" role="status">{queueLine(stand.Queue)}{stand.Queue && stand.Queue.QueuedLabs > 1 ? ` ${t("manage.labs.queue.labs", {count: stand.Queue.QueuedLabs})}` : ""}</small>}{stand.ImageWarning && <small className="event-stands__queue">{t("manage.labs.imageWarning")}</small>}</td>
                             <td className="event-participants-table__dim">{formatTime(stand.UpdatedAt) ?? "—"}</td>
-                            <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason || t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason || "—"}</span>}</td>
+                            <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason ? standReasonText(stand.Reason) : t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason ? standReasonText(stand.Reason) : "—"}</span>}</td>
                             <td><div className="event-manage-participants__actions event-stands__actions">
                                 {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={vpnBusy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
                                 {canManage && stand.Status !== "not_deployed" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDetailTeam(stand.TeamID)}><Layers size={14} aria-hidden="true" />{t("manage.labs.detail.open")}</button>}
                                 {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={recreating.includes(stand.TeamID)} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
                             </div></td>
                         </tr>
-                        {open && <tr className="event-stands__labs"><td colSpan={5}><ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{lab.Reason}</small>}</li>)}</ul></td></tr>}
+                        {open && <tr className="event-stands__labs"><td colSpan={5}><ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{standReasonText(lab.Reason)}</small>}</li>)}</ul></td></tr>}
                     </Fragment>;
                 })}</tbody>}
             </table></div>
@@ -196,4 +194,19 @@ export default function ManageLabsPage() {
         <StandDetailDialog eventID={eventID} teamID={detailTeam} canManage={canManage} onClose={() => setDetailTeam(null)} />
         <ModeratorChallengesDialog eventID={eventID} open={challengesOpen} onClose={() => setChallengesOpen(false)} />
     </div>;
+}
+
+/**
+ * The image cache before the start: ready images of those that can be prewarmed (Done of Total − Unavailable), then
+ * the unavailable ones, which are never prewarmed and whose labs will not start; they link to the tasks, where
+ * each set says which image and why.
+ */
+function PrewarmLine({prewarm}: {prewarm: Prewarm}) {
+    const unavailable = Math.min(prewarm.Unavailable, prewarm.Total);
+    const warmable = prewarm.Total - unavailable;
+    return <p className="event-stands__prewarm" role="status">
+        {warmable > 0 && t("manage.labs.prewarm.progress", {done: prewarm.Done, total: warmable})}
+        {prewarm.Failed > 0 && <span className="event-stands__error"> {t("manage.labs.prewarm.failed", {count: prewarm.Failed})}</span>}
+        {unavailable > 0 && <>{warmable > 0 && " "}<Link className="event-stands__error" href="/manage/exercises">{tPlural("manage.labs.prewarm.unavailable", unavailable)}</Link></>}
+    </p>;
 }

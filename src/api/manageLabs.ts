@@ -60,8 +60,10 @@ const standSchema = z.object({
     // Some images of the stand are pulled by tag, not by digest.
     ImageWarning: z.boolean().nullish().transform(value => value ?? false),
 });
+// Unavailable: images that cannot be pulled (counted in Total but never sent to prewarm; their labs are refused at deploy).
 const prewarmSchema = z.object({
-    Total: optionalNumber, Done: optionalNumber, Warming: optionalNumber, Queued: optionalNumber, Failed: optionalNumber, Skipped: optionalNumber, UpdatedAt: optionalTime,
+    Total: optionalNumber, Done: optionalNumber, Warming: optionalNumber, Queued: optionalNumber, Failed: optionalNumber, Skipped: optionalNumber,
+    Unavailable: optionalNumber, UpdatedAt: optionalTime,
 });
 export type Prewarm = z.infer<typeof prewarmSchema>;
 

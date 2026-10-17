@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {agoText, deviceStateLabel, queueLine, sizeText} from "./labLive";
+import {agoText, deviceStateLabel, failureReasonLabel, queueLine, sizeText} from "./labLive";
 
 const queue = {Position: 2, Length: 5, Reason: "WaitingForTurn", Message: "", Pods: 3, Pending: 3};
 
@@ -31,5 +31,15 @@ describe("lab live text", () => {
         const device = {Name: "db", Ready: false, Reason: "", Scheduling: {State: "Queued", QueuedAt: null, DispatchedAt: null, StartedAt: null, Failure: null}, Snapshot: null};
         expect(deviceStateLabel(device)).toBe("У черзі");
         expect(deviceStateLabel({...device, Ready: true})).toBe("Готовий");
+    });
+});
+
+describe("standReasonText: ImageUnavailable", () => {
+    it("names the image and never shows the raw code", async () => {
+        const {standReasonText} = await import("./labLive");
+        expect(standReasonText("ImageUnavailable: acme/web:1")).toBe("Образ недоступний: acme/web:1");
+        expect(standReasonText("ImageUnavailable")).toBe("Образ недоступний");
+        expect(standReasonText("something else")).toBe("something else");
+        expect(failureReasonLabel("ImageUnavailable")).toBe("образ недоступний");
     });
 });

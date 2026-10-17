@@ -13,6 +13,8 @@ import {
 import {ApiErrorCode} from "@/api/apiErrors";
 import {getManageConfig, getManageLifecycle, getManageScoring, ManageApiError} from "@/api/manage";
 import {getManageLabs} from "@/api/manageLabs";
+import {getImageAvailability} from "@/api/manageRegistries";
+import {ImageUnavailableNotice} from "./ImageUnavailableNotice";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
@@ -83,6 +85,8 @@ export function ExerciseAttachments() {
     const infrastructure = sets.some(set => set.attachment.Infrastructure);
     // Stand readiness is optional: a failure only hides the stand badges.
     const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), enabled: infrastructure, refetchInterval: 30_000, refetchOnWindowFocus: false, retry: false});
+    // Which images cannot start is optional context: a failed read only hides the warnings.
+    const availabilityQuery = useQuery({queryKey: ["event-image-availability", eventID], queryFn: () => getImageAvailability(eventID), enabled: infrastructure, refetchOnWindowFocus: false, retry: false, staleTime: 60_000});
     const detached = (board.attachments.data ?? []).filter(isDetached);
     // The stages are optional context for the per-set selector: a failed read only hides it.
     const stagesQuery = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false, retry: false});
@@ -155,6 +159,7 @@ export function ExerciseAttachments() {
                             {attachment.Infrastructure && <InfrastructureIcon />}
                             <ResourceHeavyTag show={attachment.ResourceHeavy} />
                             <NoAgentFitsTag show={attachment.NoAgentFits} />
+                            {(availabilityQuery.data?.get(attachment.ID)?.length ?? 0) > 0 && <span className="ib-tag ib-tag--sm ib-tag--danger" data-image-unavailable>{t("manage.registries.unavailable")}</span>}
                         </div>
                         <div className="event-exercise-set__side">
                             <span className="event-task__badges">
@@ -178,6 +183,7 @@ export function ExerciseAttachments() {
                         {attachment.FlagsMayRepeat && <div className="event-exercise-set__warning">
                             <span>{t("manage.exercises.flagsMayRepeat", {name})}</span>
                         </div>}
+                        <ImageUnavailableNotice items={availabilityQuery.data?.get(attachment.ID) ?? []} canManage={canManage} />
                         {mismatch && <div className="event-exercise-set__warning" role="alert">
                             <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t(published ? "manage.challenges.set.infraMissingAfter" : "manage.challenges.set.infraMissingBefore")}</span>
                         </div>}

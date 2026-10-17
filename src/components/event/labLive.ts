@@ -3,7 +3,7 @@ import {t} from "@/i18n/t";
 
 // The backend sends reasons as English codes; the UI never shows them raw.
 const QUEUE_REASONS = new Set(["InFlightLimit", "WaitingForGroup", "WaitingForTurn", "PreparingImages", "InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
-const FAILURE_REASONS = new Set(["ImagePull", "CrashLoop", "Unschedulable", "StartupTimeout", "DoesNotFit"]);
+const FAILURE_REASONS = new Set(["ImagePull", "ImageUnavailable", "CrashLoop", "Unschedulable", "StartupTimeout", "DoesNotFit"]);
 
 // «Лабораторія в черзі: N із M» + the reason. Null when the lab is not waiting for a turn:
 // no queue, or Position 0 (every pod is already dispatched).
@@ -15,6 +15,13 @@ export function queueLine(queue: Pick<LabQueue, "Position" | "Length" | "Reason"
 
 export function failureReasonLabel(reason: string): string {
     return t(FAILURE_REASONS.has(reason) ? `lab.live.failure.${reason}` : "lab.live.failure.unknown");
+}
+
+// A stand reason as stored: "ImageUnavailable: <image>" reads as a sentence, anything else stays as it is.
+export function standReasonText(reason: string): string {
+    const match = /^ImageUnavailable(?::\s*(.*))?$/.exec(reason.trim());
+    if (!match) return reason;
+    return match[1] ? t("lab.live.imageUnavailable.image", {image: match[1]}) : t("lab.live.imageUnavailable");
 }
 
 export function failedDevices(devices: LiveDevice[]): LiveDevice[] {
