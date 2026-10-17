@@ -150,14 +150,14 @@ const PROBE_TIMEOUT_MS = 10_000;
 
 // The recovery probe: session validation answers below 500 for everyone (200
 // signed in, 401 anonymous) once the API and its storage respond. It goes to the
-// API origin like every other call.
+// API origin like every other call. An overload answer (429, or 503 with Retry-After) is a busy API that answered: reachable.
 export async function probeService(origin = apiOrigin): Promise<boolean> {
     if (!origin) return false;
     try {
         const response = await fetch(`${origin}/api/auth/me`, {
             credentials: "include", cache: "no-store", headers: {Accept: "application/json"}, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
         });
-        return !isUnavailableStatus(response.status);
+        return !isUnavailableStatus(response.status) || isOverloadResponse(response);
     } catch {
         return false;
     }

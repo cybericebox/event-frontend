@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
+import { spawnSync } from "node:child_process"
 
 // The nginx config is rendered by deploy/entrypoint.sh (envsubst); these tests read the templates and the entrypoint as text.
 const root = resolve(import.meta.dirname, "..")
@@ -17,6 +18,12 @@ const server = code("deploy/nginx/server.conf")
 const health = code("deploy/nginx/health.conf")
 const entrypoint = read("deploy/entrypoint.sh")
 
+const limitFunction = entrypoint.match(/^limit_conn_directive\(\) \{\n[\s\S]*?\n\}$/m)?.[0] ?? ""
+function limitDirective(value: string) {
+  const run = spawnSync("sh", ["-c", `${limitFunction}\nlimit_conn_directive "$1"`, "sh", value], { encoding: "utf8" })
+  return { status: run.status, out: run.stdout.trim() }
+}
+
 describe("nginx limits and timeouts", () => {
   it("keys the connection zone on CF-Connecting-IP only after a verified client certificate", () => {
     expect(main).toMatch(/map\s+\$ssl_client_verify\s+\$\w+\s*{[^}]*default\s+\$binary_remote_addr;[^}]*SUCCESS\s+\$\w+;/)
@@ -32,8 +39,22 @@ describe("nginx limits and timeouts", () => {
   it("applies the per-IP cap through a rendered line that the entrypoint can drop", () => {
     expect(server).toContain("${NGINX_LIMIT_CONN}")
     expect(entrypoint).toMatch(/NGINX_LIMIT_CONN_PER_IP=\$\{NGINX_LIMIT_CONN_PER_IP-400\}/)
-    expect(entrypoint).toMatch(/NGINX_LIMIT_CONN=.*limit_conn \w+ \$NGINX_LIMIT_CONN_PER_IP;/)
-    expect(entrypoint).toMatch(/\[ "\$NGINX_LIMIT_CONN_PER_IP" = 0 \]/)
+    expect(entrypoint).toMatch(/NGINX_LIMIT_CONN=\$\(limit_conn_directive "\$NGINX_LIMIT_CONN_PER_IP"\) \|\| fail /)
+  })
+
+  // Runs the entrypoint's own function in sh: nginx refuses "00" and values above 65535, so they must never reach the config.
+  it.each([
+    ["400", "limit_conn client_conn 400;"],
+    ["0400", "limit_conn client_conn 400;"],
+    ["65535", "limit_conn client_conn 65535;"],
+    ["0", ""],
+    ["00", ""],
+  ])("renders NGINX_LIMIT_CONN_PER_IP=%s as %j", (value, line) => {
+    expect(limitDirective(value)).toEqual({status: 0, out: line})
+  })
+
+  it.each(["65536", "100000", "0000070000", "", "-1", "4 00", "abc"])("refuses NGINX_LIMIT_CONN_PER_IP=%j", (value) => {
+    expect(limitDirective(value).status).toBe(1)
   })
 
   it("lists the new variable in the envsubst list and leaves nginx variables alone", () => {
