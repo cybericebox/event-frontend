@@ -32,13 +32,14 @@ export function apiErrorMessage(code: number | undefined, fallback: string = t("
   return uk[key] ?? en[key] ?? fallback
 }
 
-// The overloaded line for the server's overload answer (a 503 with Retry-After); undefined for any other error.
+// The overloaded line for the server's overload signal (a 503 with Retry-After, an overload code); undefined for any
+// other error, a 429 (a personal limit with its own message) included.
 export function overloadedMessage(error: unknown): string | undefined {
-  return isOverloadError(error) && (error as {status: number}).status === 503 ? t("error.overloaded") : undefined
+  return isOverloadError(error) ? t("error.overloaded") : undefined
 }
 
 // The message for an API error object (its numeric `status`, detail `code` and `retryAfter`): the catalog text
-// of its code (a rate limit with its wait), the overloaded line for an overload 503 without one, else the fallback.
+// of its code (a rate limit with its wait), the overloaded line for the overload signal without one, else the fallback.
 export function apiErrorText(error: unknown, fallback: string = t("error.generic")): string {
   if (!(error instanceof Error)) return fallback
   const {code, retryAfter} = error as {code?: unknown; retryAfter?: unknown}

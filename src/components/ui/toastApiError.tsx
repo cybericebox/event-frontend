@@ -11,8 +11,9 @@ export function toastApiError(error: unknown, fallback: string, retry?: () => vo
     return retry && isOverloadError(error) ? toastErrorWithAction(message, {label: t("error.overloaded.retry"), onClick: retry}) : toast.error(message);
 }
 
-// The error toast of a failed action with its own message: the overloaded line when the server was only
-// busy (an overload 503), else the caller's message unchanged.
+// The error toast of a failed action with its own message: the overloaded line on the server's overload
+// signal, the catalog text (with the wait) of a personal rate limit (429), else the caller's message unchanged.
 export function toastFailure(error: unknown, message: string): string {
-    return toast.error(overloadedMessage(error) ?? message);
+    const limited = error instanceof Error && (error as {status?: unknown}).status === 429;
+    return toast.error(overloadedMessage(error) ?? (limited ? apiErrorText(error, message) : message));
 }

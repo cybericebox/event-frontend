@@ -28,6 +28,21 @@ describe("toastApiError", () => {
         await vi.waitFor(() => expect(screen.getByRole("alert").getAttribute("data-visible")).toBe("false"));
     });
 
+    it("offers the retry for the overload code (431) without Retry-After too", async () => {
+        render(<EventActionToaster />);
+        act(() => {toastApiError(new TestApiError(503, 431), "Не вдалося зберегти", vi.fn());});
+        expect(await screen.findByText("Сервер перевантажений, спробуйте за кілька секунд")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+    });
+
+    it("keeps a personal rate limit (429) on its own message with the wait, without the retry", async () => {
+        render(<EventActionToaster />);
+        act(() => {toastApiError(new TestApiError(429, 428, 30), "Не вдалося зберегти", vi.fn());});
+        expect(await screen.findByText("Забагато спроб. Спробуйте ще раз через 30 с.")).toBeTruthy();
+        expect(screen.queryByText("Сервер перевантажений, спробуйте за кілька секунд")).toBeNull();
+        expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
+    });
+
     it("shows only the message for other errors or without a handler", async () => {
         render(<EventActionToaster />);
         act(() => {
@@ -50,5 +65,13 @@ describe("toastApiError", () => {
         expect(screen.queryByText("Не вдалося видалити")).toBeNull();
         expect(screen.getByText("Не вдалося зберегти")).toBeTruthy();
         expect(screen.getByText("Не вдалося надіслати")).toBeTruthy();
+    });
+
+    it("toastFailure keeps a personal rate limit (429) on its catalog message with the wait", async () => {
+        render(<EventActionToaster />);
+        act(() => {toastFailure(new TestApiError(429, 428, 30), "Не вдалося надіслати");});
+        expect(await screen.findByText("Забагато спроб. Спробуйте ще раз через 30 с.")).toBeTruthy();
+        expect(screen.queryByText("Не вдалося надіслати")).toBeNull();
+        expect(screen.queryByText("Сервер перевантажений, спробуйте за кілька секунд")).toBeNull();
     });
 });
