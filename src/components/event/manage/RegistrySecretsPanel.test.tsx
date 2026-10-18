@@ -39,11 +39,11 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("Сховища образів заходу", () => {
+describe("Реєстри образів заходу", () => {
     it("shows the empty state when there are no secrets", async () => {
         mockApi([]);
         renderPanel();
-        expect(await screen.findByText("Облікових даних сховищ ще немає.")).toBeTruthy();
+        expect(await screen.findByText("Облікових даних реєстрів ще немає.")).toBeTruthy();
     });
 
     it("lists host, prefix and user and never renders a token back", async () => {
@@ -62,10 +62,10 @@ describe("Сховища образів заходу", () => {
     it("takes the example placeholders from the messages and keeps password managers off the credentials", async () => {
         mockApi([]);
         renderPanel();
-        await screen.findByText("Облікових даних сховищ ще немає.");
+        await screen.findByText("Облікових даних реєстрів ще немає.");
         fireEvent.click(screen.getByRole("button", {name: "Додати"}));
         const messages = uk as Record<string, string>;
-        expect((screen.getByLabelText(/^Адреса сховища/) as HTMLInputElement).placeholder).toBe(messages["manage.registries.field.hostPlaceholder"]);
+        expect((screen.getByLabelText(/^Адреса реєстру/) as HTMLInputElement).placeholder).toBe(messages["manage.registries.field.hostPlaceholder"]);
         expect((screen.getByLabelText(/^Префікс репозиторію/) as HTMLInputElement).placeholder).toBe(messages["manage.registries.field.prefixPlaceholder"]);
         for (const field of [screen.getByLabelText(/^Токен/), screen.getByLabelText(/^Користувач/)]) {
             expect(field.getAttribute("autocomplete")).toBe("off");
@@ -74,12 +74,23 @@ describe("Сховища образів заходу", () => {
         }
     });
 
+    it("has no show button on the token field", async () => {
+        mockApi([]);
+        renderPanel();
+        await screen.findByText("Облікових даних реєстрів ще немає.");
+        fireEvent.click(screen.getByRole("button", {name: "Додати"}));
+        expect((screen.getByLabelText(/^Токен/) as HTMLInputElement).type).toBe("password");
+        expect(screen.queryByRole("button", {name: "Показати"})).toBeNull();
+        const form = screen.getByLabelText(/^Адреса реєстру/).closest("form")!;
+        expect(within(form).getByRole("button", {name: "Скасувати"}).parentElement).toBe(within(form).getByRole("button", {name: "Зберегти"}).parentElement);
+    });
+
     it("adds a secret with a write-only token and puts it in the list without refetching", async () => {
         mockApi([secret]);
         renderPanel();
         await screen.findByText("ghcr.io");
         fireEvent.click(screen.getByRole("button", {name: "Додати"}));
-        fireEvent.change(screen.getByLabelText(/^Адреса сховища/), {target: {value: "docker.io"}});
+        fireEvent.change(screen.getByLabelText(/^Адреса реєстру/), {target: {value: "docker.io"}});
         fireEvent.change(screen.getByLabelText(/^Користувач/), {target: {value: "bob"}});
         fireEvent.change(screen.getByLabelText(/^Токен/), {target: {value: "dckr_pat"}});
         fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
@@ -107,8 +118,8 @@ describe("Сховища образів заходу", () => {
         renderPanel();
         await screen.findByText("ghcr.io");
         fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
-        fireEvent.change(await screen.findByLabelText(/^Адреса сховища/), {target: {value: "quay.io"}});
-        expect(screen.getByText("Змінили адресу сховища: введіть токен знову.")).toBeTruthy();
+        fireEvent.change(await screen.findByLabelText(/^Адреса реєстру/), {target: {value: "quay.io"}});
+        expect(screen.getByText("Змінили адресу реєстру: введіть токен знову.")).toBeTruthy();
         expect((screen.getByRole("button", {name: "Зберегти"}) as HTMLButtonElement).disabled).toBe(true);
     });
 
@@ -122,7 +133,7 @@ describe("Сховища образів заходу", () => {
         expect(requests.some(request => request.method === "DELETE")).toBe(false);
         fireEvent.click(within(dialog).getByRole("button", {name: "Видалити", hidden: true}));
         await waitFor(() => expect(requests.some(request => request.method === "DELETE" && request.url.endsWith("/registry-secrets/s1"))).toBe(true));
-        await waitFor(() => expect(screen.getByText("Облікових даних сховищ ще немає.")).toBeTruthy());
+        await waitFor(() => expect(screen.getByText("Облікових даних реєстрів ще немає.")).toBeTruthy());
     });
 
     it("shows a duplicate rejection inline and keeps the form open", async () => {
@@ -130,13 +141,13 @@ describe("Сховища образів заходу", () => {
         renderPanel();
         await screen.findByText("ghcr.io");
         fireEvent.click(screen.getByRole("button", {name: "Додати"}));
-        fireEvent.change(screen.getByLabelText(/^Адреса сховища/), {target: {value: "ghcr.io"}});
+        fireEvent.change(screen.getByLabelText(/^Адреса реєстру/), {target: {value: "ghcr.io"}});
         fireEvent.change(screen.getByLabelText(/^Користувач/), {target: {value: "bob"}});
         fireEvent.change(screen.getByLabelText(/^Токен/), {target: {value: "t"}});
         fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
-        const form = screen.getByLabelText(/^Адреса сховища/).closest("form")!;
+        const form = screen.getByLabelText(/^Адреса реєстру/).closest("form")!;
         await waitFor(() => expect(within(form).getByRole("alert").textContent).toContain("вже збережено доступ"));
-        expect((screen.getByLabelText(/^Адреса сховища/) as HTMLInputElement).value).toBe("ghcr.io");
+        expect((screen.getByLabelText(/^Адреса реєстру/) as HTMLInputElement).value).toBe("ghcr.io");
     });
 
     it("shows the token-required rejection next to the token field", async () => {
@@ -155,12 +166,12 @@ describe("Сховища образів заходу", () => {
         renderPanel();
         await screen.findByText("ghcr.io");
         fireEvent.click(screen.getByRole("button", {name: "Додати"}));
-        fireEvent.change(screen.getByLabelText(/^Адреса сховища/), {target: {value: "docker.io"}});
+        fireEvent.change(screen.getByLabelText(/^Адреса реєстру/), {target: {value: "docker.io"}});
         fireEvent.change(screen.getByLabelText(/^Користувач/), {target: {value: "bob"}});
         fireEvent.change(screen.getByLabelText(/^Токен/), {target: {value: "t"}});
         fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
         const token = screen.getByLabelText(/^Токен/);
-        await waitFor(() => expect(token.closest(".event-manage-field")!.querySelector("[role=alert]")?.textContent).toContain("Введіть токен сховища образів"));
+        await waitFor(() => expect(token.closest(".event-manage-field")!.querySelector("[role=alert]")?.textContent).toContain("Введіть токен реєстру образів"));
     });
 
     it.each([72826, 72827])("shows the missing secrets key (%i) as a form error, not at the token field", async code => {
@@ -170,7 +181,7 @@ describe("Сховища образів заходу", () => {
         fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
         fireEvent.change(await screen.findByLabelText(/^Токен/), {target: {value: "new"}});
         fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
-        const form = screen.getByLabelText(/^Адреса сховища/).closest("form")!;
+        const form = screen.getByLabelText(/^Адреса реєстру/).closest("form")!;
         await waitFor(() => expect(within(form).getByRole("alert").textContent).toContain("Сховище секретів не налаштоване"));
         expect(screen.getByLabelText(/^Токен/).closest(".event-manage-field")!.querySelector("[role=alert]")).toBeNull();
     });
@@ -212,7 +223,7 @@ describe("Сховища образів заходу", () => {
             await screen.findByText("never.example");
             expect(screen.getByText("Ще не перевірено")).toBeTruthy();
             expect(screen.getByText(/Перевірено: .+ — працює/)).toBeTruthy();
-            expect(screen.getByText(/Перевірено: .+ — не працює: сховище відхилило токен/)).toBeTruthy();
+            expect(screen.getByText(/Перевірено: .+ — не працює: реєстр відхилив токен/)).toBeTruthy();
         });
 
         it("names a missing repository as the reason", async () => {
@@ -225,7 +236,7 @@ describe("Сховища образів заходу", () => {
             mockApi([{...secret, Check: {...ok, AttemptedAt: "2026-10-18T15:00:00Z", Failure: "rate_limited"}}]);
             renderPanel();
             expect(await screen.findByText(/Перевірено: .+ — працює/)).toBeTruthy();
-            expect(screen.getByText(/Остання спроба .+ не вдалася \(сховище обмежило кількість запитів\), її буде повторено/)).toBeTruthy();
+            expect(screen.getByText(/Остання спроба .+ не вдалася \(реєстр обмежив кількість запитів\), її буде повторено/)).toBeTruthy();
         });
 
         it("checks now: only its own button is busy, the row updates without a refetch", async () => {
@@ -239,7 +250,7 @@ describe("Сховища образів заходу", () => {
             expect((screen.getAllByRole("button", {name: /Перевірити зараз/})[1] as HTMLButtonElement).disabled).toBe(false);
             expect((screen.getAllByRole("button", {name: "Редагувати"})[0] as HTMLButtonElement).disabled).toBe(false);
             release();
-            expect(await screen.findByText(/не працює: сховище відхилило токен/)).toBeTruthy();
+            expect(await screen.findByText(/не працює: реєстр відхилив токен/)).toBeTruthy();
             expect(requests.find(request => request.method === "POST")?.url).toContain("/registry-secrets/s1/check");
             expect(requests.filter(request => request.method === "GET")).toHaveLength(1);
         });
