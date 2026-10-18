@@ -11,7 +11,6 @@ vi.mock("@/api/manage", async importOriginal => ({...(await importOriginal<objec
 vi.mock("@/api/clientEventInfo", () => ({getClientEventInfo: async () => event}));
 vi.mock("./EventServiceStatusGate", () => ({APP_ROOT_ID: "root", EventServiceStatusGate: () => null}));
 import {AppShell} from "./AppShell";
-import {ParticipantPreviewEntry} from "./ParticipantPreview";
 import {readPreviewCookie} from "@/utils/previewCookie";
 
 const event = {EventID: "event-1", Name: "Hidden", LogoURL: "", FaviconURL: "", Theme: {Brand: "#1", AccentLight: "#2", AccentDark: "#3", AccentLive: "#4"}} as never;
