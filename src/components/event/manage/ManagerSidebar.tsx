@@ -71,7 +71,6 @@ const groups: Group[] = [
         {href: "/manage/appearance", label: t("manage.nav.appearance"), icon: Palette},
         {href: "/manage/participation-settings", label: t("manage.nav.participationSettings"), icon: UsersRound},
         {href: "/manage/schedule", label: t("manage.nav.schedule"), icon: CalendarDays},
-        {href: "/manage/registries", label: t("manage.nav.registries"), icon: KeyRound, infrastructureOnly: true},
     ]},
     {id: "participation", label: t("manage.nav.group.participation"), icon: Handshake, items: [
         {href: "/manage/registration", label: t("manage.nav.registration"), icon: FilePenLine},
@@ -82,6 +81,7 @@ const groups: Group[] = [
         {href: "/manage/exercises", label: t("manage.nav.exercises"), icon: Puzzle},
         {href: "/manage/exercise-groups", label: t("manage.nav.exerciseGroups"), icon: Layers3},
         {href: "/manage/challenge-settings", label: t("manage.nav.challengeSettings"), icon: SlidersHorizontal},
+        {href: "/manage/private-registries", label: t("manage.nav.registries"), icon: KeyRound, infrastructureOnly: true},
         {href: "/manage/labs", label: t("manage.nav.labs"), icon: Server, infrastructureOnly: true},
         {href: "/manage/resources", label: t("manage.nav.resources"), icon: Cpu, infrastructureOnly: true},
         {href: "/manage/submissions", label: t("manage.nav.submissions"), icon: ListChecks},

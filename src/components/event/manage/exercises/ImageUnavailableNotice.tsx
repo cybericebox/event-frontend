@@ -10,6 +10,6 @@ export function ImageUnavailableNotice({items, canManage}: {items: UnavailableIm
     return <div className="event-exercise-set__warning event-exercise-set__images" role="status">
         <span><strong>{t("manage.registries.unavailable")}</strong></span>
         <ul>{items.map(item => <li key={item.Image}>{tRich("manage.registries.unavailableItem", {image: <code>{item.Image}</code>, reason: unavailableReasonText(item.Reason)})}</li>)}</ul>
-        {canManage && <Link className="ib-btn ib-btn--sm" href="/manage/registries">{t("manage.registries.addCredentials")}</Link>}
+        {canManage && <Link className="ib-btn ib-btn--sm" href="/manage/private-registries">{t("manage.registries.addCredentials")}</Link>}
     </div>;
 }

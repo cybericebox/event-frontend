@@ -54,14 +54,18 @@ describe("participation navigation", () => {
         expect(screen.getByRole("link", {name: "Стенди"})).toBeTruthy();
     });
 
-    it("shows image registries only when infrastructure tasks are allowed", () => {
+    it("shows private registries in the tasks group only when infrastructure tasks are allowed", () => {
         renderSidebar(1);
-        fireEvent.click(screen.getByRole("button", {name: "Захід"}));
-        expect(screen.queryByRole("link", {name: "Сховища образів"})).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Завдання"}));
+        expect(screen.queryByRole("link", {name: "Приватні реєстри"})).toBeNull();
         cleanup();
         renderSidebar(1, true);
+        fireEvent.click(screen.getByRole("button", {name: "Завдання"}));
+        const link = screen.getByRole("link", {name: "Приватні реєстри"});
+        expect(link.getAttribute("href")).toBe("/manage/private-registries");
+        expect(document.getElementById("event-manage-group-challenges")!.contains(link)).toBe(true);
         fireEvent.click(screen.getByRole("button", {name: "Захід"}));
-        expect(screen.getByRole("link", {name: "Сховища образів"}).getAttribute("href")).toBe("/manage/registries");
+        expect(document.getElementById("event-manage-group-event")!.querySelector('a[href="/manage/private-registries"]')).toBeNull();
     });
 
     it("orders the challenges group: tasks, groups, settings, stands, resources, journal", () => {
@@ -72,6 +76,7 @@ describe("participation navigation", () => {
             ["Перелік завдань", "/manage/exercises"],
             ["Групи й порядок", "/manage/exercise-groups"],
             ["Налаштування", "/manage/challenge-settings"],
+            ["Приватні реєстри", "/manage/private-registries"],
             ["Стенди", "/manage/labs"],
             ["Ресурси", "/manage/resources"],
             ["Журнал спроб", "/manage/submissions"],

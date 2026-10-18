@@ -128,7 +128,7 @@ export function RegistrySecretsPanel() {
     return <div className="event-manage-mail__panel">
         {!canManage && <p className="event-manage-notice">{t("common.viewOnly")}</p>}
         <section className="event-manage-section" aria-labelledby="registries-title">
-            <div className="event-manage-section__head"><h2 id="registries-title">{t("manage.registries.list.title")}</h2><p>{t("manage.registries.list.intro")}</p></div>
+            <div className="event-manage-section__head"><h2 id="registries-title">{t("manage.registries.list.title")}</h2></div>
             {secrets.length === 0 ? <EmptyState compact message={t("manage.registries.empty")} /> : <ul className="event-registry-list" aria-label={t("manage.registries.list.title")}>
                 {secrets.map(secret => <li key={secret.ID} className="event-registry-list__row">
                     <div className="event-registry-list__main">
@@ -174,7 +174,7 @@ export function RegistrySecretsPanel() {
                 </div>
                 <div className="event-manage-field">
                     <ManageFieldLabel htmlFor="registry-token" title={t("manage.registries.field.token")} help={t("manage.registries.field.tokenHelp")} required={!saved} />
-                    <PasswordInput id="registry-token" value={form.token} autoComplete="off" data-1p-ignore data-lpignore="true" placeholder={saved ? t("manage.registries.field.tokenSaved") : ""} aria-invalid={(!!errors.token && (touched || !!saved)) || undefined} onChange={input => change({token: input.target.value})} />
+                    <PasswordInput writeOnly id="registry-token" value={form.token} autoComplete="off" data-1p-ignore data-lpignore="true" placeholder={saved ? t("manage.registries.field.tokenSaved") : ""} aria-invalid={(!!errors.token && (touched || !!saved)) || undefined} onChange={input => change({token: input.target.value})} />
                     {saveError?.token ? <p className="event-manage-validation" role="alert">{saveError.message}</p> : errors.token && (touched || saved) ? <p className="event-manage-validation" role="alert">{errors.token}</p> : saved && <small>{t("manage.registries.field.tokenKeep")}</small>}
                 </div>
             </div>

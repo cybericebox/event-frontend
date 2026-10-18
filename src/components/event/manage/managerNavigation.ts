@@ -6,9 +6,9 @@ export type ManageCrumb = {label: string; href?: string};
 
 // Section of the sidebar group each page lives in; a top-level page has none.
 const sections: {group: () => string; pages: string[]}[] = [
-    {group: () => t("manage.nav.group.event"), pages: ["/manage/settings", "/manage/appearance", "/manage/participation-settings", "/manage/schedule", "/manage/registries"]},
+    {group: () => t("manage.nav.group.event"), pages: ["/manage/settings", "/manage/appearance", "/manage/participation-settings", "/manage/schedule"]},
     {group: () => t("manage.nav.group.participation"), pages: ["/manage/registration", "/manage/participants", "/manage/teams"]},
-    {group: () => t("manage.nav.group.challenges"), pages: ["/manage/challenge-settings", "/manage/exercise-groups", "/manage/exercises", "/manage/labs", "/manage/resources", "/manage/submissions"]},
+    {group: () => t("manage.nav.group.challenges"), pages: ["/manage/challenge-settings", "/manage/exercise-groups", "/manage/exercises", "/manage/private-registries", "/manage/labs", "/manage/resources", "/manage/submissions"]},
     {group: () => t("manage.nav.group.results"), pages: ["/manage/results", "/manage/live", "/manage/results-settings"]},
     {group: () => t("manage.nav.group.notifications"), pages: ["/manage/banners", "/manage/notifications", "/manage/email", "/manage/mail", "/manage/mail-journal"]},
 ];
@@ -20,7 +20,7 @@ const pageNames: Record<string, () => string> = {
     "/manage/registration": () => t("manage.nav.registration"),
     "/manage/results-settings": () => t("manage.nav.resultsSettings"),
     "/manage/schedule": () => t("manage.nav.schedule"),
-    "/manage/registries": () => t("manage.nav.registries"),
+    "/manage/private-registries": () => t("manage.nav.registries"),
     "/manage/exercise-groups": () => t("manage.nav.exerciseGroups"),
     "/manage/exercises": () => t("manage.nav.exercises"),
     "/manage/labs": () => t("manage.nav.labs"),
