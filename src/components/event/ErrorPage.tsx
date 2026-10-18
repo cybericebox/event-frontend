@@ -8,7 +8,7 @@ import {BRAND} from "@/i18n/brand";
 import {mainOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 import {FeedbackLink} from "@/components/FeedbackLink";
-import {EventBrandLogo, useEventBrandName} from "./EventBrandLogo";
+import {EventBrandLogo, useEventBrandName, useEventBrandUnknown} from "./EventBrandLogo";
 import "@/styles/error-page.css";
 
 // The platform error code an API error carries (its numeric Status.Code, not the HTTP status).
@@ -79,9 +79,10 @@ function Ticket({value}: {value: string}) {
 function ErrorFooter({platformBrand, homeHref}: {platformBrand: boolean; homeHref?: string}) {
     const eventName = useEventBrandName();
     const event = !platformBrand && !!eventName;
+    const unknown = useEventBrandUnknown();
     const home = homeHref ?? (event ? "/" : mainOrigin || "/");
     const brand = <>
-        {event
+        {event || (!platformBrand && unknown)
             ? <EventBrandLogo size={18} />
             : <Image src={crest} width={18} height={18} alt="" loading="eager" />}
         {event ? eventName : BRAND}

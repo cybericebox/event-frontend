@@ -3,7 +3,7 @@ import {act,cleanup,render,screen} from "@testing-library/react";
 import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
 import {afterEach,expect,it,vi} from "vitest";
 vi.mock("next/navigation",()=>({usePathname:()=>"/",useRouter:()=>({refresh:vi.fn()})}));
-vi.mock("./EventBrandLogo",()=>({EventBrandLogo:()=>null,EventBrandProvider:({children}:{children:React.ReactNode})=>children,useEventBrandName:()=>"",useEventBrandLogo:()=>""}));
+vi.mock("./EventBrandLogo",()=>({EventBrandLogo:()=>null,useEventBrandUnknown:()=>false,EventBrandProvider:({children}:{children:React.ReactNode})=>children,useEventBrandName:()=>"",useEventBrandLogo:()=>""}));
 vi.mock("./GuestShell",()=>({GuestShell:({children}:{children:React.ReactNode})=><>{children}</>}));
 vi.mock("./ParticipantShell",()=>({ParticipantShell:({children}:{children:React.ReactNode})=><>{children}</>}));
 vi.mock("./manage/ManagerShell",()=>({ManagerShell:({children}:{children:React.ReactNode})=><>{children}</>}));
