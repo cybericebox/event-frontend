@@ -142,6 +142,14 @@ export default async function RootLayout({
         if ((error instanceof PublicEventError || error instanceof RenderReadError) && loadFailure(error) === "error") failure = {status: error.status, requestId: error.requestId};
         else unavailable = true;
     }
+    if (!event && commonPage === null && (serverPath === "/manage" || serverPath.startsWith("/manage/"))) {
+        // The staff routes keep the read grant alive: tell the client whether one is installed already.
+        try {
+            const context = await readContext();
+            hasGrant = !!context?.claims;
+            expiresAt = context?.claims?.exp;
+        } catch { /* the client then asks for a grant */ }
+    }
     // A personal route of a hidden event is anonymous in the public read; the staff grant still gives the branding.
     const granted = !event && !privateEvent && !unavailable && !failure ? await getGrantedEvent() : null;
     const known = event ?? privateEvent ?? granted;
