@@ -36,7 +36,7 @@ function difficultyLabel(value: string): string {
 // (the filter starts at «Немає»).
 export function AttachExerciseDialog({eventID, infrastructureAllowed, published = false, open, onClose, onAttached, selectionAdapter}: {
     eventID: string; infrastructureAllowed: boolean; published?: boolean; open: boolean; onClose: () => void; onAttached: () => Promise<unknown>;
-    selectionAdapter?: {variantInfrastructure?: Record<string, Record<number, boolean>>; availableVariants?: Record<string, number[]>; attachedVersionIDs: string[]; onSelect: (choice: PublishedExerciseChoice, variant: number) => Promise<unknown>};
+    selectionAdapter?: {variantInfrastructure?: Record<string, Record<number, boolean>>; availableVariants?: Record<string, number[]>; ineligible?: {ID: string; Name: string; Reason: string}[]; attachedVersionIDs: string[]; onSelect: (choice: PublishedExerciseChoice, variant: number) => Promise<unknown>};
 }) {
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
@@ -58,7 +58,17 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
         const dynamic = selectionAdapter?.variantInfrastructure?.[choice.PublishedVersionID]?.[position] ?? (infrastructureAllowed && choice.Infrastructure);
         return infrastructure === "all" || (infrastructure === "yes" ? dynamic : !dynamic);
     });
-    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags, selectionAdapter?.attachedVersionIDs, selectionAdapter?.availableVariants, selectionAdapter?.variantInfrastructure], queryFn: async () => (await getPublishedExerciseChoices(eventID, search, selectionAdapter?.availableVariants ? "all" : infrastructure, tags)).filter(choice => !selectionAdapter?.availableVariants || eligiblePositions(choice).length > 0).map(choice => selectionAdapter ? {...choice, Attached: selectionAdapter.attachedVersionIDs.includes(choice.PublishedVersionID)} : choice), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
+    const ineligibleReasons = new Map((selectionAdapter?.ineligible ?? []).map(item => [item.ID, item.Reason]));
+    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags, selectionAdapter?.attachedVersionIDs, selectionAdapter?.availableVariants, selectionAdapter?.variantInfrastructure, selectionAdapter?.ineligible], queryFn: async () => (await getPublishedExerciseChoices(eventID, search, selectionAdapter?.availableVariants ? "all" : infrastructure, tags)).filter(choice => !selectionAdapter?.availableVariants || eligiblePositions(choice).length > 0 || ineligibleReasons.has(choice.ID)).map(choice => selectionAdapter ? {...choice, Attached: selectionAdapter.attachedVersionIDs.includes(choice.PublishedVersionID)} : choice), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
+    // Preview picker: tasks that cannot be chosen stay listed, muted, after the choosable ones, each with its reason.
+    const mutedItems = (() => {
+        if (!selectionAdapter?.ineligible || !catalog.data) return [];
+        const listed = new Set(catalog.data.map(choice => choice.ID));
+        const needle = search.toLowerCase();
+        const extra = tags.length > 0 ? [] : selectionAdapter.ineligible.filter(item => !listed.has(item.ID) && item.Name.toLowerCase().includes(needle));
+        return [...catalog.data.filter(choice => ineligibleReasons.has(choice.ID)).map(choice => ({ID: choice.ID, Name: choice.Name, Reason: ineligibleReasons.get(choice.ID)!})), ...extra];
+    })();
+    const selectableItems = catalog.data?.filter(choice => !ineligibleReasons.has(choice.ID)) ?? [];
     const preview = useQuery({
         queryKey: ["event-exercise-preview", eventID, selected?.PublishedVersionID, variant],
         queryFn: () => getPublishedExercisePreview(eventID, selected!.PublishedVersionID, variant),
@@ -115,13 +125,13 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                 <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
                 <div className="ib-seg ib-seg--sm">{infrastructureFilters.map(option => <button key={option} type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
             </div>
-            {!infrastructureAllowed && (infrastructure === "yes" || (infrastructure === "all" && !!catalog.data?.some(choice => choice.Infrastructure))) && <p className="event-exercise-picker__notice" role="status">
+            {!infrastructureAllowed && (infrastructure === "yes" || (infrastructure === "all" && selectableItems.some(choice => choice.Infrastructure))) && <p className="event-exercise-picker__notice" role="status">
                 {t(published ? "manage.exercises.attachDialog.noInfrastructure" : "manage.exercises.attachDialog.noInfrastructureWithHint")}
             </p>}
             {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />
                 : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} error={catalog.error} onRetry={() => void catalog.refetch()} />
-                : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
-                : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}>
+                : selectableItems.length === 0 && mutedItems.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
+                : <ul className="event-exercise-picker__list">{selectableItems.map(choice => <li key={choice.ID}>
                     <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached || unavailable(choice)} onClick={() => select(choice)}>
                         <span className="event-exercise-picker__name"><strong>{choice.Name}</strong>{choice.Infrastructure && <InfrastructureIcon interactive={false} />}</span>
                         {choice.Description && <span className="event-exercise-picker__desc">{choice.Description}</span>}
@@ -134,6 +144,9 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                         <ResourcesLine resources={choice.Resources} className="event-exercise-picker__resources" />
                         {unavailable(choice) && !choice.Attached && <span className="event-exercise-picker__reason">{t(published ? "manage.exercises.attachDialog.needsInfrastructureAfter" : "manage.exercises.attachDialog.needsInfrastructure")}</span>}
                     </button>
+                </li>)}{mutedItems.map(item => <li key={item.ID} className="event-exercise-picker__muted">
+                    <strong>{item.Name}</strong>
+                    <span className="event-exercise-picker__muted-reason">{t(`manage.previewSettings.reason.${item.Reason}`)}</span>
                 </li>)}</ul>}
             {attachError && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{attachError}</p>}
             {needsExtension && <Link className="ib-btn" href="/manage/resources?request=1" onClick={close}>{t("manage.exercises.attachDialog.requestExtension")}</Link>}

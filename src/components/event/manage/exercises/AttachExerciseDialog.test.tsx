@@ -173,3 +173,20 @@ it("limits preview catalog and variant choices to event-eligible availability", 
     await waitFor(() => expect(select).toHaveBeenCalledWith(expect.objectContaining({ID: eligible.ID}), 2));
     expect(api.attach).not.toHaveBeenCalled();
 });
+
+it("lists preview tasks that cannot be chosen muted with a reason, after the choosable ones", async () => {
+    const eligible = choice("eligible", "Eligible", false);
+    const capped = choice("capped", "Capped", true);
+    api.choices.mockResolvedValue([capped, eligible]);
+    api.preview.mockResolvedValue({ID: eligible.ID, Name: "Eligible", Description: "", VersionID: "v", VariantCount: 1, Variant: 0, Tasks: []});
+    const ineligible = [{ID: capped.ID, Name: "Capped", Reason: "no_capacity"}, {ID: "draft", Name: "Draft", Reason: "not_published"}];
+    render(<QueryClientProvider client={new QueryClient()}><AttachExerciseDialog eventID="e" infrastructureAllowed open onClose={vi.fn()} onAttached={vi.fn(async () => undefined)} selectionAdapter={{availableVariants: {[eligible.PublishedVersionID]: [0]}, ineligible, attachedVersionIDs: [], onSelect: vi.fn(async () => undefined)}} /></QueryClientProvider>);
+    expect(await screen.findByRole("button", {name: /Eligible/})).toHaveProperty("disabled", false);
+    expect(screen.queryByRole("button", {name: /Capped/})).toBeNull();
+    expect(screen.getByText(t("manage.previewSettings.reason.no_capacity"))).toBeTruthy();
+    expect(screen.getByText(t("manage.previewSettings.reason.not_published"))).toBeTruthy();
+    const names = screen.getAllByRole("listitem").map(item => item.textContent ?? "");
+    expect(names[0]).toContain("Eligible");
+    expect(names[1]).toContain("Capped");
+    expect(names[2]).toContain("Draft");
+});
