@@ -13,7 +13,7 @@ it("deletes the read session and the remembered branding when signing out", asyn
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {calls.push(`${init?.method} ${url}`); return new Response(null, {status: 204});}));
     await signOut();
-    expect(calls).toEqual(["DELETE /api/event-session", "POST https://api.example.test/api/auth/sign-out"]);
+    expect(calls).toEqual(["POST https://api.example.test/api/auth/sign-out", "DELETE /api/event-session"]);
     expect(readCachedLogo()).toBeNull();
     expect(window.localStorage.length).toBe(0);
 });

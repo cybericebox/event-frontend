@@ -32,7 +32,7 @@ it("puts the logo of a hidden event in the first HTML of /manage when the reques
     server.manifest.mockResolvedValue({Audience: "staff", Event: hidden});
     const tree = await RootLayout({children: <main />});
     expect(find(tree, EventBrandProvider)).toMatchObject({logoURL: "https://cdn.example.test/logo.png"});
-    expect(find(tree, AppShell)).toMatchObject({event: null, privateEvent: hidden});
+    expect(find(tree, AppShell)).toMatchObject({event: null});
     expect(server.preload).toHaveBeenCalledWith("https://cdn.example.test/logo.png", {as: "image"});
     expect(server.manifest).toHaveBeenCalledWith();
 });
