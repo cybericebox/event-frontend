@@ -3,6 +3,7 @@ import {t} from "@/i18n/t";
 
 // The backend sends reasons as English codes; the UI never shows them raw.
 // Reasons that mean the cluster has no room; participants see «not enough resources», never the code.
+const QUEUE_REASONS = new Set(["InFlightLimit", "WaitingForGroup", "PreparingImages", "InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
 const NO_RESOURCES_REASONS = new Set(["InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
 const FAILURE_REASONS = new Set(["ImagePull", "ImageUnavailable", "CrashLoop", "Unschedulable", "StartupTimeout", "DoesNotFit"]);
 
@@ -16,10 +17,14 @@ export function startingNote(queue: Pick<LabQueue, "Reason"> | null | undefined,
     return t(queue && NO_RESOURCES_REASONS.has(queue.Reason) ? "lab.starting.noResources" : "lab.starting.longWait");
 }
 
-// «Готуємо лабораторію…» while the lab waits for its turn. Null when it is not waiting: no queue, or Position 0
-// (every pod is already dispatched). Same wording for operators and participants; no position, no reason.
-export function queueLine(queue: Pick<LabQueue, "Position" | "Reason"> | null | undefined): string | null {
-    return queue && queue.Position > 0 ? t("lab.starting") : null;
+// Staff view: where the lab stands in the queue, with the reason. Null when it is not waiting for a turn
+// (no queue, or Position 0: every pod is already dispatched). WaitingForTurn adds nothing beyond the queue place.
+export function queueLineStaff(queue: Pick<LabQueue, "Position" | "Reason"> | null | undefined): string | null {
+    if (!queue || queue.Position <= 0) return null;
+    const ahead = queue.Position - 1;
+    const place = ahead === 0 ? t("lab.queue.next") : t("lab.queue.ahead", {ahead});
+    if (queue.Reason === "WaitingForTurn") return place;
+    return `${place} ${t(QUEUE_REASONS.has(queue.Reason) ? `lab.queue.reason.${queue.Reason}` : "lab.queue.reason.unknown")}`;
 }
 
 export function failureReasonLabel(reason: string): string {

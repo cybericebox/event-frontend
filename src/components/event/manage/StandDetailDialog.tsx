@@ -15,7 +15,7 @@ import {AllocationFacts} from "@/components/event/manage/resources/ResourceObser
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
-import {agoText, deviceStateLabel, failureReasonLabel, queueLine, sizeText, standReasonText} from "@/components/event/labLive";
+import {agoText, deviceStateLabel, failureReasonLabel, queueLineStaff, sizeText, standReasonText} from "@/components/event/labLive";
 import {hasCurrentLabAllocation, hasCurrentLabObservation, labStatusLabel, labStatusTone, standTeamName} from "@/components/event/manage/standStatus";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -150,7 +150,7 @@ function LabBlock({eventID, teamID, lab, canManage, stale}: {eventID: string; te
     const live = lab.Live;
     const actionsAllowed = canManage && lab.Lab?.ClosedAt == null;
     const target = JSON.stringify([eventID, teamID, lab.ChallengeID, lab.Lab?.ID, lab.Lab?.AgentUID, lab.Lab?.Revision]);
-    const queue = queueLine(live?.Queue);
+    const queue = queueLineStaff(live?.Queue);
     const warnings = [live?.ImageWarning, live?.GroupImageWarning].filter(Boolean).join(", ");
     return <li className="event-stands__lab-block">
         <div className="event-stands__challenge-head"><strong>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</strong><span className={`event-stands__status is-${labStatusTone[lab.Status]}`}>{labStatusLabel[lab.Status]}</span></div>
