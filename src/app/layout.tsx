@@ -67,7 +67,9 @@ import {headers} from "next/headers";
 import {getPublicEventInfo, PublicEventError} from "@/api/publicEventInfo";
 import {loadFailure} from "@/utils/loadFailure";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
-import {EventBrandProvider} from "@/components/event/EventBrandLogo";
+import {preload} from "react-dom";
+import {EventBrandProvider, resolveEventLogoURL} from "@/components/event/EventBrandLogo";
+import {FAVICON_BOOT_SCRIPT} from "@/utils/eventBrandCache";
 import {getCommonManifest, readContext, RenderReadError} from "@/api/commonPage";
 import {commonPageSlug} from "@/utils/commonPagePath";
 import {EventReadSession} from "@/components/event/common/EventReadSession";
@@ -139,7 +141,15 @@ export default async function RootLayout({
         if ((error instanceof PublicEventError || error instanceof RenderReadError) && loadFailure(error) === "error") failure = {status: error.status, requestId: error.requestId};
         else unavailable = true;
     }
-    const theme = (event ?? privateEvent)?.Theme;
+    const known = event ?? privateEvent;
+    // Branding the server cannot know (a hidden event is anonymous here) stays unknown until the browser
+    // loads it with the session: nothing of the platform shows meanwhile. A failed or unavailable backend
+    // has no event to wait for, so it keeps the platform mark.
+    const brandUnknown = !known && !unavailable && !failure;
+    const logoSource = known ? resolveEventLogoURL(known.LogoURL) : null;
+    // The logo is in the HTML from the first byte; the preload starts its fetch before the markup is parsed.
+    if (logoSource) preload(logoSource, {as: "image"});
+    const theme = known?.Theme;
     const themeStyle = theme ? {
         "--ev-brand": theme.Brand,
         "--ev-accent-light": theme.AccentLight,
@@ -150,10 +160,11 @@ export default async function RootLayout({
         <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} suppressHydrationWarning>
         <head>
             <script nonce={nonce} dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} />
+            {brandUnknown && <script nonce={nonce} dangerouslySetInnerHTML={{__html: FAVICON_BOOT_SCRIPT}} />}
         </head>
         <body className="event-root">
         <Providers>
-            <EventBrandProvider logoURL={(event ?? privateEvent)?.LogoURL ?? ""} name={(event ?? privateEvent)?.Name ?? ""}>
+            <EventBrandProvider logoURL={brandUnknown ? null : known?.LogoURL ?? ""} faviconURL={known?.FaviconURL} name={known?.Name ?? ""} persist={!!known}>
             <AppShell event={event} privateEvent={privateEvent ?? undefined} unavailable={unavailable} failure={failure}>
                 {children}
             </AppShell>

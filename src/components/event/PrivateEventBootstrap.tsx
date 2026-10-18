@@ -66,7 +66,7 @@ export function PrivateEventBootstrap({children, initialEvent}: {children: React
         return <EventErrorScreen page body={t("error.load.body")} error={identity.error ?? access.error} onRetry={() => {void identity.refetch(); void access.refetch();}} />;
     }
     const event = verifiedEvent!;
-    return <EventBrandProvider logoURL={event.LogoURL}><PrivateEventContext.Provider value={event}>
+    return <EventBrandProvider logoURL={event.LogoURL} faviconURL={event.FaviconURL}><PrivateEventContext.Provider value={event}>
         <GuestShell event={event} authenticated notice={preview.active ? undefined : <div className="event-private-preview-banner" role="status">
             <span>{t("shell.preview.banner")}</span>
             <Link href={pathname === "/" ? "/manage/content/landing" : "/manage"}>{pathname === "/" ? t("shell.preview.editLanding") : t("shell.preview.manage")}</Link>

@@ -59,5 +59,5 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
         if (failure === "notFound") return <EventUnavailableScreen />;
         return <EventErrorScreen page body={t("error.load.body")} error={event.error} onRetry={() => void event.refetch()} />;
     }
-    return <EventBrandProvider logoURL={event.data.LogoURL}><ManagerShell event={event.data} onSection={setSection}>{children}</ManagerShell></EventBrandProvider>;
+    return <EventBrandProvider logoURL={event.data.LogoURL} faviconURL={event.data.FaviconURL}><ManagerShell event={event.data} onSection={setSection}>{children}</ManagerShell></EventBrandProvider>;
 }

@@ -3,7 +3,7 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, render, screen} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
-vi.mock("./EventBrandLogo", () => ({EventBrandLogo: () => <img alt="" data-testid="event-logo" />, useEventBrandName: () => "Кубок CTF"}));
+vi.mock("./EventBrandLogo", () => ({EventBrandLogo: () => <img alt="" data-testid="event-logo" />, useEventBrandName: () => "Кубок CTF", useEventBrandUnknown: () => false}));
 vi.mock("@/utils/origins", () => ({idOrigin: "https://id.example.test", mainOrigin: "https://example.test", apiOrigin: "", eventOrigin: () => ""}));
 const getCurrentUser = vi.fn();
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: () => getCurrentUser()}));
