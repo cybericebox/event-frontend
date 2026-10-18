@@ -28,7 +28,7 @@ beforeEach(() => {
 it("inherits defaults without loading the editable catalog", async () => {
     view();
     expect(await screen.findByText("Файл")).toBeTruthy();
-    expect(screen.getByText("Набір за замовчуванням")).toBeTruthy();
+    expect(screen.getByText("Завдання за замовчуванням")).toBeTruthy();
     expect(api.catalog).not.toHaveBeenCalled();
     expect(screen.getByRole("button", {name: "Додати завдання"})).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Відновити налаштування за замовчуванням"})).toBeNull();
