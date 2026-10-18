@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, type ReactNode} from "react";
+import {useEffect, useState, type ReactNode} from "react";
 import type {LabLifecycle} from "@/api/labLifecycle";
 import type {LabRuntime} from "@/api/manageLabs";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -8,7 +8,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {BusyMark} from "@/components/ui/EventButton";
 import {EventTooltip} from "@/components/ui/EventTooltip";
-import {queueLine} from "@/components/event/labLive";
+import {LONG_WAIT_MS, startingNote} from "@/components/event/labLive";
 import {t} from "@/i18n/t";
 import {hasCurrentRuntime} from "./descriptionValues";
 import {labLinkErrorMessage, type LabLinkState} from "./useLabLink";
@@ -42,6 +42,18 @@ function CopyField({value, onOpen, linkPending = false}: {value: string; onOpen?
     </div>;
 }
 
+// The lab is starting: one calm line, plus a second one once the wait has lasted over 30 s. The status carries no
+// start time, so the wait is counted from when this block first showed. The note's line is always laid out.
+function LabStarting({queue, checking}: {queue: LabRuntime["Queue"] | undefined; checking: boolean}) {
+    const [longWait, setLongWait] = useState(false);
+    useEffect(() => {
+        const timer = window.setTimeout(() => setLongWait(true), LONG_WAIT_MS);
+        return () => window.clearTimeout(timer);
+    }, []);
+    const note = startingNote(queue, true) ?? "";
+    return <EventLoading compact message={checking ? t("challenges.host.checking") : t("lab.starting")} note={note} noteShown={longWait} />;
+}
+
 export function LabAccessBlock({lab, lifecycle, pending, error, link, busyKey, onOpen, onRetry, onReload, controls, withdrawn = false, withdrawnReason = "stage"}: {
     lab: LabRuntime | undefined; lifecycle: LabLifecycle | null; pending: boolean; error?: unknown;
     link: LabLinkState; busyKey: string | null; onOpen: (device: string, port: number) => void;
@@ -63,7 +75,7 @@ export function LabAccessBlock({lab, lifecycle, pending, error, link, busyKey, o
         })}</div> : <div className="event-cmodal__access-state">
             {error || lifecycle?.RuntimeState === "unavailable" || lab?.Phase === "failed"
                 ? <EventLoadError error={error} message={t("challenges.host.loadFailed")} onRetry={onReload} />
-                : <EventLoading compact message={pending ? t("challenges.host.checking") : queueLine(lab?.Queue) ?? t("challenges.host.preparing")} />}
+                : <LabStarting queue={lab?.Queue} checking={pending} />}
         </div>}
         {link.status === "error" && <EventLoadError error={link.error} message={labLinkErrorMessage(link.error)} onRetry={onRetry} />}
         {controls}
