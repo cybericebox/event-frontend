@@ -74,8 +74,8 @@ it.each([false,true])("uses the approved guide and matching config filename in p
   expect(screen.getByText("Або через термінал")).toBeTruthy();
   expect(screen.getByText("sudo wg-quick up ./autumnctf.conf")).toBeTruthy();
   expect(screen.getByText("sudo wg-quick down ./autumnctf.conf")).toBeTruthy();
-  expect(screen.getByText("sudo ip link delete dev autumnctf")).toBeTruthy();
-  expect(screen.getByText("sudo pkill -f wireguard-go")).toBeTruthy();
+  expect(screen.getByText("Не видаляйте файл, доки не вимкнете VPN.")).toBeTruthy();
+  expect(screen.queryByText(/pkill|ip link delete/)).toBeNull();
   expect(screen.getByText("Не забудьте вимкнути VPN, коли закінчите.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button",{name:"Завантажити файл"}));
   await vi.waitFor(()=>expect(downloaded).toEqual(["autumnctf.conf"]));

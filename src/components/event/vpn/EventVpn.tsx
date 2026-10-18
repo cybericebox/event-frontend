@@ -2,7 +2,7 @@
 
 import {VpnCommand} from "./VpnCommand";
 import {useParticipantPreview} from "../ParticipantPreview";
-import {eventVpnFileName, eventVpnInterfaceName} from "@/utils/wireguard";
+import {eventVpnFileName} from "@/utils/wireguard";
 import {createContext, useContext, useMemo, useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ArrowUpRight, ChevronDown, Download, Shield, ShieldAlert, ShieldCheck, ShieldEllipsis, ShieldOff} from "lucide-react";
@@ -82,14 +82,7 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
                     <VpnCommand value={t("vpn.steps.command", {filename: eventVpnFileName(eventTag)})} />
                     <p className="event-vpn-note">{t("vpn.steps.down")}</p>
                     <VpnCommand value={t("vpn.steps.downCommand", {filename: eventVpnFileName(eventTag)})} />
-                    <details className="event-vpn-deleted">
-                        <summary className="event-vpn-note">{t("vpn.steps.deleted")}</summary>
-                        <p className="event-vpn-note">{t("vpn.steps.deletedLinux")}</p>
-                        <VpnCommand value={t("vpn.steps.deletedLinuxCommand", {iface: eventVpnInterfaceName(eventTag)})} />
-                        <p className="event-vpn-note">{t("vpn.steps.deletedMac")}</p>
-                        <VpnCommand value={t("vpn.steps.deletedMacCommand")} />
-                        <p className="event-vpn-note">{t("vpn.steps.deletedApp")}</p>
-                    </details>
+                    <p className="event-vpn-note">{t("vpn.steps.keepFile")}</p>
                 </div>
             </div></li>
             {probeData && <li>{richMessage(t("vpn.steps.checkProbe"), {
