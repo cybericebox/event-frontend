@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {PreviewSettingsPage as Page} from "@/components/event/manage/exercises/PreviewSettingsPage";
 
@@ -30,7 +30,7 @@ it("inherits defaults without loading the editable catalog", async () => {
     expect(await screen.findByText("Файл")).toBeTruthy();
     expect(screen.getByText("Завдання за замовчуванням")).toBeTruthy();
     expect(api.catalog).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", {name: "Додати завдання"})).toBeTruthy();
+    expect(screen.getByRole("combobox", {name: "Завдання з каталогу"})).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Відновити налаштування за замовчуванням"})).toBeNull();
 });
 
@@ -53,7 +53,7 @@ it("does not offer overrides to read-only event staff", async () => {
     api.manage = false; view();
     expect(await screen.findByText("Файл")).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Прибрати «Файл»"})).toBeNull();
-    expect(screen.queryByRole("button", {name: "Додати завдання"})).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByRole("button", {name: "Зберегти"})).toBeNull();
 });
 
@@ -112,4 +112,84 @@ it("preserves a local draft if saving fails", async () => {
     await screen.findByRole("alert");
     expect(screen.queryByRole("button", {name: "Файл"})).toBeNull();
     expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", false);
+});
+
+const catalogItems = [
+    {ID: "e1", ExerciseVersionID: "v1", Name: "Файл", Infrastructure: false, Eligible: true, Reason: "", Variants: [{ID: "a", Index: 0, Position: 0, Infrastructure: false}]},
+    {ID: "e2", ExerciseVersionID: "v2", Name: "Сервіс", Infrastructure: true, Eligible: true, Reason: "", Variants: [{ID: "b", Index: 0, Position: 0, Infrastructure: true}]},
+];
+async function openList() {
+    const box = await screen.findByRole("combobox");
+    fireEvent.focus(box);
+    await screen.findByRole("listbox");
+    return box;
+}
+
+it("shows no permanent catalog list; the dropdown opens on input with results", async () => {
+    api.catalog.mockResolvedValue(catalogItems);
+    view();
+    const box = await screen.findByRole("combobox");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(api.catalog).not.toHaveBeenCalled();
+    fireEvent.change(box, {target: {value: "Сер"}});
+    expect(await screen.findByRole("listbox")).toBeTruthy();
+    await waitFor(() => expect(api.catalog).toHaveBeenCalledWith("e1", "Сер"));
+    expect(await screen.findByRole("checkbox", {name: "Сервіс"})).toBeTruthy();
+});
+
+it("toggling in the dropdown adds and removes a row below; x unchecks it", async () => {
+    api.catalog.mockResolvedValue(catalogItems);
+    view();
+    await openList();
+    fireEvent.click(await screen.findByRole("checkbox", {name: "Сервіс"}));
+    expect(screen.getByRole("button", {name: "Прибрати «Сервіс»"})).toBeTruthy();
+    expect((screen.getByRole("checkbox", {name: "Сервіс"}) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("button", {name: "Прибрати «Сервіс»"}));
+    expect(screen.queryByRole("button", {name: "Прибрати «Сервіс»"})).toBeNull();
+    expect((screen.getByRole("checkbox", {name: "Сервіс"}) as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole("checkbox", {name: "Сервіс"}));
+    fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+    await waitFor(() => expect(api.save).toHaveBeenCalledWith("e1", expect.objectContaining({Inherit: false, Selections: [expect.objectContaining(selection), expect.objectContaining({ExerciseVersionID: "v2", VariantID: "b"})]})));
+});
+
+it("keeps keyboard control: arrows, Enter and Space toggle, Escape and outside click close", async () => {
+    api.catalog.mockResolvedValue(catalogItems);
+    view();
+    const box = await openList();
+    await screen.findByRole("checkbox", {name: "Сервіс"});
+    fireEvent.keyDown(box, {key: "ArrowDown"});
+    fireEvent.keyDown(box, {key: "ArrowDown"});
+    fireEvent.keyDown(box, {key: "Enter"});
+    expect(screen.getByRole("button", {name: "Прибрати «Сервіс»"})).toBeTruthy();
+    fireEvent.keyDown(box, {key: " "});
+    expect(screen.queryByRole("button", {name: "Прибрати «Сервіс»"})).toBeNull();
+    fireEvent.keyDown(box, {key: "Escape"});
+    expect(screen.queryByRole("listbox")).toBeNull();
+    fireEvent.focus(box);
+    expect(await screen.findByRole("listbox")).toBeTruthy();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("listbox")).toBeNull();
+});
+
+it("lists tasks that cannot be previewed muted with their reason and does not let them be selected", async () => {
+    api.catalog.mockResolvedValue([{ID: "e3", ExerciseVersionID: "v3", Name: "Чернетка", Infrastructure: false, Eligible: false, Reason: "not_published", Variants: []}, ...catalogItems]);
+    view();
+    const box = await openList();
+    const list = screen.getByRole("listbox");
+    expect(await within(list).findByText("Не опубліковано")).toBeTruthy();
+    expect(within(list).queryByRole("checkbox", {name: "Чернетка"})).toBeNull();
+    const names = within(list).getAllByRole("option").map(item => item.textContent ?? "");
+    expect(names.findIndex(text => text.includes("Сервіс"))).toBeLessThan(names.findIndex(text => text.includes("Чернетка")));
+    fireEvent.click(within(list).getByText("Чернетка"));
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(box, {key: "ArrowDown"});
+    fireEvent.keyDown(box, {key: "Enter"});
+    expect(screen.queryByRole("button", {name: "Прибрати «Чернетка»"})).toBeNull();
+    expect(within(list).getByRole("option", {name: /Чернетка/}).getAttribute("aria-disabled")).toBe("true");
+});
+
+it("shows the empty state inside the dropdown only when nothing matches", async () => {
+    api.catalog.mockResolvedValue([]);
+    view();
+    await openList();
+    expect(await within(screen.getByRole("listbox")).findByText("Завдань не знайдено.")).toBeTruthy();
 });
