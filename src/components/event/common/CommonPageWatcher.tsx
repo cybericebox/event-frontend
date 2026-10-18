@@ -2,7 +2,10 @@
 import {useEffect} from "react";
 import {useRouter} from "next/navigation";
 import {isNetworkOutage,reportServiceUnavailable} from "@/utils/serviceStatus";
-export function CommonPageWatcher({revision,page=""}:{revision:string|null;page?:string}) {
+/** Visitors notice content edits within a minute; an editor previewing with a staff grant sees them within seconds. */
+const VISITOR_POLL_MS=60_000;
+const STAFF_PREVIEW_POLL_MS=3_000;
+export function CommonPageWatcher({revision,page="",staffPreview=false}:{revision:string|null;page?:string;staffPreview?:boolean}) {
     const router=useRouter();
     useEffect(()=>{
         let stopped=false,refreshing=false;
@@ -23,10 +26,10 @@ export function CommonPageWatcher({revision,page=""}:{revision:string|null;page?
                 if (!stopped && isNetworkOutage(error,controller.signal)) reportServiceUnavailable();
             }
         }
-        const timer=window.setInterval(()=>{void check();},2000);
+        const timer=window.setInterval(()=>{void check();},staffPreview ? STAFF_PREVIEW_POLL_MS:VISITOR_POLL_MS);
         const visible=()=>{if(document.visibilityState!=="hidden") void check();};
         document.addEventListener("visibilitychange",visible);
         return ()=>{stopped=true;controller.abort();window.clearInterval(timer);document.removeEventListener("visibilitychange",visible);};
-    },[revision,page,router]);
+    },[revision,page,router,staffPreview]);
     return null;
 }
