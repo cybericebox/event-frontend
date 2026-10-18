@@ -2,7 +2,9 @@ import {NextRequest} from "next/server";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 
 const read = vi.hoisted(() => vi.fn());
+const grants = vi.hoisted(() => ({has: vi.fn<(host: string | null, token?: string) => Promise<boolean>>(async () => false)}));
 vi.mock("@/api/publicFetch", () => ({fetchPublic: read}));
+vi.mock("@/utils/server/staffGrant", () => ({READ_COOKIE: "__Host-cib-event-read", hasStaffGrant: grants.has}));
 
 import {proxy} from "./proxy";
 
@@ -10,7 +12,7 @@ let counter = 0;
 const request = (host: string, path = "/") => new NextRequest(`https://${host}${path}`, {headers: {host}});
 const host = () => `h${++counter}.example.test`;
 
-beforeEach(() => {read.mockReset();});
+beforeEach(() => {read.mockReset(); grants.has.mockReset(); grants.has.mockResolvedValue(false);});
 afterEach(() => {vi.clearAllMocks();});
 
 describe("event site status", () => {
@@ -64,5 +66,19 @@ describe("event site status", () => {
         read.mockResolvedValue({status: 404, body: null});
         const response = await proxy(request(host()));
         expect(response.headers.get("Content-Security-Policy")).toContain("nonce-");
+    });
+});
+
+describe("staff preview grant on a hidden event", () => {
+    const tokenFor = (aud: string, preview = true) => `grant-${aud}-${preview}`;
+    it("keeps 200 for a valid grant of this host and 404 without one", async () => {
+        const h = host();
+        read.mockResolvedValue({status: 404, body: null});
+        grants.has.mockImplementation(async (hostName: string | null, token?: string) => token === tokenFor(`https://${hostName}`));
+        const withGrant = new NextRequest(`https://${h}/manage`, {headers: {host: h, cookie: `__Host-cib-event-read=${tokenFor(`https://${h}`)}`}});
+        expect((await proxy(withGrant)).status).toBe(200);
+        expect((await proxy(request(h, "/manage"))).status).toBe(404);
+        const foreign = new NextRequest(`https://${h}/manage`, {headers: {host: h, cookie: `__Host-cib-event-read=${tokenFor("https://other.example.test")}`}});
+        expect((await proxy(foreign)).status).toBe(404);
     });
 });

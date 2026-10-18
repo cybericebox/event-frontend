@@ -9,6 +9,7 @@ const getCurrentUser = vi.fn();
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: () => getCurrentUser()}));
 
 import {EventUnavailableScreen} from "./EventUnavailableScreen";
+import {readCachedLogo, writeCachedBrand} from "@/utils/eventBrandCache";
 
 function renderScreen() {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -61,5 +62,14 @@ describe("EventUnavailableScreen", () => {
         getCurrentUser.mockRejectedValue(new TypeError("Failed to fetch"));
         renderScreen();
         expect(await screen.findByRole("link", {name: "Увійти"})).toBeTruthy();
+    });
+
+    it("forgets the remembered event branding when access is denied", async () => {
+        window.localStorage.clear();
+        writeCachedBrand({logo: "https://api.example.test/logo/a", favicon: "https://api.example.test/fav/a"});
+        getCurrentUser.mockResolvedValue(null);
+        renderScreen();
+        expect(readCachedLogo()).toBeNull();
+        expect(window.localStorage.length).toBe(0);
     });
 });
