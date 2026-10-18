@@ -7,9 +7,8 @@ import Link from "next/link";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {apiErrorText} from "@/api/apiErrors";
+import {apiErrorText, isOverloadOrRateLimit} from "@/api/apiErrors";
 import {toastApiError} from "@/components/ui/toastApiError";
-import {isOverloadError} from "@/api/retry";
 import {ManageApiError} from "@/api/manage";
 import {getManageConfig} from "@/api/manage";
 import {getManageParticipantForm} from "@/api/manageParticipantForm";
@@ -83,7 +82,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
         queryKey: ["event-management-participant", eventID, openedID],
         queryFn: () => getManageParticipant(eventID, openedID!),
         enabled: !!openedID, refetchOnWindowFocus: false, placeholderData: previous => previous?.UserID === openedID ? previous : undefined,
-        retry: (count, error) => !isOverloadError(error) && !(error instanceof ManageApiError && (error.status === 404 || error.status === 400)) && count < 2,
+        retry: (count, error) => !isOverloadOrRateLimit(error) && !(error instanceof ManageApiError && (error.status === 404 || error.status === 400)) && count < 2,
     });
     const fields = formFields(formQuery.data?.Document.blocks);
     const pseudonyms = !!configQuery.data?.AllowPseudonyms;

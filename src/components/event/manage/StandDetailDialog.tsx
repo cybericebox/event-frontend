@@ -5,7 +5,7 @@ import {keepPreviousData, useQuery} from "@tanstack/react-query";
 import {RotateCcw, TriangleAlert} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
-import {isOverloadError} from "@/api/retry";
+import {isOverloadOrRateLimit} from "@/api/apiErrors";
 import {
     getStandDetail, resetStandDevice, setStandDeviceRescue, standErrorMessage,
     type LiveDevice, type StandDetailLab, type StandDetail,
@@ -167,7 +167,7 @@ function LabBlock({eventID, teamID, lab, canManage, stale}: {eventID: string; te
 export function StandDetailDialog({eventID, teamID, canManage, onClose}: {eventID: string; teamID: string | null; canManage: boolean; onClose: () => void}) {
     const detail = useQuery<StandDetail>({
         queryKey: ["event-management-stand-detail", eventID, teamID], queryFn: () => getStandDetail(eventID, teamID!),
-        enabled: teamID !== null, refetchInterval: 10_000, refetchOnWindowFocus: false, retry: (count, error) => !isOverloadError(error) && count < 1, placeholderData: keepPreviousData,
+        enabled: teamID !== null, refetchInterval: 10_000, refetchOnWindowFocus: false, retry: (count, error) => !isOverloadOrRateLimit(error) && count < 1, placeholderData: keepPreviousData,
     });
     const data = detail.data?.TeamID === teamID ? detail.data : undefined;
     return <ManageDialog open={teamID !== null} onOpenChange={next => {if (!next) onClose();}} size="md"

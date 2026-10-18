@@ -23,6 +23,11 @@ describe("overload messages", () => {
     expect(apiErrorText(new TestApiError(503, undefined, 1), "fallback")).toBe(uk["error.overloaded"])
   })
 
+  it("answers the overload codes (ServiceOverloaded 431, DatabaseBusy 432 as detail codes) with the overloaded line, Retry-After or not", () => {
+    expect(overloadedMessage(new TestApiError(503, 431))).toBe(uk["error.overloaded"])
+    expect(apiErrorText(new TestApiError(503, 432, 2), "fallback")).toBe(uk["error.overloaded"])
+  })
+
   it("keeps other errors on their own text", () => {
     expect(overloadedMessage(new TestApiError(503))).toBeUndefined()
     expect(overloadedMessage(new TestApiError(429, undefined, 5))).toBeUndefined()
@@ -35,5 +40,6 @@ describe("overload messages", () => {
   it("prefers the catalog message of a coded error, the wait of a rate limit included", () => {
     expect(apiErrorText(new TestApiError(503, 2608, 1), "fallback")).toBe("Привʼязка лабораторії відновлюється, спробуйте ще раз")
     expect(apiErrorText(new TestApiError(429, 428, 30), "fallback")).toBe("Забагато спроб. Спробуйте ще раз через 30 с.")
+    expect(overloadedMessage(new TestApiError(429, 428, 30))).toBeUndefined()
   })
 })

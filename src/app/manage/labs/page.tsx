@@ -9,7 +9,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {AlertTriangle, ChevronDown, Download, Layers, ListChecks, RotateCcw} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
-import {isOverloadError} from "@/api/retry";
+import {isOverloadOrRateLimit} from "@/api/apiErrors";
 import {
     TEARDOWN_DELAY_RANGE, getManageLabs, getModeratorChallengeLab, getModeratorChallenges, getModeratorVPNConfig,
     isInfrastructureNotAllowed, putManageLabsSettings, recreateStand, standErrorMessage,
@@ -117,7 +117,7 @@ export default function ManageLabsPage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const queryClient = useQueryClient();
-    const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), refetchInterval: 15_000, refetchOnWindowFocus: false, retry: (count, failure) => !isOverloadError(failure) && !isInfrastructureNotAllowed(failure) && count < 2});
+    const labsQuery = useQuery({queryKey: ["event-management-labs", eventID], queryFn: () => getManageLabs(eventID), refetchInterval: 15_000, refetchOnWindowFocus: false, retry: (count, failure) => !isOverloadOrRateLimit(failure) && !isInfrastructureNotAllowed(failure) && count < 2});
     const [expanded, setExpanded] = useState<string | null>(null);
     const [confirm, setConfirm] = useState<ManageStand | null>(null);
     const [confirmError, setConfirmError] = useState("");
