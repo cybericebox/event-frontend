@@ -106,6 +106,13 @@ check "plain: root page served" 200 "$(code ef-plain http://localhost:8080/)"
 check "plain: static asset cache header" "public, max-age=31536000, immutable" \
   "$(docker exec ef-plain sh -c 'f=$(ls /app/.next/static/chunks/*.js | head -1); echo ${f#/app/.next/static/}' | xargs -I{} docker run --rm --network container:ef-plain "$tools" sh -c "curl -sI http://localhost:8080/_next/static/{} | tr -d '\r' | sed -n 's/^[Cc]ache-[Cc]ontrol: //p'")"
 check "plain: mode logged" "mode: http" "$(docker logs ef-plain 2>&1 | grep -m1 '^mode:')"
+check "plain: event site host served" 200 "$(code ef-plain -H 'Host: khctf.base.test' http://localhost:8080/)"
+check "plain: api host misdirected" 421 "$(code ef-plain -H 'Host: api.base.test' http://localhost:8080/)"
+check "plain: api host with port and capitals misdirected" 421 "$(code ef-plain -H 'Host: API.Base.Test:443' http://localhost:8080/)"
+check "plain: apex host misdirected" 421 "$(code ef-plain -H 'Host: base.test' http://localhost:8080/)"
+check "plain: reserved label misdirected" 421 "$(code ef-plain -H 'Host: admin.base.test' http://localhost:8080/_next/static/x.js)"
+check "plain: lookalike host is not misdirected" 200 "$(code ef-plain -H 'Host: apiXbase.test' http://localhost:8080/)"
+check "plain: other domain label is not misdirected" 200 "$(code ef-plain -H 'Host: api.other.test' http://localhost:8080/)"
 docker rm -f ef-plain >/dev/null
 mounts="-v $certs/live:/tls:ro"
 
