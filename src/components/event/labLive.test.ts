@@ -1,24 +1,30 @@
 import {describe, expect, it} from "vitest";
-import {agoText, deviceStateLabel, failureReasonLabel, queueLine, sizeText} from "./labLive";
+import {agoText, deviceStateLabel, failureReasonLabel, queueLine, sizeText, startingNote} from "./labLive";
 
 const queue = {Position: 2, Length: 5, Reason: "WaitingForTurn", Message: "", Pods: 3, Pending: 3};
 
 describe("lab live text", () => {
-    it("says where the lab stands in the queue, with a human reason", () => {
-        expect(queueLine(queue)).toBe("Лабораторія в черзі: 2 із 5. Чекаємо своєї черги.");
+    it("shows one plain starting line, with no position or reason", () => {
+        expect(queueLine(queue)).toBe("Готуємо лабораторію…");
+        expect(queueLine({...queue, Reason: "SomethingNew"})).toBe("Готуємо лабораторію…");
     });
 
-    it("shows no queue when none exists or everything is dispatched", () => {
+    it("shows no line when no queue exists or everything is dispatched", () => {
         expect(queueLine(null)).toBeNull();
         expect(queueLine({...queue, Position: 0})).toBeNull();
     });
 
-    it("has a text for the tenant quota reason", () => {
-        expect(queueLine({...queue, Reason: "TenantQuota"})).toContain("ліміту");
-    });
-
-    it("never shows a raw reason code", () => {
-        expect(queueLine({...queue, Reason: "SomethingNew"})).not.toContain("SomethingNew");
+    it("picks the second line by reason, only after the long wait", () => {
+        expect(startingNote(queue, false)).toBeNull();
+        expect(startingNote(queue, true)).toContain("Ще трохи");
+        expect(startingNote(null, true)).toContain("Ще трохи");
+        for (const Reason of ["InsufficientResources", "NoSchedulableNodes", "TenantQuota"]) {
+            expect(startingNote({...queue, Reason}, true)).toBe("Зараз бракує ресурсів. Лабораторія запуститься, щойно вони звільняться.");
+            expect(startingNote({...queue, Reason}, false)).toBeNull();
+        }
+        for (const Reason of ["InFlightLimit", "WaitingForGroup", "WaitingForTurn", "PreparingImages", ""]) {
+            expect(startingNote({...queue, Reason}, true)).toContain("Ще трохи");
+        }
     });
 
     it("formats the age and the size", () => {

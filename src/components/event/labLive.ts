@@ -2,15 +2,24 @@ import type {LabQueue, LiveDevice} from "@/api/manageLabs";
 import {t} from "@/i18n/t";
 
 // The backend sends reasons as English codes; the UI never shows them raw.
-const QUEUE_REASONS = new Set(["InFlightLimit", "WaitingForGroup", "WaitingForTurn", "PreparingImages", "InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
+// Reasons that mean the cluster has no room; participants see «not enough resources», never the code.
+const NO_RESOURCES_REASONS = new Set(["InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
 const FAILURE_REASONS = new Set(["ImagePull", "ImageUnavailable", "CrashLoop", "Unschedulable", "StartupTimeout", "DoesNotFit"]);
 
-// «Лабораторія в черзі: N із M» + the reason. Null when the lab is not waiting for a turn:
-// no queue, or Position 0 (every pod is already dispatched).
-export function queueLine(queue: Pick<LabQueue, "Position" | "Length" | "Reason"> | null | undefined): string | null {
-    if (!queue || queue.Position <= 0) return null;
-    const reason = t(QUEUE_REASONS.has(queue.Reason) ? `lab.queue.reason.${queue.Reason}` : "lab.queue.reason.unknown");
-    return t("lab.queue.status", {position: queue.Position, length: queue.Length, reason});
+// How long a starting lab may take before the participant gets a reassuring second line.
+export const LONG_WAIT_MS = 30_000;
+
+// The second line of a starting lab: null before the long wait, then «not enough resources» for a resource
+// reason or the generic «almost there». Never a queue position or a raw reason.
+export function startingNote(queue: Pick<LabQueue, "Reason"> | null | undefined, longWait: boolean): string | null {
+    if (!longWait) return null;
+    return t(queue && NO_RESOURCES_REASONS.has(queue.Reason) ? "lab.starting.noResources" : "lab.starting.longWait");
+}
+
+// «Готуємо лабораторію…» while the lab waits for its turn. Null when it is not waiting: no queue, or Position 0
+// (every pod is already dispatched). Same wording for operators and participants; no position, no reason.
+export function queueLine(queue: Pick<LabQueue, "Position" | "Reason"> | null | undefined): string | null {
+    return queue && queue.Position > 0 ? t("lab.starting") : null;
 }
 
 export function failureReasonLabel(reason: string): string {

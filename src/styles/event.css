@@ -152,6 +152,7 @@ fieldset.event-join-question>legend{margin-bottom:6px;padding:0}
 .event-block-state--compact .event-loading-logo{width:40px;height:40px}
 .event-loading-logo{width:64px;height:64px;object-fit:contain;animation:event-loading-pulse 1.8s ease-in-out infinite}
 .event-loading-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-loading-note{max-width:44ch}
 @keyframes event-loading-pulse{50%{opacity:.45;transform:scale(.94)}}
 @media(prefers-reduced-motion:reduce){.event-loading-logo{animation:none}}
 .event-private-preview-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem max(var(--ib-6),calc((100% - 1280px) / 2 + var(--ib-6)));background:var(--ib-paper);border-bottom:1px solid var(--ib-line);font-size:.875rem}
