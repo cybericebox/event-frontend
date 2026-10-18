@@ -5,6 +5,16 @@ import {eventHostMissing} from "@/utils/server/eventHostMissing";
 // Per-request nonce CSP. The nonce goes to the render through the request headers
 // (Next reads it from the CSP header and stamps its own scripts) and to the browser
 // through the response header. The layout reads x-nonce for its inline scripts.
+// A rewrite counts as internal only when its origin is the one this server listens on (the same rule Next uses for its own
+// request URL: HOSTNAME and PORT, https when the edge says so). request.nextUrl carries the public host, which Next would
+// then try to reach as an external site.
+function ownURL(request: NextRequest): URL {
+    const protocol = request.headers.get("x-forwarded-proto")?.includes("https") ? "https" : "http";
+    const hostname = process.env.HOSTNAME || "localhost";
+    const url = new URL(`${request.nextUrl.pathname}${request.nextUrl.search}`, `${protocol}://${hostname.includes(":") && !hostname.startsWith("[") ? `[${hostname}]` : hostname}:${process.env.PORT || 3000}`);
+    return url;
+}
+
 export async function proxy(request: NextRequest) {
     const nonce = generateNonce();
     const csp = buildCsp(nonce, {
@@ -18,7 +28,7 @@ export async function proxy(request: NextRequest) {
     headers.set("Content-Security-Policy", csp);
     // An unknown or hidden event answers 404 with the page it always had: the status is the only change.
     const missing = await eventHostMissing(request.headers.get("host"));
-    const response = missing ? NextResponse.rewrite(request.nextUrl, {request: {headers}, status: 404}) : NextResponse.next({request: {headers}});
+    const response = missing ? NextResponse.rewrite(ownURL(request), {request: {headers}, status: 404}) : NextResponse.next({request: {headers}});
     response.headers.set("Content-Security-Policy", csp);
     return response;
 }
