@@ -6,8 +6,8 @@ import {toast} from "react-hot-toast";
 import {apiErrorText} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {
-    createRegistrySecret, deleteRegistrySecret, emptyRegistrySecretForm, listRegistrySecrets, registrySecretErrors, registrySecretForm, registrySecretInput,
-    updateRegistrySecret, type RegistrySecret, type RegistrySecretForm,
+    checkRegistrySecret, createRegistrySecret, deleteRegistrySecret, emptyRegistrySecretForm, listRegistrySecrets, registrySecretErrors, registrySecretForm, registrySecretInput,
+    registryCheckText, registryRetryText, updateRegistrySecret, type RegistrySecret, type RegistrySecretForm,
 } from "@/api/manageRegistries";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
@@ -44,6 +44,9 @@ export function RegistrySecretsPanel() {
     const [lastRemoval, setLastRemoval] = useState<RegistrySecret | null>(null);
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState("");
+    // The secrets being checked now: only their own «Перевірити зараз» button is busy.
+    const [checking, setChecking] = useState<ReadonlySet<string>>(new Set());
+    const [checkError, setCheckError] = useState<{id: string; message: string} | null>(null);
 
     if (query.isPending) return <EventLoading event={event} label={t("manage.registries.loading")} />;
     if (query.isError) return <EventLoadError message={t("manage.registries.loadError")} error={query.error} onRetry={() => void query.refetch()} />;
@@ -66,6 +69,24 @@ export function RegistrySecretsPanel() {
         setSaveError(null);
     }
 
+    // Updates the one row with the new result; nothing else on the page moves.
+    function putSecret(result: RegistrySecret) {
+        queryClient.setQueryData<RegistrySecret[]>(queryKey, current => (current ?? []).map(item => item.ID === result.ID ? result : item));
+    }
+
+    async function check(id: string, announce: boolean) {
+        if (checking.has(id)) return;
+        setChecking(current => new Set(current).add(id));
+        if (announce) setCheckError(null);
+        try {
+            putSecret(await checkRegistrySecret(eventID, id));
+        } catch (error) {
+            if (announce) setCheckError({id, message: errorText(error, t("manage.registries.check.error"))});
+        } finally {
+            setChecking(current => { const next = new Set(current); next.delete(id); return next; });
+        }
+    }
+
     async function save(submit: FormEvent<HTMLFormElement>) {
         submit.preventDefault();
         if (!canManage || saving || !editing || invalid) return;
@@ -83,6 +104,8 @@ export function RegistrySecretsPanel() {
             setEditing(null);
             setForm(emptyRegistrySecretForm);
             toast.success(t("manage.registries.saved"));
+            // A new or changed credential is checked at once, so its status is not the old one's.
+            void check(result.ID, false);
         } catch (error) {setSaveError({message: errorText(error, t("manage.registries.saveError")), token: error instanceof ManageApiError && (error.code === 2815 || error.code === 2825)});}
         finally {setSaving(false);}
     }
@@ -114,8 +137,14 @@ export function RegistrySecretsPanel() {
                             secret.RepositoryPrefix ? t("manage.registries.row.prefix", {prefix: secret.RepositoryPrefix}) : t("manage.registries.row.anyRepository"),
                             t("manage.registries.row.username", {username: secret.Username}),
                         ].join(" · ")}</small>
+                        <small className={`event-registry-list__status${secret.Check.State === "broken" ? " event-registry-list__status--broken" : ""}`} data-state={secret.Check.State || "unknown"}>
+                            {registryCheckText(secret.Check)}
+                        </small>
+                        {registryRetryText(secret.Check) && <small>{registryRetryText(secret.Check)}</small>}
+                        {checkError?.id === secret.ID && <small className="event-manage-feedback event-manage-feedback--error" role="alert">{checkError.message}</small>}
                     </div>
                     {canManage && <div className="event-registry-list__actions">
+                        <EventButton className="ib-btn ib-btn--sm" type="button" busy={checking.has(secret.ID)} onClick={() => void check(secret.ID, true)}>{t("manage.registries.check.now")}</EventButton>
                         <button className="ib-btn ib-btn--sm" type="button" onClick={() => open(secret)}>{t("common.edit")}</button>
                         <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" onClick={() => {setRemovalError(""); setRemoval(secret); setLastRemoval(secret);}}>{t("manage.registries.delete")}</button>
                     </div>}

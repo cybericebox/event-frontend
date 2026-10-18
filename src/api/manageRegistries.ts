@@ -2,14 +2,28 @@ import {z} from "zod";
 import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
+import {formatDateTime} from "@/utils/dateTime";
 
 // «Реєстри образів» in «Панель заходу»: the registry credentials of one event
 // (used only for this event's labs) and which task images cannot start.
 // The token is write-only: no response carries it, the form never reads it back.
 
+// The last result of the periodic credential check: reason codes and times, never a token. State is "ok",
+// "broken" (the registry refused the credential) or "" (never checked). A provider error, throttling or a timeout
+// is not "broken": the state stays and Failure says why the last attempt gave no verdict (it is retried).
+const checkSchema = z.object({
+    State: z.string().nullish().transform(value => value ?? ""),
+    CheckedAt: z.string().nullish().transform(value => value ?? ""),
+    Reason: z.string().nullish().transform(value => value ?? ""),
+    AttemptedAt: z.string().nullish().transform(value => value ?? ""),
+    Failure: z.string().nullish().transform(value => value ?? ""),
+});
+export type RegistryCheck = z.infer<typeof checkSchema>;
+
 const secretSchema = z.object({
     ID: z.string(), Host: z.string(), RepositoryPrefix: z.string().nullish().transform(value => value ?? ""),
     Username: z.string(), UpdatedAt: z.string().nullish().transform(value => value ?? ""),
+    Check: checkSchema.nullish().transform(value => value ?? {State: "", CheckedAt: "", Reason: "", AttemptedAt: "", Failure: ""}),
 });
 export type RegistrySecret = z.infer<typeof secretSchema>;
 
@@ -84,6 +98,29 @@ export async function createRegistrySecret(eventID: string, input: RegistrySecre
 
 export async function updateRegistrySecret(eventID: string, secretID: string, input: RegistrySecretInput): Promise<RegistrySecret> {
     return request(eventID, `registry-secrets/${encodeURIComponent(secretID)}`, secretSchema, "PUT", input);
+}
+
+// Checks the credential now (authentication only) and returns the secret with the result.
+export async function checkRegistrySecret(eventID: string, secretID: string): Promise<RegistrySecret> {
+    return request(eventID, `registry-secrets/${encodeURIComponent(secretID)}/check`, secretSchema, "POST", {});
+}
+
+const checkReasons = ["unauthorized", "not_found"] as const;
+const checkFailures = ["unreachable", "rate_limited", "not_configured"] as const;
+
+// «Перевірено: 18 жовт. 2026 р., 15:00 — працює» / «… — не працює: <причина>» / «ще не перевірено».
+export function registryCheckText(check: RegistryCheck): string {
+    if (check.State === "ok") return t("manage.registries.check.ok", {date: formatDateTime(check.CheckedAt)});
+    if (check.State !== "broken") return t("manage.registries.check.never");
+    const reason = t((checkReasons as readonly string[]).includes(check.Reason) ? `manage.registries.check.reason.${check.Reason}` : "manage.registries.check.reason.other");
+    return t("manage.registries.check.broken", {date: formatDateTime(check.CheckedAt), reason});
+}
+
+// The note of a last attempt that gave no verdict: the previous state stays and the check is retried.
+export function registryRetryText(check: RegistryCheck): string {
+    if (!check.Failure) return "";
+    const reason = t((checkFailures as readonly string[]).includes(check.Failure) ? `manage.registries.check.failure.${check.Failure}` : "manage.registries.check.failure.other");
+    return t("manage.registries.check.retry", {date: formatDateTime(check.AttemptedAt), reason});
 }
 
 export async function deleteRegistrySecret(eventID: string, secretID: string): Promise<void> {

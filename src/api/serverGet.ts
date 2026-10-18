@@ -4,9 +4,10 @@ import {Readable} from "node:stream";
 
 // Fetch deliberately discards Host overrides. In-cluster API routing needs the
 // configured API host while the TCP connection goes to the internal Service.
-export function serverGet(url: string, headers: Record<string, string>, signal: AbortSignal): Promise<Response> {
+// noRedirect: a 3xx is returned as it is, never followed (fetch would resend custom headers such as a secret to the target).
+export function serverGet(url: string, headers: Record<string, string>, signal: AbortSignal, noRedirect = false): Promise<Response> {
     if (!Object.keys(headers).some(name => name.toLowerCase() === "host")) {
-        return fetch(url, {headers, signal, cache: "no-store"});
+        return fetch(url, {headers, signal, cache: "no-store", ...(noRedirect ? {redirect: "manual" as const} : {})});
     }
     const target = new URL(url);
     if (target.protocol !== "http:" && target.protocol !== "https:") return Promise.reject(new Error("Unsupported internal API protocol"));

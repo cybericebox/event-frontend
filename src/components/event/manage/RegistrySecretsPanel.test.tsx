@@ -185,4 +185,91 @@ describe("Сховища образів заходу", () => {
         expect(screen.queryByRole("button", {name: "Редагувати"})).toBeNull();
         expect(screen.queryByRole("button", {name: "Видалити"})).toBeNull();
     });
+
+    describe("credential check", () => {
+        const ok = {State: "ok", CheckedAt: "2026-10-18T09:00:00Z", Reason: "", AttemptedAt: "2026-10-18T09:00:00Z", Failure: ""};
+        const broken = {State: "broken", CheckedAt: "2026-10-18T09:00:00Z", Reason: "unauthorized", AttemptedAt: "2026-10-18T09:00:00Z", Failure: ""};
+
+        // Answers the list, and a check of s1 with the given result (held until released, to see the busy state).
+        function mockCheckApi(list: unknown[], result: unknown, hold?: Promise<void>) {
+            requests.length = 0;
+            globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+                const method = init?.method ?? "GET";
+                const url = String(input);
+                requests.push({method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined});
+                if (method === "POST" && url.endsWith("/check")) {
+                    await hold;
+                    return new Response(JSON.stringify({Status: {Code: 0}, Data: {...secret, Check: result}}), {status: 200});
+                }
+                if (method === "PUT") return new Response(JSON.stringify({Status: {Code: 0}, Data: {...secret, Username: "robot2"}}), {status: 200});
+                return new Response(JSON.stringify({Status: {Code: 0}, Data: list}), {status: 200});
+            }) as typeof fetch;
+        }
+
+        it("says when a secret was never checked, works, or does not work and why", async () => {
+            mockApi([{...secret, ID: "a", Host: "never.example"}, {...secret, ID: "b", Host: "good.example", Check: ok}, {...secret, ID: "c", Host: "bad.example", Check: broken}]);
+            renderPanel();
+            await screen.findByText("never.example");
+            expect(screen.getByText("Ще не перевірено")).toBeTruthy();
+            expect(screen.getByText(/Перевірено: .+ — працює/)).toBeTruthy();
+            expect(screen.getByText(/Перевірено: .+ — не працює: сховище відхилило токен/)).toBeTruthy();
+        });
+
+        it("names a missing repository as the reason", async () => {
+            mockApi([{...secret, Check: {...broken, Reason: "not_found"}}]);
+            renderPanel();
+            expect(await screen.findByText(/не працює: репозиторій не знайдено/)).toBeTruthy();
+        });
+
+        it("tells a failed attempt will be retried while the previous state stays", async () => {
+            mockApi([{...secret, Check: {...ok, AttemptedAt: "2026-10-18T15:00:00Z", Failure: "rate_limited"}}]);
+            renderPanel();
+            expect(await screen.findByText(/Перевірено: .+ — працює/)).toBeTruthy();
+            expect(screen.getByText(/Остання спроба .+ не вдалася \(сховище обмежило кількість запитів\), її буде повторено/)).toBeTruthy();
+        });
+
+        it("checks now: only its own button is busy, the row updates without a refetch", async () => {
+            let release!: () => void;
+            mockCheckApi([secret, {...secret, ID: "s9", Host: "other.example"}], broken, new Promise<void>(resolve => {release = resolve;}));
+            renderPanel();
+            await screen.findByText("ghcr.io");
+            const buttons = screen.getAllByRole("button", {name: /Перевірити зараз/});
+            fireEvent.click(buttons[0]);
+            await waitFor(() => expect((screen.getAllByRole("button", {name: /Перевірити зараз/})[0] as HTMLButtonElement).disabled).toBe(true));
+            expect((screen.getAllByRole("button", {name: /Перевірити зараз/})[1] as HTMLButtonElement).disabled).toBe(false);
+            expect((screen.getAllByRole("button", {name: "Редагувати"})[0] as HTMLButtonElement).disabled).toBe(false);
+            release();
+            expect(await screen.findByText(/не працює: сховище відхилило токен/)).toBeTruthy();
+            expect(requests.find(request => request.method === "POST")?.url).toContain("/registry-secrets/s1/check");
+            expect(requests.filter(request => request.method === "GET")).toHaveLength(1);
+        });
+
+        it("shows a failed check call at its row", async () => {
+            mockApi([secret], {code: 5000});
+            renderPanel();
+            await screen.findByText("ghcr.io");
+            fireEvent.click(screen.getByRole("button", {name: /Перевірити зараз/}));
+            const alert = await screen.findByRole("alert");
+            expect(alert.closest("li")?.textContent).toContain("ghcr.io");
+        });
+
+        it("checks a saved secret at once, without a toast or a button press", async () => {
+            mockCheckApi([secret], ok);
+            renderPanel();
+            await screen.findByText("ghcr.io");
+            fireEvent.click(screen.getByRole("button", {name: "Редагувати"}));
+            fireEvent.change(await screen.findByLabelText(/^Користувач/), {target: {value: "robot2"}});
+            fireEvent.click(screen.getByRole("button", {name: "Зберегти"}));
+            await waitFor(() => expect(requests.some(request => request.method === "POST" && request.url.endsWith("/registry-secrets/s1/check"))).toBe(true));
+        });
+
+        it("offers no check to viewers but shows the status", async () => {
+            canManage = false;
+            mockApi([{...secret, Check: ok}]);
+            renderPanel();
+            await screen.findByText("ghcr.io");
+            expect(screen.getByText(/працює/)).toBeTruthy();
+            expect(screen.queryByRole("button", {name: /Перевірити зараз/})).toBeNull();
+        });
+    });
 });
