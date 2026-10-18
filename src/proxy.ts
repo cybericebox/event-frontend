@@ -1,6 +1,7 @@
 import {NextResponse, type NextRequest} from "next/server";
 import {buildCsp, generateNonce} from "@/utils/csp";
 import {eventHostMissing} from "@/utils/server/eventHostMissing";
+import {READ_COOKIE, hasStaffGrant} from "@/utils/server/staffGrant";
 
 // Per-request nonce CSP. The nonce goes to the render through the request headers
 // (Next reads it from the CSP header and stamps its own scripts) and to the browser
@@ -27,7 +28,9 @@ export async function proxy(request: NextRequest) {
     headers.set("x-event-pathname", request.nextUrl.pathname);
     headers.set("Content-Security-Policy", csp);
     // An unknown or hidden event answers 404 with the page it always had: the status is the only change.
-    const missing = await eventHostMissing(request.headers.get("host"));
+    // The check is anonymous, so a hidden event stays 200 for its staff: a valid preview grant for this host.
+    const host = request.headers.get("host");
+    const missing = (await eventHostMissing(host)) && !(await hasStaffGrant(host, request.cookies.get(READ_COOKIE)?.value));
     const response = missing ? NextResponse.rewrite(ownURL(request), {request: {headers}, status: 404}) : NextResponse.next({request: {headers}});
     response.headers.set("Content-Security-Policy", csp);
     return response;
