@@ -18,8 +18,8 @@ function browser() {
 }
 describe("retained root common-session coordinator",()=>{
     it.each([false,true])("activates only on common navigation with existing grant %s",async hasGrant=>{
-        vi.useFakeTimers();navigation.pathname="/manage";const fetcher=browser();
-        const props={hasGrant,expiresAt:hasGrant ? Math.floor(Date.now()/1000)+300:undefined,serverPath:"/manage",revision:null,publicEvent:false};
+        vi.useFakeTimers();navigation.pathname="/team";const fetcher=browser();
+        const props={hasGrant,expiresAt:hasGrant ? Math.floor(Date.now()/1000)+300:undefined,serverPath:"/team",revision:null,publicEvent:false};
         const view=render(<EventReadSession {...props} />);
         await act(async()=>{});expect(fetcher).not.toHaveBeenCalled();
         navigation.pathname="/";view.rerender(<EventReadSession {...props} />);await act(async()=>{});
@@ -172,5 +172,26 @@ describe("grant renewal window",()=>{
         hide("visible");
         await act(async()=>{document.dispatchEvent(new Event("visibilitychange"));});
         expect(renewals(fetcher)).toBe(1);
+    });
+});
+
+describe("staff routes",()=>{
+    it("installs a grant on a /manage hard load, so the next reload has the branding",async()=>{
+        vi.useFakeTimers();navigation.pathname="/manage";const fetcher=browser();
+        render(<EventReadSession hasGrant={false} serverPath="/manage" revision={null} publicEvent={false} />);
+        await act(async()=>{});
+        expect(fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant"))).toHaveLength(1);
+        expect(fetcher.mock.calls.some(([url,init])=>String(url)==="/api/event-session" && init?.method==="POST")).toBe(true);
+    });
+    it("renews on /manage/* 60 s before expiry and leaves a public event alone",async()=>{
+        vi.useFakeTimers();navigation.pathname="/manage/teams";const fetcher=browser();
+        render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+300} serverPath="/manage/teams" revision={null} publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(239_000);});
+        expect(fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant"))).toHaveLength(0);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(1_000);});
+        expect(fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant"))).toHaveLength(1);
+        cleanup();fetcher.mockClear();
+        render(<EventReadSession hasGrant={false} serverPath="/manage" revision={null} publicEvent />);
+        await act(async()=>{});expect(fetcher).not.toHaveBeenCalled();
     });
 });

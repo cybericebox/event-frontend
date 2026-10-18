@@ -4,7 +4,7 @@ const server=vi.hoisted(()=>({path:"/rules",claims:{exp:60},context:vi.fn(async(
 vi.mock("next/headers",()=>({headers:async()=>new Headers({"x-event-pathname":server.path})}));
 vi.mock("geist/font/sans",()=>({GeistSans:{variable:"sans"}}));
 vi.mock("geist/font/mono",()=>({GeistMono:{variable:"mono"}}));
-vi.mock("@/api/publicEventInfo",()=>({getPublicEventInfo:async()=>({EventID:"event",Name:"private",Theme:{Brand:"#123456"}}),PublicEventError:class extends Error{}}));
+vi.mock("@/api/publicEventInfo",()=>({getPublicEventInfo:async()=>server.path==="/manage"?null:({EventID:"event",Name:"private",Theme:{Brand:"#123456"}}),PublicEventError:class extends Error{}}));
 vi.mock("@/api/commonPage",()=>({getCommonManifest:server.manifest,readContext:server.context,RenderReadError:class extends Error{}}));
 import RootLayout from "./layout";
 import {EventReadSession} from "@/components/event/common/EventReadSession";
@@ -20,10 +20,10 @@ it("supplies the active custom-page revision rather than the landing revision",a
     const props=sessionProps(await RootLayout({children:<main />}));
     expect(props).toMatchObject({serverPath:"/rules",revision:"rules-r2",hasGrant:true,expiresAt:60,publicEvent:false});
 });
-it("keeps the coordinator inactive without token verification on a personal-route hard entry",async()=>{
+it("tells the staff routes whether a grant is installed, without reading a manifest for the coordinator",async()=>{
     server.path="/manage";
     const props=sessionProps(await RootLayout({children:<main />}));
-    expect(props).toMatchObject({serverPath:"/manage",revision:null,hasGrant:false,expiresAt:undefined});
+    expect(props).toMatchObject({serverPath:"/manage",revision:null,hasGrant:true,expiresAt:60});
     // The grant is verified on a personal route for the branding only; it never activates the coordinator or the manifest.
     expect(server.manifest).not.toHaveBeenCalled();
 });
