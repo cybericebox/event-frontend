@@ -52,6 +52,14 @@ describe("event site status", () => {
             expect((await proxy(request(host(), "/team"))).status).toBe(200);
         }
     });
+    it("rewrites to the origin the server itself listens on, never to the public host", async () => {
+        vi.stubEnv("HOSTNAME", "127.0.0.1");
+        vi.stubEnv("PORT", "3001");
+        read.mockResolvedValue({status: 404, body: null});
+        const response = await proxy(new NextRequest("https://a.example.test/faq?x=1", {headers: {host: host(), "x-forwarded-proto": "https"}}));
+        expect(response.headers.get("x-middleware-rewrite")).toBe("https://127.0.0.1:3001/faq?x=1");
+        vi.unstubAllEnvs();
+    });
     it("still sets the CSP and nonce on a 404", async () => {
         read.mockResolvedValue({status: 404, body: null});
         const response = await proxy(request(host()));
