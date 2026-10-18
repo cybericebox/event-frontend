@@ -44,7 +44,7 @@ afterEach(cleanup);
 describe("StandDetailDialog", () => {
     it("shows the queue, a failed device and the saved state", async () => {
         mount();
-        expect(await screen.findByText(/Готуємо лабораторію/)).toBeTruthy();
+        expect(await screen.findByText(/Наступна в черзі\. Готуємо образи пристроїв/)).toBeTruthy();
         expect(screen.getByRole("alert").textContent).toContain("не вдалося завантажити образ");
         expect(screen.getByText(/pull denied/)).toBeTruthy();
         expect(screen.getByText(/Збережено 5 хвилин тому/)).toBeTruthy();
