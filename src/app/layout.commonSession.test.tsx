@@ -24,5 +24,6 @@ it("keeps the coordinator inactive without token verification on a personal-rout
     server.path="/manage";
     const props=sessionProps(await RootLayout({children:<main />}));
     expect(props).toMatchObject({serverPath:"/manage",revision:null,hasGrant:false,expiresAt:undefined});
-    expect(server.context).not.toHaveBeenCalled();
+    // The grant is verified on a personal route for the branding only; it never activates the coordinator or the manifest.
+    expect(server.manifest).not.toHaveBeenCalled();
 });

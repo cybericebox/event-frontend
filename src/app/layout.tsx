@@ -65,6 +65,7 @@ import {AppShell} from "@/components/event/AppShell";
 import {EventActionToaster} from "@/components/ui/EventActionToaster";
 import {headers} from "next/headers";
 import {getPublicEventInfo, PublicEventError} from "@/api/publicEventInfo";
+import {getGrantedEvent} from "@/api/grantedEvent";
 import {loadFailure} from "@/utils/loadFailure";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 import {preload} from "react-dom";
@@ -82,9 +83,9 @@ export async function generateMetadata(): Promise<Metadata> {
     // Robustness: an unreachable backend (or empty response) must not crash the render of
     // every route. On any failure fall back to a static title.
     try {
-        const event = await getPublicEventInfo();
+        const event = (await getPublicEventInfo()) ?? (await getGrantedEvent());
         const name = event?.Name;
-        if (!name) {
+        if (!name || !event) {
             return {title: FALLBACK_TITLE, icons: {icon: "/platform-favicon.ico"}};
         }
         const eventUrl = `https://${(await headers()).get("host")}`
@@ -141,7 +142,9 @@ export default async function RootLayout({
         if ((error instanceof PublicEventError || error instanceof RenderReadError) && loadFailure(error) === "error") failure = {status: error.status, requestId: error.requestId};
         else unavailable = true;
     }
-    const known = event ?? privateEvent;
+    // A personal route of a hidden event is anonymous in the public read; the staff grant still gives the branding.
+    const granted = !event && !privateEvent && !unavailable && !failure ? await getGrantedEvent() : null;
+    const known = event ?? privateEvent ?? granted;
     // Branding the server cannot know (a hidden event is anonymous here) stays unknown until the browser
     // loads it with the session: nothing of the platform shows meanwhile. A failed or unavailable backend
     // has no event to wait for, so it keeps the platform mark.
@@ -164,7 +167,7 @@ export default async function RootLayout({
         </head>
         <body className="event-root">
         <Providers>
-            <EventBrandProvider logoURL={brandUnknown ? null : known?.LogoURL ?? ""} faviconURL={known?.FaviconURL} name={known?.Name ?? ""} persist={!!known}>
+            <EventBrandProvider logoURL={brandUnknown ? null : known?.LogoURL ?? ""} faviconURL={known?.FaviconURL} name={known?.Name ?? ""} persist={!event && !!known}>
             <AppShell event={event} privateEvent={privateEvent ?? undefined} unavailable={unavailable} failure={failure}>
                 {children}
             </AppShell>
