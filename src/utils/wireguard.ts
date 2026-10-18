@@ -13,3 +13,8 @@ export function wireguardFileName(base: string): string {
 export function eventVpnFileName(eventTag: string): string {
     return wireguardFileName(eventTag || "cybericebox");
 }
+
+// The interface wg-quick creates is the config file name without ".conf".
+export function eventVpnInterfaceName(eventTag: string): string {
+    return eventVpnFileName(eventTag).replace(/\.conf$/, "");
+}

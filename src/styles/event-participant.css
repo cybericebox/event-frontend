@@ -84,6 +84,8 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-vpn-methods{display:grid;gap:var(--ib-3)}
 .event-vpn-methods p{margin:var(--ib-1) 0 0}
 .event-vpn-note{font-size:var(--ib-fs-12);color:var(--ib-dim)}
+.event-vpn-deleted{margin-top:var(--ib-2)}
+.event-vpn-deleted summary{cursor:pointer}
 .event-inline-icon{display:inline-block;width:14px;height:14px;vertical-align:-2px}
 
 /* ── «Моя участь» ────────────────────────────────────────────────────────── */
