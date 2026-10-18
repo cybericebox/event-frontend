@@ -112,7 +112,7 @@ echo "mode: $mode" >&2
 # code. The other operator values are required (no fallbacks); analytics is optional.
 . /usr/local/lib/base-domain.sh
 base_domain_check || exit 1
-for name in NEXT_PUBLIC_SUPPORT_EMAIL; do
+for name in NEXT_PUBLIC_SUPPORT_EMAIL RENDER_SECRET; do
   eval "value=\${$name:-}"
   if [ -z "$value" ]; then
     echo "$name is required." >&2

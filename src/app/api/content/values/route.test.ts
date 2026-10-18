@@ -1,5 +1,6 @@
 import {generateKeyPairSync, sign} from "node:crypto";
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
+import {MISSING_HOST_TTL_MS} from "@/utils/server/missingHosts";
 const browser = vi.hoisted(() => ({host:"one.example.test",token:""}));
 vi.mock("next/headers",()=>({headers:async()=>new Headers({host:browser.host}),cookies:async()=>({get:()=>browser.token ? {value:browser.token}:undefined})}));
 const event = {EventID:"33333333-3333-4333-8333-333333333333",Tag:"one",Name:"Published",StartTime:"2026-10-15T12:00:00Z",FinishTime:null,Status:1,Participation:null,Registration:0,CanViewResults:false,CanViewParticipants:false,PreviewDescription:"",PreviewPicture:"",Theme:{Version:1,Brand:"#112233",Accent:"#112233",AccentLight:"#112233",AccentDark:"#112233",AccentLive:"#112233"}};
@@ -13,21 +14,21 @@ let revision:string,count:number,gateStatus:number,valueStatus:number,contentRea
 let beforeValue:undefined|(()=>Promise<void>);
 let GET:typeof import("./route").GET;
 beforeEach(async()=>{
-    vi.resetModules();vi.useFakeTimers();vi.setSystemTime(120_000);
+    vi.resetModules();vi.useFakeTimers();vi.setSystemTime(120_000);vi.stubEnv("RENDER_SECRET","values-test-render-secret-0123456789ab");
     browser.host="one.example.test";browser.token="";revision="r1";count=1;gateStatus=200;valueStatus=200;contentReads=0;beforeValue=undefined;
     vi.stubGlobal("fetch",vi.fn(async(input:string|URL|Request,init?:RequestInit)=>{
         const url=new URL(String(input));
         const headers=new Headers(init?.headers);
-        expect(init?.cache).toBe("no-store");expect(headers.has("Cookie")).toBe(false);
-        if(url.pathname.endsWith("render-key"))return Response.json({Data:{KeyID:"test",PublicKey:pair.publicKey.export({format:"jwk"}).x}});
+        expect(init?.cache).toBe("no-store");expect(headers.has("Cookie")).toBe(false);expect(headers.get("X-Render-Secret")).toBe("values-test-render-secret-0123456789ab");expect(headers.has("Origin")).toBe(false);
+        if(url.pathname==="/api/render/key")return Response.json({Data:{KeyID:"test",PublicKey:pair.publicKey.export({format:"jwk"}).x}});
         const slug=url.searchParams.get("page")??"";
         const currentEvent={...event,Tag:browser.host.split(".")[0]};
-        if(url.pathname.endsWith("render-manifest"))return gateStatus===200 ? Response.json({Data:{Event:currentEvent,Revision:revision,Audience:headers.has("Authorization")?"staff":"public",Page:{Slug:slug,Title:"Landing"},CacheUntil:Date.now()+1000}}):new Response(null,{status:gateStatus});
+        if(url.pathname.endsWith("/manifest"))return gateStatus===200 ? Response.json({Data:{Event:currentEvent,Revision:revision,Audience:headers.has("Authorization")?"staff":"public",Page:{Slug:slug,Title:"Landing"},CacheUntil:Date.now()+1000}}):new Response(null,{status:gateStatus});
         contentReads++;
         const snapshotRevision=revision,snapshotCount=count;
         await beforeValue?.();
         if(valueStatus!==200)return new Response(null,{status:valueStatus});
-        if(url.pathname.endsWith("render-page")) {
+        if(url.pathname.endsWith("/page")) {
             if(url.searchParams.get("revision")!==snapshotRevision)return new Response(null,{status:409});
             return Response.json({Data:{Event:currentEvent,Revision:snapshotRevision,Page:{Slug:slug,Title:"Landing",Document:{blocks:[]}},Variables:{teams:snapshotCount}}});
         }
@@ -35,7 +36,7 @@ beforeEach(async()=>{
     }));
     GET=(await import("./route")).GET;
 });
-afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
+afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();vi.unstubAllEnvs();});
 const read=(eventId=event.EventID,page="")=>GET(new Request(`https://${browser.host}/api/content/values?eventId=${eventId}${page ? `&page=${page}`:""}`,{headers:{host:browser.host}}));
 
 it("shares staggered and concurrent public reads for 30 seconds, then refreshes values",async()=>{
@@ -71,6 +72,9 @@ it.each([404,503])("rejects warm values after expired visibility gate returns %s
     else expect((await read()).status).toBe(502);
     expect(contentReads).toBe(1);
     gateStatus=200;vi.setSystemTime(122_002);
+    // A 404 for the landing marks the host unknown for a while; it is asked again after that.
+    if(status===404)expect((await read()).status).toBe(404);
+    vi.setSystemTime(122_002+MISSING_HOST_TTL_MS);
     expect((await read()).status).toBe(200);
 });
 it("does not cache failed value loads",async()=>{

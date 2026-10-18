@@ -2,6 +2,7 @@ import {z} from "zod";
 import {PublicEventInfoSchema} from "@/types/publicEventInfo";
 import {ContentDocumentSchema, ContentValueSchema} from "@/types/eventContent";
 import {HardCache} from "@/utils/server/commonPageCache";
+import {MissingHosts} from "@/utils/server/missingHosts";
 import type {RenderClaims} from "@/utils/server/eventRenderGrant";
 import type {PublicResponse} from "./publicFetch";
 
@@ -11,7 +12,7 @@ const bundleSchema = z.object({Event:PublicEventInfoSchema, Revision:z.string(),
 export type CommonManifest = z.infer<typeof manifestSchema>;
 export type CommonBundle = z.infer<typeof bundleSchema>;
 export type CommonValues = CommonBundle["Variables"];
-export type ReadContext = {origin:string; token?:string; claims:RenderClaims|null};
+export type ReadContext = {origin:string; tag:string; token?:string; claims:RenderClaims|null};
 type Api = (path:string, context:ReadContext) => Promise<PublicResponse>;
 export class RenderReadError extends Error {
     constructor(readonly status:number, readonly requestId?:string) {super(`Event render request failed: ${status}`);}
@@ -21,7 +22,7 @@ export class CommonPageStore {
     private manifests:HardCache<CommonManifest|null>;
     private bundles:HardCache<CommonBundle>;
     private liveValues:HardCache<{Revision:string;Variables:CommonValues}>;
-    constructor(private api:Api, private now = Date.now) {
+    constructor(private api:Api, private now = Date.now, private missing = new MissingHosts(now)) {
         this.manifests = new HardCache({maxEntries:2048,maxBytes:8*1024*1024,ttl:1000,now});
         this.bundles = new HardCache({maxEntries:256,maxBytes:64*1024*1024,ttl:300_000,now});
         this.liveValues = new HardCache({maxEntries:256,maxBytes:8*1024*1024,ttl:30_000,now});
@@ -30,11 +31,18 @@ export class CommonPageStore {
     private alive(context:ReadContext) {return !context.claims || context.claims.exp*1000>this.now();}
     async manifest(context:ReadContext,slug:string):Promise<CommonManifest|null> {
         if (!this.alive(context)) return null;
+        const host = new URL(context.origin).host;
+        // An unknown host is not asked about again for a while (anonymous readers only: staff see events the public does not).
+        if (!context.claims && this.missing.has(host)) return null;
         try {
             const manifest = await this.manifests.get(this.key(context,slug),async () => {
-                const response = await this.api(`/api/events/self/render-manifest?page=${encodeURIComponent(slug)}`,context);
+                const response = await this.api(`/api/render/events/${context.tag}/manifest?page=${encodeURIComponent(slug)}`,context);
                 // Only anonymous, normalized absence is briefly reusable; signed denial and errors are never cached.
-                if (response.status === 404 && !context.claims) return {value:null};
+                if (response.status === 404 && !context.claims) {
+                    // The landing is part of every visible event, so its absence means the host itself is not served.
+                    if (slug === "") this.missing.add(host);
+                    return {value:null};
+                }
                 if (response.status !== 200) throw new RenderReadError(response.status,response.requestId);
                 const value = z.object({Data:manifestSchema}).parse(response.body).Data;
                 if (value.Page.Slug !== slug || value.CacheUntil <= this.now()) throw new RenderReadError(502);
@@ -63,7 +71,7 @@ export class CommonPageStore {
             const key=JSON.stringify([context.origin,manifest.Event.EventID,slug,manifest.Revision,manifest.Audience,process.env.NEXT_DEPLOYMENT_ID ?? "current"]);
             try {
                 const value=await cache.get(key,async () => {
-                    const response=await this.api(`/api/events/self/render-page?page=${encodeURIComponent(slug)}&revision=${encodeURIComponent(manifest.Revision)}`,context);
+                    const response=await this.api(`/api/render/events/${context.tag}/page?page=${encodeURIComponent(slug)}&revision=${encodeURIComponent(manifest.Revision)}`,context);
                     if (response.status!==200) throw new RenderReadError(response.status,response.requestId);
                     const value=z.object({Data:bundleSchema}).parse(response.body).Data;
                     if (value.Revision!==manifest.Revision || value.Event.EventID!==manifest.Event.EventID || value.Page.Slug!==slug) throw new RenderReadError(409);

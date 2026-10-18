@@ -9,7 +9,7 @@ vi.mock("next/headers", () => ({cookies: vi.fn(), headers: vi.fn()}));
 
 let server: Server;
 let origin: string;
-let received: {host?: string; origin?: string; authorization?: string; cookie?: string}[];
+let received: {host?: string; origin?: string; authorization?: string; cookie?: string; "x-render-secret"?: string}[];
 beforeEach(async () => {
     received = [];
     server = createServer((request, response) => {
@@ -37,6 +37,7 @@ beforeEach(async () => {
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     vi.stubEnv("INTERNAL_API_ORIGIN", origin);
+    vi.stubEnv("RENDER_SECRET", "synthetic-render-secret-0123456789abcdef");
 });
 afterEach(async () => {
     vi.unstubAllEnvs();
@@ -54,14 +55,19 @@ it("preserves the API Host over the internal connection for legacy public reads"
     expect(received[0].cookie).toBeUndefined();
 });
 
-it("preserves API Host and event Origin for common pages and forwards only the read grant", async () => {
-    const result = await renderApi("/api/events/self/render-manifest", {
-        origin: "https://event.example.test", token: "synthetic-read-grant",
-    });
+it("preserves the API Host, sends the render secret and no Origin, and forwards only the read grant", async () => {
+    const result = await renderApi("/api/render/events/event/manifest", {token: "synthetic-read-grant"});
     expect(result).toMatchObject({status: 200, body: {Data: "internal API"}});
     expect(received).toHaveLength(1);
-    expect(received[0]).toMatchObject({host: "api.example.test", origin: "https://event.example.test", authorization: "EventRender synthetic-read-grant"});
+    expect(received[0]).toMatchObject({host: "api.example.test", authorization: "EventRender synthetic-read-grant", "x-render-secret": "synthetic-render-secret-0123456789abcdef"});
+    expect(received[0].origin).toBeUndefined();
     expect(received[0].cookie).toBeUndefined();
+});
+
+it("refuses to call the render routes without a configured secret", async () => {
+    vi.stubEnv("RENDER_SECRET", "");
+    await expect(renderApi("/api/render/key", {})).rejects.toThrow("RENDER_SECRET");
+    expect(received).toHaveLength(0);
 });
 
 it("coalesces simultaneous public reads over the real internal transport", async () => {
@@ -71,7 +77,7 @@ it("coalesces simultaneous public reads over the real internal transport", async
 });
 
 it("does not follow an internal redirect with the read grant", async () => {
-    const result = await renderApi("/redirect", {origin: "https://event.example.test", token: "synthetic-read-grant"});
+    const result = await renderApi("/redirect", {token: "synthetic-read-grant"});
     expect(result).toMatchObject({status: 307, body: null});
     expect(received).toHaveLength(1);
 });

@@ -1,7 +1,8 @@
 import {describe, expect, it, vi} from "vitest";
 import {CommonPageStore} from "./commonPageStore";
+import {MISSING_HOST_TTL_MS,MissingHosts} from "@/utils/server/missingHosts";
 const event = {EventID:"33333333-3333-4333-8333-333333333333", Tag:"one", Name:"Published", StartTime:"2026-10-15T12:00:00Z", FinishTime:null, Status:1, Participation:null, Registration:0, CanViewResults:false, CanViewParticipants:false, PreviewDescription:"", PreviewPicture:"", Theme:{Version:1, Brand:"#112233", Accent:"#112233", AccentLight:"#112233", AccentDark:"#112233", AccentLive:"#112233"}};
-const context = {origin:"https://one.example.test", token:undefined, claims:null};
+const context = {origin:"https://one.example.test", tag:"one", token:undefined, claims:null};
 const manifest = (revision: string, now: number) => ({Event:event, Revision:revision, Audience:"public", Page:{Slug:"",Title:"Landing"}, CacheUntil:now+1000});
 const bundle = (revision: string) => ({Event:event, Revision:revision, Page:{Slug:"",Title:"Landing",Document:{blocks:[{id:"p", type:"text", text:revision}]}}, Variables:{}});
 describe("authorized common page store", () => {
@@ -53,8 +54,13 @@ describe("bounded anonymous neutral manifest cache",()=>{
         const store=new CommonPageStore(api,()=>now);
         for(let i=0;i<5;i++)expect(await store.manifest(context,"")).toBeNull();
         expect(api).toHaveBeenCalledTimes(1);
-        now=1001;api.mockResolvedValue({status:200,body:{Data:manifest("published",now)}});
+        now=MISSING_HOST_TTL_MS+1;api.mockResolvedValue({status:200,body:{Data:manifest("published",now)}});
         expect((await store.manifest(context,""))?.Revision).toBe("published");expect(api).toHaveBeenCalledTimes(2);
+    });
+    it("asks the render route of the event tag, never an Origin-resolved one",async()=>{
+        const api=vi.fn().mockResolvedValue({status:200,body:{Data:{...manifest("r1",0),Page:{Slug:"rules",Title:"Rules"}}}});
+        await new CommonPageStore(api,()=>0).manifest(context,"rules");
+        expect(api).toHaveBeenCalledWith("/api/render/events/one/manifest?page=rules",context);
     });
     it("never lets warm anonymous denial hide authorized staff preview",async()=>{
         const api=vi.fn().mockResolvedValueOnce({status:404,body:null}).mockResolvedValueOnce({status:200,body:{Data:{...manifest("staff",0),Audience:"staff"}}});
@@ -76,5 +82,38 @@ describe("bounded anonymous neutral manifest cache",()=>{
         const staff={...context,token:"staff",claims:{event_id:event.EventID,preview:true,exp:60}} as Parameters<typeof store.manifest>[0];
         expect(await store.manifest(staff,"")).toBeNull();
         expect((await store.manifest(staff,""))?.Revision).toBe("staff");expect(api).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("unknown host negative cache",()=>{
+    it("remembers a landing 404 for the host: no manifest for any page until it expires",async()=>{
+        let now=0;
+        const api=vi.fn().mockResolvedValue({status:404,body:null});
+        const store=new CommonPageStore(api,()=>now);
+        expect(await store.manifest(context,"")).toBeNull();
+        expect(await store.manifest(context,"rules")).toBeNull();
+        expect(await store.manifest(context,"")).toBeNull();
+        expect(api).toHaveBeenCalledTimes(1);
+        // Another host is unaffected.
+        await store.manifest({...context,origin:"https://two.example.test",tag:"two"},"");
+        expect(api).toHaveBeenCalledTimes(2);
+        now=MISSING_HOST_TTL_MS+1;
+        await store.manifest(context,"");
+        expect(api).toHaveBeenCalledTimes(3);
+    });
+    it("does not take a missing page of a visible event for a missing host",async()=>{
+        const api=vi.fn(async(path:string)=>path.includes("page=nope") ? {status:404,body:null}:{status:200,body:{Data:manifest("r1",0)}});
+        const store=new CommonPageStore(api,()=>0);
+        expect(await store.manifest(context,"nope")).toBeNull();
+        expect((await store.manifest(context,""))?.Revision).toBe("r1");
+    });
+    it("is skipped by a staff grant, which sees events the public does not",async()=>{
+        const missing=new MissingHosts(()=>0);missing.add("one.example.test");
+        const api=vi.fn().mockResolvedValue({status:200,body:{Data:{...manifest("staff",0),Audience:"staff"}}});
+        const store=new CommonPageStore(api,()=>0,missing);
+        expect(await store.manifest(context,"")).toBeNull();
+        expect(api).not.toHaveBeenCalled();
+        const staff={...context,token:"staff",claims:{event_id:event.EventID,preview:true,exp:60}} as Parameters<typeof store.manifest>[0];
+        expect((await store.manifest(staff,""))?.Revision).toBe("staff");
     });
 });
