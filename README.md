@@ -38,6 +38,7 @@ Read at runtime by the server.
 | `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | no | WireGuard install link in the VPN dialog. Default `https://www.wireguard.com/install/`. |
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
+| `RENDER_SECRET` | yes | Secret shared with the API (its `RENDER_SECRET`). The server sends it as `X-Render-Secret` to the `/api/render/*` routes that feed server rendering; without it those routes answer 404. Never sent to the browser. |
 | `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
 
 ## Container listeners and TLS

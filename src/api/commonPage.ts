@@ -4,15 +4,22 @@ import {z} from "zod";
 import {apiHost} from "@/utils/origins";
 import {READ_COOKIE,RenderKeySchema,eventOriginFromHost,verifyRenderGrant} from "@/utils/server/eventRenderGrant";
 import {HardCache} from "@/utils/server/commonPageCache";
+import {missingHosts} from "@/utils/server/missingHosts";
 import {CommonPageStore,RenderReadError,type ReadContext} from "./commonPageStore";
 import {SERVER_FETCH_TIMEOUT_MS} from "./publicFetch";
 import {serverGet} from "./serverGet";
 
 export {RenderReadError} from "./commonPageStore";
-export async function renderApi(path:string,context:{origin:string;token?:string}) {
+/** The secret that opens /api/render/* to this server. Server-only: never exposed to the browser (no NEXT_PUBLIC_ prefix). */
+function renderSecret() {
+    const secret=process.env.RENDER_SECRET;
+    if (!secret) throw new Error("RENDER_SECRET is required");
+    return secret;
+}
+export async function renderApi(path:string,context:{token?:string}) {
     const internal=process.env.INTERNAL_API_ORIGIN;
     const response=await serverGet(`${internal ?? `https://${apiHost}`}${path}`,
-        {Accept:"application/json",Origin:context.origin,...(internal ? {Host:apiHost}:{}),...(context.token ? {Authorization:`EventRender ${context.token}`}:{})},
+        {Accept:"application/json","X-Render-Secret":renderSecret(),...(internal ? {Host:apiHost}:{}),...(context.token ? {Authorization:`EventRender ${context.token}`}:{})},
         AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS));
     if (!response.ok) return {status:response.status,body:null,requestId:response.headers.get("X-Request-ID") ?? undefined};
     return {status:response.status,body:await response.json() as unknown};
@@ -22,7 +29,7 @@ const keys=new HardCache<z.infer<typeof RenderKeySchema>>({maxEntries:1,maxBytes
 let nextKeyRefreshAt=0;
 let keyRefresh:Promise<z.infer<typeof RenderKeySchema>>|undefined;
 async function loadRenderKey() {
-    const response=await renderApi("/api/auth/event-render-key",{origin:`https://${apiHost}`});
+    const response=await renderApi("/api/render/key",{});
     if (response.status!==200) throw new RenderReadError(response.status,response.requestId);
     return {value:z.object({Data:RenderKeySchema}).parse(response.body).Data};
 }
@@ -48,12 +55,13 @@ export async function getRenderKey(token?:string) {
 export async function readContext():Promise<ReadContext|null> {
     const origin=eventOriginFromHost((await headers()).get("host"));
     if (!origin) return null;
+    const tag=new URL(origin).hostname.split(".")[0];
     const token=(await cookies()).get(READ_COOKIE)?.value;
-    if (!token) return {origin,claims:null};
+    if (!token) return {origin,tag,claims:null};
     const claims=verifyRenderGrant(token,await getRenderKey(token),origin);
-    return claims ? {origin,token,claims}:{origin,claims:null};
+    return claims ? {origin,tag,token,claims}:{origin,tag,claims:null};
 }
-const store=new CommonPageStore(renderApi);
+const store=new CommonPageStore(renderApi,Date.now,missingHosts);
 export const getCommonManifest=cache(async (slug="") => {
     const context=await readContext();
     return context ? store.manifest(context,slug):null;

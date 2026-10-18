@@ -53,7 +53,7 @@ docker run --rm -v "$certs:/c" -w /c "$tools" sh -ec '
 
 # The domain and the support e-mail are the only inputs a container needs. The certificates are mounted at /tls (where the image
 # looks for them by default) unless $mounts is emptied for a test of the plain default.
-envs="-e NEXT_PUBLIC_DOMAIN=base.test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test"
+envs="-e NEXT_PUBLIC_DOMAIN=base.test -e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e RENDER_SECRET=container-test-render-secret-0123456789"
 mounts="-v $certs/live:/tls:ro"
 
 # start <name> [docker run args...]: a container with dropped capabilities and the cert directory.
@@ -177,7 +177,7 @@ docker rm -f ef-opt >/dev/null
 echo "== hosts derive from NEXT_PUBLIC_DOMAIN"
 # The domain is the only host input: the derived hosts are in the substituted files and no placeholder is left.
 saved_envs=$envs
-site="-e NEXT_PUBLIC_SUPPORT_EMAIL=s@test"
+site="-e NEXT_PUBLIC_SUPPORT_EMAIL=s@test -e RENDER_SECRET=container-test-render-secret-0123456789"
 envs="$site -e NEXT_PUBLIC_DOMAIN=derived.test"
 mounts=
 start ef-dom

@@ -35,4 +35,15 @@ describe("hard shared cache", () => {
         finish({value: "ok"});
         await pending;
     });
+    it("peeks and sets without a loader, with hard expiry and the same bounds", () => {
+        let now = 0;
+        const cache = new HardCache<string>({maxEntries: 2, maxBytes: 100, ttl: 1000, now: () => now});
+        expect(cache.peek("a")).toBeUndefined();
+        cache.set("a", "x"); cache.set("b", "y"); cache.set("c", "z");
+        expect(cache.size).toBe(2);
+        expect(cache.peek("a")).toBeUndefined();
+        expect(cache.peek("c")).toBe("z");
+        now = 1001;
+        expect(cache.peek("c")).toBeUndefined();
+    });
 });
