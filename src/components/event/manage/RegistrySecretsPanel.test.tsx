@@ -215,6 +215,12 @@ describe("Сховища образів заходу", () => {
             expect(screen.getByText(/Перевірено: .+ — не працює: сховище відхилило токен/)).toBeTruthy();
         });
 
+        it("names a missing repository as the reason", async () => {
+            mockApi([{...secret, Check: {...broken, Reason: "not_found"}}]);
+            renderPanel();
+            expect(await screen.findByText(/не працює: репозиторій не знайдено/)).toBeTruthy();
+        });
+
         it("tells a failed attempt will be retried while the previous state stays", async () => {
             mockApi([{...secret, Check: {...ok, AttemptedAt: "2026-10-18T15:00:00Z", Failure: "rate_limited"}}]);
             renderPanel();
