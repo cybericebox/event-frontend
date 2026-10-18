@@ -5,8 +5,6 @@ import {localToISO} from "@/components/ui/dateTimePicker";
 import {t} from "@/i18n/t";
 import {formatBytes} from "../analytics/analyticsFormat";
 
-const MIB = 1024 ** 2;
-
 const cpuNumber = new Intl.NumberFormat("uk-UA", {maximumFractionDigits: 2});
 const plural = new Intl.PluralRules("uk");
 
@@ -28,53 +26,57 @@ export function amountText(amount: Amount): string {
     return t("manage.resources.amount", {cpu: formatCpu(amount.CPUMillicores), memory: formatMemory(amount.MemoryBytes)});
 }
 
-export type ChangeDraft = {sizeCpu: string; sizeMemory: string; dynamicCpu: string; dynamicMemory: string; windowStart: string; windowEnd: string; reason: string};
-export const emptyDraft: ChangeDraft = {sizeCpu: "", sizeMemory: "", dynamicCpu: "", dynamicMemory: "", windowStart: "", windowEnd: "", reason: ""};
+const GIB = 1024 ** 3;
+// The platform ties CPU to memory: 250 millicores per GiB (the backend's milliCPUPerGiB).
+const MILLICPU_PER_GIB = 250;
+const gbNumber = new Intl.NumberFormat("uk-UA", {maximumFractionDigits: 1});
 
-export type DraftIssue = "empty" | "size" | "dynamic" | "window" | "reason";
+// Memory in GB, the only unit of the reserve: «3,4 ГБ». CPU is not shown here.
+export const formatGB = (bytes: number) => t("manage.resources.gb", {value: gbNumber.format(bytes / GIB)});
 
-const wholeNumber = (value: string) => /^\d+$/.test(value.trim()) ? Number(value.trim()) : null;
+// What the event uses beyond its reserve, in bytes; 0 while the usage fits.
+export const shortageBytes = (resources: {Allocated: Amount; InUse: Amount}) => Math.max(0, resources.InUse.MemoryBytes - resources.Allocated.MemoryBytes);
 
-// An amount is two numbers (CPU in millicores, memory in MiB); both or none.
-function amountOf(cpu: string, memory: string): Amount | null | "invalid" {
-    if (cpu.trim() === "" && memory.trim() === "") return null;
-    const millicores = wholeNumber(cpu);
-    const mebibytes = wholeNumber(memory);
-    if (millicores === null || mebibytes === null || millicores <= 0 || mebibytes <= 0) return "invalid";
-    return {CPUMillicores: millicores, MemoryBytes: mebibytes * MIB};
+export type ChangeDraft = {extraGB: string; extendTo: string; reason: string};
+export const emptyDraft: ChangeDraft = {extraGB: "", extendTo: "", reason: ""};
+
+export type DraftIssue = "empty" | "extra" | "extend" | "reason";
+export type CurrentReserve = {allocated: Amount; to: string | null};
+
+// A positive decimal with a dot or a comma; null when empty, NaN when it is not one.
+function extraOf(text: string): number | null {
+    const value = text.trim().replace(",", ".");
+    if (value === "") return null;
+    const number = /^\d+(\.\d+)?$/.test(value) ? Number(value) : Number.NaN;
+    return number > 0 ? number : Number.NaN;
 }
 
-export function changeRequestErrors(draft: ChangeDraft): Partial<Record<keyof ChangeDraft | "empty", DraftIssue>> {
+export function changeRequestErrors(draft: ChangeDraft, current: CurrentReserve): Partial<Record<keyof ChangeDraft | "empty", DraftIssue>> {
     const errors: Partial<Record<keyof ChangeDraft | "empty", DraftIssue>> = {};
-    const size = amountOf(draft.sizeCpu, draft.sizeMemory);
-    const dynamic = amountOf(draft.dynamicCpu, draft.dynamicMemory);
-    for (const [cpu, memory, issue] of [["sizeCpu", "sizeMemory", "size"], ["dynamicCpu", "dynamicMemory", "dynamic"]] as const) {
-        if (!draft[cpu].trim() && !draft[memory].trim()) continue;
-        if ((wholeNumber(draft[cpu]) ?? 0) <= 0) errors[cpu] = issue;
-        if ((wholeNumber(draft[memory]) ?? 0) <= 0) errors[memory] = issue;
-    }
-    const start = draft.windowStart ? localToISO(draft.windowStart) : null;
-    const end = draft.windowEnd ? localToISO(draft.windowEnd) : null;
-    if (draft.windowStart && !start) errors.windowStart = "window";
-    if (draft.windowEnd && !end || start && end && new Date(end).getTime() <= new Date(start).getTime()) errors.windowEnd = "window";
-    if (!size && !dynamic && !start && !end) errors.empty = "empty";
+    const extra = extraOf(draft.extraGB);
+    if (Number.isNaN(extra)) errors.extraGB = "extra";
+    const end = draft.extendTo ? localToISO(draft.extendTo) : null;
+    if (draft.extendTo && (!end || (current.to && new Date(end).getTime() <= new Date(current.to).getTime()))) errors.extendTo = "extend";
+    if (extra === null && !draft.extendTo) errors.empty = "empty";
     if (!draft.reason.trim()) errors.reason = "reason";
     return errors;
 }
 
-// At least one of size, dynamic estimate, window start or end, plus a reason (the backend's 22507).
-export function buildChangeRequest(draft: ChangeDraft): {input: ChangeRequestInput} | {issue: DraftIssue} {
-    const size = amountOf(draft.sizeCpu, draft.sizeMemory);
-    if (size === "invalid") return {issue: "size"};
-    const dynamic = amountOf(draft.dynamicCpu, draft.dynamicMemory);
-    if (dynamic === "invalid") return {issue: "dynamic"};
-    const start = draft.windowStart ? localToISO(draft.windowStart) : null;
-    const end = draft.windowEnd ? localToISO(draft.windowEnd) : null;
-    if ((draft.windowStart && !start) || (draft.windowEnd && !end)) return {issue: "window"};
-    if (start && end && new Date(end).getTime() <= new Date(start).getTime()) return {issue: "window"};
-    if (!size && !dynamic && !start && !end) return {issue: "empty"};
+// The new total of the reserve for «на скільки більше»: memory in GB, CPU follows the memory.
+export function enlarged(allocated: Amount, extraGB: number): Amount {
+    return {CPUMillicores: allocated.CPUMillicores + Math.round(extraGB * MILLICPU_PER_GIB), MemoryBytes: allocated.MemoryBytes + Math.round(extraGB * GIB)};
+}
+
+// «На скільки більше» and/or «Продовжити до», plus a reason (the backend's 22507). The extra is sent as the new
+// total size; the end is the real end of the reservation.
+export function buildChangeRequest(draft: ChangeDraft, current: CurrentReserve): {input: ChangeRequestInput} | {issue: DraftIssue} {
+    const extra = extraOf(draft.extraGB);
+    if (Number.isNaN(extra)) return {issue: "extra"};
+    const end = draft.extendTo ? localToISO(draft.extendTo) : null;
+    if (draft.extendTo && (!end || (current.to && new Date(end).getTime() <= new Date(current.to).getTime()))) return {issue: "extend"};
+    if (extra === null && !end) return {issue: "empty"};
     if (draft.reason.trim() === "") return {issue: "reason"};
-    return {input: {Size: size, Dynamic: dynamic, WindowStart: start, WindowEnd: end, Reason: draft.reason.trim()}};
+    return {input: {Size: extra === null ? null : enlarged(current.allocated, extra), Dynamic: null, WindowStart: null, WindowEnd: end, Reason: draft.reason.trim()}};
 }
 
 export const hasCode = (error: unknown, code: number) => error instanceof ManageApiError && error.code === code;

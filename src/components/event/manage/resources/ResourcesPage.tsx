@@ -14,17 +14,17 @@ import {t} from "@/i18n/t";
 import {formatDateTime} from "@/utils/dateTime";
 import {ChangeRequestDialog} from "./ChangeRequestDialog";
 import {ResourceObservationFacts} from "./ResourceObservationFacts";
-import {amountText} from "./resourcesModel";
+import {formatGB, shortageBytes} from "./resourcesModel";
 import {TableEmptyBody} from "../TableEmptyBody";
 import "./resources.css";
 
 const STATUS_TONE: Record<ChangeStatus, string> = {pending: "ib-tag--warn", approved: "ib-tag--ok", rejected: "ib-tag--danger"};
 
-// What a request asks for, as one line: «розмір 2 · 4Gi · запас 500m · 1Gi · вікно …».
+// What a request asks for, as one line: «розмір 8 ГБ · діє до …».
 function changeSummary(change: ResourceChange): string {
     const parts: string[] = [];
-    if (change.Size) parts.push(t("manage.resources.history.size", {value: amountText(change.Size)}));
-    if (change.Dynamic) parts.push(t("manage.resources.history.dynamic", {value: amountText(change.Dynamic)}));
+    if (change.Size) parts.push(t("manage.resources.history.size", {value: formatGB(change.Size.MemoryBytes)}));
+    if (change.Dynamic) parts.push(t("manage.resources.history.dynamic", {value: formatGB(change.Dynamic.MemoryBytes)}));
     if (change.WindowStart) parts.push(t("manage.resources.history.from", {value: formatDateTime(change.WindowStart)}));
     if (change.WindowEnd) parts.push(t("manage.resources.history.to", {value: formatDateTime(change.WindowEnd)}));
     return parts.join(" · ");
@@ -54,14 +54,12 @@ export function ResourcesPage() {
         {heading}
         {!resources.Reserved ? <section className="event-manage-section"><EmptyState message={t("manage.resources.notReserved")} /></section> : <>
             {!resources.Covered && <div className="event-manage-notice" role="status"><AlertTriangle size={18} aria-hidden="true" />{t("manage.resources.notCovered")}</div>}
+            {shortageBytes(resources) > 0 && <div className="event-manage-notice" role="status" data-testid="resources-shortage"><AlertTriangle size={18} aria-hidden="true" />{t("manage.resources.shortage", {value: formatGB(shortageBytes(resources))})}</div>}
             <dl className="event-resources__facts">
-                <div><dt>{t("manage.resources.window")}</dt><dd className="event-resources__window"><span>{resources.From ? formatDateTime(resources.From) : "—"}</span><span>{resources.To ? formatDateTime(resources.To) : "—"}</span></dd></div>
-                <div><dt>{t("manage.resources.allocated")}</dt><dd>{amountText(resources.Allocated)}</dd></div>
-                <div><dt>{t("manage.resources.inUse")}</dt><dd>{amountText(resources.InUse)}</dd></div>
-                <div><dt>{t("manage.resources.free")}</dt><dd>{amountText(resources.Free)}</dd></div>
-                <div><dt>{t("manage.resources.teams")}</dt><dd>{resources.Teams}</dd></div>
-                <div><dt>{t("manage.resources.buffer")}</dt><dd>{t("manage.resources.bufferValue", {percent: resources.BufferPercent})}</dd></div>
-                <div><dt>{t("manage.resources.dynamic")}</dt><dd>{resources.Dynamic ? amountText(resources.Dynamic) : "—"}</dd></div>
+                <div><dt>{t("manage.resources.validUntil")}</dt><dd>{resources.To ? formatDateTime(resources.To) : "—"}</dd></div>
+                <div><dt>{t("manage.resources.allocated")}</dt><dd>{formatGB(resources.Allocated.MemoryBytes)}</dd></div>
+                <div><dt>{t("manage.resources.inUse")}</dt><dd>{formatGB(resources.InUse.MemoryBytes)}</dd></div>
+                <div><dt>{t("manage.resources.free")}</dt><dd>{formatGB(resources.Free.MemoryBytes)}</dd></div>
             </dl>
             <ResourceObservationFacts observation={resources.Observation ?? null} stale={query.isError} />
             <section className="event-manage-section">
@@ -79,6 +77,6 @@ export function ResourcesPage() {
                 </table></div>
             </section>
         </>}
-        <ChangeRequestDialog eventID={eventID} open={requesting} onClose={() => setRequesting(false)} onSent={() => void query.refetch()} />
+        <ChangeRequestDialog eventID={eventID} allocated={resources.Allocated} to={resources.To} open={requesting} onClose={() => setRequesting(false)} onSent={() => void query.refetch()} />
     </div>;
 }
