@@ -13,7 +13,7 @@ import {BrandDraftField, useBrandDraft} from "@/components/event/manage/BrandDra
 import {paletteFromLogo} from "@/components/event/manage/paletteFromLogo";
 import {deriveTheme, whiteTextContrast} from "@/components/event/manage/deriveTheme";
 import {useManager} from "@/components/event/manage/ManagerShell";
-import {resolveEventLogoURL} from "@/components/event/EventBrandLogo";
+import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";

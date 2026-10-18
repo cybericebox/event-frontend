@@ -12,7 +12,7 @@ import {chartSeries, spreadLabels} from "./liveChart";
 import {liveSampleSpan} from "./liveSample";
 import {LiveQR} from "./LiveQR";
 import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
-import {resolveEventLogoURL} from "@/components/event/EventBrandLogo";
+import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import {clockLabel} from "@/utils/resultsFreeze";
 import crest from "@/styles/assets/crest-128.png";
 import "./live.css";

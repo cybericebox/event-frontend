@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect} from "react";
-import {resolveEventLogoURL} from "./EventBrandLogo";
+import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 
 // Manager identity is read with the API session, including for unpublished
 // events. Keep its saved icon ahead of the public layout's cached metadata.
