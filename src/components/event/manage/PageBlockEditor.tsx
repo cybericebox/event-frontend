@@ -26,6 +26,7 @@ import {DateVariableFormatControls} from "./DateVariableFormatControls";
 import {updateBlockRichText} from "./richTextBlockUpdate";
 import {t} from "@/i18n/t";
 import {BusyMark} from "@/components/ui/EventButton";
+import {fitImage, fitImageMaxSide} from "@/utils/fitImage";
 import {actionWarning, blockDataWarning, type ActionWarning} from "./previewScenario";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 
@@ -341,13 +342,18 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
     async function uploadBanner(file: File | undefined) {
         if (!file) return;
         setImageError("");
-        if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 5 * 1024 * 1024) {
+        if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
             setImageError(t("manage.blocks.image.invalid"));
             return;
         }
         setUploadingImage(true);
         try {
-            const imageURL = await uploadManageBannerImage(eventID, file);
+            const fitted = await fitImage(file);
+            if (fitted.size > 5 * 1024 * 1024) {
+                setImageError(t("manage.blocks.image.invalid"));
+                return;
+            }
+            const imageURL = await uploadManageBannerImage(eventID, fitted);
             onUpdate(current => ({...current, imageSource: "custom", imageURL}));
         } catch (error) {
             setImageError(imageUploadMessage(error, t("manage.blocks.image.uploadFailed")));
@@ -477,7 +483,7 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
             {["hero", "banner", "facts", "timeline", "doc", "faq", "cta", "countdown", "partners"].includes(block.type) && inputField("title", block.type === "hero" ? t("manage.blocks.field.title") : block.type === "banner" ? t("manage.blocks.field.bannerCaption") : t("manage.blocks.field.heading"), block.type === "banner" || block.type === "cta" ? t("manage.blocks.field.optional") : t("manage.blocks.field.blockTitle"), false, block.type === "hero", block.type === "faq" ? t("manage.blocks.faq.titleHelp") : block.type === "cta" ? t("manage.blocks.cta.titleHelp") : block.type === "countdown" ? t("manage.blocks.countdown.titleHelp") : undefined)}
             {block.type === "banner" && <>
                 <div role="group" aria-label={t("manage.blocks.banner.image")} {...fieldProps("imageSource")} className={`event-manage-field${fieldProblem("imageSource") ? " is-invalid" : ""}`}><FieldLabel label={t("manage.blocks.banner.image")} required help={t("manage.blocks.banner.imageHelp")} /><EventSelect ariaLabel={t("manage.blocks.banner.imageAria")} value={block.imageSource ?? "preview"} options={[{value: "preview", label: coverImage ? t("manage.blocks.banner.cover") : t("manage.blocks.banner.coverMissing"), disabled: !coverImage}, {value: "custom", label: t("manage.blocks.banner.custom")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, imageSource: value})} />{fieldIssue("imageSource")}</div>
-                {block.imageSource === "custom" && <div role="group" aria-label={t("manage.blocks.banner.custom")} {...fieldProps("imageURL")} className={`event-manage-field${fieldProblem("imageURL") ? " is-invalid" : ""}`}><FieldLabel label={t("manage.blocks.banner.custom")} required help={t("manage.blocks.banner.customHelp")} /><label className={`event-brand-drop event-content-editor__upload${imageDragOver ? " is-over" : ""}`} onDragOver={event => {event.preventDefault(); setImageDragOver(true);}} onDragLeave={() => setImageDragOver(false)} onDrop={event => {event.preventDefault(); setImageDragOver(false); if (canEdit && !uploadingImage) void uploadBanner(event.dataTransfer.files[0]);}}>{uploadingImage ? <BusyMark /> : <ImagePlus size={22} />}<span className="event-brand-drop__action"><strong>{block.imageURL ? t("manage.blocks.banner.replace") : t("manage.blocks.banner.attach")}</strong><small>{t("manage.blocks.upload.dropHint")}</small></span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={!canEdit || uploadingImage} onChange={event => void uploadBanner(event.target.files?.[0])} /></label>{block.imageURL && <p className="event-content-editor__hint">{t("manage.blocks.banner.attached")}</p>}{fieldIssue("imageURL")}{imageError && <p className="event-manage-validation" role="alert">{imageError}</p>}</div>}
+                {block.imageSource === "custom" && <div role="group" aria-label={t("manage.blocks.banner.custom")} {...fieldProps("imageURL")} aria-invalid={!!(imageError || fieldErrors.imageURL) || undefined} className={`event-manage-field${imageError || fieldProblem("imageURL") ? " is-invalid" : ""}`}><FieldLabel label={t("manage.blocks.banner.custom")} required help={`${t("manage.blocks.banner.customHelp")}\n\n${t("manage.images.autoShrink", {side: fitImageMaxSide})}`} /><label className={`event-brand-drop event-content-editor__upload${imageDragOver ? " is-over" : ""}`} onDragOver={event => {event.preventDefault(); setImageDragOver(true);}} onDragLeave={() => setImageDragOver(false)} onDrop={event => {event.preventDefault(); setImageDragOver(false); if (canEdit && !uploadingImage) void uploadBanner(event.dataTransfer.files[0]);}}>{uploadingImage ? <BusyMark /> : <ImagePlus size={22} />}<span className="event-brand-drop__action"><strong>{block.imageURL ? t("manage.blocks.banner.replace") : t("manage.blocks.banner.attach")}</strong><small>{t("manage.blocks.upload.dropHint")}</small></span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={!canEdit || uploadingImage} onChange={event => void uploadBanner(event.target.files?.[0])} /></label>{block.imageURL && <p className="event-content-editor__hint">{t("manage.blocks.banner.attached")}</p>}{imageError ? <p id={`block-${block.id}-imageURL-error`} className="event-manage-validation" role="alert">{imageError}</p> : fieldIssue("imageURL")}</div>}
                 <div className="event-manage-field"><FieldLabel label={t("manage.blocks.banner.margins")} required help={t("manage.blocks.banner.marginsHelp")} /><EventSelect ariaLabel={t("manage.blocks.banner.margins")} value={block.variant ?? "frame"} options={[{value: "edge", label: t("manage.blocks.banner.edge")}, {value: "frame", label: t("manage.blocks.banner.frame")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, variant: value})} /></div>
                 {block.title && <div className="event-manage-field"><FieldLabel label={t("manage.blocks.banner.captionPosition")} required help={t("manage.blocks.banner.captionPositionHelp")} /><EventSelect ariaLabel={t("manage.blocks.banner.captionPositionAria")} value={block.layout ?? "left"} options={[{value: "left", label: t("manage.blocks.align.left")}, {value: "center", label: t("manage.blocks.align.center")}, {value: "right", label: t("manage.blocks.align.right")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, layout: value})} /></div>}
                 <label className="event-manage-field"><FieldLabel label={t("manage.blocks.banner.width")} required help={t("manage.blocks.banner.widthHelp")} /><span className="event-content-editor__range"><input type="range" min="50" max="100" step="5" value={block.widthPercent ?? 100} disabled={!canEdit} aria-label={t("manage.blocks.banner.widthAria")} onChange={event => onUpdate({...block, widthPercent: Number(event.target.value)})} /><output>{block.widthPercent ?? 100}%</output></span></label>
@@ -557,16 +563,21 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
                             </li>;
                         })}</ul>}
                         {fieldIssue(`group:${groupIndex}:items`)}
-                        {canEdit && group.items.length < 24 && <label className="event-brand-drop event-content-editor__upload">{logoUpload?.group === groupIndex && logoUpload.busy ? <BusyMark /> : <ImagePlus size={20} />}<span className="event-brand-drop__action"><strong>{t("manage.blocks.partners.addLogo")}</strong><small>{t("manage.blocks.partners.logoHint")}</small></span><input type="file" accept="image/png,image/webp,image/jpeg,image/gif" aria-label={t("manage.blocks.partners.addLogo")} aria-invalid={logoUpload?.group === groupIndex && !!logoUpload.error || undefined} aria-describedby={logoUpload?.group === groupIndex && logoUpload.error ? `block-${block.id}-logo-upload-${groupIndex}-error` : undefined} disabled={logoUpload?.busy} onChange={event => {
+                        {canEdit && group.items.length < 24 && <label className="event-brand-drop event-content-editor__upload">{logoUpload?.group === groupIndex && logoUpload.busy ? <BusyMark /> : <ImagePlus size={20} />}<span className="event-brand-drop__action"><strong>{t("manage.blocks.partners.addLogo")}</strong><small>{t("manage.blocks.partners.logoHint")}. {t("manage.images.autoShrink", {side: fitImageMaxSide})}</small></span><input type="file" accept="image/png,image/webp,image/jpeg,image/gif" aria-label={t("manage.blocks.partners.addLogo")} aria-invalid={logoUpload?.group === groupIndex && !!logoUpload.error || undefined} aria-describedby={logoUpload?.group === groupIndex && logoUpload.error ? `block-${block.id}-logo-upload-${groupIndex}-error` : undefined} disabled={logoUpload?.busy} onChange={event => {
                             const file = event.target.files?.[0];
                             event.target.value = "";
                             if (!file) return;
-                            if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 5 * 1024 * 1024) {
+                            if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
                                 setLogoUpload({group: groupIndex, error: t("manage.blocks.partners.logoInvalid"), busy: false});
                                 return;
                             }
                             setLogoUpload({group: groupIndex, error: "", busy: true});
-                            void uploadManageBannerImage(eventID, file).then(imageURL => {
+                            void fitImage(file).then(fitted => {
+                                if (fitted.size <= 5 * 1024 * 1024) return uploadManageBannerImage(eventID, fitted);
+                                setLogoUpload({group: groupIndex, error: t("manage.blocks.partners.logoInvalid"), busy: false});
+                                return null;
+                            }).then(imageURL => {
+                                if (!imageURL) return;
                                 const name = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 120);
                                 updateGroup(current => ({...current, items: [...current.items, {name, imageURL}]}));
                                 setLogoUpload(null);

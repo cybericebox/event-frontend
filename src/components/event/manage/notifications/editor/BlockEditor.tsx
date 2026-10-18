@@ -23,6 +23,7 @@ import { EventButton } from "@/components/ui/EventButton";
 import { EventSelect } from "@/components/ui/EventSelect";
 import { ManageFieldLabel } from "../../ManageFieldLabel";
 import { RichTextEditor } from "./RichTextEditor";
+import { fitImage, fitImageMaxSide } from "@/utils/fitImage";
 import { defaultBlockForType } from "./emailBlocks";
 import type { BlockPreset, ButtonBlock, EmailBodyBlock, ImageBlock, LogoBlock, PresetBlock } from "./emailBlocks";
 import type { VariableDef } from "./variableUtils";
@@ -101,7 +102,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
   const handleImageUpload = async (key: string, file: File) => {
     setUploadState((prev) => ({ ...prev, [key]: { uploading: true, error: null } }));
     try {
-      const fileID = await onUploadImage(file);
+      const fileID = await onUploadImage(await fitImage(file));
       const idx = latestKeysRef.current.indexOf(key);
       const current = idx === -1 ? undefined : latestValueRef.current[idx];
       // Block gone (removed while uploading) or no longer an image block: drop
@@ -219,7 +220,7 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
               <div className="space-y-3">
                 {/* A plain URL or an uploaded file: the two are mutually exclusive. */}
                 <div className="event-manage-field">
-                  <ManageFieldLabel title={t("manage.tpl.editor.imageUrl")} help={t("manage.tpl.editor.imageUrlHelp")} htmlFor={`event-block-${stableKey}-image`} />
+                  <ManageFieldLabel title={t("manage.tpl.editor.imageUrl")} help={`${t("manage.tpl.editor.imageUrlHelp")}\n\n${t("manage.images.autoShrink", {side: fitImageMaxSide})}`} htmlFor={`event-block-${stableKey}-image`} />
                   <input id={`event-block-${stableKey}-image`} className="event-manage-input" disabled={disabled} value={(block as ImageBlock).url ?? ""}
                     onChange={(e) => updateBlock(i, { ...(block as ImageBlock), url: e.target.value, file_id: undefined })} placeholder="https://example.com/image.png" />
                 </div>
