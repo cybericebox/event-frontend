@@ -63,7 +63,8 @@ import {GeistMono} from "geist/font/mono";
 import {Providers} from "@/utils/providers";
 import {AppShell} from "@/components/event/AppShell";
 import {EventActionToaster} from "@/components/ui/EventActionToaster";
-import {headers} from "next/headers";
+import {cookies, headers} from "next/headers";
+import {PREVIEW_COOKIE, parsePreviewCookie} from "@/utils/previewCookie";
 import {getPublicEventInfo, PublicEventError} from "@/api/publicEventInfo";
 import {getGrantedEvent} from "@/api/grantedEvent";
 import {loadFailure} from "@/utils/loadFailure";
@@ -119,6 +120,8 @@ export default async function RootLayout({
     const requestHeaders = await headers();
     const nonce = requestHeaders.get("x-nonce") ?? undefined;
     const serverPath = requestHeaders.get("x-event-pathname") ?? "/";
+    // Only hides staff UI in the first HTML; the backend and the preview grant decide access.
+    const previewCookie = parsePreviewCookie((await cookies()).get(PREVIEW_COOKIE)?.value);
     const commonPage = commonPageSlug(serverPath);
     let privateEvent: Awaited<ReturnType<typeof getPublicEventInfo>> = null;
     let hasGrant = false;
@@ -177,7 +180,7 @@ export default async function RootLayout({
         <body className="event-root">
         <Providers>
             <EventBrandProvider logoURL={brandUnknown ? null : known?.LogoURL ?? ""} faviconURL={known?.FaviconURL} name={known?.Name ?? ""} persist={!event && !!known}>
-            <AppShell event={event} privateEvent={privateEvent ?? undefined} unavailable={unavailable} failure={failure}>
+            <AppShell previewCookie={previewCookie} event={event} privateEvent={privateEvent ?? undefined} unavailable={unavailable} failure={failure}>
                 {children}
             </AppShell>
             </EventBrandProvider>

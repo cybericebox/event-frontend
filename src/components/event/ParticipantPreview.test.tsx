@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
+// @vitest-environment-options {"url": "https://event.test/"}
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {readPreviewCookie} from "@/utils/previewCookie";
 import {ParticipantPreviewProvider, ParticipantPreviewEntry, previewAnswerFile, useParticipantPreview} from "./ParticipantPreview";
 
 const api = vi.hoisted(() => ({pathname: "/join", reset: vi.fn(), toastError: vi.fn(), push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
@@ -29,7 +31,7 @@ async function openMenu() {
     return screen.findByRole("menu");
 }
 
-beforeEach(() => {sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.reset.mockResolvedValue(undefined); api.access.mockResolvedValue({CanManage: true});});
+beforeEach(() => {document.cookie = "cib_participant_preview=; Path=/; Max-Age=0"; sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.reset.mockResolvedValue(undefined); api.access.mockResolvedValue({CanManage: true});});
 afterEach(cleanup);
 
 it("persists local state, clears owned server runs before resetting registration, and exits to management", async () => {
@@ -170,4 +172,28 @@ it.each([
     expect(screen.queryAllByRole("menuitemradio")).toHaveLength(relevant ? 3 : 0);
     expect(screen.getByRole("menuitem", {name: "Почати спочатку"})).toBeTruthy();
     expect(screen.getByRole("menuitem", {name: "Вийти з тестування"})).toBeTruthy();
+});
+
+it("sets the mode cookie when the mode starts and clears it on exit", async () => {
+    view();
+    expect(readPreviewCookie()).toBeNull();
+    fireEvent.click(screen.getByRole("button", {name: "Тестувати як учасник"}));
+    expect(readPreviewCookie()).toBe("event-1");
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", {name: "Вийти з тестування"}));
+    expect(readPreviewCookie()).toBeNull();
+});
+
+it("initial client state equals the server render: the cookie hint is on before any query answers", () => {
+    document.cookie = "cib_participant_preview=event-1; Path=/; Secure";
+    const client = new QueryClient();
+    function Hint() {return <output data-testid="hint">{String(useParticipantPreview("event-1").hinted)}</output>;}
+    const {container} = render(<QueryClientProvider client={client}><ParticipantPreviewProvider serverCookie="event-1"><Hint /></ParticipantPreviewProvider></QueryClientProvider>);
+    expect(container.querySelector("[data-testid=hint]")?.textContent).toBe("true");
+});
+
+it("drops a stale cookie when no valid mode stands behind it", async () => {
+    document.cookie = "cib_participant_preview=event-1; Path=/; Secure";
+    view();
+    await waitFor(() => expect(readPreviewCookie()).toBeNull());
 });
