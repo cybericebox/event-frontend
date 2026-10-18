@@ -159,7 +159,10 @@ src=/etc/cybericebox/nginx
 run=/tmp/nginx
 conf=$run/nginx.conf
 mkdir -p "$run"
-vars='${HTTP_PORT} ${HTTPS_PORT} ${HEALTH_PORT} ${HEALTH_BIND} ${TLS_CERT_FILE} ${TLS_KEY_FILE} ${TLS_PROTOCOLS} ${TLS_CLIENT_CA_FILE} ${TLS_CLIENT_VERIFY} ${NGINX_LIMIT_CONN}'
+# The domain as a regular expression for the $misdirected map (the dots are the only special characters of a valid domain).
+PLATFORM_HOST_DOMAIN_RE=$(printf '%s' "$NEXT_PUBLIC_DOMAIN" | sed 's/\./\\./g')
+export PLATFORM_HOST_DOMAIN_RE
+vars='${HTTP_PORT} ${HTTPS_PORT} ${HEALTH_PORT} ${HEALTH_BIND} ${TLS_CERT_FILE} ${TLS_KEY_FILE} ${TLS_PROTOCOLS} ${TLS_CLIENT_CA_FILE} ${TLS_CLIENT_VERIFY} ${NGINX_LIMIT_CONN} ${PLATFORM_HOST_DOMAIN_RE}'
 render() {
   envsubst "$vars" < "$src/$1" > "$run/$1"
 }
