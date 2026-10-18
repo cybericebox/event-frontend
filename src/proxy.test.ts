@@ -1,0 +1,48 @@
+import {NextRequest} from "next/server";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+
+const read = vi.hoisted(() => vi.fn());
+vi.mock("@/api/publicFetch", () => ({fetchPublic: read}));
+
+import {proxy} from "./proxy";
+
+let counter = 0;
+const request = (host: string, path = "/") => new NextRequest(`https://${host}${path}`, {headers: {host}});
+const host = () => `h${++counter}.example.test`;
+
+beforeEach(() => {read.mockReset();});
+afterEach(() => {vi.clearAllMocks();});
+
+describe("event site status", () => {
+    it("answers 404 for an unknown host on every route", async () => {
+        const h = host();
+        read.mockResolvedValue({status: 404, body: null});
+        for (const path of ["/", "/faq", "/p/rules", "/scoreboard"]) expect((await proxy(request(h, path))).status).toBe(404);
+    });
+    it("answers 404 for a hidden event read anonymously (the API gives the same 404)", async () => {
+        read.mockResolvedValue({status: 404, body: null});
+        expect((await proxy(request(host()))).status).toBe(404);
+    });
+    it("answers 200 for a public event landing", async () => {
+        read.mockResolvedValue({status: 200, body: {}});
+        expect((await proxy(request(host()))).status).toBe(200);
+    });
+    it("keeps 200 when the API is unreachable or fails", async () => {
+        read.mockRejectedValueOnce(new Error("down"));
+        expect((await proxy(request(host()))).status).toBe(200);
+        read.mockResolvedValueOnce({status: 503, body: null});
+        expect((await proxy(request(host()))).status).toBe(200);
+    });
+    it("remembers an unknown host for the negative window without asking the API again", async () => {
+        const h = host();
+        read.mockResolvedValue({status: 404, body: null});
+        await proxy(request(h));
+        await proxy(request(h, "/faq"));
+        expect(read).toHaveBeenCalledTimes(1);
+    });
+    it("still sets the CSP and nonce on a 404", async () => {
+        read.mockResolvedValue({status: 404, body: null});
+        const response = await proxy(request(host()));
+        expect(response.headers.get("Content-Security-Policy")).toContain("nonce-");
+    });
+});
