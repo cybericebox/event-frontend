@@ -82,7 +82,6 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
                     <VpnCommand value={t("vpn.steps.command", {filename: eventVpnFileName(eventTag)})} />
                     <p className="event-vpn-note">{t("vpn.steps.down")}</p>
                     <VpnCommand value={t("vpn.steps.downCommand", {filename: eventVpnFileName(eventTag)})} />
-                    <p className="event-vpn-note">{t("vpn.steps.keepFile")}</p>
                 </div>
             </div></li>
             {probeData && <li>{richMessage(t("vpn.steps.checkProbe"), {
