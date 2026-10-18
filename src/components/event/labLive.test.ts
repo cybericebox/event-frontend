@@ -1,17 +1,20 @@
 import {describe, expect, it} from "vitest";
-import {agoText, deviceStateLabel, failureReasonLabel, queueLine, sizeText, startingNote} from "./labLive";
+import {agoText, deviceStateLabel, failureReasonLabel, queueLineStaff, sizeText, startingNote} from "./labLive";
 
 const queue = {Position: 2, Length: 5, Reason: "WaitingForTurn", Message: "", Pods: 3, Pending: 3};
 
 describe("lab live text", () => {
-    it("shows one plain starting line, with no position or reason", () => {
-        expect(queueLine(queue)).toBe("Готуємо лабораторію…");
-        expect(queueLine({...queue, Reason: "SomethingNew"})).toBe("Готуємо лабораторію…");
+    it("tells staff how many labs are ahead, without the total", () => {
+        expect(queueLineStaff({...queue, Position: 3, Reason: "PreparingImages"})).toBe("У черзі, перед нею ще 2. Готуємо образи пристроїв.");
+        expect(queueLineStaff({...queue, Position: 1, Reason: "WaitingForTurn"})).toBe("Наступна в черзі.");
+        expect(queueLineStaff(queue)).toBe("У черзі, перед нею ще 1.");
+        expect(queueLineStaff({...queue, Reason: "TenantQuota"})).toContain("ліміту");
+        expect(queueLineStaff({...queue, Reason: "SomethingNew"})).not.toContain("SomethingNew");
     });
 
     it("shows no line when no queue exists or everything is dispatched", () => {
-        expect(queueLine(null)).toBeNull();
-        expect(queueLine({...queue, Position: 0})).toBeNull();
+        expect(queueLineStaff(null)).toBeNull();
+        expect(queueLineStaff({...queue, Position: 0})).toBeNull();
     });
 
     it("picks the second line by reason, only after the long wait", () => {
