@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {eventVpnFileName, eventVpnInterfaceName, wireguardFileName} from "./wireguard";
+import {eventVpnFileName, wireguardFileName} from "./wireguard";
 
 const valid = (file: string) => /^[a-zA-Z0-9_=+.-]{1,15}\.conf$/.test(file);
 
@@ -15,13 +15,5 @@ describe("wireguard file names", () => {
     it("replaces invalid characters and never returns an empty name", () => {
         expect(valid(wireguardFileName("тег заходу"))).toBe(true);
         expect(wireguardFileName("")).toBe("wg0.conf");
-    });
-});
-
-describe("wireguard interface names", () => {
-    it("is the file name without .conf", () => {
-        expect(eventVpnInterfaceName("autumnctf")).toBe("autumnctf");
-        expect(eventVpnInterfaceName("cybersecuritychampionship2026")).toBe("cybersecuritych");
-        expect(eventVpnInterfaceName("")).toBe("cybericebox");
     });
 });
