@@ -6,10 +6,13 @@ import {t} from "@/i18n/t";
 // block, plus an optional line for a specific loading stage. `label` is read by
 // screen readers only. The block keeps the EmptyState size, so loading → empty
 // never jumps.
-export function EventLoading({event, label, message, full = false, compact = false}: {
+export function EventLoading({event, label, message, note, noteShown = true, full = false, compact = false}: {
     event?: PublicEventInfo | null;
     label?: string;
     message?: string;
+    // A second line that is always laid out (hidden until `noteShown`), so showing it never moves the block.
+    note?: string;
+    noteShown?: boolean;
     full?: boolean;
     compact?: boolean;
 }) {
@@ -17,5 +20,6 @@ export function EventLoading({event, label, message, full = false, compact = fal
     return <div className={className} role="status" aria-label={label ?? message ?? t("common.loading")}>
         <EventBrandLogo event={event} className="event-loading-logo" size={compact ? 40 : 64} />
         {message && <span className="event-loading-label" aria-hidden="true">{message}</span>}
+        {note && <span className="event-loading-label event-loading-note" aria-hidden="true" style={noteShown ? undefined : {visibility: "hidden"}}>{note}</span>}
     </div>;
 }

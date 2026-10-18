@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import {act} from "react";
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {cleanup, fireEvent, render, screen} from "@testing-library/react";
 import {LabAccessBlock} from "./LabAccessBlock";
@@ -34,5 +35,59 @@ describe("LabAccessBlock", () => {
         expect(view.container.querySelector("[data-load-error]")).toBeNull();
         view.rerender(<LabAccessBlock lab={{...stale, Lab: null}} lifecycle={null} pending={false} link={{status: "idle"}} busyKey={null} {...actions} />);
         expect(view.container.querySelector(".ib-copy")).toBeTruthy();
+    });
+
+    describe("starting lab", () => {
+        const empty = {...runtimeFixture, Access: [], Ready: false, Phase: "Pending"};
+        const queue = (Reason: string) => ({...empty, Queue: {Position: 1, Length: 1, Reason, Message: "", Pods: 1, Pending: 1}});
+        const renderStarting = (lab: typeof empty) => {
+            const actions = callbacks();
+            return render(<LabAccessBlock lab={lab} lifecycle={{...runningLab, RuntimeState: "preparing"}} pending={false} link={{status: "idle"}} busyKey={null} {...actions} />);
+        };
+        const visibleNote = (container: HTMLElement) => {
+            const note = container.querySelector<HTMLElement>(".event-loading-note");
+            return note && note.style.visibility !== "hidden" ? note.textContent : null;
+        };
+        afterEach(() => vi.useRealTimers());
+
+        it("shows the plain starting line without a queue position", () => {
+            vi.useFakeTimers();
+            const {container} = renderStarting(queue("WaitingForTurn"));
+            expect(screen.getByRole("status").getAttribute("aria-label")).toBe("Готуємо лабораторію…");
+            expect(container.textContent).not.toMatch(/черз|1 із/);
+            expect(visibleNote(container)).toBeNull();
+        });
+        it("adds the long-wait line after 30 s", () => {
+            vi.useFakeTimers();
+            const {container} = renderStarting(queue("PreparingImages"));
+            act(() => { vi.advanceTimersByTime(29_999); });
+            expect(visibleNote(container)).toBeNull();
+            act(() => { vi.advanceTimersByTime(1); });
+            expect(visibleNote(container)).toContain("Ще трохи — готуємо все для вас.");
+        });
+        it.each(["InsufficientResources", "NoSchedulableNodes", "TenantQuota"])("shows the no-resources line for %s only after 30 s", reason => {
+            vi.useFakeTimers();
+            const {container} = renderStarting(queue(reason));
+            act(() => { vi.advanceTimersByTime(29_999); });
+            expect(visibleNote(container)).toBeNull();
+            act(() => { vi.advanceTimersByTime(1); });
+            expect(visibleNote(container)).toBe("Зараз бракує ресурсів. Лабораторія запуститься, щойно вони звільняться.");
+        });
+        it("does not restart the wait when the reason changes", () => {
+            vi.useFakeTimers();
+            const actions = callbacks();
+            const view = renderStarting(queue("WaitingForTurn"));
+            act(() => { vi.advanceTimersByTime(20_000); });
+            view.rerender(<LabAccessBlock lab={queue("TenantQuota")} lifecycle={{...runningLab, RuntimeState: "preparing"}} pending={false} link={{status: "idle"}} busyKey={null} {...actions} />);
+            act(() => { vi.advanceTimersByTime(10_000); });
+            expect(visibleNote(view.container)).toContain("бракує ресурсів");
+        });
+        it("still shows the error on failure", () => {
+            vi.useFakeTimers();
+            const actions = callbacks();
+            const {container} = render(<LabAccessBlock lab={{...queue("WaitingForTurn"), Phase: "failed"}} lifecycle={{...runningLab, RuntimeState: "preparing"}} pending={false} link={{status: "idle"}} busyKey={null} {...actions} />);
+            expect(container.querySelector("[data-load-error]")).toBeTruthy();
+            expect(container.querySelector(".event-loading-note")).toBeNull();
+        });
     });
 });
