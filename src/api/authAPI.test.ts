@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
+// @vitest-environment-options {"url": "https://event.test/"}
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
 
 vi.mock("@/utils/origins", () => ({requireApiOrigin: () => "https://api.example.test"}));
 import {signOut} from "./authAPI";
+import {readPreviewCookie, setPreviewCookie} from "@/utils/previewCookie";
 import {readCachedLogo, writeCachedBrand} from "@/utils/eventBrandCache";
 
 beforeEach(() => {window.localStorage.clear();});
@@ -31,4 +33,12 @@ it("still signs out when the session cleanup request fails", async () => {
 it("reports a failed sign-out", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(null, {status: url === "/api/event-session" ? 204 : 500})));
     await expect(signOut()).rejects.toThrow("Sign-out failed");
+});
+
+it("clears the participant preview cookie when signing out", async () => {
+    setPreviewCookie("event-1");
+    expect(readPreviewCookie()).toBe("event-1");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, {status: 204})));
+    await signOut();
+    expect(readPreviewCookie()).toBeNull();
 });

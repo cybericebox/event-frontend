@@ -31,6 +31,8 @@ type Props = {
     unavailable: boolean;
     // The server read of the event failed with an error of our backend: the 500 page, not the outage overlay.
     failure?: {status: number; requestId?: string};
+    // The «view as participant» cookie as the server read it: the first render already hides the staff UI.
+    previewCookie?: string | null;
 };
 
 // The outage modal is mounted once over every shell state; the page stays underneath.
@@ -38,7 +40,7 @@ export function AppShell(props: Props) {
     // The event was deleted while the site was open: the same screen as for an event that never existed.
     const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
     if (gone) return <EventUnavailableScreen />;
-    return <ParticipantPreviewProvider>
+    return <ParticipantPreviewProvider serverCookie={props.previewCookie ?? null}>
         <div id={APP_ROOT_ID}><ShellContent {...props} /></div>
         <EventServiceStatusGate serverUnavailable={props.unavailable} />
     </ParticipantPreviewProvider>;

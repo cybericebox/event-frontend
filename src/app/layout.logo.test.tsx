@@ -1,7 +1,7 @@
 import {isValidElement, type ReactNode} from "react";
 import {afterEach, expect, it, vi} from "vitest";
 const server = vi.hoisted(() => ({event: null as null | Record<string, unknown>, preload: vi.fn(), grant: false, staff: null as null | Record<string, unknown>}));
-vi.mock("next/headers", () => ({headers: async () => new Headers({"x-event-pathname": "/"})}));
+vi.mock("next/headers", () => ({cookies: async () => ({get: () => undefined}), headers: async () => new Headers({"x-event-pathname": "/"})}));
 vi.mock("geist/font/sans", () => ({GeistSans: {variable: "sans"}}));
 vi.mock("geist/font/mono", () => ({GeistMono: {variable: "mono"}}));
 vi.mock("react-dom", async () => ({...(await vi.importActual<object>("react-dom")), preload: server.preload}));
