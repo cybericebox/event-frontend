@@ -2,7 +2,7 @@ import {NextRequest} from "next/server";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 
 const read = vi.hoisted(() => vi.fn());
-const grants = vi.hoisted(() => ({has: vi.fn(async (_host: string | null, _token?: string) => false)}));
+const grants = vi.hoisted(() => ({has: vi.fn<(host: string | null, token?: string) => Promise<boolean>>(async () => false)}));
 vi.mock("@/api/publicFetch", () => ({fetchPublic: read}));
 vi.mock("@/utils/server/staffGrant", () => ({READ_COOKIE: "__Host-cib-event-read", hasStaffGrant: grants.has}));
 
