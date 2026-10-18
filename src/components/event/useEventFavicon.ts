@@ -9,14 +9,21 @@ export function useEventFavicon(faviconURL: string | undefined) {
     useEffect(() => {
         if (faviconURL === undefined) return;
         const source = resolveEventLogoURL(faviconURL) ?? "/platform-favicon.ico";
+        // React owns the <link rel="icon"> of the route metadata (a hoisted element it removes on navigation):
+        // never remove or move those nodes, only set the attributes, or React's later removal throws.
         const apply = () => {
             const icons = [...document.head.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]')];
-            const icon = icons[0] ?? document.createElement("link");
-            if (icon.rel !== "icon") icon.rel = "icon";
-            if (icon.getAttribute("href") !== source) icon.setAttribute("href", source);
-            icon.type = source === "/platform-favicon.ico" ? "image/x-icon" : "image/png";
-            if (!icon.parentNode) document.head.append(icon);
-            icons.slice(1).forEach(other => other.remove());
+            if (!icons.length) {
+                const created = document.createElement("link");
+                created.rel = "icon";
+                document.head.append(created);
+                icons.push(created);
+            }
+            for (const icon of icons) {
+                if (icon.getAttribute("href") !== source) icon.setAttribute("href", source);
+                const type = source === "/platform-favicon.ico" ? "image/x-icon" : "image/png";
+                if (icon.type !== type) icon.type = type;
+            }
         };
         apply();
         const observer = new MutationObserver(apply);
