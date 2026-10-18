@@ -38,6 +38,18 @@ export function writeCachedBrand(brand: {logo: string; favicon?: string}): void 
     if (brand.favicon !== undefined) write(FAVICON_PREFIX, brand.favicon);
 }
 
+// The remembered branding of a private event must not outlive the access to it: sign-out and a denied access clear it.
+export function clearCachedBrand(): void {
+    try {
+        const h = host();
+        if (!h) return;
+        window.localStorage.removeItem(LOGO_PREFIX + h);
+        window.localStorage.removeItem(FAVICON_PREFIX + h);
+    } catch {
+        // storage blocked: nothing was remembered
+    }
+}
+
 export function subscribeCachedBrand(onChange: () => void): () => void {
     window.addEventListener("storage", onChange);
     return () => window.removeEventListener("storage", onChange);

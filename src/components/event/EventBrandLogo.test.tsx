@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {afterEach, beforeEach, expect, it} from "vitest";
+import {afterEach, beforeEach, expect, it, vi} from "vitest";
 import {cleanup, render} from "@testing-library/react";
 import {EventBrandLogo, EventBrandProvider} from "./EventBrandLogo";
 import {EventLoading} from "./EventLoading";
@@ -58,5 +58,33 @@ it("remembers the known logo for the next load and forgets a removed one", () =>
 
 it("does not remember when persisting is off", () => {
     render(<EventBrandProvider logoURL="" persist={false}><span /></EventBrandProvider>);
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+});
+
+it("clears the remembered branding when the access is denied", async () => {
+    const {clearCachedBrand} = await import("@/utils/eventBrandCache");
+    window.localStorage.setItem(KEY, LOGO);
+    window.localStorage.setItem(`cib:event-favicon:${window.location.host}`, LOGO);
+    clearCachedBrand();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+    expect(window.localStorage.getItem(`cib:event-favicon:${window.location.host}`)).toBeNull();
+});
+
+it("clears the remembered branding on sign-out", async () => {
+    const {signOut} = await import("@/api/authAPI");
+    window.localStorage.setItem(KEY, LOGO);
+    const fetchMock = vi.fn(async () => new Response("{}", {status: 200}));
+    vi.stubGlobal("fetch", fetchMock);
+    await signOut();
+    vi.unstubAllGlobals();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+});
+
+it("clears the remembered branding on the not-found screen", async () => {
+    window.localStorage.setItem(KEY, LOGO);
+    const {render: r} = await import("@testing-library/react");
+    const {QueryClient, QueryClientProvider} = await import("@tanstack/react-query");
+    const {EventUnavailableScreen} = await import("./EventUnavailableScreen");
+    r(<QueryClientProvider client={new QueryClient()}><EventUnavailableScreen /></QueryClientProvider>);
     expect(window.localStorage.getItem(KEY)).toBeNull();
 });
