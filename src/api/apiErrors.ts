@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {parseRetryAfterSeconds} from "./retry";
+import {isOverloadError, parseRetryAfterSeconds} from "./retry";
 
 // Backend full codes are informCode*10000 + objectCode*100 + detailCode.
 // The UI matches on objectCode*100 + detailCode so a changed HTTP class
@@ -99,6 +99,12 @@ export function errorDetailCode(code: number | undefined): number | undefined {
 // (the port contract of api/retry.ts), so isOverloadError and the overloaded message see it.
 export function readRetryAfter(response: Response): number | undefined {
     return parseRetryAfterSeconds(response.headers?.get("Retry-After") ?? null);
+}
+
+// A failure the server answered as busy or over a limit (a 429, the overload signal): the client already retried the
+// GET (fetchWithOverloadRetry), so React Query must not add more tries. Not for messages: a 429 keeps its own text.
+export function isOverloadOrRateLimit(error: unknown): boolean {
+    return isOverloadError(error) || (error instanceof Error && (error as {status?: unknown}).status === 429);
 }
 
 // The detail code and the public context (what the server marked safe to show, e.g. the teams of a conflict) of an error answer.
