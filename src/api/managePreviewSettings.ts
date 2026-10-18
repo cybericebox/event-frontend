@@ -5,7 +5,7 @@ import {requireApiOrigin} from "@/utils/origins";
 const selection = z.object({ID: z.string().uuid().optional(), ExerciseVersionID: z.string().uuid(), VariantID: z.string().uuid(), Name: z.string().optional(), VariantIndex: z.number().optional(), VariantPosition: z.number().optional()});
 const selections = z.array(selection).nullish().transform(value => value ?? []);
 const settings = z.object({DefaultSelections: selections, DefaultGroupName: z.string(), DynamicAllocated: z.boolean(), GroupName: z.string(), GroupNameOverride: z.string().nullable(), Inherit: z.boolean(), Selections: selections, EffectiveSelections: selections});
-const catalog = z.array(z.object({ID: z.string().uuid(), ExerciseVersionID: z.string().uuid(), Name: z.string(), Infrastructure: z.boolean(), Variants: z.array(z.object({ID: z.string().uuid(), Index: z.number().int(), Position: z.number().int(), Infrastructure: z.boolean().default(false)}))}));
+const catalog = z.array(z.object({ID: z.string().uuid(), ExerciseVersionID: z.string().uuid(), Name: z.string(), Infrastructure: z.boolean(), Eligible: z.boolean().default(true), Reason: z.string().nullish().transform(value => value ?? ""), Variants: z.array(z.object({ID: z.string().uuid(), Index: z.number().int(), Position: z.number().int(), Infrastructure: z.boolean().default(false)}))}));
 export type PreviewSelection = z.infer<typeof selection>;
 export type PreviewSettings = z.infer<typeof settings>;
 export type PreviewSettingsDraft = Pick<PreviewSettings, "Inherit" | "Selections" | "GroupNameOverride">;
