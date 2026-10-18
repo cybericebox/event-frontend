@@ -2,8 +2,9 @@
 import {useEffect} from "react";
 import {useRouter} from "next/navigation";
 import {isNetworkOutage,reportServiceUnavailable} from "@/utils/serviceStatus";
-/** Visitors notice content edits within a minute; an editor previewing with a staff grant sees them within seconds. */
-const VISITOR_POLL_MS=60_000;
+/** A visitor never polls: the revision is checked when the tab becomes visible again, at most once per minute.
+ *  An editor previewing with a staff grant polls every few seconds to see live edits. */
+const VISIBLE_CHECK_MIN_GAP_MS=60_000;
 const STAFF_PREVIEW_POLL_MS=3_000;
 export function CommonPageWatcher({revision,page="",staffPreview=false}:{revision:string|null;page?:string;staffPreview?:boolean}) {
     const router=useRouter();
@@ -26,8 +27,16 @@ export function CommonPageWatcher({revision,page="",staffPreview=false}:{revisio
                 if (!stopped && isNetworkOutage(error,controller.signal)) reportServiceUnavailable();
             }
         }
-        const timer=window.setInterval(()=>{void check();},staffPreview ? STAFF_PREVIEW_POLL_MS:VISITOR_POLL_MS);
-        const visible=()=>{if(document.visibilityState!=="hidden") void check();};
+        const timer=staffPreview ? window.setInterval(()=>{void check();},STAFF_PREVIEW_POLL_MS):undefined;
+        let lastVisibleCheck=-Infinity;
+        const visible=()=>{
+            if(document.visibilityState==="hidden") return;
+            if(!staffPreview) {
+                if(Date.now()-lastVisibleCheck<VISIBLE_CHECK_MIN_GAP_MS) return;
+                lastVisibleCheck=Date.now();
+            }
+            void check();
+        };
         document.addEventListener("visibilitychange",visible);
         return ()=>{stopped=true;controller.abort();window.clearInterval(timer);document.removeEventListener("visibilitychange",visible);};
     },[revision,page,router,staffPreview]);

@@ -5,6 +5,7 @@ import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser} from "@/api/clientAuth";
 import {idOrigin} from "@/utils/origins";
 import {signInRedirectTarget} from "@/utils/signInRedirect";
+import {clearCachedBrand} from "@/utils/eventBrandCache";
 import {t} from "@/i18n/t";
 import {ErrorPage} from "./ErrorPage";
 
@@ -19,6 +20,7 @@ export function EventUnavailableScreen() {
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
     useEffect(() => {
         document.title = t("shell.eventUnavailable.title");
+        clearCachedBrand();
     }, []);
     // getCurrentUser answers null for a 401; any other failed answer says nothing about the session,
     // while a request that never got an answer (offline) offers the sign-in.

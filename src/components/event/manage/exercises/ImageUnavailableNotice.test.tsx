@@ -34,8 +34,8 @@ describe("Образ недоступний", () => {
         expect(alert.textContent).toContain("приватний або не існує");
         expect(alert.textContent).toContain("два різні токени");
         // The line is one message with the image and the reason as variables.
-        expect(alert.querySelector("li")?.innerHTML).toBe("<code>acme/web:1</code> — приватний або не існує. Docker Hub відповідає так само на відсутній образ; для приватного додайте облікові дані сховища.");
-        expect(screen.getByRole("link", {name: "Додати облікові дані"}).getAttribute("href")).toBe("/manage/registries");
+        expect(alert.querySelector("li")?.innerHTML).toBe("<code>acme/web:1</code> — приватний або не існує. Docker Hub відповідає так само на відсутній образ; для приватного додайте облікові дані реєстру.");
+        expect(screen.getByRole("link", {name: "Додати облікові дані"}).getAttribute("href")).toBe("/manage/private-registries");
     });
 
     it("words the image line through one message in both languages", () => {

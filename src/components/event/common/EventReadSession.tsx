@@ -4,6 +4,7 @@ import {usePathname,useRouter} from "next/navigation";
 import {apiOrigin} from "@/utils/origins";
 import {commonPageSlug} from "@/utils/commonPagePath";
 import {resetEventGone} from "@/utils/eventGone";
+import {clearCachedBrand} from "@/utils/eventBrandCache";
 import {CommonPageWatcher} from "./CommonPageWatcher";
 const localHeaders={"Content-Type":"application/json","x-cib-event-session":"1"};
 type Props={hasGrant:boolean;expiresAt?:number;serverPath:string;revision:string|null;publicEvent:boolean};
@@ -61,6 +62,7 @@ function GrantSynchronizer({hasGrant,expiresAt}:{hasGrant:boolean;expiresAt?:num
                     signedOut.current=grant.status===401;
                     retryAfter=signedOut.current ? null:40_000;
                     failures=0;
+                    clearCachedBrand();
                     await fetch("/api/event-session",{method:"DELETE",headers:localHeaders,cache:"no-store",signal:controller.signal});
                     if (!stopped && installedGrant) {installedGrant=false;expiry=0;router.refresh();}
                     return;
