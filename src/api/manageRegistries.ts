@@ -105,8 +105,8 @@ export async function checkRegistrySecret(eventID: string, secretID: string): Pr
     return request(eventID, `registry-secrets/${encodeURIComponent(secretID)}/check`, secretSchema, "POST", {});
 }
 
-const checkReasons = ["unauthorized"] as const;
-const checkFailures = ["unreachable", "rate_limited", "not_found", "not_configured"] as const;
+const checkReasons = ["unauthorized", "not_found"] as const;
+const checkFailures = ["unreachable", "rate_limited", "not_configured"] as const;
 
 // «Перевірено: 18 жовт. 2026 р., 15:00 — працює» / «… — не працює: <причина>» / «ще не перевірено».
 export function registryCheckText(check: RegistryCheck): string {
