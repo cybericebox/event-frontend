@@ -12,7 +12,11 @@ describe("event read grants", () => {
     it("accepts the correct purpose/audience with a bounded lifetime", () => {
         expect(verifyRenderGrant(token(), key, claims.aud, 120)?.event_id).toBe(claims.event_id);
     });
-    it.each([{exp: 120}, {exp: 161}, {iat: 121}, {aud: "https://two.example.test"}, {scope: "admin"}, {event_id: "bad"}, {preview: "true"}, {challenge: "bad"}])("rejects invalid claims %j", change => {
+    it("accepts a five-minute grant and no longer one", () => {
+        expect(verifyRenderGrant(token({exp: 400}), key, claims.aud, 120)).not.toBeNull();
+        expect(verifyRenderGrant(token({exp: 401}), key, claims.aud, 120)).toBeNull();
+    });
+    it.each([{exp: 120}, {exp: 401}, {iat: 121}, {aud: "https://two.example.test"}, {scope: "admin"}, {event_id: "bad"}, {preview: "true"}, {challenge: "bad"}])("rejects invalid claims %j", change => {
         expect(verifyRenderGrant(token(change), key, claims.aud, 120)).toBeNull();
     });
     it("rejects tampering, other algorithms and oversize tokens", () => {

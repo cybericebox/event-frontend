@@ -7,6 +7,8 @@ import {resetEventGone} from "@/utils/eventGone";
 import {clearCachedBrand} from "@/utils/eventBrandCache";
 import {CommonPageWatcher} from "./CommonPageWatcher";
 const localHeaders={"Content-Type":"application/json","x-cib-event-session":"1"};
+/** A grant lives 5 minutes; it is renewed this long before it expires, so a visible tab never renders on an expired one. */
+export const RENEW_BEFORE_MS=60_000;
 type Props={hasGrant:boolean;expiresAt?:number;serverPath:string;revision:string|null;publicEvent:boolean};
 /** Root layouts survive navigation. Activate common reads from the live client path. */
 export function EventReadSession({hasGrant,expiresAt,serverPath,revision,publicEvent}:Props) {
@@ -31,7 +33,7 @@ export function EventReadSession({hasGrant,expiresAt,serverPath,revision,publicE
 }
 
 /** The primary API session stays on its API host. Reuse verified read cookies until renewal is due. */
-function GrantSynchronizer({hasGrant,expiresAt}:{hasGrant:boolean;expiresAt?:number}) {
+export function GrantSynchronizer({hasGrant,expiresAt}:{hasGrant:boolean;expiresAt?:number}) {
     const router=useRouter();
     const signedOut=useRef(false);
     useEffect(()=>{
@@ -46,7 +48,7 @@ function GrantSynchronizer({hasGrant,expiresAt}:{hasGrant:boolean;expiresAt?:num
         }
         async function sync() {
             if (running || stopped || document.visibilityState==="hidden") return;
-            const remaining=expiry*1000-Date.now()-15_000;
+            const remaining=expiry*1000-Date.now()-RENEW_BEFORE_MS;
             if (installedGrant && remaining>0) {schedule(remaining);return;}
             running=true;
             window.clearTimeout(timer);
@@ -75,7 +77,7 @@ function GrantSynchronizer({hasGrant,expiresAt}:{hasGrant:boolean;expiresAt?:num
                 if (!stopped) {
                     const firstGrant=!installedGrant;
                     installedGrant=true;expiry=data.ExpiresAt;failures=0;
-                    retryAfter=Math.max(5000,expiry*1000-Date.now()-15_000);
+                    retryAfter=Math.max(5000,expiry*1000-Date.now()-RENEW_BEFORE_MS);
                     // A renewal changes permission lifetime, not the rendered source.
                     // Revision polling still observes content edits and access denial.
                     if (firstGrant) router.refresh();

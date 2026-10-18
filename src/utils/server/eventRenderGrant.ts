@@ -2,6 +2,8 @@ import {createPublicKey, verify} from "node:crypto";
 import {z} from "zod";
 import {hosts} from "@/utils/hosts";
 
+/** The API signs grants for 5 minutes; anything longer is not one of ours. */
+export const MAX_GRANT_SECONDS = 300;
 export const READ_COOKIE = "__Host-cib-event-read";
 export const ATTEMPT_COOKIE = "__Host-cib-event-attempt";
 export const cookieOptions = {httpOnly: true, secure: true, sameSite: "strict", path: "/"} as const;
@@ -42,7 +44,7 @@ export function verifyRenderGrant(token: string, key: RenderKey, origin: string,
         const publicKey = createPublicKey({key: {kty: "OKP", crv: "Ed25519", x: key.PublicKey}, format: "jwk"});
         if (!verify(null, Buffer.from(`${parts[0]}.${parts[1]}`), publicKey, signature)) return null;
         const claims = claimsSchema.parse(JSON.parse(Buffer.from(parts[1], "base64url").toString()));
-        if (claims.aud !== origin || claims.iat > now || claims.exp <= now || claims.exp <= claims.iat || claims.exp - claims.iat > 60) return null;
+        if (claims.aud !== origin || claims.iat > now || claims.exp <= now || claims.exp <= claims.iat || claims.exp - claims.iat > MAX_GRANT_SECONDS) return null;
         return claims;
     } catch {return null;}
 }

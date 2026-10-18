@@ -11,7 +11,7 @@ function browser() {
         if(String(input).includes("/revision"))return new Response(null,{status:404});
         if(String(input).endsWith("/challenge"))return Response.json({Challenge:"challenge"});
         if(String(input).endsWith("/render-grant"))return Response.json({Data:{Token:"scoped"}});
-        if(init?.method==="POST")return Response.json({Subject:"user",ExpiresAt:Math.floor(Date.now()/1000)+60});
+        if(init?.method==="POST")return Response.json({Subject:"user",ExpiresAt:Math.floor(Date.now()/1000)+300});
         return new Response(null,{status:204});
     });
     vi.stubGlobal("fetch",fetcher);return fetcher;
@@ -19,7 +19,7 @@ function browser() {
 describe("retained root common-session coordinator",()=>{
     it.each([false,true])("activates only on common navigation with existing grant %s",async hasGrant=>{
         vi.useFakeTimers();navigation.pathname="/manage";const fetcher=browser();
-        const props={hasGrant,expiresAt:hasGrant ? Math.floor(Date.now()/1000)+60:undefined,serverPath:"/manage",revision:null,publicEvent:false};
+        const props={hasGrant,expiresAt:hasGrant ? Math.floor(Date.now()/1000)+300:undefined,serverPath:"/manage",revision:null,publicEvent:false};
         const view=render(<EventReadSession {...props} />);
         await act(async()=>{});expect(fetcher).not.toHaveBeenCalled();
         navigation.pathname="/";view.rerender(<EventReadSession {...props} />);await act(async()=>{});
@@ -32,17 +32,17 @@ describe("retained root common-session coordinator",()=>{
         navigation.pathname="/";view.rerender(<EventReadSession {...props} />);await act(async()=>{});
         expect(navigation.router.refresh.mock.calls.length).toBeGreaterThan(1);
     });
-    it("uses the verified cookie on reload until fifteen seconds before expiry",async()=>{
+    it("uses the verified cookie on reload until sixty seconds before expiry",async()=>{
         vi.useFakeTimers();const fetcher=browser();
-        render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+60} serverPath="/" revision="r1" publicEvent={false} />);
-        await act(async()=>{await vi.advanceTimersByTimeAsync(44_000);});
+        render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+300} serverPath="/" revision="r1" publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(239_000);});
         expect(fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant"))).toHaveLength(0);
         await act(async()=>{await vi.advanceTimersByTimeAsync(1000);});
         expect(fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant"))).toHaveLength(1);
     });
     it.each([[true,false,3],[false,false,0],[false,true,0]])("revision polling %#: grant %s, public %s -> every %i s (0 = none)",async(hasGrant,publicEvent,seconds)=>{
         vi.useFakeTimers();const fetcher=browser();
-        render(<EventReadSession hasGrant={hasGrant} expiresAt={hasGrant ? Math.floor(Date.now()/1000)+600:undefined} serverPath="/" revision="r1" publicEvent={publicEvent} />);
+        render(<EventReadSession hasGrant={hasGrant} expiresAt={hasGrant ? Math.floor(Date.now()/1000)+3000:undefined} serverPath="/" revision="r1" publicEvent={publicEvent} />);
         const revisions=()=>fetcher.mock.calls.filter(([url])=>String(url).includes("/revision")).length;
         if(seconds===0) {
             await act(async()=>{await vi.advanceTimersByTimeAsync(600_000);});
@@ -64,7 +64,7 @@ describe("retained root common-session coordinator",()=>{
         vi.useFakeTimers();browser();markEventGone();
         const view=render(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
         expect(isEventGone()).toBe(true);
-        view.rerender(<EventReadSession hasGrant={hasGrant} expiresAt={hasGrant ? Math.floor(Date.now()/1000)+60:undefined} serverPath="/" revision="r2" publicEvent={!hasGrant} />);
+        view.rerender(<EventReadSession hasGrant={hasGrant} expiresAt={hasGrant ? Math.floor(Date.now()/1000)+300:undefined} serverPath="/" revision="r2" publicEvent={!hasGrant} />);
         expect(isEventGone()).toBe(false);
     });
 });
@@ -74,7 +74,7 @@ function grantResponses(reply:()=>Response|Promise<Response>) {
         if(String(input).includes("/revision"))return new Response(null,{status:404});
         if(String(input).endsWith("/challenge"))return Response.json({Challenge:"challenge"});
         if(String(input).endsWith("/render-grant"))return reply();
-        if(init?.method==="POST")return Response.json({ExpiresAt:Math.floor(Date.now()/1000)+60});
+        if(init?.method==="POST")return Response.json({ExpiresAt:Math.floor(Date.now()/1000)+300});
         return new Response(null,{status:204});
     });
     vi.stubGlobal("fetch",fetcher);return fetcher;
@@ -94,8 +94,8 @@ describe("grant retry admission",()=>{
     });
     it("clears a failed 401 renewal exactly once and stops timer retries",async()=>{
         vi.useFakeTimers();const fetcher=grantResponses(()=>new Response(null,{status:401}));
-        const view=render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+60} serverPath="/" revision="r1" publicEvent={false} />);
-        await act(async()=>{await vi.advanceTimersByTimeAsync(45_000);});
+        const view=render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+300} serverPath="/" revision="r1" publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(245_000);});
         view.rerender(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
         await act(async()=>{await vi.advanceTimersByTimeAsync(60_000);});
         expect(grantCalls(fetcher)).toHaveLength(1);
@@ -128,11 +128,49 @@ it("renews an existing grant without refreshing unchanged page content",async()=
         if(String(input).includes("/revision"))return Response.json({Revision:"r1"});
         if(String(input).endsWith("/challenge"))return Response.json({Challenge:"challenge"});
         if(String(input).endsWith("/render-grant"))return Response.json({Data:{Token:"renewed"}});
-        if(init?.method==="POST")return Response.json({ExpiresAt:Math.floor(Date.now()/1000)+60});
+        if(init?.method==="POST")return Response.json({ExpiresAt:Math.floor(Date.now()/1000)+300});
         return new Response(null,{status:204});
     });
-    render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+60} serverPath="/" revision="r1" publicEvent={false} />);
-    await act(async()=>{await vi.advanceTimersByTimeAsync(45_000);});
+    render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+300} serverPath="/" revision="r1" publicEvent={false} />);
+    await act(async()=>{await vi.advanceTimersByTimeAsync(245_000);});
     expect(fetcher.mock.calls.some(([url])=>String(url).endsWith("/render-grant"))).toBe(true);
     expect(navigation.router.refresh).not.toHaveBeenCalled();
+});
+
+describe("grant renewal window",()=>{
+    const renewals=(fetcher:ReturnType<typeof browser>)=>fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant")).length;
+    function hide(state:"hidden"|"visible") {
+        Object.defineProperty(document,"visibilityState",{configurable:true,get:()=>state});
+    }
+    afterEach(()=>hide("visible"));
+    it("renews a five-minute grant 60 s before expiry, not earlier",async()=>{
+        vi.useFakeTimers();const fetcher=browser();
+        render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+300} serverPath="/" revision="r1" publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(239_000);});expect(renewals(fetcher)).toBe(0);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(1_000);});expect(renewals(fetcher)).toBe(1);
+    });
+    it("renews at once when the tab becomes visible with less than 60 s left",async()=>{
+        vi.useFakeTimers();const fetcher=browser();
+        hide("hidden");
+        render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+300} serverPath="/" revision="r1" publicEvent={false} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(250_000);});expect(renewals(fetcher)).toBe(0);
+        hide("visible");
+        await act(async()=>{document.dispatchEvent(new Event("visibilitychange"));});
+        expect(renewals(fetcher)).toBe(1);
+    });
+    it("does not renew on visibility while more than 60 s remain",async()=>{
+        vi.useFakeTimers();const fetcher=browser();
+        render(<EventReadSession hasGrant expiresAt={Math.floor(Date.now()/1000)+300} serverPath="/" revision="r1" publicEvent={false} />);
+        await act(async()=>{document.dispatchEvent(new Event("visibilitychange"));});
+        expect(renewals(fetcher)).toBe(0);
+    });
+    it("asks for a new grant on visibility when the grant is gone",async()=>{
+        vi.useFakeTimers();const fetcher=browser();
+        hide("hidden");
+        render(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
+        await act(async()=>{});expect(renewals(fetcher)).toBe(0);
+        hide("visible");
+        await act(async()=>{document.dispatchEvent(new Event("visibilitychange"));});
+        expect(renewals(fetcher)).toBe(1);
+    });
 });
