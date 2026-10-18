@@ -181,9 +181,12 @@ nginx -e /dev/stderr -p "$run/" -c "$conf" -t
 # Next.js stays internal. HOSTNAME is forced because Kubernetes sets it to the pod name.
 # The internal port is a constant (the same 3001 as the nginx upstream in nginx.conf), not an input.
 export PORT=3001
-export HOSTNAME=127.0.0.1
+# It is "localhost", not 127.0.0.1: Next rewrites a loopback address in a URL to "localhost" and treats a rewrite whose host
+# differs from its own as an external site to proxy to (the 404 rewrite of src/proxy.ts then fails with a 500).
+# ipv4first makes "localhost" bind 127.0.0.1, the address of the nginx upstream.
+export HOSTNAME=localhost
 
-node server.js &
+node --dns-result-order=ipv4first server.js &
 node_pid=$!
 nginx -e /dev/stderr -p "$run/" -c "$conf" &
 nginx_pid=$!

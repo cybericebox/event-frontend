@@ -72,6 +72,6 @@ USER nextjs
 EXPOSE 8080 8443 8081
 
 ENV PORT=3001
-ENV HOSTNAME="127.0.0.1"
+ENV HOSTNAME="localhost"
 
 ENTRYPOINT [ "/sbin/tini", "--", "entrypoint.sh" ]
