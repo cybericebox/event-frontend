@@ -40,6 +40,15 @@ describe("retained root common-session coordinator",()=>{
         await act(async()=>{await vi.advanceTimersByTimeAsync(1000);});
         expect(fetcher.mock.calls.filter(([url])=>String(url).endsWith("/render-grant"))).toHaveLength(1);
     });
+    it.each([[true,false,3],[false,false,60],[false,true,60]])("polls the revision every %#: grant %s, public %s -> %i s",async(hasGrant,publicEvent,seconds)=>{
+        vi.useFakeTimers();const fetcher=browser();
+        render(<EventReadSession hasGrant={hasGrant} expiresAt={hasGrant ? Math.floor(Date.now()/1000)+600:undefined} serverPath="/" revision="r1" publicEvent={publicEvent} />);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(seconds*1000-100);});
+        const revisions=()=>fetcher.mock.calls.filter(([url])=>String(url).includes("/revision")).length;
+        expect(revisions()).toBe(0);
+        await act(async()=>{await vi.advanceTimersByTimeAsync(100);});
+        expect(revisions()).toBe(1);
+    });
     it("never obtains a grant for known public common pages",async()=>{
         vi.useFakeTimers();const fetcher=browser();
         render(<EventReadSession hasGrant={false} serverPath="/" revision="r1" publicEvent />);
@@ -74,7 +83,7 @@ describe("grant retry admission",()=>{
         render(<EventReadSession hasGrant={false} serverPath="/" revision={null} publicEvent={false} />);
         await act(async()=>{await vi.advanceTimersByTimeAsync(60_000);});
         expect(grantCalls(fetcher)).toHaveLength(1);
-        expect(fetcher.mock.calls.filter(([url])=>String(url).includes("/revision")).length).toBeGreaterThan(1);
+        expect(fetcher.mock.calls.filter(([url])=>String(url).includes("/revision")).length).toBeGreaterThan(0);
         await act(async()=>{window.dispatchEvent(new Event("focus"));});
         expect(grantCalls(fetcher)).toHaveLength(2);
     });

@@ -24,7 +24,7 @@ export function EventReadSession({hasGrant,expiresAt,serverPath,revision,publicE
     },[pathname,page,serverPath,revision,hasGrant,expiresAt]);
     if (page===null) return null;
     return <>
-        <CommonPageWatcher page={page} revision={serverPath===pathname ? revision:null} />
+        <CommonPageWatcher page={page} revision={serverPath===pathname ? revision:null} staffPreview={hasGrant && !publicEvent} />
         {serverPath===pathname && !publicEvent && <GrantSynchronizer hasGrant={hasGrant} expiresAt={expiresAt} />}
     </>;
 }
