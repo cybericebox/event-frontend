@@ -67,7 +67,7 @@ export function PrivateEventBootstrap({children, initialEvent}: {children: React
     }
     const event = verifiedEvent!;
     return <EventBrandProvider logoURL={event.LogoURL} faviconURL={event.FaviconURL}><PrivateEventContext.Provider value={event}>
-        <GuestShell event={event} authenticated notice={preview.active ? undefined : <div className="event-private-preview-banner" role="status">
+        <GuestShell event={event} authenticated notice={preview.active || preview.hinted ? undefined : <div className="event-private-preview-banner" role="status">
             <span>{t("shell.preview.banner")}</span>
             <Link href={pathname === "/" ? "/manage/content/landing" : "/manage"}>{pathname === "/" ? t("shell.preview.editLanding") : t("shell.preview.manage")}</Link>
         </div>}>

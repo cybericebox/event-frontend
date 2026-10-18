@@ -1,7 +1,7 @@
 import {afterEach, expect, it, vi} from "vitest";
 // Real helpers (nothing mocked but the network readers): a server call into a client-only module must surface here.
 const server = vi.hoisted(() => ({manifest: vi.fn()}));
-vi.mock("next/headers", () => ({headers: async () => new Headers({"x-event-pathname": "/manage", host: "khctf.cybericebox.com"})}));
+vi.mock("next/headers", () => ({cookies: async () => ({get: () => undefined}), headers: async () => new Headers({"x-event-pathname": "/manage", host: "khctf.cybericebox.com"})}));
 vi.mock("geist/font/sans", () => ({GeistSans: {variable: "sans"}}));
 vi.mock("geist/font/mono", () => ({GeistMono: {variable: "mono"}}));
 vi.mock("@/api/publicEventInfo", () => ({getPublicEventInfo: async () => null, PublicEventError: class extends Error {}}));

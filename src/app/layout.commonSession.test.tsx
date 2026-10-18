@@ -1,7 +1,7 @@
 import {isValidElement,type ReactNode} from "react";
 import {afterEach,expect,it,vi} from "vitest";
 const server=vi.hoisted(()=>({path:"/rules",claims:{exp:60},context:vi.fn(async()=>({claims:{exp:60}})),manifest:vi.fn(async(slug="")=>({Audience:"staff",Revision:slug ? "rules-r2":"landing-r1"}))}));
-vi.mock("next/headers",()=>({headers:async()=>new Headers({"x-event-pathname":server.path})}));
+vi.mock("next/headers",()=>({cookies:async()=>({get:()=>undefined}),headers:async()=>new Headers({"x-event-pathname":server.path})}));
 vi.mock("geist/font/sans",()=>({GeistSans:{variable:"sans"}}));
 vi.mock("geist/font/mono",()=>({GeistMono:{variable:"mono"}}));
 vi.mock("@/api/publicEventInfo",()=>({getPublicEventInfo:async()=>server.path==="/manage"?null:({EventID:"event",Name:"private",Theme:{Brand:"#123456"}}),PublicEventError:class extends Error{}}));
