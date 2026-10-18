@@ -25,7 +25,9 @@ export function EventReadSession({hasGrant,expiresAt,serverPath,revision,publicE
         // Only a fresh server manifest clears denial; installing a cookie alone is not permission.
         if (page!==null && serverPath===pathname && revision!==null) resetEventGone();
     },[pathname,page,serverPath,revision,hasGrant,expiresAt]);
-    if (page===null) return null;
+    // Staff routes keep the read grant alive too, so a reload of /manage renders the event branding on the server.
+    const staffRoute=pathname==="/manage" || pathname.startsWith("/manage/");
+    if (page===null) return staffRoute && !publicEvent ? <GrantSynchronizer hasGrant={hasGrant} expiresAt={expiresAt} />:null;
     return <>
         <CommonPageWatcher page={page} revision={serverPath===pathname ? revision:null} staffPreview={hasGrant && !publicEvent} />
         {serverPath===pathname && !publicEvent && <GrantSynchronizer hasGrant={hasGrant} expiresAt={expiresAt} />}
