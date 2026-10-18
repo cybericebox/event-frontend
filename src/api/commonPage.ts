@@ -18,9 +18,17 @@ function renderSecret() {
 }
 export async function renderApi(path:string,context:{token?:string}) {
     const internal=process.env.INTERNAL_API_ORIGIN;
-    const response=await serverGet(`${internal ?? `https://${apiHost}`}${path}`,
+    const base=internal ?? `https://${apiHost}`;
+    const url=`${base}${path}`;
+    // The secret goes only to the configured API origin, and a redirect is never followed with it.
+    if (new URL(url).origin!==new URL(base).origin || !path.startsWith("/api/render/")) throw new Error("Render secret refused for a foreign URL");
+    const response=await serverGet(url,
         {Accept:"application/json","X-Render-Secret":renderSecret(),...(internal ? {Host:apiHost}:{}),...(context.token ? {Authorization:`EventRender ${context.token}`}:{})},
-        AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS));
+        AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS),true);
+    if (response.status>=300 && response.status<400) {
+        response.body?.cancel().catch(()=>undefined);
+        return {status:502,body:null};
+    }
     if (!response.ok) return {status:response.status,body:null,requestId:response.headers.get("X-Request-ID") ?? undefined};
     return {status:response.status,body:await response.json() as unknown};
 }
