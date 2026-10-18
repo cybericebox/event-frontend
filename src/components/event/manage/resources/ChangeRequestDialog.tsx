@@ -4,20 +4,21 @@ import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 
 import {useState, type FormEvent} from "react";
 import {toast} from "react-hot-toast";
-import {requestResourceChange} from "@/api/manageResources";
+import {requestResourceChange, type Amount} from "@/api/manageResources";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventDateTimePicker} from "@/components/ui/EventDateTimePicker";
 import {t} from "@/i18n/t";
-import {buildChangeRequest, changeRequestErrors, emptyDraft, resourceErrorMessage, type ChangeDraft} from "./resourcesModel";
+import {buildChangeRequest, changeRequestErrors, emptyDraft, enlarged, formatGB, resourceErrorMessage, type ChangeDraft} from "./resourcesModel";
 import "./resources.css";
 
-// The change request: size, dynamic estimate and/or window, with a reason. Only the submit button is busy.
-export function ChangeRequestDialog({eventID, open, onClose, onSent}: {eventID: string; open: boolean; onClose: () => void; onSent: () => void}) {
+// The request for more: «на скільки більше» (GB) and/or «продовжити до», with a reason. Only the submit button is busy.
+export function ChangeRequestDialog({eventID, allocated, to, open, onClose, onSent}: {eventID: string; allocated: Amount; to: string | null; open: boolean; onClose: () => void; onSent: () => void}) {
     const [draft, setDraft] = useSessionDraftState<ChangeDraft>("resource-request", emptyDraft);
     const [issues, setIssues] = useState<ReturnType<typeof changeRequestErrors>>({});
     const [failure, setFailure] = useState("");
     const [busy, setBusy] = useState(false);
+    const current = {allocated, to};
     const set = (patch: Partial<ChangeDraft>) => {setDraft(current => ({...current, ...patch})); setIssues({}); setFailure("");};
 
     function close() {
@@ -30,8 +31,8 @@ export function ChangeRequestDialog({eventID, open, onClose, onSent}: {eventID: 
     async function submit(submitEvent: FormEvent<HTMLFormElement>) {
         submitEvent.preventDefault();
         if (busy) return;
-        const built = buildChangeRequest(draft);
-        if ("issue" in built) {setIssues(changeRequestErrors(draft)); return;}
+        const built = buildChangeRequest(draft, current);
+        if ("issue" in built) {setIssues(changeRequestErrors(draft, current)); return;}
         setBusy(true);
         try {
             await requestResourceChange(eventID, built.input);
@@ -45,37 +46,19 @@ export function ChangeRequestDialog({eventID, open, onClose, onSent}: {eventID: 
 
     const fieldIssue = (field: keyof ChangeDraft) => issues[field] && <p id={`resources-${field}-error`} className="event-manage-validation" role="alert">{t(`manage.resources.request.issue.${issues[field]}`)}</p>;
     const props = (field: keyof ChangeDraft) => ({"aria-invalid": !!issues[field] || undefined, "aria-describedby": issues[field] ? `resources-${field}-error` : undefined});
-    const numberField = (field: keyof ChangeDraft, id: string, label: string, value: string, onChange: (value: string) => void) => <div className="event-manage-field">
-        <label htmlFor={id}>{label}</label>
-        <input {...props(field)} id={id} className="event-manage-input" type="number" inputMode="numeric" min={1} step={1} value={value} onChange={change => onChange(change.target.value)} disabled={busy} />{fieldIssue(field)}
-    </div>;
+    const extra = Number(draft.extraGB.trim().replace(",", "."));
+    const previewable = /^\d+([.,]\d+)?$/.test(draft.extraGB.trim()) && extra > 0;
 
     return <ManageDialog open={open} onOpenChange={next => {if (!next) close();}} size="md" onSubmit={submit} title={t("manage.resources.request.title")} description={t("manage.resources.request.description")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="submit" busy={busy} disabled={busy}>{t("manage.resources.request.send")}</EventButton></>}>
         <div className="event-resources-form">
-            <fieldset className="event-resources-form__group">
-                <legend>{t("manage.resources.request.size")}</legend>
-                <div className="event-manage-fields-two">
-                    {numberField("sizeCpu", "resources-size-cpu", t("manage.resources.request.cpu"), draft.sizeCpu, value => set({sizeCpu: value}))}
-                    {numberField("sizeMemory", "resources-size-memory", t("manage.resources.request.memory"), draft.sizeMemory, value => set({sizeMemory: value}))}
-                </div>
-            </fieldset>
-            <fieldset className="event-resources-form__group">
-                <legend>{t("manage.resources.request.dynamic")}</legend>
-                <p className="event-resources-form__help">{t("manage.resources.request.dynamicHelp")}</p>
-                <div className="event-manage-fields-two">
-                    {numberField("dynamicCpu", "resources-dynamic-cpu", t("manage.resources.request.cpu"), draft.dynamicCpu, value => set({dynamicCpu: value}))}
-                    {numberField("dynamicMemory", "resources-dynamic-memory", t("manage.resources.request.memory"), draft.dynamicMemory, value => set({dynamicMemory: value}))}
-                </div>
-            </fieldset>
-            <fieldset className="event-resources-form__group">
-                <legend>{t("manage.resources.request.window")}</legend>
-                <div className="event-manage-fields-two">
-                    <div className="event-manage-field"><span>{t("manage.resources.request.windowStart")}</span><EventDateTimePicker {...props("windowStart")} ariaLabel={t("manage.resources.request.windowStart")} value={draft.windowStart} onChange={value => set({windowStart: value})} allowClear disabled={busy} />{fieldIssue("windowStart")}</div>
-                    <div className="event-manage-field"><span>{t("manage.resources.request.windowEnd")}</span><EventDateTimePicker {...props("windowEnd")} ariaLabel={t("manage.resources.request.windowEnd")} value={draft.windowEnd} onChange={value => set({windowEnd: value})} allowClear disabled={busy} />{fieldIssue("windowEnd")}</div>
-                </div>
-            </fieldset>
+            <div className="event-manage-field">
+                <label htmlFor="resources-extra">{t("manage.resources.request.extra")}</label>
+                <input {...props("extraGB")} id="resources-extra" className="event-manage-input" type="text" inputMode="decimal" autoComplete="off" value={draft.extraGB} onChange={change => set({extraGB: change.target.value})} disabled={busy} />{fieldIssue("extraGB")}
+                {previewable && <p className="event-resources-form__help">{t("manage.resources.request.preview", {from: formatGB(allocated.MemoryBytes), to: formatGB(enlarged(allocated, extra).MemoryBytes)})}</p>}
+            </div>
+            <div className="event-manage-field"><span>{t("manage.resources.request.extend")}</span><EventDateTimePicker {...props("extendTo")} ariaLabel={t("manage.resources.request.extend")} value={draft.extendTo} onChange={value => set({extendTo: value})} allowClear disabled={busy} />{fieldIssue("extendTo")}</div>
             <div className="event-manage-field">
                 <label htmlFor="resources-reason">{t("manage.resources.request.reason")}</label>
                 <textarea {...props("reason")} id="resources-reason" className="event-manage-input" rows={3} maxLength={1000} value={draft.reason} onChange={change => set({reason: change.target.value})} disabled={busy} />{fieldIssue("reason")}
