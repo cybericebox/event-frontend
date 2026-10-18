@@ -3,6 +3,7 @@
 import {useId, useRef, useState} from "react";
 import {GripVertical, Moon, X} from "lucide-react";
 import {imageUploadMessage} from "@/api/apiErrors";
+import {fitImage, fitImageMaxSide} from "@/utils/fitImage";
 import {liveLogoAccept, liveLogoMaxBytes, uploadLiveLogo} from "@/api/manageLive";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {t} from "@/i18n/t";
@@ -60,7 +61,7 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
         setBusy(true);
         setError(null);
         setErrorTarget(target);
-        try {return await uploadLiveLogo(eventID, file);}
+        try {return await uploadLiveLogo(eventID, await fitImage(file));}
         catch (failure) {const text = imageUploadMessage(failure, t("manage.live.logos.uploadError")); setError(text); return null;}
         finally {setBusy(false);}
     }
@@ -84,7 +85,7 @@ export function LiveLogosEditor({eventID, items, disabled, onChange}: {eventID: 
         onChange(next);
     }
     return <div className="event-live-field event-live-logos-editor">
-        <ManageFieldLabel title={t("manage.live.logos.title")} help={t("manage.live.logos.help")} htmlFor={pickerID} />
+        <ManageFieldLabel title={t("manage.live.logos.title")} help={`${t("manage.live.logos.help")}\n\n${t("manage.images.autoShrink", {side: fitImageMaxSide})}`} htmlFor={pickerID} />
         {items.length ? <Sortable ids={keyed.map(item => item.key)} itemName={key => t("manage.live.logos.file", {number: keyed.findIndex(item => item.key === key) + 1})} onMove={move}>
             <ul className="event-live-logo-list">{keyed.map((item, index) => <LogoRow key={item.key} item={item} index={index} disabled={disabled} busy={busy} error={errorTarget === item.key ? error ?? undefined : undefined} errorID={`${pickerID}-dark-${index}-error`}
                 onDark={() => {darkFor.current = index; darkInput.current?.click();}}

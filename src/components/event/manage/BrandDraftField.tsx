@@ -5,6 +5,7 @@ import {useEffect, useRef, useState, type ChangeEvent, type DragEvent} from "rea
 import {ImagePlus, Pencil, Trash2} from "lucide-react";
 import {uploadManageBrandDraft, type BrandAssetChange} from "@/api/manage";
 import {imageUploadMessage} from "@/api/apiErrors";
+import {fitImage, fitImageMaxSide} from "@/utils/fitImage";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {ManageFieldLabel} from "./ManageFieldLabel";
 import {t} from "@/i18n/t";
@@ -23,14 +24,21 @@ export function useBrandDraft(eventID: string, kind: Kind, currentURL: string, m
     async function select(file?: File): Promise<boolean> {
         if (!file || uploading) return false;
         const validType = kind === "favicon" ? file.type === "image/png" : ["image/png", "image/jpeg", "image/webp"].includes(file.type);
-        if (!validType || file.size > maxBytes || file.size === 0) {
-            setError(kind === "favicon" ? t("manage.appearance.brand.faviconInvalid") : t("manage.appearance.brand.imageInvalid", {size: Math.round(maxBytes / (1 << 20))}));
+        const invalid = () => setError(kind === "favicon" ? t("manage.appearance.brand.faviconInvalid") : t("manage.appearance.brand.imageInvalid", {size: Math.round(maxBytes / (1 << 20))}));
+        if (!validType || file.size === 0) {
+            invalid();
             return false;
         }
         setUploading(true); setError("");
         try {
-            const fileID = await uploadManageBrandDraft(eventID, kind, file);
-            setDraft({action: "replace", fileID, fileName: file.name, uploadedAt: Date.now(), previewURL: URL.createObjectURL(file)});
+            // A favicon is a small fixed-size icon: never rescaled.
+            const fitted = kind === "favicon" ? file : await fitImage(file);
+            if (fitted.size > maxBytes) {
+                invalid();
+                return false;
+            }
+            const fileID = await uploadManageBrandDraft(eventID, kind, fitted);
+            setDraft({action: "replace", fileID, fileName: fitted.name, uploadedAt: Date.now(), previewURL: URL.createObjectURL(fitted)});
             return true;
         } catch (error) {
             setError(imageUploadMessage(error, t("manage.appearance.brand.uploadFailed")));
@@ -73,7 +81,7 @@ export function BrandDraftField({id, title, help, hint, kind, draft, disabled, o
         if (!disabled && !draft.uploading && file) void draft.select(file).then(accepted => {if (accepted) onFileSelected?.(file);});
     }
     return <div className="event-brand-field" role="group" aria-label={title} aria-invalid={!!draft.error || undefined} aria-describedby={draft.error ? `${id}-error` : undefined}>
-        <ManageFieldLabel title={title} help={[help, hint.replace(" · ", "\n")].join("\n\n")} />
+        <ManageFieldLabel title={title} help={[help, hint.replace(" · ", "\n"), ...(kind === "favicon" ? [] : [t("manage.images.autoShrink", {side: fitImageMaxSide})])].join("\n\n")} />
         <input ref={inputRef} id={id} type="file" hidden accept={kind === "favicon" ? "image/png" : "image/png,image/jpeg,image/webp"} onChange={handleChange} disabled={disabled || draft.uploading} />
         {draft.source ? <div className={`event-brand-current event-brand-current--${kind}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- Local blob and event media proxy need immediate draft preview. */}
