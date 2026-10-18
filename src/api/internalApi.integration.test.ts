@@ -18,7 +18,7 @@ beforeEach(async () => {
             response.writeHead(404).end();
             return;
         }
-        if (request.url === "/redirect") {
+        if (request.url === "/api/render/redirect") {
             response.writeHead(307, {Location: `${origin}/redirect-target`}).end();
             return;
         }
@@ -76,10 +76,37 @@ it("coalesces simultaneous public reads over the real internal transport", async
     expect(received).toHaveLength(1);
 });
 
-it("does not follow an internal redirect with the read grant", async () => {
-    const result = await renderApi("/redirect", {token: "synthetic-read-grant"});
-    expect(result).toMatchObject({status: 307, body: null});
-    expect(received).toHaveLength(1);
+it("never sends the render secret to a redirect target", async () => {
+    // The target is another origin that records what reaches it.
+    const target: Record<string, string | string[] | undefined>[] = [];
+    const other = createServer((request, response) => { target.push(request.headers); response.end("{}"); });
+    await new Promise<void>(resolve => other.listen(0, "127.0.0.1", resolve));
+    const otherOrigin = `http://127.0.0.1:${(other.address() as AddressInfo).port}`;
+    server.removeAllListeners("request");
+    server.on("request", (request, response) => { received.push(request.headers); response.writeHead(302, {Location: `${otherOrigin}/steal`}).end(); });
+    try {
+        // Through the internal Host transport (never follows).
+        expect(await renderApi("/api/render/redirect", {token: "synthetic-read-grant"})).toMatchObject({status: 502, body: null});
+        // Through plain fetch (no Host override): the redirect must be left unfollowed.
+        vi.stubEnv("INTERNAL_API_ORIGIN", origin);
+        const realFetch = globalThis.fetch;
+        const seen: RequestInit[] = [];
+        vi.stubGlobal("fetch", (url: string, init: RequestInit) => { seen.push(init); return realFetch(url, init); });
+        const { serverGet: get } = await import("./serverGet");
+        const response = await get(`${origin}/api/render/redirect`, {"X-Render-Secret": "s"}, AbortSignal.timeout(5000), true);
+        expect(response.status).toBe(302);
+        expect(seen[0].redirect).toBe("manual");
+        expect(target).toHaveLength(0);
+    } finally {
+        vi.unstubAllGlobals();
+        await new Promise<void>(resolve => other.close(() => resolve()));
+    }
+});
+
+it("refuses to attach the render secret to a URL outside the API origin or the render routes", async () => {
+    await expect(renderApi("/other/path", {})).rejects.toThrow("refused");
+    await expect(renderApi("@evil.test/api/render/key", {})).rejects.toThrow();
+    expect(received).toHaveLength(0);
 });
 
 it("preserves denial status and request IDs without caching a failure", async () => {
