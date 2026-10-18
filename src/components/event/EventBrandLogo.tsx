@@ -4,15 +4,8 @@ import {createContext, useContext, useEffect, useState, useSyncExternalStore, ty
 import Image from "next/image";
 import crest from "@/styles/assets/crest-128.png";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
-import {apiOrigin} from "@/utils/origins";
+import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import {readCachedLogo, subscribeCachedBrand, writeCachedBrand} from "@/utils/eventBrandCache";
-
-export function resolveEventLogoURL(logoURL: string): string | null {
-    if (!logoURL) return null;
-    if (/^https:\/\//.test(logoURL)) return logoURL;
-    if (!logoURL.startsWith("/api/events/")) return null;
-    return apiOrigin ? `${apiOrigin}${logoURL}` : null;
-}
 
 // null = the event branding is not known yet (the server render of a hidden event is anonymous); "" = known, no logo.
 const EventBrandContext = createContext<string | null>("");
