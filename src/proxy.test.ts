@@ -40,6 +40,18 @@ describe("event site status", () => {
         await proxy(request(h, "/faq"));
         expect(read).toHaveBeenCalledTimes(1);
     });
+    it("asks the API at most once for a known public host within the window", async () => {
+        const h = host();
+        read.mockResolvedValue({status: 200, body: {}});
+        for (let i = 0; i < 25; i++) expect((await proxy(request(h, i % 2 ? "/" : "/faq"))).status).toBe(200);
+        expect(read).toHaveBeenCalledTimes(1);
+    });
+    it("does not turn a sign-in-gated answer (401/403) into a 404", async () => {
+        for (const status of [401, 403]) {
+            read.mockResolvedValueOnce({status, body: null});
+            expect((await proxy(request(host(), "/team"))).status).toBe(200);
+        }
+    });
     it("still sets the CSP and nonce on a 404", async () => {
         read.mockResolvedValue({status: 404, body: null});
         const response = await proxy(request(host()));
