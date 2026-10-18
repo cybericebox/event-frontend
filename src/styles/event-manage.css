@@ -991,4 +991,5 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-registry-list__main{display:grid;gap:var(--ib-1);min-width:0}
 .event-registry-list__main strong,.event-registry-list__main small{overflow-wrap:anywhere}
 .event-registry-list__main small{color:var(--ib-dim)}
+.event-registry-list__main .event-registry-list__status--broken{color:var(--ib-danger)}
 .event-registry-list__actions{display:flex;gap:var(--ib-2);flex:none}
