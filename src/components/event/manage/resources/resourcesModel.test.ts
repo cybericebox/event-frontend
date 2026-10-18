@@ -1,34 +1,51 @@
 import {describe, expect, it} from "vitest";
-import {buildChangeRequest, emptyDraft, amountText, formatCpu, formatMemory} from "./resourcesModel";
+import {amountText, buildChangeRequest, emptyDraft, formatCpu, formatGB, formatMemory, shortageBytes} from "./resourcesModel";
 
 const MIB = 1024 ** 2;
 
+const GIB = 1024 ** 3;
+const current = {allocated: {CPUMillicores: 2000, MemoryBytes: 8 * GIB}, to: "2026-10-05T13:00:00Z"};
+
 describe("change request draft", () => {
-    it("needs at least one of size, dynamic estimate and window", () => {
-        expect(buildChangeRequest({...emptyDraft, reason: "more teams"})).toEqual({issue: "empty"});
+    it("needs at least one of «на скільки більше» and «продовжити до»", () => {
+        expect(buildChangeRequest({...emptyDraft, reason: "more teams"}, current)).toEqual({issue: "empty"});
     });
 
     it("needs a reason", () => {
-        expect(buildChangeRequest({...emptyDraft, sizeCpu: "2000", sizeMemory: "4096"})).toEqual({issue: "reason"});
+        expect(buildChangeRequest({...emptyDraft, extraGB: "2"}, current)).toEqual({issue: "reason"});
     });
 
-    it("sends size in millicores and bytes, and omits what is not asked", () => {
-        const built = buildChangeRequest({...emptyDraft, sizeCpu: "2000", sizeMemory: "4096", reason: " more teams "});
-        expect(built).toEqual({input: {Size: {CPUMillicores: 2000, MemoryBytes: 4096 * MIB}, Dynamic: null, WindowStart: null, WindowEnd: null, Reason: "more teams"}});
+    it("sends the new total (memory in GB, CPU following it) and omits what is not asked", () => {
+        const built = buildChangeRequest({...emptyDraft, extraGB: "2,5", reason: " more teams "}, current);
+        expect(built).toEqual({input: {Size: {CPUMillicores: 2000 + 625, MemoryBytes: 10.5 * GIB}, Dynamic: null, WindowStart: null, WindowEnd: null, Reason: "more teams"}});
     });
 
-    it("rejects half an amount", () => {
-        expect(buildChangeRequest({...emptyDraft, sizeCpu: "2000", reason: "x"})).toEqual({issue: "size"});
-        expect(buildChangeRequest({...emptyDraft, dynamicMemory: "512", reason: "x"})).toEqual({issue: "dynamic"});
+    it("rejects an extra that is not a positive number", () => {
+        expect(buildChangeRequest({...emptyDraft, extraGB: "abc", reason: "x"}, current)).toEqual({issue: "extra"});
+        expect(buildChangeRequest({...emptyDraft, extraGB: "0", reason: "x"}, current)).toEqual({issue: "extra"});
     });
 
-    it("rejects a window that ends before it starts", () => {
-        expect(buildChangeRequest({...emptyDraft, windowStart: "2026-10-05T12:00", windowEnd: "2026-10-05T10:00", reason: "x"})).toEqual({issue: "window"});
+    it("rejects an end that is not after the current end of the reserve", () => {
+        expect(buildChangeRequest({...emptyDraft, extendTo: "2026-10-05T10:00", reason: "x"}, {...current, to: new Date(2026, 9, 5, 13, 0).toISOString()})).toEqual({issue: "extend"});
     });
 
-    it("accepts a window alone", () => {
-        const built = buildChangeRequest({...emptyDraft, windowEnd: "2026-10-05T18:00", reason: "x"});
+    it("accepts an extension alone and sends the end as given", () => {
+        const built = buildChangeRequest({...emptyDraft, extendTo: "2026-10-05T18:00", reason: "x"}, {...current, to: new Date(2026, 9, 5, 13, 0).toISOString()});
         expect("input" in built && built.input.WindowEnd).toBe(new Date(2026, 9, 5, 18, 0).toISOString());
+        expect("input" in built && built.input.Size).toBeNull();
+    });
+});
+
+describe("GB format", () => {
+    it("reads memory in GB with a decimal comma and a non-breaking space", () => {
+        expect(formatGB(3.4 * GIB)).toBe("3,4\u00A0ГБ");
+        expect(formatGB(0)).toBe("0\u00A0ГБ");
+    });
+
+    it("counts a shortage only when the usage is above the reserve", () => {
+        const reserve = {Allocated: {CPUMillicores: 0, MemoryBytes: 8 * GIB}, InUse: {CPUMillicores: 0, MemoryBytes: 8 * GIB}};
+        expect(shortageBytes(reserve)).toBe(0);
+        expect(shortageBytes({...reserve, InUse: {CPUMillicores: 0, MemoryBytes: 9.5 * GIB}})).toBe(1.5 * GIB);
     });
 });
 
