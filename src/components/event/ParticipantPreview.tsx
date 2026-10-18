@@ -62,13 +62,8 @@ type PreviewContextValue = {
     reset: () => void | Promise<boolean>; exit: () => void;
 };
 const noop = () => {};
-// The event named by the mode cookie. The server render passes the cookie it read, so hydration starts from
-// the same value; the browser value takes over after hydration.
+// The event named by the mode cookie the server render read, while the browser has not yet confirmed the mode.
 const CookieContext = createContext<string | null>(null);
-function subscribeCookie(onChange: () => void) {
-    window.addEventListener(CHANGE_EVENT, onChange);
-    return () => window.removeEventListener(CHANGE_EVENT, onChange);
-}
 const PreviewContext = createContext<PreviewContextValue>({state: null, config: null, active: false, hinted: false, resetting: false, start: noop, update: noop, reset: noop, exit: noop});
 export function useParticipantPreview(eventID?: string) {
     const context = useContext(PreviewContext);
@@ -87,12 +82,11 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
     const raw = useSyncExternalStore(subscribe, snapshot, () => null);
     const saved = useMemo(() => parseSnapshot(raw), [raw]);
     const access = useQuery({queryKey: ["event-management-access", saved?.eventID], queryFn: () => getManageAccess(saved!.eventID), enabled: !!saved && saved.userID === identity.data?.ID, retry: false, refetchOnWindowFocus: false});
-    const cookieEvent = useSyncExternalStore(subscribeCookie, readPreviewCookie, () => serverCookie);
     const state = saved && identity.isSuccess && saved.userID === identity.data?.ID && access.isSuccess && access.data.CanManage ? saved : null;
     // A cookie without a valid mode behind it (other tab, another user, lost access, signed out) must not keep
     // the staff UI hidden: clear it once the identity and access answers are in.
     const settled = identity.isSuccess && (!saved || saved.userID !== identity.data?.ID || access.isSuccess || access.isError);
-    useEffect(() => {if (settled && !state && cookieEvent) clearPreviewCookie();}, [settled, state, cookieEvent]);
+    useEffect(() => {if (settled && !state && readPreviewCookie()) clearPreviewCookie();}, [settled, state]);
     const config = useQuery({queryKey: ["event-management-config", state?.eventID], queryFn: () => getManageConfig(state!.eventID), enabled: !!state, retry: false, refetchOnWindowFocus: false});
     const exit = () => {persist(null); router.push("/manage");};
     const reset = async () => {
@@ -113,7 +107,11 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
         } catch (failure) {toastFailure(failure, t("participantPreview.resetFailed")); return false;}
         finally {setResetting(false);}
     };
-    return <CookieContext.Provider value={cookieEvent}><PreviewContext.Provider value={{state, hinted: !!cookieEvent, config: config.data ?? null, resetting, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
+    // The hint comes only from the cookie the SERVER rendered with, and only until the identity and access answers
+    // are in: it covers the first HTML and hydration. A client navigation (the server layout is not re-rendered)
+    // starts with no hint and behaves as before the cookie existed.
+    const hint = !settled && !state ? serverCookie : null;
+    return <CookieContext.Provider value={hint}><PreviewContext.Provider value={{state, hinted: !!hint, config: config.data ?? null, resetting, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
         if (!identity.data) return;
         persist({eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null});
         router.push("/");
