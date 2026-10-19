@@ -141,7 +141,7 @@ async function screenRequest<T>(path: string, token: string, schema: z.ZodType<T
 const liveStageSchema = z.object({Name: z.string(), OpensAt: z.string(), ClosesAt: z.string()});
 export const getLiveScreenByLink = (token: string) => screenRequest("", token, z.object({
     Event: PublicEventInfoSchema, Layout: liveLayoutSchema,
-    Stages: z.array(liveStageSchema).nullish().transform(value => value ?? []),
+    Stages: z.array(liveStageSchema),
 }));
 export type LiveScreenByLink = Awaited<ReturnType<typeof getLiveScreenByLink>>;
 export const getLiveScreenResultsByLink = (token: string) => screenRequest("/results", token, resultsSnapshotSchema);

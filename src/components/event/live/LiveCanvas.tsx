@@ -54,7 +54,7 @@ function FreezeBadge({at, size}: {at: string; size?: number}) {
     return <span className="live-freeze" style={size ? {fontSize: size} : undefined}><Snowflake aria-hidden="true" />{t("live.freeze.badge", {time: clockLabel(at)})}</span>;
 }
 
-function LiveChart({widget, event, results, now, theme, sample, metrics}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean; metrics: LiveMetrics}) {
+function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean; metrics: LiveMetrics; suffix: string}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const [labelRef, labelSize] = useElementSize<HTMLSpanElement>();
     const lines = Math.min(10, Math.max(1, Number(widget.props.lines) || 5));
@@ -73,7 +73,7 @@ function LiveChart({widget, event, results, now, theme, sample, metrics}: {widge
     const colors = seriesColors;
     const hasData = !!results?.Scoreboard.length;
     return <div className="live-chart" data-live={theme}>
-        <h2>{t("live.chart.title", {suffix: frozenSuffix(results)})}</h2>
+        <h2>{t("live.chart.title", {suffix})}</h2>
         <div className="live-chart__plot" ref={ref}>
             <span className="live-chart__probe" ref={labelRef} aria-hidden="true">0</span>
             {!hasData ? <EmptyState compact message={t("live.chart.empty")} /> : size.width > 0 && <>
@@ -130,9 +130,9 @@ function LiveLogos({widget, fallback, edit, sample, theme}: {widget: LiveWidget;
 
 type LiveMetrics = {caption: number; body: number; timer: number};
 
-function LiveTimer({widget, event, stages, now, results, badge, metrics}: {widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; now: number; results?: ManageResultsSnapshot; badge: boolean; metrics: LiveMetrics}) {
+function LiveTimer({widget, event, stages, now, results, badge, metrics, named}: {widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; now: number; results?: ManageResultsSnapshot; badge: boolean; metrics: LiveMetrics; named: boolean}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
-    const state = liveTimerState(widget.props, event, stages, now, results?.Freeze.FrozenAt ?? null);
+    const state = liveTimerState(widget.props, event, stages, now, results?.Freeze.FrozenAt ?? null, named);
     const digits = liveTimerDigits(state, now, widget.props.showSeconds !== false);
     const shown = digits ?? (state.mode === "word" ? state.word : "");
     const custom = typeof widget.props.label === "string" ? widget.props.label.trim() : "";
@@ -197,7 +197,7 @@ function measureName(text: string, font: number): number {
     return measureContext.measureText(text).width;
 }
 
-function LiveTable({widget, event, results, now, metrics, edit}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean}) {
+function LiveTable({widget, event, results, now, metrics, edit, suffix}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean; suffix: string}) {
     const teams = results?.Scoreboard ?? [];
     const pageSize = Math.max(1, Number(widget.props.rowsPerPage) || 10);
     const pageSeconds = Math.max(1, Number(widget.props.pageSeconds) || 10);
@@ -205,7 +205,7 @@ function LiveTable({widget, event, results, now, metrics, edit}: {widget: LiveWi
     const view = liveTablePage(teams, {pageSize, pinTop: livePinTop(widget.props.pinTop), page});
     const paged = view.pageCount > 1;
     const caption = <>
-        <span>{t("live.table.title", {suffix: frozenSuffix(results)})}</span>
+        <span>{t("live.table.title", {suffix})}</span>
         {paged && <span className="live-list__range">{t("live.table.range", {from: view.from, to: view.to, total: view.total})}</span>}
     </>;
     const rankChars = String(teams.at(-1)?.Rank ?? 1).length;
@@ -227,30 +227,32 @@ function LiveTable({widget, event, results, now, metrics, edit}: {widget: LiveWi
     </LiveList>;
 }
 
-function LiveSolves({widget, results, metrics}: {widget: LiveWidget; results?: ManageResultsSnapshot; metrics: LiveMetrics}) {
+function LiveSolves({widget, results, metrics, suffix, participation}: {widget: LiveWidget; results?: ManageResultsSnapshot; metrics: LiveMetrics; suffix: string; participation: PublicEventInfo["Participation"]}) {
     const names = new Map((results?.Scoreboard ?? []).map(team => [team.TeamID, team.TeamName]));
     const rows = Math.max(1, Number(widget.props.rows) || 5);
     const items = [...(results?.Timeline ?? [])].sort((a, b) => b.SolvedAt.localeCompare(a.SolvedAt)).slice(0, rows);
-    return <LiveList caption={t("live.solves.title", {suffix: frozenSuffix(results)})} rows={rows} header={false} metrics={metrics} empty={items.length ? null : t("live.solves.empty")}>
+    return <LiveList caption={t("live.solves.title", {suffix})} rows={rows} header={false} metrics={metrics} empty={items.length ? null : t("live.solves.empty")}>
         {geometry => <ol className="live-solves" style={{fontSize: geometry.rowFont}}>{items.map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`} style={{height: geometry.rowHeight}}>
-            <span>{t("live.solves.row", {team: names.get(item.EventTeamID) ?? t("live.table.team"), task: item.ChallengeName})}</span><b>{t("live.solves.points", {points: livePoints(item.Points)})}</b><time>{clockLabel(item.SolvedAt)}</time>
+            <span>{t("live.solves.row", {team: names.get(item.EventTeamID) ?? (participation === 1 ? t("live.table.team") : t("live.table.participant")), task: item.ChallengeName})}</span><b>{t("live.solves.points", {points: livePoints(item.Points)})}</b><time>{clockLabel(item.SolvedAt)}</time>
         </li>)}</ol>}
     </LiveList>;
 }
 
-function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, badge}: {
+function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, badge, suffix, named}: {
     widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean; metrics: LiveMetrics;
     // Whether this widget carries the freeze badge (the timer, else the title).
     badge: boolean;
+    // The freeze note of the captions (none while a badge shows it) and whether the timer names the stage.
+    suffix: string; named: boolean;
 }) {
     const logo = resolveEventLogoURL(event.LogoURL);
     if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} stages={stages} now={now} results={results} badge={badge} metrics={metrics} />;
-    if (widget.type === "timer") return <LiveTimer widget={widget} event={event} stages={stages} now={now} results={results} badge={badge} metrics={metrics} />;
-    if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} metrics={metrics} />;
+    if (widget.type === "timer") return <LiveTimer widget={widget} event={event} stages={stages} now={now} results={results} badge={badge} metrics={metrics} named={named} />;
+    if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} metrics={metrics} suffix={suffix} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
     if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
-    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} />;
-    if (widget.type === "solves") return <LiveSolves widget={widget} results={results} metrics={metrics} />;
+    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} suffix={suffix} />;
+    if (widget.type === "solves") return <LiveSolves widget={widget} results={results} metrics={metrics} suffix={suffix} participation={event.Participation} />;
     if (widget.type === "announcement") return <div className="live-announcement">{typeof widget.props.text === "string" && widget.props.text.trim() || t("live.announcement.placeholder")}</div>;
     if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} sample={sample} theme={theme} />;
     if (widget.type === "qr") return <LiveQR value={typeof widget.props.value === "string" ? widget.props.value : typeof widget.props.url === "string" ? widget.props.url : ""}
@@ -276,6 +278,10 @@ export function LiveCanvas({layout, event, stages = noStages, results, sample = 
         timer: liveTextFloors[profile].timer,
     }), [canvasSize.height, canvasSize.width, layout.screen.textScale, profile]);
     const badgeHost = layout.widgets.some(widget => widget.type === "timer") ? "timer" : "title";
+    // One freeze mark is enough: with a badge on screen the captions skip the note.
+    const suffix = layout.widgets.some(widget => widget.type === badgeHost) ? "" : frozenSuffix(results);
+    // The timer names the stage unless the title already shows it.
+    const named = !layout.widgets.some(widget => widget.type === "title" && widget.props.subtitleStage === true);
     const [now, setNow] = useState(0);
     useEffect(() => {const frame = requestAnimationFrame(() => setNow(Date.now())); const timer = setInterval(() => setNow(Date.now()), 1000); return () => {cancelAnimationFrame(frame); clearInterval(timer);};}, []);
     const style = useMemo(() => ({
@@ -288,9 +294,9 @@ export function LiveCanvas({layout, event, stages = noStages, results, sample = 
     const area = (widget: {x: number; y: number; w: number; h: number}) => ({gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`});
     return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={area(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
-            <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit sample={sample} metrics={metrics} badge={widget.type === badgeHost} />
+            <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit sample={sample} metrics={metrics} badge={widget.type === badgeHost} suffix={suffix} named={named} />
             <span className="live-widget__resize" role="presentation" onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, "resize");}} />
-        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={false} sample={sample} metrics={metrics} badge={widget.type === badgeHost} /></div>)}
+        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={false} sample={sample} metrics={metrics} badge={widget.type === badgeHost} suffix={suffix} named={named} /></div>)}
         {ghost && <div className={`live-drop-ghost${ghost.ok ? "" : " is-blocked"}`} style={area(ghost)} aria-hidden="true" />}
     </div>;
 }

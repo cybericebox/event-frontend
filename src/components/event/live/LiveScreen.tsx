@@ -20,6 +20,9 @@ import {ErrorPage} from "@/components/event/ErrorPage";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
 import {clockLabel} from "@/utils/resultsFreeze";
+import {ManageApiError} from "@/api/manage";
+import {SignInRedirect} from "@/components/event/SignInRedirect";
+import {NoAccessScreen} from "@/components/event/NoAccessScreen";
 
 // A full-screen state of the live screen (loading, error, closed link): the
 // event colour behind it, as on the screen itself, and large enough to read
@@ -43,6 +46,12 @@ export function LiveLinkClosed({event}: {event?: PublicEventInfo | null}) {
 }
 
 const wakeLabel = (state: WakeLockState) => t(`live.wake.${state}`);
+
+// 401 or 403 of a moderator's read: the session or the rights are gone.
+function staffDenied(error: unknown): 401 | 403 | null {
+    const status = error instanceof ManageApiError ? error.status : 0;
+    return status === 401 || status === 403 ? status : null;
+}
 
 // Screen test (LIVE-CONSTRUCTOR §2): the frame marks the edges of the render
 // area, so a video processor's crop is visible; the dashed lines mark 5% and
@@ -121,9 +130,15 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
     const refreshSeconds = base?.refreshSeconds ?? 10;
     const {results, stream} = useLiveResults(eventID, !!base, {token, refreshSeconds});
     const closed = !!token && results.error instanceof LiveScreenLinkError && results.error.status === 403;
-    const layoutRetryIn = useLiveRetry(staff && layoutQuery.isError && !layoutQuery.data, layoutQuery.errorUpdatedAt, () => void layoutQuery.refetch());
-    const resultsRetryIn = useLiveRetry(results.isError && !results.data && !closed, results.errorUpdatedAt, () => void results.refetch());
-    // Live while the stream is open or its fallback polls succeed.
+    // The moderator's session ended or their rights were taken: sign in or «no access», no retries.
+    const denied = staff ? staffDenied(layoutQuery.data ? null : layoutQuery.error) ?? staffDenied(results.error) : null;
+    const layoutRetryIn = useLiveRetry(staff && layoutQuery.isError && !layoutQuery.data && !denied, layoutQuery.errorUpdatedAt, () => void layoutQuery.refetch());
+    // A failed snapshot is retried with or without older data: while the
+    // stream stays open no new change may come to reload it (a freeze holds
+    // back the others' solves), so waiting for one would keep it stale.
+    const resultsRetryIn = useLiveRetry(results.isError && !closed && !denied, results.errorUpdatedAt, () => void results.refetch());
+    // Live while the stream is open or its fallback polls succeed, and the
+    // last snapshot load did too.
     const lostAt = useLiveConnection(!results.isError && stream !== "connecting", refreshSeconds);
     // The shape of the window picks the layout: the nearest saved format.
     const windowSize = useWindowSize();
@@ -152,6 +167,8 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
 
     // A link revoked or expired while the screen is open.
     if (closed) return <LiveLinkClosed event={event} />;
+    if (denied === 401) return <SignInRedirect event={event} />;
+    if (denied === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;
     if (staff && layoutQuery.isError && !layoutQuery.data) return <LiveFailure event={event} message={t("live.loadFailed")} error={layoutQuery.error} retryIn={layoutRetryIn} onRetry={() => void layoutQuery.refetch()} />;
     if (results.isError && !results.data) return <LiveFailure event={event} message={t("live.resultsUnavailable")} error={results.error} retryIn={resultsRetryIn} onRetry={() => void results.refetch()} />;
     if (!base) return <LiveState event={event}><EventLoading event={event} label={t("live.loading")} /></LiveState>;
@@ -167,7 +184,7 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
             <LiveCanvas layout={layout} event={event} stages={stages} results={results.data} />
             {testing && <LiveScreenTest layout={layout} />}
         </div>
-        {lostAt !== null && <div className="live-offline" role="status"><WifiOff aria-hidden="true" />{t("live.offline", {time: clockLabel(lostAt)})}</div>}
+        {lostAt !== null && <div className="live-offline" role="status" style={{right: safe.x + 16, bottom: safe.y + 16}}><WifiOff aria-hidden="true" />{t("live.offline", {time: clockLabel(lostAt)})}</div>}
         <div className="live-controls" aria-label={t("live.controls")}>
             {fullscreen.supported && <EventTooltip content={t("live.keyF")}>{id => <button type="button" onClick={fullscreen.toggle} aria-keyshortcuts="F" aria-describedby={id}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}</EventTooltip>}
             <EventTooltip content={t("live.keyT")}>{id => <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} aria-keyshortcuts="T" aria-describedby={id}><MonitorCheck size={16} />{t("live.test.title")}</button>}</EventTooltip>

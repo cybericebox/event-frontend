@@ -3,15 +3,19 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {act, renderHook} from "@testing-library/react";
 import {liveConnectionLost, liveRetryDelay, useLiveConnection, useLiveRetry} from "./liveRecovery";
 
-afterEach(() => {vi.useRealTimers();});
+afterEach(() => {vi.useRealTimers(); vi.restoreAllMocks();});
 
 describe("live retry", () => {
     it("backs off 5 → 10 → 30 s and keeps retrying every 30 s", () => {
-        expect([1, 2, 3, 4, 10].map(liveRetryDelay)).toEqual([5, 10, 30, 30, 30]);
+        expect([1, 2, 3, 4, 10].map(attempt => liveRetryDelay(attempt, () => 0.5))).toEqual([5, 10, 30, 30, 30]);
+        // ±20% so screens that failed together do not return in the same second.
+        expect(liveRetryDelay(3, () => 0)).toBe(24);
+        expect(liveRetryDelay(3, () => 1)).toBe(36);
     });
 
     it("retries a failed load by itself, with longer pauses after each failure", async () => {
         vi.useFakeTimers();
+        vi.spyOn(Math, "random").mockReturnValue(0.5);
         const retry = vi.fn();
         const {result, rerender} = renderHook(({failed, at}) => useLiveRetry(failed, at, retry), {initialProps: {failed: true, at: 1}});
         await act(async () => {await Promise.resolve();});
@@ -36,6 +40,25 @@ describe("live retry", () => {
         rerender({failed: true, at: 4});
         await act(async () => {vi.advanceTimersByTime(5000);});
         expect(retry).toHaveBeenCalledTimes(4);
+    });
+
+    it("shows the first pause at once, never a bare «retrying» first", () => {
+        vi.useFakeTimers();
+        const {result} = renderHook(() => useLiveRetry(true, 1, () => undefined));
+        expect(result.current).toBe(5);
+    });
+
+    it("arms the next try even when a try brings no new failure", async () => {
+        vi.useFakeTimers();
+        vi.spyOn(Math, "random").mockReturnValue(0.5);
+        const retry = vi.fn();
+        renderHook(() => useLiveRetry(true, 1, retry));
+        await act(async () => {vi.advanceTimersByTime(5000);});
+        expect(retry).toHaveBeenCalledTimes(1);
+        // The try loaded another query; this one still has no data and no new error.
+        await act(async () => {vi.advanceTimersByTime(30_000);});
+        await act(async () => {vi.advanceTimersByTime(10_000);});
+        expect(retry).toHaveBeenCalledTimes(2);
     });
 });
 

@@ -33,7 +33,8 @@ export function liveTablePage<T>(teams: T[], {pageSize, pinTop, page}: {pageSize
     const pageCount = Math.ceil(rest / per);
     const index = ((Math.floor(page) % pageCount) + pageCount) % pageCount;
     const start = pinned + Math.min(index * per, rest - per);
-    return {rows: [...teams.slice(0, pinned), ...teams.slice(start, start + per)], pinned, from: start + 1, to: start + per, total, page: index, pageCount};
+    // The first page shows places 1 to N, the pinned ones included.
+    return {rows: [...teams.slice(0, pinned), ...teams.slice(start, start + per)], pinned, from: index === 0 ? 1 : start + 1, to: start + per, total, page: index, pageCount};
 }
 
 // The page shown at `now`: pages turn every `pageSeconds`. The editor preview

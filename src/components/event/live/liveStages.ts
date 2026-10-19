@@ -32,6 +32,12 @@ export function liveNextStage(stages: LiveStage[], now: number): LiveStage | nul
     return [...stages].sort((a, b) => time(a.OpensAt) - time(b.OpensAt)).find(stage => time(stage.OpensAt) > now) ?? null;
 }
 
+// «До кінця: Етап 1»; without the name («До кінця етапу») when the title
+// already shows the stage.
+function stageLabel(key: "live.timer.stageEnd" | "live.timer.stageNext", stage: LiveStage, named: boolean): string {
+    return named ? t(key, {stage: stage.Name}) : t(`${key}Short`);
+}
+
 const countdown = (target: number, label: string): LiveTimerState => ({mode: "countdown", target, label});
 const word = (value: string, label = ""): LiveTimerState => ({mode: "word", word: value, label});
 
@@ -50,19 +56,20 @@ function eventState(event: PublicEventInfo, now: number): LiveTimerState {
 // «Автоматично»: before the start → to the start; then to the end of the
 // current stage; between stages → to the next stage; after the stages → to
 // the finish; after the finish → «Завершено».
-function autoState(event: PublicEventInfo, stages: LiveStage[], now: number): LiveTimerState {
+function autoState(event: PublicEventInfo, stages: LiveStage[], now: number, named: boolean): LiveTimerState {
     const start = time(event.StartTime);
     const finish = event.FinishTime ? time(event.FinishTime) : null;
     if (now < start || finish !== null && now >= finish) return eventState(event, now);
     const current = liveCurrentStage(stages, now);
-    if (current) return countdown(time(current.ClosesAt), t("live.timer.stageEnd", {stage: current.Name}));
+    if (current) return countdown(time(current.ClosesAt), stageLabel("live.timer.stageEnd", current, named));
     const next = liveNextStage(stages, now);
-    if (next && (finish === null || time(next.OpensAt) < finish)) return countdown(time(next.OpensAt), t("live.timer.stageNext", {stage: next.Name}));
+    if (next && (finish === null || time(next.OpensAt) < finish)) return countdown(time(next.OpensAt), stageLabel("live.timer.stageNext", next, named));
     return eventState(event, now);
 }
 
-// The timer of a widget at `now`. `frozenAt` is the results freeze moment.
-export function liveTimerState(props: LiveWidget["props"], event: PublicEventInfo, stages: LiveStage[], now: number, frozenAt: string | null): LiveTimerState {
+// The timer of a widget at `now`. `frozenAt` is the results freeze moment;
+// `named`: the label names the stage (off when the title shows it).
+export function liveTimerState(props: LiveWidget["props"], event: PublicEventInfo, stages: LiveStage[], now: number, frozenAt: string | null, named = true): LiveTimerState {
     const source = (typeof props.source === "string" ? props.source : "auto") as LiveTimerSource;
     if (source === "start") {
         const start = time(event.StartTime);
@@ -85,17 +92,17 @@ export function liveTimerState(props: LiveWidget["props"], event: PublicEventInf
     }
     if (source === "stage-end") {
         const current = liveCurrentStage(stages, now);
-        if (current) return countdown(time(current.ClosesAt), t("live.timer.stageEnd", {stage: current.Name}));
+        if (current) return countdown(time(current.ClosesAt), stageLabel("live.timer.stageEnd", current, named));
         const next = liveNextStage(stages, now);
-        if (next) return countdown(time(next.OpensAt), t("live.timer.stageNext", {stage: next.Name}));
-        return stages.length ? word(t("live.timer.stagesDone")) : autoState(event, stages, now);
+        if (next) return countdown(time(next.OpensAt), stageLabel("live.timer.stageNext", next, named));
+        return stages.length ? word(t("live.timer.stagesDone")) : autoState(event, stages, now, named);
     }
     if (source === "stage-next") {
         const next = liveNextStage(stages, now);
-        if (next) return countdown(time(next.OpensAt), t("live.timer.stageNext", {stage: next.Name}));
-        return stages.length ? word(t("live.timer.stagesDone")) : autoState(event, stages, now);
+        if (next) return countdown(time(next.OpensAt), stageLabel("live.timer.stageNext", next, named));
+        return stages.length ? word(t("live.timer.stagesDone")) : autoState(event, stages, now, named);
     }
-    return autoState(event, stages, now);
+    return autoState(event, stages, now, named);
 }
 
 // The digits of a countdown or elapsed time: HH:MM:SS, or HH:MM without seconds.

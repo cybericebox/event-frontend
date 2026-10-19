@@ -63,7 +63,9 @@ export function liveTimerFit({width, height, digits, label, labelSize, badge = n
         const topFont = top ? Math.max(natural * topRatio, labelMin) : 0;
         const bottomFont = bottom ? Math.max(natural * bottomRatio, labelMin) : 0;
         const digitsFont = Math.max(0, Math.min(byWidth, (height - topFont * 1.3 - bottomFont * 1.4) / 1.08));
-        return {digits: digitsFont, top: fitText(top, topFont, top === badge ? 2.4 : 0), bottom: fitText(bottom, bottomFont, 2.4)};
+        // The label never drops below its floor: a long one ends with «…» instead.
+        const topText = top === badge ? fitText(top, topFont, 2.4) : Math.max(Math.min(labelMin, topFont), fitText(top, topFont, 0));
+        return {digits: digitsFont, top: topText, bottom: fitText(bottom, bottomFont, 2.4)};
     };
     const labelRatio = label ? 0.3 * liveTimerLabelScale[labelSize] : 0;
     if (!badge) {
@@ -141,5 +143,9 @@ export function liveTableFit({width, rowHeight, body, rankChars, pointsChars, na
         if (twoLines >= floor) return {font: twoLines, lines: 2};
         return {font: floor, lines: rowHeight >= 2 * nameLeading * floor ? 2 : 1};
     };
-    return {font, rankWidth, pointsWidth, nameWidth, names: names.map(fitName)};
+    // One size for the one-line names of a page, so neighbouring rows match;
+    // a wrapped name keeps its own.
+    const fitted = names.map(fitName);
+    const oneLine = Math.min(font, ...fitted.filter(name => name.lines === 1).map(name => name.font));
+    return {font, rankWidth, pointsWidth, nameWidth, names: fitted.map(name => name.lines === 1 ? {font: oneLine, lines: 1} : name)};
 }
