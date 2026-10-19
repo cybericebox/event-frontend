@@ -1,5 +1,7 @@
 "use client";
 
+import {BlockContent} from "./BlockContent";
+import type {BlockLayoutProps} from "./blockLayout";
 import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {getCurrentUser, getInvitationInfo, getJoinStatus} from "@/api/clientAuth";
@@ -76,7 +78,8 @@ export function joinState({preview, staff, windowOpen, timeWindowOpen, registerA
 
 const joinLabel = (kind: "invite" | "pending" | "approved" | "rejected") => t(`content.join.${kind}`);
 
-export function ActionBlock({id, title, text, variant, alignment, selected, primaryHeading, preview, previewViewer, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID}: {
+export function ActionBlock({layoutProps, id, title, text, variant, alignment, selected, primaryHeading, preview, previewViewer, actions, registrationOpen, joinPolicy, startAt, finishAt, eventID}: {
+    layoutProps?: BlockLayoutProps;
     id: string;
     title: string;
     text: string;
@@ -138,14 +141,14 @@ export function ActionBlock({id, title, text, variant, alignment, selected, prim
     });
     if (!visible.length && !title && !text) return null;
     const branded = variant === "mass";
-    return <section className={`ib-block ib-block-cta${branded ? " ib-mass ib-mass-waves" : ""}${!title && !text ? " ib-block-cta--buttons-only" : ""} ib-block-cta--actions-${alignment ?? "end"}`} id={id} data-preview-selected={selected || undefined}>
-        <div className="ib-block__in"><div>{title && (primaryHeading ? <h1 className="ib-block-cta__title">{title}</h1> : <h2 className="ib-block-cta__title">{title}</h2>)}{text && <p className="ib-block-cta__text">{text}</p>}</div>
+    return <section className={`ib-block ib-block-cta${branded ? " ib-mass ib-mass-waves" : ""}${!title && !text ? " ib-block-cta--buttons-only" : ""} ib-block-cta--actions-${alignment ?? "end"}`} id={id} {...layoutProps} data-preview-selected={selected || undefined}>
+        <BlockContent constrained={layoutProps?.["data-layout-width"]}><div>{title && (primaryHeading ? <h1 className="ib-block-cta__title">{title}</h1> : <h2 className="ib-block-cta__title">{title}</h2>)}{text && <p className="ib-block-cta__text">{text}</p>}</div>
             {visible.length > 0 && <div className="ib-block-cta__acts">{visible.map((action, position) => {
                 const className = `ib-btn${position === 0 ? branded ? " ib-btn--mass" : " ib-btn--primary" : branded ? " ib-btn--mass-outline" : ""}`;
                 if (action.status === "loading") return <span key={action.index} className={`${className} ib-block-cta__reserved`} aria-hidden="true">{action.label}</span>;
                 if (action.status === "static") return <span key={action.index} className={`${className} ib-block-cta__status`} role="status">{action.label}</span>;
                 return <a key={action.index} className={className} href={action.href}>{action.label}</a>;
             })}</div>}
-        </div>
+        </BlockContent>
     </section>;
 }

@@ -1,3 +1,5 @@
+import {BlockContent} from "./BlockContent";
+import type {BlockLayoutProps} from "./blockLayout";
 import type {ReactNode} from "react";
 import Image from "next/image";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -12,15 +14,16 @@ function safeHref(href: string | undefined): string | undefined {
 
 // Block «Партнери» (ds-v2 patterns/blocks/partners): named groups of logos,
 // one height and one tone for every logo; a logo may link to its site.
-export function PartnersBlock({id, selected, heading, text, groups}: {
+export function PartnersBlock({layoutProps, id, selected, heading, text, groups}: {
+    layoutProps?: BlockLayoutProps;
     id: string;
     selected?: boolean;
     heading: ReactNode;
     text: string;
     groups: {title: string; items: Logo[]}[];
 }) {
-    return <section className="ib-block ib-block-partners" id={id} data-preview-selected={selected || undefined}>
-        <div className="ib-block__in">
+    return <section className="ib-block ib-block-partners" id={id} {...layoutProps} data-preview-selected={selected || undefined}>
+        <BlockContent constrained={layoutProps?.["data-layout-width"]}>
             {heading}
             {text && <p className="ib-block-partners__text">{text}</p>}
             {groups.map((group, groupIndex) => <div className="ib-block-partners__group" key={groupIndex}>
@@ -37,6 +40,6 @@ export function PartnersBlock({id, selected, heading, text, groups}: {
                     return <li key={logoIndex}>{logo.imageURL ? <EventTooltip content={logo.name} className="ib-block-partners__tip" silent>{() => tile}</EventTooltip> : tile}</li>;
                 })}</ul>
             </div>)}
-        </div>
+        </BlockContent>
     </section>;
 }

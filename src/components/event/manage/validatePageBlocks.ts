@@ -1,3 +1,4 @@
+import {blockLayoutProblems} from "./blockLayoutValidation";
 import type {ContentBlock, ContentDocument} from "../../../types/eventContent";
 import {visibilityOperators, type ContentVariableDefinition} from "../content/variableCatalog";
 import {validDatePattern} from "../content/dateDisplay";
@@ -106,6 +107,7 @@ export function landingProblems(document: ContentDocument, catalog: ContentVaria
     const contentVariableByName = new Map(catalog.map(variable => [variable.name, variable]));
     const ids = new Set<string>();
     for (const [index, block] of document.blocks.entries()) {
+        for (const issue of blockLayoutProblems(block)) problems.push({index, field: issue.field, message: t("manage.validation.block", {index: index + 1, message: issue.message})});
         if (!block.id.trim() || ids.has(block.id)) add(index, "badId");
         ids.add(block.id);
         // A repeated anchor is reported at its later block.
