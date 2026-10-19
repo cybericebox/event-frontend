@@ -10,10 +10,10 @@ import {LiveEditor} from "./LiveEditor";
 HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
 HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 
-const api = vi.hoisted(() => ({save: vi.fn(), publish: vi.fn()}));
+const api = vi.hoisted(() => ({save: vi.fn(), publish: vi.fn(), settings: vi.fn()}));
 vi.mock("@/api/manageLive", async importOriginal => ({...await importOriginal<typeof import("@/api/manageLive")>(), saveManageLiveDraft: api.save, publishManageLive: api.publish}));
 vi.mock("@/api/manageResults", async importOriginal => ({...await importOriginal<typeof import("@/api/manageResults")>(),
-    getResultsSettings: vi.fn(() => new Promise(() => undefined))}));
+    getResultsSettings: api.settings}));
 vi.mock("../useLiveResults", () => ({useLiveResults: () => ({results: {data: undefined}, stream: "live"})}));
 vi.mock("../LiveQR", () => ({LiveQR: () => null}));
 
@@ -34,7 +34,7 @@ function mount(canManage = true, editor = data) {
 }
 const widgets = () => document.querySelectorAll(".event-live-editor__native .live-widget").length;
 
-beforeEach(() => {api.save.mockReset().mockResolvedValue(undefined); api.publish.mockReset();});
+beforeEach(() => {api.save.mockReset().mockResolvedValue(undefined); api.publish.mockReset(); api.settings.mockReset().mockReturnValue(new Promise(() => undefined));});
 afterEach(cleanup);
 
 describe("live editor", () => {
@@ -227,5 +227,23 @@ describe("live editor", () => {
         mount(false);
         expect(screen.queryByRole("button", {name: /Опублікувати/})).toBeNull();
         expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it("stops at 48 widgets on a scene with a clear message instead of a failing save", () => {
+        const full = Array.from({length: 48}, (_, index) => ({id: `q${index}`, type: "qr" as const, x: index % 12 + 1, y: Math.floor(index / 12) + 1, w: 1, h: 1, props: {value: "/"}}));
+        mount(true, {Published: {...defaultLiveLayout, scenes: undefined, widgets: full}, Draft: null});
+        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «QR-код»"}));
+        expect(screen.getByRole("alert").textContent).toBe("На одній сцені може бути не більше 48 віджетів. Приберіть зайвий віджет.");
+        expect(document.querySelectorAll(".event-live-editor__native .live-widget")).toHaveLength(48);
+    });
+
+    it("says on the «Заморожено» tab that the scene will not show while the freeze is not applied", async () => {
+        api.settings.mockResolvedValue({ScoreboardVisibility: 0, FreezeEnabled: true, FreezeMinutes: 60, LiveFreeze: false, ChartEnabled: true, ChartTeams: 10, RowsLimit: null, OpenedAt: null,
+            Freeze: {Enabled: true, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false}});
+        mount();
+        fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
+        expect(await screen.findByText(/вимкнено: зал бачить живі результати, і ця сцена не покажеться/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
+        expect(screen.queryByText(/зал бачить живі результати/)).toBeNull();
     });
 });
