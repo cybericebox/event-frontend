@@ -34,7 +34,7 @@ const scenes = {
         organizers(), partners(),
     ]),
     prestart: () => canvas([
-        widget("title", 1, 1, 8, 2), widget("timer", 1, 3, 8, 3, {align: "left"}),
+        widget("title", 1, 1, 8, 2, {subtitleStage: true}), widget("timer", 1, 3, 8, 3, {align: "left"}),
         widget("facts", 1, 6, 8, 2, {items: ["teams", "tasks", "start"]}),
         widget("qr", 9, 1, 4, 7, {value: "/", caption: t("live.template.qrCaption")}),
         organizers(), partners(),
@@ -45,7 +45,7 @@ const scenes = {
         organizers(), partners(),
     ]),
     break: () => canvas([
-        widget("title", 1, 1, 6, 1), widget("clock", 7, 1, 3, 1), widget("timer", 10, 1, 3, 1),
+        widget("title", 1, 1, 6, 1), widget("clock", 7, 1, 3, 1, {label: t("live.template.clockLabel")}), widget("timer", 10, 1, 3, 1),
         widget("announcement", 1, 2, 12, 2, {text: t("live.template.breakText")}),
         organizers(1, 4, 12, 2), partners(1, 6, 10, 3, {mode: "fixed", rows: 2}),
         widget("qr", 11, 6, 2, 3, {value: "/", caption: t("live.template.qrShort")}),

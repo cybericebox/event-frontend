@@ -76,7 +76,7 @@
 /* «Перегляд»: the target resolution of the preview (K1). */
 .event-live-editor__preview{display:flex;align-items:center;gap:var(--ib-2)}
 .event-live-editor__preview>span{color:var(--ib-dim);font-size:var(--ib-fs-12)}
-.event-live-editor__stage-meta{display:flex;align-items:center;justify-content:space-between;gap:var(--ib-2);min-height:24px;flex-wrap:wrap}
+.event-live-editor__stage-meta{position:relative;display:flex;align-items:center;justify-content:space-between;gap:var(--ib-2);min-height:24px;flex-wrap:wrap}
 /* Text warnings: a counter by the stage; the list opens on demand, so the canvas does not move. */
 .event-live-editor__warnings-toggle{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border:1px solid var(--ib-warn);border-radius:999px;background:var(--ib-warn-bg);color:var(--ib-ink);font:inherit;font-size:var(--ib-fs-12);cursor:pointer}
 .event-live-editor__warnings-toggle svg{color:var(--ib-warn)}
@@ -147,7 +147,9 @@
 
 
 .event-live-editor__error{padding:var(--ib-3);border:1px solid var(--ib-danger);border-radius:var(--ib-r);color:var(--ib-danger)}
-.event-live-editor__warnings{display:grid;gap:4px;margin:0;padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-warn);border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink);list-style:none}
+/* The open list lies over the stage, so the canvas never moves. */
+.event-live-editor__warnings{position:absolute;top:calc(100% + 4px);right:0;z-index:5;display:grid;gap:4px;width:min(560px,100%);max-height:50vh;margin:0;overflow-y:auto;padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-warn);border-radius:var(--ib-r);background:var(--ib-paper);color:var(--ib-ink);list-style:none}
+.event-live-editor__warnings.is-quiet{border-color:var(--ib-line)}
 .event-live-editor__warnings button{padding:0;border:0;background:none;color:inherit;font:inherit;font-size:var(--ib-fs-13);text-align:left;cursor:pointer}
 .event-live-editor__warnings button:hover{text-decoration:underline}
 .event-live-editor__warnings li.is-floor button{color:var(--ib-dim)}

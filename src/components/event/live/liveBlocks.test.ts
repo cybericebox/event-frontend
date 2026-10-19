@@ -3,7 +3,7 @@ import type {LiveWidget} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {liveFactItems, liveFacts} from "./liveFacts";
-import {liveFactsFit, livePodiumFit} from "./liveFit";
+import {liveFactsFit, livePodiumFit, liveTwoLineRow} from "./liveFit";
 import {liveTimerDigits, liveTimerUrgency, liveTimerZero, type LiveTimerState} from "./liveStages";
 import {liveSolveItems, liveTableSource} from "./LiveCanvas";
 import {liveCaptionShown, liveCaptionText, liveTextFloors, liveTextSize, liveTextWarnings, liveWidgetTextScale} from "./liveText";
@@ -158,5 +158,60 @@ describe("per-block text size and caption", () => {
         expect(liveCaptionText(widget("table", {caption: " Рейтинг "}), "Таблиця результатів")).toBe("Рейтинг");
         expect(liveCaptionText(widget("logos", {title: "Партнери"}), "Логотипи")).toBe("Партнери");
         expect(liveCaptionShown(widget("timer"))).toBe(false);
+    });
+});
+
+describe("stages block fit (I3)", () => {
+    const hour = 3600_000, base = Date.parse("2026-10-20T07:00:00Z");
+    const stagesOf = (count: number, name = (i: number) => `Етап ${i + 1}`) => Array.from({length: count}, (_, i) => ({
+        Name: name(i), OpensAt: new Date(base + i * hour).toISOString(), ClosesAt: new Date(base + (i + 0.9) * hour).toISOString(),
+    }));
+    const stageLayout = (w: number, h: number) => livePreviewLayout({...defaultLiveLayout, widgets: [{id: "s", type: "stages", x: 1, y: 2, w, h, props: {}}]}, "720");
+    const fits = (layout: ReturnType<typeof stageLayout>, stages: ReturnType<typeof stagesOf>) => liveTextWarnings(layout, "CTF", stages).filter(item => item.kind === "fit");
+
+    it("is quiet for three stages in the template block", () => {
+        expect(fits(stageLayout(4, 6), stagesOf(3))).toEqual([]);
+    });
+
+    it("counts the real stages: 8 keep the floors in a 4×6 block at 720p, 10 do not", () => {
+        expect(fits(stageLayout(4, 6), stagesOf(8))).toEqual([]);
+        expect(fits(stageLayout(4, 6), stagesOf(10)).map(item => item.text).join()).toMatch(/етапи \(10\)/);
+    });
+
+    it("warns at 720p when long names do not fit a narrow block", () => {
+        expect(fits(stageLayout(3, 6), stagesOf(3, i => `Етап ${i + 1} · Реверс-інжиніринг і криптографія`))).toHaveLength(1);
+    });
+
+    it("never sizes the time line under the caption floor, nor the name under the body", () => {
+        const fit = liveTwoLineRow({rowHeight: 50, width: 400, chars: 20, body: 20, caption: 18});
+        expect(fit.name).toBeGreaterThanOrEqual(20);
+        expect(fit.meta).toBeGreaterThanOrEqual(18);
+        expect(fit.readable).toBe(false);
+        expect(liveTwoLineRow({rowHeight: 120, width: 400, chars: 20, body: 20, caption: 18}).readable).toBe(true);
+    });
+});
+
+describe("facts over more than one day (Q4)", () => {
+    it("adds the date to the start and finish of a multi-day event only", () => {
+        const twoDays = {...event, StartTime: "2026-10-20T07:00:00Z", FinishTime: "2026-10-21T15:00:00Z"} as PublicEventInfo;
+        const [start, finish] = liveFacts(["start", "finish"], twoDays, results);
+        expect(start.value).toMatch(/^\d\d\.\d\d \d\d:\d\d$/);
+        expect(finish.value).toMatch(/^\d\d\.\d\d \d\d:\d\d$/);
+        expect(liveFacts(["start"], event, results)[0].value).toMatch(/^\d\d:\d\d$/);
+    });
+});
+
+describe("timer and table minors", () => {
+    const at = Date.parse("2026-10-20T10:00:00Z");
+    it("keeps HH:MM in «Коротко» when seconds are off", () => {
+        const state: LiveTimerState = {mode: "countdown", target: at + 45 * 60_000, label: ""};
+        expect(liveTimerDigits(state, at, false, "compact")).toBe("00:45");
+        expect(liveTimerDigits(state, at, true, "compact")).toBe("45:00");
+    });
+
+    it("warns about a timer in words that cannot fit", () => {
+        const layout = livePreviewLayout({...defaultLiveLayout, widgets: [{id: "t", type: "timer", x: 1, y: 1, w: 3, h: 1, props: {digits: "words"}}]}, "720");
+        expect(liveTextWarnings(layout).some(item => item.kind === "fit")).toBe(true);
+        expect(liveTextWarnings({...layout, widgets: [{...layout.widgets[0], props: {}}]}).some(item => item.kind === "fit")).toBe(false);
     });
 });

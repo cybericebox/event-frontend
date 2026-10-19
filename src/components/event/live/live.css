@@ -59,6 +59,8 @@
 .live-solves{margin:0;padding:0;list-style:none}
 .live-solves li{display:flex;gap:.6em;align-items:center;border-bottom:1px solid var(--live-line);line-height:1.2}
 .live-solves li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-solves li span strong{font-weight:600}
+.live-solves li span em{color:var(--live-dim);font-style:normal;font-weight:400}
 .live-solves li b{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
 .live-solves li time{color:var(--live-faint);font-size:.75em;font-family:var(--font-geist-mono,ui-monospace,monospace)}
 /* Empty widget: the shared EmptyState fills the tile under its caption, centered. */
@@ -138,7 +140,7 @@
 .live-stages{margin:0;padding:0;list-style:none}
 .live-stages li{display:flex;flex-direction:column;justify-content:center;gap:.15em;padding-inline:.4em;border-bottom:1px solid var(--live-line);line-height:1.2}
 .live-stages li span{min-width:0;overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
-.live-stages small{display:flex;align-items:baseline;gap:.8em;color:var(--live-faint);font-size:.75em;white-space:nowrap}
+.live-stages small{display:flex;align-items:baseline;gap:.8em;color:var(--live-faint);white-space:nowrap}
 .live-stages time{font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums}
 .live-stages b{font-weight:600}
 .live-stages li.is-now{background:var(--live-lead)}

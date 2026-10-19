@@ -21,7 +21,7 @@ import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import {clockLabel} from "@/utils/resultsFreeze";
 import crest from "@/styles/assets/crest-128.png";
 import "./live.css";
-import {t} from "@/i18n/t";
+import {t, tRich} from "@/i18n/t";
 
 const noStages: LiveStage[] = [];
 
@@ -219,7 +219,7 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix}: {widget
     const title = captionOf(widget, t("live.table.title", {suffix}));
     const caption = title === null ? null : <>
         <span>{title}</span>
-        {paged && <span className="live-list__range">{t("live.table.range", {from: view.from + offset, to: view.to + offset, total: teams.length})}</span>}
+        {paged && <span className="live-list__range">{t("live.table.range", {from: view.from + offset, to: view.to + offset, total: offset + source.length})}</span>}
     </>;
     const rankChars = String(teams.at(-1)?.Rank ?? 1).length;
     const pointsChars = Math.max(...teams.map(team => livePoints(team.Points).length), 1);
@@ -260,7 +260,9 @@ function LiveSolves({widget, results, metrics, suffix, participation}: {widget: 
     const caption = captionOf(widget, t(first ? "live.solves.firstTitle" : "live.solves.title", {suffix}));
     return <LiveList caption={caption} rows={rows} header={false} metrics={metrics} empty={items.length ? null : t("live.solves.empty")}>
         {(geometry, width) => <ol className="live-solves" style={{fontSize: liveSolvesFont(geometry.rowFont, width, metrics.body)}}>{items.map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`} style={{height: geometry.rowHeight}}>
-            <span>{t("live.solves.row", {team: names.get(item.EventTeamID) ?? (participation === 1 ? t("live.table.team") : t("live.table.participant")), task: item.ChallengeName})}</span><b>{t("live.solves.points", {points: livePoints(item.Points)})}</b><time>{clockLabel(item.SolvedAt)}</time>
+            <span>{tRich("live.solves.row", {team: <strong>{names.get(item.EventTeamID) ?? (participation === 1 ? t("live.table.team") : t("live.table.participant"))}</strong>, task: <em>{item.ChallengeName}</em>})}</span>
+            {/* First solves are about the task: no points, the room goes to its name. */}
+            {!first && <b>{t("live.solves.points", {points: livePoints(item.Points)})}</b>}<time>{clockLabel(item.SolvedAt)}</time>
         </li>)}</ol>}
     </LiveList>;
 }

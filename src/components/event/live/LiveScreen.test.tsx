@@ -145,4 +145,14 @@ describe("live screen scenes", () => {
         await advance(1000);
         expect(document.querySelector(".live-widget--chart")).not.toBeNull();
     });
+
+    it("stays on the board when the hall sees live results during the freeze", async () => {
+        const live = {...board(false), Freeze: {Enabled: true, FrozenAt: new Date(now - 600_000).toISOString(), FinishAt: null, OpenedAt: null, Active: true, Applied: false}};
+        api.results.mockResolvedValue(live);
+        api.layout.mockResolvedValue({...defaultLiveLayout, scenes: {...defaultLiveLayout.scenes, frozen: {grid: {cols: 12, rows: 8}, widgets: [{id: "ann", type: "announcement", x: 1, y: 1, w: 12, h: 8, props: {text: "Результати заморожено"}}]}}});
+        mountAt(event);
+        await advance(1000);
+        expect(document.querySelector(".live-widget--announcement")).toBeNull();
+        expect(document.querySelector(".live-widget--chart")).not.toBeNull();
+    });
 });
