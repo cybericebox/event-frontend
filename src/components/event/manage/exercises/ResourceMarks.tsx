@@ -2,7 +2,7 @@
 
 import type {TaskResources} from "@/api/manageChallenges";
 import {t} from "@/i18n/t";
-import {hasResources, resourcesText} from "./resourceModel";
+import {formatCpu, formatMemory, hasResources, resourcesText} from "./resourceModel";
 
 // An approved resource elevation: the task is heavier than the platform frame.
 export function ResourceHeavyTag({show}: {show: boolean}) {
@@ -17,4 +17,11 @@ export function NoAgentFitsTag({show}: {show: boolean}) {
 // The total resources of a set of tasks (CPU, memory, devices).
 export function ResourcesLine({resources, className = "event-resources-line"}: {resources: TaskResources | null; className?: string}) {
     return hasResources(resources) ? <span className={className} data-resources-total>{resourcesText(resources)}</span> : null;
+}
+
+// The largest variant in short form for a one-line header: «1 vCPU · 1 ГіБ · пристроїв: 3».
+export function ResourcesShort({resources, className = "event-resources-short"}: {resources: TaskResources | null; className?: string}) {
+    if (!hasResources(resources)) return null;
+    const max = resources.Max;
+    return <span className={className} data-resources-short>{t("manage.exercises.resourcesShort", {cpu: formatCpu(max.CPUMillicores), memory: formatMemory(max.MemoryBytes), devices: max.Devices})}</span>;
 }

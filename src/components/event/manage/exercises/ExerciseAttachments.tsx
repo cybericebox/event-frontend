@@ -31,7 +31,7 @@ import {getManageStages} from "@/api/manageStages";
 import {HintMark, TaskRow} from "./TaskRow";
 import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRowModel";
 import {SetStatusIcon} from "./SetStatusIcon";
-import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
+import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine, ResourcesShort} from "./ResourceMarks";
 import {ResourcePlanSummary} from "./ResourcePlanSummary";
 import {CatalogStatsList} from "./CatalogStats";
 import {EventSwitch} from "@/components/ui/EventSwitch";
@@ -163,8 +163,10 @@ export function ExerciseAttachments() {
                             </button>}</EventTooltip>
                             <h3 id={`set-${attachment.ID}`}>{name}</h3>
                             <SetStatusIcon status={status} />
-                            <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
-                            <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
+                            <span className="event-exercise-set__tags">
+                                <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
+                                <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
+                            </span>
                             {attachment.Infrastructure && <InfrastructureIcon />}
                             <ResourceHeavyTag show={attachment.ResourceHeavy} />
                             <NoAgentFitsTag show={attachment.NoAgentFits} />
@@ -174,6 +176,7 @@ export function ExerciseAttachments() {
                         <div className="event-exercise-set__side">
                             {/* The pinned version's stats; the count opens the subtask names (a button: it never toggles the set). */}
                             <CatalogStatsList average={attachment.AvgDifficulty} count={attachment.TaskCount} names={attachment.TaskNames} className="event-exercise-set__stats" />
+                            <ResourcesShort resources={attachment.Resources} className="event-exercise-set__res" />
                             <span className="event-task__badges">
                                 {summary.hints && <HintMark hints={summary.hints} />}
                                 {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
@@ -182,26 +185,31 @@ export function ExerciseAttachments() {
                             {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy} broken={mismatch}
                                 onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}
                         </div>
-                        <p className="event-exercise-set__meta">
-                            {[
-                                tPlural("manage.exercises.meta.challenges", attachment.ChallengeCount),
-                                publishedLabel(challenges.filter(challenge => challenge.Published).length, lifecycleQuery.data.Status),
-                                attachment.VariantMode === 1 && attachment.FixedVariantIndex !== null ? t("manage.exercises.meta.fixedVariant", {number: attachment.FixedVariantIndex + 1})
-                                    : attachment.VariantCount > 1 ? tPlural("manage.exercises.meta.variants", attachment.VariantCount) : "",
-                                attachment.Fork ? t("manage.exercises.meta.forkOf", {number: attachment.Fork.SourceVersionNumber}) : "",
-                            ].filter(Boolean).join(" · ")}
-                        </p>
-                        <ResourcesLine resources={attachment.Resources} className="event-exercise-set__meta" />
-                        {/* A warning, not an error: its full text once, in the open set; a collapsed set keeps only the mark. */}
-                        {flagRepeat && open && <div className="event-exercise-set__warning event-exercise-set__warning--warn" role="note">
-                            <TriangleAlert size={16} aria-hidden="true" /><span>{flagRepeat}</span>
-                        </div>}
                         <ImageUnavailableNotice items={availabilityQuery.data?.get(attachment.ID) ?? []} canManage={canManage} />
                         {mismatch && <div className="event-exercise-set__warning" role="alert">
                             <span><strong>{t("manage.challenges.set.infraMissing")}</strong> {t(published ? "manage.challenges.set.infraMissingAfter" : "manage.challenges.set.infraMissingBefore")}</span>
                         </div>}
                     </header>
                     {open && <div className="event-exercise-set__body" id={`set-tasks-${attachment.ID}`}>
+                        {/* The details the one-line header leaves out. */}
+                        <div className="event-exercise-set__details">
+                            {/* Phones keep the name whole in the one-line header: the version and the source move here. */}
+                            <span className="event-exercise-set__tags event-exercise-set__tags--details">{attachmentVersionLabel(attachment)} · {attachmentScopeLabel(kind)}</span>
+                            <p className="event-exercise-set__meta">
+                                {[
+                                    tPlural("manage.exercises.meta.challenges", attachment.ChallengeCount),
+                                    publishedLabel(challenges.filter(challenge => challenge.Published).length, lifecycleQuery.data.Status),
+                                    attachment.VariantMode === 1 && attachment.FixedVariantIndex !== null ? t("manage.exercises.meta.fixedVariant", {number: attachment.FixedVariantIndex + 1})
+                                        : attachment.VariantCount > 1 ? tPlural("manage.exercises.meta.variants", attachment.VariantCount) : "",
+                                    attachment.Fork ? t("manage.exercises.meta.forkOf", {number: attachment.Fork.SourceVersionNumber}) : "",
+                                ].filter(Boolean).join(" · ")}
+                            </p>
+                            <ResourcesLine resources={attachment.Resources} className="event-exercise-set__meta" />
+                            {/* A warning, not an error: its full text once, here in the open set; a collapsed set keeps only the mark. */}
+                            {flagRepeat && <div className="event-exercise-set__warning event-exercise-set__warning--warn" role="note">
+                                <TriangleAlert size={16} aria-hidden="true" /><span>{flagRepeat}</span>
+                            </div>}
+                        </div>
                         {/* Visibility is per set: its tasks share one infrastructure. */}
                         <EventSwitch className="event-manage-form__switch" checked={shown} disabled={!canManage || challenges.length === 0}
                             onCheckedChange={checked => mutations.setPublished(attachment.ID, checked)} label={t("manage.exercises.challenge.showOnBoard")} />

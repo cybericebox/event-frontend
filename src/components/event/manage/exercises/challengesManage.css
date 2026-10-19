@@ -160,3 +160,32 @@ button.event-sortable__main{cursor:pointer}
 .event-resource-plan .event-resource-plan__overhead td{white-space:normal}
 .event-resource-plan .event-resource-plan__basis{display:block;margin:2px 0 0}
 .event-resource-plan__table thead .ib-num{font-family:inherit}
+/* A set is one thin row: name and marks on the left, stats, short resources, badges and actions on the right;
+   the meta line, the long resource line and the flag warning live in the open details. Phones: two lines at most. */
+.event-exercise-set__head{grid-template-columns:minmax(0,1fr) auto;row-gap:var(--ib-2)}
+.event-exercise-set__title{flex-wrap:nowrap}
+.event-exercise-set__title h3{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-exercise-set__title>:not(h3){flex:none}
+.event-exercise-set__side{flex-wrap:nowrap}
+.event-exercise-set__res{color:var(--ib-dim);font-size:var(--ib-fs-12);white-space:nowrap;font-variant-numeric:tabular-nums}
+.event-exercise-set__side .event-catalog-stats{display:flex;align-items:center;gap:var(--ib-3);margin:0}
+.event-exercise-set__side .event-catalog-stats>div{display:flex;align-items:baseline;gap:var(--ib-1)}
+.event-exercise-set__side .event-catalog-stats dt{color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-exercise-set__side .event-catalog-stats dd{margin:0;font-size:var(--ib-fs-13);white-space:nowrap}
+.event-exercise-set__details{display:grid;gap:var(--ib-1)}
+/* The labels stay for screen readers; the values say enough in one row (the count names itself on focus). */
+.event-exercise-set__side .event-catalog-stats dt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media(max-width:640px){
+  /* Line 1: the name with its marks (the name shortens); line 2: stats, badges and actions. */
+  .event-exercise-set__head{grid-template-columns:minmax(0,1fr)}
+  .event-exercise-set__side{flex-wrap:wrap;justify-content:flex-start;gap:var(--ib-1) var(--ib-2)}
+  .event-exercise-set__side .event-task__badges{margin-left:0;padding-left:0}
+  .event-exercise-set__side .event-catalog-stats{gap:var(--ib-2)}
+  /* The level word stays in the open details' stats; the number is enough on the card. */
+  .event-exercise-set__side .event-catalog-stat__difficulty>:first-child{display:none}
+  .event-exercise-set__side .event-exercise-set__res,.event-exercise-set__head .event-exercise-set__tags{display:none}
+  .event-exercise-set__details .event-exercise-set__tags--details{display:block}
+  .event-exercise-set__side .event-row-actions{margin-left:auto}
+}
+.event-exercise-set__tags{display:inline-flex;align-items:center;gap:var(--ib-2)}
+.event-exercise-set__tags--details{display:none;color:var(--ib-dim);font-size:var(--ib-fs-12)}
