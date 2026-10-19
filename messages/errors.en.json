@@ -284,6 +284,8 @@
   "1326": "Registration is not open right now: the event is not published yet or has finished.",
   "1327": "A required form field is not filled in",
   "1328": "The form is invalid",
+  "1329": "Event form not found",
+  "1330": "Event form to answer not found",
   "1401": "infrastructure agent is not connected",
   "1402": "Lab binding data is invalid",
   "1403": "The laboratory access is being reset, try again in a minute",
