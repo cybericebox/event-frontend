@@ -65,6 +65,9 @@ const standSchema = z.object({
     Queue: standQueueSchema.nullish().transform(value => value ?? null),
     // Some images of the stand are pulled by tag, not by digest.
     ImageWarning: z.boolean().nullish().transform(value => value ?? false),
+    // The team's resource reservation: when it deletes the labs (its ending notice), or that it already did. Staff only.
+    ReservationEndsAt: optionalTime,
+    ReservationEnded: z.boolean().nullish().transform(value => value ?? false),
 });
 // Unavailable: images that cannot be pulled (counted in Total but never sent to prewarm; their labs are refused at deploy).
 const prewarmSchema = z.object({

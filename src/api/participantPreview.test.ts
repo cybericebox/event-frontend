@@ -53,3 +53,16 @@ it("fails closed for a missing preview selection and strips expired runtime acce
     fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Expired: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://expired.test"}]}));
     expect(await api.getPreviewLab("event", selection)).toMatchObject({Ready: false, Access: []});
 });
+
+it("preview sends the chosen length", async () => {
+    const api = await import("./participantPreview");
+    fetchMock.mockResolvedValueOnce(reply({ID: "run", SelectionID: selection, Dynamic: true, ExpiresAt: null}));
+    await api.startPreviewRun("event", selection, 45);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain(`/manage/participant-preview/selections/${selection}/start`);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({LeaseMinutes: 45});
+    fetchMock.mockResolvedValueOnce(reply({ID: "run", SelectionID: selection, Dynamic: true, ExpiresAt: null}));
+    await api.startPreviewRun("event", selection);
+    expect(fetchMock.mock.calls[1][1].body).toBeUndefined();
+});

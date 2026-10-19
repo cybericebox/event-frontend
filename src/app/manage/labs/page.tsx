@@ -20,7 +20,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel, standStatusLabel, standStatusTone, standTeamName, type StatusTone} from "@/components/event/manage/standStatus";
-import {queueLineStaff, standQueueLabs, standReasonText} from "@/components/event/labLive";
+import {queueLineStaff, reservationLine, standQueueLabs, standReasonText} from "@/components/event/labLive";
 import {StandDetailDialog} from "@/components/event/manage/StandDetailDialog";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {t, tPlural} from "@/i18n/t";
@@ -176,7 +176,7 @@ export default function ManageLabsPage() {
                     return <Fragment key={stand.TeamID}>
                         <tr>
                             <td><div className="event-participants-table__person"><strong>{standTeamName(stand)}</strong>{stand.Generation > 0 && <small>{t("manage.labs.generation", {count: stand.Generation})}</small>}</div></td>
-                            <td><StatusBadge label={standStatusLabel[stand.Status]} tone={standStatusTone[stand.Status]} />{queueLineStaff(stand.Queue) && <small className="event-stands__queue" role="status">{queueLineStaff(stand.Queue)}{standQueueLabs(stand.Queue) > 1 ? ` ${t("manage.labs.queue.labs", {count: standQueueLabs(stand.Queue)})}` : ""}</small>}{stand.ImageWarning && <small className="event-stands__queue">{t("manage.labs.imageWarning")}</small>}</td>
+                            <td><StatusBadge label={standStatusLabel[stand.Status]} tone={standStatusTone[stand.Status]} />{queueLineStaff(stand.Queue) && <small className="event-stands__queue" role="status">{queueLineStaff(stand.Queue)}{standQueueLabs(stand.Queue) > 1 ? ` ${t("manage.labs.queue.labs", {count: standQueueLabs(stand.Queue)})}` : ""}</small>}{stand.ImageWarning && <small className="event-stands__queue">{t("manage.labs.imageWarning")}</small>}{reservationLine(stand) && <small className="event-stands__queue" role="status">{reservationLine(stand)}</small>}</td>
                             <td className="event-participants-table__dim">{formatTime(stand.UpdatedAt) ?? "—"}</td>
                             <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason ? standReasonText(stand.Reason) : t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason ? standReasonText(stand.Reason) : "—"}</span>}</td>
                             <td><div className="event-manage-participants__actions event-stands__actions">

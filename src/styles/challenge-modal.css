@@ -83,3 +83,5 @@ dialog.ib-cmodal:not([open]){display:none}
   .ib-cmodal{margin-top:16px;max-height:calc(100vh - 32px)}
   .ib-cmodal__row{flex-direction:column}
 }
+.event-cmodal__start{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--ib-2)}
+.event-cmodal__length{display:grid;gap:4px;font-size:var(--ib-fs-13);color:var(--ib-dim)}

@@ -50,6 +50,16 @@ function withdrawnLine(queue: StaffQueue): string {
     return t("lab.queue.reason.Withdrawn.retry", {attempt: queue.Attempt, time: formatClock(queue.RetryAt)});
 }
 
+// The staff line of a team's resource reservation: «… закінчується о 18:05: лабораторії буде видалено.» while the
+// ending is announced, «… закінчився, лабораторії видалено.» once it ended. Null otherwise. Never shown to participants.
+export function reservationLine(stand: {ReservationEndsAt: string | null; ReservationEnded: boolean}): string | null {
+    if (stand.ReservationEnded) return t("lab.reservation.ended");
+    if (!stand.ReservationEndsAt) return null;
+    const at = new Date(stand.ReservationEndsAt);
+    if (Number.isNaN(at.getTime())) return null;
+    return t("lab.reservation.ending", {time: at.toLocaleTimeString("uk-UA", {hour: "2-digit", minute: "2-digit", hour12: false})});
+}
+
 export function failureReasonLabel(reason: string): string {
     return t(FAILURE_REASONS.has(reason) ? `lab.live.failure.${reason}` : "lab.live.failure.unknown");
 }
