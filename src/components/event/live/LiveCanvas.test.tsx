@@ -9,7 +9,17 @@ import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {LiveStage} from "./liveStages";
 
 vi.mock("./LiveQR", () => ({LiveQR: () => null}));
-afterEach(() => {cleanup(); vi.useRealTimers();});
+afterEach(() => {cleanup(); vi.useRealTimers(); vi.unstubAllGlobals();});
+
+// jsdom has no layout: every observed box reports this size, so the fit-based blocks render.
+function stubBoxes(width = 1200, height = 400) {
+    vi.stubGlobal("ResizeObserver", class {
+        constructor(private readonly callback: ResizeObserverCallback) {}
+        observe(target: Element) {this.callback([{target, contentRect: {width, height}} as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);}
+        unobserve() {}
+        disconnect() {}
+    });
+}
 
 const now = Date.UTC(2026, 8, 29, 12);
 const event = {
@@ -104,5 +114,107 @@ describe("live canvas widgets", () => {
         const {container} = await mount(only({type: "logos", props: {mode: "fixed", title: "Партнери"}}));
         expect(container.querySelector(".live-logos")).toBeNull();
         expect(container.textContent).not.toContain("Партнери");
+    });
+});
+
+describe("live canvas blocks of step 2", () => {
+    it("puts places 2-1-3 on the podium, the winner in the middle and tallest", async () => {
+        stubBoxes();
+        const {container} = await mount(only({type: "podium", w: 12, h: 3}), false, {results: board(5)});
+        const tiles = [...container.querySelectorAll(".live-podium__tile")];
+        expect(tiles.map(tile => tile.querySelector(".live-podium__place")?.textContent)).toEqual(["2", "1", "3"]);
+        expect(tiles[1].classList.contains("is-lead")).toBe(true);
+        expect((tiles[1] as HTMLElement).style.height).toBe("100%");
+        expect(container.querySelector(".live-podium h2")).toBeNull();
+        expect(tiles[0].querySelector(".live-podium__points")?.textContent).toBe("400");
+    });
+
+    it("hides the podium points and shows the centered empty state without teams", async () => {
+        stubBoxes();
+        const hidden = await mount(only({type: "podium", w: 12, h: 3, props: {showPoints: false}}), false, {results: board(3)});
+        expect(hidden.container.querySelector(".live-podium__points")).toBeNull();
+        cleanup();
+        const empty = await mount(only({type: "podium", w: 12, h: 3}));
+        expect(empty.container.querySelector(".live-podium .ib-empty")).not.toBeNull();
+    });
+
+    it("shows the chosen facts as values over labels", async () => {
+        stubBoxes();
+        const {container} = await mount(only({type: "facts", w: 8, h: 2, props: {items: ["teams", "start"]}}), false, {results: {...board(12), Tasks: 30}});
+        const values = [...container.querySelectorAll(".live-facts dd")].map(item => item.textContent);
+        expect(values[0]).toBe("12");
+        expect(values[1]).toMatch(/^\d\d:\d\d$/);
+        expect([...container.querySelectorAll(".live-facts dt")].map(item => item.textContent)[0]).toBe("команд");
+    });
+
+    it("lists the stages with the running one marked, and can drop the done ones", async () => {
+        const stages = [
+            {Name: "Етап 1", OpensAt: new Date(now - 7200_000).toISOString(), ClosesAt: new Date(now - 3600_000).toISOString()},
+            {Name: "Етап 2", OpensAt: new Date(now - 600_000).toISOString(), ClosesAt: new Date(now + 1800_000).toISOString()},
+            {Name: "Етап 3", OpensAt: new Date(now + 3600_000).toISOString(), ClosesAt: new Date(now + 7200_000).toISOString()},
+        ];
+        const all = await mount(only({type: "stages", w: 4, h: 4}), false, {stages});
+        expect([...all.container.querySelectorAll(".live-stages li")].map(item => item.className)).toEqual(["is-done", "is-now", "is-next"]);
+        cleanup();
+        const ahead = await mount(only({type: "stages", w: 4, h: 4, props: {showDone: false}}), false, {stages});
+        expect(ahead.container.querySelectorAll(".live-stages li")).toHaveLength(2);
+    });
+
+    it("shows the clock of the screen", async () => {
+        const {container} = await mount(only({type: "clock", w: 3, h: 1, props: {label: "Київ"}}));
+        expect(container.querySelector(".live-clock small")?.textContent).toBe("Київ");
+        expect(container.querySelector(".live-clock strong")?.textContent).toMatch(/^\d\d:\d\d$/);
+    });
+
+    it("hides a caption or replaces its text", async () => {
+        const hidden = await mount(only({type: "table", w: 4, h: 4, props: {showCaption: false}}), false, {results: board(3)});
+        expect(hidden.container.querySelector(".live-list h2")).toBeNull();
+        cleanup();
+        const own = await mount(only({type: "table", w: 4, h: 4, props: {caption: "Рейтинг"}}), false, {results: board(3)});
+        expect(own.container.querySelector(".live-list h2")?.textContent).toBe("Рейтинг");
+    });
+
+    it("scales the text of one block by its own size", async () => {
+        const {container} = await mount({...defaultLiveLayout, widgets: [
+            {id: "big", type: "table", x: 1, y: 1, w: 4, h: 4, props: {textSize: "xl"}},
+            {id: "plain", type: "table", x: 5, y: 1, w: 4, h: 4, props: {}},
+        ]}, false, {results: board(3)});
+        const [big, plain] = [...container.querySelectorAll(".live-widget")] as HTMLElement[];
+        expect(big.style.getPropertyValue("--live-u")).toContain("* 1.45");
+        expect(plain.style.getPropertyValue("--live-u")).toBe("");
+    });
+
+    it("splits a wide table into two columns and starts after the podium", async () => {
+        const {container} = await mount(only({type: "table", w: 12, h: 4, props: {columns: 2, offset: 3, limit: 8, rowsPerPage: 4}}), false, {results: board(20)});
+        const columns = [...container.querySelectorAll(".live-table-columns > .live-table")];
+        expect(columns).toHaveLength(2);
+        expect(columns.map(column => [...column.querySelectorAll("tbody tr")].map(row => row.querySelector("td")?.textContent))).toEqual([["4", "5", "6", "7"], ["8", "9", "10", "11"]]);
+    });
+
+    it("turns the timer into an accent tile in its last minutes, then drops the label", async () => {
+        const target = (seconds: number) => ({type: "timer" as const, props: {source: "custom", target: new Date(now + 1000 + seconds * 1000).toISOString(), lastMinutes: 5}});
+        const urgent = await mount(only(target(240)));
+        expect(urgent.container.querySelector(".live-timer--urgent small")).not.toBeNull();
+        cleanup();
+        const final = await mount(only(target(30)));
+        expect(final.container.querySelector(".live-timer--final")).not.toBeNull();
+        expect(final.container.querySelector(".live-timer small")).toBeNull();
+    });
+
+    it("shows an own text at zero, or nothing", async () => {
+        const passed = {source: "custom", target: new Date(now - 60_000).toISOString()};
+        const text = await mount(only({type: "timer", props: {...passed, atZero: "text", zeroText: "Здаємо роботи"}}));
+        expect(text.container.querySelector(".live-timer strong")?.textContent).toBe("Здаємо роботи");
+        cleanup();
+        const hidden = await mount(only({type: "timer", props: {...passed, atZero: "hide"}}));
+        expect(hidden.container.querySelector(".live-timer strong")).toBeNull();
+    });
+
+    it("previews a scene at a moment of its state", async () => {
+        vi.useFakeTimers({now});
+        const view = render(<LiveCanvas layout={only({type: "timer"})} event={event} nowOffset={-2 * 3600_000} />);
+        await act(async () => {vi.advanceTimersByTime(1000);});
+        // Two hours back is before the start: the timer counts to it.
+        expect(view.container.querySelector(".live-timer small")?.textContent).toBe("До початку");
     });
 });

@@ -1,6 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
-import {distributeWidgets, layoutConflicts, livePaletteItems, liveWidgetName, presetLayout, recomputeGrid, widgetAt} from "./liveLayout";
+import {distributeWidgets, layoutConflicts, livePaletteItems, liveWidgetName, recomputeGrid, widgetAt} from "./liveLayout";
+import {applyLiveTemplate} from "./liveTemplates";
 
 const item = (id: string, type: LiveWidget["type"], x: number, y: number, w: number, h: number, props: LiveWidget["props"] = {}): LiveWidget => ({id, type, x, y, w, h, props});
 const layoutOf = (widgets: LiveWidget[], cols = 12, rows = 8): LiveLayout => ({...defaultLiveLayout, grid: {cols, rows}, widgets});
@@ -85,8 +86,9 @@ describe("palette and drop", () => {
 
     it("shows the timer in the default layout and the classic preset", () => {
         expect(defaultLiveLayout.widgets.some(widget => widget.type === "timer")).toBe(true);
-        expect(presetLayout("classic").widgets.some(widget => widget.type === "timer")).toBe(true);
-        expect(layoutConflicts(presetLayout("classic")).size).toBe(0);
+        const classic = applyLiveTemplate(defaultLiveLayout, "classic", "running");
+        expect(classic.widgets.some(widget => widget.type === "timer")).toBe(true);
+        expect(layoutConflicts(classic).size).toBe(0);
     });
 
     it("places a dropped widget at the cell, clamped inside the grid", () => {

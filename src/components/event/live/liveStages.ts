@@ -11,12 +11,12 @@ export type LiveTimerSource = "auto" | "start" | "finish" | "freeze" | "custom" 
 export const liveTimerSources: LiveTimerSource[] = ["auto", "stage-end", "stage-next", "start", "finish", "freeze", "custom"];
 
 // What the timer shows: a countdown to `target`, the time since `since`
-// (a running event with no finish), or a word instead of the digits (the
-// target passed or there is none). Never 00:00:00.
+// (a running event with no finish), or a word instead of the digits: the
+// target `passed` («Завершено»), or there is `none`. Never 00:00:00.
 export type LiveTimerState =
     | {mode: "countdown"; target: number; label: string}
     | {mode: "elapsed"; since: number; label: string}
-    | {mode: "word"; word: string; label: string};
+    | {mode: "word"; word: string; label: string; reason: "passed" | "none"};
 
 function time(value: string): number {
     return Date.parse(value);
@@ -39,7 +39,7 @@ function stageLabel(key: "live.timer.stageEnd" | "live.timer.stageNext", stage: 
 }
 
 const countdown = (target: number, label: string): LiveTimerState => ({mode: "countdown", target, label});
-const word = (value: string, label = ""): LiveTimerState => ({mode: "word", word: value, label});
+const word = (value: string, label = "", reason: "passed" | "none" = "passed"): LiveTimerState => ({mode: "word", word: value, label, reason});
 
 // The event without its stages: before the start → to the start, running →
 // to the finish (or the time since the start when there is no finish), after
@@ -82,12 +82,12 @@ export function liveTimerState(props: LiveWidget["props"], event: PublicEventInf
     }
     if (source === "freeze") {
         const freeze = frozenAt ? time(frozenAt) : null;
-        if (freeze === null) return word(t("live.timer.noTarget"), t("live.timer.untilFreeze"));
+        if (freeze === null) return word(t("live.timer.noTarget"), t("live.timer.untilFreeze"), "none");
         return now < freeze ? countdown(freeze, t("live.timer.untilFreeze")) : word(t("live.timer.frozen"));
     }
     if (source === "custom") {
         const target = typeof props.target === "string" ? time(props.target) || null : null;
-        if (target === null) return word(t("live.timer.noTarget"), t("live.timer.untilCustom"));
+        if (target === null) return word(t("live.timer.noTarget"), t("live.timer.untilCustom"), "none");
         return now < target ? countdown(target, t("live.timer.untilCustom")) : word(t("live.timer.timeUp"));
     }
     if (source === "stage-end") {
@@ -105,13 +105,55 @@ export function liveTimerState(props: LiveWidget["props"], event: PublicEventInf
     return autoState(event, stages, now, named);
 }
 
-// The digits of a countdown or elapsed time: HH:MM:SS, or HH:MM without seconds.
-export function liveTimerDigits(state: LiveTimerState, now: number, showSeconds: boolean): string | null {
+// «Формат»: HH:MM:SS always («full»), MM:SS in the last hour («compact»),
+// or words, «2 год 14 хв» («words»).
+export const liveTimerDigitModes = ["full", "compact", "words"] as const;
+export type LiveTimerDigitMode = typeof liveTimerDigitModes[number];
+
+export function liveTimerDigitMode(value: unknown): LiveTimerDigitMode {
+    return (liveTimerDigitModes as readonly unknown[]).includes(value) ? value as LiveTimerDigitMode : "full";
+}
+
+// The digits of a countdown or elapsed time: HH:MM:SS, or HH:MM without
+// seconds; in the «compact» format the last hour drops its hours.
+export function liveTimerDigits(state: LiveTimerState, now: number, showSeconds: boolean, format: LiveTimerDigitMode = "full"): string | null {
     if (state.mode === "word") return null;
     const span = state.mode === "countdown" ? state.target - now : now - state.since;
     const seconds = Math.max(0, Math.floor(span / 1000));
-    const parts = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, ...(showSeconds ? [seconds % 60] : [])];
-    return parts.map(part => String(part).padStart(2, "0")).join(":");
+    const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds / 60) % 60, rest = seconds % 60;
+    if (format === "words") {
+        if (hours) return t("live.timer.wordsHM", {hours, minutes});
+        if (minutes) return showSeconds ? t("live.timer.wordsMS", {minutes, seconds: rest}) : t("live.timer.wordsM", {minutes});
+        return t("live.timer.wordsS", {seconds: rest});
+    }
+    const pad = (part: number) => String(part).padStart(2, "0");
+    if (format === "compact" && !hours) return [minutes, rest].map(pad).join(":");
+    return [hours, minutes, ...(showSeconds ? [rest] : [])].map(pad).join(":");
+}
+
+// «Останні хвилини»: from `lastMinutes` before the target the timer stands
+// out («urgent»); in the last minute it drops its label and grows («final»).
+export function liveTimerUrgency(state: LiveTimerState, now: number, lastMinutes: number): "calm" | "urgent" | "final" {
+    if (state.mode !== "countdown" || lastMinutes <= 0) return "calm";
+    const left = state.target - now;
+    if (left > lastMinutes * 60_000) return "calm";
+    return left <= 60_000 ? "final" : "urgent";
+}
+
+export const liveLastMinutesOptions = [0, 1, 3, 5, 10, 15] as const;
+
+// «На нулі»: the word of the passed target («word»), an own text («text»)
+// or nothing at all («hide»).
+export const liveTimerZeroModes = ["word", "text", "hide"] as const;
+export type LiveTimerZeroMode = typeof liveTimerZeroModes[number];
+
+// The line in the digits' place once the target passed: null hides the timer.
+export function liveTimerZero(state: LiveTimerState, mode: unknown, text: unknown): string | null {
+    if (state.mode !== "word") return null;
+    if (state.reason !== "passed") return state.word;
+    if (mode === "hide") return null;
+    if (mode === "text" && typeof text === "string" && text.trim()) return text.trim();
+    return state.word;
 }
 
 // «Підзаголовок = поточний етап»: the running stage, or the next one with

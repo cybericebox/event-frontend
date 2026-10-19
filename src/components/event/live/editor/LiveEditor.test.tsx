@@ -48,7 +48,7 @@ describe("live editor", () => {
     it("renders every palette widget as a preview with sample data", () => {
         mount();
         const items = document.querySelectorAll(".event-live-palette-item");
-        expect(items.length).toBe(9);
+        expect(items.length).toBe(14);
         items.forEach(item => expect(item.querySelector(".live-canvas")).not.toBeNull());
         expect(screen.getByText(/зразок даних/)).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-table tbody tr")).not.toBeNull();
@@ -116,22 +116,72 @@ describe("live editor", () => {
         expect(screen.getAllByText(/1920×1080/).length).toBeGreaterThan(0);
     });
 
-    it("applies a layout template from the dialog and marks later edits", () => {
+    it("applies a layout template to the scene being edited and marks later edits", () => {
         mount();
         fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
-        const cards = within(screen.getByRole("radiogroup", {name: "Шаблон розкладки"})).getAllByRole("radio");
-        expect(cards).toHaveLength(5);
+        const cards = within(screen.getByRole("radiogroup", {name: "Шаблони екрана"})).getAllByRole("radio");
+        expect(cards).toHaveLength(9);
         cards.forEach(card => expect(card.querySelector(".live-canvas")).not.toBeNull());
-        expect(screen.getByText(/буде замінено/)).toBeTruthy();
-        const apply = screen.getByRole("button", {name: "Застосувати"}) as HTMLButtonElement;
+        const apply = screen.getByRole("button", {name: "Застосувати до «Триває»"}) as HTMLButtonElement;
         expect(apply.disabled).toBe(true);
-        fireEvent.click(screen.getByRole("radio", {name: /Лише таблиця/}));
-        expect(screen.getByRole("radio", {name: /Лише таблиця/}).getAttribute("aria-checked")).toBe("true");
+        fireEvent.click(screen.getByRole("radio", {name: /Велике табло/}));
+        expect(screen.getByRole("radio", {name: /Велике табло/}).getAttribute("aria-checked")).toBe("true");
+        expect(screen.getByText(/Віджети сцени «Триває» буде замінено/)).toBeTruthy();
         fireEvent.click(apply);
-        expect(screen.getByText("Шаблон: Лише таблиця")).toBeTruthy();
+        expect(screen.getByText("Шаблон: Велике табло")).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
+        expect(document.querySelectorAll(".event-live-editor__native .live-table-columns > .live-table")).toHaveLength(2);
         fireEvent.click(screen.getByRole("radio", {name: /Класика світла/}));
-        expect(screen.getByText("Шаблон: Лише таблиця · змінено")).toBeTruthy();
+        expect(screen.getByText("Шаблон: Велике табло · змінено")).toBeTruthy();
+    });
+
+    it("applies «Повний показ» to every scene", () => {
+        mount();
+        fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
+        fireEvent.click(screen.getByRole("radio", {name: /Повний показ/}));
+        expect(screen.getByText(/Буде замінено всі сцени/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "Застосувати до всіх сцен"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--solves")).not.toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: /До старту/}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).not.toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--podium")).not.toBeNull();
+        // The frozen state shows the running board.
+        fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
+        expect(screen.getByText("Сцена «Заморожено» показує розкладку «Триває».")).toBeTruthy();
+        expect(document.querySelector(".event-live-editor__native .live-widget--solves")).not.toBeNull();
+    });
+
+    it("edits a scene apart from the running board, and a scene can fall back to it", () => {
+        mount();
+        fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
+        expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
+        fireEvent.click(screen.getByRole("button", {name: "Своя розкладка"}));
+        // A copy of the running board, now editable on its own.
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+        fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
+        fireEvent.click(screen.getByRole("button", {name: "Прибрати віджет"}));
+        fireEvent.click(within(screen.getByText("Прибрати віджет?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати віджет"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: /Триває/}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
+        fireEvent.click(screen.getByRole("button", {name: "Як «Триває»"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+    });
+
+    it("previews the screen at a target resolution without changing the layout", async () => {
+        mount();
+        expect(screen.getByText(/^1920×1080 · проєктор/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "720p"}));
+        expect(screen.getByText(/^1280×720 · проєктор/)).toBeTruthy();
+        const native = document.querySelector(".event-live-editor__native") as HTMLElement;
+        expect(native.style.width).toBe("1280px");
+        fireEvent.click(screen.getByRole("button", {name: "LED"}));
+        expect(screen.getByText(/^1040×624 · LED/)).toBeTruthy();
+        // Only the preview changed: nothing to save or publish.
+        await act(async () => {await new Promise(resolve => setTimeout(resolve, 900));});
+        expect(api.save).not.toHaveBeenCalled();
     });
 
     it("is read-only for viewers", () => {

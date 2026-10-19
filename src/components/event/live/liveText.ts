@@ -1,6 +1,7 @@
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
-import {liveWidgetLabels} from "./liveLayout";
-import {liveListGeometry, liveTimerFit, liveTitleFit, type LiveListGeometry} from "./liveFit";
+import {liveWidgetName} from "./liveLayout";
+import {liveFactsFit, liveListGeometry, livePodiumFit, liveRowLeading, liveTimerFit, liveTitleFit, type LiveListGeometry} from "./liveFit";
+import {liveFactItems} from "./liveFacts";
 import {t} from "@/i18n/t";
 
 // Live typography (LIVE-CONSTRUCTOR §2): sizes are multiples of
@@ -71,32 +72,74 @@ export function liveTextVars(textScale: number, profile: LiveTextProfile = "proj
 }
 
 const widgetRoles: Record<LiveWidget["type"], LiveTextRole[]> = {
-    // Title and timer size themselves to the widget (liveFit); their warnings
-    // come from the fit, not from the role floors.
+    // Title, timer and clock size themselves to the widget (liveFit); their
+    // warnings come from the fit, not from the role floors.
     title: [], timer: [], chart: ["caption"], table: ["body", "caption"],
     ad_table: [], logos: ["caption"], solves: ["body", "caption"], announcement: ["display"], qr: ["caption"],
+    podium: ["body", "caption"], facts: ["caption"], stages: ["body", "caption"], clock: [],
 };
 
-export type LiveTextWarning = {id: string; text: string};
+// «Розмір тексту» of a block (K3): S / M / L / XL multiply the screen unit of
+// that block. The floors stay: a smaller size never reads below them.
+export const liveTextSizes = {s: 0.85, m: 1, l: 1.2, xl: 1.45} as const;
+export type LiveTextSizeKey = keyof typeof liveTextSizes;
+
+// Blocks that fill their box (title, timer, clock) size by the box itself.
+export function liveTextSized(type: LiveWidget["type"]): boolean {
+    return widgetRoles[type].length > 0;
+}
+
+export function liveWidgetTextSize(widget: LiveWidget): LiveTextSizeKey {
+    const value = widget.props.textSize;
+    return liveTextSized(widget.type) && typeof value === "string" && value in liveTextSizes ? value as LiveTextSizeKey : "m";
+}
+
+// The text scale a block renders with: the screen scale × its own size.
+export function liveWidgetTextScale(textScale: number, widget: LiveWidget): number {
+    return textScale * liveTextSizes[liveWidgetTextSize(widget)];
+}
+
+// Blocks with a caption over their content, and whether it shows (K4):
+// on by default, except the facts and the podium.
+const captioned = new Set<LiveWidget["type"]>(["chart", "table", "solves", "logos", "stages", "facts", "podium"]);
+export function liveHasCaption(type: LiveWidget["type"]): boolean {
+    return captioned.has(type);
+}
+export function liveCaptionShown(widget: LiveWidget): boolean {
+    if (!captioned.has(widget.type)) return false;
+    if (typeof widget.props.showCaption === "boolean") return widget.props.showCaption;
+    return widget.type !== "facts" && widget.type !== "podium";
+}
+
+// The caption text: the own one, else the block's default.
+export function liveCaptionText(widget: LiveWidget, fallback: string): string {
+    const own = widget.type === "logos" ? widget.props.title : widget.props.caption;
+    return typeof own === "string" && own.trim() ? own.trim() : fallback;
+}
+
+// «fit»: the content does not fit the block (a real problem); «floor»: the
+// natural size is under the profile floor and the screen raises it (a note,
+// common on 720p, where every block reads at the floors).
+export type LiveTextWarning = {id: string; text: string; kind: "fit" | "floor"};
 
 // The widget's inner box on the real screen, in screen pixels (the widget
 // padding is --live-pad).
 export function liveWidgetBox(layout: LiveLayout, item: LiveWidget): {width: number; height: number} {
-    const {textScale} = layout.screen;
     const {width, height} = liveCanvasSize(layout);
-    const pad = Math.max(6, liveUnit(height, textScale, width) * 0.4);
+    // The padding follows the screen, not the block's text size.
+    const pad = Math.max(6, liveUnit(height, layout.screen.textScale, width) * 0.4);
     return {width: item.w * width / layout.grid.cols - 2 * pad, height: item.h * height / layout.grid.rows - 2 * pad};
 }
 
 // Rows of a table or recent-solves widget on the real screen: the same rule
 // the screen renders with.
 export function liveListFit(layout: LiveLayout, item: LiveWidget): LiveListGeometry & {rows: number} {
-    const {textScale} = layout.screen;
+    const textScale = liveWidgetTextScale(layout.screen.textScale, item);
     const {height, width} = liveCanvasSize(layout);
     const profile = liveTextProfile(layout.screen);
     const rows = item.type === "table" ? numberProp(item, "rowsPerPage", 10) : numberProp(item, "rows", 5);
     const geometry = liveListGeometry({height: liveWidgetBox(layout, item).height, caption: liveTextSize("caption", height, textScale, width, profile).effective,
-        body: liveTextSize("body", height, textScale, width, profile).effective, rows, header: item.type === "table"});
+        body: liveTextSize("body", height, textScale, width, profile).effective, rows, header: item.type === "table", captionShown: liveCaptionShown(item)});
     return {...geometry, rows};
 }
 
@@ -110,28 +153,33 @@ function numberProp(item: LiveWidget, key: string, fallback: number): number {
 // widget whose content no longer fits at the effective sizes is named.
 // `eventName` is the real event name the title must fit.
 export function liveTextWarnings(layout: LiveLayout, eventName = t("live.text.sampleTitle")): LiveTextWarning[] {
-    const {textScale} = layout.screen;
     const {height, width} = liveCanvasSize(layout);
     const profile = liveTextProfile(layout.screen);
     const floors = liveTextFloors[profile];
-    const size = (role: LiveTextRole) => liveTextSize(role, height, textScale, width, profile);
-    const heading = size("caption").effective * 1.2 + size("caption").effective * 0.5;
     const warnings: LiveTextWarning[] = [];
     for (const item of layout.widgets) {
         if (item.type === "ad_table") continue;
-        const name = liveWidgetLabels[item.type];
+        const textScale = liveWidgetTextScale(layout.screen.textScale, item);
+        const size = (role: LiveTextRole) => liveTextSize(role, height, textScale, width, profile);
+        const heading = liveCaptionShown(item) ? size("caption").effective * 1.2 + size("caption").effective * 0.5 : 0;
+        const name = liveWidgetName(item);
         const low = widgetRoles[item.type].filter(role => size(role).natural < floors[role]);
         if (low.length) {
-            warnings.push({id: item.id, text: t("live.text.warning", {name, problem: t("live.text.belowFloor", {
+            warnings.push({id: item.id, kind: "floor", text: t("live.text.warning", {name, problem: t("live.text.belowFloor", {
                 sizes: low.map(role => t("live.text.roleSize", {role: liveTextRoles[role].label, size: Math.floor(size(role).natural)})).join(", "),
                 floors: low.map(role => t("live.text.px", {size: floors[role]})).join(" / "),
             })})});
         }
         const box = liveWidgetBox(layout, item);
         const fit = item.type === "table" || item.type === "solves" ? listProblem(liveListFit(layout, item)) : fitProblem(item, box.width, box.height, heading, size, floors, eventName);
-        if (fit) warnings.push({id: item.id, text: t("live.text.warning", {name, problem: fit})});
+        if (fit) warnings.push({id: item.id, kind: "fit", text: t("live.text.warning", {name, problem: fit})});
     }
     return warnings;
+}
+
+function logoRows(item: LiveWidget): number {
+    const rows = Number(item.props.rows);
+    return item.props.mode !== "carousel" && [1, 2, 3].includes(rows) ? rows : 1;
 }
 
 function listProblem(fit: LiveListGeometry & {rows: number}): string | null {
@@ -140,6 +188,7 @@ function listProblem(fit: LiveListGeometry & {rows: number}): string | null {
 
 function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: number, size: (role: LiveTextRole) => {effective: number}, floors: Record<LiveTextRole, number>, eventName: string): string | null {
     const caption = size("caption").effective;
+    const body = size("body").effective;
     if (item.type === "title") {
         const subtitle = typeof item.props.subtitle === "string" && !!item.props.subtitle.trim() || item.props.subtitleStage === true;
         const fit = liveTitleFit({width: boxW, height: boxH, name: eventName, subtitle, logo: true, subtitleMin: floors.caption});
@@ -158,7 +207,22 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
         const lines = Math.min(10, numberProp(item, "lines", 5));
         return boxH - heading - caption * 1.6 < lines * caption * 1.25 ? t("live.text.chartFit", {lines}) : null;
     }
-    if (item.type === "logos") return boxH < caption * 1.8 + 24 ? t("live.text.logosFit") : null;
+    if (item.type === "logos") return boxH - heading < 24 * logoRows(item) ? t("live.text.logosFit") : null;
+    if (item.type === "clock") {
+        const label = typeof item.props.label === "string" && item.props.label.trim() ? item.props.label.trim() : null;
+        const fit = liveTimerFit({width: boxW, height: boxH, digits: item.props.showSeconds === true ? 8 : 5, label, labelSize: "m", labelMin: floors.caption});
+        return fit.digits < floors.timer ? t("live.text.timerFit") : null;
+    }
+    if (item.type === "podium") {
+        const fit = livePodiumFit({width: boxW, height: boxH - heading, names: [t("live.text.sampleTeam"), t("live.text.sampleTeam"), t("live.text.sampleTeam")], body, caption});
+        return fit.readable ? null : t("live.text.podiumFit");
+    }
+    if (item.type === "facts") {
+        const fit = liveFactsFit({width: boxW, height: boxH - heading, items: liveFactItems(item).map(() => ({value: 5, label: 8})), display: size("display").effective, caption});
+        return fit.readable ? null : t("live.text.factsFit");
+    }
+    // Stages: room for three readable rows (a running, a done and a next one).
+    if (item.type === "stages") return boxH - heading < 3 * body * liveRowLeading ? t("live.text.stagesFit") : null;
     if (item.type === "qr") return Math.min(boxW, boxH - caption * 1.3) < 80 ? t("live.text.qrFit") : null;
     return null;
 }

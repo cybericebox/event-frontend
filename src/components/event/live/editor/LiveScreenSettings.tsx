@@ -58,8 +58,10 @@ const themes = ["dark", "light"] as const;
 const baseRatios = {"16:9": 16 / 9, "16:10": 16 / 10, "4:3": 4 / 3, "5:3": 5 / 3};
 
 // Settings of the whole screen, shown while no widget is selected.
-export function LiveScreenSettings({eventID, event, layout, results, sample, canManage, disabled, onChange}: {
+export function LiveScreenSettings({eventID, event, layout, results, sample, nowOffset = 0, canManage, disabled, onChange}: {
     eventID: string; event: PublicEventInfo; layout: LiveLayout; results?: ManageResultsSnapshot; sample: boolean;
+    // The theme thumbnails show the scene at the moment the canvas does.
+    nowOffset?: number;
     canManage: boolean; disabled: boolean; onChange: (next: LiveLayout) => void;
 }) {
     const scale = Math.round(layout.screen.textScale * 100);
@@ -69,7 +71,7 @@ export function LiveScreenSettings({eventID, event, layout, results, sample, can
         <LiveField label={t("manage.live.theme")} help={t("manage.live.themeHelp")}>
             {() => <div className="event-live-themes" role="radiogroup" aria-label={t("manage.live.theme")}>
                 {themes.map(theme => <button key={theme} type="button" role="radio" aria-checked={layout.theme === theme} disabled={disabled} className="event-live-theme" onClick={() => onChange({...layout, theme})}>
-                    <LiveMiniature layout={{...layout, theme}} event={event} results={results} sample={sample} box={{width: 112, height: 63}} />
+                    <LiveMiniature layout={{...layout, theme}} event={event} results={results} sample={sample} nowOffset={nowOffset} box={{width: 112, height: 63}} />
                     <span>{t(theme === "dark" ? "manage.live.themeDark" : "manage.live.themeLight")}</span>
                 </button>)}
             </div>}

@@ -24,9 +24,10 @@ export type LiveListGeometry = {
     readable: boolean;
 };
 
-// N rows split the space under the caption (and the header row) exactly.
-export function liveListGeometry({height, caption, body, rows, header}: {height: number; caption: number; body: number; rows: number; header: boolean}): LiveListGeometry {
-    const rowsHeight = Math.max(0, height - caption * liveCaptionBlock - (header ? caption * liveHeaderRow : 0));
+// N rows split the space under the caption (and the header row) exactly; a
+// hidden caption leaves its room to the rows.
+export function liveListGeometry({height, caption, body, rows, header, captionShown = true}: {height: number; caption: number; body: number; rows: number; header: boolean; captionShown?: boolean}): LiveListGeometry {
+    const rowsHeight = Math.max(0, height - (captionShown ? caption * liveCaptionBlock : 0) - (header ? caption * liveHeaderRow : 0));
     const count = Math.max(1, Math.floor(rows));
     const rowHeight = rowsHeight / count;
     const minRow = body * liveRowLeading;
@@ -52,16 +53,19 @@ export type LiveTimerLabelSize = keyof typeof liveTimerLabelScale;
 // The label keeps at least `labelMin` (the caption floor): the digits give
 // way. A freeze `badge` takes a line under the digits; when the digits would
 // drop below `digitsMin` with three lines, the badge takes the label's place.
-export function liveTimerFit({width, height, digits, label, labelSize, badge = null, labelMin = 0, digitsMin = 0}: {
-    width: number; height: number; digits: number; label: string | null; labelSize: LiveTimerLabelSize; badge?: string | null; labelMin?: number; digitsMin?: number;
+// `labelMax` caps the label and the badge of a very large timer (a pre-start
+// countdown), so they stay captions and leave the room to the digits.
+export function liveTimerFit({width, height, digits, label, labelSize, badge = null, labelMin = 0, digitsMin = 0, labelMax = Number.POSITIVE_INFINITY}: {
+    width: number; height: number; digits: number; label: string | null; labelSize: LiveTimerLabelSize; badge?: string | null; labelMin?: number; digitsMin?: number; labelMax?: number;
 }): {digits: number; label: number; badge: number; labelShown: boolean} {
     const byWidth = width / Math.max(1, digits * digitWidth);
     const fitText = (text: string | null, size: number, extra: number) => text ? Math.min(size, width / Math.max(1, text.length * letterWidth + extra)) : 0;
     const lines = (top: string | null, topRatio: number, bottom: string | null) => {
         const bottomRatio = bottom ? 0.3 : 0;
         const natural = Math.min(byWidth, height / (1.08 + topRatio * 1.3 + bottomRatio * 1.4));
-        const topFont = top ? Math.max(natural * topRatio, labelMin) : 0;
-        const bottomFont = bottom ? Math.max(natural * bottomRatio, labelMin) : 0;
+        const cap = Math.max(labelMin, labelMax * (top === label ? liveTimerLabelScale[labelSize] : 1));
+        const topFont = top ? Math.max(Math.min(natural * topRatio, cap), labelMin) : 0;
+        const bottomFont = bottom ? Math.max(Math.min(natural * bottomRatio, labelMax), labelMin) : 0;
         const digitsFont = Math.max(0, Math.min(byWidth, (height - topFont * 1.3 - bottomFont * 1.4) / 1.08));
         // The label never drops below its floor: a long one ends with «…» instead.
         const topText = top === badge ? fitText(top, topFont, 2.4) : Math.max(Math.min(labelMin, topFont), fitText(top, topFont, 0));
@@ -148,4 +152,81 @@ export function liveTableFit({width, rowHeight, body, rankChars, pointsChars, na
     const fitted = names.map(fitName);
     const oneLine = Math.min(font, ...fitted.filter(name => name.lines === 1).map(name => name.font));
     return {font, rankWidth, pointsWidth, nameWidth, names: fitted.map(name => name.lines === 1 ? {font: oneLine, lines: 1} : name)};
+}
+
+// Podium: three tiles side by side in the order 2-1-3, the winner's the
+// tallest. Tile heights as shares of the block; the name gets up to two
+// lines, the place and the points a line each.
+export const livePodiumHeights = [1, 0.82, 0.72] as const;
+const podiumLines = 0.72 + 2 * nameLeading + 0.72;
+
+export type LivePodiumFit = {
+    // Name text of places 2–3 and of the winner, the place and points text.
+    name: number; lead: number; meta: number;
+    gap: number; pad: number;
+    readable: boolean;
+};
+
+// The names fit the narrowest and lowest tile (the third); the winner's name
+// is a fifth larger when its tile allows. Readable while the names keep the
+// body size.
+export function livePodiumFit({width, height, names, body, caption, measure = liveEstimateWidth}: {
+    width: number; height: number; names: string[]; body: number; caption: number; measure?: LiveMeasure;
+}): LivePodiumFit {
+    const gap = Math.max(4, width * 0.02);
+    const tile = Math.max(0, (width - 2 * gap) / 3);
+    const pad = Math.max(4, Math.min(tile, height) * 0.08);
+    const room = Math.max(0, tile - 2 * pad);
+    const lowest = height * livePodiumHeights[2] - 2 * pad;
+    const widest = Math.max(1, ...names.map(name => measure(name, 1)));
+    const byHeight = lowest / podiumLines;
+    const byWidth = room * 1.8 / widest;
+    const name = Math.max(0, Math.min(byHeight, byWidth, body * 3));
+    const lead = Math.min(name * 1.2, (height - 2 * pad) / podiumLines, room * 1.8 / widest * 1.2);
+    return {name, lead: Math.max(name, lead), meta: Math.max(caption, name * 0.6), gap, pad, readable: name >= body};
+}
+
+// Facts: N numbers side by side, each a large value over a caption-sized
+// label. `value` and `label` are character counts.
+export type LiveFactsFit = {value: number; label: number; gap: number; readable: boolean};
+
+export function liveFactsFit({width, height, items, display, caption}: {
+    width: number; height: number; items: {value: number; label: number; text?: boolean}[]; display: number; caption: number;
+}): LiveFactsFit {
+    const count = Math.max(1, items.length);
+    const gap = Math.max(8, width * 0.03);
+    const cell = Math.max(0, (width - gap * (count - 1)) / count);
+    const byWidth = Math.min(...items.map(item => cell / Math.max(1, item.value * (item.text ? letterWidth : digitWidth))), Number.POSITIVE_INFINITY);
+    const labelNatural = (value: number) => Math.max(caption, value * 0.36);
+    // value × 1.1 + label × 1.3 fill the height.
+    const byHeight = height / (1.1 + 0.36 * 1.3);
+    // Facts stay below the timer: at most twice the display size.
+    let value = Math.max(0, Math.min(byWidth, byHeight, display * 2.2));
+    let label = labelNatural(value);
+    if (value * 1.1 + label * 1.3 > height) {
+        label = caption;
+        value = Math.max(0, Math.min(byWidth, (height - label * 1.3) / 1.1));
+    }
+    const widestLabel = Math.max(1, ...items.map(item => item.label));
+    label = Math.max(caption, Math.min(label, cell / (widestLabel * letterWidth)));
+    return {value, label, gap, readable: value >= display};
+}
+
+// An announcement fills its block: one line as large as the box allows, or
+// two lines when that reads larger; never below the display floor.
+export function liveAnnouncementFit({width, height, chars, display}: {width: number; height: number; chars: number; display: number}): {font: number; lines: 1 | 2} {
+    // Semibold letters run wider than the body estimate; 6% of the width stays spare.
+    const perPx = Math.max(1, chars) * letterWidth * 1.12;
+    const one = Math.min(height / 1.3, width * 0.94 / perPx);
+    // Two lines lose some width at the break: keep 10% of it spare.
+    const two = Math.min(height / (2 * 1.2 + 0.2), width * 1.8 / perPx);
+    return two > one * 1.15 ? {font: Math.max(display, two), lines: 2} : {font: Math.max(display, one), lines: 1};
+}
+
+// A list row of two lines (a stage: its name, then its time and status):
+// the name as large as the row and the width allow, the second line 0.75 of it.
+export function liveTwoLineRow({rowHeight, width, chars, body}: {rowHeight: number; width: number; chars: number; body: number}): number {
+    const byHeight = rowHeight / (1.2 + 0.75 * 1.25 + 0.5);
+    const byWidth = width / Math.max(1, chars * letterWidth);
+    return Math.max(Math.min(body, rowHeight / 2.4), Math.min(byHeight, byWidth, body * liveRowTextMax));
 }

@@ -6,13 +6,16 @@ import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas} from "../LiveCanvas";
 import type {LivePaletteItem} from "../liveLayout";
+import type {LiveStage} from "../liveStages";
 
 // A live canvas rendered at its native resolution and scaled into a box, so
 // thumbnails show the real widget, text sizes included. `crop` shows only
 // the top-left cells (a single widget); the rest of the canvas is cut off.
-export function LiveMiniature({layout, event, results, sample, box, crop, showGrid = false}: {
+export function LiveMiniature({layout, event, results, sample, box, crop, showGrid = false, stages, nowOffset = 0}: {
     layout: LiveLayout; event: PublicEventInfo; results?: ManageResultsSnapshot; sample: boolean;
     box: {width: number; height: number}; crop?: {w: number; h: number}; showGrid?: boolean;
+    // A scene's miniature shows a moment of its state (LiveCanvas nowOffset).
+    stages?: LiveStage[]; nowOffset?: number;
 }) {
     const {width, height} = layout.screen;
     const viewW = crop ? width * crop.w / layout.grid.cols : width;
@@ -21,7 +24,7 @@ export function LiveMiniature({layout, event, results, sample, box, crop, showGr
     return <span className={`live-mini live-mini--${layout.theme}`} style={{width: box.width, height: box.height} as CSSProperties} aria-hidden="true">
         <span className={`live-mini__view live-mini__view--${layout.theme}`} style={{width: viewW * scale, height: viewH * scale}}>
             <span className="live-mini__native" style={{width, height, transform: `scale(${scale})`}} inert>
-                <LiveCanvas layout={layout} event={event} results={results} sample={sample} showGrid={showGrid} />
+                <LiveCanvas layout={layout} event={event} results={results} sample={sample} showGrid={showGrid} stages={stages} nowOffset={nowOffset} />
             </span>
         </span>
     </span>;
