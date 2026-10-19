@@ -61,6 +61,34 @@ describe("live screen links", () => {
         expect(api.screen).toHaveBeenCalledTimes(2);
     });
 
+    it("says plainly that the event is not found or not published yet, and does not retry on screen", async () => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        window.location.hash = "#screen=tok";
+        api.screen.mockRejectedValue(new LiveScreenLinkError(404));
+        mount();
+        expect(await screen.findByText("Захід не знайдено")).toBeTruthy();
+        expect(screen.getByText("або його ще не опубліковано")).toBeTruthy();
+        expect(screen.getByText("Посилання запрацює, щойно захід опублікують.")).toBeTruthy();
+        // The platform's neutral page, not a half-themed live screen; no retry countdown or button.
+        expect(document.querySelector(".live-neutral .ib-error--page")).not.toBeNull();
+        expect(document.querySelector(".live-fullscreen")).toBeNull();
+        expect(screen.queryByText(/Повторимо через/)).toBeNull();
+        expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
+        await act(async () => {await vi.advanceTimersByTimeAsync(30_000);});
+        expect(api.screen).toHaveBeenCalledTimes(1);
+    });
+
+    it("opens by itself once the event is published", async () => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        window.location.hash = "#screen=tok";
+        api.screen.mockRejectedValueOnce(new LiveScreenLinkError(404)).mockResolvedValue({Event: event, Layout: defaultLiveLayout, Stages: []});
+        api.results.mockReturnValue(new Promise(() => undefined));
+        mount();
+        expect(await screen.findByText("Захід не знайдено")).toBeTruthy();
+        await act(async () => {await vi.advanceTimersByTimeAsync(60_000);});
+        expect(await screen.findByText("Захід")).toBeTruthy();
+    });
+
     it("says the link no longer works when it is revoked or expired", async () => {
         window.location.hash = "#screen=gone";
         api.screen.mockRejectedValue(new LiveScreenLinkError(403));

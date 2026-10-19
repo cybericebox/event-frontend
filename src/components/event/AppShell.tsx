@@ -41,7 +41,8 @@ export function AppShell(props: Props) {
     const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
     // The live screen retries its own loads and marks a lost connection itself: no outage cover over a projector.
     const live = usePathname() === "/live";
-    if (gone) return <EventUnavailableScreen />;
+    // The live screen tells a missing or unpublished event itself, without the sign-in offer a projector cannot use.
+    if (gone && !live) return <EventUnavailableScreen />;
     return <ParticipantPreviewProvider serverCookie={props.previewCookie ?? null}>
         <div id={APP_ROOT_ID}><ShellContent {...props} /></div>
         {!live && <EventServiceStatusGate serverUnavailable={props.unavailable} />}

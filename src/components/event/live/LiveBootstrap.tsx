@@ -6,7 +6,7 @@ import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {getManageAccess, ManageApiError} from "@/api/manage";
 import {getLiveScreenByLink, liveScreenTokenFromHash, LiveScreenLinkError} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
-import {LiveFailure, LiveLinkClosed, LiveScreen, LiveState} from "./LiveScreen";
+import {LiveFailure, LiveLinkClosed, LiveLinkNotFound, LiveScreen, LiveState} from "./LiveScreen";
 import {useLiveRetry} from "./liveRecovery";
 import "./live.css";
 import {t} from "@/i18n/t";
@@ -28,16 +28,29 @@ function applyEventTheme(event: PublicEventInfo) {
 // The event, its layout and stages are re-read this often, so a moved start
 // or finish, a new name or colours reach an open screen.
 const liveEventRefreshMs = 30_000;
+const liveNotFoundRecheckMs = 60_000;
+
+function linkStatus(error: unknown): number | null {
+    return error instanceof LiveScreenLinkError ? error.status : null;
+}
 
 // A projector PC opened with a screen link (/live#screen=…): no session, the
 // link alone opens this event's staff live screen. A failed open is retried
 // by itself (nobody presses a button on a projector).
 function LiveLinkBootstrap({token}: {token: string}) {
-    const screen = useQuery({queryKey: ["event-live-link", token], queryFn: () => getLiveScreenByLink(token), retry: false, refetchOnWindowFocus: false, refetchInterval: liveEventRefreshMs});
+    const screen = useQuery({
+        queryKey: ["event-live-link", token], queryFn: () => getLiveScreenByLink(token), retry: false, refetchOnWindowFocus: false,
+        // «Not found» re-checks quietly and less often: the screen opens by itself once the event is published.
+        refetchInterval: query => linkStatus(query.state.error) === 404 && !query.state.data ? liveNotFoundRecheckMs : liveEventRefreshMs,
+    });
     useEffect(() => {if (screen.data) applyEventTheme(screen.data.Event);}, [screen.data]);
-    const closed = screen.error instanceof LiveScreenLinkError && screen.error.status === 403;
-    const retryIn = useLiveRetry(screen.isError && !screen.data && !closed, screen.errorUpdatedAt, () => void screen.refetch());
+    const status = linkStatus(screen.error);
+    const closed = status === 403;
+    // A missing or unpublished event (404) is final; only a temporary failure (network, 5xx) retries.
+    const notFound = status === 404 && !screen.data;
+    const retryIn = useLiveRetry(screen.isError && !screen.data && !closed && !notFound, screen.errorUpdatedAt, () => void screen.refetch());
     if (closed) return <LiveLinkClosed event={screen.data?.Event} />;
+    if (notFound) return <LiveLinkNotFound />;
     if (screen.isError && !screen.data) return <LiveFailure message={t("live.openFailed.title")} error={screen.error} retryIn={retryIn} onRetry={() => void screen.refetch()} />;
     if (!screen.data) return <LiveState><EventLoading label={t("live.link.checking")} /></LiveState>;
     return <LiveScreen event={screen.data.Event} token={token} link={screen.data} />;
