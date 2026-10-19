@@ -189,3 +189,16 @@ button.event-sortable__main{cursor:pointer}
 }
 .event-exercise-set__tags{display:inline-flex;align-items:center;gap:var(--ib-2)}
 .event-exercise-set__tags--details{display:none;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+/* Bulk selection: «Вибрати всі» above the sets; the bar with the count and the actions while something is selected. */
+.event-bulk-select{display:grid;gap:var(--ib-2)}
+.event-bulk-select__all{display:inline-flex;align-items:center;gap:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-dim);cursor:pointer}
+.event-bulk-select__all input,.event-exercise-set__pick{width:16px;height:16px;margin:0;accent-color:var(--ib-action);flex:none;cursor:pointer}
+.event-bulk-bar{display:grid;gap:var(--ib-2);padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-soft)}
+.event-bulk-bar__row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--ib-2) var(--ib-4)}
+.event-bulk-bar__count{font-size:var(--ib-fs-13)}
+.event-bulk-bar__actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
+.event-bulk-bar__actions .ib-btn{display:inline-flex;align-items:center;gap:var(--ib-1)}
+.event-bulk-bar__result{font-size:var(--ib-fs-13)}
+.event-bulk-bar__result p{margin:0}
+.event-bulk-bar__result ul,.event-bulk-bar__attempted ul{margin:var(--ib-1) 0 0;padding-left:var(--ib-5);color:var(--ib-dim)}
+.event-bulk-bar__attempted{display:block;margin-top:var(--ib-2)}

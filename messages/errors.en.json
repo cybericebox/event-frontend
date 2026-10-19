@@ -490,5 +490,6 @@
   "2827": "Secret storage is not configured: registry tokens cannot be saved",
   "2828": "Another image already uses this registry tag",
   "2829": "The image archive cannot be imported",
-  "2830": "A platform image cannot be exported: the image registry is not configured, not responding or does not have it"
+  "2830": "A platform image cannot be exported: the image registry is not configured, not responding or does not have it",
+  "21814": "Select from 1 to 200 exercises"
 }

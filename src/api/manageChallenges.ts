@@ -168,6 +168,16 @@ export const forkEventExercise = (eventID: string, attachmentID: string, recreat
 // «Повернути оригінал»: back to the catalog version the copy was made from.
 export const revertEventExercise = (eventID: string, attachmentID: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/revert`, attachmentSchema, "POST", recreateStands ? {RecreateStands: true} : undefined);
 // With attempts the server wants confirm=true (409 1810) and keeps the attachment as detached.
+// Bulk actions on 1..200 of the event's sets: each set goes through the single action's rules; one failure never stops the
+// others. Every set answers Changed, or the code and message a single action would have answered.
+const bulkResultSchema = z.object({
+    Changed: z.number().int(), Skipped: z.number().int(),
+    Results: z.array(z.object({ID: id, Changed: z.boolean(), Code: z.number().int().optional(), Message: z.string().optional()})),
+});
+export type BulkExerciseResult = z.infer<typeof bulkResultSchema>;
+export const bulkSetEventExerciseVisibility = (eventID: string, ids: string[], published: boolean) => request(eventID, "exercises/bulk/visibility", bulkResultSchema, "PUT", {ExerciseIDs: ids, Published: published});
+export const bulkSetEventExerciseScoring = (eventID: string, ids: string[], override: ChallengeScoringOverride | null) => request(eventID, "exercises/bulk/scoring", bulkResultSchema, "PUT", {ExerciseIDs: ids, Override: override});
+export const bulkDetachEventExercises = (eventID: string, ids: string[], confirm: boolean) => request(eventID, "exercises/bulk/detach", bulkResultSchema, "POST", {ExerciseIDs: ids, Confirm: confirm});
 export const detachEventExercise = (eventID: string, attachmentID: string, confirm = false) => request(eventID, `exercises/${attachmentID}${confirm ? "?confirm=true" : ""}`, z.unknown(), "DELETE").then(() => undefined);
 // Visibility is per set: see setEventExerciseVisibility.
 export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean; MaxFlagAttempts?: number | null}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);
