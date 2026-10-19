@@ -84,27 +84,40 @@ describe("running stage confirmation", () => {
 });
 
 describe("flag repeat warning", () => {
-    const warning = "Флаги завдання «Web» можуть повторюватися між командами: можливих флагів замало для кількості команд.";
-    function withRepeat(run: () => Promise<void>) {
-        Object.assign(attachment, {FlagsMayRepeat: true});
-        return run().finally(() => Object.assign(attachment, {FlagsMayRepeat: false}));
+    const limitText = "Завдання «Web» має 15 різних флагів, а команд може бути до 40: після 15-ї команди флаги почнуть повторюватися.";
+    function withRepeat(repeat: unknown, run: () => Promise<void>) {
+        Object.assign(attachment, {FlagsRepeat: repeat});
+        return run().finally(() => Object.assign(attachment, {FlagsRepeat: null}));
     }
 
-    it("is a warning (not an error), shown once while the set is open", () => withRepeat(async () => {
+    it("says how many flags and teams, once, as a warning (not an error) while the set is open", () => withRepeat({Flags: 15, Teams: 40, Reason: "limit"}, async () => {
         setup();
-        const text = await screen.findByText(warning);
-        expect(text.closest(".event-exercise-set__warning")!.className).toContain("event-exercise-set__warning--warn");
-        expect(screen.getAllByText(warning)).toHaveLength(1);
-        expect(screen.queryByRole("img", {name: warning})).toBeNull();
+        const text = await screen.findByText(limitText);
+        const block = text.closest(".event-exercise-set__warning")!;
+        expect(block.className).toContain("event-exercise-set__warning--warn");
+        expect(screen.getAllByText(limitText)).toHaveLength(1);
+        expect(screen.queryByRole("img", {name: limitText})).toBeNull();
     }));
 
-    it("shrinks to a warning mark with the text in its tooltip when the set is collapsed", () => withRepeat(async () => {
+    it("shrinks to a warning mark with the text in its tooltip when the set is collapsed", () => withRepeat({Flags: 15, Teams: 40, Reason: "limit"}, async () => {
         setup();
-        await screen.findByText(warning);
+        await screen.findByText(limitText);
         fireEvent.click(screen.getByRole("button", {name: /Згорнути/}));
         expect(document.querySelector(".event-exercise-set__warning")).toBeNull();
-        expect(screen.getByRole("img", {name: warning})).toBeTruthy();
+        expect(screen.getByRole("img", {name: limitText})).toBeTruthy();
     }));
+
+    it("names the teams that exist now when the event has no team limit, and a pool already used up", async () => {
+        await withRepeat({Flags: 15, Teams: 16, Reason: "teams"}, async () => {
+            setup();
+            expect(await screen.findByText("Завдання «Web» має 15 різних флагів, а команд уже 16: флаги повторюватимуться.")).toBeTruthy();
+        });
+        cleanup();
+        await withRepeat({Flags: 15, Teams: 3, Reason: "repeated"}, async () => {
+            setup();
+            expect(await screen.findByText("Флаги завдання «Web» уже повторюються: усі 15 видано.")).toBeTruthy();
+        });
+    });
 
     it("is hidden otherwise", async () => {
         setup();
