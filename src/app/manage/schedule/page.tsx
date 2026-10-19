@@ -33,6 +33,10 @@ type ScheduleDraft = {
 type CountdownDraft = {ShowStart: boolean; ShowFinish: boolean; Minutes: number; Mode: "before_end" | "from_start"};
 
 const validMinutes = (minutes: number) => Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440;
+// The minutes only matter while the finish countdown runs in the "last minutes" mode.
+const minutesApply = (value: CountdownDraft) => value.ShowFinish && value.Mode === "before_end";
+// The server always wants valid minutes, so other modes send the saved value instead of a hidden invalid draft.
+const effectiveCountdown = (value: CountdownDraft, saved: CountdownDraft | null): CountdownDraft => minutesApply(value) || !saved ? value : {...value, Minutes: saved.Minutes};
 
 function localDateTime(iso: string | null): string {
     if (!iso) return "";
@@ -133,18 +137,20 @@ export default function ManageSchedulePage() {
     const savedCountdown: CountdownDraft | null = config.data ? {ShowStart: config.data.ShowStartCountdown, ShowFinish: config.data.ShowFinishCountdown, Minutes: config.data.FinishCountdownMinutes, Mode: config.data.FinishCountdownMode} : null;
     const countdown = countdownEdited?.eventID === eventID ? countdownEdited.value : savedCountdown;
     const setCountdown = (value: CountdownDraft) => setCountdownEdited({eventID, value});
-    const countdownDirty = !!countdown && JSON.stringify(countdown) !== JSON.stringify(savedCountdown);
+    const countdownMinutesValid = !countdown || !minutesApply(countdown) || validMinutes(countdown.Minutes);
+    const countdownDirty = !!countdown && JSON.stringify(effectiveCountdown(countdown, savedCountdown)) !== JSON.stringify(savedCountdown);
 
     useDraftDirty("countdown", savedCountdown ? countdownDirty : undefined);
 
     async function saveCountdown(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (!countdownDirty || !countdown || !config.data || !canManage || countdownSaving || !validMinutes(countdown.Minutes)) return;
+        if (!countdownDirty || !countdown || !config.data || !canManage || countdownSaving || !countdownMinutesValid) return;
         setCountdownSaving(true);
         try {
+            const sent = effectiveCountdown(countdown, savedCountdown);
             const updated = await putManageConfig(eventID, {
                 ...manageConfigInput(config.data),
-                ShowStartCountdown: countdown.ShowStart, ShowFinishCountdown: countdown.ShowFinish, FinishCountdownMinutes: countdown.Minutes, FinishCountdownMode: countdown.Mode,
+                ShowStartCountdown: sent.ShowStart, ShowFinishCountdown: sent.ShowFinish, FinishCountdownMinutes: sent.Minutes, FinishCountdownMode: sent.Mode,
             });
             queryClient.setQueryData(["event-management-config", eventID], updated);
             setCountdownEdited(current => current?.value === countdown ? null : current);
@@ -188,17 +194,17 @@ export default function ManageSchedulePage() {
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showStart")} help={t("manage.schedule.countdown.showStartHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowStart} onCheckedChange={checked => setCountdown({...countdown, ShowStart: checked})} disabled={!canManage} label={t("manage.schedule.countdown.startSwitch")} /></div>
             <div className="event-manage-field"><ManageFieldLabel title={t("manage.schedule.countdown.showFinish")} help={t("manage.schedule.countdown.showFinishHelp")} /><EventSwitch className="event-manage-form__switch" checked={countdown.ShowFinish} onCheckedChange={checked => setCountdown({...countdown, ShowFinish: checked})} disabled={!canManage} label={t("manage.schedule.countdown.finishSwitch")} /></div>
             {countdown.ShowFinish && <div className="event-manage-field">
-                <ManageFieldLabel htmlFor="countdown-finish-minutes" title={t("manage.schedule.countdown.minutes")} help={t("manage.schedule.countdown.minutesHelp")} required />
-                <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage} aria-invalid={!validMinutes(countdown.Minutes)} aria-describedby={!validMinutes(countdown.Minutes) ? "countdown-finish-minutes-error" : undefined} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
-                {!validMinutes(countdown.Minutes) && <small id="countdown-finish-minutes-error" className="event-manage-validation" role="alert">{t("manage.schedule.countdown.minutesRange")}</small>}
-            </div>}
-            {countdown.ShowFinish && <div className="event-manage-field">
                 <ManageFieldLabel title={t("manage.schedule.countdown.mode")} help={t("manage.schedule.countdown.modeHelp")} />
                 <EventSelect ariaLabel={t("manage.schedule.countdown.mode")} value={countdown.Mode} disabled={!canManage}
                     options={[{value: "before_end", label: t("manage.schedule.countdown.mode.beforeEnd")}, {value: "from_start", label: t("manage.schedule.countdown.mode.fromStart")}]}
                     onValueChange={mode => setCountdown({...countdown, Mode: mode as CountdownDraft["Mode"]})} />
             </div>}
-            <div className="event-manage-section__actions"><EventButton saveDirty={countdownDirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || countdownSaving || !countdownDirty || !validMinutes(countdown.Minutes)} busy={countdownSaving}>{t("manage.schedule.countdown.save")}</EventButton></div>
+            {minutesApply(countdown) && <div className="event-manage-field">
+                <ManageFieldLabel htmlFor="countdown-finish-minutes" title={t("manage.schedule.countdown.minutes")} help={t("manage.schedule.countdown.minutesHelp")} required />
+                <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage} aria-invalid={!countdownMinutesValid} aria-describedby={!countdownMinutesValid ? "countdown-finish-minutes-error" : undefined} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
+                {!countdownMinutesValid && <small id="countdown-finish-minutes-error" className="event-manage-validation" role="alert">{t("manage.schedule.countdown.minutesRange")}</small>}
+            </div>}
+            <div className="event-manage-section__actions"><EventButton saveDirty={countdownDirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || countdownSaving || !countdownDirty || !countdownMinutesValid} busy={countdownSaving}>{t("manage.schedule.countdown.save")}</EventButton></div>
         </form>}
     </div>;
 }
