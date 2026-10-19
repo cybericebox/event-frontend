@@ -237,3 +237,6 @@
 .live-controls__wake{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .live-controls .live-controls__help{min-height:0;padding:2px;border:0;border-radius:999px;color:var(--ib-on-brand-3)}
 .live-controls .live-controls__help:hover{background:transparent;color:var(--ib-on-brand)}
+
+/* The neutral error page of /live (no event data): the platform page, above everything, on the page colour. */
+.live-neutral{position:fixed;inset:0;z-index:200;overflow:auto;background:var(--ib-paper)}

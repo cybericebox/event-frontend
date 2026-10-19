@@ -41,8 +41,24 @@ export function LiveFailure({event, message, error, retryIn, onRetry}: {event?: 
 
 // The screen link no longer works: the shared error page, no sign-in offer
 // and no button (the projector PC is not meant to sign in).
+// Before any event data arrived the screen has no event colours: it uses the
+// platform's neutral error page (crest in the footer) instead of a half-themed one.
 export function LiveLinkClosed({event}: {event?: PublicEventInfo | null}) {
+    if (!event) return <LiveNeutralPage code={403} title={t("live.link.closedTitle")} text={t("live.link.closedText")} />;
     return <LiveState event={event}><ErrorPage mode="block" role="alert" code={403} title={t("live.link.closedTitle")} text={t("live.link.closedText")} /></LiveState>;
+}
+
+// The link answers «not found»: the event does not exist or is not published
+// yet. One message for both, as for any event the visitor cannot open, and no
+// visible retry: the screen re-checks quietly and opens once it is published.
+export function LiveLinkNotFound() {
+    return <LiveNeutralPage code={404} title={[t("live.link.notFound.line1"), t("live.link.notFound.line2")]} text={t("live.link.notFound.body")} />;
+}
+
+function LiveNeutralPage({code, title, text}: {code: number; title: string | [string, string]; text: string}) {
+    const documentTitle = typeof title === "string" ? title : title.join(" ");
+    useEffect(() => {document.title = documentTitle;}, [documentTitle]);
+    return <div className="live-neutral"><ErrorPage mode="page" role="alert" platformBrand code={code} title={title} text={text} /></div>;
 }
 
 const wakeLabel = (state: WakeLockState) => t(`live.wake.${state}`);
