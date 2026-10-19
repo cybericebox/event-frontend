@@ -2,6 +2,7 @@
 
 import {useLayoutEffect, useRef, useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
+import Link from "next/link";
 import {RotateCcw, X} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {getPreviewSettings, previewSettingsIdentity, previewSettingsKey, savePreviewSettings, type PreviewCatalogItem, type PreviewSettingsDraft} from "@/api/managePreviewSettings";
@@ -70,8 +71,13 @@ export function PreviewSettingsPage() {
                 onRemove={versionID => update(customDraft({Selections: selected.filter(x => x.ExerciseVersionID !== versionID)}))}
                 onAdd={(item, position) => select(item, position)} onVariant={(item, position) => select(item, position)} />}
             <div className="event-part__actions event-preview-heading"><h2>{t(model.Inherit ? "manage.previewSettings.platformSet" : "manage.previewSettings.eventSet")}</h2></div>
-            {selected.length === 0 ? <EmptyState compact className="event-preview-selection-empty" message={t("manage.previewSettings.empty")} /> : <ul className="event-preview-selection">{selected.map(item => <li key={item.ExerciseVersionID}>
-                <PreviewExerciseDetails eventID={eventID} item={item} />
+            {selected.length === 0 ? <EmptyState compact className="event-preview-selection-empty" message={t("manage.previewSettings.empty")} /> : <ul className="event-preview-selection">{selected.map(item => <li key={item.ExerciseVersionID} className={item.Reason ? "is-unavailable" : undefined}>
+                <div className="event-preview-selection__item">
+                    <PreviewExerciseDetails eventID={eventID} item={item} />
+                    {/* A dynamic task that cannot run now stays listed, with why; the reservation is where staff fix it. */}
+                    {item.Reason && <p className="event-preview-selection__reason">{t(`manage.previewSettings.unavailableReason.${item.Reason}`)}
+                        {canManage && item.Reason === "no_reservation" && <> <Link className="ib-link" href="/manage/resources">{t("manage.previewSettings.toReservations")}</Link></>}</p>}
+                </div>
                 {canManage && <button type="button" className="ib-icon-btn" aria-label={t("manage.previewSettings.remove", {name: item.Name || item.ExerciseVersionID})} onClick={() => update(customDraft({Selections: selected.filter(x => x.ExerciseVersionID !== item.ExerciseVersionID)}))}><X aria-hidden="true" /></button>}
             </li>)}</ul>}
         </section>

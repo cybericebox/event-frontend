@@ -5481,5 +5481,8 @@
   "manage.challenges.groups.points.one": "{count} point",
   "manage.challenges.groups.points.few": "{count} points",
   "manage.challenges.groups.points.many": "{count} points",
-  "manage.challenges.groups.pointsDynamic": "dynamic {max}→{min}"
+  "manage.challenges.groups.pointsDynamic": "dynamic {max}→{min}",
+  "manage.previewSettings.unavailableReason.no_infrastructure": "Will not start: the event has no infrastructure",
+  "manage.previewSettings.unavailableReason.no_reservation": "Will not start: no active resource reservation",
+  "manage.previewSettings.toReservations": "Reservation calendar"
 }

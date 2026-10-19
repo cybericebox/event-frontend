@@ -5481,5 +5481,8 @@
   "manage.challenges.groups.points.one": "{count} бал",
   "manage.challenges.groups.points.few": "{count} бали",
   "manage.challenges.groups.points.many": "{count} балів",
-  "manage.challenges.groups.pointsDynamic": "динамічні {max}→{min}"
+  "manage.challenges.groups.pointsDynamic": "динамічні {max}→{min}",
+  "manage.previewSettings.unavailableReason.no_infrastructure": "Не запуститься: у заходу немає інфраструктури",
+  "manage.previewSettings.unavailableReason.no_reservation": "Не запуститься: немає активного бронювання ресурсів",
+  "manage.previewSettings.toReservations": "Календар бронювань"
 }
