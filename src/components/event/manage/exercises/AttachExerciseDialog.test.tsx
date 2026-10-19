@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeAll, beforeEach, describe, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {PublishedExerciseChoice} from "@/api/manageChallenges";
 import {ManageApiError} from "@/api/manage";
@@ -22,7 +22,7 @@ beforeAll(() => {
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 beforeEach(() => sessionStorage.clear());
 
-const choice = (id: string, name: string, infrastructure: boolean) => ({ID: id, Name: name, Description: "", PublishedVersionID: id, Tags: [], Scope: "catalog", Infrastructure: infrastructure, Attached: false, ResourceHeavy: false, Resources: null}) as PublishedExerciseChoice;
+const choice = (id: string, name: string, infrastructure: boolean) => ({ID: id, Name: name, Description: "", PublishedVersionID: id, Tags: [], Scope: "catalog", Infrastructure: infrastructure, Attached: false, ResourceHeavy: false, Resources: null, AvgDifficulty: null, TaskCount: null, TaskNames: []}) as PublishedExerciseChoice;
 
 function renderDialog(infrastructureAllowed: boolean, withDrafts = false) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -70,10 +70,10 @@ describe("AttachExerciseDialog", () => {
         renderDialog(true);
         const heavy = await screen.findByRole("button", {name: /Heavy/});
         expect(heavy.querySelector("[data-resource-heavy]")?.textContent).toBe("Ресурсоємне");
-        expect(heavy.querySelector("[data-resources-total]")?.textContent).toBe("CPU 500 мілі-ядер · памʼять 2 ГіБ · 8 блоків · пристроїв 2");
+        expect(heavy.querySelector("[data-resources-total]")?.textContent).toBe("CPU 500 мілі-ядер · памʼять 2 ГіБ · пристроїв 2");
         const light = screen.getByRole("button", {name: /Light/});
         expect(light.querySelector("[data-resource-heavy]")).toBeNull();
-        expect(light.querySelector("[data-resources-total]")?.textContent).toBe("CPU 50 мілі-ядер–250 мілі-ядер · памʼять 128 МіБ–1 ГіБ · 4–12 блоків · пристроїв 1–3");
+        expect(light.querySelector("[data-resources-total]")?.textContent).toBe("CPU 50 мілі-ядер–250 мілі-ядер · памʼять 128 МіБ–1 ГіБ · пристроїв 1–3");
         expect(screen.getByRole("button", {name: /Plain/}).querySelector("[data-resources-total]")).toBeNull();
     });
 
@@ -134,5 +134,29 @@ describe("AttachExerciseDialog", () => {
         await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", "", "all", ["web"]));
         // The previous list stays on screen while the filtered one loads.
         expect(screen.getByRole("button", {name: /Tagged/})).toBeTruthy();
+    });
+
+    it("shows each row's tags, average difficulty and subtask count; the count opens the names", async () => {
+        const web = {...choice("33333333-3333-4333-8333-333333333333", "Web", false), Description: "A long description", Tags: ["web", "sqli", "auth"],
+            AvgDifficulty: 3.33, TaskCount: 3, TaskNames: ["Recon", "Exploit", "Report"]};
+        const bare = {...choice("44444444-4444-4444-8444-444444444444", "Bare", false)};
+        api.choices.mockResolvedValue([web, bare]);
+        renderDialog(true);
+        const row = (await screen.findByRole("button", {name: /^Web/})).closest("li")!;
+        for (const tag of ["web", "sqli", "auth"]) expect(within(row).getByText(tag)).toBeTruthy();
+        expect(within(row).getByLabelText(t("manage.exercises.avgDifficulty.value", {level: t("manage.exercises.avgDifficulty.easy"), value: "3,3"}))).toBeTruthy();
+        const count = within(row).getByRole("button", {name: t("manage.exercises.subtasks.show", {count: 3})});
+        expect(count.textContent).toBe("3");
+        // Not inside the row's select button, and it does not select the row.
+        expect(count.closest(".event-exercise-picker__item")).toBeNull();
+        const panel = document.getElementById(count.getAttribute("popovertarget")!)!;
+        expect(panel.getAttribute("popover")).toBe("auto");
+        expect([...panel.querySelectorAll("li")].map(item => item.textContent)).toEqual(["Recon", "Exploit", "Report"]);
+        fireEvent.click(count);
+        expect(within(row).getByRole("button", {name: /^Web/}).getAttribute("aria-pressed")).toBe("false");
+        // Without a variant or a difficulty: «—».
+        const bareRow = screen.getByRole("button", {name: /^Bare/}).closest("li")!;
+        expect(within(bareRow).getByLabelText(t("manage.exercises.avgDifficulty.none")).textContent).toBe("—");
+        expect(within(bareRow).getByLabelText(t("manage.exercises.subtasks.none")).textContent).toBe("—");
     });
 });

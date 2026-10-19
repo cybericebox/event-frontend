@@ -208,7 +208,7 @@
 
 @media(max-width:720px){
   .live-fullscreen:not(.live-fullscreen--anchor) .live-area{position:static;min-height:100%}
-  .live-fullscreen:not(.live-fullscreen--anchor){overflow:auto}
+  .live-fullscreen:not(.live-fullscreen--anchor){overflow:hidden auto}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-canvas{container-type:normal;display:flex;flex-direction:column;gap:0;height:auto;min-height:100%;overflow:visible}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget{flex:none;min-height:96px;padding:12px 16px}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--chart{height:280px}

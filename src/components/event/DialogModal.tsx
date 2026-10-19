@@ -12,7 +12,7 @@ export function DialogModal({open, onClose, title, description, size = "sm", foo
     onClose: () => void;
     title: string;
     description?: ReactNode;
-    size?: "sm" | "md";
+    size?: "sm" | "md" | "lg";
     footer?: ReactNode;
     headerActions?: ReactNode;
     children: ReactNode;
@@ -30,7 +30,7 @@ export function DialogModal({open, onClose, title, description, size = "sm", foo
             dialog.close();
         }
     }, [open]);
-    return <dialog ref={ref} className={`ib-modal event-dialog${size === "sm" ? " ib-modal--sm" : ""}`} aria-labelledby={titleID}
+    return <dialog ref={ref} className={`ib-modal event-dialog${size === "sm" ? " ib-modal--sm" : size === "lg" ? " event-dialog--lg" : ""}`} aria-labelledby={titleID}
         onClose={() => { onClose(); if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus(); }}
         onCancel={event => { event.preventDefault(); onClose(); }}
         onClick={event => {
