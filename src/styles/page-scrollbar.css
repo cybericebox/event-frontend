@@ -1,0 +1,11 @@
+/* Only the document scrollbar is replaced. Dialogs and editor panels keep their own scrolling. */
+.event-page-scrollbar{display:none}
+@media screen and (forced-colors:none){
+  html[data-page-scrollbar]{scrollbar-width:none;scrollbar-gutter:auto}
+  html[data-page-scrollbar]::-webkit-scrollbar{display:none}
+  .event-page-scrollbar{display:block;position:fixed;inset:4px 0 4px auto;width:16px;z-index:45;opacity:0;pointer-events:none;touch-action:none;user-select:none;transition:opacity .18s ease}
+  .event-page-scrollbar[data-visible="true"],.event-page-scrollbar:focus-visible{opacity:1;pointer-events:auto}
+  .event-page-scrollbar__thumb{width:8px;margin-inline:auto;border-radius:var(--ib-r-pill);background:var(--ib-dim);border:1px solid var(--ib-paper)}
+  .event-page-scrollbar:hover .event-page-scrollbar__thumb,.event-page-scrollbar:focus-visible .event-page-scrollbar__thumb{background:var(--ib-ink)}
+}
+@media(prefers-reduced-motion:reduce){.event-page-scrollbar{transition:none}}
