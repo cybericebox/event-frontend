@@ -88,3 +88,19 @@ describe("cursor pages", () => {
         expect(result.current).toMatchObject({cursor: null, page: 1, pageSize: 100});
     });
 });
+
+describe("manage table cards (phones)", () => {
+    it("labels every cell with its visible column name, so a row can show as a card", () => {
+        const {container} = render(<ManageTable event={event} state="ready" cards loadingLabel="" emptyMessage="" errorMessage="" onRetry={vi.fn()}
+            head={<tr><th scope="col">Текст</th><th scope="col"><span className="sr-only">Дії</span></th></tr>}><tbody><tr><td>Банер</td><td><button type="button">x</button></td></tr></tbody></ManageTable>);
+        expect(container.querySelector(".event-manage-table")?.classList.contains("event-manage-table--cards")).toBe(true);
+        const cells = [...container.querySelectorAll("tbody td")];
+        expect(cells.map(cell => cell.getAttribute("data-label"))).toEqual(["Текст", ""]);
+    });
+
+    it("leaves a plain table alone", () => {
+        const {container} = table("ready");
+        expect(container.querySelector(".event-manage-table--cards")).toBeNull();
+        expect(container.querySelector("tbody td")?.hasAttribute("data-label")).toBe(false);
+    });
+});

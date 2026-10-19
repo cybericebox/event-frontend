@@ -6,7 +6,7 @@ import {useState} from "react";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {toastFailure} from "@/components/ui/toastApiError";
+import {failureText, toastFailure} from "@/components/ui/toastApiError";
 import {
     channelSignals, customizeManageInAppTemplate, getManageInAppTemplates, getManageNotificationSubscriptions,
     getManageNotificationTypes, publishManageInAppTemplate, resetManageInAppTemplate,
@@ -73,7 +73,8 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     const editable = !!(canManage && mode === "edit");
     const ownVersions = versions.filter(item => item.Source === "event");
 
-    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true): Promise<boolean> {
+    // `inline` takes the error text instead of a toast (an error inside a dialog).
+    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true, inline?: (text: string) => void): Promise<boolean> {
         if (!canManage || busy) return false;
         setBusy(true);
         try {
@@ -86,7 +87,8 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
             return true;
         } catch (error) {
             // A refused link or button address has its own message; every other error keeps the generic one.
-            toastFailure(error, error instanceof ManageApiError && error.code === ApiErrorCode.TemplateLinkInvalid ? apiErrorMessage(error.code, failure) : failure);
+            const message = error instanceof ManageApiError && error.code === ApiErrorCode.TemplateLinkInvalid ? apiErrorMessage(error.code, failure) : failure;
+            if (inline) inline(failureText(error, message)); else toastFailure(error, message);
             return false;
         } finally {setBusy(false);}
     }
@@ -129,7 +131,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
                     onCustomize={() => void mutate(() => customizeManageInAppTemplate(eventID, template!), t("manage.notifications.customized"))}
                     onEdit={() => void mutate(() => rollbackManageInAppTemplate(eventID, template!), t("manage.notifications.draftFromPublished"))}
                     onRestore={() => void mutate(() => rollbackManageInAppTemplate(eventID, template!), t("manage.notifications.draftFromPrevious"))}
-                    onReset={async () => { const done = await run(() => resetManageInAppTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.notifications.restoreError")); if (done) router.replace(href()); return done; }} />
+                    onReset={async () => { let failed = ""; const done = await run(() => resetManageInAppTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.notifications.restoreError"), true, text => {failed = text;}); if (done) router.replace(href()); return done || failed; }} />
             </>} />
         {readOnlyHint && <p className="event-template-page__hint" role="note" data-testid="template-notice">{readOnlyHint}</p>}
         {ownVersions.length > 0 && template && <TemplateVersions versions={ownVersions.map(item => ({ID: item.ID, Status: item.Status, UpdatedAt: item.UpdatedAt, PublishedAt: item.PublishedAt, Heading: item.Title}))} currentId={template.ID} hrefFor={href}

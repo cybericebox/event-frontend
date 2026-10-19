@@ -44,7 +44,7 @@ export function BroadcastHistory() {
 
     return <div className="event-manage-settings event-journal">
         <header className="event-manage-heading"><div><h1>{t("manage.broadcasts.title")}</h1><p>{t("manage.broadcasts.subtitle")}</p></div>{action}</header>
-        <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.broadcasts.loading")} emptyMessage={t("manage.broadcasts.empty")}
+        <ManageTable cards event={event} state={state} busy={busy} loadingLabel={t("manage.broadcasts.loading")} emptyMessage={t("manage.broadcasts.empty")}
             errorMessage={t("manage.broadcasts.loadError")} onRetry={() => void query.refetch()} error={query.error}
             head={<tr>
                 <th scope="col">{t("manage.broadcasts.col.message")}</th>

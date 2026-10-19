@@ -198,7 +198,7 @@ export function BannersManager() {
 
     return <div className="event-manage-settings">
         <header className="event-manage-heading"><div><h1>{t("manage.banners.title")}</h1><p>{t("manage.banners.subtitle")}</p></div>{create}</header>
-        <ManageTable event={event} state={query.isPending ? "loading" : query.isError && !query.data ? "error" : banners.length ? "ready" : "empty"}
+        <ManageTable cards event={event} state={query.isPending ? "loading" : query.isError && !query.data ? "error" : banners.length ? "ready" : "empty"}
             label={t("manage.banners.title")} loadingLabel={t("manage.banners.loading")} emptyMessage={t("manage.banners.empty")} errorMessage={t("manage.banners.loadError")}
             error={query.error} onRetry={() => void query.refetch()}
             head={<tr><th>{t("manage.banners.field.text")}</th><th>{t("manage.banners.field.level")}</th><th>{t("manage.banners.table.window")}</th><th>{t("manage.banners.field.audience")}</th><th>{t("manage.banners.table.status")}</th>{canManage && <th className="event-manage-table__actions-col event-manage-table__sticky-end">{t("manage.banners.table.actions")}</th>}</tr>}>

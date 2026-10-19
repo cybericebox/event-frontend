@@ -3,7 +3,7 @@
 import {useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {toastFailure} from "@/components/ui/toastApiError";
+import {failureText} from "@/components/ui/toastApiError";
 import {Copy, Link2, Power, RefreshCw} from "lucide-react";
 import {getLiveScreenLink, issueLiveScreenLink, liveScreenExpiries, liveScreenURL, regenerateLiveScreenLink, revokeLiveScreenLink, type LiveScreenExpiry, type LiveScreenLink} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -31,27 +31,34 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
     const [fresh, setFresh] = useState<LiveScreenLink | null>(null);
     const [busy, setBusy] = useState<"issue" | "regenerate" | "revoke" | null>(null);
     const [confirm, setConfirm] = useState<"regenerate" | "revoke" | null>(null);
+    // A failure stays in the dialog: inside the open confirmation, else above the actions.
+    const [error, setError] = useState("");
     // The server clock decides; this only explains why the option is off.
     const [openedAt] = useState(() => Date.now());
     const endAvailable = !!event.FinishTime && Date.parse(event.FinishTime) > openedAt;
 
     async function run(kind: "issue" | "regenerate" | "revoke", action: () => Promise<LiveScreenLink | undefined>, success: string) {
         setBusy(kind);
+        setError("");
         try {
             const issued = await action();
             setFresh(issued?.Token ? issued : null);
             queryClient.setQueryData(queryKey, issued ? {...issued, Token: undefined} : null);
             toast.success(success);
-        } catch (failure) {toastFailure(failure, t("manage.live.links.error"));}
-        finally {setBusy(null); setConfirm(null);}
+            setConfirm(null);
+        } catch (failure) {setError(failureText(failure, t("manage.live.links.error")));}
+        finally {setBusy(null);}
     }
     async function copy(url: string) {
         try {
             await navigator.clipboard.writeText(url);
+            setError("");
             toast.success(t("manage.live.links.copied"));
-        } catch (failure) {toastFailure(failure, t("manage.live.links.copyError"));}
+        } catch (failure) {setError(failureText(failure, t("manage.live.links.copyError")));}
     }
-    const close = () => {setFresh(null); onClose();};
+    const close = () => {setFresh(null); setError(""); onClose();};
+    const ask = (kind: "regenerate" | "revoke") => {setError(""); setConfirm(kind);};
+    const inlineError = !confirm && error ? <p className="event-manage-validation" role="alert">{error}</p> : null;
     const freshURL = fresh?.Token ? liveScreenURL(window.location.origin, fresh.Token) : "";
     const current = link.data;
     const expires = (value: string | null) => value ? dateFormat.format(new Date(value)) : t("manage.live.links.noExpiry");
@@ -67,6 +74,7 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
                                 options={liveScreenExpiries.map(value => ({value, label: t(`manage.live.links.expiry.${value}`),
                                     disabled: value === "event_end" && !endAvailable, disabledReason: value === "event_end" && !endAvailable ? t("manage.live.links.expiryNoFinish") : undefined}))} />
                         </div>
+                        {inlineError}
                         <EventButton className="ib-btn ib-btn--primary" type="button" busy={busy === "issue"} busyLabel={t("common.busy.creating")} disabled={!!busy || expiry === "event_end" && !endAvailable}
                             onClick={() => void run("issue", () => issueLiveScreenLink(eventID, expiry), t("manage.live.links.created"))}><Link2 size={16} /> {t("manage.live.links.create")}</EventButton>
                     </div>
@@ -81,17 +89,18 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
                                 </div>
                                 <small>{t("manage.live.links.freshHint")}</small>
                             </div> : <p className="event-live-links__hidden">{t("manage.live.links.hiddenURL")}</p>}
+                            {inlineError}
                             <div className="event-live-links__actions">
                                 <EventTooltip content={t("manage.live.links.regenerateHint")}>{id => <EventButton className="ib-btn" type="button" aria-describedby={id} busy={busy === "regenerate"} busyLabel={t("common.busy.regenerating")} disabled={!!busy}
-                                    onClick={() => setConfirm("regenerate")}><RefreshCw size={16} /> {t("manage.live.links.regenerate")}</EventButton>}</EventTooltip>
-                                <EventButton className="ib-btn" type="button" busy={busy === "revoke"} busyLabel={t("common.busy.revoking")} disabled={!!busy} onClick={() => setConfirm("revoke")}><Power size={16} /> {t("manage.live.links.revoke")}</EventButton>
+                                    onClick={() => ask("regenerate")}><RefreshCw size={16} /> {t("manage.live.links.regenerate")}</EventButton>}</EventTooltip>
+                                <EventButton className="ib-btn" type="button" busy={busy === "revoke"} busyLabel={t("common.busy.revoking")} disabled={!!busy} onClick={() => ask("revoke")}><Power size={16} /> {t("manage.live.links.revoke")}</EventButton>
                             </div>
                         </section>}
         </div>
-        <ConfirmDialog open={confirm === "revoke"} tone="danger" busy={busy === "revoke"} busyLabel={t("common.busy.revoking")} onCancel={() => setConfirm(null)}
+        <ConfirmDialog open={confirm === "revoke"} tone="danger" busy={busy === "revoke"} busyLabel={t("common.busy.revoking")} error={confirm === "revoke" && error || undefined} onCancel={() => setConfirm(null)}
             title={t("manage.live.links.revokeTitle")} description={t("manage.live.links.revokeBody")} confirmLabel={t("manage.live.links.revoke")}
             onConfirm={() => void run("revoke", async () => {await revokeLiveScreenLink(eventID); return undefined;}, t("manage.live.links.revoked"))} />
-        <ConfirmDialog open={confirm === "regenerate"} busy={busy === "regenerate"} busyLabel={t("common.busy.regenerating")} onCancel={() => setConfirm(null)}
+        <ConfirmDialog open={confirm === "regenerate"} busy={busy === "regenerate"} busyLabel={t("common.busy.regenerating")} error={confirm === "regenerate" && error || undefined} onCancel={() => setConfirm(null)}
             title={t("manage.live.links.regenerateTitle")} description={t("manage.live.links.regenerateBody")} confirmLabel={t("manage.live.links.regenerate")}
             onConfirm={() => void run("regenerate", () => regenerateLiveScreenLink(eventID), t("manage.live.links.regenerated"))} />
     </DialogModal>;

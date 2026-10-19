@@ -106,7 +106,7 @@ export function DismissalsPanel() {
 
     return <>
         <p className="event-integrity__notice">{t("manage.analytics.integrity.dismissals.notice")}</p>
-        <ManageTable event={event} state={state} loadingLabel={t("manage.analytics.integrity.dismissals.loading")} errorMessage={t("manage.analytics.integrity.dismissals.loadFailed")}
+        <ManageTable cards event={event} state={state} loadingLabel={t("manage.analytics.integrity.dismissals.loading")} errorMessage={t("manage.analytics.integrity.dismissals.loadFailed")}
             emptyMessage={t("manage.analytics.integrity.dismissals.empty")} onRetry={() => void query.refetch()} error={query.error}
             head={<tr>
                 <th scope="col">{t("manage.analytics.integrity.dismissals.col.kind")}</th>

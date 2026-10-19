@@ -73,7 +73,7 @@ export function BroadcastDetails({broadcastID}: {broadcastID: string}) {
                 <section className="event-broadcast-section">
                     <h2>{t("manage.broadcasts.deliveries")}</h2>
                     <div className="event-broadcast-deliveries">
-                        <ManageTable event={event} state={state} busy={deliveries.isFetchingNextPage} loadingLabel={t("manage.broadcasts.deliveriesLoading")} emptyMessage={t("manage.broadcasts.deliveriesEmpty")}
+                        <ManageTable cards event={event} state={state} busy={deliveries.isFetchingNextPage} loadingLabel={t("manage.broadcasts.deliveriesLoading")} emptyMessage={t("manage.broadcasts.deliveriesEmpty")}
                             errorMessage={t("manage.broadcasts.deliveriesError")} onRetry={() => void deliveries.refetch()} error={deliveries.error}
                             head={<tr>
                                 <th scope="col">{t("manage.mail.journal.col.recipient")}</th>
