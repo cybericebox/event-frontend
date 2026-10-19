@@ -27,11 +27,18 @@ const formats = {
 const numericParts = new Intl.DateTimeFormat("en-GB", {year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23", timeZone: EVENT_TIME_ZONE});
 const monthLong = new Intl.DateTimeFormat("uk-UA", {month: "long", timeZone: EVENT_TIME_ZONE});
 const monthShort = new Intl.DateTimeFormat("uk-UA", {month: "short", timeZone: EVENT_TIME_ZONE});
+// With a day number the month is in the genitive: «21 жовтня», alone the nominative: «жовтень 2026».
+const dayMonthLong = new Intl.DateTimeFormat("uk-UA", {day: "numeric", month: "long", timeZone: EVENT_TIME_ZONE});
 
-// The calendar fields of a moment in the event's zone.
+// The calendar fields of a moment in the event's zone (one formatToParts call).
 function eventParts(date: Date) {
-    const part = (type: Intl.DateTimeFormatPartTypes) => Number(numericParts.formatToParts(date).find(item => item.type === type)?.value ?? 0);
+    const parts = new Map(numericParts.formatToParts(date).map(item => [item.type, Number(item.value)]));
+    const part = (type: Intl.DateTimeFormatPartTypes) => parts.get(type) ?? 0;
     return {year: part("year"), month: part("month"), day: part("day"), hour: part("hour"), minute: part("minute"), second: part("second")};
+}
+
+function monthName(date: Date, withDay: boolean): string {
+    return withDay ? dayMonthLong.formatToParts(date).find(item => item.type === "month")?.value ?? monthLong.format(date) : monthLong.format(date);
 }
 
 export function formatDateTime(value: string, format: DateDisplayFormat = "date-time", pattern = ""): string {
@@ -44,7 +51,7 @@ export function formatDateTime(value: string, format: DateDisplayFormat = "date-
     if (!validDatePattern(pattern)) return "—";
     const parts: Record<string, string> = {
         yyyy: String(year), yy: pad(year % 100),
-        MMMM: monthLong.format(date),
+        MMMM: monthName(date, /(^|[^d])d{1,2}([^d]|$)/.test(pattern.replace(/\[[^\]]*\]/g, ""))),
         MMM: monthShort.format(date),
         MM: pad(month), M: String(month),
         dd: pad(day), d: String(day),

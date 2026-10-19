@@ -8,6 +8,7 @@ import {toastFailure} from "@/components/ui/toastApiError";
 import {ChevronRight, Download, ExternalLink, Radio, Snowflake} from "lucide-react";
 import {downloadResultsCSV, getModeratorResults, resultsLiveURL, setResultsOpened, type ModeratorResults, type ModeratorResultsTeam} from "@/api/manageResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {useCanExport} from "@/components/event/manage/managerContext";
 import {ManageTable, ManageTablePagination, ManageTableSearch} from "@/components/event/manage/ManageTable";
 import {HiddenMark} from "@/components/event/manage/HiddenMark";
 import {LiveStatus} from "@/components/event/manage/LiveStatus";
@@ -65,6 +66,7 @@ function SolveDetails({team}: {team: ModeratorResultsTeam}) {
 
 export default function ManageResultsPage() {
     const {event, canManage} = useManager();
+    const canExport = useCanExport();
     const eventID = event.EventID;
     const teamMode = event.Participation === 1;
     const queryClient = useQueryClient();
@@ -148,7 +150,7 @@ export default function ManageResultsPage() {
             toolbar={<>
                 <ManageTableSearch value={table.search} onChange={table.setSearch} label={teamMode ? t("manage.results.searchTeams") : t("manage.results.searchParticipants")} />
                 <TableFiltersButton specs={specs} drafts={table.drafts} onChange={table.setDrafts} active={table.active} />
-                {canManage && <div className="event-results-table__tools">
+                {canExport && <div className="event-results-table__tools">
                     <EventButton className="ib-btn" type="button" disabled={busy === "export"} busy={busy === "export"} busyLabel={t("common.busy.downloading")} onClick={() => void exportCSV()}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>
                 </div>}
                 <TableFilterChips specs={specs} drafts={table.drafts} onChange={table.setDrafts} onReset={table.reset}

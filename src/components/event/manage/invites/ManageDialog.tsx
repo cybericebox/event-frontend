@@ -28,7 +28,7 @@ export function ManageDialog({open, onOpenChange, title, description, footer, ch
     return <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
         <DialogPrimitive.Portal>
             <DialogPrimitive.Overlay className="ib-modal-backdrop event-modal-backdrop">
-                <DialogPrimitive.Content className={`ib-modal event-modal${size === "sm" ? " ib-modal--sm" : ""}${drag.active ? " is-file-over" : ""}`} {...(description ? {} : {"aria-describedby": undefined})} {...drag.handlers}
+                <DialogPrimitive.Content data-event-modal="" className={`ib-modal event-modal${size === "sm" ? " ib-modal--sm" : ""}${drag.active ? " is-file-over" : ""}`} {...(description ? {} : {"aria-describedby": undefined})} {...drag.handlers}
                     onEscapeKeyDown={event => {if (drag.active) {event.preventDefault(); drag.hide();}}}>
                     <header className="ib-modal__head">
                         <div><DialogPrimitive.Title className="ib-modal__title">{title}</DialogPrimitive.Title>{description ? <DialogPrimitive.Description className="ib-modal__desc">{description}</DialogPrimitive.Description> : null}</div>

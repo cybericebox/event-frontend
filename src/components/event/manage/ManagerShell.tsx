@@ -54,8 +54,15 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
             if (event.target instanceof Node && (sidebarRef.current?.contains(event.target) || menuRef.current?.contains(event.target))) return;
             closeDrawer();
         };
+        // Widened to the desktop layout (sidebar in place): the menu closes, so nothing stays inert behind it.
+        const desktop = window.matchMedia?.("(min-width: 768px)");
+        const onWide = () => {if (desktop?.matches) closeDrawer();};
         document.addEventListener("pointerdown", outside, true);
-        return () => document.removeEventListener("pointerdown", outside, true);
+        desktop?.addEventListener?.("change", onWide);
+        return () => {
+            document.removeEventListener("pointerdown", outside, true);
+            desktop?.removeEventListener?.("change", onWide);
+        };
     }, [drawerOpen, closeDrawer]);
     const access = useQuery({
         queryKey: ["event-management-access", event.EventID],
@@ -110,7 +117,7 @@ export function ManagerShell({event, children, onSection}: {event: PublicEventIn
                         : <li key={index}>{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : crumb.label}</li>)}</ol>
                     <div ref={actionsRef} className="ib-topbar__actions"><SetupChip eventID={event.EventID} />{access.data.CanManage && <ParticipantPreviewEntry eventID={event.EventID} registration={event.Registration} />}{!access.data.CanManage && <span className="event-manage-mode">{t("manage.shell.readOnly")}</span>}<EventHeaderActions event={event} authenticated /></div>
                 </header>
-                <main ref={scrollRef} id="main" tabIndex={-1} className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage}}>{children}</ManagerContext.Provider></main>
+                <main ref={scrollRef} id="main" tabIndex={-1} className="ib-admin-shell__scroll"><ManagerContext.Provider value={{event, canManage: access.data.CanManage, canExport: access.data.CanExport}}>{children}</ManagerContext.Provider></main>
             </div>
         </div>
         <button className="ib-admin-shell__backdrop" type="button" aria-label={t("manage.shell.closeMenu")} onClick={closeDrawer} />

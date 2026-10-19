@@ -2,8 +2,10 @@
    target is at least 44 × 44 px. Small controls keep their look: an invisible ::after grows the hit area around them.
    Rows of options (tabs, segmented filters, menu items) simply grow to 44px. */
 @media (pointer:coarse){
+  /* Only the editable root of a rich-text editor: iOS zooms by the focused element, and the headings inside keep their
+     own sizes (em of the root), so the editor stays what you see is what you get. */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
-  select,textarea,[contenteditable="true"],[contenteditable="true"] :where(p,li,h1,h2,h3,h4,blockquote){font-size:16px}
+  select,textarea,[contenteditable="true"]{font-size:16px}
 
   :where(.ib-help,.event-brand-help,.event-content-editor__help,.live-controls__help,.ib-icon-btn,.ib-topbar__icon-btn,.ib-navbar__toggle,
     .event-navbar__icon,.event-account__trigger,.event-brand-reset-icon,.event-manage-icon-action,.event-action-toast__close,.ib-btn--sm,

@@ -126,7 +126,7 @@ export function TaskDrawer({eventID, challengeID, period, onClose}: {eventID: st
     return <DialogPrimitive.Root open={challengeID !== null} onOpenChange={open => {if (!open) onClose();}}>
         <DialogPrimitive.Portal>
             <DialogPrimitive.Overlay className="ib-modal-backdrop event-modal-backdrop event-analytics-drawer-backdrop">
-                <DialogPrimitive.Content className="ib-modal event-modal event-analytics-drawer" aria-describedby={undefined}>
+                <DialogPrimitive.Content data-event-modal="" className="ib-modal event-modal event-analytics-drawer" aria-describedby={undefined}>
                     <header className="ib-modal__head">
                         <div>
                             <DialogPrimitive.Title className="ib-modal__title">{task?.Name ?? t("manage.analytics.tasks.detail.title")}</DialogPrimitive.Title>

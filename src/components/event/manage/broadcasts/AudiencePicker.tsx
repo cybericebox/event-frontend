@@ -12,6 +12,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
+import {EventButton} from "@/components/ui/EventButton";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
 import {ManageFieldLabel} from "../ManageFieldLabel";
 import {ManageTableSearch} from "../ManageTable";
@@ -38,7 +39,7 @@ function PickList({event, label, rows, selected, onToggle, search, onSearch, sta
                         : <ul>{rows.map(row => <li key={row.id}>
                             <EventCheckbox checked={selected.includes(row.id)} onCheckedChange={checked => onToggle(row, checked)} label={<span className="event-broadcast-picker__row"><span>{row.title}</span>{row.hint && <small>{row.hint}</small>}</span>} />
                         </li>)}
-                        {hasMore && <li><button className="ib-btn ib-btn--sm" type="button" disabled={moreBusy} onClick={onMore}>{t("manage.broadcasts.picker.more")}</button></li>}</ul>}
+                        {hasMore && <li><EventButton className="ib-btn ib-btn--sm" type="button" busy={moreBusy} busyLabel={t("common.busy.loadingMore")} onClick={onMore}>{t("manage.broadcasts.picker.more")}</EventButton></li>}</ul>}
         </div>
     </div>;
 }

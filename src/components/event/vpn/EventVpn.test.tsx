@@ -27,9 +27,13 @@ it.each([true,false,null])("colours the header only for the caller's connected p
  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
  render(<QueryClientProvider client={client}><EventVpnProvider eventID="e1" eventTag="test" enabled><VpnHeaderButton/></EventVpnProvider></QueryClientProvider>);
  await vi.waitFor(()=>expect(client.getQueryData(["event-vpn-status","e1",false])).toMatchObject({Connected:connected}));
+ // The cache fills before the header re-renders: wait for the rendered state, not only the data (flaky under load).
+ await vi.waitFor(()=>{
+  const button=screen.getByRole("button",{name:/VPN:/});
+  expect(button.classList.contains("is-connected")).toBe(connected===true);
+  expect(button.classList.contains("is-available")).toBe(connected!==true);
+ });
  const header=screen.getByRole("button",{name:/VPN:/});
- expect(header.classList.contains("is-connected")).toBe(connected===true);
- expect(header.classList.contains("is-available")).toBe(connected!==true);
  fireEvent.click(header);
  expect(screen.queryByText("Лабораторії")).toBeNull();
  expect(screen.queryByText(/завдан/)).toBeNull();

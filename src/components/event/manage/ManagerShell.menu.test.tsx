@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {t} from "@/i18n/t";
@@ -64,5 +64,23 @@ describe("panel phone menu", () => {
         fireEvent.click(toggle);
         fireEvent.pointerDown(document.querySelector(".ib-admin-side")!);
         expect(frame().classList.contains("is-drawer-open")).toBe(true);
+    });
+
+    it("closes and frees the page when the window widens to the desktop layout", async () => {
+        const listeners: (() => void)[] = [];
+        const query = {matches: false, addEventListener: (_: string, listener: () => void) => listeners.push(listener), removeEventListener: vi.fn()};
+        const original = window.matchMedia;
+        window.matchMedia = (() => query) as unknown as typeof window.matchMedia;
+        try {
+            const toggle = await shell();
+            fireEvent.click(toggle);
+            expect(document.getElementById("main")!.hasAttribute("inert")).toBe(true);
+            query.matches = true;
+            act(() => listeners.forEach(listener => listener()));
+            await waitFor(() => expect(document.querySelector(".event-manage-shell")!.classList.contains("is-drawer-open")).toBe(false));
+            expect(document.getElementById("main")!.hasAttribute("inert")).toBe(false);
+        } finally {
+            window.matchMedia = original;
+        }
     });
 });
