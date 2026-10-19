@@ -40,12 +40,14 @@ export function DraftBar({state, busy, canManage, invalid, onSave, onPublish, on
 }) {
     const [confirmDiscard, setConfirmDiscard] = useState(false);
     const [discardError, setDiscardError] = useState("");
+    // «Скасувати» drops every unsaved edit, so it asks first.
+    const [confirmRevert, setConfirmRevert] = useState(false);
     const label = draftStateLabel(state);
     const canPublish = state.dirty || state.hasDraft || !state.published;
     return <div className="event-draft-bar" role="region" aria-label={t("manage.editor.draft.region")}>
         <div className="event-draft-bar__state" role="status"><strong>{label.title}</strong><small>{label.detail}</small></div>
         {canManage && <div className="event-draft-bar__actions">
-            {state.dirty && <button className="ib-btn" type="button" disabled={!!busy} onClick={onRevertLocal}><RotateCcw size={16} /> {t("common.cancel")}</button>}
+            {state.dirty && <button className="ib-btn" type="button" disabled={!!busy} onClick={() => setConfirmRevert(true)}><RotateCcw size={16} /> {t("common.cancel")}</button>}
             {!state.dirty && state.hasDraft && state.published && onDiscardDraft && <button className="ib-btn" type="button" disabled={!!busy} onClick={() => {setDiscardError(""); setConfirmDiscard(true);}}><RotateCcw size={16} /> {t("manage.editor.draft.discard")}</button>}
             <EventButton saveDirty={state.dirty} className="ib-btn" type="button" disabled={!state.dirty || invalid || !!busy} onClick={() => {if (state.dirty && !invalid && !busy) onSave();}} busy={busy === "save"} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton>
             <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canPublish || invalid || !!busy} onClick={onPublish} busy={busy === "publish"} busyLabel={t("common.busy.publishing")}><Send size={16} /> {t("manage.editor.draft.publish")}</EventButton>
@@ -57,5 +59,8 @@ export function DraftBar({state, busy, canManage, invalid, onSave, onPublish, on
                 const failed = await onDiscardDraft?.();
                 if (failed) setDiscardError(failed); else setConfirmDiscard(false);
             }} />
+        <ConfirmDialog open={confirmRevert} onCancel={() => setConfirmRevert(false)} tone="danger"
+            title={t("manage.editor.draft.revertTitle")} description={t("manage.editor.draft.revertBody")}
+            confirmLabel={t("manage.editor.draft.revertAction")} onConfirm={() => {setConfirmRevert(false); onRevertLocal();}} />
     </div>;
 }

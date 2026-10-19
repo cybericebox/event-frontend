@@ -97,7 +97,7 @@ export function AnalyticsTasks() {
             footer={<div className="event-manage-table__footer"><div className="event-manage-table__meta"><span>{t("manage.table.total", {count: rows.length})}</span></div></div>}>
             <tbody>{rows.map(row => <tr key={row.ChallengeID} className="is-clickable" onClick={() => setOpenID(row.ChallengeID)}>
                 <td><button className="event-analytics-tasks__name" type="button" onClick={() => setOpenID(row.ChallengeID)}>
-                    <span>{row.Name}</span><small>{groupName(row)} · {t("manage.analytics.tasks.points", {points: row.Points})}</small>
+                    <span title={row.Name}>{row.Name}</span><small>{groupName(row)} · {t("manage.analytics.tasks.points", {points: row.Points})}</small>
                 </button></td>
                 <td>{difficultyLabel(row.Difficulty)}</td>
                 <td className="ib-num">{number.format(row.Attempts)}</td>
@@ -107,7 +107,7 @@ export function AnalyticsTasks() {
                 <td><VerdictTag row={row} /></td>
                 <td className="ib-num">{formatDuration(row.MedianSinceStartSeconds)}</td>
                 <td className="ib-num">{formatDuration(row.MedianSinceOpenSeconds)}</td>
-                <td>{row.FirstBloodTeam ? <span className="event-analytics-tasks__name"><span>{row.FirstBloodTeam}</span>{row.FirstBloodAt && <small>{solveTime.format(new Date(row.FirstBloodAt))}</small>}</span> : <span className="event-analytics-tasks__dim">—</span>}</td>
+                <td>{row.FirstBloodTeam ? <span className="event-analytics-tasks__name"><span title={row.FirstBloodTeam}>{row.FirstBloodTeam}</span>{row.FirstBloodAt && <small>{solveTime.format(new Date(row.FirstBloodAt))}</small>}</span> : <span className="event-analytics-tasks__dim">—</span>}</td>
                 <td className="ib-num">{row.HintsOpened > 0 ? t("manage.analytics.tasks.hintsCell", {count: row.HintsOpened, points: row.HintPoints}) : "—"}</td>
             </tr>)}</tbody>
         </ManageTable>

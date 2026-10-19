@@ -41,7 +41,7 @@ export function TemplateList({event, state, onRetry, error, loadingLabel, errorM
             <th scope="col">{t("manage.notifications.list.colType")}</th>
             <th scope="col">{t("manage.notifications.list.colStatus")}</th>
             <th scope="col">{t("manage.notifications.list.colUpdated", {zone: zoneOffset()})}</th>
-            <th scope="col">{t("manage.notifications.list.colSend")}</th>
+            <th scope="col" className="event-manage-table__sticky-end">{t("manage.notifications.list.colSend")}</th>
         </tr>}>
         <tbody>{shown.map(signal => {
             const label = signalLabel(signal);
@@ -49,13 +49,15 @@ export function TemplateList({event, state, onRetry, error, loadingLabel, errorM
             const {status, draftPending} = listStatus(versions);
             const effective = versions.find(item => item.Source === "event" && item.Status === status) ?? versions[0];
             const row = rows.find(item => item.SignalType === signal);
+            // The tag already names the status; several own versions get one link to the template page, which lists them.
+            const ownVersions = versions.filter(item => item.Source === "event").length;
             const href = `${basePath}/${encodeURIComponent(signal)}`;
             return <tr key={signal}>
                 <td><div className="event-manage-table__person"><Link className="event-template-list__name" href={href}>{label.title}</Link>{label.description && <small>{label.description}</small>}</div></td>
                 <td><div className="event-template-list__status"><TemplateStatusTag status={status} />{draftPending && <span className="ib-tag ib-tag--warn">{t("manage.notifications.list.draftPending")}</span>}
-                    {versions.filter(item => item.Source === "event").map(item => <Link key={item.ID} href={`${href}?id=${item.ID}`}>{t(`manage.notifications.status.${item.Status}`)}</Link>)}</div></td>
+                    {ownVersions > 1 && <Link href={href}>{t("manage.notifications.list.versions", {count: ownVersions})}</Link>}</div></td>
                 <td className="event-manage-table__nowrap">{effective && effective.Source === "event" ? new Date(effective.UpdatedAt).toLocaleDateString("uk-UA") : <span className="event-manage-table__dim">—</span>}</td>
-                <td>{row ? <EventSwitch checked={row.Enabled} disabled={!canManage || row.Required} ariaLabel={t("manage.notifications.switchLabel", {title: label.title})} onCheckedChange={checked => onToggle(signal, checked)} /> : <span className="event-manage-table__dim">—</span>}</td>
+                <td className="event-manage-table__sticky-end">{row ? <EventSwitch checked={row.Enabled} disabled={!canManage || row.Required} ariaLabel={t("manage.notifications.switchLabel", {title: label.title})} onCheckedChange={checked => onToggle(signal, checked)} /> : <span className="event-manage-table__dim">—</span>}</td>
             </tr>;
         })}</tbody>
     </ManageTable>;

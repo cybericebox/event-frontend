@@ -13,6 +13,12 @@ export function popInDuration(value: number | null | undefined): number {
     return value == null ? 5000 : Math.min(10000, Math.max(3000, value));
 }
 
+// The in-app body format (notifications/editor/InAppBodyEditor): bold, italic and line breaks. The pop-in and the
+// editor preview render it the same way; the inbox list shows plain text.
+export function popInBodyHTML(body: string): string {
+    return keepBrand(DOMPurify.sanitize(body, {ALLOWED_TAGS: ["strong", "b", "em", "i", "br"], ALLOWED_ATTR: []}));
+}
+
 function safeHref(value: string): boolean {
     const href = value.trim();
     return (href.startsWith("/") && !href.startsWith("//")) || href.startsWith("#") || /^https?:\/\/|^mailto:/i.test(href);
@@ -43,7 +49,7 @@ export function NotificationPopIn({message, onClose, onAction}: {
         <button className="event-notification-popin__close" type="button" onClick={onClose} aria-label={t("notifications.close")}><X size={16} /></button>
         <div className="event-notification-popin__content"><NotificationMessageCard
             icon={message.Icon} tone={message.Tone} accentColor={message.AccentColor} title={message.Title}
-            body={message.Body && <div dangerouslySetInnerHTML={{__html: keepBrand(DOMPurify.sanitize(message.Body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []}))}} />}
+            body={message.Body && <div dangerouslySetInnerHTML={{__html: popInBodyHTML(message.Body)}} />}
             actions={action && <button type="button" onClick={() => onAction(action.href)}>{action.label}</button>}
         />
         </div>

@@ -44,3 +44,12 @@ export function bannerFieldErrors(form: BannerForm): BannerErrors {
 export function bannerValidation(form: BannerForm): string {
     return Object.values(bannerFieldErrors(form))[0] ?? "";
 }
+
+// What the site shows now: a switched-on banner outside its window is not on the site.
+export type BannerShowState = "active" | "inactive" | "scheduled" | "ended";
+export function bannerShowState(banner: Pick<ManageBanner, "IsActive" | "ActiveFrom" | "ActiveTo">, now = Date.now()): BannerShowState {
+    if (!banner.IsActive) return "inactive";
+    if (banner.ActiveTo && new Date(banner.ActiveTo).getTime() <= now) return "ended";
+    if (banner.ActiveFrom && new Date(banner.ActiveFrom).getTime() > now) return "scheduled";
+    return "active";
+}

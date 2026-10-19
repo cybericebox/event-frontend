@@ -1,4 +1,5 @@
 import type {ManageNotificationType, ManageNotificationVariable} from "@/api/manageNotifications";
+import {t} from "@/i18n/t";
 
 type Versioned = {NotificationType: string; Status: "draft" | "published" | "unpublished"; UpdatedAt: string};
 type Owned = {Source: "platform" | "event"; Status: Versioned["Status"]};
@@ -15,6 +16,14 @@ export function templateMode(template: Owned | undefined): TemplateMode {
     if (!template) return "none";
     if (template.Source === "platform") return "platform";
     return template.Status === "draft" ? "edit" : template.Status === "published" ? "view" : "previous";
+}
+
+// The orange notice under a template header: what to press to change a read-only template, or, for a viewer who
+// cannot press anything, that the access is read-only. A draft open in the editor has none.
+export function templateReadOnlyHint(mode: TemplateMode, canManage: boolean): string {
+    if (mode !== "platform" && mode !== "view" && mode !== "previous") return "";
+    if (!canManage) return t("manage.notifications.viewerHint");
+    return mode === "platform" ? t("manage.notifications.platformHint") : t("manage.notifications.readonlyHint");
 }
 
 // A draft first, then the published version, then older ones; newest first within a status.
