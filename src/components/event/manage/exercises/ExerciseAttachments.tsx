@@ -66,6 +66,12 @@ function actionCopy(action: Action): {title: string; description: string; confir
 }
 
 // «Завдання»: the event's sets, each collapsible, with its tasks as thin rows.
+// What the flag pool means for the teams: already repeating, or how many flags against how many teams.
+function flagRepeatText(repeat: EventExerciseAttachment["FlagsRepeat"], name: string): string | null {
+    if (!repeat) return null;
+    return t(`manage.exercises.flagRepeat.${repeat.Reason}`, {name, flags: repeat.Flags, teams: repeat.Teams});
+}
+
 // The count comes from the board (it follows the toggle at once); before the start nothing is on the participants' board yet.
 function publishedLabel(count: number, status: string): string {
     return t(count > 0 && (status === "not_published" || status === "published") ? "manage.exercises.meta.publishedUpcoming" : "manage.exercises.meta.published", {count});
@@ -140,7 +146,7 @@ export function ExerciseAttachments() {
                 const open = openState.isOpen(attachment.ID, fallback);
                 const toggle = () => openState.toggle(attachment.ID, fallback);
                 const name = attachment.ExerciseName || t("manage.exercises.set");
-                const flagRepeat = attachment.FlagsMayRepeat ? t("manage.exercises.flagsMayRepeat", {name}) : null;
+                const flagRepeat = flagRepeatText(attachment.FlagsRepeat, name);
                 const stands = challenges.map(challenge => attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null);
                 const summary = setSummary(challenges, configQuery.data.HintsDisabled, stands);
                 const mismatch = infrastructureMismatch(attachment, configQuery.data.InfrastructureAllowed);

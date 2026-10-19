@@ -21,7 +21,7 @@ const attachment: EventExerciseAttachment = {
     Revision: 0, Status: 0, ReplacesID: null, SupersededAt: null, DetachedAt: null, CreatedAt: "2026-10-01T00:00:00Z",
     StageID: null, Scope: "catalog", VersionNumber: 1, LatestVersionID: null, LatestVersionNumber: 1, UpdateAvailable: false,
     Fork: null, Infrastructure: false, VariantCount: 1, ChallengeCount: 0, PublishedCount: 0, HasAttempts: false,
-    ResourceHeavy: false, Resources: null, NoAgentFits: false, FlagsMayRepeat: false, AvgDifficulty: null, TaskCount: null, TaskNames: [],
+    ResourceHeavy: false, Resources: null, NoAgentFits: false, FlagsRepeat: null, AvgDifficulty: null, TaskCount: null, TaskNames: [],
 };
 const config: ManageConfig = {
     EventID: "e1", LabPolicy: null, Participation: 0, Registration: 0, ScoreboardVisibility: 0, ParticipantsVisibility: 0,

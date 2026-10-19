@@ -56,8 +56,9 @@ const attachmentSchema = z.object({
     Resources: taskResourcesSchema.nullish().transform(value => value ?? null),
     // No laboratory that is used can run this set.
     NoAgentFits: z.boolean().default(false),
-    // A task has fewer possible flags than the team capacity, or its flags were reused: flags may repeat.
-    FlagsMayRepeat: z.boolean().default(false),
+    // Two teams may get the same flag: the smallest flag pool (Flags) against the teams that draw from it
+    // (Teams: the team limit, or the teams that exist now with the moderators team) and why (Reason). null: they cannot.
+    FlagsRepeat: z.object({Flags: z.number().int(), Teams: z.number().int(), Reason: z.enum(["limit", "teams", "repeated"])}).nullable().default(null),
     // The PINNED version: mean difficulty (null: none), subtask count (null: no variant), subtask names.
     AvgDifficulty: z.number().nullish().transform(value => value ?? null),
     TaskCount: z.number().int().nullish().transform(value => value ?? null),
