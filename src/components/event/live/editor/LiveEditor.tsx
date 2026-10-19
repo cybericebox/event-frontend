@@ -423,28 +423,30 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                     disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}><Send size={16} /> {t("manage.live.publish")}</EventButton>}</EventTooltip>}
             </div>
         </header>
-        <nav className="event-live-scenes" aria-label={t("manage.live.scene.label")}>
-            <div className="event-live-scenes__mode">
+        <div className="event-live-editor__toolbar">
+            {/* «Екран за станом заходу»: one screen for all states, or one per state (then the state tabs). */}
+            <div className="event-live-editor__tool event-live-editor__tool--mode">
                 <ManageFieldLabel title={t("manage.live.scene.label")} help={t("manage.live.scene.help")} />
-                <div className="ib-seg" role="group" aria-label={t("manage.live.scene.label")}>
-                    {(["single", "separate"] as const).map(value => <button key={value} type="button" aria-pressed={sceneMode === value} disabled={locked}
-                        onClick={() => {
-                            if (sceneMode === value) return;
-                            // Back to one screen: ask which state's screen stays.
-                            if (value === "single") {setKeepScene(scene); return;}
-                            if (liveWidgetsTotal(doc) * liveSceneKeys.length > liveWidgetLimits.total) {setError(t("manage.live.error.limit.total", liveWidgetLimits)); return;}
-                            mutateDoc(withLiveSceneMode(doc, "separate")); setSelectedID(null);
-                        }}>{t(`manage.live.scene.mode.${value}`)}</button>)}
-                </div>
+                <EventSelect ariaLabel={t("manage.live.scene.label")} value={sceneMode} disabled={locked}
+                    options={(["single", "separate"] as const).map(value => ({value, label: t(`manage.live.scene.mode.${value}`)}))}
+                    onValueChange={value => {
+                        if (value === sceneMode) return;
+                        // Back to one screen: ask which state's screen stays.
+                        if (value === "single") {setKeepScene(scene); return;}
+                        if (liveWidgetsTotal(doc) * liveSceneKeys.length > liveWidgetLimits.total) {setError(t("manage.live.error.limit.total", liveWidgetLimits)); return;}
+                        mutateDoc(withLiveSceneMode(doc, "separate")); setSelectedID(null);
+                    }} />
             </div>
             {sceneMode === "separate" && <div className="event-live-scenes__tabs" role="tablist" aria-label={t("manage.live.scene.tabs")}>
-                {liveSceneKeys.map(key => <button key={key} type="button" role="tab" aria-selected={scene === key} className="event-live-scene" onClick={() => switchScene(key)}>
-                    <strong>{sceneName(key)}</strong>
-                    {key === current && <span>{t("manage.live.scene.now")}</span>}
-                </button>)}
+                {liveSceneKeys.map(key => {
+                    const tab = (described?: string) => <button type="button" role="tab" aria-selected={scene === key} aria-describedby={described} className="event-live-scene" onClick={() => switchScene(key)}>{sceneName(key)}</button>;
+                    // The live state: a dot by its name; «зараз» on hover, focus or a tap on the dot.
+                    return key === current
+                        ? <EventTooltip key={key} content={t("manage.live.scene.now")}>{id => <span className="event-live-scene-cell is-now">{tab(id)}<span className="event-live-scene__now" aria-hidden="true" /></span>}</EventTooltip>
+                        : <span key={key} className="event-live-scene-cell">{tab()}</span>;
+                })}
             </div>}
-        </nav>
-        <div className="event-live-editor__toolbar">
+            <span className="event-live-editor__break" aria-hidden="true" />
             <div className="event-live-editor__tool">
                 <ManageFieldLabel title={t("manage.live.templates.label")} help={t("manage.live.templates.help")} />
                 <button className="ib-btn event-live-editor__template" type="button" disabled={locked} onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={16} /> {t("manage.live.templates.open")}</button>
