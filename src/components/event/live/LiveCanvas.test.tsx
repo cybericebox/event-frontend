@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {act, cleanup, render} from "@testing-library/react";
+import {act, cleanup, fireEvent, render} from "@testing-library/react";
 import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas} from "./LiveCanvas";
@@ -114,6 +114,37 @@ describe("live canvas widgets", () => {
         const {container} = await mount(only({type: "logos", props: {mode: "fixed", title: "Партнери"}}));
         expect(container.querySelector(".live-logos")).toBeNull();
         expect(container.textContent).not.toContain("Партнери");
+    });
+
+    it("never puts the event logo into an organizers block without logos", async () => {
+        const withLogo = {...event, LogoURL: "/api/events/e/logo/l"} as PublicEventInfo;
+        const {container} = await mount(only({type: "logos", props: {mode: "fixed", title: "Організатори"}}), false, {on: withLogo});
+        expect(container.querySelector(".live-logos")).toBeNull();
+    });
+
+    it("drops a logo that does not load, and the block when none is left", async () => {
+        const items = [{src: "/api/events/e/content-images/a"}, {src: "/api/events/e/content-images/b"}];
+        const {container} = await mount(only({type: "logos", props: {mode: "fixed", title: "Партнери", items}}));
+        expect(container.querySelectorAll(".live-logo")).toHaveLength(2);
+        await act(async () => {fireEvent.error(container.querySelectorAll(".live-logo img")[0]);});
+        expect(container.querySelectorAll(".live-logo")).toHaveLength(1);
+        await act(async () => {fireEvent.error(container.querySelector(".live-logo img")!);});
+        expect(container.querySelector(".live-logos")).toBeNull();
+    });
+
+    it("recolours monochrome logos by a filter, not a cross-origin mask", async () => {
+        const {container} = await mount(only({type: "logos", props: {mode: "fixed", items: [{src: "/api/events/e/content-images/a"}]}}));
+        const logo = container.querySelector(".live-logo") as HTMLElement;
+        expect(logo.closest(".live-logos--mono")).not.toBeNull();
+        expect(logo.getAttribute("style") ?? "").not.toMatch(/mask/i);
+    });
+
+    it("hides the title logo tile when the logo does not load", async () => {
+        const withLogo = {...event, LogoURL: "/api/events/e/logo/l"} as PublicEventInfo;
+        const {container} = await mount(only({type: "title"}), false, {on: withLogo});
+        expect(container.querySelector(".live-title__logo")).not.toBeNull();
+        await act(async () => {fireEvent.error(container.querySelector(".live-title__logo img")!);});
+        expect(container.querySelector(".live-title__logo")).toBeNull();
     });
 });
 
