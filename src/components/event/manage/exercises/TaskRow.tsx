@@ -40,7 +40,7 @@ const boardFields = (challenge: EventBoardChallenge) => ({Points: challenge.Poin
 
 // A required whole-number field with the /manage required marker and its
 // inline error.
-function RequiredNumber({id, title, help, value, min, max, error, disabled, onChange}: {
+export function RequiredNumber({id, title, help, value, min, max, error, disabled, onChange}: {
     id: string; title: string; help: string; value: string; min: number; max?: number; error: string; disabled: boolean; onChange: (value: string) => void;
 }) {
     return <div className="event-manage-field event-task__number">

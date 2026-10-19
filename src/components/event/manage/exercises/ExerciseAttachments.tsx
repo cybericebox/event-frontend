@@ -34,6 +34,7 @@ import {SetStatusIcon} from "./SetStatusIcon";
 import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine, ResourcesShort} from "./ResourceMarks";
 import {ResourcePlanSummary} from "./ResourcePlanSummary";
 import {CatalogStatsList} from "./CatalogStats";
+import {BulkSelectionBar} from "./BulkSelectionBar";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
 import {useBoardSets} from "./useBoardSets";
@@ -99,6 +100,10 @@ export function ExerciseAttachments() {
     // The stages are optional context for the per-set selector: a failed read only hides it.
     const stagesQuery = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false, retry: false});
     const stages = stagesQuery.data ?? [];
+    // Bulk selection (managers only): the selected sets that still exist.
+    const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+    const selected = sets.map(set => set.attachment.ID).filter(id => picked.has(id));
+    const togglePicked = (id: string) => setPicked(current => {const next = new Set(current); if (!next.delete(id)) next.add(id); return next;});
 
     async function runAction() {
         if (!action || busy) return;
@@ -138,6 +143,13 @@ export function ExerciseAttachments() {
         {scoringQuery.data.ForceEventScoring && <p className="event-manage-notice">{t("manage.challenges.task.scoringForcedNotice")}</p>}
         <ResourcePlanSummary eventID={eventID} attachments={sets.map(set => set.attachment)} />
         <section className="event-manage-section event-sets" aria-label={t("manage.exercises.sets")}>
+            {canManage && sets.length > 0 && <div className="event-bulk-select">
+                <label className="event-bulk-select__all"><input type="checkbox" checked={selected.length > 0 && selected.length === sets.length}
+                    ref={input => {if (input) input.indeterminate = selected.length > 0 && selected.length < sets.length;}}
+                    onChange={() => setPicked(selected.length === sets.length ? new Set() : new Set(sets.map(set => set.attachment.ID)))} />{t("manage.exercises.bulk.selectAll")}</label>
+                {selected.length > 0 && <BulkSelectionBar eventID={eventID} sets={sets} selected={selected} scoringForced={scoringQuery.data.ForceEventScoring} lifecycle={lifecycleQuery.data}
+                    onClear={() => setPicked(new Set())} onRemoved={ids => setPicked(current => new Set([...current].filter(id => !ids.includes(id))))} />}
+            </div>}
             {sets.length === 0 && detached.length === 0 && <EmptyState message={t("manage.exercises.empty")} />}
             {sets.map(({attachment, challenges}) => {
                 const kind = attachmentKind(attachment);
@@ -154,8 +166,10 @@ export function ExerciseAttachments() {
                 const shown = challenges.some(challenge => challenge.Published);
                 return <article className={`event-exercise-set${open ? " is-open" : ""}`} key={attachment.ID} aria-labelledby={`set-${attachment.ID}`}>
                     {/* The header row toggles the set; its buttons and links keep their own action. */}
-                    <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a, [role=alert]")) toggle(); }}>
+                    <header className="event-exercise-set__head" onClick={clickEvent => { if (!(clickEvent.target as HTMLElement).closest("button, a, input, [role=alert]")) toggle(); }}>
                         <div className="event-exercise-set__title">
+                            {canManage && <input type="checkbox" className="event-exercise-set__pick" checked={picked.has(attachment.ID)} aria-label={t("manage.exercises.bulk.select", {name})}
+                                onClick={clickEvent => clickEvent.stopPropagation()} onChange={() => togglePicked(attachment.ID)} />}
                             {/* Tree-style disclosure: right when collapsed, down when open. */}
                             <EventTooltip content={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} silent>{() => <button type="button" className="ib-icon-btn ib-icon-btn--sm event-exercise-set__toggle" aria-expanded={open} aria-controls={`set-tasks-${attachment.ID}`}
                                 aria-label={t(open ? "manage.challenges.set.collapse" : "manage.challenges.set.expand", {name})} onClick={toggle}>
