@@ -194,3 +194,13 @@ it("says «participation confirmed» once, with the date", async () => {
     expect(screen.getAllByText(/Участь підтверджено/)).toHaveLength(1);
     expect(screen.getByText(/Участь підтверджено/).textContent).toMatch(/Участь підтверджено \d/);
 });
+
+it("shows a member the teammates' results although the roster comes without their account ids", async () => {
+    window.history.replaceState(null, "", "/participation?tab=team");
+    state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member)};
+    state.members = [{...member(ME, "Олена", TeamRole.Captain, false), UserID: ""}, member(MATE, "Іван", TeamRole.Member, true)];
+    view();
+    const card = await screen.findByRole("region", {name: "Учасники"});
+    const row = (await within(card).findByText("Олена", {selector: "td"})).closest("tr")!;
+    expect(within(row).getByText("200")).toBeTruthy();
+});
