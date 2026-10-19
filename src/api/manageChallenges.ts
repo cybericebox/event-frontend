@@ -58,6 +58,10 @@ const attachmentSchema = z.object({
     NoAgentFits: z.boolean().default(false),
     // A task has fewer possible flags than the team capacity, or its flags were reused: flags may repeat.
     FlagsMayRepeat: z.boolean().default(false),
+    // The PINNED version: mean difficulty (null: none), subtask count (null: no variant), subtask names.
+    AvgDifficulty: z.number().nullish().transform(value => value ?? null),
+    TaskCount: z.number().int().nullish().transform(value => value ?? null),
+    TaskNames: z.array(z.string()).nullish().transform(value => value ?? []),
 });
 // Cost is the event's price (0 until set); Overridden says a price is set.
 const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int(), Overridden: z.boolean()});
