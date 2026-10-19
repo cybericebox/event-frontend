@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 afterEach(() => {cleanup(); clients.splice(0).forEach(client => client.clear()); vi.unstubAllGlobals();});
 
-function view({preview = true, authenticated = true, approved = false, pages = [] as ManagePage[], pending = false} = {}) {
+function view({preview = true, authenticated = true, approved = false, pages = [] as ManagePage[], pending = false, loadingNavigation = false} = {}) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
     clients.push(client);
     if (preview) sessionStorage.setItem("event-participant-preview-v1", JSON.stringify({eventID: event.EventID, userID: user.ID, status: approved ? 2 : 0, outcome: "approved", answers: {}, team: null}));
@@ -38,7 +38,7 @@ function view({preview = true, authenticated = true, approved = false, pages = [
     client.setQueryData(["event-management-access", event.EventID], preview ? {CanManage: true, InfrastructureAllowed: false} : null);
     client.setQueryData(["event-management-config", event.EventID], config);
     if (preview) client.setQueryData(["event-management-pages", event.EventID], pages);
-    client.setQueryData(["event-navigation-pages", event.EventID, approved], preview ? [] : pages.map(page => ({Slug: page.Slug, Title: page.Title, NavigationOrder: page.NavigationOrder})));
+    if (!loadingNavigation) client.setQueryData(["event-navigation-pages", event.EventID, approved], preview ? [] : pages.map(page => ({Slug: page.Slug, Title: page.Title, NavigationOrder: page.NavigationOrder})));
     const tree = <QueryClientProvider client={client}><ParticipantPreviewProvider><EventNavbar event={event} authenticated={authenticated} approved={approved} pending={pending} /></ParticipantPreviewProvider></QueryClientProvider>;
     return {...render(tree), client};
 }
@@ -107,6 +107,12 @@ it("keeps the header icons while participation is loading without exposing unkno
     expect(screen.getByRole("button", {name: "Вхідні"})).toHaveProperty("disabled", true);
     expect(screen.getByRole("button", {name: "Меню акаунта"})).toHaveProperty("disabled", true);
     expect(container.querySelector("#event-menu")).toBeNull();
+});
+
+it("retains the burger icon while the public page links are loading", async () => {
+    view({preview: false, authenticated: false, loadingNavigation: true});
+    expect(screen.getByRole("button", {name: "Відкрити меню"})).toHaveProperty("disabled", true);
+    await waitFor(() => expect(screen.queryByRole("button", {name: "Відкрити меню"})).toBeNull());
 });
 
 it("opens outside document flow, locks background scrolling and closes on Escape", async () => {

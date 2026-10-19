@@ -237,7 +237,8 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     const overflow = links.slice(visibleCount);
     const showParticipation = authenticated && participant;
     const showManagement = authenticated && !preview.active && !!managementAccess.data;
-    const hasMobileMenu = !pending && (links.length > 0 || showParticipation || showManagement);
+    const navigationPending = pending || pages.isPending || (authenticated && managementAccess.isPending) || (!!managementAccess.data && managedPages.isPending);
+    const hasMobileMenu = !navigationPending && (links.length > 0 || showParticipation || showManagement);
     const menuExpanded = hasMobileMenu && open;
     useLayoutEffect(() => {
         const header = headerRef.current;
@@ -248,7 +249,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
         return () => observer.disconnect();
     }, []);
     return <Popover modal open={menuExpanded} onOpenChange={setOpen}>
-        <PopoverAnchor asChild><header ref={headerRef} className={`ib-navbar event-navbar${hasMobileMenu || pending ? "" : " event-navbar--no-menu"}${menuExpanded ? " is-open" : ""}`} aria-busy={pending || undefined}>
+        <PopoverAnchor asChild><header ref={headerRef} className={`ib-navbar event-navbar${hasMobileMenu || navigationPending ? "" : " event-navbar--no-menu"}${menuExpanded ? " is-open" : ""}`} aria-busy={navigationPending || undefined}>
         <div className="ib-navbar__bar">
             <Link className="ib-navbar__brand" href="/" aria-label={t("nav.brand", {name: event.Name})} onClick={() => setOpen(false)}>
                 <EventBrandLogo event={event} className="ib-navbar__crest" />
@@ -268,7 +269,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
                 {authenticated && !preview.active && <ManagerEntry eventID={event.EventID} variant="nav" />}
                 <EventHeaderActions event={event} authenticated={authenticated} approved={approved} pinned={participant} />
                 </>}
-                {(hasMobileMenu || pending) && <PopoverTrigger asChild><button ref={toggleRef} className="ib-navbar__toggle" type="button" disabled={pending} aria-expanded={menuExpanded} aria-controls="event-menu" aria-label={menuExpanded ? t("nav.closeMenu") : t("nav.openMenu")}>{menuExpanded ? <X size={20} /> : <Menu size={20} />}</button></PopoverTrigger>}
+                {(hasMobileMenu || navigationPending) && <PopoverTrigger asChild><button ref={toggleRef} className="ib-navbar__toggle" type="button" disabled={navigationPending} aria-expanded={menuExpanded} aria-controls="event-menu" aria-label={menuExpanded ? t("nav.closeMenu") : t("nav.openMenu")}>{menuExpanded ? <X size={20} /> : <Menu size={20} />}</button></PopoverTrigger>}
             </div>
         </div>
         </header></PopoverAnchor>
