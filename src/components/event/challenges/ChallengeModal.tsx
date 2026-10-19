@@ -18,6 +18,8 @@ import {
 } from "@/api/participantChallenges";
 import {reportTaskOpened} from "@/api/taskOpenedBeacon";
 import {useParticipantPreview} from "../ParticipantPreview";
+import {EventSelect} from "@/components/ui/EventSelect";
+import {getTestRunLengths, initialLength, testRunLengthsKey} from "@/api/testRunLengths";
 import {moderatorFileUrl, submitModeratorFlag, type ModeratorSubmission} from "@/api/moderatorsBoard";
 import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
@@ -38,6 +40,9 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 
 export type BoardMode = "participant" | "moderators" | "preview";
+
+// The event's reservation has no room for the preview's laboratory (409).
+const PREVIEW_RESERVATION_FULL = 72517;
 // retry: the server was only busy; the message offers to send the same answer again.
 type Message = {text: string; tone: "error" | "warn"; retry?: boolean} | null;
 
@@ -213,6 +218,8 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const cacheMode = isPreview ? "preview" : mode;
     const [starting, setStarting] = useState(false);
     const [startError, setStartError] = useState<unknown>();
+    // The run length of the preview's laboratory; 0 until the author picks one (the offered default applies).
+    const [chosenLength, setChosenLength] = useState(0);
     const [startedRun, setStartedRun] = useState<{selectionID: string; expiresAt: string | null} | null>(null);
     const selectionID = challenge?.PreviewSelectionID;
     const previewRunStarted = (!!challenge?.PreviewRunID && (!challenge.PreviewExpiresAt || Date.parse(challenge.PreviewExpiresAt) > now)) || (startedRun?.selectionID === selectionID && !!startedRun && (!startedRun.expiresAt || Date.parse(startedRun.expiresAt) > now));
@@ -390,11 +397,17 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const hints = practice ? shownHints.map(hint => hint.Unlocked ? hint : {...hint, Cost: 0}) : shownHints;
     const fileUrl = (fileID: string) => isPreview ? previewFileUrl(eventID, challenge!, fileID) : moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
 
+    const lengths = useQuery({
+        queryKey: testRunLengthsKey, queryFn: getTestRunLengths, staleTime: 5 * 60_000, retry: false,
+        enabled: isPreview && !!challenge?.Infrastructure && !previewRunStarted && challenge?.PreviewCanStart === true,
+    });
+    const lengthChoices = lengths.data && lengths.data.AllowedMinutes.length > 0 ? lengths.data : null;
+    const runLength = chosenLength || (lengthChoices ? initialLength(lengthChoices) : 0);
     const start = async () => {
         if (starting || !selectionID || challenge?.PreviewCanStart !== true) return;
         setStarting(true); setStartError(undefined);
         try {
-            const run = await startPreviewRun(eventID, selectionID);
+            const run = await startPreviewRun(eventID, selectionID, runLength || undefined);
             queryClient.setQueryData<LabRuntime>(runtimeKey, {Lab: null, Phase: "pending", Ready: false, Queue: null, VPNCIDR: "", InternetCIDR: "", Access: []});
             queryClient.setQueryData<OwnBoard>(previewBoardKey(eventID), board => board && ({...board, Challenges: board.Challenges.map(task => task.PreviewSelectionID === selectionID ? {...task, PreviewRunID: run.ID, PreviewExpiresAt: run.ExpiresAt} : task)}));
             setStartedRun({selectionID, expiresAt: run.ExpiresAt});
@@ -449,8 +462,14 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 </section>}
                 {isPreview && challenge.Infrastructure && !previewRunStarted && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.lab.environment")}</h3>
-                    {challenge.PreviewCanStart === true ? <EventButton className="ib-btn ib-btn--primary" busy={starting} busyLabel={t("common.busy.starting")} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
-                    {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? apiErrorMessage(startError.code, t("participantPreview.lab.startFailed")) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
+                    {challenge.PreviewCanStart === true ? <div className="event-cmodal__start">
+                        {lengthChoices && <label className="event-cmodal__length"><span>{t("lab.preview.length")}</span>
+                            <EventSelect ariaLabel={t("lab.preview.length")} value={String(runLength)} disabled={starting}
+                                options={lengthChoices.AllowedMinutes.map(minutes => ({value: String(minutes), label: minutes % 60 === 0 ? t("lab.preview.duration.hours", {n: minutes / 60}) : t("lab.preview.duration.minutes", {n: minutes})}))}
+                                onValueChange={value => setChosenLength(Number(value))} /></label>}
+                        <EventButton className="ib-btn ib-btn--primary" busy={starting} busyLabel={t("common.busy.starting")} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton>
+                    </div> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
+                    {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? (startError.code === PREVIEW_RESERVATION_FULL ? t("lab.preview.reservationFull") : apiErrorMessage(startError.code, t("participantPreview.lab.startFailed"))) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
                 </section>}
                 {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn && !preview.active ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} previewMode={isPreview} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}

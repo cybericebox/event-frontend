@@ -15,6 +15,9 @@ vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID:
 vi.mock("@/components/event/PrivateEventBootstrap", () => ({usePrivateEvent: () => null}));
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: false, openVpn: () => {}}), EventVpnProvider: ({children}: {children: React.ReactNode}) => children}));
 vi.mock("@/api/taskOpenedBeacon", () => ({reportTaskOpened: opened}));
+// The run lengths are a platform setting read once: answered here so the counts below are the preview's own calls.
+vi.mock("@/api/testRunLengths", async importOriginal => ({...await importOriginal<typeof import("@/api/testRunLengths")>(),
+    getTestRunLengths: () => Promise.resolve({AllowedMinutes: [15, 30, 60], DefaultMinutes: 60})}));
 vi.mock("@/utils/origins", async importOriginal => ({...await importOriginal<typeof import("@/utils/origins")>(), requireApiOrigin: () => "https://api.test"}));
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -83,6 +86,19 @@ it("keeps a refused launch actionable without calling any competition lab", asyn
     expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain(`/selections/${selection}/start`);
+});
+
+it("starts the preview's laboratory for the chosen length", async () => {
+    mount({...base, Infrastructure: true, PreviewDynamic: true});
+    const length = await screen.findByRole("button", {name: "Тривалість"});
+    expect(length.textContent).toContain("1 год");
+    fireEvent.pointerDown(length, {button: 0, ctrlKey: false});
+    fireEvent.click(await screen.findByRole("menuitemradio", {name: "30 хв"}));
+    fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
+    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false}));
+    fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
+    await waitFor(() => expect(fetchMock.mock.calls[0]?.[0]).toContain(`/selections/${selection}/start`));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({LeaseMinutes: 30});
 });
 
 it.each([false, undefined])("does not offer a dynamic launch without confirmed event allocation: %s", canStart => {

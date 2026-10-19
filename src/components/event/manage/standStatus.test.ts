@@ -3,7 +3,7 @@ import {managedLab} from "@/test/labObservations";
 import {describe, expect, it} from "vitest";
 import {canRecreate, hasCurrentLabAllocation, orderStands, standStatusLabel, standStatusTone, standTeamName} from "./standStatus";
 
-const stand = (teamID: string, moderators: boolean) => ({TeamID: teamID, TeamName: `T-${teamID}`, Moderators: moderators, Status: "ready" as const, Reason: "", UpdatedAt: null, Generation: 0, Labs: [], Queue: null, ImageWarning: false});
+const stand = (teamID: string, moderators: boolean) => ({TeamID: teamID, TeamName: `T-${teamID}`, Moderators: moderators, Status: "ready" as const, Reason: "", UpdatedAt: null, Generation: 0, Labs: [], Queue: null, ImageWarning: false, ReservationEndsAt: null, ReservationEnded: false});
 
 describe("stand status", () => {
     it("labels every status in Ukrainian", () => {
