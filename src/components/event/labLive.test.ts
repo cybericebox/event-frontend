@@ -1,7 +1,8 @@
 import {describe, expect, it} from "vitest";
-import {agoText, deviceStateLabel, failureReasonLabel, queueLineStaff, sizeText, startingNote} from "./labLive";
+import {formatClock} from "@/components/event/challenges/challengeBoardModel";
+import {agoText, deviceStateLabel, failureReasonLabel, queueLineStaff, sizeText, standQueueLabs, startingNote} from "./labLive";
 
-const queue = {Position: 2, Length: 5, Reason: "WaitingForTurn", Message: "", Pods: 3, Pending: 3};
+const queue = {Position: 2, Length: 5, Reason: "WaitingForTurn", Message: "", Pods: 3, Pending: 3, Attempt: 0, RetryAt: null, WaitingSince: null};
 
 describe("lab live text", () => {
     it("tells staff how many labs are ahead, without the total", () => {
@@ -15,6 +16,40 @@ describe("lab live text", () => {
     it("shows no line when no queue exists or everything is dispatched", () => {
         expect(queueLineStaff(null)).toBeNull();
         expect(queueLineStaff({...queue, Position: 0})).toBeNull();
+    });
+
+    it("tells staff a lab waits for a new node, whatever its queue place", () => {
+        const since = "2026-01-01T10:05:00Z";
+        expect(queueLineStaff({...queue, Position: 0, Reason: "NodeStarting", WaitingSince: since})).toBe(`Чекає на новий вузол кластера з ${formatClock(since)}.`);
+        expect(queueLineStaff({...queue, Position: 0, Reason: "NodeStarting"})).toBe("Чекає на новий вузол кластера.");
+    });
+
+    it("tells staff a withdrawn launch with its attempt and retry time", () => {
+        const retry = "2026-01-01T10:20:00Z";
+        expect(queueLineStaff({...queue, Position: 1, Reason: "Withdrawn", Attempt: 2, RetryAt: retry}))
+            .toBe(`Наступна в черзі. Запуск відкликано: не всі пристрої отримали вузол вчасно. Спроба 2, повтор о ${formatClock(retry)}.`);
+        expect(queueLineStaff({...queue, Position: 1, Reason: "Withdrawn"}))
+            .toBe("Наступна в черзі. Запуск відкликано: не всі пристрої отримали вузол вчасно, повтор буде автоматично.");
+    });
+
+    it("counts the labs of a stand the queue line speaks about", () => {
+        const stand = {QueuedLabs: 3, Reason: "InsufficientResources", NodeStartingLabs: 2};
+        expect(standQueueLabs(stand)).toBe(3);
+        expect(standQueueLabs({...stand, QueuedLabs: 0, Reason: "NodeStarting"})).toBe(2);
+        expect(standQueueLabs(null)).toBe(0);
+    });
+
+    it("names every scheduler wait reason, never the generic one", () => {
+        for (const Reason of ["DoesNotFitNow", "ReservationMissing", "ReservationNotActive", "ReservationFull"]) {
+            expect(queueLineStaff({...queue, Reason})).not.toContain("Чекаємо на запуск");
+        }
+    });
+
+    it("gives participants a calm line for a node start and the resource line for a withdrawal", () => {
+        expect(startingNote({...queue, Reason: "NodeStarting"}, true)).toBe("Готуємо для вас додаткові потужності. Це може зайняти кілька хвилин, лабораторія запуститься автоматично.");
+        for (const Reason of ["Withdrawn", "DoesNotFitNow", "ReservationMissing", "ReservationNotActive", "ReservationFull"]) {
+            expect(startingNote({...queue, Reason}, true)).toBe("Зараз бракує ресурсів. Лабораторія запуститься, щойно вони звільняться.");
+        }
     });
 
     it("picks the second line by reason, only after the long wait", () => {
