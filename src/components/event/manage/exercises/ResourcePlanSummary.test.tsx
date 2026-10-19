@@ -41,14 +41,17 @@ describe("ResourcePlanSummary", () => {
         expect(rows[1]).toContain("Немає лабораторії для запуску");
         const overhead = container.querySelector("[data-plan-overhead]")!;
         expect(overhead.textContent).toContain("Службові поди групи");
-        expect(overhead.textContent).toContain("VPN: CPU 100 мілі-ядер · памʼять 128 МіБ · 2 блоки; шлюз: CPU 50 мілі-ядер · памʼять 64 МіБ · 1 блок");
+        expect(overhead.textContent).toContain("VPN: CPU 100 мілі-ядер · памʼять 128 МіБ; шлюз: CPU 50 мілі-ядер · памʼять 64 МіБ");
+        // The internal scheduling blocks are never shown.
+        expect(container.textContent).not.toMatch(/блок/i);
         expect(container.querySelector("[data-plan-team]")!.textContent).toContain("525 мілі-ядер");
         const total = container.querySelector("[data-plan-total]")!.textContent!;
         expect(total).toContain("Разом на 10 команд");
         expect(total).toContain("за максимумом заходу");
         expect(total).toContain("5,25 vCPU");
-        expect(total).toContain("120");
-        expect(container.querySelector("[data-plan-team]")!.textContent).toContain("12");
+        expect(total).toContain("30");
+        expect(total).not.toContain("120");
+        expect(container.querySelector("[data-plan-team]")!.textContent).not.toContain("12");
     });
 
     it("says the laboratory has not reported the pod sizing when it is unknown", async () => {

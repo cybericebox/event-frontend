@@ -82,6 +82,10 @@ const catalogChoiceSchema = z.object({
     Attached: z.boolean().default(false),
     ResourceHeavy: z.boolean().default(false),
     Resources: taskResourcesSchema.nullish().transform(value => value ?? null),
+    // The published version's first variant: mean difficulty (null: none), subtask count (null: no variant), names.
+    AvgDifficulty: z.number().nullish().transform(value => value ?? null),
+    TaskCount: z.number().int().nullish().transform(value => value ?? null),
+    TaskNames: z.array(z.string()).nullish().transform(value => value ?? []),
 });
 const catalogTagSchema = z.object({Tag: z.string(), ExerciseCount: z.number().int()});
 const catalogPreviewSchema = z.object({

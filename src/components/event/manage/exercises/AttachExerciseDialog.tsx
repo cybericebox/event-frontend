@@ -22,6 +22,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventButton} from "@/components/ui/EventButton";
 import {CatalogTagFilter} from "./CatalogTagFilter";
 import {ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
+import {AverageDifficulty, SubtaskCount} from "./CatalogStats";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
@@ -93,7 +94,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
         } finally {setBusy(false);}
     }
 
-    return <DialogModal open={open} onClose={close} size="md" title={t("manage.exercises.attach")} description={t("manage.exercises.attachDialog.description")}
+    return <DialogModal open={open} onClose={close} size="lg" title={t("manage.exercises.attach")} description={t("manage.exercises.attachDialog.description")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !selected || selected.Attached || unavailable(selected)} onClick={() => void attach()} busy={busy} busyLabel={t("common.busy.adding")}>{t("common.add")}</EventButton></>}>
         <div className="event-exercise-picker">
@@ -112,8 +113,9 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
             {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />
                 : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} error={catalog.error} onRetry={() => void catalog.refetch()} />
                 : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
-                : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}>
-                    <button type="button" className={`event-exercise-picker__item${selected?.ID === choice.ID ? " is-selected" : ""}`} aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached || unavailable(choice)} onClick={() => select(choice)}>
+                : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}
+                    className={`event-exercise-picker__row${selected?.ID === choice.ID ? " is-selected" : ""}${choice.Attached || unavailable(choice) ? " is-disabled" : ""}`}>
+                    <button type="button" className="event-exercise-picker__item" aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached || unavailable(choice)} onClick={() => select(choice)}>
                         <span className="event-exercise-picker__name"><strong>{choice.Name}</strong>{choice.Infrastructure && <InfrastructureIcon interactive={false} />}</span>
                         {choice.Description && <span className="event-exercise-picker__desc">{choice.Description}</span>}
                         <span className="event-exercise-picker__tags">
@@ -125,6 +127,11 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                         <ResourcesLine resources={choice.Resources} className="event-exercise-picker__resources" />
                         {unavailable(choice) && !choice.Attached && <span className="event-exercise-picker__reason">{t(published ? "manage.exercises.attachDialog.needsInfrastructureAfter" : "manage.exercises.attachDialog.needsInfrastructure")}</span>}
                     </button>
+                    {/* Outside the row's button (no button in a button): the count opens the subtask names. */}
+                    <dl className="event-exercise-picker__stats">
+                        <div><dt>{t("manage.exercises.attachDialog.avgDifficulty")}</dt><dd><AverageDifficulty average={choice.AvgDifficulty} /></dd></div>
+                        <div><dt>{t("manage.exercises.attachDialog.subtasks")}</dt><dd><SubtaskCount count={choice.TaskCount} names={choice.TaskNames} /></dd></div>
+                    </dl>
                 </li>)}</ul>}
             {attachError && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{attachError}</p>}
             {needsExtension && <Link className="ib-btn" href="/manage/resources?request=1" onClick={close}>{t("manage.exercises.attachDialog.requestExtension")}</Link>}
