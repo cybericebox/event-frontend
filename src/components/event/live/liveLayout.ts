@@ -66,6 +66,21 @@ function widget(type: LiveWidget["type"], x: number, y: number, w: number, h: nu
     return {id: crypto.randomUUID(), type, x, y, w, h, props};
 }
 
+// A block's corners: north-west, north-east, south-west, south-east.
+export const liveCorners = ["nw", "ne", "sw", "se"] as const;
+export type LiveCorner = typeof liveCorners[number];
+
+// Resizing from a corner by (dx, dy) cells: that corner moves, the opposite
+// one stays fixed, and the block never gets smaller than its type allows
+// (the dragged edge stops at the minimum instead).
+export function liveResizeFromCorner<T extends LiveWidget>(start: T, corner: LiveCorner, dx: number, dy: number): T {
+    const min = liveWidgetMinimums[start.type];
+    const west = corner === "nw" || corner === "sw", north = corner === "nw" || corner === "ne";
+    const w = Math.max(min.w, west ? start.w - dx : start.w + dx);
+    const h = Math.max(min.h, north ? start.h - dy : start.h + dy);
+    return {...start, x: west ? start.x + start.w - w : start.x, y: north ? start.y + start.h - h : start.y, w, h};
+}
+
 export function canPlace(layout: LiveLayout, candidate: LiveWidget, ignoreID?: string): boolean {
     const minimum = liveWidgetMinimums[candidate.type];
     return [candidate.x, candidate.y, candidate.w, candidate.h].every(Number.isInteger)

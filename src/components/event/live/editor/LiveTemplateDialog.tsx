@@ -17,11 +17,14 @@ const showScenes = ["before", "running", "finished"] as const;
 const templateKeys = Object.keys(liveTemplates) as LiveTemplateKey[];
 
 // «Шаблони»: template cards rendered as live miniatures with sample data in
-// the current theme and screen. «Повний показ» shows its three scenes; any
-// other template fills the scene being edited. The replace warning lives in
+// the current theme and screen. «Повний показ» shows its three states and
+// turns on «Окремий екран для кожного стану»; any other template fills the
+// screen being edited (the one screen, or the open state's screen). The replace warning lives in
 // the dialog (and Ctrl+Z undoes), so applying needs no second confirmation.
-export function LiveTemplateDialog({open, layout, scene, event, stages, results, sample, onClose, onApply}: {
-    open: boolean; layout: LiveLayout; scene: LiveSceneKey; event: PublicEventInfo; stages?: LiveStage[]; results?: ManageResultsSnapshot; sample: boolean;
+export function LiveTemplateDialog({open, layout, scene, separate, event, stages, results, sample, onClose, onApply}: {
+    open: boolean; layout: LiveLayout; scene: LiveSceneKey;
+    // «Окремий екран для кожного стану»: the texts name the state's screen.
+    separate: boolean; event: PublicEventInfo; stages?: LiveStage[]; results?: ManageResultsSnapshot; sample: boolean;
     onClose: () => void; onApply: (key: LiveTemplateKey) => void;
 }) {
     const [chosen, setChosen] = useState<LiveTemplateKey | null>(null);
@@ -38,11 +41,13 @@ export function LiveTemplateDialog({open, layout, scene, event, stages, results,
     }, [version, theme, aspect, screen, refreshSeconds]);
     const target = chosen && liveTemplates[chosen].scene === "all" ? null : scene;
     const replaces = chosen ? liveTemplates[chosen].scene === "all" ? true : liveSceneLayout(layout, scene).widgets.length > 0 : false;
-    return <DialogModal open={open} onClose={close} size="md" title={t("manage.live.templates.title")} description={t("manage.live.templates.description", {scene: t(`manage.live.scene.${scene}`)})}
+    const sceneName = t(`manage.live.scene.${scene}`);
+    return <DialogModal open={open} onClose={close} size="md" title={t("manage.live.templates.title")}
+        description={separate ? t("manage.live.templates.descriptionState", {scene: sceneName}) : t("manage.live.templates.descriptionSingle")}
         footer={<>
             <button className="ib-btn" type="button" onClick={close}>{t("common.cancel")}</button>
             <button className="ib-btn ib-btn--primary" type="button" disabled={!chosen} onClick={() => {if (chosen) {onApply(chosen); setChosen(null);}}}>
-                {target ? t("manage.live.templates.applyTo", {scene: t(`manage.live.scene.${target}`)}) : t("manage.live.templates.applyAll")}
+                {!target ? t("manage.live.templates.applyAll") : separate ? t("manage.live.templates.applyToState", {scene: sceneName}) : t("manage.live.templates.applyToScreen")}
             </button>
         </>}>
         <div className="event-live-templates" role="radiogroup" aria-label={t("manage.live.templates.title")}>
@@ -56,11 +61,11 @@ export function LiveTemplateDialog({open, layout, scene, event, stages, results,
                             <small>{t(`manage.live.scene.${item}`)}</small>
                         </span>)}</span>
                         : <LiveMiniature layout={liveSceneLayout(result, "running")} {...card(template.scene)} box={cardBox} showGrid={key === "empty"} />}
-                    <strong>{template.label}{template.scene !== "all" && <em>{t("manage.live.templates.for", {scene: t(`manage.live.scene.${template.scene}`)})}</em>}</strong>
+                    <strong>{template.label}{separate && template.scene !== "all" && <em>{t("manage.live.templates.for", {scene: t(`manage.live.scene.${template.scene}`)})}</em>}</strong>
                     <span>{template.description}</span>
                 </button>;
             })}
         </div>
-        {replaces && <p className="event-live-templates__warning" role="note">{t(target ? "manage.live.templates.replaceScene" : "manage.live.templates.replaceAll", {scene: t(`manage.live.scene.${scene}`)})}</p>}
+        {replaces && <p className="event-live-templates__warning" role="note">{!target ? t("manage.live.templates.replaceAll") : separate ? t("manage.live.templates.replaceState", {scene: sceneName}) : t("manage.live.templates.replaceScreen")}</p>}
     </DialogModal>;
 }
