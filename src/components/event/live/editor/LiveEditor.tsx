@@ -4,7 +4,7 @@ import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
-import {CircleHelp, ExternalLink, LayoutTemplate, MonitorUp, Redo2, Send, TriangleAlert, Undo2} from "lucide-react";
+import {CircleHelp, ExternalLink, LayoutTemplate, MonitorUp, Redo2, RotateCcw, Send, TriangleAlert, Undo2} from "lucide-react";
 import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
@@ -13,7 +13,7 @@ import {liveSampleResults} from "@/components/event/live/liveSample";
 import {liveFormatLayout, liveFormatMode, liveFormatTabs, pruneLiveFormats, withLiveFormatMode, withLiveFormatView} from "@/components/event/live/liveFormats";
 import type {LiveLogoItem} from "@/components/event/live/LiveCanvas";
 import {liveSafeArea, liveSafeInsets, liveTextProfile, liveTextWarnings} from "@/components/event/live/liveText";
-import {liveSceneKeys, liveSceneLayout, liveSceneOwn, liveScenePreviewNow, liveScenePreviewResults, liveSceneState, liveSceneViews, liveWidgetLimit, liveWidgetLimits, mapLiveScenes, withLiveScene, withLiveSceneOwn, type LiveSceneKey} from "@/components/event/live/liveScenes";
+import {liveSceneKeys, liveSceneLayout, liveScenePreviewNow, liveScenePreviewResults, liveSceneState, liveSceneViews, liveWidgetLimit, liveWidgetLimits, mapLiveScenes, withLiveScene, withLiveSceneReset, type LiveSceneKey} from "@/components/event/live/liveScenes";
 import {applyLiveTemplate, liveTemplates, type LiveTemplateKey} from "@/components/event/live/liveTemplates";
 import {livePreviewKeys, livePreviewLayout, livePreviewScale, type LivePreviewKey} from "@/components/event/live/livePreview";
 import {getManageStages} from "@/api/manageStages";
@@ -126,9 +126,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const [preview, setPreview] = useState<LivePreviewKey>("layout");
     const lastEdit = useRef(0);
     useEffect(() => {queueMicrotask(() => setOrigin(window.location.origin));}, []);
-    const sceneOwn = liveSceneOwn(doc, scene);
     // A scene «Як «Триває»» shows the running canvas, read-only.
-    const layout = useMemo(() => liveSceneLayout(doc, sceneOwn ? scene : "running"), [doc, scene, sceneOwn]);
+    const layout = useMemo(() => liveSceneLayout(doc, scene), [doc, scene]);
     const paletteLayouts = usePaletteLayouts(livePaletteItems, layout.theme, origin);
     const shape = liveFormatTabs(layout).includes(format) ? format : layout.aspect;
     const view = useMemo(() => liveFormatLayout(layout, shape), [layout, shape]);
@@ -169,7 +168,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const current = liveSceneState(event, results.data?.Freeze, clock);
     const locked = !canManage;
     const selected = view.widgets.find(item => item.id === selectedID) ?? null;
-    const editable = !locked && mode !== "auto" && sceneOwn;
+    const editable = !locked && mode !== "auto";
 
     // Undo keeps the whole layout before each edit; bursts of edits merge into one.
     function remember() {
@@ -208,7 +207,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     // A change of the scene shown (its canvas or the shared screen settings);
     // a scene «Як «Триває»» shows, and so changes, the running one.
     function mutate(changed: LiveLayout) {
-        mutateDoc(withLiveScene(doc, sceneOwn ? scene : "running", changed));
+        mutateDoc(withLiveScene(doc, scene, changed));
         // The open «Власна…» inputs follow a grid that grew or changed elsewhere.
         if (customGrid && (changed.grid.cols !== layout.grid.cols || changed.grid.rows !== layout.grid.rows)) setCustomGrid({...changed.grid});
     }
@@ -421,7 +420,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             <div className="event-live-scenes__tabs" role="tablist" aria-label={t("manage.live.scene.tabs")}>
                 {liveSceneKeys.map(key => <button key={key} type="button" role="tab" aria-selected={scene === key} className="event-live-scene" onClick={() => switchScene(key)}>
                     <strong>{sceneName(key)}</strong>
-                    <span>{key === current ? t("manage.live.scene.now") : key === "running" ? t("manage.live.scene.main") : liveSceneOwn(doc, key) ? t("manage.live.scene.own") : t("manage.live.scene.asRunning")}</span>
+                    {key === current && <span>{t("manage.live.scene.now")}</span>}
                 </button>)}
             </div>
             <ManageFieldLabel title={t("manage.live.scene.label")} help={t("manage.live.scene.help")} />
@@ -432,20 +431,10 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 <button className="ib-btn event-live-editor__template" type="button" disabled={locked} onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={16} /> {t("manage.live.templates.open")}</button>
                 {applied && <small className="event-live-editor__applied">{t(layoutKey(doc) === applied.layout ? "manage.live.templates.applied" : "manage.live.templates.appliedChanged", {name: liveTemplates[applied.key].label})}</small>}
             </div>
-            {scene !== "running" && <div className="event-live-editor__tool">
-                <ManageFieldLabel title={t("manage.live.scene.mode")} help={t("manage.live.scene.modeHelp")} />
-                <div className="ib-seg" role="group" aria-label={t("manage.live.scene.mode")}>
-                    {([true, false] as const).map(own => <button key={String(own)} type="button" aria-pressed={sceneOwn === own} disabled={locked}
-                        onClick={() => {
-                            if (sceneOwn === own) return;
-                            // Dropping an own layout with widgets discards them: ask first.
-                            if (!own && layout.widgets.length) {setConfirmReset(true); return;}
-                            // An own copy of «Триває» must stay within the widgets of all scenes.
-                            if (own && liveWidgetLimit(doc, scene, liveSceneLayout(doc, "running").widgets.length) === "total") {setError(t("manage.live.error.limit.total", liveWidgetLimits)); return;}
-                            mutateDoc(withLiveSceneOwn(doc, scene, own)); setSelectedID(null);
-                        }}>{t(own ? "manage.live.scene.modeOwn" : "manage.live.scene.modeRunning")}</button>)}
-                </div>
-            </div>}
+            <div className="event-live-editor__tool">
+                <ManageFieldLabel title={t("manage.live.scene.reset")} help={t("manage.live.scene.resetHelp", {scene: sceneName(scene)})} />
+                <button className="ib-btn" type="button" disabled={locked} onClick={() => setConfirmReset(true)}><RotateCcw size={16} /> {t("manage.live.scene.resetAction")}</button>
+            </div>
             <div className="event-live-editor__tool">
                 <ManageFieldLabel title={t("manage.live.grid")} help={t("manage.live.gridHelp")} required />
                 <EventSelect ariaLabel={t("manage.live.grid")} value={gridValue} disabled={!editable}
@@ -478,7 +467,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         <div className="event-live-editor__workspace">
             <aside className="event-live-editor__palette">
                 <h2>{t("manage.live.widgets")}</h2>
-                <p>{t(!sceneOwn ? "manage.live.paletteScene" : mode === "base" ? "manage.live.paletteHint" : "manage.live.paletteBaseOnly", {name: tabLabel(layout.aspect)})}</p>
+                <p>{t(mode === "base" ? "manage.live.paletteHint" : "manage.live.paletteBaseOnly", {name: tabLabel(layout.aspect)})}</p>
                 {livePaletteItems.map(item => <button key={item.key} type="button" className="event-live-palette-item" draggable={editable && mode === "base"} disabled={!editable || mode !== "base"} aria-label={t("manage.live.paletteAdd", {name: item.label})}
                     onDragStart={dragEvent => {dragEvent.dataTransfer.setData(dragMime, item.key); dragEvent.dataTransfer.effectAllowed = "copy"; setDragItem(item);}}
                     onDragEnd={() => {setDragItem(null); setGhost(null);}}
@@ -495,7 +484,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                         </div>
                         {mode !== "base" && <div className="event-live-editor__format-mode">
                             <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.live.format.mode")}>
-                                {(["auto", "custom"] as const).map(value => <button key={value} type="button" aria-pressed={mode === value} disabled={locked || !sceneOwn} onClick={() => {if (mode !== value) mutate(withLiveFormatMode(layout, shape, value));}}>{t(`manage.live.format.mode.${value}`)}</button>)}
+                                {(["auto", "custom"] as const).map(value => <button key={value} type="button" aria-pressed={mode === value} disabled={locked} onClick={() => {if (mode !== value) mutate(withLiveFormatMode(layout, shape, value));}}>{t(`manage.live.format.mode.${value}`)}</button>)}
                             </div>
                             <EventTooltip content={<span className="event-brand-tooltip-copy">{t("manage.live.format.modeHelp", {name: tabLabel(layout.aspect)})}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: t("manage.live.format.mode")})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
                         </div>}
@@ -516,8 +505,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                         {[...fits, ...warnings.filter(item => item.kind === "floor")].map((warning, index) => <li key={`${warning.id}-${index}`} className={warning.kind === "floor" ? "is-floor" : undefined}><button type="button" onClick={() => setSelectedID(warning.id)}>{warning.text}</button></li>)}
                     </ul>}
                 </div>
-                {mode === "auto" && sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.format.autoNote", {name: tabLabel(layout.aspect)})}</p>}
-                {!sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.scene.asRunningNote", {scene: sceneName(scene)})}</p>}
+                {mode === "auto" && <p className="event-live-editor__format-note">{t("manage.live.format.autoNote", {name: tabLabel(layout.aspect)})}</p>}
                 {scene === "frozen" && resultsSettings.data && !resultsSettings.data.LiveFreeze && <p className="event-live-editor__format-note">{t("manage.live.scene.frozenOff")}</p>}
                 {scene === "finished" && !event.FinishTime && <p className="event-live-editor__format-note">{t("manage.live.scene.noFinish")}</p>}
                 {mode === "base" && layout.aspect === "custom" && <div className="event-live-editor__custom-size">
@@ -546,9 +534,9 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         </div>
         {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
         <LiveTemplateDialog open={templatesOpen} layout={doc} scene={scene} event={event} stages={stages.data} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
-        <ConfirmDialog open={confirmReset && scene !== "running" && sceneOwn} onCancel={() => setConfirmReset(false)} tone="danger" title={t("manage.live.scene.resetConfirm.title")}
+        <ConfirmDialog open={confirmReset && !locked} onCancel={() => setConfirmReset(false)} tone="danger" title={t("manage.live.scene.resetConfirm.title")}
             description={t("manage.live.scene.resetConfirm.body", {scene: sceneName(scene)})} confirmLabel={t("manage.live.scene.resetConfirm.action")}
-            onConfirm={() => {if (scene !== "running") mutateDoc(withLiveSceneOwn(doc, scene, false)); setSelectedID(null); setConfirmReset(false);}} />
+            onConfirm={() => {mutateDoc(withLiveSceneReset(doc, scene)); setSelectedID(null); setConfirmReset(false);}} />
         <ConfirmDialog open={confirmRemove && !!selected && editable} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
             description={t(selected?.type === "logos" ? "manage.live.removeConfirm.bodyLogos" : "manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
             onConfirm={() => {if (selected) mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null); setConfirmRemove(false);}} />

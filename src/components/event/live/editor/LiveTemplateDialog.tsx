@@ -6,7 +6,7 @@ import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {DialogModal} from "@/components/event/DialogModal";
 import {t} from "@/i18n/t";
-import {liveSceneLayout, liveSceneOwn, liveScenePreviewNow, liveScenePreviewResults, type LiveSceneKey} from "../liveScenes";
+import {liveSceneLayout, liveScenePreviewNow, liveScenePreviewResults, type LiveSceneKey} from "../liveScenes";
 import type {LiveStage} from "../liveStages";
 import {applyLiveTemplate, liveTemplates, type LiveTemplateKey} from "../liveTemplates";
 import {LiveMiniature} from "./LiveMiniature";
@@ -37,7 +37,7 @@ export function LiveTemplateDialog({open, layout, scene, event, stages, results,
         return new Map(templateKeys.map(key => [key, applyLiveTemplate(base, key, "running")]));
     }, [version, theme, aspect, screen, refreshSeconds]);
     const target = chosen && liveTemplates[chosen].scene === "all" ? null : scene;
-    const replaces = chosen ? liveTemplates[chosen].scene === "all" ? true : liveSceneOwn(layout, scene) && liveSceneLayout(layout, scene).widgets.length > 0 : false;
+    const replaces = chosen ? liveTemplates[chosen].scene === "all" ? true : liveSceneLayout(layout, scene).widgets.length > 0 : false;
     return <DialogModal open={open} onClose={close} size="md" title={t("manage.live.templates.title")} description={t("manage.live.templates.description", {scene: t(`manage.live.scene.${scene}`)})}
         footer={<>
             <button className="ib-btn" type="button" onClick={close}>{t("common.cancel")}</button>

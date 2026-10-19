@@ -2,7 +2,7 @@ import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, type LiveLayout} from "@/api/manageLive";
 import {layoutConflicts, liveGridValid} from "./liveLayout";
 import {applyLiveTemplate, liveTemplatePreview, liveTemplates, type LiveTemplateKey} from "./liveTemplates";
-import {liveSceneLayout, liveSceneOwn, liveSceneViews} from "./liveScenes";
+import {liveSceneLayout, liveSceneViews} from "./liveScenes";
 import {liveTextWarnings} from "./liveText";
 import {livePreviewLayout} from "./livePreview";
 
@@ -42,16 +42,13 @@ describe("live templates", () => {
         expect(next.formats).toBeUndefined();
         expect(next.scenes).toEqual(defaultLiveLayout.scenes);
         const frozen = applyLiveTemplate(defaultLiveLayout, "finale", "frozen");
-        expect(liveSceneOwn(frozen, "frozen")).toBe(true);
         expect(liveSceneLayout(frozen, "frozen").widgets.some(widget => widget.type === "podium")).toBe(true);
         expect(frozen.widgets).toEqual(defaultLiveLayout.widgets);
     });
 
-    it("sets the whole chain with «Повний показ»: before, the board, the finale; frozen shows the board", () => {
+    it("sets the whole chain with «Повний показ»: before, the board, its copy for the freeze, the finale", () => {
         const show = applyLiveTemplate({...withFormat, scenes: {...defaultLiveLayout.scenes, frozen: {grid: {cols: 12, rows: 8}, widgets: []}}}, "show", "finished");
-        expect(liveSceneOwn(show, "before")).toBe(true);
-        expect(liveSceneOwn(show, "frozen")).toBe(false);
-        expect(liveSceneOwn(show, "finished")).toBe(true);
+        expect(liveSceneLayout(show, "frozen").widgets.map(widget => widget.type)).toEqual(show.widgets.map(widget => widget.type));
         expect(show.widgets.map(widget => widget.type)).toContain("solves");
         expect(liveSceneLayout(show, "before").widgets.map(widget => widget.type)).toEqual(expect.arrayContaining(["timer", "facts", "qr"]));
         expect(liveSceneLayout(show, "finished").widgets.map(widget => widget.type)).toEqual(expect.arrayContaining(["podium", "table"]));

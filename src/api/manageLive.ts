@@ -23,7 +23,7 @@ const formatsSchema = z.record(z.string(), z.object({
 }));
 // A scene (liveScenes.ts): the canvas of one event state.
 const sceneSchema = z.object({grid: gridSchema, widgets: z.array(widgetSchema), formats: formatsSchema.optional()});
-export const liveLayoutSchema = z.object({
+const liveLayoutObject = z.object({
     version: z.number().int(), theme: z.enum(["dark", "light"]),
     aspect: z.enum(["16:9", "16:10", "4:3", "5:3", "custom"]),
     // safeArea: the margin around the canvas for TVs that crop the edges (overscan), % of each side: 0, 2.5 or 5.
@@ -34,10 +34,12 @@ export const liveLayoutSchema = z.object({
     // setting existed get the default.
     refreshSeconds: z.number().int().optional().transform(value => value || liveRefreshDefault),
     formats: formatsSchema.optional(),
-    // The other event states; the layout itself is «running».
+    // The other event states; the layout itself is «running». Every state has
+    // its own canvas: a missing one is filled in on load (withLiveSceneDefaults).
     scenes: z.object({before: sceneSchema.optional(), frozen: sceneSchema.optional(), finished: sceneSchema.optional()}).optional(),
 });
-export type LiveLayout = z.output<typeof liveLayoutSchema>;
+export const liveLayoutSchema = liveLayoutObject.transform(layout => withLiveSceneDefaults(layout));
+export type LiveLayout = z.output<typeof liveLayoutObject>;
 export type LiveWidget = LiveLayout["widgets"][number];
 export type LiveScene = z.output<typeof sceneSchema>;
 const editorSchema = z.object({Published: liveLayoutSchema, Draft: liveLayoutSchema.nullable()});
@@ -47,7 +49,7 @@ const organizers = (id: string): LiveWidget => ({id, type: "logos", x: 1, y: 8, 
 const partners = (id: string): LiveWidget => ({id, type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: t("manage.live.defaultPartners")}});
 
 // The same as the daemon default: «Перед стартом» → this board → «Підсумки».
-export const defaultLiveLayout: LiveLayout = {
+export const defaultLiveLayout: LiveLayout = withSceneChain({
     version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1, safeArea: 2.5},
     grid: {cols: 12, rows: 8}, widgets: [
         {id: "title", type: "title", x: 1, y: 1, w: 9, h: 1, props: {}},
@@ -75,7 +77,37 @@ export const defaultLiveLayout: LiveLayout = {
             partners("finished-partners"),
         ]},
     },
-};
+});
+
+// The default chain also fills «Заморожено» (a copy of the board).
+function withSceneChain(layout: LiveLayout): LiveLayout {
+    return {...layout, scenes: {...layout.scenes, frozen: {grid: layout.grid, widgets: layout.widgets.map(item => ({...item, id: `frozen-${item.id}`}))}}};
+}
+
+// The daemon limit of widgets in all scenes together.
+const liveWidgetsTotalMax = 96;
+
+// The starting canvas of a scene: «До старту» the pre-start screen,
+// «Завершено» the finale, «Триває» the board, «Заморожено» a copy of the
+// layout's own board (the default board when a copy would pass the widget
+// limit). IDs are fixed, so the same layout always gets the same scenes.
+export function liveSceneTemplate(layout: LiveLayout, key: "before" | "running" | "frozen" | "finished"): LiveScene {
+    const board = (prefix: string, widgets: LiveWidget[]): LiveScene => ({grid: {cols: 12, rows: 8}, widgets: widgets.map(item => ({...item, id: `${prefix}${item.id}`}))});
+    if (key === "before") return defaultLiveLayout.scenes!.before!;
+    if (key === "finished") return defaultLiveLayout.scenes!.finished!;
+    if (key === "running") return board("", defaultLiveLayout.widgets);
+    const others = (layout.scenes?.before?.widgets.length ?? defaultLiveLayout.scenes!.before!.widgets.length) + (layout.scenes?.finished?.widgets.length ?? defaultLiveLayout.scenes!.finished!.widgets.length);
+    if (others + 2 * layout.widgets.length <= liveWidgetsTotalMax) return {grid: layout.grid, widgets: layout.widgets.map(item => ({...item, id: `frozen-${item.id}`}))};
+    return board("frozen-", defaultLiveLayout.widgets);
+}
+
+// Every scene has its own canvas: a layout saved before that (or without
+// some scenes) gets the missing ones from their templates.
+export function withLiveSceneDefaults(layout: LiveLayout): LiveLayout {
+    const scenes = {...layout.scenes};
+    for (const key of ["before", "frozen", "finished"] as const) scenes[key] ??= liveSceneTemplate({...layout, scenes}, key);
+    return {...layout, scenes};
+}
 
 // 400 code 21122 on publish: the stored draft is invalid (legacy grid below 3×3).
 export class LiveDraftInvalidError extends ManageApiError {

@@ -80,8 +80,8 @@ export const liveTemplates = {
 } satisfies Record<string, LiveTemplate>;
 export type LiveTemplateKey = keyof typeof liveTemplates;
 
-// Applies a template: «Повний показ» replaces every scene (the frozen state
-// then shows the board); any other one replaces the canvas of `scene`, the
+// Applies a template: «Повний показ» replaces every scene («Заморожено»
+// gets a copy of the board); any other one replaces the canvas of `scene`, the
 // scene being edited. Screen settings stay; custom shapes of a replaced
 // canvas are dropped, as their placements belong to the old widgets.
 export function applyLiveTemplate(layout: LiveLayout, key: LiveTemplateKey, scene: LiveSceneKey): LiveLayout {
@@ -90,11 +90,8 @@ export function applyLiveTemplate(layout: LiveLayout, key: LiveTemplateKey, scen
     if (template.scene === "all") {
         const running = built.running ?? scenes.classic();
         const next: LiveLayout = {...layout, grid: running.grid, widgets: running.widgets, formats: undefined, scenes: {}};
-        for (const own of ["before", "frozen", "finished"] as const) {
-            const canvasOf = built[own];
-            if (canvasOf) next.scenes = {...next.scenes, [own]: canvasOf};
-        }
-        return {...next, scenes: Object.keys(next.scenes ?? {}).length ? next.scenes : undefined};
+        const frozen = {grid: running.grid, widgets: running.widgets.map(item => ({...item, id: crypto.randomUUID()}))};
+        return {...next, scenes: {before: built.before ?? scenes.prestart(), frozen: built.frozen ?? frozen, finished: built.finished ?? scenes.finale()}};
     }
     const canvasOf = Object.values(built)[0] ?? scenes.empty();
     return withLiveScene(layout, scene, {...liveSceneLayout(layout, scene), grid: canvasOf.grid, widgets: canvasOf.widgets, formats: undefined});
