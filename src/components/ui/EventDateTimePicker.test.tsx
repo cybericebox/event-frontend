@@ -20,6 +20,8 @@ describe("EventDateTimePicker", () => {
         render(<Controlled initial="2026-09-29T14:30" onValue={onValue} />);
         const trigger = screen.getByRole("button", {name: "Від"});
         expect(trigger.textContent).toContain("29 вересня 2026, 14:30");
+        // Phones show the short form, so the time is never cut off.
+        expect(trigger.querySelector(".event-date-picker__short")?.textContent).toBe("29.09.2026, 14:30");
         fireEvent.click(trigger);
         const day = screen.getByRole("button", {name: "29 вересня 2026"});
         expect(day.getAttribute("aria-pressed")).toBe("true");

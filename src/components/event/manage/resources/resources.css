@@ -11,3 +11,7 @@
 
 .event-stands__lab-block .event-resources__facts{grid-template-columns:repeat(2,minmax(0,1fr));margin:var(--ib-3) 0}
 .event-resources__facts dd{overflow-wrap:anywhere}
+.event-resources{display:grid;gap:var(--ib-4);--event-manage-flow:var(--ib-4)}
+/* The decision time and its note: each on its own line under the status. */
+.event-resources__decision{display:block;margin-top:var(--ib-1)}
+.event-resources__pending{color:var(--ib-dim);font-size:var(--ib-fs-13)}

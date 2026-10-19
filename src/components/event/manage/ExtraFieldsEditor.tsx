@@ -36,17 +36,20 @@ function AnswerFilePreview({field}: {field: FormField}) {
 }
 
 function FormPreview({blocks, selectedID, scope}: {blocks: FormBlock[]; selectedID: string | null; scope: "participant" | "team"}) {
+    // A staff-only field is filled by the organizers, never by the participant or the team.
+    const answerHint = (block: FormBlock) => isFormField(block) && block.staffOnly ? t("manage.fields.preview.staffAnswer")
+        : scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer");
     return <div className="event-form-preview">{blocks.map(block => <div className={`event-form-preview__block${block.id === selectedID ? " is-selected" : ""}`} key={block.id}>
         {block.type === "section" && <h3>{block.label || t("manage.fields.block.section")}</h3>}
         {block.type === "text" && <div className="event-form-preview__text"><EventRichTextView value={block.richText} emptyFallback={t("manage.fields.block.text")} /></div>}
         {block.type === "divider" && <hr />}
         {isFormField(block) && <div className="event-manage-field"><strong>{block.label || t("manage.fields.preview.newQuestion")}{block.required && <span className="event-field-required">*</span>}{block.staffOnly && <span className="ib-tag ib-tag--sm event-form-preview__staff"><EyeOff size={12} aria-hidden="true" />{t("manage.fields.preview.staffOnly")}</span>}</strong>{block.condition && <small className="event-form-preview__condition">{t("manage.fields.preview.conditional", {question: blocks.find(item => isFormField(item) && item.key === block.condition?.fieldKey)?.label || t("manage.fields.preview.previousQuestion")})}</small>}{block.help && <small>{block.help}</small>}
-            {block.input === "long_text" ? <textarea className="event-manage-input" rows={3} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} /> :
+            {block.input === "long_text" ? <textarea className="event-manage-input" rows={3} disabled placeholder={answerHint(block)} /> :
                 block.input === "checkbox" ? <label className="event-form-preview__choice"><input type="checkbox" disabled /> {t("common.yes")}</label> :
                 block.input === "file" ? <AnswerFilePreview field={block} /> :
                 block.input === "date" ? <DateAnswerInput mode={dateModeOf(block)} value="" onChange={() => undefined} ariaLabel={block.label || t("manage.fields.preview.newQuestion")} disabled /> :
                 block.input === "select" || block.input === "multi_select" ? <div className="event-form-preview__choices">{(block.options ?? []).map((option, index) => <label className="event-form-preview__choice" key={index}><input type={block.input === "select" ? "radio" : "checkbox"} disabled />{option || t("manage.fields.preview.option", {n: index + 1})}</label>)}</div> :
-                <input className="event-manage-input" type={block.input === "number" ? "number" : "text"} disabled placeholder={scope === "team" ? t("manage.fields.preview.teamAnswer") : t("manage.fields.preview.participantAnswer")} />}
+                <input className="event-manage-input" type={block.input === "number" ? "number" : "text"} disabled placeholder={answerHint(block)} />}
         </div>}
         {!isFormField(block) && !["section", "text", "divider"].includes(block.type) && <span>{t("manage.fields.preview.unknownBlock", {type: block.type})}</span>}
     </div>)}{blocks.length === 0 && <EmptyState compact message={t("manage.fields.preview.empty")} />}</div>;

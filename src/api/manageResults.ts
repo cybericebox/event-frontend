@@ -97,6 +97,8 @@ export const moderatorTeamSchema = z.object({
 });
 const moderatorResultsSchema = z.object({
     Revision: z.number().int(), GeneratedAt: z.string(), Freeze: freezeSchema,
+    // The participants read the board now: the event runs or finished and its results are not hidden.
+    ParticipantsSee: z.boolean(),
     Counts: z.object({Ranked: z.number().int(), Hidden: z.number().int(), NotAdmitted: z.number().int()}),
     Teams: z.array(moderatorTeamSchema),
 });

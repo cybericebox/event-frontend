@@ -122,3 +122,10 @@ button.event-sortable__main{cursor:pointer}
 .event-preview-picker__option.is-active{background:var(--ib-soft,rgba(127,127,127,.12))}
 .event-preview-picker__option.is-muted{display:grid;gap:2px;color:var(--ib-dim)}
 .event-preview-picker__option.is-muted span{font-size:var(--ib-fs-12)}
+/* Phones: the sets column never grows past the page; long rows wrap or scroll inside their own block. */
+.event-sets{grid-template-columns:minmax(0,1fr)}
+.event-exercise-set,.event-exercise-set>*,.event-exercise-set__body>*{min-width:0}
+.event-exercise-set__body,.event-exercise-set .event-task-list{grid-template-columns:minmax(0,1fr)}
+.event-exercise-set .event-task{min-width:0}
+.event-exercise-set__stage .event-select{max-width:100%}
+.event-exercise-set .ib-switch{flex-wrap:wrap}
