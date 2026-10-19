@@ -8,7 +8,7 @@ import {CircleHelp, ExternalLink, Info, LayoutTemplate, MonitorUp, Redo2, Send, 
 import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
-import {canPlace, distributeWidgets, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteItems, liveWidgetMinimums, liveWidgetName, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem} from "@/components/event/live/liveLayout";
+import {canPlace, distributeWidgets, liveResizeFromCorner, type LiveCorner, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteItems, liveWidgetMinimums, liveWidgetName, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem} from "@/components/event/live/liveLayout";
 import {liveSampleResults} from "@/components/event/live/liveSample";
 import {liveFormatLayout, liveFormatMode, liveFormatTabs, pruneLiveFormats, withLiveFormatMode, withLiveFormatView} from "@/components/event/live/liveFormats";
 import type {LiveLogoItem} from "@/components/event/live/LiveCanvas";
@@ -280,7 +280,9 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         if (!next) {setError(t("manage.live.error.noSpaceHere")); return;}
         insert(layout, next, item);
     }
-    function pointerDown(pointerEvent: PointerEvent<HTMLButtonElement | HTMLSpanElement>, item: LiveWidget, action: "move" | "resize") {
+    // Dragging a block moves it; dragging one of its corners resizes it toward
+    // that corner while the opposite corner stays where it is.
+    function pointerDown(pointerEvent: PointerEvent<HTMLButtonElement | HTMLSpanElement>, item: LiveWidget, action: "move" | LiveCorner) {
         if (!editable || pointerEvent.button !== 0) return;
         const canvas = pointerEvent.currentTarget.closest(".live-canvas") as HTMLElement | null;
         if (!canvas) return;
@@ -297,7 +299,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             const nextEvent = rawEvent as globalThis.PointerEvent;
             const dx = Math.round((nextEvent.clientX - originX) / (rect.width / grid.cols));
             const dy = Math.round((nextEvent.clientY - originY) / (rect.height / grid.rows));
-            const candidate = action === "move" ? {...start, x: start.x + dx, y: start.y + dy} : {...start, w: start.w + dx, h: start.h + dy};
+            const candidate = action === "move" ? {...start, x: start.x + dx, y: start.y + dy} : liveResizeFromCorner(start, action, dx, dy);
             if (!moved && (dx || dy)) {
                 moved = true;
                 lastEdit.current = 0;
@@ -567,7 +569,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             </aside>
         </div>
         {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
-        <LiveTemplateDialog open={templatesOpen} layout={doc} scene={scene} event={event} stages={stages.data} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
+        <LiveTemplateDialog open={templatesOpen} layout={doc} scene={scene} separate={sceneMode === "separate"} event={event} stages={stages.data} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
         <ConfirmDialog open={copyFrom !== null && !locked} onCancel={() => setCopyFrom(null)} tone="danger" title={t("manage.live.scene.copyConfirm.title", {scene: sceneName(scene)})}
             description={copyFrom ? t("manage.live.scene.copyConfirm.body", {scene: sceneName(scene), source: sceneName(copyFrom)}) : undefined} confirmLabel={t("manage.live.scene.copyConfirm.action")} busyLabel={t("common.busy.copying")}
             onConfirm={() => {if (copyFrom) mutateDoc(withLiveSceneCopy(doc, scene, copyFrom)); setSelectedID(null); setCopyFrom(null);}} />

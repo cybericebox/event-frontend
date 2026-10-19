@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
-import {distributeWidgets, layoutConflicts, livePaletteItems, liveWidgetName, recomputeGrid, widgetAt} from "./liveLayout";
+import {distributeWidgets, layoutConflicts, liveResizeFromCorner, livePaletteItems, liveWidgetName, recomputeGrid, widgetAt} from "./liveLayout";
 import {applyLiveTemplate} from "./liveTemplates";
 
 const item = (id: string, type: LiveWidget["type"], x: number, y: number, w: number, h: number, props: LiveWidget["props"] = {}): LiveWidget => ({id, type, x, y, w, h, props});
@@ -95,5 +95,30 @@ describe("palette and drop", () => {
         const empty = layoutOf([]);
         expect(widgetAt(empty, "chart", 11, 7)).toMatchObject({x: 9, y: 6, w: 4, h: 3});
         expect(widgetAt(defaultLiveLayout, "qr", 2, 2)).toBeNull();
+    });
+});
+
+describe("resize from a corner", () => {
+    const block = {id: "t", type: "table" as const, x: 4, y: 3, w: 4, h: 4, props: {}};
+    const corners = (widget: {x: number; y: number; w: number; h: number}) => ({
+        nw: [widget.x, widget.y], ne: [widget.x + widget.w - 1, widget.y], sw: [widget.x, widget.y + widget.h - 1], se: [widget.x + widget.w - 1, widget.y + widget.h - 1],
+    });
+
+    it("moves the dragged corner and keeps the opposite one fixed", () => {
+        const opposite = {nw: "se", ne: "sw", sw: "ne", se: "nw"} as const;
+        for (const corner of ["nw", "ne", "sw", "se"] as const) {
+            const grown = liveResizeFromCorner(block, corner, corner.endsWith("w") ? -2 : 2, corner.startsWith("n") ? -1 : 1);
+            expect(grown.w).toBe(6);
+            expect(grown.h).toBe(5);
+            expect(corners(grown)[opposite[corner]]).toEqual(corners(block)[opposite[corner]]);
+        }
+    });
+
+    it("stops at the minimum size of the block type, the opposite corner still fixed", () => {
+        // A table is at least 3×3.
+        const shrunk = liveResizeFromCorner(block, "nw", 5, 5);
+        expect(shrunk).toMatchObject({w: 3, h: 3, x: 5, y: 4});
+        expect(corners(shrunk).se).toEqual(corners(block).se);
+        expect(liveResizeFromCorner(block, "se", -5, -5)).toMatchObject({x: 4, y: 3, w: 3, h: 3});
     });
 });

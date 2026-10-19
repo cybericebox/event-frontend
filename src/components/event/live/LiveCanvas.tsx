@@ -6,7 +6,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
-import {liveLogoURL, liveWidgetLabels} from "./liveLayout";
+import {liveCorners, liveLogoURL, liveWidgetLabels, type LiveCorner} from "./liveLayout";
 import {liveCaptionShown, liveCaptionText, liveTextFloors, liveTextProfile, liveTextSize, liveTextSizes, liveTextVars, liveWidgetTextScale, type LiveTextProfile} from "./liveText";
 import {liveAnnouncementFit, liveHeaderRow, liveTableFit, liveTimerFit, liveTitleFit} from "./liveFit";
 import {liveStageSubtitle, liveTimerDigitMode, liveTimerDigits, liveTimerState, liveTimerUrgency, liveTimerZero, type LiveStage} from "./liveStages";
@@ -325,7 +325,7 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     // The editor previews a scene at a moment of its state: the clock runs this far from now.
     nowOffset?: number;
     onSelect?: (id: string) => void; edit?: boolean; showGrid?: boolean;
-    onPointerDown?: (event: PointerEvent<HTMLButtonElement | HTMLSpanElement>, widget: LiveWidget, mode: "move" | "resize") => void;
+    onPointerDown?: (event: PointerEvent<HTMLButtonElement | HTMLSpanElement>, widget: LiveWidget, mode: "move" | LiveCorner) => void;
     conflicts?: Set<string>; warned?: Set<string>; ghost?: LiveGhost | null;
     onDragOver?: (event: DragEvent<HTMLDivElement>) => void; onDragLeave?: () => void; onDrop?: (event: DragEvent<HTMLDivElement>) => void;
 }) {
@@ -364,7 +364,8 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={blockStyle(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
             {content(widget, true)}
-            <span className="live-widget__resize" role="presentation" onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, "resize");}} />
+            {liveCorners.map(corner => <span key={corner} className={`live-widget__corner live-widget__corner--${corner}`} role="presentation" data-corner={corner}
+                onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, corner);}} />)}
         </button> : <div key={widget.id} className={place(widget)} style={blockStyle(widget)}>{content(widget, false)}</div>)}
         {ghost && <div className={`live-drop-ghost${ghost.ok ? "" : " is-blocked"}`} style={{gridColumn: `${ghost.x} / span ${ghost.w}`, gridRow: `${ghost.y} / span ${ghost.h}`}} aria-hidden="true" />}
     </div>;
