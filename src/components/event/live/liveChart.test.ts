@@ -79,4 +79,23 @@ describe("chartSeries", () => {
         ys.forEach(value => expect(value).toBeGreaterThanOrEqual(0));
         expect(series[0].endY).toBe(0);
     });
+
+    it("stops the lines at the freeze moment instead of running on to now", () => {
+        const team = "01900000-0000-7000-8000-000000000042";
+        const results = {
+            Revision: 1, GeneratedAt: "", TotalTeams: 1, Freeze: {Enabled: true, FrozenAt: new Date(60000).toISOString(), FinishAt: null, OpenedAt: null, Active: true, Applied: true},
+            Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
+            Scoreboard: [{Rank: 1, TeamID: team, TeamName: "A", Points: 100, Solved: 1, LastSolveAt: null}],
+            Timeline: [{EventTeamID: team, EventChallengeID: team, ChallengeName: "x", Points: 100, SolvedAt: new Date(40000).toISOString()}],
+        };
+        const box = {left: 0, top: 0, width: 100, height: 300};
+        const frozen = chartSeries(results, 5, box, 0, 100000, 60000);
+        expect(frozen.cutX).toBe(60);
+        expect(frozen.series[0].endX).toBe(60);
+        expect(Math.max(...samplePath(frozen.series[0].path).map(([x]) => x))).toBeLessThanOrEqual(60 + 1e-6);
+        // A freeze moment after the end of the axis changes nothing.
+        const later = chartSeries(results, 5, box, 0, 100000, 200000);
+        expect(later.cutX).toBeNull();
+        expect(later.series[0].endX).toBe(100);
+    });
 });

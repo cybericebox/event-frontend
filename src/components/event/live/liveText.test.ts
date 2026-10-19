@@ -1,15 +1,22 @@
 import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, type LiveLayout} from "@/api/manageLive";
-import {liveListFit, liveTextSize, liveTextVars, liveTextWarnings} from "./liveText";
+import {liveListFit, liveTextProfile, liveTextSize, liveTextVars, liveTextWarnings} from "./liveText";
 
 const led: LiveLayout = {...defaultLiveLayout, aspect: "custom", screen: {width: 1040, height: 624, anchor: "top-left", textScale: 1}};
 
 describe("liveTextSize", () => {
-    it("scales with the screen height and keeps the floors", () => {
+    it("scales with the screen height and keeps the floors of the profile", () => {
         expect(liveTextSize("body", 1080, 1)).toEqual({natural: 26.1, effective: 26.1});
-        expect(liveTextSize("body", 624, 1)).toEqual({natural: 15.1, effective: 19});
-        expect(liveTextSize("caption", 624, 1.5).effective).toBe(15.6);
-        expect(liveTextSize("timer", 624, 1).effective).toBe(34);
+        expect(liveTextSize("body", 624, 1, undefined, "led")).toEqual({natural: 15.1, effective: 19});
+        expect(liveTextSize("caption", 624, 1.5, undefined, "led").effective).toBe(20.8);
+        expect(liveTextSize("timer", 624, 1, undefined, "led").effective).toBe(34);
+    });
+
+    it("raises the floors for a projector at 720p", () => {
+        expect(liveTextSize("body", 720, 1)).toEqual({natural: 17.4, effective: 20});
+        expect(liveTextSize("caption", 720, 1)).toEqual({natural: 16, effective: 18});
+        expect(liveTextProfile({anchor: "full"})).toBe("projector");
+        expect(liveTextProfile({anchor: "top-left"})).toBe("led");
     });
 
     it("caps the unit by the width on screens narrower than 16:9", () => {
@@ -18,7 +25,8 @@ describe("liveTextSize", () => {
     });
 
     it("exposes the same formula to CSS", () => {
-        expect(liveTextVars(1.2)).toMatchObject({"--live-u": "calc(min(100cqh, 100cqw * 9 / 16) / 36 * 1.2)", "--live-fs-body": "max(19px, calc(var(--live-u) * 0.87))"});
+        expect(liveTextVars(1.2)).toMatchObject({"--live-u": "calc(min(100cqh, 100cqw * 9 / 16) / 36 * 1.2)", "--live-fs-body": "max(20px, calc(var(--live-u) * 0.87))", "--live-fs-caption": "max(18px, calc(var(--live-u) * 0.8))"});
+        expect(liveTextVars(1, "led")).toMatchObject({"--live-fs-body": "max(19px, calc(var(--live-u) * 0.87))", "--live-fs-caption": "max(14px, calc(var(--live-u) * 0.8))"});
     });
 });
 
@@ -31,7 +39,7 @@ describe("liveTextWarnings", () => {
         const warnings = liveTextWarnings(led);
         const table = warnings.filter(item => item.id === "table").map(item => item.text).join("\n");
         // 1040×624 is narrower than 16:9, so the unit follows the width.
-        expect(table).toMatch(/основний текст 14 px, підписи 9 px/);
+        expect(table).toMatch(/основний текст 14 px, підписи 13 px/);
         expect(table).toMatch(/19 px \/ 14 px/);
     });
 
@@ -53,5 +61,14 @@ describe("liveTextWarnings", () => {
     it("ignores legacy A/D tables", () => {
         const legacy: LiveLayout = {...defaultLiveLayout, widgets: [{id: "ad", type: "ad_table", x: 1, y: 1, w: 6, h: 4, props: {}}]};
         expect(liveTextWarnings({...legacy, screen: led.screen})).toEqual([]);
+    });
+});
+
+describe("liveTextWarnings with the real event name", () => {
+    it("checks the title against the event name, not a sample", () => {
+        const short = liveTextWarnings(defaultLiveLayout, "CTF 2026");
+        const long = liveTextWarnings(defaultLiveLayout, "Регіональні змагання з кібербезпеки серед команд закладів вищої освіти Харківщини та сусідніх областей, відкритий кваліфікаційний етап 2026");
+        expect(short.some(item => item.id === "title")).toBe(false);
+        expect(long.some(item => item.id === "title")).toBe(true);
     });
 });

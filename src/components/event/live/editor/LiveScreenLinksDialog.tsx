@@ -72,6 +72,7 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
                     </div>
                         : <section className="event-live-links__state" aria-label={t("manage.live.links.active")}>
                             <p className="event-live-links__status">{t("manage.live.links.row", {created: dateFormat.format(new Date(current.CreatedAt)), expires: expires(current.ExpiresAt)})}</p>
+                            <p className="event-live-links__hidden">{t("manage.live.links.screens")}</p>
                             {fresh ? <div className="event-live-links__fresh" role="status">
                                 <ManageFieldLabel title={t("manage.live.links.fresh")} help={t("manage.live.links.freshHelp")} htmlFor="live-screen-link-url" />
                                 <div className="event-live-links__url">

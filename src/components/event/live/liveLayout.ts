@@ -1,4 +1,4 @@
-import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
+import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import {apiOrigin} from "@/utils/origins";
 import {t, tPlural} from "@/i18n/t";
 
@@ -6,6 +6,7 @@ export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
     title: t("live.widget.title"), timer: t("live.widget.timer"), chart: t("live.widget.chart"), table: t("live.widget.table"),
     ad_table: t("live.widget.ad_table"), logos: t("live.widget.logos"), solves: t("live.widget.solves"),
     announcement: t("live.widget.announcement"), qr: t("live.widget.qr"),
+    podium: t("live.widget.podium"), facts: t("live.widget.facts"), stages: t("live.widget.stages"), clock: t("live.widget.clock"),
 };
 
 // Widgets offered in the palette: a type with starting props and the cells
@@ -20,14 +21,22 @@ export const livePaletteItems: LivePaletteItem[] = [
     {key: "table", type: "table", label: liveWidgetLabels.table, props: {}, preview: {w: 4, h: 4}},
     {key: "organizers", type: "logos", label: t("live.preset.organizers"), props: {mode: "fixed", title: t("live.preset.organizers")}, preview: {w: 4, h: 1}},
     {key: "partners", type: "logos", label: t("live.preset.partners"), props: {mode: "carousel", title: t("live.preset.partners")}, preview: {w: 4, h: 1}},
+    {key: "podium", type: "podium", label: liveWidgetLabels.podium, props: {}, preview: {w: 6, h: 3}},
+    {key: "facts", type: "facts", label: liveWidgetLabels.facts, props: {}, preview: {w: 5, h: 2}},
     {key: "solves", type: "solves", label: liveWidgetLabels.solves, props: {}, preview: {w: 4, h: 3}},
+    {key: "first", type: "solves", label: t("live.preset.firstSolves"), props: {mode: "first"}, preview: {w: 4, h: 3}},
+    {key: "stages", type: "stages", label: liveWidgetLabels.stages, props: {}, preview: {w: 4, h: 3}},
+    {key: "clock", type: "clock", label: liveWidgetLabels.clock, props: {}, preview: {w: 3, h: 1}},
     {key: "announcement", type: "announcement", label: liveWidgetLabels.announcement, props: {}, preview: {w: 4, h: 1}},
     {key: "qr", type: "qr", label: liveWidgetLabels.qr, props: {}, preview: {w: 2, h: 2}},
 ];
 
-// The name of a placed widget: logos blocks go by their own title.
+// The name of a placed widget: its own caption (a logos block: its title),
+// else the type name; «Перші розв'язання» for the first-solves feed.
 export function liveWidgetName(widget: LiveWidget): string {
-    return widget.type === "logos" && typeof widget.props.title === "string" && widget.props.title.trim() ? widget.props.title.trim() : liveWidgetLabels[widget.type];
+    const own = widget.type === "logos" ? widget.props.title : widget.props.caption;
+    if (typeof own === "string" && own.trim()) return own.trim();
+    return widget.type === "solves" && widget.props.mode === "first" ? t("live.preset.firstSolves") : liveWidgetLabels[widget.type];
 }
 
 export const liveGridPresets = [{cols: 12, rows: 8}, {cols: 16, rows: 9}, {cols: 24, rows: 16}];
@@ -50,23 +59,11 @@ export const liveWidgetMinimums: Record<LiveWidget["type"], {w: number; h: numbe
     title: {w: 3, h: 1}, timer: {w: 2, h: 1}, chart: {w: 4, h: 3}, table: {w: 3, h: 3},
     ad_table: {w: 6, h: 4}, logos: {w: 2, h: 1}, solves: {w: 3, h: 2},
     announcement: {w: 3, h: 1}, qr: {w: 1, h: 1},
+    podium: {w: 4, h: 2}, facts: {w: 3, h: 1}, stages: {w: 3, h: 2}, clock: {w: 2, h: 1},
 };
 
 function widget(type: LiveWidget["type"], x: number, y: number, w: number, h: number, props: LiveWidget["props"] = {}): LiveWidget {
     return {id: crypto.randomUUID(), type, x, y, w, h, props};
-}
-
-export const livePresets = {
-    classic: {label: t("live.preset.classic"), description: t("live.preset.classicDescription"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 8, 6), widget("table", 9, 2, 4, 6), widget("logos", 1, 8, 3, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 4, 8, 9, 1, {mode: "carousel", title: t("live.preset.partners")})]},
-    chart: {label: t("live.preset.chart"), description: t("live.preset.chartDescription"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 12, 6), widget("logos", 1, 8, 12, 1, {mode: "carousel", title: t("live.preset.partners")})]},
-    table: {label: t("live.preset.table"), description: t("live.preset.tableDescription"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("table", 1, 2, 12, 6), widget("logos", 1, 8, 4, 1, {mode: "fixed", title: t("live.preset.organizers")}), widget("logos", 5, 8, 8, 1, {mode: "carousel", title: t("live.preset.partners")})]},
-    side: {label: t("live.preset.side"), description: t("live.preset.sideDescription"), widgets: () => [widget("title", 1, 1, 10, 1), widget("timer", 11, 1, 2, 1), widget("chart", 1, 2, 7, 7), widget("table", 8, 2, 3, 7), widget("logos", 11, 2, 2, 7, {mode: "fixed", title: t("live.preset.organizers")})]},
-    empty: {label: t("live.preset.empty"), description: t("live.preset.emptyDescription"), widgets: () => [] as LiveWidget[]},
-} satisfies Record<string, {label: string; description: string; widgets: () => LiveWidget[]}>;
-export type LivePresetKey = keyof typeof livePresets;
-
-export function presetLayout(key: LivePresetKey, base: LiveLayout = defaultLiveLayout): LiveLayout {
-    return {...base, grid: {cols: 12, rows: 8}, widgets: livePresets[key].widgets()};
 }
 
 export function canPlace(layout: LiveLayout, candidate: LiveWidget, ignoreID?: string): boolean {

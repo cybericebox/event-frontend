@@ -10,41 +10,71 @@ export const liveRefreshDefault = 5;
 export const liveRefreshOptions = [2, 3, 5, 10, 15, 20, 30];
 
 const widgetSchema = z.object({
-    id: z.string(), type: z.enum(["title", "timer", "chart", "table", "ad_table", "logos", "solves", "announcement", "qr"]),
+    id: z.string(), type: z.enum(["title", "timer", "chart", "table", "ad_table", "logos", "solves", "announcement", "qr", "podium", "facts", "stages", "clock"]),
     x: z.number().int(), y: z.number().int(), w: z.number().int(), h: z.number().int(),
     props: z.record(z.string(), z.unknown()),
 });
+const gridSchema = z.object({cols: z.number().int(), rows: z.number().int()});
+// Other screen shapes (liveFormats.ts): «auto» or a «custom» placement.
+const formatsSchema = z.record(z.string(), z.object({
+    mode: z.enum(["auto", "custom"]),
+    grid: gridSchema.optional(),
+    placements: z.array(z.object({id: z.string(), x: z.number().int(), y: z.number().int(), w: z.number().int(), h: z.number().int()})).optional(),
+}));
+// A scene (liveScenes.ts): the canvas of one event state.
+const sceneSchema = z.object({grid: gridSchema, widgets: z.array(widgetSchema), formats: formatsSchema.optional()});
 export const liveLayoutSchema = z.object({
     version: z.number().int(), theme: z.enum(["dark", "light"]),
     aspect: z.enum(["16:9", "16:10", "4:3", "5:3", "custom"]),
-    screen: z.object({width: z.number().int(), height: z.number().int(), anchor: z.enum(["full", "top-left"]), textScale: z.number()}),
-    grid: z.object({cols: z.number().int(), rows: z.number().int()}),
+    // safeArea: the margin around the canvas for TVs that crop the edges (overscan), % of each side: 0, 2.5 or 5.
+    screen: z.object({width: z.number().int(), height: z.number().int(), anchor: z.enum(["full", "top-left"]), textScale: z.number(), safeArea: z.number().optional()}),
+    grid: gridSchema,
     widgets: z.array(widgetSchema),
     // Results refresh on the open screen, 2–30 s; layouts stored before the
     // setting existed get the default.
     refreshSeconds: z.number().int().optional().transform(value => value || liveRefreshDefault),
-    // Other screen shapes (liveFormats.ts): «auto» or a «custom» placement.
-    formats: z.record(z.string(), z.object({
-        mode: z.enum(["auto", "custom"]),
-        grid: z.object({cols: z.number().int(), rows: z.number().int()}).optional(),
-        placements: z.array(z.object({id: z.string(), x: z.number().int(), y: z.number().int(), w: z.number().int(), h: z.number().int()})).optional(),
-    })).optional(),
+    formats: formatsSchema.optional(),
+    // The other event states; the layout itself is «running».
+    scenes: z.object({before: sceneSchema.optional(), frozen: sceneSchema.optional(), finished: sceneSchema.optional()}).optional(),
 });
 export type LiveLayout = z.output<typeof liveLayoutSchema>;
 export type LiveWidget = LiveLayout["widgets"][number];
+export type LiveScene = z.output<typeof sceneSchema>;
 const editorSchema = z.object({Published: liveLayoutSchema, Draft: liveLayoutSchema.nullable()});
 export type LiveEditor = z.infer<typeof editorSchema>;
 
+const organizers = (id: string): LiveWidget => ({id, type: "logos", x: 1, y: 8, w: 3, h: 1, props: {mode: "fixed", title: t("manage.live.defaultOrganizers")}});
+const partners = (id: string): LiveWidget => ({id, type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: t("manage.live.defaultPartners")}});
+
+// The same as the daemon default: «Перед стартом» → this board → «Підсумки».
 export const defaultLiveLayout: LiveLayout = {
-    version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1},
+    version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1, safeArea: 2.5},
     grid: {cols: 12, rows: 8}, widgets: [
-        {id: "title", type: "title", x: 1, y: 1, w: 10, h: 1, props: {}},
+        {id: "title", type: "title", x: 1, y: 1, w: 9, h: 1, props: {}},
         {id: "chart", type: "chart", x: 1, y: 2, w: 8, h: 6, props: {}},
         {id: "table", type: "table", x: 9, y: 2, w: 4, h: 6, props: {}},
-        {id: "organizers", type: "logos", x: 1, y: 8, w: 3, h: 1, props: {mode: "fixed", title: t("manage.live.defaultOrganizers")}},
-        {id: "partners", type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: t("manage.live.defaultPartners")}},
-        {id: "timer", type: "timer", x: 11, y: 1, w: 2, h: 1, props: {}},
+        organizers("organizers"),
+        partners("partners"),
+        {id: "timer", type: "timer", x: 10, y: 1, w: 3, h: 1, props: {}},
     ],
+    scenes: {
+        before: {grid: {cols: 12, rows: 8}, widgets: [
+            {id: "before-title", type: "title", x: 1, y: 1, w: 8, h: 2, props: {subtitleStage: true}},
+            {id: "before-timer", type: "timer", x: 1, y: 3, w: 8, h: 3, props: {align: "left"}},
+            {id: "before-facts", type: "facts", x: 1, y: 6, w: 8, h: 2, props: {items: ["teams", "tasks", "start"]}},
+            {id: "before-qr", type: "qr", x: 9, y: 1, w: 4, h: 7, props: {value: "/", caption: t("manage.live.defaultQRCaption")}},
+            organizers("before-organizers"),
+            partners("before-partners"),
+        ]},
+        finished: {grid: {cols: 12, rows: 8}, widgets: [
+            {id: "finished-title", type: "title", x: 1, y: 1, w: 9, h: 1, props: {subtitle: t("manage.live.defaultFinaleSubtitle")}},
+            {id: "finished-timer", type: "timer", x: 10, y: 1, w: 3, h: 1, props: {}},
+            {id: "finished-podium", type: "podium", x: 1, y: 2, w: 12, h: 3, props: {}},
+            {id: "finished-table", type: "table", x: 1, y: 5, w: 12, h: 3, props: {columns: 2, offset: 3, limit: 8, rowsPerPage: 4, showCaption: false}},
+            organizers("finished-organizers"),
+            partners("finished-partners"),
+        ]},
+    },
 };
 
 // 400 code 21122 on publish: the stored draft is invalid (legacy grid below 3×3).
@@ -136,7 +166,13 @@ async function screenRequest<T>(path: string, token: string, schema: z.ZodType<T
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
-export const getLiveScreenByLink = (token: string) => screenRequest("", token, z.object({Event: PublicEventInfoSchema, Layout: liveLayoutSchema}));
+// Stages in the event order: the screen timer counts by them.
+const liveStageSchema = z.object({Name: z.string(), OpensAt: z.string(), ClosesAt: z.string()});
+export const getLiveScreenByLink = (token: string) => screenRequest("", token, z.object({
+    Event: PublicEventInfoSchema, Layout: liveLayoutSchema,
+    Stages: z.array(liveStageSchema),
+}));
+export type LiveScreenByLink = Awaited<ReturnType<typeof getLiveScreenByLink>>;
 export const getLiveScreenResultsByLink = (token: string) => screenRequest("/results", token, resultsSnapshotSchema);
 export function liveScreenResultsStreamURL(token: string, revision: number, refreshSeconds: number): string {
     return screenURL("/results/live", token, {lastEventId: String(revision), pollInterval: String(refreshSeconds)});
