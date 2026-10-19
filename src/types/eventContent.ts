@@ -10,6 +10,12 @@ export const PartnerLogoSchema = z.object({name: z.string(), imageURL: z.string(
 export const PartnerGroupSchema = z.object({title: z.string().optional(), items: z.array(PartnerLogoSchema)});
 export type PartnerGroup = z.infer<typeof PartnerGroupSchema>;
 export type PageBlockType = typeof PageBlockTypes[number];
+export const BlockSpacingValuesSchema = z.object({
+    top: z.number().int().min(0).max(160).optional(),
+    bottom: z.number().int().min(0).max(160).optional(),
+    inline: z.number().int().min(0).max(160).optional(),
+});
+export const BlockSpacingSchema = z.object({desktop: BlockSpacingValuesSchema.optional(), mobile: BlockSpacingValuesSchema.optional()});
 export const ContentBlockSchema = z.object({
     id: z.string(),
     type: z.enum(PageBlockTypes),
@@ -50,6 +56,11 @@ export const ContentBlockSchema = z.object({
     secondaryAction: z.object({label: z.string(), kind: z.enum(["link", "join_event"]).optional(), href: z.string().optional()}).optional(),
     variant: z.string().optional(),
     widthPercent: z.number().int().min(50).max(100).multipleOf(5).optional(),
+    spacing: BlockSpacingSchema.optional(),
+    maxWidth: z.number().int().min(320).max(1920).optional(),
+    contentAlign: z.enum(["start", "center", "end"]).optional(),
+    textColumns: z.union([z.literal(1), z.literal(2)]).optional(),
+    mobileFullWidth: z.boolean().optional(),
     size: z.string().optional(),
     line: z.boolean().optional(),
     openItem: z.number().int().optional(),
@@ -57,6 +68,9 @@ export const ContentBlockSchema = z.object({
     variables: z.array(ContentVariableSchema).optional(),
     dateDisplays: z.record(z.string(), z.record(z.string(), ContentDateDisplaySchema)).optional(),
     visibility: z.array(ContentVisibilitySchema).optional(),
+}).superRefine((block, context) => {
+    if (block.textColumns !== undefined && block.type !== "text") context.addIssue({code: "custom", path: ["textColumns"], message: "Text columns only apply to text blocks"});
+    if (block.mobileFullWidth && block.type !== "banner") context.addIssue({code: "custom", path: ["mobileFullWidth"], message: "Mobile full width only applies to banners"});
 });
 export const ContentDocumentSchema = z.object({blocks: z.array(ContentBlockSchema)}).transform(document => {
     const usedIDs = new Set(document.blocks.map(block => block.id));

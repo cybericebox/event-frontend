@@ -30,6 +30,8 @@ import {fitImage, fitImageMaxSide} from "@/utils/fitImage";
 import {actionWarning, blockDataWarning, type ActionWarning} from "./previewScenario";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 
+import {BlockLayoutControls} from "./BlockLayoutControls";
+
 export {FieldLabel} from "./FieldLabel";
 
 const textHelpKeys: Record<string, string> = {
@@ -589,8 +591,9 @@ export function PageBlockEditor({eventID, coverImage, block, index, count, ancho
                 {fieldIssue("groups")}
                 {canEdit && (block.groups?.length ?? 0) < 10 && <button className="ib-btn ib-btn--sm" type="button" onClick={() => onUpdate(current => ({...current, groups: [...(current.groups ?? []), {title: "", items: []}]}))}><Plus size={15} /> {t("manage.blocks.partners.addGroup")}</button>}
             </>}
+            <BlockLayoutControls block={block} disabled={!canEdit} errors={errors} onUpdate={onUpdate} />
             {block.type === "divider" && <div className="event-content-editor__item">
-                <div className="event-manage-field"><FieldLabel label={t("manage.blocks.divider.spacing")} required help={t("manage.blocks.divider.spacingHelp")} /><EventSelect value={block.size ?? "md"} ariaLabel={t("manage.blocks.divider.spacingAria")} options={[{value: "sm", label: t("manage.blocks.size.small")}, {value: "md", label: t("manage.blocks.size.medium")}, {value: "lg", label: t("manage.blocks.size.large")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, size: value})} /></div>
+            <div className="event-manage-field"><FieldLabel label={t("manage.blocks.divider.spacing")} required help={t("manage.blocks.divider.spacingHelp")} /><EventSelect value={block.size ?? "md"} ariaLabel={t("manage.blocks.divider.spacingAria")} options={[{value: "sm", label: t("manage.blocks.size.small")}, {value: "md", label: t("manage.blocks.size.medium")}, {value: "lg", label: t("manage.blocks.size.large")}]} disabled={!canEdit} onValueChange={value => onUpdate({...block, size: value})} /></div>
                 <div className="event-manage-field"><FieldLabel label={t("manage.blocks.divider.line")} help={t("manage.blocks.divider.lineHelp")} /><EventSwitch className="event-manage-form__switch" checked={!!block.line} disabled={!canEdit} onCheckedChange={checked => onUpdate({...block, line: checked})} ariaLabel={t("manage.blocks.divider.line")} /></div>
             </div>}
             <div className={`event-manage-field${anchorProblem || errorField === "anchor" ? " is-invalid" : ""}`}>

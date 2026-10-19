@@ -52,6 +52,7 @@ import "@/styles/event-manage-brand.css";
 import "@/styles/event-manage-access.css";
 import "@/styles/event-action-toast.css";
 import "@/styles/event-page-builder.css";
+import "@/styles/block-layout.css";
 import "@/styles/rich-text-view.css";
 import "@/styles/event-manage-layout.css";
 import "@/styles/event-page-frame.css";
