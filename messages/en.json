@@ -5097,5 +5097,6 @@
   "manage.blocks.layoutSettings.desktop.bottom": "Bottom spacing — desktop",
   "manage.blocks.layoutSettings.mobile.bottom": "Bottom spacing — mobile",
   "manage.blocks.layoutSettings.desktop.inline": "Side spacing — desktop",
-  "manage.blocks.layoutSettings.mobile.inline": "Side spacing — mobile"
+  "manage.blocks.layoutSettings.mobile.inline": "Side spacing — mobile",
+  "scrollbar.page": "Page scrolling"
 }

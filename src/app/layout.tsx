@@ -57,6 +57,7 @@ import "@/styles/rich-text-view.css";
 import "@/styles/event-manage-layout.css";
 import "@/styles/event-page-frame.css";
 import "@/styles/join-preview.css";
+import "@/styles/page-scrollbar.css";
 import type React from "react";
 import {Analytics} from "@/components/consent/Analytics";
 import {GeistSans} from "geist/font/sans";
@@ -79,6 +80,7 @@ import {commonPageSlug} from "@/utils/commonPagePath";
 import {EventReadSession} from "@/components/event/common/EventReadSession";
 import {apiOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
+import {PageScrollbar} from "@/components/ui/PageScrollbar";
 
 const FALLBACK_TITLE = t("meta.brand");
 
@@ -187,6 +189,7 @@ export default async function RootLayout({
             </EventBrandProvider>
             <EventReadSession hasGrant={hasGrant} expiresAt={expiresAt} serverPath={serverPath} revision={revision} publicEvent={!!event} />
             <EventActionToaster />
+            <PageScrollbar />
         </Providers>
         {/* the consent panel is always mounted («Налаштування файлів cookie»); GA loads only when configured */}
         <Analytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} nonce={nonce} />
