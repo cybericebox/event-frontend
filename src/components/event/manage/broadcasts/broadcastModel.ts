@@ -13,9 +13,15 @@ export function broadcastVariables(): VariableDef[] {
     return broadcastVariableNames.map(name => ({name, description: t(`manage.broadcasts.variable.${name}`), example: t(`manage.broadcasts.sample.${name}`)}));
 }
 
-// Sample values of the variables for the in-app preview (the event name is the real one).
+// Sample values of the variables for the in-app preview: the event's own name and site (this page runs on it), the
+// recipient as a placeholder, like the email preview of the server.
 export function broadcastSampleValues(eventName: string): Record<string, string> {
-    return {...Object.fromEntries(broadcastVariableNames.map(name => [name, t(`manage.broadcasts.sample.${name}`)])), event_name: eventName};
+    const site = typeof window === "undefined" ? null : window.location;
+    return {
+        ...Object.fromEntries(broadcastVariableNames.map(name => [name, t(`manage.broadcasts.sample.${name}`)])),
+        event_name: eventName,
+        ...(site ? {event_url: `${site.origin}/`, user_email: `participant@${site.hostname}`} : {}),
+    };
 }
 
 export type BroadcastDraft = {
