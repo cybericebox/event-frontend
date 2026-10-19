@@ -45,7 +45,7 @@ export function GroupNameDialog({open, mode, initialName, draftID, otherNames, b
     const shownProblem = (touched || name !== initialName ? problem : "") || error;
     return <DialogModal open={open} onClose={() => { if (!busy) onClose(); }} title={t(mode === "create" ? "manage.challenges.groups.createTitle" : "manage.challenges.groups.renameTitle")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={onClose}>{t("common.cancel")}</button>
-            <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" form="group-name-form" disabled={busy} busy={busy}>{t(mode === "create" ? "manage.challenges.groups.create" : "common.save")}</EventButton></>}>
+            <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" form="group-name-form" disabled={busy} busy={busy} busyLabel={t(mode === "create" ? "common.busy.creating" : "common.busy.saving")}>{t(mode === "create" ? "manage.challenges.groups.create" : "common.save")}</EventButton></>}>
         <form id="group-name-form" className="event-manage-field" onSubmit={submit} noValidate>
             <ManageFieldLabel htmlFor="group-name" title={t("manage.challenges.groups.name")} help={t("manage.challenges.groups.nameHelp")} required />
             <input ref={input} id="group-name" className="event-manage-input" value={name} maxLength={groupNameMax} required placeholder={t("manage.exercises.groups.newGroupPlaceholder")}

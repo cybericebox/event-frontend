@@ -9,7 +9,7 @@ import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, ChevronDown, Trash2} from "lucide-react";
 import toast from "react-hot-toast";
-import {toastFailure} from "@/components/ui/toastApiError";
+import {failureText} from "@/components/ui/toastApiError";
 import {createManagePage, deleteManagePage, discardManagePageDraft, editablePage, getManageConfig, getManageContent, getManageContentVariables, getManagePage, getManagePages, ManageApiError, type ManagePage, type ManagePageInput, publishManagePage, saveManagePageDraft} from "@/api/manage";
 import type {ContentDocument} from "@/types/eventContent";
 import {FieldLabel} from "./PageBlockEditor";
@@ -63,6 +63,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const detailsID = useId();
     const [busy, setBusy] = useState<"save" | "publish" | "discard" | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
 
     const existingPages = pages.data ?? [];
     const scoreboardShown = config.data?.ScoreboardVisibility !== 0;
@@ -114,9 +115,12 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         void queryClient.invalidateQueries({queryKey: ["event-navigation-pages", eventID]});
     }
 
-    function failure(error: unknown, fallbackKey: string) {
+    function failureMessage(error: unknown, fallbackKey: string): string {
         const status = error instanceof ManageApiError ? error.status : 0;
-        toastFailure(error, status === 400 ? t("manage.content.page.rejected") : status === 409 ? t("manage.content.page.conflict") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+        return failureText(error, status === 400 ? t("manage.content.page.rejected") : status === 409 ? t("manage.content.page.conflict") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+    }
+    function failure(error: unknown, fallbackKey: string) {
+        toast.error(failureMessage(error, fallbackKey));
     }
 
     // Stores the draft; returns the stored page.
@@ -155,8 +159,9 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         } catch (error) { failure(error, "manage.content.page.publishFailed"); } finally { setBusy(null); }
     }
 
-    async function discardDraft() {
-        if (!canManage || busy || !page.data) return;
+    // Runs from the confirm dialog: the error text stays inside it.
+    async function discardDraft(): Promise<string | null> {
+        if (!canManage || busy || !page.data) return null;
         setBusy("discard");
         try {
             await discardManagePageDraft(eventID, page.data.ID);
@@ -164,12 +169,14 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             setEdited(null);
             toast.success(t("manage.content.page.discarded"));
             if (page.data.Slug !== slug) router.replace(`/manage/content/pages/${page.data.Slug}`);
-        } catch (error) { failure(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
+            return null;
+        } catch (error) { return failureMessage(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
     }
 
     async function remove() {
         if (!page.data || !canManage) return;
         setBusy("discard");
+        setDeleteError("");
         try {
             await deleteManagePage(eventID, page.data.ID);
             await Promise.all([
@@ -179,7 +186,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             toast.success(t("manage.content.page.deleted"));
             router.replace("/manage/content/landing");
         } catch (error) {
-            toastFailure(error, t("manage.content.page.deleteFailed"));
+            setDeleteError(failureText(error, t("manage.content.page.deleteFailed")));
             setBusy(null);
         }
     }
@@ -203,10 +210,10 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     return <div className="event-manage-content">
         <header className="event-manage-heading"><div><h1>{isNew ? t("manage.content.page.new") : draft.Title}</h1><p>{t("manage.content.page.lead")}</p></div><div className="event-manage-heading__actions">{page.data && published ? <EventTooltip content={t("manage.content.page.openTip")}>{tipID => <Link className="ib-btn event-manage-icon-action" href={`/${page.data.Slug}`} target="_blank" aria-label={t("manage.content.page.open")} aria-describedby={tipID}><ArrowUpRight size={17} /></Link>}</EventTooltip> : <EventTooltip content={t("manage.content.page.openDisabledTip")}>{tipID => <button className="ib-btn event-manage-icon-action" type="button" aria-label={t("manage.content.page.open")} aria-describedby={tipID} disabled><ArrowUpRight size={17} /></button>}</EventTooltip>}{!isNew && canManage && <EventTooltip content={t("manage.content.page.deleteTip")}>{tipID => <button className="ib-btn ib-btn--danger event-manage-icon-action" type="button" aria-label={t("manage.content.page.delete")} aria-describedby={tipID} disabled={!!busy} onClick={() => setDeleteOpen(true)}><Trash2 size={17} /></button>}</EventTooltip>}</div></header>
         <DraftBar state={{dirty, hasDraft: !!page.data?.Draft, published}} busy={busy} canManage={canManage} invalid={!!validation}
-            onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={() => void discardDraft()} />
+            onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={discardDraft} />
         <BlockStackEditor editorKey={`${eventID}:${key}`} eventID={eventID} coverImage={event.PreviewPicture ?? ""} document={draft.Document} catalog={catalog} values={values} validation={documentError}
             canEdit={canManage} pageVisibility={draft.Visibility} previewTitle={draft.Title || t("manage.content.page.new")} before={settings} onChange={changeDocument} />
-        <ConfirmDialog open={deleteOpen} onCancel={() => {if (!busy) setDeleteOpen(false);}} tone="danger" busy={!!busy}
+        <ConfirmDialog open={deleteOpen} onCancel={() => {if (!busy) {setDeleteOpen(false); setDeleteError("");}}} tone="danger" busy={!!busy} busyLabel={t("common.busy.deleting")} error={deleteError || undefined}
             title={t("manage.content.page.deleteTitle", {title: page.data?.Title ?? ""})} description={t("manage.content.page.deleteBody")}
             cancelLabel={t("manage.content.page.keep")} confirmLabel={t("manage.content.page.delete")} onConfirm={() => void remove()} />
     </div>;

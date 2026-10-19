@@ -44,7 +44,7 @@ export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mai
             {t("auth.noAccess.body", {email: user.data?.Email ?? ""})}
             {failed && <><br />{t("account.signOutFailed")}</>}
         </>}>
-        <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} busy={working} onClick={() => void switchAccount()}>{t("auth.noAccess.switch")}</EventButton>
+        <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} busy={working} busyLabel={t("common.busy.switching")} onClick={() => void switchAccount()}>{t("auth.noAccess.switch")}</EventButton>
         <a className="ib-link" href={homeHref}>{t("auth.noAccess.home")}</a>
     </ErrorPage>;
 }

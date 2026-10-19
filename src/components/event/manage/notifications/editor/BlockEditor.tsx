@@ -231,8 +231,8 @@ export function BlockEditor({ value, onChange, variables, presets, onUploadImage
                       e.target.value = "";
                       if (file) void handleImageUpload(stableKey, file);
                     }} />
-                  <EventButton className="ib-btn ib-btn--sm" busy={uploadState[stableKey]?.uploading} disabled={disabled} onClick={() => fileInputRefs.current[stableKey]?.click()}>
-                    {!uploadState[stableKey]?.uploading && <Upload className="h-3.5 w-3.5" />}
+                  <EventButton className="ib-btn ib-btn--sm" busy={!!uploadState[stableKey]?.uploading} busyLabel={t("common.busy.uploading")} disabled={disabled} onClick={() => fileInputRefs.current[stableKey]?.click()}>
+                    <Upload className="h-3.5 w-3.5" />
                     {t("manage.tpl.editor.uploadImage")}
                   </EventButton>
                   {(block as ImageBlock).file_id && (

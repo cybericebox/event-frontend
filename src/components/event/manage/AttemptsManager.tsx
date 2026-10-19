@@ -203,7 +203,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
         <PeriodFilters from={filters.from} to={filters.to} onChange={changeFilters} />
         {filtered && <button className="ib-btn ib-btn--sm" type="button" onClick={() => changeFilters(emptyAttemptFilters)}>{t("manage.attempts.filter.reset")}</button>}
         <div className="event-journal__actions">
-            {canManage && <EventButton className="ib-btn ib-btn--sm" type="button" disabled={exporting} onClick={() => void exportCSV()} busy={exporting}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>}
+            {canManage && <EventButton className="ib-btn ib-btn--sm" type="button" disabled={exporting} onClick={() => void exportCSV()} busy={exporting} busyLabel={t("common.busy.downloading")}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>}
         </div>
     </>;
 
@@ -245,12 +245,12 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
                 {canManage && <form className="event-attempts-manager__review" onSubmit={save}>
                     <label className="event-manage-field">{t("manage.attempts.decision")}<EventSelect ariaLabel={t("manage.attempts.decisionLabel")} value={decision} options={[{value: "automatic", label: t("manage.attempts.automaticCheck")}, {value: "accepted", label: t("manage.attempts.accept")}, {value: "rejected", label: t("manage.attempts.reject")}]} onValueChange={value => setDraft({id: selected.ID, decision: value as AttemptDecision, reason: value === selected.Decision ? selected.DecisionReason ?? "" : ""})} /></label>
                     <label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={reason} onChange={changeEvent => setDraft({id: selected.ID, decision, reason: changeEvent.target.value})} placeholder={t("manage.attempts.reasonPlaceholder")} maxLength={1000} /></label>
-                    <div className="event-manage-section__actions"><EventButton saveDirty={changed} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !reason.trim()} busy={saving}>{t("manage.attempts.saveDecision")}</EventButton></div>
+                    <div className="event-manage-section__actions"><EventButton saveDirty={changed} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !reason.trim()} busy={saving} busyLabel={t("common.busy.saving")}>{t("manage.attempts.saveDecision")}</EventButton></div>
                 </form>}
                 {canManage && selected.Correct && <div className="event-attempts-manager__annul"><div><strong>{t("manage.attempts.annul.title")}</strong><p>{teamMode ? t("manage.attempts.annul.hintTeam") : t("manage.attempts.annul.hintParticipant")}</p></div><button className="ib-btn ib-btn--danger" type="button" onClick={() => setAnnul({attempt: selected, reason: ""})}>{t("manage.attempts.annul.confirm")}</button></div>}
             </div>}
         </DialogModal>
-        <ConfirmDialog open={!!annul} onCancel={() => setAnnul(null)} tone="danger" busy={annulling} disabled={!annul?.reason.trim()} error={annul?.error}
+        <ConfirmDialog open={!!annul} onCancel={() => setAnnul(null)} tone="danger" busy={annulling} busyLabel={t("common.busy.annulling")} disabled={!annul?.reason.trim()} error={annul?.error}
             title={t("manage.attempts.annul.dialogTitle")} description={annul ? t("manage.attempts.annul.description", {challenge: annul.attempt.ChallengeName || t("manage.attempts.challenge"), name: teamMode ? annul.attempt.TeamName : annul.attempt.ParticipantName}) : undefined}
             confirmLabel={t("manage.attempts.annul.confirm")} onConfirm={() => void confirmAnnul()}>
             <label className="event-manage-field">{t("manage.attempts.reason")}<textarea className="event-manage-input" value={annul?.reason ?? ""} onChange={changeEvent => setAnnul(current => current && {...current, reason: changeEvent.target.value})} placeholder={t("manage.attempts.annul.reasonPlaceholder")} maxLength={1000} disabled={annulling} required /></label>

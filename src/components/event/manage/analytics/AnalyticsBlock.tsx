@@ -8,6 +8,7 @@ import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import {analyticsTableExportPath, type CommunicationsTable, type ParticipantsTable} from "@/api/manageAnalyticsPeople";
 import type {AnalyticsPeriod} from "@/api/manageAnalytics";
 import {EventButton} from "@/components/ui/EventButton";
+import {useCanExport} from "@/components/event/manage/managerContext";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import "./analytics.css";
@@ -27,7 +28,7 @@ export function AnalyticsBlock({title, subtitle, hint, actions, className = "", 
         <div className="event-analytics__block-head">
             <div className="event-analytics-people__title">
                 <h2>{title}</h2>
-                <EventTooltip content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
+                <EventTooltip help content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
                 {subtitle && <p>{subtitle}</p>}
             </div>
             {actions && <div className="event-analytics-people__actions">{actions}</div>}
@@ -44,6 +45,7 @@ export function AnalyticsTableExport({eventID, section, table, period, disabled 
     period: AnalyticsPeriod;
     disabled?: boolean;
 }) {
+    const canExport = useCanExport();
     const [busy, setBusy] = useState(false);
     async function download() {
         setBusy(true);
@@ -51,5 +53,6 @@ export function AnalyticsTableExport({eventID, section, table, period, disabled 
         catch (failure) {toastFailure(failure, t("manage.analytics.exportFailed"));}
         finally {setBusy(false);}
     }
-    return <EventButton className="ib-btn ib-btn--sm" type="button" disabled={disabled || busy} busy={busy} onClick={() => void download()}><Download size={14} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;
+    if (!canExport) return null;
+    return <EventButton className="ib-btn ib-btn--sm" type="button" disabled={disabled || busy} busy={busy} busyLabel={t("common.busy.downloading")} onClick={() => void download()}><Download size={14} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;
 }

@@ -18,7 +18,7 @@ function RegenerateLinkDialog({open, onClose, onRegenerate}: {open: boolean; onC
     const [expiry, setExpiry] = useState<JoinLinkExpiry>("none");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
-    return <ConfirmDialog open={open} onCancel={() => { if (!busy) { setError(""); onClose(); } }} busy={busy} error={error}
+    return <ConfirmDialog open={open} onCancel={() => { if (!busy) { setError(""); onClose(); } }} busy={busy} busyLabel={t("common.busy.regenerating")} error={error}
         title={t("participation.team.link.regenerateTitle")} description={t("participation.team.link.regenerateText")} confirmLabel={t("participation.team.link.regenerate")}
         onConfirm={async () => {
             setBusy(true);

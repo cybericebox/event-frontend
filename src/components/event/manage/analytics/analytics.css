@@ -1,5 +1,6 @@
 /* Event analytics: the shared frame, counters, chart and feed blocks. */
-.event-analytics{display:grid;gap:var(--ib-5);align-content:start}
+.event-analytics{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--ib-5);align-content:start}
+.event-analytics>*{min-width:0}
 .event-analytics>.event-manage-heading{margin-bottom:0}
 .event-analytics__filter{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--ib-3)}
 .event-analytics-period{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--ib-3)}

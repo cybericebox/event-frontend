@@ -144,7 +144,7 @@ export function RegistrySecretsPanel() {
                         {checkError?.id === secret.ID && <small className="event-manage-feedback event-manage-feedback--error" role="alert">{checkError.message}</small>}
                     </div>
                     {canManage && <div className="event-registry-list__actions">
-                        <EventButton className="ib-btn ib-btn--sm" type="button" busy={checking.has(secret.ID)} onClick={() => void check(secret.ID, true)}>{t("manage.registries.check.now")}</EventButton>
+                        <EventButton className="ib-btn ib-btn--sm" type="button" busy={checking.has(secret.ID)} busyLabel={t("common.busy.checking")} onClick={() => void check(secret.ID, true)}>{t("manage.registries.check.now")}</EventButton>
                         <button className="ib-btn ib-btn--sm" type="button" onClick={() => open(secret)}>{t("common.edit")}</button>
                         <button className="ib-btn ib-btn--sm ib-btn--ghost" type="button" onClick={() => {setRemovalError(""); setRemoval(secret); setLastRemoval(secret);}}>{t("manage.registries.delete")}</button>
                     </div>}
@@ -181,11 +181,11 @@ export function RegistrySecretsPanel() {
             {saveError && !saveError.token && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{saveError.message}</p>}
             <div className="event-manage-section__actions">
                 <button className="ib-btn" type="button" onClick={() => setEditing(null)}>{t("common.cancel")}</button>
-                <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || invalid} busy={saving}>{t("common.save")}</EventButton>
+                <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={saving || invalid} busy={saving} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton>
             </div>
         </form>}
 
-        <ConfirmDialog open={!!removal} onCancel={() => setRemoval(null)} tone="danger" busy={removing} error={removalError}
+        <ConfirmDialog open={!!removal} onCancel={() => setRemoval(null)} tone="danger" busy={removing} busyLabel={t("common.busy.deleting")} error={removalError}
             title={t("manage.registries.deleteTitle", {host: (removal ?? lastRemoval)?.Host ?? ""})} description={t("manage.registries.deleteDescription")}
             subject={(removal ?? lastRemoval) ? [(removal ?? lastRemoval)!.RepositoryPrefix, (removal ?? lastRemoval)!.Username].filter(Boolean).join(" · ") : undefined}
             confirmLabel={t("manage.registries.delete")} onConfirm={() => void remove()} />

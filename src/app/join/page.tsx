@@ -109,7 +109,7 @@ export default function JoinPage() {
             : <form ref={formRef} className="ib-form" noValidate onSubmit={event => {event.preventDefault(); void submit();}}>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} />}
                 {error && <p className="ib-form__error" role="alert">{error}</p>}
-                <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working}>{t("shell.join.action")}</EventButton>
+                <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working} busyLabel={t("common.busy.joining")}>{t("shell.join.action")}</EventButton>
             </form>}
     </JoinDialog>;
 }

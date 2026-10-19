@@ -95,7 +95,7 @@ function OutageOverlay({onCheck}: {onCheck: () => Promise<void>}) {
             <h2 className="ib-service-down__title" id={titleId}>{t("shell.unavailable.title")}</h2>
             <p className="ib-service-down__text" id={textId}>{t("shell.unavailable.body")}</p>
             <p className="ib-service-down__status" role="status" aria-live="polite">{checking ? t("shell.unavailable.checking") : t("shell.unavailable.nextTry", {seconds})}</p>
-            <EventButton className="ib-btn ib-btn--block" busy={checking} onClick={() => void check()}>{t("shell.unavailable.retryNow")}</EventButton>
+            <EventButton className="ib-btn ib-btn--block" busy={checking} busyLabel={t("common.busy.checking")} onClick={() => void check()}>{t("shell.unavailable.retryNow")}</EventButton>
         </div>
     </div>;
 }

@@ -13,7 +13,7 @@ function setup(props: Partial<Parameters<typeof ConfirmDialog>[0]> = {}) {
     const onCancel = vi.fn();
     const onConfirm = vi.fn();
     render(<ConfirmDialog open title="Delete the team?" description="All results will be lost." subject="Frost Byte"
-        confirmLabel="Delete" tone="danger" onCancel={onCancel} onConfirm={onConfirm} {...props} />);
+        confirmLabel="Delete" busyLabel="Deleting…" tone="danger" onCancel={onCancel} onConfirm={onConfirm} {...props} />);
     return {onCancel, onConfirm};
 }
 
@@ -42,11 +42,11 @@ describe("ConfirmDialog", () => {
         document.removeEventListener("keydown", parent, true);
     });
 
-    it("stays open while busy, shows the busy mark and an inline error", () => {
+    it("stays open while busy, shows the busy mark with the running operation and an inline error", () => {
         const {onCancel} = setup({busy: true, error: "Failed"});
-        const action = screen.getByRole("button", {name: /Delete/});
-        expect(action.getAttribute("aria-busy")).toBe("true");
-        expect(action.querySelector(".ib-busy-mark")).not.toBeNull();
+        const action = screen.getByRole("button", {name: "Deleting…"});
+        expect(action).toHaveProperty("disabled", true);
+        expect(action.querySelector("img.ib-busy-mark")).not.toBeNull();
         expect(screen.getByRole("alert").textContent).toBe("Failed");
         fireEvent.keyDown(document.body, {key: "Escape"});
         expect(onCancel).not.toHaveBeenCalled();

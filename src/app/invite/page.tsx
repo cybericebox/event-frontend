@@ -118,9 +118,9 @@ export default function InvitePage() {
                 <p>{invitation.InvitedTeamName ? t("invite.acceptHintTeam") : t("invite.acceptHint")}</p>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} idPrefix="invite" locked={locked} errors={fieldErrors} />}
                 {error && <p className="ib-form__error" role="alert">{error}</p>}
-                <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="submit" busy={working}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => {setDeclineError(""); setDeclining(true);}}>{t("invite.decline")}</button></div>
+                <div className="event-join-actions"><EventButton className="ib-btn ib-btn--primary" type="submit" busy={working} busyLabel={t("common.busy.accepting")}>{t("invite.accept")}</EventButton><button className="ib-btn" type="button" disabled={working} onClick={() => {setDeclineError(""); setDeclining(true);}}>{t("invite.decline")}</button></div>
                 <ConfirmDialog open={declining} onCancel={() => setDeclining(false)} tone="danger" busy={working} error={declineError}
-                    title={t("invite.declineTitle")} description={t("invite.declineBody")} confirmLabel={t("invite.decline")} onConfirm={() => void decline()} />
+                    title={t("invite.declineTitle")} description={t("invite.declineBody")} confirmLabel={t("invite.decline")} busyLabel={t("common.busy.declining")} onConfirm={() => void decline()} />
             </form>}
     </JoinDialog>;
 }

@@ -147,7 +147,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         <ul className="event-cmodal__hints">{challenge.Hints.map((original, index) => {const hint = localHints[original.ID] ?? original; return <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
                 <span className="event-cmodal__hint-title">{moderatorPresentation ? t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)}) : t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
-                {!moderatorPresentation && !hint.Unlocked && !closed && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
+                {!moderatorPresentation && !hint.Unlocked && !closed && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID} busyLabel={t("common.busy.unlocking")}
                     onClick={() => {if (hintNeedsConfirm(hint)) {setConfirmError(""); setConfirm({hint, index});} else void unlock(hint);}}>{t("challenges.hints.unlock")}</EventButton>}
             </div>
             {hint.Content && <HintText text={hint.Content} />}
@@ -158,7 +158,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         <ConfirmDialog open={!!confirm} onCancel={() => setConfirm(null)} busy={!!busyID} error={confirmError}
             title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
             description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
-            confirmLabel={t("challenges.hints.confirm")} onConfirm={() => confirm && void unlock(confirm.hint)}>
+            confirmLabel={t("challenges.hints.confirm")} busyLabel={t("common.busy.unlocking")} onConfirm={() => confirm && void unlock(confirm.hint)}>
             <p className="ib-cmodal__hint">{t("challenges.hints.teamSees")}</p>
         </ConfirmDialog>
     </section>;
@@ -449,7 +449,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 </section>}
                 {isPreview && challenge.Infrastructure && !previewRunStarted && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.lab.environment")}</h3>
-                    {challenge.PreviewCanStart === true ? <EventButton className="ib-btn ib-btn--primary" busy={starting} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
+                    {challenge.PreviewCanStart === true ? <EventButton className="ib-btn ib-btn--primary" busy={starting} busyLabel={t("common.busy.starting")} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
                     {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? apiErrorMessage(startError.code, t("participantPreview.lab.startFailed")) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
                 </section>}
                 {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn && !preview.active ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
@@ -464,7 +464,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                         <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
                             aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer} disabled={exhausted}
                             onChange={event => { setAnswer(event.target.value); if (message?.tone === "error" || message?.retry) setMessage(null); if (moderators) setAccepted(false); }} />
-                        <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy}>{t("challenges.modal.submit")}</EventButton>
+                        <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy} busyLabel={t("common.busy.checking")}>{t("challenges.modal.submit")}</EventButton>
                     </div>
                     {/* While waiting, the visible countdown ticks silently; one status announces the full wait once. */}
                     <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role={waiting ? undefined : "alert"}>

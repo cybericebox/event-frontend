@@ -41,7 +41,7 @@ export function TeamConfirmPrompt({eventID}: {eventID: string}) {
     };
     return <>
         <EventBanner tone="warning" title={t("participation.team.confirmPrompt")} message={reason || t("participation.team.confirmWarning")}
-            action={form.Allowed ? <EventButton className="ib-btn ib-btn--sm ib-btn--primary" onClick={() => setConfirm({title: t("participation.team.formTitle"), text: t("participation.team.formText"), action: t("participation.team.formAction"), run: confirmRoster})}>{t("participation.team.form")}</EventButton> : undefined} />
+            action={form.Allowed ? <EventButton className="ib-btn ib-btn--sm ib-btn--primary" onClick={() => setConfirm({title: t("participation.team.formTitle"), text: t("participation.team.formText"), action: t("participation.team.formAction"), busy: t("common.busy.approving"), run: confirmRoster})}>{t("participation.team.form")}</EventButton> : undefined} />
         <TeamConfirm confirm={confirm} onClose={() => setConfirm(null)} />
     </>;
 }

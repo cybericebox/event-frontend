@@ -29,6 +29,9 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 
 /* Nested grids and toolbars shrink inside the page; tables retain local scrolling. */
 .event-manage-shell .ib-admin-shell__scroll>*{min-width:0}
+/* A grid or flex item never grows to its widest table or chart: an «auto» track would take the content's min-content
+   width and push the toolbar and the page past the screen (participants, analytics). Wide content scrolls in its own box. */
+.event-manage-shell .ib-admin-shell__scroll :is(.ib-tabpanel,[role="tabpanel"],.event-manage-section){min-width:0}
 .event-manage-shell :is(.event-manage-heading,.event-manage-heading__actions){min-width:0;flex-wrap:wrap}
 .event-manage-shell .event-manage-heading>div{min-width:0;overflow-wrap:anywhere}
 
@@ -36,3 +39,26 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .event-resource-plan__scroll{min-width:0;overflow:auto}
 .event-resource-plan__scroll:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
 .event-resource-plan__scroll>.event-resource-plan__table{min-width:520px}
+
+/* Top bar: the account menu and the bell always stay on screen. The last crumb gives way first (ellipsis); below the
+   desktop width the setup chip keeps only «8/9» and «Тестувати як учасник» only its icon (the label stays its
+   accessible name), so the crumb keeps room next to the sidebar on a tablet. */
+.event-manage-shell .ib-topbar__crumbs{flex:1 1 auto;min-width:0;overflow:hidden}
+.event-manage-shell .ib-topbar__actions{min-width:0}
+.event-manage-shell .ib-topbar__actions>*{flex:none}
+.event-setup-chip__count{display:none}
+@container ib-admin-shell (max-width: 1023px){
+  .event-manage-shell .event-setup-chip__label{display:none}
+  .event-manage-shell .event-setup-chip__count{display:inline}
+  .event-manage-shell .event-preview-entry{width:var(--ib-control-h);padding:0}
+  .event-manage-shell .event-preview-entry__label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+/* Phone menu (AGENTS.md «Mobile menu»): the drawer and its backdrop open under the top bar, which stays in place with
+   its menu button turned into «close»; the page behind never scrolls. */
+@container ib-admin-shell (max-width: 767px){
+  .event-manage-shell .ib-admin-side{top:var(--ib-topbar-h)}
+  .event-manage-shell.is-drawer-open .ib-admin-shell__backdrop{top:var(--ib-topbar-h)}
+  .event-manage-shell .ib-admin-side__nav{overscroll-behavior:contain}
+  .event-manage-shell .ib-admin-side__close{display:none}
+}
+html:has(.event-manage-shell.is-drawer-open){overflow:hidden}

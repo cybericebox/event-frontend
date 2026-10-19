@@ -168,7 +168,7 @@ export function MailSettingsPanel() {
             </div>
             <small>{t("manage.mail.identity.inheritHint")}</small>
             {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
-            {canManage && <div className="event-manage-section__actions"><EventButton saveDirty={identityDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity}>{t("common.save")}</EventButton></div>}
+            {canManage && <div className="event-manage-section__actions"><EventButton saveDirty={identityDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>}
         </form>
 
         <form className="event-manage-section" onSubmit={saveSMTP} aria-labelledby="mail-smtp-title">
@@ -222,12 +222,12 @@ export function MailSettingsPanel() {
             </div>}
             {canManage && <div className="event-manage-section__actions event-manage-mail__actions">
                 {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => {setResetError(""); setConfirmReset(true);}}>{t("manage.mail.smtp.usePlatform")}</button>}
-                <EventButton className="ib-btn" type="button" disabled={disabled || busy.test || !canTest} onClick={() => void runTest()} busy={busy.test}>{t("manage.mail.smtp.test")}</EventButton>
-                <EventButton saveDirty={smtpDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.smtp || !smtpDirty || !!smtpValidation} busy={busy.smtp}>{t("common.save")}</EventButton>
+                <EventButton className="ib-btn" type="button" disabled={disabled || busy.test || !canTest} onClick={() => void runTest()} busy={busy.test} busyLabel={t("common.busy.checking")}>{t("manage.mail.smtp.test")}</EventButton>
+                <EventButton saveDirty={smtpDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.smtp || !smtpDirty || !!smtpValidation} busy={busy.smtp} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton>
             </div>}
         </form>
 
-        <ConfirmDialog open={confirmReset} onCancel={() => setConfirmReset(false)} tone="danger" busy={busy.reset} error={resetError}
+        <ConfirmDialog open={confirmReset} onCancel={() => setConfirmReset(false)} tone="danger" busy={busy.reset} busyLabel={t("common.busy.restoring")} error={resetError}
             title={t("manage.mail.smtp.resetTitle")} description={t("manage.mail.smtp.resetDescription")}
             confirmLabel={t("manage.mail.smtp.switch")} onConfirm={() => void resetSMTP()}>
             <p className="event-manage-mail__hint">{t("manage.mail.smtp.resetHint")}</p>

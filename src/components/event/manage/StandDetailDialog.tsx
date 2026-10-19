@@ -107,7 +107,7 @@ function DeviceRow({eventID, teamID, challengeID, device, canManage, target}: {e
             </div>}
             {rescue && <p className="event-manage-notice" role="status">{t("lab.live.rescueBanner")}</p>}
         </div>}
-        <ConfirmDialog open={resetTarget === target && canManage} tone="danger" busy={resetting} error={resetError} title={t("lab.live.resetTitle")} description={t("lab.live.resetDescription")}
+        <ConfirmDialog open={resetTarget === target && canManage} tone="danger" busy={resetting} busyLabel={t("common.busy.resetting")} error={resetError} title={t("lab.live.resetTitle")} description={t("lab.live.resetDescription")}
             confirmLabel={t("lab.live.reset")} onCancel={() => setResetTarget(null)} onConfirm={() => void reset()} />
     </li>;
 }

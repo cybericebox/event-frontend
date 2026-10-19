@@ -46,7 +46,7 @@ export function OverviewCard({event, title, subtitle, hint, link, state, loading
     return <section className={`event-analytics__block event-analytics-card${className ? ` ${className}` : ""}`} aria-label={title}>
         <div className="event-analytics__block-head">
             <div>
-                <h2>{title}{hint && <EventTooltip content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>}</h2>
+                <h2>{title}{hint && <EventTooltip help content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>}</h2>
                 {subtitle && <p>{subtitle}</p>}
             </div>
             {link && <Link className="event-analytics-card__link" href={link.href}>{link.label}<ArrowRight size={14} aria-hidden="true" /></Link>}

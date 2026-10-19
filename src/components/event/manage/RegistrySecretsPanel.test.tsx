@@ -246,8 +246,9 @@ describe("Реєстри образів заходу", () => {
             await screen.findByText("ghcr.io");
             const buttons = screen.getAllByRole("button", {name: /Перевірити зараз/});
             fireEvent.click(buttons[0]);
-            await waitFor(() => expect((screen.getAllByRole("button", {name: /Перевірити зараз/})[0] as HTMLButtonElement).disabled).toBe(true));
-            expect((screen.getAllByRole("button", {name: /Перевірити зараз/})[1] as HTMLButtonElement).disabled).toBe(false);
+            await waitFor(() => expect((screen.getByRole("button", {name: "Перевіряємо…"}) as HTMLButtonElement).disabled).toBe(true));
+            expect(screen.getAllByRole("button", {name: /Перевірити зараз/})).toHaveLength(1);
+            expect((screen.getByRole("button", {name: /Перевірити зараз/}) as HTMLButtonElement).disabled).toBe(false);
             expect((screen.getAllByRole("button", {name: "Редагувати"})[0] as HTMLButtonElement).disabled).toBe(false);
             release();
             expect(await screen.findByText(/не працює: реєстр відхилив токен/)).toBeTruthy();

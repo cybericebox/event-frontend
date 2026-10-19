@@ -181,7 +181,7 @@ export function BannersManager() {
         ? <button className="ib-btn ib-btn--primary" type="button" onClick={() => {setError(""); setServerErrors(null); setEditing({banner: null, form: emptyBannerForm()});}}><Plus size={15} aria-hidden="true" /> {t("manage.banners.create")}</button>
         : <span className="event-broadcast-heading-actions">
             <button className="ib-btn ib-btn--primary" type="button" disabled><Plus size={15} aria-hidden="true" /> {t("manage.banners.create")}</button>
-            <EventTooltip content={t("manage.banners.viewerCannotEdit")}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.banners.viewerCannotEditLabel")} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
+            <EventTooltip help content={t("manage.banners.viewerCannotEdit")}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.banners.viewerCannotEditLabel")} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
         </span>;
 
     return <div className="event-manage-settings">
@@ -206,7 +206,7 @@ export function BannersManager() {
         <DialogModal open={editing !== null} onClose={() => {if (!busy) setEditing(null);}} size="md" title={editing?.banner ? t("manage.banners.editTitle") : t("manage.banners.createTitle")}
             footer={<>
                 <button className="ib-btn" type="button" disabled={busy} onClick={() => setEditing(null)}>{t("common.cancel")}</button>
-                <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" busy={busy} disabled={!!validation} onClick={() => void save()}>{t("common.save")}</EventButton>
+                <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" busy={busy} busyLabel={t("common.busy.saving")} disabled={!!validation} onClick={() => void save()}>{t("common.save")}</EventButton>
             </>}>
             {editing && <>
                 <BannerFormFields form={editing.form} errors={fieldErrors} disabled={!canManage} onChange={form => setEditing({...editing, form})} />
@@ -214,6 +214,6 @@ export function BannersManager() {
             </>}
         </DialogModal>
         <ConfirmDialog open={removing !== null} onCancel={() => setRemoving(null)} tone="danger" title={t("manage.banners.deleteTitle")} description={t("manage.banners.deleteBody")}
-            subject={removing?.Text} confirmLabel={t("manage.banners.delete")} busy={busy} error={removing ? error || undefined : undefined} onConfirm={() => void remove()} />
+            subject={removing?.Text} confirmLabel={t("manage.banners.delete")} busy={busy} busyLabel={t("common.busy.deleting")} error={removing ? error || undefined : undefined} onConfirm={() => void remove()} />
     </div>;
 }

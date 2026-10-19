@@ -48,7 +48,7 @@ export function AnalyticsFunnels({funnels}: {funnels: Funnels}) {
         {funnelCards(funnels).map(card => <div key={card.key} className="event-analytics-stat event-analytics-funnel" data-testid={`funnel-${card.key}`}>
             <div className="event-analytics-stat__label">
                 <span>{card.title}</span>
-                <EventTooltip content={card.hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: card.title})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
+                <EventTooltip help content={card.hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: card.title})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
             </div>
             <strong className="event-analytics-stat__value">{formatRate(card.rate)}</strong>
             <dl className="event-analytics-funnel__stages">

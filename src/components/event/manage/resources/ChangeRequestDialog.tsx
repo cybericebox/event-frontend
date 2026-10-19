@@ -51,7 +51,7 @@ export function ChangeRequestDialog({eventID, allocated, to, open, onClose, onSe
 
     return <ManageDialog open={open} onOpenChange={next => {if (!next) close();}} size="md" onSubmit={submit} title={t("manage.resources.request.title")} description={t("manage.resources.request.description")}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
-            <EventButton className="ib-btn ib-btn--primary" type="submit" busy={busy} disabled={busy}>{t("manage.resources.request.send")}</EventButton></>}>
+            <EventButton className="ib-btn ib-btn--primary" type="submit" busy={busy} busyLabel={t("common.busy.sending")} disabled={busy}>{t("manage.resources.request.send")}</EventButton></>}>
         <div className="event-resources-form">
             <div className="event-manage-field">
                 <label htmlFor="resources-extra">{t("manage.resources.request.extra")}</label>

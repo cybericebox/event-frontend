@@ -153,3 +153,17 @@ it("closes and unlocks the page when resized to desktop navigation", async () =>
     await waitFor(() => expect(document.getElementById("event-menu")).toBeNull());
     expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
 });
+
+it("gives focus back to the menu button without scrolling the page to the top", async () => {
+    view({pages: [publicPage]});
+    const toggle = screen.getByRole("button", {name: "Відкрити меню"});
+    fireEvent.click(toggle);
+    await waitFor(() => expect(document.getElementById("event-menu")).not.toBeNull());
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
+    fireEvent.keyDown(document, {key: "Escape"});
+    await waitFor(() => expect(document.activeElement).toBe(toggle));
+    const calls = focus.mock.contexts.map((element, index) => [element, focus.mock.calls[index][0]] as const).filter(([element]) => element === toggle);
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.every(([, options]) => (options as FocusOptions | undefined)?.preventScroll === true)).toBe(true);
+    focus.mockRestore();
+});

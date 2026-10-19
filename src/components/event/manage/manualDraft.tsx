@@ -244,5 +244,5 @@ export function ManualDraftProvider({userID, eventID, children}: {userID: string
         clearPage();
         const action = pending; setPending(null); action?.();
     };
-    return <DraftContext.Provider value={context}>{children}<ConfirmDialog open={pending !== null} title={t("manage.unsaved.title")} description={t("manage.unsaved.description")} confirmLabel={t("manage.unsaved.discard")} tone="danger" onCancel={() => setPending(null)} onConfirm={discard} /></DraftContext.Provider>;
+    return <DraftContext.Provider value={context}>{children}<ConfirmDialog open={pending !== null} title={t("manage.unsaved.title")} description={t("manage.unsaved.description")} confirmLabel={t("manage.unsaved.discard")} busyLabel={t("common.busy.discarding")} tone="danger" onCancel={() => setPending(null)} onConfirm={discard} /></DraftContext.Provider>;
 }

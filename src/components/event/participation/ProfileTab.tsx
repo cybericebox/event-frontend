@@ -60,7 +60,7 @@ function PseudonymEditor({info, eventID}: {info: ParticipantEventInfo; eventID: 
     };
     if (editing) return <form className="event-pp-rename" onSubmit={event => { event.preventDefault(); void save(value.trim() || null); }}>
         <div className="ib-field"><input className="ib-input" aria-invalid={!!fieldError || undefined} aria-describedby={fieldError ? "participant-pseudonym-error" : undefined} value={value} onChange={event => {setFieldError(""); setValue((event.target.value.trim() || null) === (info.Pseudonym?.trim() || null) ? null : event.target.value);}} maxLength={32} minLength={2} aria-label={t("participation.pseudonym.label")} autoFocus />{fieldError && <p className="ib-field__error" id="participant-pseudonym-error" role="alert">{fieldError}</p>}</div>
-        <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary ib-btn--sm" busy={busy}>{t("common.save")}</EventButton>
+        <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary ib-btn--sm" busy={busy} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton>
         <button type="button" className="ib-btn ib-btn--sm" disabled={busy} onClick={() => setEditing(false)}>{t("common.cancel")}</button>
     </form>;
     return <div className="event-pp-rename">
