@@ -11,10 +11,10 @@ export type MemberRow = {member: TeamMember; stats: ParticipationMember | undefi
 
 // The roster joined with each member's results; members with points first, invitees who have not accepted yet last.
 export function memberRows(roster: readonly TeamMember[], stats: readonly ParticipationMember[]): MemberRow[] {
-    const byUser = new Map(stats.map(item => [item.UserID, item]));
+    const byUser = new Map(stats.filter(item => item.UserID).map(item => [item.UserID, item]));
     // A member gets the others without account ids: their results are matched by the name instead.
     const byName = new Map(stats.map(item => [item.Name, item]));
-    return roster.map(member => ({member, stats: member.UserID ? byUser.get(member.UserID) : member.Pending ? undefined : byName.get(member.DisplayName)}))
+    return roster.map(member => ({member, stats: member.Pending ? undefined : (member.UserID && byUser.get(member.UserID)) || byName.get(member.DisplayName)}))
         .sort((a, b) => Number(a.member.Pending) - Number(b.member.Pending) || (b.stats?.Points ?? 0) - (a.stats?.Points ?? 0) || a.member.DisplayName.localeCompare(b.member.DisplayName, "uk"));
 }
 

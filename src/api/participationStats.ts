@@ -15,7 +15,8 @@ const solveSchema = z.object({
     SolvedByName: z.string().default(""), FirstBlood: z.boolean().default(false),
 });
 const memberSchema = z.object({
-    UserID: z.string(), Name: z.string(), Role: z.number().int(), JoinedAt: z.string(),
+    // Other members' ids come to the captain only; for a member they are "" (results are matched by name).
+    UserID: z.string().optional().transform(value => value ?? ""), Name: z.string(), Role: z.number().int(), JoinedAt: z.string(),
     Points: z.number().int(), Solves: z.number().int(), FirstBloods: z.number().int(),
     Attempts: z.number().int(), CorrectAttempts: z.number().int(), Hints: z.number().int(),
 });

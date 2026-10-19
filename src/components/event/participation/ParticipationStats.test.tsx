@@ -199,6 +199,8 @@ it("shows a member the teammates' results although the roster comes without thei
     window.history.replaceState(null, "", "/participation?tab=team");
     state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member)};
     state.members = [{...member(ME, "Олена", TeamRole.Captain, false), UserID: ""}, member(MATE, "Іван", TeamRole.Member, true)];
+    // The stats come the same way: the other member without an id.
+    state.stats = stats({Team: {...stats().Team, Members: [{...stats().Team.Members[0], UserID: undefined as unknown as string}, stats().Team.Members[1]]}});
     view();
     const card = await screen.findByRole("region", {name: "Учасники"});
     const row = (await within(card).findByText("Олена", {selector: "td"})).closest("tr")!;
