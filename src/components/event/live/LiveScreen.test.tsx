@@ -103,3 +103,46 @@ describe("live screen of a moderator who lost access", () => {
         expect(api.results).toHaveBeenCalledTimes(1);
     });
 });
+
+describe("live screen scenes", () => {
+    const starting = {...event, StartTime: new Date(now + 90_000).toISOString(), FinishTime: new Date(now + 3600_000).toISOString()} as PublicEventInfo;
+    const mountAt = (on: PublicEventInfo) => {
+        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        render(<QueryClientProvider client={client}><LiveScreen event={on} /></QueryClientProvider>);
+    };
+
+    it("switches by itself: before the start → the board at the start → the results after the finish", async () => {
+        api.results.mockResolvedValue(board(false));
+        const short = {...starting, FinishTime: new Date(now + 180_000).toISOString()} as PublicEventInfo;
+        mountAt(short);
+        await advance(1000);
+        expect(document.querySelector(".live-widget--facts")).not.toBeNull();
+        expect(document.querySelector(".live-widget--chart")).toBeNull();
+        await advance(90_000);
+        expect(document.querySelector(".live-widget--chart")).not.toBeNull();
+        expect(document.querySelector(".live-widget--facts")).toBeNull();
+        await advance(90_000);
+        expect(document.querySelector(".live-widget--podium")).not.toBeNull();
+    });
+
+    it("shows the frozen scene while the results are frozen, the board without one", async () => {
+        api.results.mockResolvedValue(board(true));
+        api.layout.mockResolvedValue({...defaultLiveLayout, scenes: {...defaultLiveLayout.scenes, frozen: {grid: {cols: 12, rows: 8}, widgets: [{id: "ann", type: "announcement", x: 1, y: 1, w: 12, h: 8, props: {text: "Результати заморожено"}}]}}});
+        mountAt(event);
+        await advance(1000);
+        expect(document.querySelector(".live-widget--announcement")?.textContent).toBe("Результати заморожено");
+        cleanup();
+        api.layout.mockResolvedValue(defaultLiveLayout);
+        mountAt(event);
+        await advance(1000);
+        expect(document.querySelector(".live-widget--chart")).not.toBeNull();
+    });
+
+    it("shows the running board in every state when the layout has no scenes", async () => {
+        api.results.mockResolvedValue(board(false));
+        api.layout.mockResolvedValue({...defaultLiveLayout, scenes: undefined});
+        mountAt(starting);
+        await advance(1000);
+        expect(document.querySelector(".live-widget--chart")).not.toBeNull();
+    });
+});

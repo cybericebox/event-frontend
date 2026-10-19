@@ -4,15 +4,18 @@ import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
-import {CircleHelp, ExternalLink, LayoutTemplate, MonitorUp, Redo2, Send, Undo2} from "lucide-react";
+import {CircleHelp, ExternalLink, LayoutTemplate, MonitorUp, Redo2, Send, TriangleAlert, Undo2} from "lucide-react";
 import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
-import {canPlace, distributeWidgets, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteItems, livePresets, liveWidgetMinimums, liveWidgetName, presetLayout, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem, type LivePresetKey} from "@/components/event/live/liveLayout";
+import {canPlace, distributeWidgets, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteItems, liveWidgetMinimums, liveWidgetName, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem} from "@/components/event/live/liveLayout";
 import {liveSampleResults} from "@/components/event/live/liveSample";
 import {liveFormatLayout, liveFormatMode, liveFormatTabs, pruneLiveFormats, withLiveFormatMode, withLiveFormatView} from "@/components/event/live/liveFormats";
 import type {LiveLogoItem} from "@/components/event/live/LiveCanvas";
-import {liveSafeArea, liveSafeInsets, liveTextWarnings} from "@/components/event/live/liveText";
+import {liveSafeArea, liveSafeInsets, liveTextProfile, liveTextWarnings} from "@/components/event/live/liveText";
+import {liveSceneKeys, liveSceneLayout, liveSceneOwn, liveScenePreviewNow, liveScenePreviewResults, liveSceneState, liveSceneViews, mapLiveScenes, withLiveScene, withLiveSceneOwn, type LiveSceneKey} from "@/components/event/live/liveScenes";
+import {applyLiveTemplate, liveTemplates, type LiveTemplateKey} from "@/components/event/live/liveTemplates";
+import {livePreviewKeys, livePreviewLayout, livePreviewScale, type LivePreviewKey} from "@/components/event/live/livePreview";
 import {getManageStages} from "@/api/manageStages";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {LiveMiniature, usePaletteLayouts} from "./LiveMiniature";
@@ -24,7 +27,7 @@ import {LiveScreenSettings} from "./LiveScreenSettings";
 import {LiveWidgetSettings, qrProblem} from "./LiveWidgetSettings";
 import {useLiveAutosave, type LiveSaveState} from "./useLiveAutosave";
 import "./liveEditor.css";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -47,24 +50,33 @@ function typingTarget(target: EventTarget | null): boolean {
 // The version changes on every publish; it is not a change of the layout.
 const layoutKey = (layout: LiveLayout) => JSON.stringify({...layout, version: 0});
 
-function validationMessage(layout: LiveLayout, conflicts: Set<string>): string {
-    if (!liveGridValid(layout.grid.cols, layout.grid.rows)) return t("manage.live.validation.grid", liveGridLimits);
-    if (layout.screen.width < 320 || layout.screen.width > 7680 || layout.screen.height < 240 || layout.screen.height > 4320 || layout.screen.width <= layout.screen.height) return t("manage.live.validation.screen");
-    if (conflicts.size) return t("manage.live.validation.conflicts", {widgets: layout.widgets.filter(item => conflicts.has(item.id)).map(item => t("manage.live.validation.widgetName", {name: liveWidgetName(item)})).join(", ")});
-    if (layout.widgets.some(widget => widget.type === "logos" && Array.isArray(widget.props.logos) && widget.props.logos.some(value => typeof value !== "string" || !liveLogoURL(value)))) return t("manage.live.validation.logo");
-    if (layout.widgets.some(widget => widget.type === "qr" && qrProblem(typeof widget.props.value === "string" ? widget.props.value : typeof widget.props.url === "string" ? widget.props.url : ""))) return t("manage.live.validation.qr");
-    if (layout.widgets.some(widget => widget.type === "timer" && widget.props.source === "custom" && typeof widget.props.target !== "string")) return t("manage.live.validation.timerTarget");
+const sceneName = (key: LiveSceneKey) => t(`manage.live.scene.${key}`);
+
+// The first problem of one scene's canvas, or "".
+function canvasProblem(view: LiveLayout): string {
+    if (!liveGridValid(view.grid.cols, view.grid.rows)) return t("manage.live.validation.grid", liveGridLimits);
+    const conflicts = layoutConflicts(view);
+    if (conflicts.size) return t("manage.live.validation.conflicts", {widgets: view.widgets.filter(item => conflicts.has(item.id)).map(item => t("manage.live.validation.widgetName", {name: liveWidgetName(item)})).join(", ")});
+    if (view.widgets.some(widget => widget.type === "logos" && Array.isArray(widget.props.logos) && widget.props.logos.some(value => typeof value !== "string" || !liveLogoURL(value)))) return t("manage.live.validation.logo");
+    if (view.widgets.some(widget => widget.type === "qr" && qrProblem(typeof widget.props.value === "string" ? widget.props.value : typeof widget.props.url === "string" ? widget.props.url : ""))) return t("manage.live.validation.qr");
+    if (view.widgets.some(widget => widget.type === "timer" && widget.props.source === "custom" && typeof widget.props.target !== "string")) return t("manage.live.validation.timerTarget");
+    // A custom shape must be valid too: every placement inside its grid and without overlaps.
+    for (const key of liveFormatTabs(view)) {
+        if (liveFormatMode(view, key) !== "custom") continue;
+        const shape = liveFormatLayout(view, key);
+        if (!liveGridValid(shape.grid.cols, shape.grid.rows)) return t("manage.live.validation.formatGrid", {name: key});
+        if (layoutConflicts(shape).size) return t("manage.live.validation.formatConflicts", {name: key});
+    }
     return "";
 }
 
-// A custom format must be valid too: every placement inside its grid and
-// without overlaps.
-function formatProblem(layout: LiveLayout): string {
-    for (const key of liveFormatTabs(layout)) {
-        if (liveFormatMode(layout, key) !== "custom") continue;
-        const view = liveFormatLayout(layout, key);
-        if (!liveGridValid(view.grid.cols, view.grid.rows)) return t("manage.live.validation.formatGrid", {name: key});
-        if (layoutConflicts(view).size) return t("manage.live.validation.formatConflicts", {name: key});
+// What blocks a save: the screen size, or the first problem of a scene
+// (named when it is not the running one).
+function validationMessage(layout: LiveLayout): string {
+    if (layout.screen.width < 320 || layout.screen.width > 7680 || layout.screen.height < 240 || layout.screen.height > 4320 || layout.screen.width <= layout.screen.height) return t("manage.live.validation.screen");
+    for (const {key, view} of liveSceneViews(layout)) {
+        const problem = canvasProblem(view);
+        if (problem) return key === "running" ? problem : t("manage.live.validation.scene", {scene: sceneName(key), problem});
     }
     return "";
 }
@@ -80,90 +92,110 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const {results} = useLiveResults(eventID);
-    const [layout, setLayout] = useState<LiveLayout>(data.Draft ?? data.Published);
+    // The whole layout (every scene); the canvas edits one scene of it.
+    const [doc, setDoc] = useState<LiveLayout>(data.Draft ?? data.Published);
     const [published, setPublished] = useState<LiveLayout>(data.Published);
     const [selectedID, setSelectedID] = useState<string | null>(null);
     const [error, setError] = useState("");
     const [dragItem, setDragItem] = useState<LivePaletteItem | null>(null);
     const [ghost, setGhost] = useState<LiveGhost | null>(null);
     const [screen, setScreen] = useState<HTMLDivElement | null>(null);
-    const [scale, setScale] = useState(0);
+    const [boxWidth, setBoxWidth] = useState(0);
     const [customGrid, setCustomGrid] = useState<{cols: number; rows: number} | null>(null);
     const [templatesOpen, setTemplatesOpen] = useState(false);
     const [linksOpen, setLinksOpen] = useState(false);
+    const [warningsOpen, setWarningsOpen] = useState(false);
     // The last applied template and the layout it produced: the quiet
     // «Шаблон: …» line says «змінено» once the layout moves away from it.
-    const [applied, setApplied] = useState<{key: LivePresetKey; layout: string} | null>(null);
+    const [applied, setApplied] = useState<{key: LiveTemplateKey; layout: string} | null>(null);
     const [confirmRemove, setConfirmRemove] = useState(false);
     const [publishing, setPublishing] = useState(false);
-    const [sampleResults] = useState(() => liveSampleResults(Date.now()));
+    const [openedAt] = useState(() => Date.now());
+    const [sampleResults] = useState(() => liveSampleResults(openedAt));
     const [origin, setOrigin] = useState("");
     const [history, setHistory] = useState<{past: LiveLayout[]; future: LiveLayout[]}>({past: [], future: []});
-    // The screen shape being edited: the base or one of the other formats.
+    // The scene (event state) being edited, the screen shape and the preview resolution.
+    const [scene, setScene] = useState<LiveSceneKey>("running");
     const [format, setFormat] = useState<string>(() => (data.Draft ?? data.Published).aspect);
+    const [preview, setPreview] = useState<LivePreviewKey>("layout");
     const lastEdit = useRef(0);
     useEffect(() => {queueMicrotask(() => setOrigin(window.location.origin));}, []);
+    const sceneOwn = liveSceneOwn(doc, scene);
+    // A scene «Як «Триває»» shows the running canvas, read-only.
+    const layout = useMemo(() => liveSceneLayout(doc, sceneOwn ? scene : "running"), [doc, scene, sceneOwn]);
     const paletteLayouts = usePaletteLayouts(livePaletteItems, layout.theme, origin);
-    // The preview renders at the screen's own resolution and is scaled down,
-    // so text sizes, floors and warnings match the real screen.
     const shape = liveFormatTabs(layout).includes(format) ? format : layout.aspect;
     const view = useMemo(() => liveFormatLayout(layout, shape), [layout, shape]);
     const mode = liveFormatMode(layout, shape);
-    const nativeWidth = view.screen.width;
+    // The preview renders at the target screen's own resolution and is scaled
+    // down, so text sizes, floors and warnings match that screen.
+    const shown = useMemo(() => livePreviewLayout(view, preview), [view, preview]);
     useEffect(() => {
         if (!screen || typeof ResizeObserver === "undefined") return;
-        const observer = new ResizeObserver(([entry]) => setScale(entry.contentRect.width / nativeWidth));
+        const observer = new ResizeObserver(([entry]) => setBoxWidth(entry.contentRect.width));
         observer.observe(screen);
         return () => observer.disconnect();
-    }, [screen, nativeWidth]);
+    }, [screen]);
+    const scale = livePreviewScale(boxWidth, shown.screen);
 
     const conflicts = useMemo(() => layoutConflicts(view), [view]);
-    const warnings = useMemo(() => liveTextWarnings(view, event.Name), [view, event.Name]);
+    const warnings = useMemo(() => liveTextWarnings(shown, event.Name), [shown, event.Name]);
     // The timer and the stage subtitle of the preview follow the real stages.
     const stages = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false});
-    const validation = validationMessage(layout, layoutConflicts(layout)) || formatProblem(layout);
+    const validation = validationMessage(doc);
     const autosave = useLiveAutosave({
-        eventID, layout, savedJSON: JSON.stringify(data.Draft ?? data.Published), valid: !validation, enabled: canManage,
+        eventID, layout: doc, savedJSON: JSON.stringify(data.Draft ?? data.Published), valid: !validation, enabled: canManage,
         onSaved: saved => queryClient.setQueryData<LiveEditorData>(["event-live-editor", eventID], current => current && {...current, Draft: saved}),
     });
-    const unpublished = layoutKey(layout) !== layoutKey(published);
+    const unpublished = layoutKey(doc) !== layoutKey(published);
     // Until the event has results, the editor fills widgets with sample data.
     const sample = !results.data?.Scoreboard.length;
     const shownResults = sample ? sampleResults : results.data;
+    // The preview shows a moment of the scene's state: its timer, stage and freeze.
+    const previewNow = liveScenePreviewNow(scene, event, openedAt);
+    const previewResults = liveScenePreviewResults(scene, shownResults, previewNow);
+    const current = liveSceneState(event, results.data?.Freeze, openedAt);
     const locked = !canManage;
     const selected = view.widgets.find(item => item.id === selectedID) ?? null;
-    const editable = !locked && mode !== "auto";
+    const editable = !locked && mode !== "auto" && sceneOwn;
 
-    // Undo keeps the layout before each edit; bursts of edits merge into one.
+    // Undo keeps the whole layout before each edit; bursts of edits merge into one.
     function remember() {
         const now = editClock();
         const merge = now - lastEdit.current < historyMergeMs;
         lastEdit.current = now;
-        setHistory(current => ({past: merge && current.past.length ? current.past : [...current.past.slice(1 - historyLimit), layout], future: []}));
+        setHistory(past => ({past: merge && past.past.length ? past.past : [...past.past.slice(1 - historyLimit), doc], future: []}));
     }
     function undo() {
         const previous = history.past.at(-1);
         if (!previous || locked) return;
         lastEdit.current = 0;
-        setHistory({past: history.past.slice(0, -1), future: [layout, ...history.future]});
-        setLayout(previous);
+        setHistory({past: history.past.slice(0, -1), future: [doc, ...history.future]});
+        setDoc(previous);
         setError("");
     }
     function redo() {
         const next = history.future[0];
         if (!next || locked) return;
         lastEdit.current = 0;
-        setHistory({past: [...history.past, layout], future: history.future.slice(1)});
-        setLayout(next);
+        setHistory({past: [...history.past, doc], future: history.future.slice(1)});
+        setDoc(next);
         setError("");
     }
-    function mutate(changed: LiveLayout) {
-        const next = pruneLiveFormats(changed);
-        if (changed !== layout) remember();
-        setLayout(next);
+    // A change of the whole layout; every scene drops shapes and placements that no longer apply.
+    function mutateDoc(changed: LiveLayout) {
+        if (changed === doc) return;
+        const next = mapLiveScenes(changed, item => pruneLiveFormats(item));
+        remember();
+        setDoc(next);
         setError("");
+    }
+    // A change of the scene shown (its canvas or the shared screen settings);
+    // a scene «Як «Триває»» shows, and so changes, the running one.
+    function mutate(changed: LiveLayout) {
+        mutateDoc(withLiveScene(doc, sceneOwn ? scene : "running", changed));
         // The open «Власна…» inputs follow a grid that grew or changed elsewhere.
-        if (customGrid && (next.grid.cols !== layout.grid.cols || next.grid.rows !== layout.grid.rows)) setCustomGrid({...next.grid});
+        if (customGrid && (changed.grid.cols !== layout.grid.cols || changed.grid.rows !== layout.grid.rows)) setCustomGrid({...changed.grid});
     }
     // An edited view of the current shape: the base itself, or the
     // placements of a custom format.
@@ -174,8 +206,15 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         if (!canPlace(view, next, next.id)) {setError(t("manage.live.error.overlap")); return;}
         commitView({...view, widgets: view.widgets.map(item => item.id === next.id ? next : item)});
     }
-    function updateProp(key: string, value: string | number | boolean | string[] | LiveLogoItem[]) {
-        if (selected) mutate({...layout, widgets: layout.widgets.map(item => item.id === selected.id ? {...item, props: {...item.props, [key]: value}} : item)});
+    function updateProp(key: string, value: string | number | boolean | string[] | LiveLogoItem[] | null) {
+        if (!selected) return;
+        mutate({...layout, widgets: layout.widgets.map(item => {
+            if (item.id !== selected.id) return item;
+            const props = {...item.props};
+            // null drops a setting back to its default.
+            if (value === null) delete props[key]; else props[key] = value;
+            return {...item, props};
+        })});
     }
     function insert(working: LiveLayout, next: LiveWidget, item: LivePaletteItem) {
         next.props = item.type === "qr" ? {value: `${window.location.origin}/`, caption: t("live.qr.defaultCaption")} : {...item.props};
@@ -184,6 +223,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     }
     // The grid never grows by itself: with no free cells the editor says so.
     function addWidget(item: LivePaletteItem) {
+        if (!editable || mode !== "base") return;
         const next = firstFreeWidget(layout, item.type);
         if (!next) {setError(t("manage.live.error.noSpace")); return;}
         insert(layout, next, item);
@@ -197,21 +237,21 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         };
     }
     function dragOver(dragEvent: DragEvent<HTMLDivElement>) {
-        if (!dragItem || locked) return;
+        if (!dragItem || !editable) return;
         dragEvent.preventDefault();
         dragEvent.dataTransfer.dropEffect = "copy";
         const {x, y} = dropCell(dragEvent);
         const candidate = widgetAt(layout, dragItem.type, x, y);
         const min = liveWidgetMinimums[dragItem.type];
         const next = candidate ? {x: candidate.x, y: candidate.y, w: min.w, h: min.h, ok: true} : {x: Math.min(x, Math.max(1, layout.grid.cols - min.w + 1)), y: Math.min(y, Math.max(1, layout.grid.rows - min.h + 1)), w: min.w, h: min.h, ok: false};
-        setGhost(current => current && current.x === next.x && current.y === next.y && current.ok === next.ok && current.w === next.w ? current : next);
+        setGhost(past => past && past.x === next.x && past.y === next.y && past.ok === next.ok && past.w === next.w ? past : next);
     }
     function drop(dragEvent: DragEvent<HTMLDivElement>) {
         const key = dragEvent.dataTransfer.getData(dragMime);
         const item = livePaletteItems.find(entry => entry.key === key) ?? dragItem;
         setGhost(null);
         setDragItem(null);
-        if (!item || locked) return;
+        if (!item || !editable) return;
         dragEvent.preventDefault();
         const {x, y} = dropCell(dragEvent);
         const next = widgetAt(layout, item.type, x, y);
@@ -226,6 +266,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         const originX = pointerEvent.clientX, originY = pointerEvent.clientY;
         const start = {...item};
         const grid = view.grid;
+        const editing = scene, editingShape = shape, editingMode = mode;
         let moved = false;
         setSelectedID(item.id);
         pointerEvent.currentTarget.setPointerCapture(pointerEvent.pointerId);
@@ -240,11 +281,12 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 lastEdit.current = 0;
                 remember();
             }
-            setLayout(active => {
-                const current = liveFormatLayout(active, shape);
-                if (!canPlace(current, candidate, item.id)) return active;
-                const next = {...current, widgets: current.widgets.map(widget => widget.id === item.id ? candidate : widget)};
-                return mode === "base" ? next : withLiveFormatView(active, shape, next);
+            setDoc(active => {
+                const sceneView = liveSceneLayout(active, editing);
+                const shaped = liveFormatLayout(sceneView, editingShape);
+                if (!canPlace(shaped, candidate, item.id)) return active;
+                const next = {...shaped, widgets: shaped.widgets.map(widget => widget.id === item.id ? candidate : widget)};
+                return withLiveScene(active, editing, editingMode === "base" ? next : withLiveFormatView(sceneView, editingShape, next));
             });
         };
         const end = () => {target.removeEventListener("pointermove", move); target.removeEventListener("pointerup", end); target.removeEventListener("pointercancel", end);};
@@ -265,14 +307,22 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         if (typeof next === "string") setError(next);
         else commitView(next);
     }
-    function applyTemplate(key: LivePresetKey) {
-        const next = presetLayout(key, layout);
-        mutate(next);
+    function applyTemplate(key: LiveTemplateKey) {
+        const next = applyLiveTemplate(doc, key, scene);
+        mutateDoc(next);
         setApplied({key, layout: layoutKey(next)});
         setSelectedID(null);
         setTemplatesOpen(false);
         setCustomGrid(null);
-        setFormat(layout.aspect);
+        setFormat(doc.aspect);
+        // «Повний показ» fills every scene: the running one is the one to look at first.
+        if (liveTemplates[key].scene === "all") setScene("running");
+    }
+    function switchScene(key: LiveSceneKey) {
+        setScene(key);
+        setSelectedID(null);
+        setCustomGrid(null);
+        setGhost(null);
     }
 
     async function publish() {
@@ -299,12 +349,12 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             if (key === "y" || keyEvent.shiftKey) redo(); else undo();
             return;
         }
-        if (!selected || locked || mod || keyEvent.altKey || typingTarget(keyEvent.target) || document.querySelector("dialog[open], [role=dialog]:not(dialog), [role=menu]")) return;
+        if (!selected || !editable || mod || keyEvent.altKey || typingTarget(keyEvent.target) || document.querySelector("dialog[open], [role=dialog]:not(dialog), [role=menu]")) return;
         const step = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[keyEvent.key];
         if (step) {
             keyEvent.preventDefault();
             const next = keyEvent.shiftKey ? {...selected, w: selected.w + step[0], h: selected.h + step[1]} : {...selected, x: selected.x + step[0], y: selected.y + step[1]};
-            if (editable && canPlace(view, next, next.id)) commitView({...view, widgets: view.widgets.map(item => item.id === next.id ? next : item)});
+            if (canPlace(view, next, next.id)) commitView({...view, widgets: view.widgets.map(item => item.id === next.id ? next : item)});
         } else if (keyEvent.key === "Delete" || keyEvent.key === "Backspace") {
             keyEvent.preventDefault();
             setConfirmRemove(true);
@@ -319,19 +369,23 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     }, []);
     const applyCustomGrid = () => {if (customGrid) changeGrid(customGrid.cols, customGrid.rows);};
 
-    const warned = new Set(warnings.map(item => item.id));
+    // Only real fit problems mark a block; the floor notes stay in the list.
+    const fits = warnings.filter(item => item.kind === "fit");
+    const warned = new Set(fits.map(item => item.id));
     const gridPreset = liveGridPresets.find(item => item.cols === view.grid.cols && item.rows === view.grid.rows);
     const gridValue = customGrid || !gridPreset ? "custom" : `${gridPreset.cols}x${gridPreset.rows}`;
-    const screenStyle = {"--live-aspect": view.screen.width / view.screen.height} as CSSProperties;
-    const safe = liveSafeInsets(view.screen.width, view.screen.height, liveSafeArea(view.screen));
-    const nativeStyle = {width: view.screen.width, height: view.screen.height, padding: `${safe.y}px ${safe.x}px`, "--live-preview-scale": scale || 1, visibility: scale ? "visible" : "hidden"} as CSSProperties;
+    const screenStyle = {"--live-aspect": shown.screen.width / shown.screen.height} as CSSProperties;
+    const safe = liveSafeInsets(shown.screen.width, shown.screen.height, liveSafeArea(shown.screen));
+    const nativeStyle = {width: shown.screen.width, height: shown.screen.height, padding: `${safe.y}px ${safe.x}px`, "--live-preview-scale": scale || 1, visibility: scale ? "visible" : "hidden"} as CSSProperties;
     const tabLabel = (key: string) => key === layout.aspect
         ? t("manage.live.format.base", {name: key === "custom" ? t("manage.live.format.customSize", layout.screen) : key})
         : liveFormatMode(layout, key) === "custom" ? t("manage.live.format.custom", {name: key}) : key;
     const status = autosave.status;
+    const problem = error || canvasProblem(layout);
+    const profile = t(liveTextProfile(shown.screen) === "led" ? "manage.live.preview.led" : "manage.live.preview.projector");
     return <div className="event-live-editor">
         <header className="event-live-editor__heading">
-            <div><h1>{t("manage.live.title")}</h1><p>{t("manage.live.intro")}</p></div>
+            <div><h1>{t("manage.live.title")}</h1><p>{t(canManage ? "manage.live.intro" : "manage.live.introViewer")}</p></div>
             <div className="event-live-editor__actions">
                 {canManage && <span className={`event-live-editor__status${status === "error" || status === "invalid" ? " is-problem" : ""}`} role="status">
                     {saveLabel(status, unpublished, published.version)}
@@ -340,15 +394,31 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 {canManage && <EventTooltip content={t("manage.live.links.hint")}>{id => <button className="ib-btn" type="button" aria-describedby={id} onClick={() => setLinksOpen(true)}><MonitorUp size={16} /> {t("manage.live.links.open")}</button>}</EventTooltip>}
                 <EventTooltip content={t("manage.live.openHint")}>{id => <a className="ib-btn" href="/live" target="_blank" rel="noreferrer" aria-describedby={id}><ExternalLink size={16} /> {t("manage.live.open")}</a>}</EventTooltip>
                 {canManage && <EventTooltip content={t("manage.live.publishHint")}>{id => <EventButton className="ib-btn ib-btn--primary" type="button" aria-describedby={id} busy={publishing}
-                    disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}><Send size={16} /> {t("manage.live.publish")}</EventButton>}</EventTooltip>}
+                    disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}>{publishing ? t("manage.live.publishing") : <><Send size={16} /> {t("manage.live.publish")}</>}</EventButton>}</EventTooltip>}
             </div>
         </header>
+        <nav className="event-live-scenes" aria-label={t("manage.live.scene.tabs")}>
+            <div className="event-live-scenes__tabs" role="tablist" aria-label={t("manage.live.scene.tabs")}>
+                {liveSceneKeys.map(key => <button key={key} type="button" role="tab" aria-selected={scene === key} className="event-live-scene" onClick={() => switchScene(key)}>
+                    <strong>{sceneName(key)}</strong>
+                    <span>{key === current ? t("manage.live.scene.now") : liveSceneOwn(doc, key) ? t("manage.live.scene.own") : t("manage.live.scene.asRunning")}</span>
+                </button>)}
+            </div>
+            <ManageFieldLabel title={t("manage.live.scene.label")} help={t("manage.live.scene.help")} />
+        </nav>
         <div className="event-live-editor__toolbar">
             <div className="event-live-editor__tool">
                 <ManageFieldLabel title={t("manage.live.templates.label")} help={t("manage.live.templates.help")} />
                 <button className="ib-btn event-live-editor__template" type="button" disabled={locked} onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={16} /> {t("manage.live.templates.open")}</button>
-                {applied && <small className="event-live-editor__applied">{t(layoutKey(layout) === applied.layout ? "manage.live.templates.applied" : "manage.live.templates.appliedChanged", {name: livePresets[applied.key].label})}</small>}
+                {applied && <small className="event-live-editor__applied">{t(layoutKey(doc) === applied.layout ? "manage.live.templates.applied" : "manage.live.templates.appliedChanged", {name: liveTemplates[applied.key].label})}</small>}
             </div>
+            {scene !== "running" && <div className="event-live-editor__tool">
+                <ManageFieldLabel title={t("manage.live.scene.mode")} help={t("manage.live.scene.modeHelp")} />
+                <div className="ib-seg" role="group" aria-label={t("manage.live.scene.mode")}>
+                    {([true, false] as const).map(own => <button key={String(own)} type="button" aria-pressed={sceneOwn === own} disabled={locked}
+                        onClick={() => {if (sceneOwn !== own) {mutateDoc(withLiveSceneOwn(doc, scene, own)); setSelectedID(null);}}}>{t(own ? "manage.live.scene.modeOwn" : "manage.live.scene.modeRunning")}</button>)}
+                </div>
+            </div>}
             <div className="event-live-editor__tool">
                 <ManageFieldLabel title={t("manage.live.grid")} help={t("manage.live.gridHelp")} required />
                 <EventSelect ariaLabel={t("manage.live.grid")} value={gridValue} disabled={!editable}
@@ -367,25 +437,22 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             {customGrid && <div className="event-live-editor__tool event-live-editor__custom-grid">
                 <ManageFieldLabel title={t("manage.live.gridCells")} help={t("manage.live.gridCellsHelp", liveGridLimits)} required />
                 <div>
-                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.cols")} aria-invalid={!liveGridValid(customGrid.cols, customGrid.rows) || undefined} aria-describedby={!liveGridValid(customGrid.cols, customGrid.rows) ? "live-custom-grid-error" : undefined} min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={customGrid.cols || ""} disabled={locked}
+                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.cols")} aria-invalid={!liveGridValid(customGrid.cols, customGrid.rows) || undefined} aria-describedby={!liveGridValid(customGrid.cols, customGrid.rows) ? "live-custom-grid-error" : undefined} min={liveGridLimits.minCols} max={liveGridLimits.maxCols} value={customGrid.cols || ""} disabled={!editable}
                         onChange={changeEvent => setCustomGrid({...customGrid, cols: changeEvent.target.valueAsNumber || 0})} onBlur={applyCustomGrid} onKeyDown={keyEvent => {if (keyEvent.key === "Enter") applyCustomGrid();}} />
                     <span aria-hidden="true">×</span>
-                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.rows")} aria-invalid={!liveGridValid(customGrid.cols, customGrid.rows) || undefined} aria-describedby={!liveGridValid(customGrid.cols, customGrid.rows) ? "live-custom-grid-error" : undefined} min={liveGridLimits.minRows} max={liveGridLimits.maxRows} value={customGrid.rows || ""} disabled={locked}
+                    <input className="event-manage-input" type="number" inputMode="numeric" aria-label={t("manage.live.rows")} aria-invalid={!liveGridValid(customGrid.cols, customGrid.rows) || undefined} aria-describedby={!liveGridValid(customGrid.cols, customGrid.rows) ? "live-custom-grid-error" : undefined} min={liveGridLimits.minRows} max={liveGridLimits.maxRows} value={customGrid.rows || ""} disabled={!editable}
                         onChange={changeEvent => setCustomGrid({...customGrid, rows: changeEvent.target.valueAsNumber || 0})} onBlur={applyCustomGrid} onKeyDown={keyEvent => {if (keyEvent.key === "Enter") applyCustomGrid();}} />
                 </div>
                 {!liveGridValid(customGrid.cols, customGrid.rows) && <small id="live-custom-grid-error" className="event-manage-validation" role="alert">{t("manage.live.validation.grid", liveGridLimits)}</small>}
             </div>}
         </div>
-        {(error || formatProblem(layout) || layoutConflicts(layout).size > 0) && <div className="event-live-editor__error" role="alert">{error || formatProblem(layout) || t("manage.live.validation.conflicts", {widgets: layout.widgets.filter(item => layoutConflicts(layout).has(item.id)).map(item => t("manage.live.validation.widgetName", {name: liveWidgetName(item)})).join(", ")})}</div>}
-        {warnings.length > 0 && <section className="event-live-editor__warnings" aria-label={t("manage.live.warnings")}>
-            <h2>{t("manage.live.warningsTitle", {width: view.screen.width, height: view.screen.height})}</h2>
-            <ul>{warnings.map((warning, index) => <li key={`${warning.id}-${index}`}><button type="button" onClick={() => setSelectedID(warning.id)}>{warning.text}</button></li>)}</ul>
-        </section>}
+        {problem && <div className="event-live-editor__error" role="alert">{problem}</div>}
+        {!problem && validation && <div className="event-live-editor__error" role="alert">{validation}</div>}
         <div className="event-live-editor__workspace">
             <aside className="event-live-editor__palette">
                 <h2>{t("manage.live.widgets")}</h2>
-                <p>{t(mode === "base" ? "manage.live.paletteHint" : "manage.live.paletteBaseOnly", {name: tabLabel(layout.aspect)})}</p>
-                {livePaletteItems.map(item => <button key={item.key} type="button" className="event-live-palette-item" draggable={!locked && mode === "base"} disabled={locked || mode !== "base"} aria-label={t("manage.live.paletteAdd", {name: item.label})}
+                <p>{t(!sceneOwn ? "manage.live.paletteScene" : mode === "base" ? "manage.live.paletteHint" : "manage.live.paletteBaseOnly", {name: tabLabel(layout.aspect)})}</p>
+                {livePaletteItems.map(item => <button key={item.key} type="button" className="event-live-palette-item" draggable={editable && mode === "base"} disabled={!editable || mode !== "base"} aria-label={t("manage.live.paletteAdd", {name: item.label})}
                     onDragStart={dragEvent => {dragEvent.dataTransfer.setData(dragMime, item.key); dragEvent.dataTransfer.effectAllowed = "copy"; setDragItem(item);}}
                     onDragEnd={() => {setDragItem(null); setGhost(null);}}
                     onClick={() => addWidget(item)}>
@@ -401,14 +468,30 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                         </div>
                         {mode !== "base" && <div className="event-live-editor__format-mode">
                             <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.live.format.mode")}>
-                                {(["auto", "custom"] as const).map(value => <button key={value} type="button" aria-pressed={mode === value} disabled={locked} onClick={() => {if (mode !== value) mutate(withLiveFormatMode(layout, shape, value));}}>{t(`manage.live.format.mode.${value}`)}</button>)}
+                                {(["auto", "custom"] as const).map(value => <button key={value} type="button" aria-pressed={mode === value} disabled={locked || !sceneOwn} onClick={() => {if (mode !== value) mutate(withLiveFormatMode(layout, shape, value));}}>{t(`manage.live.format.mode.${value}`)}</button>)}
                             </div>
                             <EventTooltip content={<span className="event-brand-tooltip-copy">{t("manage.live.format.modeHelp", {name: tabLabel(layout.aspect)})}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: t("manage.live.format.mode")})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
                         </div>}
                     </div>
-                    <span className="event-live-editor__stage-note">{t(sample ? "manage.live.sampleNote" : "manage.live.adaptNote", {width: view.screen.width, height: view.screen.height})}</span>
+                    <div className="event-live-editor__preview">
+                        <span id="live-preview-label">{t("manage.live.preview.label")}</span>
+                        <div className="ib-seg ib-seg--sm" role="group" aria-labelledby="live-preview-label">
+                            {livePreviewKeys.map(key => <button key={key} type="button" aria-pressed={preview === key} onClick={() => setPreview(key)}>{t(`manage.live.preview.${key}`)}</button>)}
+                        </div>
+                    </div>
                 </div>
-                {mode === "auto" && <p className="event-live-editor__format-note">{t("manage.live.format.autoNote", {name: tabLabel(layout.aspect)})}</p>}
+                <div className="event-live-editor__stage-meta">
+                    <span className="event-live-editor__stage-note">{t("manage.live.preview.size", {width: shown.screen.width, height: shown.screen.height, profile})}{sample ? ` ${t("manage.live.sampleShort")}` : ""}</span>
+                    {warnings.length > 0 && <button type="button" className={`event-live-editor__warnings-toggle${fits.length ? "" : " is-quiet"}`} aria-expanded={warningsOpen} aria-controls="live-warnings" onClick={() => setWarningsOpen(value => !value)}>
+                        {fits.length > 0 && <TriangleAlert size={14} aria-hidden="true" />}{fits.length ? tPlural("manage.live.warningsCount", fits.length) : tPlural("manage.live.floorsCount", warnings.length)}
+                    </button>}
+                </div>
+                {warnings.length > 0 && warningsOpen && <ul id="live-warnings" className="event-live-editor__warnings" aria-label={t("manage.live.warningsTitle", {width: shown.screen.width, height: shown.screen.height})}>
+                    {[...fits, ...warnings.filter(item => item.kind === "floor")].map((warning, index) => <li key={`${warning.id}-${index}`} className={warning.kind === "floor" ? "is-floor" : undefined}><button type="button" onClick={() => setSelectedID(warning.id)}>{warning.text}</button></li>)}
+                </ul>}
+                {mode === "auto" && sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.format.autoNote", {name: tabLabel(layout.aspect)})}</p>}
+                {!sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.scene.asRunningNote", {scene: sceneName(scene)})}</p>}
+                {scene === "finished" && !event.FinishTime && <p className="event-live-editor__format-note">{t("manage.live.scene.noFinish")}</p>}
                 {mode === "base" && layout.aspect === "custom" && <div className="event-live-editor__custom-size">
                     <LiveField label={t("manage.live.screenWidth")} help={t("manage.live.screenWidthHelp")} required>
                         {id => <LiveNumberInput id={id} value={layout.screen.width} min={320} max={7680} disabled={locked} onChange={width => mutate({...layout, screen: {...layout.screen, width}})} />}
@@ -418,24 +501,24 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                     </LiveField>
                 </div>}
                 <div className="event-live-editor__screen" style={screenStyle} ref={setScreen}>
-                    <div className={`event-live-editor__native${view.theme === "light" ? " is-light" : ""}`} style={nativeStyle}>
-                        <LiveCanvas layout={view} event={event} stages={stages.data} results={shownResults} sample={sample} selectedID={selectedID} onSelect={setSelectedID} edit={editable} showGrid onPointerDown={pointerDown}
+                    <div className={`event-live-editor__native${shown.theme === "light" ? " is-light" : ""}`} style={nativeStyle}>
+                        <LiveCanvas layout={shown} event={event} stages={stages.data} results={previewResults} sample={sample} nowOffset={previewNow - openedAt} selectedID={selectedID} onSelect={setSelectedID} edit={editable} showGrid onPointerDown={pointerDown}
                             conflicts={conflicts} warned={warned} ghost={ghost} onDragOver={dragOver} onDragLeave={() => setGhost(null)} onDrop={drop} />
                     </div>
                 </div>
-                <p className="event-live-editor__note">{t("manage.live.note")}</p>
+                <p className="event-live-editor__note">{t(canManage ? "manage.live.note" : "manage.live.noteViewer")}</p>
             </div>
             <aside className="event-live-editor__properties">
                 {selected ? <>
                     <button className="event-live-editor__back" type="button" onClick={() => setSelectedID(null)}>{t("manage.live.backToScreen")}</button>
-                    <LiveWidgetSettings event={event} layout={view} widget={selected} disabled={locked} placeDisabled={!editable} onPlace={updateWidget} onProp={updateProp} onDistribute={distribute} onRemove={() => setConfirmRemove(true)} />
-                </> : <LiveScreenSettings eventID={eventID} event={event} layout={layout} results={shownResults} sample={sample} canManage={canManage} disabled={locked}
+                    <LiveWidgetSettings event={event} layout={shown} widget={selected} disabled={!editable} placeDisabled={!editable} onPlace={updateWidget} onProp={updateProp} onDistribute={distribute} onRemove={() => setConfirmRemove(true)} />
+                </> : <LiveScreenSettings eventID={eventID} event={event} layout={layout} results={previewResults} sample={sample} nowOffset={previewNow - openedAt} canManage={canManage} disabled={locked}
                     onChange={next => {mutate(next); if (next.aspect !== layout.aspect && shape === layout.aspect) setFormat(next.aspect);}} />}
             </aside>
         </div>
         {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
-        <LiveTemplateDialog open={templatesOpen} layout={layout} event={event} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
-        <ConfirmDialog open={confirmRemove && !!selected} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
+        <LiveTemplateDialog open={templatesOpen} layout={doc} scene={scene} event={event} stages={stages.data} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
+        <ConfirmDialog open={confirmRemove && !!selected && editable} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
             description={t(selected?.type === "logos" ? "manage.live.removeConfirm.bodyLogos" : "manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
             onConfirm={() => {if (selected) mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null); setConfirmRemove(false);}} />
     </div>;

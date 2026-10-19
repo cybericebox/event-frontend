@@ -30,7 +30,7 @@ describe("live timer by stages", () => {
 
     it("counts to the finish after the last stage, then shows a word instead of zeros", () => {
         expect(auto(at(7))).toEqual({mode: "countdown", target: at(8), label: "До завершення"});
-        expect(auto(at(9))).toEqual({mode: "word", word: "Завершено", label: ""});
+        expect(auto(at(9))).toEqual({mode: "word", word: "Завершено", label: "", reason: "passed"});
     });
 
     it("follows a moved finish: the target is read from the event every time", () => {
@@ -48,16 +48,16 @@ describe("live timer by stages", () => {
         const next = (now: number) => liveTimerState({source: "stage-next"}, event(), stages, now, null);
         expect(end(at(1)).mode === "countdown" && end(at(1))).toMatchObject({target: at(2)});
         expect(end(at(2.5))).toMatchObject({target: at(3), label: "До початку: Етап 2"});
-        expect(end(at(7))).toEqual({mode: "word", word: "Етапи завершено", label: ""});
+        expect(end(at(7))).toEqual({mode: "word", word: "Етапи завершено", label: "", reason: "passed"});
         expect(next(at(1))).toMatchObject({target: at(3), label: "До початку: Етап 2"});
-        expect(next(at(4))).toEqual({mode: "word", word: "Етапи завершено", label: ""});
+        expect(next(at(4))).toEqual({mode: "word", word: "Етапи завершено", label: "", reason: "passed"});
     });
 
     it("never shows 00:00:00 for a passed or missing target", () => {
         expect(liveTimerState({source: "custom"}, event(), [], at(1), null)).toMatchObject({mode: "word", word: "Не задано"});
         expect(liveTimerState({source: "custom", target: iso(0.5)}, event(), [], at(1), null)).toMatchObject({mode: "word", word: "Час вийшов"});
         expect(liveTimerState({source: "freeze"}, event(), [], at(7.5), iso(7))).toMatchObject({mode: "word", word: "Заморожено"});
-        expect(liveTimerDigits({mode: "word", word: "Завершено", label: ""}, at(1), true)).toBeNull();
+        expect(liveTimerDigits({mode: "word", word: "Завершено", label: "", reason: "passed"}, at(1), true)).toBeNull();
     });
 
     it("gives the current stage, or the next one with its time, as the title subtitle", () => {

@@ -62,10 +62,10 @@
 .live-solves li b{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
 .live-solves li time{color:var(--live-faint);font-size:.75em;font-family:var(--font-geist-mono,ui-monospace,monospace)}
 /* Empty widget: the shared EmptyState fills the tile under its caption, centered. */
-.live-chart .event-block-state,.live-list .event-block-state{--event-block-state-h:0px;flex:1;min-height:0;padding:var(--ib-4)}
+.live-chart .event-block-state,.live-list .event-block-state,.live-podium .event-block-state{--event-block-state-h:0px;flex:1;min-height:0;padding:var(--ib-4)}
 .live-chart__plot>.event-block-state{position:absolute;inset:0}
-.live-chart .ib-empty__text,.live-list .ib-empty__text{max-width:28ch;font-size:var(--live-fs-body)}
-.live-chart .ib-empty svg,.live-list .ib-empty svg{width:1.6em;height:1.6em;font-size:var(--live-fs-body)}
+.live-chart .ib-empty__text,.live-list .ib-empty__text,.live-podium .ib-empty__text{max-width:28ch;font-size:var(--live-fs-body)}
+.live-chart .ib-empty svg,.live-list .ib-empty svg,.live-podium .ib-empty svg{width:1.6em;height:1.6em;font-size:var(--live-fs-body)}
 .live-widget p{margin:0;color:var(--live-faint);font-size:var(--live-fs-caption)}
 .live-chart__plot{position:relative;flex:1;min-height:0;font-size:var(--live-fs-caption)}
 .live-chart__plot>svg{position:absolute;inset:0;overflow:visible}
@@ -80,10 +80,13 @@
 .live-chart__freeze-label svg{width:1em;height:1em}
 .live-chart__label span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .live-chart__label i{flex:none;width:.9em;height:.2em;border-radius:999px}
-.live-announcement{display:grid;place-items:center;height:100%;font-size:var(--live-fs-display);font-weight:600;line-height:1.2;text-align:center}
+.live-announcement{display:grid;place-items:center;height:100%;overflow:hidden;font-size:var(--live-fs-display);font-weight:600;line-height:1.2;text-align:center}
+.live-announcement>span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-announcement>span.is-wrap{display:-webkit-box;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
 /* Logos: monochrome, quieter than the numbers (§3). */
 .live-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em;height:100%;min-height:0;text-align:center}
-.live-qr img{display:block;flex:1;min-height:0;max-width:100%;aspect-ratio:1;object-fit:contain;border-radius:calc(var(--live-u) * .15)}
+/* The code keeps its square at most 12 units wide, with the caption right under it. */
+.live-qr img{display:block;flex:0 1 auto;width:auto;height:auto;min-height:0;max-width:min(100%,calc(var(--live-u) * 12));max-height:100%;aspect-ratio:1;object-fit:contain;border-radius:calc(var(--live-u) * .15)}
 .live-qr span{max-width:100%;overflow:hidden;color:var(--live-ink);font-size:var(--live-fs-caption);font-weight:600;text-overflow:ellipsis;white-space:nowrap}
 .live-qr strong{color:var(--live-faint);font-size:var(--live-fs-caption)}
 /* Logos: equal-height boxes, contain-fit up to 4:1; spacing follows the
@@ -97,6 +100,51 @@
 .live-logos--carousel .live-logos__track>div{justify-content:flex-start;width:max-content;animation:live-logo-scroll 50s linear infinite}
 @keyframes live-logo-scroll{from{transform:translateX(0)}to{transform:translateX(calc(-50% - calc(var(--live-u) * .6)))}}
 @media(prefers-reduced-motion:reduce){.live-logos--carousel .live-logos__track>div{animation:none}}
+/* Alignment of the title, timer, clock and announcement («Вирівнювання»). */
+.live-title[data-align="center"]{justify-content:center;text-align:center}
+.live-title[data-align="right"]{justify-content:flex-end;text-align:right}
+.live-timer[data-align="left"]{align-items:flex-start;text-align:left}
+.live-timer[data-align="center"]{align-items:center;text-align:center}
+.live-announcement[data-align="left"]{place-items:center start;text-align:left}
+.live-announcement[data-align="right"]{place-items:center end;text-align:right}
+/* «Останні хвилини»: the digits turn into an accent tile; in the last minute the label steps aside. */
+.live-timer--urgent strong,.live-timer--final strong{padding:0 .14em;border-radius:.1em;background:var(--live-accent);color:var(--live-bg)}
+.live-timer--urgent small{color:var(--live-accent)}
+/* «На нулі → Сховати»: the editor keeps a quiet hint in the empty block. */
+.live-timer--hidden strong{color:var(--live-faint);font-weight:500}
+.live-clock strong{color:var(--live-ink)}
+/* A wide table: two columns side by side, one page split between them. */
+.live-table-columns{display:flex;min-width:0}
+.live-table-columns>.live-table{flex:1 1 0;min-width:0}
+/* A fixed logos block in 2–3 rows (a sponsors' wall). */
+.live-logos--rows .live-logos__track>div{display:grid;grid-template-columns:repeat(var(--live-logo-cols),minmax(0,1fr));grid-template-rows:repeat(var(--live-logo-rows),minmax(0,1fr));place-items:center;gap:calc(var(--live-u) * .5) calc(var(--live-u) * .8)}
+.live-logos--rows .live-logo{max-width:100%}
+/* «Подіум»: places 2-1-3 as tiles on a common baseline; the winner taller, tinted with the accent. */
+.live-podium,.live-facts-block{display:flex;flex-direction:column;height:100%;min-height:0}
+.live-podium__stage{display:flex;flex:1;align-items:flex-end;min-height:0}
+.live-podium__stage>.event-block-state{flex:1;align-self:stretch}
+.live-podium__tile{display:flex;flex:1 1 0;flex-direction:column;justify-content:flex-end;gap:.2em;box-sizing:border-box;min-width:0;overflow:hidden;border-radius:calc(var(--live-u) * .3);background:var(--live-tile)}
+.live-podium__tile.is-lead{background:color-mix(in srgb,var(--live-tile),var(--live-accent) 20%)}
+.live-podium__place{color:var(--live-accent);font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600;line-height:1.2}
+.live-podium__tile strong{display:-webkit-box;overflow:hidden;font-weight:600;line-height:1.15;overflow-wrap:anywhere;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+.live-podium__points{color:var(--live-dim);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.2}
+/* «Факти»: a large value over its label, side by side. */
+.live-facts{display:flex;flex:1;align-items:center;min-height:0;margin:0}
+.live-facts>div{display:flex;flex:1 1 0;flex-direction:column-reverse;min-width:0}
+.live-facts dd{margin:0;overflow:hidden;color:var(--live-ink);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.1;text-overflow:ellipsis;white-space:nowrap}
+.live-facts .is-text dd{font-family:inherit}
+.live-facts dt{overflow:hidden;color:var(--live-faint);line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
+/* «Етапи»: done ones quiet, the running one on the lead row in the accent. */
+.live-stages{margin:0;padding:0;list-style:none}
+.live-stages li{display:flex;flex-direction:column;justify-content:center;gap:.15em;padding-inline:.4em;border-bottom:1px solid var(--live-line);line-height:1.2}
+.live-stages li span{min-width:0;overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.live-stages small{display:flex;align-items:baseline;gap:.8em;color:var(--live-faint);font-size:.75em;white-space:nowrap}
+.live-stages time{font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums}
+.live-stages b{font-weight:600}
+.live-stages li.is-now{background:var(--live-lead)}
+.live-stages li.is-now span,.live-stages li.is-now b{color:var(--live-accent)}
+.live-stages li.is-now small{color:var(--live-dim)}
+.live-stages li.is-done span{color:var(--live-faint)}
 .live-retired{display:grid;align-content:center;gap:.3em;height:100%;color:var(--live-faint);font-size:var(--live-fs-caption)}
 .live-drop-ghost{z-index:3;border:2px dashed #7e85ff;background:color-mix(in srgb,#7e85ff 18%,transparent);pointer-events:none}
 .live-drop-ghost.is-blocked{border-color:#fd929d;background:color-mix(in srgb,#fd929d 18%,transparent)}
@@ -160,7 +208,7 @@
   .live-fullscreen:not(.live-fullscreen--anchor) .live-canvas{container-type:normal;display:flex;flex-direction:column;gap:0;height:auto;min-height:100%;overflow:visible}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget{flex:none;min-height:96px;padding:12px 16px}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--chart{height:280px}
-  .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--table,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--ad_table,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--solves{min-height:180px}
+  .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--table,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--ad_table,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--solves,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--stages,.live-fullscreen:not(.live-fullscreen--anchor) .live-widget--podium{min-height:180px}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-widget--logos{min-height:110px}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-table{font-size:16px;table-layout:fixed}
   .live-fullscreen:not(.live-fullscreen--anchor) .live-table th,.live-fullscreen:not(.live-fullscreen--anchor) .live-table td{padding:.45em .3em}

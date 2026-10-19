@@ -1,5 +1,6 @@
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import {t} from "@/i18n/t";
+import type {LiveStage} from "./liveStages";
 
 // Sample results for the live editor: the palette previews and the canvas
 // show widgets filled with plausible data until the event has real results.
@@ -43,8 +44,20 @@ export function liveSampleResults(now: number): ManageResultsSnapshot {
         .sort((a, b) => b.points - a.points || a.team - b.team)
         .map((item, index) => ({Rank: index + 1, TeamID: teamID(item.team), TeamName: item.team < namedTeams ? t(`live.sample.team.${item.team + 1}`) : t("live.sample.teamNumbered", {number: item.team + 1}), Points: item.points, Solved: timeline.filter(solve => solve.EventTeamID === teamID(item.team)).length, LastSolveAt: new Date(last[item.team]).toISOString()}));
     return {
-        Revision: 0, GeneratedAt: new Date(now).toISOString(), Scoreboard: scoreboard, Timeline: timeline, TotalTeams: teamCount,
+        Revision: 0, GeneratedAt: new Date(now).toISOString(), Scoreboard: scoreboard, Timeline: timeline, TotalTeams: teamCount, Tasks: 24,
         Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
         Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
     };
+}
+
+// Sample stages for the «Етапи» block of an event without stages: three
+// two-hour stages from the start with short breaks.
+export function liveSampleStages(start: string): LiveStage[] {
+    const at = Date.parse(start);
+    const hour = 60 * 60 * 1000;
+    return [0, 1, 2].map(index => ({
+        Name: t(`live.sample.stage.${index + 1}`),
+        OpensAt: new Date(at + index * 2.25 * hour).toISOString(),
+        ClosesAt: new Date(at + (index * 2.25 + 2) * hour).toISOString(),
+    }));
 }
