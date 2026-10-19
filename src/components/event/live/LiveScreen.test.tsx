@@ -66,7 +66,7 @@ describe("live screen keeps its data fresh", () => {
             await advance(1000);
             expect(api.results).toHaveBeenCalledTimes(3);
             await advance(10_000);
-            expect(document.querySelector(".live-offline")).toBeNull();
+            expect(document.querySelector(".live-freeze--offline")).toBeNull();
         });
     }
 
@@ -76,7 +76,7 @@ describe("live screen keeps its data fresh", () => {
         await advance(1000);
         await act(async () => {await client.invalidateQueries({queryKey: ["event-live-results"]}).catch(() => undefined);});
         await advance(12_000);
-        expect(document.querySelector(".live-offline")?.textContent).toMatch(/^Немає звʼязку · дані на \d\d:\d\d$/);
+        expect(document.querySelector(".live-freeze--offline")?.textContent).toMatch(/^Немає звʼязку · дані на \d\d:\d\d$/);
         // The retries go on (5, then 10 s) and keep the board on screen.
         expect(api.results.mock.calls.length).toBeGreaterThanOrEqual(3);
         expect(screen.getAllByText("IceBreakers").length).toBeGreaterThan(0);

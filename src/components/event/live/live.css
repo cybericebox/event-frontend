@@ -31,6 +31,8 @@
 /* «Заморожено о 10:59»: under the timer digits, or in the title subtitle line. */
 .live-freeze{display:inline-flex;align-items:center;gap:.35em;max-width:100%;padding:.08em .45em;border:1px solid currentColor;border-radius:.3em;color:var(--live-accent);font-weight:600;line-height:1.25;white-space:nowrap}
 .live-freeze svg{flex:none;width:1em;height:1em}
+/* The connection note: the same place, the ink colour, quieter than the accent. */
+.live-freeze--offline{color:var(--live-ink);border-color:var(--live-faint)}
 .live-title span .live-freeze{font-size:inherit}
 .live-chart,.live-list,.live-logos{display:flex;flex-direction:column;height:100%;min-height:0}
 /* Table and recent solves: the caption, then N rows that split the rest
@@ -116,10 +118,6 @@
 .live-fullscreen--state .ib-error__code{font-size:max(72px,14vh)}
 .live-fullscreen--state .ib-error__title{max-width:28ch;font-size:max(22px,4.2vh)}
 .live-fullscreen--state .ib-error__text{max-width:40ch;font-size:max(16px,2.6vh)}
-/* «Немає зв'язку · дані на 12:03»: quiet, in the corner, only while the data is not live. */
-.live-offline{position:absolute;right:max(16px,2vh);bottom:max(16px,2vh);z-index:5;display:inline-flex;align-items:center;gap:.5em;padding:.35em .7em;border:1px solid rgba(255,255,255,.35);border-radius:.4em;background:rgba(9,9,17,.72);color:#fff;font:500 max(15px,2.2vh)/1.2 var(--font-geist-sans,Arial,sans-serif)}
-.live-offline svg{flex:none;width:1.1em;height:1.1em}
-.live-fullscreen.is-offline .live-controls{bottom:calc(max(16px,2vh) + max(15px,2.2vh) * 2.4 + 8px)}
 .live-fullscreen.is-idle,.live-fullscreen.is-idle *{cursor:none!important}
 .live-area{position:absolute;inset:0;box-sizing:border-box}
 .live-fullscreen--anchor .live-area{inset:auto;top:0;left:0;width:var(--live-screen-width);height:var(--live-screen-height)}
