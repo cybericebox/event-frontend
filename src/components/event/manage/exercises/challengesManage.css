@@ -152,3 +152,11 @@ button.event-sortable__main{cursor:pointer}
 .event-resource-plan__toggle[aria-expanded="true"] .event-resource-plan__chevron{transform:rotate(90deg)}
 .event-resource-plan__summary{color:var(--ib-dim);font-weight:var(--ib-w-regular);font-size:var(--ib-fs-13)}
 .event-resource-plan__body{display:grid;gap:var(--ib-2);min-width:0}
+/* Resource totals: fixed column widths shared by every row; numbers right-aligned under right-aligned headers. */
+.event-resource-plan__table{table-layout:fixed}
+.event-resource-plan__table .event-resource-plan__name-col{width:44%}
+.event-resource-plan__table .ib-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.event-resource-plan .event-resource-plan__overhead td span{margin-left:0}
+.event-resource-plan .event-resource-plan__overhead td{white-space:normal}
+.event-resource-plan .event-resource-plan__basis{display:block;margin:2px 0 0}
+.event-resource-plan__table thead .ib-num{font-family:inherit}
