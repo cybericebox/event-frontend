@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent, type ReactNode} from "react";
-import {Snowflake} from "lucide-react";
+import {Snowflake, WifiOff} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
@@ -48,10 +48,22 @@ function frozenAt(results?: ManageResultsSnapshot): string | null {
     return results?.Freeze.Applied && results.Freeze.FrozenAt ? results.Freeze.FrozenAt : null;
 }
 
-// «Результати заморожено о 10:59»: under the timer, or in the title when the
-// screen has no timer.
-function FreezeBadge({at, size}: {at: string; size?: number}) {
-    return <span className="live-freeze" style={size ? {fontSize: size} : undefined}><Snowflake aria-hidden="true" />{t("live.freeze.badge", {time: clockLabel(at)})}</span>;
+// A note under the timer, or in the title when the screen has no timer:
+// «Немає звʼязку · дані на 12:03» while the data is not live, else
+// «Заморожено о 10:59» while the results are frozen.
+export type LiveNote = {kind: "offline" | "freeze"; text: string};
+
+function liveNote(results: ManageResultsSnapshot | undefined, offlineSince: number | null): LiveNote | null {
+    if (offlineSince !== null) return {kind: "offline", text: t("live.offline", {time: clockLabel(offlineSince)})};
+    const frozen = frozenAt(results);
+    return frozen ? {kind: "freeze", text: t("live.freeze.badge", {time: clockLabel(frozen)})} : null;
+}
+
+function NoteBadge({note, size}: {note: LiveNote; size?: number}) {
+    const Icon = note.kind === "offline" ? WifiOff : Snowflake;
+    return <span className={`live-freeze${note.kind === "offline" ? " live-freeze--offline" : ""}`} role={note.kind === "offline" ? "status" : undefined} style={size ? {fontSize: size} : undefined}>
+        <Icon aria-hidden="true" />{note.text}
+    </span>;
 }
 
 function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean; metrics: LiveMetrics; suffix: string}) {
@@ -130,7 +142,7 @@ function LiveLogos({widget, fallback, edit, sample, theme}: {widget: LiveWidget;
 
 type LiveMetrics = {caption: number; body: number; timer: number};
 
-function LiveTimer({widget, event, stages, now, results, badge, metrics, named}: {widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; now: number; results?: ManageResultsSnapshot; badge: boolean; metrics: LiveMetrics; named: boolean}) {
+function LiveTimer({widget, event, stages, now, results, note, metrics, named}: {widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; now: number; results?: ManageResultsSnapshot; note: LiveNote | null; metrics: LiveMetrics; named: boolean}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const state = liveTimerState(widget.props, event, stages, now, results?.Freeze.FrozenAt ?? null, named);
     const digits = liveTimerDigits(state, now, widget.props.showSeconds !== false);
@@ -138,29 +150,26 @@ function LiveTimer({widget, event, stages, now, results, badge, metrics, named}:
     const custom = typeof widget.props.label === "string" ? widget.props.label.trim() : "";
     const label = widget.props.showLabel === false ? null : custom || state.label || null;
     const labelSize = (["s", "m", "l"] as const).find(value => value === widget.props.labelSize) ?? "m";
-    const frozen = badge ? frozenAt(results) : null;
-    const badgeText = frozen ? t("live.freeze.badge", {time: clockLabel(frozen)}) : null;
-    const fit = liveTimerFit({width: size.width, height: size.height, digits: shown.length, label, labelSize, badge: badgeText, labelMin: metrics.caption, digitsMin: metrics.timer});
+    const fit = liveTimerFit({width: size.width, height: size.height, digits: shown.length, label, labelSize, badge: note?.text ?? null, labelMin: metrics.caption, digitsMin: metrics.timer});
     return <div className="live-timer" ref={ref}>
         {label && fit.labelShown && <small style={{fontSize: fit.label}}>{label}</small>}
-        {frozen && !fit.labelShown && <FreezeBadge at={frozen} size={fit.badge} />}
+        {note && !fit.labelShown && <NoteBadge note={note} size={fit.badge} />}
         <strong className={digits ? undefined : "live-timer__word"} style={{fontSize: fit.digits}}>{shown}</strong>
-        {frozen && fit.labelShown && <FreezeBadge at={frozen} size={fit.badge} />}
+        {note && fit.labelShown && <NoteBadge note={note} size={fit.badge} />}
     </div>;
 }
 
-function LiveTitle({widget, event, logo, stages, now, results, badge, metrics}: {widget: LiveWidget; event: PublicEventInfo; logo: string | null; stages: LiveStage[]; now: number; results?: ManageResultsSnapshot; badge: boolean; metrics: LiveMetrics}) {
+function LiveTitle({widget, event, logo, stages, now, note, metrics}: {widget: LiveWidget; event: PublicEventInfo; logo: string | null; stages: LiveStage[]; now: number; note: LiveNote | null; metrics: LiveMetrics}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const text = typeof widget.props.subtitle === "string" ? widget.props.subtitle.trim() : "";
     // «Поточний етап»: the running stage (or the next one); the own text otherwise.
     const subtitle = widget.props.subtitleStage === true ? liveStageSubtitle(stages, now) || text : text;
-    const frozen = badge ? frozenAt(results) : null;
-    const fit = liveTitleFit({width: size.width, height: size.height, name: event.Name, subtitle: !!subtitle || !!frozen, logo: !!logo, subtitleMin: metrics.caption});
+    const fit = liveTitleFit({width: size.width, height: size.height, name: event.Name, subtitle: !!subtitle || !!note, logo: !!logo, subtitleMin: metrics.caption});
     return <div className="live-title" ref={ref}>
         {logo && <span className="live-title__logo" style={{height: fit.logo}}><img src={logo} alt="" /></span>}
         <div>
             <strong style={{fontSize: fit.name}}>{event.Name}</strong>
-            {(subtitle || frozen) && <span style={{fontSize: fit.subtitle}}>{frozen ? <FreezeBadge at={frozen} /> : subtitle}</span>}
+            {(subtitle || note) && <span style={{fontSize: fit.subtitle}}>{note ? <NoteBadge note={note} /> : subtitle}</span>}
         </div>
     </div>;
 }
@@ -238,16 +247,16 @@ function LiveSolves({widget, results, metrics, suffix, participation}: {widget: 
     </LiveList>;
 }
 
-function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, badge, suffix, named}: {
+function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, note, suffix, named}: {
     widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean; metrics: LiveMetrics;
-    // Whether this widget carries the freeze badge (the timer, else the title).
-    badge: boolean;
+    // The note this widget carries (the timer, else the title): no connection or the freeze.
+    note: LiveNote | null;
     // The freeze note of the captions (none while a badge shows it) and whether the timer names the stage.
     suffix: string; named: boolean;
 }) {
     const logo = resolveEventLogoURL(event.LogoURL);
-    if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} stages={stages} now={now} results={results} badge={badge} metrics={metrics} />;
-    if (widget.type === "timer") return <LiveTimer widget={widget} event={event} stages={stages} now={now} results={results} badge={badge} metrics={metrics} named={named} />;
+    if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} stages={stages} now={now} note={note} metrics={metrics} />;
+    if (widget.type === "timer") return <LiveTimer widget={widget} event={event} stages={stages} now={now} results={results} note={note} metrics={metrics} named={named} />;
     if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} metrics={metrics} suffix={suffix} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
     if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
@@ -262,8 +271,10 @@ function WidgetContent({widget, event, stages, results, now, theme, edit, sample
 
 export type LiveGhost = {x: number; y: number; w: number; h: number; ok: boolean};
 
-export function LiveCanvas({layout, event, stages = noStages, results, sample = false, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
+export function LiveCanvas({layout, event, stages = noStages, results, offlineSince = null, sample = false, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
     layout: LiveLayout; event: PublicEventInfo; stages?: LiveStage[]; results?: ManageResultsSnapshot; sample?: boolean; selectedID?: string | null;
+    // Since when the data is not live (the screen lost the connection), else null.
+    offlineSince?: number | null;
     onSelect?: (id: string) => void; edit?: boolean; showGrid?: boolean;
     onPointerDown?: (event: PointerEvent<HTMLButtonElement | HTMLSpanElement>, widget: LiveWidget, mode: "move" | "resize") => void;
     conflicts?: Set<string>; warned?: Set<string>; ghost?: LiveGhost | null;
@@ -280,6 +291,7 @@ export function LiveCanvas({layout, event, stages = noStages, results, sample = 
     const badgeHost = layout.widgets.some(widget => widget.type === "timer") ? "timer" : "title";
     // One freeze mark is enough: with a badge on screen the captions skip the note.
     const suffix = layout.widgets.some(widget => widget.type === badgeHost) ? "" : frozenSuffix(results);
+    const note = liveNote(results, offlineSince);
     // The timer names the stage unless the title already shows it.
     const named = !layout.widgets.some(widget => widget.type === "title" && widget.props.subtitleStage === true);
     const [now, setNow] = useState(0);
@@ -294,9 +306,9 @@ export function LiveCanvas({layout, event, stages = noStages, results, sample = 
     const area = (widget: {x: number; y: number; w: number; h: number}) => ({gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`});
     return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={area(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
-            <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit sample={sample} metrics={metrics} badge={widget.type === badgeHost} suffix={suffix} named={named} />
+            <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit sample={sample} metrics={metrics} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} />
             <span className="live-widget__resize" role="presentation" onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, "resize");}} />
-        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={false} sample={sample} metrics={metrics} badge={widget.type === badgeHost} suffix={suffix} named={named} /></div>)}
+        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={false} sample={sample} metrics={metrics} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} /></div>)}
         {ghost && <div className={`live-drop-ghost${ghost.ok ? "" : " is-blocked"}`} style={area(ghost)} aria-hidden="true" />}
     </div>;
 }

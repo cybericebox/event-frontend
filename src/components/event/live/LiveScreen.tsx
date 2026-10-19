@@ -3,7 +3,7 @@
 import {useCallback, useEffect, useState, type CSSProperties, type ReactNode} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {CircleHelp, Maximize, Minimize, MonitorCheck, WifiOff} from "lucide-react";
+import {CircleHelp, Maximize, Minimize, MonitorCheck} from "lucide-react";
 import {getLiveLayoutVersion, getPublishedLiveLayout, LiveScreenLinkError, type LiveLayout, type LiveScreenByLink} from "@/api/manageLive";
 import {getManageStages} from "@/api/manageStages";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -19,7 +19,6 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {ErrorPage} from "@/components/event/ErrorPage";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
-import {clockLabel} from "@/utils/resultsFreeze";
 import {ManageApiError} from "@/api/manage";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
 import {NoAccessScreen} from "@/components/event/NoAccessScreen";
@@ -179,12 +178,11 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
     const safe = liveSafeInsets(anchored ? layout.screen.width : windowWidth || 0, anchored ? layout.screen.height : windowHeight || 0, liveSafeArea(layout.screen));
     const style = {"--live-screen-width": `${layout.screen.width}px`, "--live-screen-height": `${layout.screen.height}px`} as CSSProperties;
     const areaStyle = {padding: `${safe.y}px ${safe.x}px`, transform: shift[0] || shift[1] ? `translate(${shift[0]}px, ${shift[1]}px)` : undefined} as CSSProperties;
-    return <main className={`live-fullscreen live-fullscreen--${layout.theme}${anchored ? " live-fullscreen--anchor" : ""}${idle ? " is-idle" : ""}${lostAt !== null ? " is-offline" : ""}`} style={style}>
+    return <main className={`live-fullscreen live-fullscreen--${layout.theme}${anchored ? " live-fullscreen--anchor" : ""}${idle ? " is-idle" : ""}`} style={style}>
         <div className="live-area" style={areaStyle}>
-            <LiveCanvas layout={layout} event={event} stages={stages} results={results.data} />
+            <LiveCanvas layout={layout} event={event} stages={stages} results={results.data} offlineSince={lostAt} />
             {testing && <LiveScreenTest layout={layout} />}
         </div>
-        {lostAt !== null && <div className="live-offline" role="status" style={{right: safe.x + 16, bottom: safe.y + 16}}><WifiOff aria-hidden="true" />{t("live.offline", {time: clockLabel(lostAt)})}</div>}
         <div className="live-controls" aria-label={t("live.controls")}>
             {fullscreen.supported && <EventTooltip content={t("live.keyF")}>{id => <button type="button" onClick={fullscreen.toggle} aria-keyshortcuts="F" aria-describedby={id}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}</EventTooltip>}
             <EventTooltip content={t("live.keyT")}>{id => <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} aria-keyshortcuts="T" aria-describedby={id}><MonitorCheck size={16} />{t("live.test.title")}</button>}</EventTooltip>

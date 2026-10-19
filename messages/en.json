@@ -3120,6 +3120,7 @@
   "manage.live.links.noExpiry": "no limit",
   "manage.live.links.freshHelp": "Open it in the browser of the screen PC. Only a hash is stored, so the full link is shown only now.",
   "manage.live.links.hiddenURL": "The full link is shown only right after it is created. To get it again, regenerate it — the old one stops working.",
+  "manage.live.links.screens": "One link — up to ~10 screens at once.",
   "manage.live.section.display": "Display",
   "manage.live.section.place": "Position and size",
   "manage.live.pos.xHelp": "The column of the widget's left edge (1 = left). The grid has {cols} columns.",
