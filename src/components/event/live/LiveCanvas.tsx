@@ -113,11 +113,14 @@ export function liveLogoItems(props: LiveWidget["props"]): LiveLogoItem[] {
 // «Одноколірні» the logo is a CSS mask filled with the theme ink; the dark
 // theme uses a logo's own dark file when it has one. A fixed block may wrap
 // into 2–3 rows (a sponsors' wall).
-function LiveLogos({widget, fallback, edit, sample, theme}: {widget: LiveWidget; fallback: string | null; edit: boolean; sample: boolean; theme: LiveLayout["theme"]}) {
+function LiveLogos({widget, edit, sample, theme}: {widget: LiveWidget; edit: boolean; sample: boolean; theme: LiveLayout["theme"]}) {
+    // A logo that does not load leaves no empty slot behind.
+    const [broken, setBroken] = useState<ReadonlySet<string>>(() => new Set());
     const items = liveLogoItems(widget.props);
-    const urls = items.map(item => liveLogoURL(theme === "dark" && item.dark ? item.dark : item.src)).filter((value): value is string => !!value);
-    // With sample data and no logo at all, the platform crest stands in.
-    const images = urls.length ? urls : fallback ? [fallback] : sample ? [crest.src, crest.src, crest.src] : [];
+    const urls = items.map(item => liveLogoURL(theme === "dark" && item.dark ? item.dark : item.src)).filter((value): value is string => !!value && !broken.has(value));
+    // With sample data and no logo at all, the platform crest stands in. The
+    // event logo never does: an organizers block without logos is no block.
+    const images = urls.length ? urls : sample ? [crest.src, crest.src, crest.src] : [];
     // No logo at all: the screen shows nothing rather than a lonely caption.
     if (!images.length && !edit) return null;
     const carousel = widget.props.mode === "carousel" && images.length > 1;
@@ -130,8 +133,9 @@ function LiveLogos({widget, fallback, edit, sample, theme}: {widget: LiveWidget;
         {caption !== null && <h2>{caption}</h2>}
         <div className="live-logos__track">
             <div style={carousel ? {animationDuration: duration, animationPlayState: widget.props.paused === true || edit ? "paused" : "running"} : undefined}>
-                {(carousel ? [...images, ...images] : images).map((url, index) => <span key={`${url}-${index}`} className="live-logo" style={mono ? {maskImage: `url("${url}")`, WebkitMaskImage: `url("${url}")`} as CSSProperties : undefined}>
-                    <img src={url} alt={index < images.length ? t("live.logos.alt") : ""} aria-hidden={index >= images.length || undefined} />
+                {(carousel ? [...images, ...images] : images).map((url, index) => <span key={`${url}-${index}`} className="live-logo">
+                    <img src={url} alt={index < images.length ? t("live.logos.alt") : ""} aria-hidden={index >= images.length || undefined}
+                        onError={() => setBroken(current => new Set(current).add(url))} />
                 </span>)}
             </div>
         </div>
@@ -168,10 +172,12 @@ function LiveTitle({widget, event, logo, stages, now, note, metrics}: {widget: L
     const text = typeof widget.props.subtitle === "string" ? widget.props.subtitle.trim() : "";
     // «Поточний етап»: the running stage (or the next one); the own text otherwise.
     const subtitle = widget.props.subtitleStage === true ? liveStageSubtitle(stages, now) || text : text;
-    const shownLogo = widget.props.showLogo === false ? null : logo;
+    // A logo that does not load (an unpublished event's logo on a screen with no session) leaves no empty tile.
+    const [logoBroken, setLogoBroken] = useState(false);
+    const shownLogo = widget.props.showLogo === false || logoBroken ? null : logo;
     const fit = liveTitleFit({width: size.width, height: size.height, name: event.Name, subtitle: !!subtitle || !!note, logo: !!shownLogo, subtitleMin: metrics.caption});
     return <div className="live-title" ref={ref} data-align={liveAlign(widget, "left")}>
-        {shownLogo && <span className="live-title__logo" style={{height: fit.logo}}><img src={shownLogo} alt="" /></span>}
+        {shownLogo && <span className="live-title__logo" style={{height: fit.logo}}><img src={shownLogo} alt="" onError={() => setLogoBroken(true)} /></span>}
         <div>
             <strong style={{fontSize: fit.name}}>{event.Name}</strong>
             {(subtitle || note) && <span style={{fontSize: fit.subtitle}}>{note ? <NoteBadge note={note} /> : subtitle}</span>}
@@ -283,7 +289,7 @@ function WidgetContent({widget, event, stages, results, now, theme, edit, sample
     if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} suffix={suffix} />;
     if (widget.type === "solves") return <LiveSolves widget={widget} results={results} metrics={metrics} suffix={suffix} participation={event.Participation} />;
     if (widget.type === "announcement") return <LiveAnnouncement widget={widget} metrics={metrics} />;
-    if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} sample={sample} theme={theme} />;
+    if (widget.type === "logos") return <LiveLogos widget={widget} edit={edit} sample={sample} theme={theme} />;
     if (widget.type === "qr") return <LiveQR value={typeof widget.props.value === "string" ? widget.props.value : typeof widget.props.url === "string" ? widget.props.url : ""}
         caption={typeof widget.props.caption === "string" ? widget.props.caption : ""} />;
     if (widget.type === "podium") return <LivePodium widget={widget} event={event} results={results} metrics={metrics} caption={captionOf(widget, t("live.podium.title"))} />;
@@ -343,7 +349,7 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     const now = clock && clock + nowOffset;
     const style = useMemo(() => ({
         "--live-cols": layout.grid.cols, "--live-rows": layout.grid.rows, ...liveTextVars(layout.screen.textScale, profile),
-        ...(layout.theme === "dark" && (whiteTextContrast(event.Theme.Brand) ?? 21) < 4.5 ? {"--live-ink": "#16152B", "--live-dim": "#4D4B61", "--live-faint": "#4D4B61", "--live-line": "rgba(33,26,82,.2)"} : {}),
+        ...(layout.theme === "dark" && (whiteTextContrast(event.Theme.Brand) ?? 21) < 4.5 ? {"--live-ink": "#16152B", "--live-dim": "#4D4B61", "--live-faint": "#4D4B61", "--live-line": "rgba(33,26,82,.2)", "--live-logo-filter": "brightness(0)"} : {}),
     } as CSSProperties), [layout.grid.cols, layout.grid.rows, layout.screen.textScale, layout.theme, event.Theme.Brand, profile]);
     // Light theme: row 1 is the brand band; one-row widgets there sit on it,
     // taller ones cover it with the page colour.

@@ -97,8 +97,10 @@
 .live-logos__track>div{display:flex;align-items:center;justify-content:space-evenly;gap:calc(var(--live-u) * max(.6, 2.4 - var(--live-logo-count, 1) * .2));height:100%}
 .live-logo{display:inline-flex;flex:none;align-items:center;justify-content:center;height:72%;max-height:calc(var(--live-u) * 3)}
 .live-logo img{display:block;height:100%;max-width:calc(var(--live-u) * 12);max-height:100%;object-fit:contain;opacity:.88}
-.live-logos--mono .live-logo{background:var(--live-logo-ink);-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
-.live-logos--mono .live-logo img{opacity:0}
+/* «Одноколірні»: the logo itself recoloured by a filter (white on the dark
+   theme, near-black on the light one). A CSS mask would need the image over
+   CORS, which an unpublished event's logo does not allow. */
+.live-logos--mono .live-logo img{filter:var(--live-logo-filter)}
 .live-logos--carousel .live-logos__track>div{justify-content:flex-start;width:max-content;animation:live-logo-scroll 50s linear infinite}
 @keyframes live-logo-scroll{from{transform:translateX(0)}to{transform:translateX(calc(-50% - calc(var(--live-u) * .6)))}}
 @media(prefers-reduced-motion:reduce){.live-logos--carousel .live-logos__track>div{animation:none}}
