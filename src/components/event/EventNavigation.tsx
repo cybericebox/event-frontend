@@ -4,13 +4,13 @@ import {useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {ChevronDown, Menu, MessageSquare, X} from "lucide-react";
+import {Bell, ChevronDown, Menu, MessageSquare, UserRound, X} from "lucide-react";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {getNavigationPages} from "@/api/navigationPages";
 import {getManageAccess, getManagePages} from "@/api/manage";
 import {signOut} from "@/api/authAPI";
 import {getCatalogAccess, getCurrentUser, profilePictureUrl} from "@/api/clientAuth";
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import {Popover, PopoverAnchor, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {EventBrandLogo} from "./EventBrandLogo";
 import {ThemeToggle} from "./ThemeToggle";
 import {VpnHeaderButton} from "./vpn/EventVpn";
@@ -103,7 +103,7 @@ function AccountMenu({event, approved, pinned, theme}: Required<Pick<Props, "eve
             // The API returns an origin-specific media URL; this app is statically exported.
             // eslint-disable-next-line @next/next/no-img-element
             <img src={picture} alt="" width={32} height={32} referrerPolicy="no-referrer" />
-        ) : avatarInitials}</span></button></PopoverTrigger>
+        ) : avatarInitials || <UserRound size={18} />}</span></button></PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} collisionPadding={12} className="event-account__menu">
             {profile.data && <div className="event-account__head">
                 <b>{`${profile.data.FirstName} ${profile.data.LastName}`.trim() || profile.data.Email}</b>
@@ -169,6 +169,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     const navRef = useRef<HTMLElement>(null);
     const measureRef = useRef<HTMLUListElement>(null);
     const measureMoreRef = useRef<HTMLButtonElement>(null);
+    const headerRef = useRef<HTMLElement>(null);
     const pages = useQuery({
         queryKey: ["event-navigation-pages", event.EventID, approved],
         queryFn: () => getNavigationPages(event.EventID),
@@ -237,7 +238,16 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     const showManagement = authenticated && !preview.active && !!managementAccess.data;
     const hasMobileMenu = !pending && (links.length > 0 || showParticipation || showManagement);
     const menuExpanded = hasMobileMenu && open;
-    return <header className={`ib-navbar event-navbar${hasMobileMenu ? "" : " event-navbar--no-menu"}${menuExpanded ? " is-open" : ""}`} aria-busy={pending || undefined}>
+    useLayoutEffect(() => {
+        const header = headerRef.current;
+        if (!header) return;
+        const closeOnDesktop = () => {if (header.clientWidth > 760) setOpen(false);};
+        const observer = new ResizeObserver(closeOnDesktop);
+        observer.observe(header);
+        return () => observer.disconnect();
+    }, []);
+    return <Popover modal open={menuExpanded} onOpenChange={setOpen}>
+        <PopoverAnchor asChild><header ref={headerRef} className={`ib-navbar event-navbar${hasMobileMenu || pending ? "" : " event-navbar--no-menu"}${menuExpanded ? " is-open" : ""}`} aria-busy={pending || undefined}>
         <div className="ib-navbar__bar">
             <Link className="ib-navbar__brand" href="/" aria-label={t("nav.brand", {name: event.Name})} onClick={() => setOpen(false)}>
                 <EventBrandLogo event={event} className="ib-navbar__crest" />
@@ -250,20 +260,26 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
                 <button className="ib-navbar__more-btn event-navbar__more-measure" type="button" ref={measureMoreRef} tabIndex={-1} aria-hidden="true">{t("nav.more")} <ChevronDown className="ib-icon" /></button>
             </nav>
             <div className="ib-navbar__actions">
-                {!pending && <>
+                {pending ? <>
+                    <button type="button" className="event-navbar__icon" aria-label={t("inbox.title")} disabled><Bell size={18} aria-hidden="true" /></button>
+                    <button type="button" className="event-account__trigger" aria-label={t("account.menu")} disabled><UserRound size={18} aria-hidden="true" /></button>
+                </> : <>
                 {authenticated && !preview.active && <ManagerEntry eventID={event.EventID} variant="nav" />}
                 <EventHeaderActions event={event} authenticated={authenticated} approved={approved} pinned={participant} />
                 </>}
-                {hasMobileMenu && <button className="ib-navbar__toggle" type="button" aria-expanded={menuExpanded} aria-controls="event-menu" aria-label={menuExpanded ? t("nav.closeMenu") : t("nav.openMenu")} onClick={() => setOpen(value => !value)}>{menuExpanded ? <X size={20} /> : <Menu size={20} />}</button>}
+                {(hasMobileMenu || pending) && <PopoverTrigger asChild><button className="ib-navbar__toggle" type="button" disabled={pending} aria-expanded={menuExpanded} aria-controls="event-menu" aria-label={menuExpanded ? t("nav.closeMenu") : t("nav.openMenu")}>{menuExpanded ? <X size={20} /> : <Menu size={20} />}</button></PopoverTrigger>}
             </div>
         </div>
-        {hasMobileMenu && <nav className="ib-navbar__panel" id="event-menu" aria-label={t("nav.mobile")}>
+        </header></PopoverAnchor>
+        {hasMobileMenu && <PopoverContent id="event-menu" className="event-mobile-menu" aria-label={t("nav.mobile")} side="bottom" align="start" sideOffset={0} avoidCollisions={false}
+            onClickCapture={event => {if (event.target instanceof Element && event.target.closest("a")) setOpen(false);}}>
+        <nav className="event-mobile-menu__links" aria-label={t("nav.mobile")}>
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}
             {showParticipation && <>
                                 <Link href="/participation" aria-current={path === "/participation" ? "page" : undefined} onClick={() => setOpen(false)}>{t("nav.participation")}</Link>
             </>}
             {showManagement && <ManagerEntry eventID={event.EventID} variant="panel" />}
             {!authenticated && !pending && <a className="event-navbar__panel-signin" href={identityHref("/sign-in", event)}>{t("account.signIn")}</a>}
-        </nav>}
-    </header>;
+        </nav></PopoverContent>}
+    </Popover>;
 }
