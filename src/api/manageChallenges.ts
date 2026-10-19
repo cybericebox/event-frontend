@@ -74,7 +74,7 @@ const challengeSchema = z.object({
     MaxFlagAttempts: attemptLimit,
     // Place inside the group across the event's sets; null sorts after the ordered ones.
     BoardOrder: z.number().int().nullish().transform(value => value ?? null),
-    Snapshot: z.object({name: z.string(), description: z.unknown().optional(), placeholders: z.array(placeholderSchema).nullish().transform(value => value ?? [])}),
+    Snapshot: z.object({name: z.string(), description: z.unknown().optional(), difficulty: z.string().optional(), placeholders: z.array(placeholderSchema).nullish().transform(value => value ?? [])}),
     Hints: z.array(challengeHintSchema).nullish().transform(value => value ?? []),
 });
 const groupSchema = z.object({ID: id, Name: z.string(), Order: z.number().int(), CreatedAt: z.string()});

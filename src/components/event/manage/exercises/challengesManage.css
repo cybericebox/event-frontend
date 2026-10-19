@@ -129,3 +129,14 @@ button.event-sortable__main{cursor:pointer}
 .event-exercise-set .event-task{min-width:0}
 .event-exercise-set__stage .event-select{max-width:100%}
 .event-exercise-set .ib-switch{flex-wrap:wrap}
+/* Difficulty and points of a task: compact on the right of its row, under the name on a phone. */
+.event-group-order__meta{display:inline-flex;align-items:center;gap:var(--ib-2);flex:none;margin-left:auto;color:var(--ib-dim);font-size:var(--ib-fs-12);white-space:nowrap}
+.event-group-order__meta>span+span::before{content:"·";margin-right:var(--ib-2)}
+@media(max-width:640px){
+  .event-group-order__task{flex-wrap:wrap;row-gap:var(--ib-1)}
+  .event-group-order__meta{flex-basis:100%;margin-left:calc(24px + var(--ib-3))}
+}
+/* The task name keeps its room; the set name next to it gives way first. */
+.event-group-order__task{flex:1 1 auto;width:100%}
+.event-group-order__task strong{flex:0 1 auto;min-width:3em}
+.event-group-order__task small{flex-shrink:6;max-width:9em}
