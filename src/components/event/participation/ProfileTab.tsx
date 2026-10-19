@@ -138,10 +138,10 @@ export function ProfileTab({event, info, team, finished, preview, now, onOpenTea
                 </div>
                 {allowPseudonym && info && !preview && <PseudonymEditor info={info} eventID={event.EventID} />}
             </div>
-            <dl className="event-pp-hero__score">
+            {!noTeam && <dl className="event-pp-hero__score">
                 {!preview && <div><dt>{teamMode ? t("participation.stats.teamPlace") : t("participation.stats.myPlace")}</dt><dd>{data ? placeText(data.Rank) : "—"}</dd></div>}
                 <div><dt>{teamMode ? t("participation.stats.myPoints") : t("participation.stats.points")}</dt><dd>{data ? formatNumber(points) : "—"}</dd></div>
-            </dl>
+            </dl>}
         </section>
         {noTeam ? <Card title={t("participation.stats.title")}>
             <EmptyState message={t("participation.stats.noTeam")} action={<button type="button" className="ib-btn ib-btn--primary" onClick={onOpenTeam}>{t("participation.stats.toTeam")}</button>} />
