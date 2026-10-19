@@ -90,6 +90,13 @@ describe("ResourcePlanSummary", () => {
         expect(container.querySelector("table")).toBeNull();
     });
 
+    it.each([[1, "Разом на 1 команду"], [2, "Разом на 2 команди"], [5, "Разом на 5 команд"], [21, "Разом на 21 команду"]])("says the team count in the right plural form (%i)", async (teams, text) => {
+        api.plan.mockResolvedValue(plan({Teams: teams, TeamsBasis: "current"}));
+        const {container} = view([attachment(2)]);
+        await waitFor(() => expect(container.querySelector("[data-plan-total]")).not.toBeNull());
+        expect(container.querySelector("[data-plan-total] th")!.textContent).toContain(text);
+    });
+
     it("renders nothing when no set has devices", () => {
         const {container} = view([attachment(0)]);
         expect(container.firstChild).toBeNull();
