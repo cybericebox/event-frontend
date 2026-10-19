@@ -43,3 +43,18 @@ it("names the missing field in the editor warning", () => {
 it("has no editor warning when the date is set", () => {
     expect(blockDataWarning(countdown, {"event.finish": "2099-01-01T00:00:00Z"}, catalog)).toBeNull();
 });
+
+it("drops the hero timer and its note on the site once the target time has come, keeps them in the editor", () => {
+    const withNote: ContentBlock = {...hero, note: "До старту залишилось"};
+    const past = {"event.finish": "2020-01-01T00:00:00Z"};
+    const {container} = render(<ContentBlocks document={{blocks: [withNote]}} variables={past} initialNow={Date.parse("2026-01-01T00:00:00Z")} />);
+    expect(screen.getByText("Захід")).toBeTruthy();
+    expect(container.querySelector(".ib-timer")).toBeNull();
+    expect(screen.queryByText("До старту залишилось")).toBeNull();
+    cleanup();
+    render(<ContentBlocks document={{blocks: [withNote]}} variables={{"event.finish": "2099-01-01T00:00:00Z"}} />);
+    expect(screen.getByText("До старту залишилось")).toBeTruthy();
+    cleanup();
+    render(<ContentBlocks document={{blocks: [withNote]}} variables={past} preview />);
+    expect(screen.getByText("До старту залишилось")).toBeTruthy();
+});

@@ -19,6 +19,7 @@ import {useLinkCode} from "./participationParts";
 import {ProfileTab} from "./ProfileTab";
 import {useParticipationStats} from "./useParticipationStats";
 import {TeamTab} from "./TeamPage";
+import {NotParticipant} from "./NotParticipant";
 import {getOwnTeamMembers, TeamRole} from "@/api/eventTeams";
 
 function Heading({sub}: {sub?: string}) {
@@ -56,7 +57,7 @@ export function ParticipationPage() {
         if (staff.pending) return <EventLoading label={t("participation.loading")} />;
         return <div className="event-participation">
             <Heading />
-            <EmptyState message={linkCode ? t("participation.team.linkRegister") : t("participation.unavailable")} action={<Link className="ib-btn ib-btn--primary" href="/join">{linkCode ? t("shell.join.action") : t("participation.noTeam.join")}</Link>} />
+            <NotParticipant eventID={event.EventID} message={linkCode ? t("participation.team.linkRegister") : t("participation.unavailable")} action={linkCode ? t("shell.join.action") : t("participation.noTeam.join")} />
         </div>;
     }
     if (previewing && previewStats.unavailable) return <div className="event-participation"><Heading /><EmptyState message={t("participation.preview.noModerators")} /></div>;

@@ -9,7 +9,7 @@
 .event-scoreboard{display:flex;flex-direction:column;min-height:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:hidden}
 .event-scoreboard__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
 .event-scoreboard__search{flex:1 1 240px;max-width:360px}
-.event-scoreboard__scroll{overflow:auto}
+.event-scoreboard__scroll{position:relative;overflow:auto}
 .event-scoreboard table{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--ib-fs-13)}
 .event-scoreboard th{position:sticky;top:0;z-index:1;padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);background:var(--ib-surface);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);letter-spacing:.04em;text-align:left;text-transform:uppercase;white-space:nowrap}
 .event-scoreboard th.ib-num{text-align:right}
@@ -18,12 +18,21 @@
 .event-scoreboard td.ib-num{text-align:right}
 .event-scoreboard tr.is-own td{background:var(--ib-soft);font-weight:var(--ib-w-semibold)}
 .event-scoreboard__place{width:64px;color:var(--ib-dim);font-family:var(--ib-mono);font-variant-numeric:tabular-nums}
-.event-scoreboard__name{font-weight:var(--ib-w-medium);overflow-wrap:anywhere}
+.event-scoreboard__name{font-weight:var(--ib-w-medium);overflow-wrap:break-word;hyphens:auto}
 .event-scoreboard__points{font-weight:var(--ib-w-semibold)}
 .event-scoreboard td.event-scoreboard__state{height:var(--event-block-state-h,240px);padding:0;border-bottom:0}
 .event-scoreboard td.event-scoreboard__state>*{min-height:var(--event-block-state-h,240px)}
+.event-scoreboard--closed>*{min-height:var(--event-block-state-h,240px)}
 @media (max-width:640px){
   .event-scoreboard__search{max-width:none}
   .event-scoreboard .event-scoreboard__last{display:none}
+  /* The name takes the room; numbers stay on one line and narrow. */
+  .event-scoreboard th,.event-scoreboard td{padding-inline:var(--ib-2)}
+  .event-scoreboard th:first-child,.event-scoreboard td:first-child{padding-left:var(--ib-3)}
+  .event-scoreboard th:last-child,.event-scoreboard td:last-child{padding-right:var(--ib-3)}
+  .event-scoreboard__place{width:40px}
+  .event-scoreboard td.ib-num{white-space:nowrap}
+  .event-scoreboard th{letter-spacing:0}
   .event-results__actions{width:100%}
 }
+@media (max-width:400px){.event-scoreboard .event-scoreboard__solved{display:none}}

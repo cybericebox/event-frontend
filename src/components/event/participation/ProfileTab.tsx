@@ -82,7 +82,7 @@ function VpnCard() {
 }
 
 // The participant's own page: who they are, how they do and what they answered.
-export function ProfileTab({event, info, team, finished, preview, now}: {
+export function ProfileTab({event, info, team, finished, preview, now, onOpenTeam}: {
     event: PublicEventInfo; info: ParticipantEventInfo | null; team: OwnTeam | null; finished: boolean; preview: boolean; now: number; onOpenTeam: () => void;
 }) {
     const simulation = useParticipantPreview(event.EventID);
@@ -90,7 +90,9 @@ export function ProfileTab({event, info, team, finished, preview, now}: {
     const accent = useEventAccent();
     // The organizers' preview reads the real moderators team, so it is always a team.
     const teamMode = event.Participation === 1 || preview && !simulation.active;
-    const stats = useParticipationStats(event.EventID, {preview, enabled: true});
+    // In a team event the statistics are the team's: without a team the server has none (and answers an error).
+    const noTeam = event.Participation === 1 && !team && !preview;
+    const stats = useParticipationStats(event.EventID, {preview, enabled: !noTeam});
     const answers = useQuery({queryKey: ["event-own-answers", event.EventID], queryFn: () => getOwnParticipantAnswers(), enabled: !preview, retry: false, refetchOnWindowFocus: false});
     const data = stats.stats;
     const me = data?.Me;
@@ -131,7 +133,7 @@ export function ProfileTab({event, info, team, finished, preview, now}: {
                 <div className="event-pp-hero__tags">
                     {preview && !simulation.active
                         ? me && <span className="ib-tag ib-tag--role">{me.Role === 0 ? eventRoleLabel(0) : t("participation.team.member")}</span>
-                        : <span className="ib-tag ib-tag--ok">{t("participation.self.confirmed")}</span>}
+                        : <span className="ib-tag ib-tag--ok">{me?.JoinedAt ? t("participation.self.confirmedAt", {date: shortTime(me.JoinedAt)}) : t("participation.self.confirmed")}</span>}
                     {teamMode && !admitted && <span className="ib-tag ib-tag--warn">{t("participation.team.incomplete")}</span>}
                 </div>
                 {allowPseudonym && info && !preview && <PseudonymEditor info={info} eventID={event.EventID} />}
@@ -140,17 +142,18 @@ export function ProfileTab({event, info, team, finished, preview, now}: {
                 {!preview && <div><dt>{teamMode ? t("participation.stats.teamPlace") : t("participation.stats.myPlace")}</dt><dd>{data ? placeText(data.Rank) : "—"}</dd></div>}
                 <div><dt>{teamMode ? t("participation.stats.myPoints") : t("participation.stats.points")}</dt><dd>{data ? formatNumber(points) : "—"}</dd></div>
             </dl>
-            {me && <dl className="event-pp-dates">
-                <div><dt>{t("participation.dates.joined")}</dt><dd>{shortTime(me.JoinedAt)}</dd></div>
-            </dl>}
         </section>
-        <StatTiles label={t("participation.stats.title")} tiles={shownTiles} />
-        <div className="event-pp-charts">
-            <PointsChartCard event={event} title={t("participation.chart.points.title")} state={scopeState} error={stats.error} onRetry={stats.retry} window={window}
-                series={[{name: t("participation.chart.points.mine"), points: series, color: accent}]} />
-            <CategoryChartCard event={event} state={scopeState} solves={mine} color={accent} error={stats.error} onRetry={stats.retry} />
-        </div>
-        <SolvesTable event={event} state={scopeState} solves={mine} now={now} showSolver={false} error={stats.error} onRetry={stats.retry} title={t("participation.solves.title")} />
+        {noTeam ? <Card title={t("participation.stats.title")}>
+            <EmptyState message={t("participation.stats.noTeam")} action={<button type="button" className="ib-btn ib-btn--primary" onClick={onOpenTeam}>{t("participation.stats.toTeam")}</button>} />
+        </Card> : <>
+            <StatTiles label={t("participation.stats.title")} tiles={shownTiles} />
+            <div className="event-pp-charts">
+                <PointsChartCard event={event} title={t("participation.chart.points.title")} state={scopeState} error={stats.error} onRetry={stats.retry} window={window}
+                    series={[{name: t("participation.chart.points.mine"), points: series, color: accent}]} />
+                <CategoryChartCard event={event} state={scopeState} solves={mine} color={accent} error={stats.error} onRetry={stats.retry} />
+            </div>
+            <SolvesTable event={event} state={scopeState} solves={mine} now={now} showSolver={false} error={stats.error} onRetry={stats.retry} title={t("participation.solves.title")} />
+        </>}
         {preview && !simulation.active && <Card title={t("participation.form.cardTitle")}><EmptyState message={t("participation.preview.noForm")} compact /></Card>}
         {answers.isPending && !preview && <Card title={t("participation.form.cardTitle")}><EventLoading event={event} label={t("participation.loading")} /></Card>}
         {answers.isError && <Card title={t("participation.form.cardTitle")}><EventLoadError message={t("participation.fields.loadFailed")} error={answers.error} onRetry={() => void answers.refetch()} /></Card>}

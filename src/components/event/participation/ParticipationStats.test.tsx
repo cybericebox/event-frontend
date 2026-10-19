@@ -9,6 +9,7 @@ import type {ParticipationStats} from "@/api/participationStats";
 import {ParticipationPage} from "./ParticipationPage";
 
 const state = vi.hoisted(() => ({
+    statsCalls: 0,
     participant: null as unknown,
     stats: null as unknown,
     statsError: false,
@@ -32,6 +33,7 @@ vi.mock("@/api/participantForm", async importOriginal => ({
 vi.mock("@/api/participationStats", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/participationStats")>()),
     getParticipationStats: async () => {
+        state.statsCalls++;
         if (state.statsPending) return new Promise(() => undefined);
         if (state.statsError) throw new Error("boom");
         return state.stats;
@@ -73,7 +75,7 @@ function view() {
 }
 
 beforeEach(() => {
-    state.participant = null; state.stats = stats(); state.statsError = false; state.statsPending = false; state.members = [];
+    state.participant = null; state.statsCalls = 0; state.stats = stats(); state.statsError = false; state.statsPending = false; state.members = [];
     state.answers = {Form: {Version: 1, Enabled: false, Required: false, Document: {blocks: []}}, Answers: {}, Editable: true, Missing: []};
     window.history.replaceState(null, "", "/participation");
     sessionStorage.clear();
@@ -168,4 +170,25 @@ it("tells a member how to ask the captain and offers only leaving", async () => 
     expect(screen.queryByLabelText("Посилання для запрошення")).toBeNull();
     expect(screen.queryByRole("button", {name: /^Виключити /})).toBeNull();
     expect(screen.getByRole("button", {name: "Вийти з команди"})).toBeTruthy();
+});
+
+it("does not ask for statistics without a team: one note with the way to the team tab instead of load errors", async () => {
+    window.history.replaceState(null, "", "/participation?tab=profile");
+    state.participant = {event, participantInfo: info, ownTeam: null};
+    view();
+    expect(await screen.findByText("Статистика зʼявиться, коли ви приєднаєтеся до команди")).toBeTruthy();
+    expect(screen.queryByText(/Не вдалося/)).toBeNull();
+    expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
+    expect(state.statsCalls).toBe(0);
+    fireEvent.click(screen.getByRole("button", {name: "Перейти до команди"}));
+    expect(screen.getByRole("tab", {name: /Команда/}).getAttribute("aria-selected")).toBe("true");
+});
+
+it("says «participation confirmed» once, with the date", async () => {
+    window.history.replaceState(null, "", "/participation?tab=profile");
+    state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member)};
+    view();
+    await screen.findByText("3 місце");
+    expect(screen.getAllByText(/Участь підтверджено/)).toHaveLength(1);
+    expect(screen.getByText(/Участь підтверджено/).textContent).toMatch(/Участь підтверджено \d/);
 });

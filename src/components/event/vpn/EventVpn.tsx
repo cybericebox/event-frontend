@@ -18,8 +18,9 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import {getPreviewBoard, getPreviewLab, getPreviewVPNConfig, previewBoardKey} from "@/api/participantPreview";
 import type {PreviewLab} from "@/api/participantPreview";
 
-type VpnContextValue = {available: boolean; status: StandStatus | null; ready: boolean; connected: boolean | null; openVpn: () => void};
-const VpnContext = createContext<VpnContextValue>({available: false, status: null, ready: false, connected: null, openVpn: () => {}});
+// checkFailed: the stand status could not be read, so «not ready yet» is unknown rather than true.
+type VpnContextValue = {available: boolean; status: StandStatus | null; ready: boolean; connected: boolean | null; checkFailed?: boolean; openVpn: () => void};
+const VpnContext = createContext<VpnContextValue>({available: false, status: null, ready: false, connected: null, checkFailed: false, openVpn: () => {}});
 export const useEventVpn = () => useContext(VpnContext);
 
 // Participant wording: no failure reasons (they stay with the moderators).
@@ -112,7 +113,8 @@ export function EventVpnProvider({eventID, eventTag, enabled, moderators = false
     const ready = preview.active ? previewRuntime.data?.Ready === true && !previewRuntime.data.Expired && !previewRuntime.data.Removing : moderators ? labs.data?.ModeratorVPNReady === true : own.data?.VPNReady === true;
     const connection = useQuery({queryKey: ["event-vpn-status", eventID, moderators], queryFn: () => moderators ? getModeratorVPNStatus(eventID) : getVPNStatus(eventID), enabled: enabled && !preview.active && ready, retry: false, refetchInterval: 30000, refetchOnWindowFocus: true});
     const connected = preview.active ? ready ? previewRuntime.data?.VPNConnected ?? null : null : ready && !connection.isError ? connection.data?.Connected ?? null : null;
-    const value = useMemo(() => ({available, status, ready, connected, openVpn: () => setOpen(true)}), [available, status, ready, connected]);
+    const checkFailed = !preview.active && (moderators ? labs.isError && !labs.data : own.isError && !own.data);
+    const value = useMemo(() => ({available, status, ready, connected, checkFailed, openVpn: () => setOpen(true)}), [available, status, ready, connected, checkFailed]);
     return <VpnContext.Provider value={value}>
         {children}
         {available && <VpnModal eventID={eventID} eventTag={eventTag} moderators={moderators} vpnReady={ready} connected={connected} open={open} onClose={() => setOpen(false)} previewSelectionID={selectionID} previewLab={previewRuntime.data} />}
@@ -121,10 +123,10 @@ export function EventVpnProvider({eventID, eventTag, enabled, moderators = false
 
 // Header entry: the icon itself carries the state (no dot indicators in the DS); the short label sits beside it.
 export function VpnHeaderButton() {
-    const {available, ready, connected, openVpn} = useEventVpn();
+    const {available, ready, connected, checkFailed, openVpn} = useEventVpn();
     if (!available) return null;
     const state = vpnConnectionState(ready, connected);
-    const label = t(ready && connected === null ? "vpn.header.unknown" : `vpn.header.${state}`);
+    const label = t(!ready && checkFailed ? "vpn.header.checkFailed" : ready && connected === null ? "vpn.header.unknown" : `vpn.header.${state}`);
     return <EventTooltip content={label} placement="bottom" silent>{() => <button type="button" className={`ib-btn ib-btn--sm ib-btn--ghost event-pin event-vpn-button is-${state}`} aria-label={label} onClick={openVpn}>
         <VpnConnectionIcon ready={ready} connected={connected} /><span className="event-pin__label">{t("nav.pin.vpn")}</span>
     </button>}</EventTooltip>;

@@ -50,6 +50,8 @@
 .event-private-preview-banner.event-participant-preview{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:var(--ib-3);padding-block:var(--ib-2);min-height:48px}
 .event-participant-preview__title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .event-participant-preview__trigger{flex:none;color:inherit}
+/* While a dialog carries its own copy of the menu (registration), the bar's copy under it is inert: hide it, not a dead button. */
+body:has(dialog[open] .event-participant-preview__trigger) .event-participant-preview>.event-participant-preview__trigger{visibility:hidden}
 .event-participant-preview__menu{min-width:min(240px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:var(--radix-dropdown-menu-content-available-height);overflow:auto;z-index:100}
 .event-participant-preview__option{display:flex;align-items:center;gap:var(--ib-2)}
 .event-participant-preview__option>svg,.event-participant-preview__indicator{width:16px;height:16px;flex:none}
