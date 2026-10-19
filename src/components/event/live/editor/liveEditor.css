@@ -12,6 +12,7 @@
 
 /* Scenes: one tab per event state, its name over its status («зараз», «своя», «як «Триває»»). */
 .event-live-scenes{display:flex;align-items:center;gap:var(--ib-3);flex-wrap:wrap}
+.event-live-scenes__mode{display:flex;align-items:center;gap:var(--ib-2);flex-wrap:wrap}
 .event-live-scenes__tabs{display:flex;gap:4px;max-width:100%;overflow-x:auto;padding:3px;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-seg-bg,var(--ib-paper));scrollbar-width:none}
 .event-live-scene{display:grid;gap:2px;min-width:132px;padding:6px var(--ib-3);border:1px solid transparent;border-radius:var(--ib-r);background:transparent;color:var(--ib-dim);font:inherit;text-align:left;cursor:pointer}
 .event-live-scene strong{color:inherit;font-size:var(--ib-fs-14,14px);font-weight:var(--ib-w-semibold,600);line-height:1.2;white-space:nowrap}
@@ -148,11 +149,19 @@
 
 .event-live-editor__error{padding:var(--ib-3);border:1px solid var(--ib-danger);border-radius:var(--ib-r);color:var(--ib-danger)}
 /* The open list lies over the stage, so the canvas never moves. */
-.event-live-editor__warnings{position:absolute;top:calc(100% + 4px);right:0;z-index:5;display:grid;gap:4px;width:min(560px,100%);max-height:50vh;margin:0;overflow-y:auto;padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-warn);border-radius:var(--ib-r);background:var(--ib-paper);color:var(--ib-ink);list-style:none}
+.event-live-editor__warnings{position:absolute;top:calc(100% + 4px);right:0;z-index:5;display:block;width:min(560px,100%);max-height:50vh;margin:0;overflow-y:auto;padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-warn);border-radius:var(--ib-r);background:var(--ib-paper);color:var(--ib-ink);list-style:none}
 .event-live-editor__warnings.is-quiet{border-color:var(--ib-line)}
-.event-live-editor__warnings button{padding:0;border:0;background:none;color:inherit;font:inherit;font-size:var(--ib-fs-13);text-align:left;cursor:pointer}
+.event-live-editor__warnings ul{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.event-live-editor__warnings button{display:inline-flex;align-items:flex-start;gap:6px;padding:0;border:0;background:none;color:inherit;font:inherit;font-size:var(--ib-fs-13);text-align:left;cursor:pointer}
+.event-live-editor__warnings button svg{flex:none;margin-top:2px}
 .event-live-editor__warnings button:hover{text-decoration:underline}
+/* A problem carries the warning colour; a note stays neutral. */
+.event-live-editor__warnings li.is-fit svg,.event-live-editor__legend .is-fit svg{color:var(--ib-warn)}
 .event-live-editor__warnings li.is-floor button{color:var(--ib-dim)}
+.event-live-editor__warnings li.is-floor svg,.event-live-editor__legend .is-floor svg{color:var(--ib-dim)}
+.event-live-editor__legend{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:0 0 var(--ib-2);padding-bottom:var(--ib-2);border-bottom:1px solid var(--ib-line);font-size:var(--ib-fs-12)}
+.event-live-editor__legend dt{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.event-live-editor__legend dd{margin:0;color:var(--ib-dim)}
 /* Fact chips: several numbers on or off. */
 .event-live-chips{display:flex;flex-wrap:wrap;gap:6px}
 .event-live-chips>button{min-height:30px;padding:0 10px;border:1px solid var(--ib-line);border-radius:999px;background:var(--ib-paper);color:var(--ib-dim);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}

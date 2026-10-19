@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, liveLayoutSchema, type LiveLayout} from "@/api/manageLive";
 import {liveSampleResults} from "./liveSample";
-import {liveWidgetLimit, liveWidgetsTotal, liveSceneLayout, liveScenePreviewNow, liveScenePreviewResults, liveSceneState, liveSceneViews, mapLiveScenes, withLiveScene, withLiveSceneReset} from "./liveScenes";
+import {liveSceneLayout, liveSceneMode, liveScenePreviewNow, liveScenePreviewResults, liveScenesEqual, liveSceneState, liveSceneViews, liveWidgetLimit, liveWidgetsTotal, mapLiveScenes, withLiveScene, withLiveSceneCopy, withLiveSceneMode} from "./liveScenes";
 
 const hour = 3600_000;
 const start = Date.parse("2026-10-20T08:00:00Z");
@@ -31,38 +31,46 @@ describe("liveSceneState: the event state picks the scene", () => {
 });
 
 describe("scenes of a layout", () => {
-    const single: LiveLayout = {...defaultLiveLayout, scenes: undefined};
 
-    it("gives every state its own canvas by default: pre-start, the board, its copy for the freeze, the finale", () => {
-        expect(Object.keys(defaultLiveLayout.scenes ?? {}).sort()).toEqual(["before", "finished", "frozen"]);
-        expect(liveSceneLayout(defaultLiveLayout, "before").widgets.some(widget => widget.type === "facts")).toBe(true);
-        expect(liveSceneLayout(defaultLiveLayout, "frozen").widgets.map(widget => widget.type)).toEqual(defaultLiveLayout.widgets.map(widget => widget.type));
-        expect(liveSceneLayout(defaultLiveLayout, "finished").widgets.some(widget => widget.type === "podium")).toBe(true);
+    it("shows one screen for all states by default", () => {
+        expect(liveSceneMode(defaultLiveLayout)).toBe("single");
+        for (const state of ["before", "running", "frozen", "finished"] as const) expect(liveSceneLayout(defaultLiveLayout, state)).toBe(defaultLiveLayout);
+        expect(liveSceneViews(defaultLiveLayout).map(item => item.key)).toEqual(["running"]);
     });
 
-    it("fills the missing scenes of a saved layout from their templates on load, the same way every time", () => {
-        const saved = JSON.parse(JSON.stringify(single));
-        const loaded = liveLayoutSchema.parse(saved);
-        expect(Object.keys(loaded.scenes ?? {}).sort()).toEqual(["before", "finished", "frozen"]);
-        expect(loaded.scenes?.frozen?.widgets.map(widget => widget.type)).toEqual(single.widgets.map(widget => widget.type));
-        expect(loaded.scenes?.frozen?.widgets.every(widget => widget.id.startsWith("frozen-"))).toBe(true);
-        expect(liveLayoutSchema.parse(saved)).toEqual(loaded);
-        // A scene the organizer made stays as it is.
-        const own = liveLayoutSchema.parse({...saved, scenes: {finished: {grid: {cols: 12, rows: 8}, widgets: []}}});
-        expect(own.scenes?.finished?.widgets).toEqual([]);
+    it("turns to separate screens as copies of the one screen, and back keeping the chosen state's", () => {
+        const separate = withLiveSceneMode(defaultLiveLayout, "separate");
+        expect(liveSceneMode(separate)).toBe("separate");
+        for (const state of ["before", "frozen", "finished"] as const) expect(liveSceneLayout(separate, state).widgets).toEqual(defaultLiveLayout.widgets);
+        const edited = withLiveScene(separate, "finished", {...liveSceneLayout(separate, "finished"), widgets: []});
+        const back = withLiveSceneMode(edited, "single", "finished");
+        expect(liveSceneMode(back)).toBe("single");
+        expect(back.widgets).toEqual([]);
+        expect(withLiveSceneMode(edited, "single", "running").widgets).toEqual(defaultLiveLayout.widgets);
     });
 
-    it("resets a scene to its template", () => {
-        const cleared = withLiveScene(defaultLiveLayout, "before", {...liveSceneLayout(defaultLiveLayout, "before"), widgets: []});
-        const reset = withLiveSceneReset(cleared, "before");
-        expect(liveSceneLayout(reset, "before").widgets).toEqual(liveSceneLayout(defaultLiveLayout, "before").widgets);
-        const board = withLiveSceneReset({...defaultLiveLayout, widgets: []}, "running");
-        expect(board.widgets.map(widget => widget.type)).toEqual(defaultLiveLayout.widgets.map(widget => widget.type));
+    it("copies the screen of another state", () => {
+        const separate = withLiveSceneMode(defaultLiveLayout, "separate");
+        const edited = withLiveScene(separate, "before", {...liveSceneLayout(separate, "before"), widgets: []});
+        expect(liveScenesEqual(edited, "before", "running")).toBe(false);
+        const copied = withLiveSceneCopy(edited, "before", "running");
+        expect(liveScenesEqual(copied, "before", "running")).toBe(true);
+        expect(liveSceneLayout(copied, "frozen").widgets).toEqual(defaultLiveLayout.widgets);
+    });
+
+    it("fills a state missing from stored separate screens with a copy of «running» on load", () => {
+        const stored = JSON.parse(JSON.stringify({...defaultLiveLayout, scenes: {finished: {grid: {cols: 12, rows: 8}, widgets: []}}}));
+        const loaded = liveLayoutSchema.parse(stored);
+        expect(liveSceneLayout(loaded, "before").widgets).toEqual(defaultLiveLayout.widgets);
+        expect(liveSceneLayout(loaded, "frozen").widgets).toEqual(defaultLiveLayout.widgets);
+        expect(liveSceneLayout(loaded, "finished").widgets).toEqual([]);
+        expect(liveLayoutSchema.parse(JSON.parse(JSON.stringify(defaultLiveLayout))).scenes).toBeUndefined();
     });
 
     it("keeps the screen settings shared while each scene keeps its canvas", () => {
-        const before = liveSceneLayout(defaultLiveLayout, "before");
-        const next = withLiveScene(defaultLiveLayout, "before", {...before, theme: "light", grid: {cols: 16, rows: 9}});
+        const separate = withLiveSceneMode(defaultLiveLayout, "separate");
+        const before = liveSceneLayout(separate, "before");
+        const next = withLiveScene(separate, "before", {...before, theme: "light", grid: {cols: 16, rows: 9}});
         expect(next.theme).toBe("light");
         expect(next.grid).toEqual(defaultLiveLayout.grid);
         expect(next.scenes?.before?.grid).toEqual({cols: 16, rows: 9});
@@ -70,8 +78,9 @@ describe("scenes of a layout", () => {
     });
 
     it("lists and maps every scene in the order of the event", () => {
-        expect(liveSceneViews(defaultLiveLayout).map(item => item.key)).toEqual(["before", "running", "frozen", "finished"]);
-        const cleared = mapLiveScenes(defaultLiveLayout, view => ({...view, widgets: []}));
+        const separate = withLiveSceneMode(defaultLiveLayout, "separate");
+        expect(liveSceneViews(separate).map(item => item.key)).toEqual(["before", "running", "frozen", "finished"]);
+        const cleared = mapLiveScenes(separate, view => ({...view, widgets: []}));
         expect(liveSceneViews(cleared).every(item => item.view.widgets.length === 0)).toBe(true);
     });
 });

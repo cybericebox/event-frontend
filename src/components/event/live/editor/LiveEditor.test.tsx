@@ -5,6 +5,8 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {defaultLiveLayout, type LiveEditor as LiveEditorData} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveEditor} from "./LiveEditor";
+import {applyLiveTemplate} from "../liveTemplates";
+import {withLiveSceneMode} from "../liveScenes";
 
 // jsdom has no top-layer dialog.
 HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
@@ -16,6 +18,9 @@ vi.mock("@/api/manageResults", async importOriginal => ({...await importOriginal
     getResultsSettings: api.settings}));
 vi.mock("../useLiveResults", () => ({useLiveResults: () => ({results: {data: undefined}, stream: "live"})}));
 vi.mock("../LiveQR", () => ({LiveQR: () => null}));
+// A plain <select> stands in for the Radix menu, which jsdom cannot open.
+vi.mock("@/components/ui/EventSelect", () => ({EventSelect: ({ariaLabel, value, options, onValueChange, disabled}: {ariaLabel: string; value: string; options: {value: string; label: string; disabled?: boolean}[]; onValueChange: (value: string) => void; disabled?: boolean}) =>
+    <select aria-label={ariaLabel} value={value} disabled={disabled} onChange={change => onValueChange(change.target.value)}><option value="" />{options.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}</select>}));
 
 const event = {
     EventID: "01900000-0000-7000-8000-000000000001", Tag: "test", Name: "Кібер-захід",
@@ -25,6 +30,8 @@ const event = {
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
 } as unknown as PublicEventInfo;
 const data: LiveEditorData = {Published: defaultLiveLayout, Draft: null};
+// Separate screens per event state: the board, a pre-start screen and the finale.
+const separate: LiveEditorData = {Published: applyLiveTemplate(applyLiveTemplate(withLiveSceneMode(defaultLiveLayout, "separate"), "prestart", "before"), "finale", "finished"), Draft: null};
 // The default layout fills its grid; without the partners row there is room.
 const roomy: LiveEditorData = {Published: {...defaultLiveLayout, widgets: defaultLiveLayout.widgets.filter(item => item.id !== "partners")}, Draft: null};
 
@@ -108,7 +115,7 @@ describe("live editor", () => {
         expect(screen.getAllByText(/1440×1080/).length).toBeGreaterThan(0);
         expect(screen.getByText(/будується автоматично з основного/)).toBeTruthy();
         expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
-        fireEvent.click(screen.getByRole("button", {name: "Власна розкладка"}));
+        fireEvent.click(screen.getByRole("button", {name: "Власне розміщення"}));
         expect(screen.getByRole("tab", {name: "4:3 · власна"})).toBeTruthy();
         expect(screen.queryByText(/будується автоматично з основного/)).toBeNull();
         expect(document.querySelector(".event-live-editor__error")).toBeNull();
@@ -152,7 +159,7 @@ describe("live editor", () => {
     });
 
     it("edits every scene on its own; the tabs mark only the live scene", () => {
-        mount();
+        mount(true, separate);
         const tabs = screen.getAllByRole("tab").filter(tab => tab.closest(".event-live-scenes"));
         expect(tabs.map(tab => tab.textContent)).not.toContain("основна");
         expect(tabs.filter(tab => tab.textContent?.includes("зараз"))).toHaveLength(1);
@@ -167,25 +174,57 @@ describe("live editor", () => {
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
     });
 
-    it("resets a scene to its template after a danger confirmation", () => {
+    it("lists problems and notes under one legend, each in its own colour", () => {
+        const crowded: LiveEditorData = {Published: {...defaultLiveLayout, widgets: defaultLiveLayout.widgets.map(item => item.type === "table" ? {...item, props: {rowsPerPage: 40}} : item)}, Draft: null};
+        mount(true, crowded);
+        fireEvent.click(document.querySelector(".event-live-editor__warnings-toggle")!);
+        const list = document.getElementById("live-warnings")!;
+        expect(list.querySelectorAll(".event-live-editor__legend")).toHaveLength(1);
+        expect(within(list).getByText("Не вміщується")).toBeTruthy();
+        expect(list.querySelector("li.is-fit")).not.toBeNull();
+    });
+
+    it("shows one screen for all states by default, with no state tabs", () => {
         mount();
+        expect(screen.getByRole("button", {name: "Один екран для всіх станів"}).getAttribute("aria-pressed")).toBe("true");
+        expect(screen.queryByRole("tab", {name: /До старту/})).toBeNull();
+    });
+
+    it("turns to separate screens as copies of the one screen, and back keeping the chosen state's", () => {
+        mount();
+        fireEvent.click(screen.getByRole("button", {name: "Окремий екран для кожного стану"}));
+        for (const name of [/До старту/, /Заморожено/, /Завершено/]) {
+            fireEvent.click(screen.getByRole("tab", {name}));
+            expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+        }
+        // Change «Завершено», then keep its screen as the one for all states.
+        fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
+        fireEvent.keyDown(window, {key: "Delete"});
+        fireEvent.click(within(screen.getByText("Прибрати віджет?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати віджет"}));
+        fireEvent.click(screen.getByRole("button", {name: "Один екран для всіх станів"}));
+        const dialog = screen.getByText("Залишити один екран для всіх станів?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
+        expect((within(dialog).getByRole("combobox", {name: "Який екран залишити"}) as HTMLSelectElement).value).toBe("finished");
+        fireEvent.click(within(dialog).getByRole("button", {name: "Залишити один"}));
+        expect(screen.queryByRole("tab", {name: /До старту/})).toBeNull();
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
+    });
+
+    it("copies another state's screen, asking first when this one has blocks", () => {
+        mount(true, separate);
         fireEvent.click(screen.getByRole("tab", {name: /До старту/}));
-        fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
-        fireEvent.click(screen.getByRole("radio", {name: /Порожня сітка/}));
-        fireEvent.click(screen.getByRole("button", {name: /Застосувати до «До старту»|Замінити/}));
-        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).toBeNull();
-        fireEvent.click(screen.getByRole("button", {name: "Скинути до шаблону сцени"}));
-        const dialog = () => screen.getByText("Скинути сцену до шаблону?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
-        expect(within(dialog()).getByText(/Розкладку сцени «До старту» буде замінено шаблоном/)).toBeTruthy();
-        fireEvent.click(within(dialog()).getByRole("button", {name: "Скасувати"}));
-        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).toBeNull();
-        fireEvent.click(screen.getByRole("button", {name: "Скинути до шаблону сцени"}));
-        fireEvent.click(within(dialog()).getByRole("button", {name: "Скинути"}));
         expect(document.querySelector(".event-live-editor__native .live-widget--facts")).not.toBeNull();
+        fireEvent.change(screen.getByRole("combobox", {name: "Скопіювати з…"}), {target: {value: "running"}});
+        const dialog = () => screen.getByText("Замінити екран «До старту»?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
+        fireEvent.click(within(dialog()).getByRole("button", {name: "Скасувати"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).not.toBeNull();
+        fireEvent.change(screen.getByRole("combobox", {name: "Скопіювати з…"}), {target: {value: "running"}});
+        fireEvent.click(within(dialog()).getByRole("button", {name: "Замінити"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).toBeNull();
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
     });
 
     it("opens the scene of the step it undoes and redoes", () => {
-        mount();
+        mount(true, separate);
         fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--podium")!);
         fireEvent.keyDown(window, {key: "Delete"});
@@ -233,7 +272,7 @@ describe("live editor", () => {
     it("says on the «Заморожено» tab that the scene will not show while the freeze is not applied", async () => {
         api.settings.mockResolvedValue({ScoreboardVisibility: 0, FreezeEnabled: true, FreezeMinutes: 60, LiveFreeze: false, ChartEnabled: true, ChartTeams: 10, RowsLimit: null, OpenedAt: null,
             Freeze: {Enabled: true, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false}});
-        mount();
+        mount(true, separate);
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
         expect(await screen.findByText(/вимкнено: зал бачить живі результати, і ця сцена не покажеться/)).toBeTruthy();
         fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));

@@ -7,6 +7,11 @@ import {ManageApiError} from "@/api/manage";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveScreen} from "./LiveScreen";
+import {applyLiveTemplate} from "./liveTemplates";
+import {withLiveSceneMode} from "./liveScenes";
+
+// Separate screens: the board, the pre-start screen before the start and the finale after the finish.
+const chain = applyLiveTemplate(applyLiveTemplate(withLiveSceneMode(defaultLiveLayout, "separate"), "prestart", "before"), "finale", "finished");
 
 const api = vi.hoisted(() => ({layout: vi.fn(), version: vi.fn(), stages: vi.fn(), results: vi.fn(), user: vi.fn()}));
 vi.mock("@/api/manageLive", async importOriginal => ({...await importOriginal<typeof import("@/api/manageLive")>(), getPublishedLiveLayout: api.layout, getLiveLayoutVersion: api.version}));
@@ -113,6 +118,7 @@ describe("live screen scenes", () => {
 
     it("switches by itself: before the start → the board at the start → the results after the finish", async () => {
         api.results.mockResolvedValue(board(false));
+        api.layout.mockResolvedValue(chain);
         const short = {...starting, FinishTime: new Date(now + 180_000).toISOString()} as PublicEventInfo;
         mountAt(short);
         await advance(1000);
@@ -138,13 +144,13 @@ describe("live screen scenes", () => {
         expect(document.querySelector(".live-widget--chart")).not.toBeNull();
     });
 
-    it("gives a layout saved without scenes the scene templates: the pre-start screen before the start", async () => {
+    it("shows the one screen in every state when the layout has a single screen", async () => {
         api.results.mockResolvedValue(board(false));
         api.layout.mockResolvedValue({...defaultLiveLayout, scenes: undefined});
         mountAt(starting);
         await advance(1000);
-        expect(document.querySelector(".live-widget--facts")).not.toBeNull();
-        expect(document.querySelector(".live-widget--chart")).toBeNull();
+        expect(document.querySelector(".live-widget--chart")).not.toBeNull();
+        expect(document.querySelector(".live-widget--facts")).toBeNull();
     });
 
     it("stays on the board when the hall sees live results during the freeze", async () => {
