@@ -127,16 +127,15 @@ describe("lifecycle policy optimistic save queue", () => {
         expect(server.put.mock.calls[1][1]).toMatchObject({LabPolicy: {SnapshotMode: "required", MaxActiveLabsPerTeam: 7, RetentionMinutes: 90}, MaxFlagAttempts: null, ShowDifficulty: true});
         await act(async () => {finishes[1]({...server.put.mock.calls[1][1]});});
     });
-    it("accepts zero retention, rejects invalid retention and rolls back a refused policy save with a toast", async () => {
+    it("offers no retention setting and rolls back a refused policy save with a toast", async () => {
         server.policy = {SnapshotMode: "required", MaxActiveLabsPerTeam: 7, RetentionMinutes: 90};
         server.put.mockRejectedValue(new Error("refused"));
         renderPage();
-        const retention = await screen.findByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-        fireEvent.change(retention, {target: {value: "10081"}}); fireEvent.blur(retention);
-        expect(server.put).not.toHaveBeenCalled(); expect(screen.getByText("Введіть ціле число від 0 до 10080.")).toBeTruthy();
-        fireEvent.change(retention, {target: {value: "0"}}); fireEvent.keyDown(retention, {key: "Enter"});
+        const limit = await screen.findByLabelText("Максимум активних середовищ команди") as HTMLInputElement;
+        expect(screen.queryByLabelText("Зберігати зупинене середовище (хвилини)")).toBeNull();
+        fireEvent.change(limit, {target: {value: "3"}}); fireEvent.keyDown(limit, {key: "Enter"});
         await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
-        expect(server.put.mock.calls[0][1].LabPolicy.RetentionMinutes).toBe(0);
-        await waitFor(() => expect(retention.value).toBe("90"));
+        expect(server.put.mock.calls[0][1].LabPolicy).toEqual({SnapshotMode: "required", MaxActiveLabsPerTeam: 3, RetentionMinutes: 90});
+        await waitFor(() => expect(limit.value).toBe("7"));
     });
 });
