@@ -138,12 +138,13 @@ describe("live screen scenes", () => {
         expect(document.querySelector(".live-widget--chart")).not.toBeNull();
     });
 
-    it("shows the running board in every state when the layout has no scenes", async () => {
+    it("gives a layout saved without scenes the scene templates: the pre-start screen before the start", async () => {
         api.results.mockResolvedValue(board(false));
         api.layout.mockResolvedValue({...defaultLiveLayout, scenes: undefined});
         mountAt(starting);
         await advance(1000);
-        expect(document.querySelector(".live-widget--chart")).not.toBeNull();
+        expect(document.querySelector(".live-widget--facts")).not.toBeNull();
+        expect(document.querySelector(".live-widget--chart")).toBeNull();
     });
 
     it("stays on the board when the hall sees live results during the freeze", async () => {

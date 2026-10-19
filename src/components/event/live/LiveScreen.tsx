@@ -14,7 +14,7 @@ import {useFullscreen, useIdle, useWakeLock, useWindowSize, type WakeLockState} 
 import {useLiveConnection, useLiveRetry} from "./liveRecovery";
 import {liveSafeArea, liveSafeInsets, liveTextFloors, liveTextProfile} from "./liveText";
 import type {LiveStage} from "./liveStages";
-import {liveSceneLayout, liveSceneShown, liveSceneState, type LiveSceneKey} from "./liveScenes";
+import {liveSceneLayout, liveSceneState, type LiveSceneKey} from "./liveScenes";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {ErrorPage} from "@/components/event/ErrorPage";
@@ -190,7 +190,7 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
     const [windowWidth, windowHeight] = windowSize.split("@")[0].split("×").map(Number);
     // Scenes: before the start, running, frozen, finished — each its own
     // canvas when the layout has one, else the running board.
-    const scene = liveSceneLayout(base, liveSceneShown(base, sceneState));
+    const scene = liveSceneLayout(base, sceneState);
     const layout = scene.screen.anchor === "top-left" ? scene : liveFormatLayout(scene, pickLiveFormat(scene, windowWidth / windowHeight));
     const anchored = layout.screen.anchor === "top-left";
     // «Безпечне поле»: the canvas keeps clear of the edges a TV crops.
