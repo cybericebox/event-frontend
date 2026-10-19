@@ -5394,5 +5394,6 @@
   "manage.banners.discardTitle": "Discard the banner changes?",
   "manage.banners.discardBody": "The changes you made will not be saved.",
   "manage.banners.discardAction": "Discard changes",
-  "manage.analytics.report.funnel.otherStep": "Other step"
+  "manage.analytics.report.funnel.otherStep": "Other step",
+  "manage.analytics.usage.peopleHidden": "Per-participant data (names, visit times, VPN sessions) is visible to the event owner and moderators with write access. You see the totals only."
 }

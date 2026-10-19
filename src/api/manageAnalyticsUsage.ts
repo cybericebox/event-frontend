@@ -59,6 +59,8 @@ export const AnalyticsUsageSchema = z.object({
     }),
     Users: z.array(userSchema).nullish().transform(value => value ?? []),
     Period: z.object({From: z.string(), To: z.string()}),
+    // A read-only moderator gets the totals only: no people rows (the server leaves Users empty).
+    PeopleHidden: z.boolean().default(false),
 });
 export type AnalyticsUsage = z.infer<typeof AnalyticsUsageSchema>;
 

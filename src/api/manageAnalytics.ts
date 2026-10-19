@@ -12,7 +12,8 @@ export const wholeEvent: AnalyticsPeriod = {from: null, to: null};
 const count = z.number().int();
 const optionalTime = z.string().nullish().transform(value => value ?? null);
 
-export const AnalyticsAccessSchema = z.object({Sections: z.boolean(), Sensitive: z.boolean().default(false)});
+// People: the per-person rows of «Використання» (owner, write moderators, platform staff).
+export const AnalyticsAccessSchema = z.object({Sections: z.boolean(), Sensitive: z.boolean().default(false), People: z.boolean().default(false)});
 export type AnalyticsAccess = z.infer<typeof AnalyticsAccessSchema>;
 
 export const FeedKindSchema = z.enum(["first_blood", "stand_failed", "team_created", "freeze_started"]);
