@@ -12,12 +12,13 @@ const state = vi.hoisted(() => ({
     participation: null as unknown,
     staff: false,
     form: false,
+    participant: null as unknown,
 }));
 
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
 vi.mock("next/navigation", () => ({useRouter: () => ({push: api.push, replace: api.replace})}));
-vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event-1", Name: "Олімпіада", Registration: 2})}));
-vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => null}));
+vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event-1", Name: "Олімпіада", Registration: 2, Participation: state.participant ? 1 : 0})}));
+vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => state.participant}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
 vi.mock("@/components/event/join/JoinPreview", () => ({JoinPreview: () => <div>join-preview</div>}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
@@ -40,10 +41,18 @@ function view() {
     return render(<QueryClientProvider client={client}><JoinPage /></QueryClientProvider>);
 }
 
-beforeEach(() => { HTMLDialogElement.prototype.showModal=function(){this.open=true;}; HTMLDialogElement.prototype.close=function(){this.open=false;}; api.replace.mockReset(); api.invitation.mockReset(); api.invitation.mockImplementation(async()=>({Status:state.status,Invited:false})); state.status = 0; state.participation = null; state.staff = false; state.form = false; api.join.mockClear(); window.history.replaceState(null, "", "/join"); sessionStorage.clear(); });
+beforeEach(() => { HTMLDialogElement.prototype.showModal=function(){this.open=true;}; HTMLDialogElement.prototype.close=function(){this.open=false;}; api.replace.mockReset(); api.invitation.mockReset(); api.invitation.mockImplementation(async()=>({Status:state.status,Invited:false})); state.status = 0; state.participation = null; state.staff = false; state.form = false; state.participant = null; api.join.mockClear(); window.history.replaceState(null, "", "/join"); sessionStorage.clear(); });
 afterEach(cleanup);
 
 describe("join page", () => {
+    it("does not ask a participant who already has a team to create or join one", async () => {
+        state.status = 2;
+        state.participant = {event: {EventID: "event-1", Name: "Олімпіада", Participation: 1}, ownTeam: {ID: "t", Name: "Сині"}};
+        view();
+        expect(await screen.findByText("Ви вже в команді «Сині».")).toBeTruthy();
+        expect(screen.queryByText(/Створіть команду/)).toBeNull();
+    });
+
     it("offers the registration button when the server allows registering", async () => {
         state.participation = block({Allowed: true, Reason: ""});
         view();

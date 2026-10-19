@@ -22,6 +22,11 @@ export function createJoinIntent(eventID: string, now = Date.now()): string {
     return nonce;
 }
 
+// /join for a registration this page asked for: it continues by itself (the same nonce as after the sign-in).
+export function joinIntentHref(eventID: string, now = Date.now()): string {
+    return `/join?continue=${createJoinIntent(eventID, now)}`;
+}
+
 // True once, for the matching, unexpired nonce of this event; every other case is false.
 export function consumeJoinIntent(eventID: string, nonce: string | null, now = Date.now()): boolean {
     if (!nonce) return false;

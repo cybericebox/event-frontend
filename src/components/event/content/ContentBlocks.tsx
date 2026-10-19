@@ -135,10 +135,13 @@ export function ContentBlocks({document, variables, title, selectedBlockId, cove
                         <Heading className="ib-block-hero__title">{render(block.title, "title")}</Heading>
                         <div className="ib-block-hero__row">
                             <dl className="ib-block-hero__facts">{(block.items ?? []).map((item, index) => <div key={index}><dt>{render(item.label, `item:${index}:label`)}</dt><dd>{render(item.value, `item:${index}:value`)}</dd></div>)}</dl>
-                            <div className="ib-block-hero__aside">
-                                {(block.targetVariable || block.targetDate) && (!gap || preview) && <CountdownValue initialNow={initialNow} target={target} display={block.timerDisplay} />}
-                                {block.note && <p className="ib-block-hero__note">{render(block.note, "note")}</p>}
-                            </div>
+                            {/* On the site the timer and its note leave once the target time has come: «00 00 00» says nothing. */}
+                            <CountdownWindow initialNow={initialNow} target={target} hideAfterFinish={!preview && !!(block.targetVariable || block.targetDate)}>
+                                <div className="ib-block-hero__aside">
+                                    {(block.targetVariable || block.targetDate) && (!gap || preview) && <CountdownValue initialNow={initialNow} target={target} display={block.timerDisplay} />}
+                                    {block.note && <p className="ib-block-hero__note">{render(block.note, "note")}</p>}
+                                </div>
+                            </CountdownWindow>
                         </div>
                     </BlockContent>
                 </section>;

@@ -64,6 +64,26 @@ describe("solved task card", () => {
     });
 });
 
+describe("hints after the solve", () => {
+    it("shows the still closed hints as free, as the server charges nothing once the task is solved", () => {
+        const hints = [{ID: uuid(501), Cost: 50, Unlocked: false, Content: null, Level: "nudge"}];
+        renderModal(challengeSchema.parse({...base, Hints: hints, HintCostTotal: 0}));
+        expect(screen.getByText(/· −50/)).toBeTruthy();
+        cleanup();
+        renderModal(challengeSchema.parse({...base, Hints: hints, HintCostTotal: 0, SolvedAt: "2026-10-01T11:52:00Z", AwardedPoints: 100}));
+        expect(screen.queryByText(/−50/)).toBeNull();
+        expect(screen.getByText(/· безкоштовно/)).toBeTruthy();
+    });
+
+    it("keeps the flag error under the field, before the submit button", async () => {
+        renderModal(base);
+        await act(async () => {fireEvent.click(screen.getByRole("button", {name: "Надіслати"}));});
+        const field = screen.getByLabelText("Прапор").closest(".ib-cmodal__field")!;
+        expect(field.querySelector(".ib-cmodal__msg")?.textContent).not.toBe("");
+        expect(within(field as HTMLElement).queryByRole("button", {name: "Надіслати"})).toBeNull();
+    });
+});
+
 describe("authoritative shared Lab on the participant board", () => {
     const otherLab = {...runningLab, ID: uuid(101)};
     const questions = [1, 2, 3].map(n => ({...base, ID: uuid(900 + n), EventChallengeID: uuid(n),

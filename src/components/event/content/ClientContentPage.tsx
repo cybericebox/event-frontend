@@ -54,7 +54,7 @@ export function ClientContentPage({slug, publicEventID}: {slug: string; publicEv
     if (page.isError) {
         const missing = page.error instanceof ManageApiError && [403, 404].includes(page.error.status);
         if (!missing) return <EventLoadError message={t("content.page.failed")} error={page.error} onRetry={() => void page.refetch()} />;
-        return <NotFoundScreen block title={t("content.page.missing")} />;
+        return <NotFoundScreen block title={t("content.page.missing")} body={t("content.page.missingDescription")} />;
     }
     return <ContentBlocks document={page.data.Page.Document} variables={page.data.Variables} title={page.data.Page.Title} coverImage={privateEvent?.PreviewPicture} eventID={eventID} />;
 }

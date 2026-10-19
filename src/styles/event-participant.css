@@ -53,7 +53,17 @@
 .event-cmodal__hint-head .ib-btn{flex:none}
 .event-cmodal__hints .ib-cmodal__hint{margin-top:var(--ib-1)}
 .event-cmodal__hint-text{margin-top:var(--ib-1)}
-.event-cmodal__hint-mode{margin:0 0 var(--ib-2)}
+/* Flag answer: the field with its message right under it, the button beside it (below it on a phone).
+   The DS row rule gives the input flex:1, which a column field would turn into a 23 px height. */
+.ib-cmodal__flag .ib-cmodal__row{align-items:flex-start}
+.ib-cmodal__field{display:flex;flex:1 1 auto;flex-direction:column;min-width:0}
+.ib-cmodal__row .ib-cmodal__field .ib-input{flex:none;width:100%}
+@media (max-width:560px){
+  .ib-cmodal__flag .ib-cmodal__row{align-items:stretch}
+  .ib-cmodal__field{flex:none}
+}
+/* Running text with an inline number: a block, not the flex row of .ib-cmodal__hint (its gap split «балів .»). */
+.event-cmodal__hint-mode{display:block;margin:0 0 var(--ib-2)}
 .event-cmodal__note{margin-top:18px}
 .event-cmodal__mods{margin-top:18px;padding:12px 14px;border-radius:var(--ib-r);background:var(--ib-warn-bg);color:var(--ib-ink);font-size:var(--ib-fs-13);line-height:1.5}
 .event-cmodal__mods p{margin:0}
@@ -102,8 +112,9 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-part__missing{margin-inline-start:8px;vertical-align:middle}
 .event-part__note{margin-top:var(--ib-3);font-size:var(--ib-fs-13);color:var(--ib-dim)}
 .event-part__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);margin-top:var(--ib-4)}
-.event-part__inline{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2);width:100%}
-.event-part__inline .ib-input{flex:1 1 220px;min-width:0}
+.event-part__inline{display:flex;flex-wrap:wrap;align-items:flex-start;gap:var(--ib-2);width:100%}
+/* Only a direct input grows along the row; one inside a column .ib-field would turn the basis into its height. */
+.event-part__inline>.ib-input{flex:1 1 220px;min-width:0}
 .event-part__form{display:grid;gap:var(--ib-4)}
 .event-part__choice{display:grid;grid-template-columns:1fr 1fr;gap:var(--ib-4)}
 .event-part__choice>section{padding:var(--ib-5);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}

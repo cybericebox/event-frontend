@@ -86,3 +86,9 @@ it.each([false,true])("uses the approved guide and matching config filename in p
   else{expect(api.config).toHaveBeenCalledWith("e1");expect(api.previewConfig).not.toHaveBeenCalled();}
  }finally{anchorClick.mockRestore();vi.unstubAllGlobals();}
 });
+it("says the VPN could not be checked when the stand status fails, instead of «soon before the start»",async()=>{
+ api.stand.mockRejectedValue(new Error("down"));
+ const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+ render(<QueryClientProvider client={client}><EventVpnProvider eventID="e1" eventTag="test" enabled><VpnHeaderButton/></EventVpnProvider></QueryClientProvider>);
+ await vi.waitFor(()=>expect(screen.getByRole("button",{name:/VPN:/}).getAttribute("aria-label")).toBe("VPN: не вдалося перевірити стан. Натисніть, щоб переглянути налаштування."));
+});

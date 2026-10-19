@@ -101,12 +101,14 @@ export function ScoreboardView() {
     if (!event || !preview.active && access.pending) return <EventLoading event={event} label={t("scoreboard.loadingRanking")} />;
     const teamMode = event.Participation === 1;
     const ownTeamID = preview.active ? preview.state?.team?.ID ?? preview.state?.userID : participant?.ownTeam?.ID;
-    // A reply that closes the board (the setting changed meanwhile) wins.
-    const denied = results.error instanceof ResultsUnavailableError ? deniedMessages[results.error.reason as keyof typeof deniedMessages] ?? "scoreboard.hidden" : view.message;
-    const data = !denied ? results.data : undefined;
+    // A reply that closes the board (the setting changed meanwhile) wins. «Not started» is no denial: the countdown
+    // above already says when the ranking appears, so the page shows nothing else.
+    const notStarted = results.error instanceof ResultsUnavailableError && results.error.reason === "not_started";
+    const denied = notStarted ? null : results.error instanceof ResultsUnavailableError ? deniedMessages[results.error.reason as keyof typeof deniedMessages] ?? "scoreboard.hidden" : view.message;
+    const data = !denied && !notStarted ? results.data : undefined;
     const rows = data ? searchScoreboard(data, search) : [];
     let state: ScoreTableState;
-    if (denied) state = {kind: "empty", message: t(denied)};
+    if (denied) state = {kind: "closed", message: t(denied)};
     else if (results.isError) state = {kind: "custom", content: <EventLoadError message={t("scoreboard.loadFailed")} error={results.error} onRetry={() => void results.refetch()} />};
     else if (!data) state = {kind: "loading"};
     else if (data.Scoreboard.length === 0) state = {kind: "empty", message: t(teamMode ? "scoreboard.noTeams" : "scoreboard.noParticipants")};
@@ -133,14 +135,15 @@ export function ScoreboardView() {
             <header className="ib-page-header">
                 <div className="ib-page-header__top"><div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("scoreboard.title")}</h1>{sub && <p className="ib-page-header__sub">{sub}</p>}</div></div>
             </header>
-            {readable && <div className="event-results__actions"><LiveStatus freshness={{kind: "polling", seconds: RESULTS_POLL_SECONDS, failing: polls.isError}} updatedAt={Math.max(results.dataUpdatedAt, polls.dataUpdatedAt)} hint={pollHint} /></div>}
+            {readable && !denied && !notStarted && <div className="event-results__actions"><LiveStatus freshness={{kind: "polling", seconds: RESULTS_POLL_SECONDS, failing: polls.isError}} updatedAt={Math.max(results.dataUpdatedAt, polls.dataUpdatedAt)} hint={pollHint} /></div>}
         </div>
         <EventCountdown event={event} hint={t("countdown.start.results")} />
         {data && data.Display.ChartEnabled && <div className="event-results__chart" data-testid="score-chart">
             <p className="event-results__chart-title">{chartIDs.length === 0 ? t("scoreboard.chartTitlePlain") : t(ownRow ? (teamMode ? "scoreboard.chartTitleOwnTeam" : "scoreboard.chartTitleOwn") : "scoreboard.chartTitle", {top: Math.min(data.Display.ChartTeams, data.Scoreboard.length)})}</p>
             <ScoreChart snapshot={data} teamIDs={chartIDs} ownTeamID={ownTeamID} startTime={new Date(startAt)} finishTime={new Date(chartEnd)} note={chartNote} />
         </div>}
-        <ScoreTable event={event} state={state} ownTeamID={ownTeamID} teamMode={teamMode} search={search} onSearch={setSearch} />
+        {notStarted ? !event.ShowStartCountdown && <ScoreTable event={event} state={{kind: "closed", message: t("countdown.start.results")}} teamMode={teamMode} />
+            : <ScoreTable event={event} state={state} ownTeamID={ownTeamID} teamMode={teamMode} search={search} onSearch={setSearch} />}
         {(frozen && ownRow || trimmed) && <p className="ib-ranking-note">
             {frozen && ownRow && t(teamMode ? "scoreboard.frozenOwnTeam" : "scoreboard.frozenOwn")}
             {frozen && ownRow && trimmed && " "}

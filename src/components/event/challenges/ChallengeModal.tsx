@@ -394,7 +394,9 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const exhausted = left === 0;
     const category = challenge?.GroupName || t("challenges.otherCategory");
     const shownHints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
-    const hints = practice ? shownHints.map(hint => hint.Unlocked ? hint : {...hint, Cost: 0}) : shownHints;
+    // Hints are free once the task is solved, after the finish and as practice (the server charges 0 then).
+    const freeHints = practice || solved || (finished && !moderators);
+    const hints = freeHints ? shownHints.map(hint => hint.Unlocked ? hint : {...hint, Cost: 0}) : shownHints;
     const fileUrl = (fileID: string) => isPreview ? previewFileUrl(eventID, challenge!, fileID) : moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
 
     const lengths = useQuery({
@@ -480,15 +482,17 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 {!solved && !accepted && !practiceSolved && (moderators || (!finished && !stageClosed)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
                     <label htmlFor={`${id}-flag`}>{t("challenges.modal.flag")}</label>
                     <div className="ib-cmodal__row">
-                        <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
-                            aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer} disabled={exhausted}
-                            onChange={event => { setAnswer(event.target.value); if (message?.tone === "error" || message?.retry) setMessage(null); if (moderators) setAccepted(false); }} />
+                        <div className="ib-cmodal__field">
+                            <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
+                                aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer} disabled={exhausted}
+                                onChange={event => { setAnswer(event.target.value); if (message?.tone === "error" || message?.retry) setMessage(null); if (moderators) setAccepted(false); }} />
+                            {/* Under the field, never under the button. While waiting, the visible countdown ticks silently; one status announces the full wait once. */}
+                            <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role={waiting ? undefined : "alert"}>
+                                {waiting ? <span aria-hidden="true">{t("challenges.modal.rateLimited", {seconds: waitSeconds})}</span> : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
+                            </p>
+                        </div>
                         <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy} busyLabel={t("common.busy.checking")}>{t("challenges.modal.submit")}</EventButton>
                     </div>
-                    {/* While waiting, the visible countdown ticks silently; one status announces the full wait once. */}
-                    <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role={waiting ? undefined : "alert"}>
-                        {waiting ? <span aria-hidden="true">{t("challenges.modal.rateLimited", {seconds: waitSeconds})}</span> : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
-                    </p>
                     {!waiting && !exhausted && message?.retry && <EventButton className="ib-btn ib-btn--sm" onClick={() => void send()}>{t("error.overloaded.retry")}</EventButton>}
                     {waiting && <span className="ib-sr" role="status">{t("challenges.modal.rateLimited", {seconds: waitTotal})}</span>}
                     {left !== null && left > 0 && <p className="ib-cmodal__hint" id={`${id}-left`}>{t("challenges.modal.attemptsLeft", {count: left})}</p>}

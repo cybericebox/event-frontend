@@ -53,7 +53,9 @@ it("shows a pending result in a dialog without offering team access or writing t
     fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
     const input = await screen.findByLabelText(/Школа/);
     fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
-    expect(screen.getByRole("alert").textContent).toContain("Школа");
+    // The message sits under its question, so it does not repeat the question.
+    expect(screen.getByRole("alert").textContent).toBe("Обовʼязкове поле");
+    expect(input.getAttribute("aria-describedby")).toContain(screen.getByRole("alert").id);
     fireEvent.change(input, {target: {value: "Ліцей"}});
     fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
     expect(screen.getByRole("dialog", {name: "Заявку подано"})).toBeTruthy();

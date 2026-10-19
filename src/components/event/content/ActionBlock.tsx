@@ -9,6 +9,7 @@ import {useStaffAccess} from "@/components/event/useStaffAccess";
 import {useParticipation} from "@/components/event/participation/participationRules";
 import {useParticipantPreview} from "@/components/event/ParticipantPreview";
 import {t} from "@/i18n/t";
+import {joinIntentHref} from "@/utils/joinIntent";
 
 type Action = {label: string; kind?: "link" | "join_event"; href?: string};
 
@@ -124,7 +125,9 @@ export function ActionBlock({layoutProps, id, title, text, variant, alignment, s
         status: participantPreview.active ? participantPreview.state!.status : join.isPending ? "loading" : join.isError ? "error" : join.data,
         invitation: participantPreview.active ? {Invited:false,InvitationExpired:false} : invitation.isPending ? "loading" : invitation.data,
     }) : {kind: "hidden" as const};
-    const visible = actions.flatMap((action, index): {index: number; label: string; href?: string; status?: "loading" | "static"}[] => {
+    // A signed-in visitor's «Приєднатися» carries this browser's intent, so a registration without fields is sent at once.
+    const joinIntent = !viewer && !participantPreview.active && !!identity.data;
+    const visible = actions.flatMap((action, index): {index: number; label: string; href?: string; status?: "loading" | "static"; intent?: boolean}[] => {
         if (action.kind !== "join_event") {
             const href = safeHref(action.href);
             return href && action.label ? [{href, label: action.label, index}] : [];
@@ -132,7 +135,7 @@ export function ActionBlock({layoutProps, id, title, text, variant, alignment, s
         switch (state.kind) {
             case "hidden": return [];
             case "loading": return action.label ? [{label: action.label, index, status: "loading"}] : [];
-            case "join": return action.label ? [{href: state.href, label: action.label, index}] : [];
+            case "join": return action.label ? [{href: state.href, label: action.label, index, intent: joinIntent}] : [];
             case "staffPreview": return [];
             case "invite": return [{href: "/invite", label: joinLabel("invite"), index}];
             case "approved": return [{href: "/challenges", label: joinLabel("approved"), index}];
@@ -147,7 +150,11 @@ export function ActionBlock({layoutProps, id, title, text, variant, alignment, s
                 const className = `ib-btn${position === 0 ? branded ? " ib-btn--mass" : " ib-btn--primary" : branded ? " ib-btn--mass-outline" : ""}`;
                 if (action.status === "loading") return <span key={action.index} className={`${className} ib-block-cta__reserved`} aria-hidden="true">{action.label}</span>;
                 if (action.status === "static") return <span key={action.index} className={`${className} ib-block-cta__status`} role="status">{action.label}</span>;
-                return <a key={action.index} className={className} href={action.href}>{action.label}</a>;
+                return <a key={action.index} className={className} href={action.href} onClick={action.intent ? click => {
+                    if (click.button !== 0 || click.metaKey || click.ctrlKey || click.shiftKey || click.altKey) return;
+                    click.preventDefault();
+                    window.location.assign(joinIntentHref(eventID));
+                } : undefined}>{action.label}</a>;
             })}</div>}
         </BlockContent>
     </section>;

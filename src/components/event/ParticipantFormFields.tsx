@@ -28,7 +28,7 @@ export function collectFormAnswers(form: ParticipantForm | null | undefined, ans
     for (const block of form.Document.blocks) {
         if (!isFormField(block) || !shown.has(block.key)) continue;
         const answer = answers[block.key];
-        if (block.required && !present(answer)) errors[block.key] = t("forms.field.requiredMissing", {label: block.label});
+        if (block.required && !present(answer)) errors[block.key] = t("forms.field.requiredEmpty");
         if (present(answer)) sent[block.key] = answer!;
     }
     const first = Object.keys(errors)[0];
