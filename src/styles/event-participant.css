@@ -203,3 +203,10 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .vpn-command__button.is-copied,.vpn-command__button--inline.is-copied code{color:var(--ib-ok)}
 .vpn-command__feedback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .vpn-command__error{display:block;margin-top:var(--ib-1);font-size:var(--ib-fs-12);color:var(--ib-danger)}
+
+/* Test-lab cap: the running labs, each with its own «Зупинити»; nothing is replaced on its own. */
+.event-cmodal__limit{display:grid;gap:var(--ib-2);margin-top:var(--ib-2);font-size:var(--ib-fs-13);color:var(--ib-body)}
+.event-cmodal__limit p{margin:0}
+.event-cmodal__limit ul{display:grid;gap:var(--ib-2);margin:0;padding:0;list-style:none}
+.event-cmodal__limit li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--ib-2);min-width:0}
+.event-cmodal__limit li>span{min-width:0;overflow-wrap:anywhere}

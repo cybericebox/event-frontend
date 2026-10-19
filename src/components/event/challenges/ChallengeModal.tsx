@@ -34,7 +34,7 @@ import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
-import {getPreviewLab, previewBoardKey, previewFileUrl, startPreviewRun, submitPreviewFlag, unlockPreviewHint} from "@/api/participantPreview";
+import {getPreviewLab, previewBoardKey, previewFileUrl, runningTestLabs, startPreviewRun, stopOwnTestLab, submitPreviewFlag, unlockPreviewHint} from "@/api/participantPreview";
 import type {OwnBoard} from "@/api/participantChallenges";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -44,6 +44,26 @@ export type BoardMode = "participant" | "moderators" | "preview";
 // No free test capacity for the preview's laboratory (409; detail codes of the calendar): no room now, the run's
 // reservation full, not enough reserved. The preview takes the starting staff member's test lease like the studio.
 const PREVIEW_NO_FREE_RESOURCES = new Set([2508, 2509, 2517]);
+// The caller's test-lab cap is reached (409, ErrTestDeployActiveExists): the error names the running labs.
+const TEST_LAB_LIMIT = 963;
+
+// At the test-lab cap nothing is replaced: the running labs are named, each with its own deliberate «Зупинити».
+function TestLabLimit({eventID, labs, onStopped}: {eventID: string; labs: {ID: string; Name: string; EventID?: string}[]; onStopped: () => void}) {
+    const [stopping, setStopping] = useState<string | null>(null);
+    const [failed, setFailed] = useState<unknown>(null);
+    const stop = async (id: string) => {
+        setStopping(id); setFailed(null);
+        try { await stopOwnTestLab(eventID, id); onStopped(); } catch (error) { setFailed(error); } finally { setStopping(null); }
+    };
+    return <div className="event-cmodal__limit" role="alert">
+        <p>{t("lab.preview.limit.title")}</p>
+        <ul>{labs.map(lab => <li key={lab.ID}>
+            <span>{t(lab.EventID ? "lab.preview.limit.preview" : "lab.preview.limit.studio", {name: lab.Name || t("lab.preview.limit.unnamed")})}</span>
+            <EventButton className="ib-btn ib-btn--sm" busy={stopping === lab.ID} busyLabel={t("common.busy.stopping")} disabled={!!stopping} onClick={() => void stop(lab.ID)}>{t("lab.preview.limit.stop")}</EventButton>
+        </li>)}</ul>
+        {!!failed && <p className="ib-cmodal__msg is-error">{apiErrorMessage(failed instanceof ParticipantChallengeError ? failed.code : undefined, t("lab.preview.limit.stopFailed"))}</p>}
+    </div>;
+}
 // retry: the server was only busy; the message offers to send the same answer again.
 type Message = {text: string; tone: "error" | "warn"; retry?: boolean} | null;
 
@@ -472,7 +492,9 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                                 onValueChange={value => setChosenLength(Number(value))} /></label>}
                         <EventButton className="ib-btn ib-btn--primary" busy={starting} busyLabel={t("common.busy.starting")} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton>
                     </div> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
-                    {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? (startError.code !== undefined && PREVIEW_NO_FREE_RESOURCES.has(startError.code) ? t("lab.preview.noFreeResources") : apiErrorMessage(startError.code, t("participantPreview.lab.startFailed"))) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
+                    {startError instanceof ParticipantChallengeError && startError.code === TEST_LAB_LIMIT && runningTestLabs(startError.context).length > 0
+                        ? <TestLabLimit eventID={eventID} labs={runningTestLabs(startError.context)} onStopped={() => {setStartError(undefined); void start();}} />
+                        : !!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? (startError.code !== undefined && PREVIEW_NO_FREE_RESOURCES.has(startError.code) ? t("lab.preview.noFreeResources") : apiErrorMessage(startError.code, t("participantPreview.lab.startFailed"))) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
                 </section>}
                 {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn && !preview.active ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} previewMode={isPreview} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}

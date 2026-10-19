@@ -2,7 +2,10 @@
 
 import {VpnCommand} from "./VpnCommand";
 import {useParticipantPreview} from "../ParticipantPreview";
-import {eventVpnFileName} from "@/utils/wireguard";
+import {eventVpnFileName, wireguardFileName} from "@/utils/wireguard";
+
+// A participant-mode preview downloads the staff member's own test-lab config (the studio's one, «cybericebox.conf»).
+const TEST_VPN_FILE = wireguardFileName("cybericebox");
 import {createContext, useContext, useMemo, useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ArrowUpRight, ChevronDown, Download, Shield, ShieldAlert, ShieldCheck, ShieldEllipsis, ShieldOff} from "lucide-react";
@@ -48,6 +51,7 @@ function downloadText(text: string, name: string) {
 
 function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onClose, previewSelectionID, previewLab}: {previewSelectionID?: string; previewLab?: PreviewLab; eventID: string; eventTag: string; moderators: boolean; connected: boolean | null; vpnReady: boolean; open: boolean; onClose: () => void}) {
     const preview = useParticipantPreview(eventID);
+    const fileName = preview.active ? TEST_VPN_FILE : eventVpnFileName(eventTag);
     const [issuing, setIssuing] = useState(false);
     const [error, setError] = useState("");
     const probe = useQuery({queryKey: ["event-vpn-status", eventID, moderators], queryFn: () => moderators ? getModeratorVPNStatus(eventID) : getVPNStatus(eventID), enabled: !preview.active && open && vpnReady, retry: false, refetchOnWindowFocus: false});
@@ -56,7 +60,7 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
         setIssuing(true);
         setError("");
         try {
-            downloadText(preview.active ? await getPreviewVPNConfig(eventID, previewSelectionID ?? "") : moderators ? await getModeratorVPNConfig(eventID) : await issueVPNConfig(eventID), eventVpnFileName(eventTag));
+            downloadText(preview.active ? await getPreviewVPNConfig(eventID, previewSelectionID ?? "") : moderators ? await getModeratorVPNConfig(eventID) : await issueVPNConfig(eventID), fileName);
         } catch (failure) {
             setError(failure instanceof VPNApiError && failure.status === 404 ? t("vpn.error.notReady") : t("vpn.error.failed"));
         } finally {
@@ -67,6 +71,7 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
     return <DialogModal open={open} onClose={onClose} title={t("vpn.modal.title")}
         footer={vpnReady ? <EventButton type="button" className="ib-btn ib-btn--primary" onClick={() => void download()} busy={issuing} busyLabel={t("common.busy.preparing")}><Download aria-hidden="true" />{t("vpn.modal.download")}</EventButton> : <button type="button" className="ib-btn ib-btn--primary" onClick={onClose}>{t("vpn.modal.acknowledge")}</button>}>
         <VpnConnectionStatus ready={vpnReady} connected={connected} />
+        {preview.active && <p className="event-vpn-note">{t("vpn.preview.testConfig")}</p>}
         {!vpnReady && <div className="event-vpn-wait"><p>{t(preview.active ? "vpn.group.previewWait" : "vpn.group.wait")}</p><p className="event-vpn-note">{t("vpn.group.waitNext")}</p></div>}
         {vpnReady && <>
         {connected === null && <p className="event-vpn-note">{t("vpn.connection.unknown")}</p>}
@@ -80,9 +85,9 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
                 <div><strong>{t("vpn.steps.app")}</strong><p>{t("vpn.steps.import")}</p></div>
                 <div><strong>{t("vpn.steps.terminal")}</strong><p>{t("vpn.steps.terminalFolder")}</p>
                     <p className="event-vpn-note">{t("vpn.steps.up")}</p>
-                    <VpnCommand value={t("vpn.steps.command", {filename: eventVpnFileName(eventTag)})} />
+                    <VpnCommand value={t("vpn.steps.command", {filename: fileName})} />
                     <p className="event-vpn-note">{t("vpn.steps.down")}</p>
-                    <VpnCommand value={t("vpn.steps.downCommand", {filename: eventVpnFileName(eventTag)})} />
+                    <VpnCommand value={t("vpn.steps.downCommand", {filename: fileName})} />
                 </div>
             </div></li>
             {probeData && <li>{richMessage(t("vpn.steps.checkProbe"), {
