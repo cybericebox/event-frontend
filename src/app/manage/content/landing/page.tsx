@@ -7,7 +7,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight} from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import {toastFailure} from "@/components/ui/toastApiError";
+import {failureText} from "@/components/ui/toastApiError";
 import {discardManageLandingDraft, getManageContent, getManageContentVariables, ManageApiError, publishManageLanding, putManageLanding} from "@/api/manage";
 import {BlockStackEditor} from "@/components/event/manage/BlockStackEditor";
 import {DraftBar} from "@/components/event/manage/DraftBar";
@@ -45,9 +45,12 @@ export default function ManageLandingPage() {
     const validation = useMemo(() => draft && variables.data ? validateLanding(draft, catalog, event.PreviewPicture ?? "") : null, [draft, variables.data, catalog, event.PreviewPicture]);
     const publicValues = useMemo(() => Object.fromEntries(catalog.map(variable => [variable.name, content.data?.Variables[variable.name] ?? null])), [content.data?.Variables, catalog]);
 
-    function failure(error: unknown, fallbackKey: string) {
+    function failureMessage(error: unknown, fallbackKey: string): string {
         const status = error instanceof ManageApiError ? error.status : 0;
-        toastFailure(error, status === 403 ? t("manage.content.landing.forbidden") : status === 400 ? t("manage.content.landing.rejected") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+        return failureText(error, status === 403 ? t("manage.content.landing.forbidden") : status === 400 ? t("manage.content.landing.rejected") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+    }
+    function failure(error: unknown, fallbackKey: string) {
+        toast.error(failureMessage(error, fallbackKey));
     }
 
     async function saveDraft(): Promise<boolean> {
@@ -79,15 +82,17 @@ export default function ManageLandingPage() {
         } catch (error) { failure(error, "manage.content.page.publishFailed"); } finally { setBusy(null); }
     }
 
-    async function discardDraft() {
-        if (!canManage || busy || !content.data?.LandingDraft) return;
+    // Runs from the confirm dialog: the error text stays inside it.
+    async function discardDraft(): Promise<string | null> {
+        if (!canManage || busy || !content.data?.LandingDraft) return null;
         setBusy("discard");
         try {
             await discardManageLandingDraft(eventID);
             queryClient.setQueryData(["event-management-content", eventID], {...content.data, LandingDraft: null});
             setEdited(null);
             toast.success(t("manage.content.page.discarded"));
-        } catch (error) { failure(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
+            return null;
+        } catch (error) { return failureMessage(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
     }
 
     if (content.isError || variables.isError) return <EventLoadError message={t("manage.content.landing.loadFailed")} error={content.error ?? variables.error} onRetry={() => void Promise.all([content.refetch(), variables.refetch()])} />;
@@ -98,7 +103,7 @@ export default function ManageLandingPage() {
         {!canManage && <div className="event-manage-notice" role="status">{t("manage.content.landing.readOnly")}</div>}
         {event.Status === 0 && <div className="event-manage-notice" role="status">{t("manage.content.landing.siteUnpublished")}</div>}
         <DraftBar state={{dirty, hasDraft: !!content.data.LandingDraft, published: true}} busy={busy} canManage={canManage} invalid={!!validation}
-            onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={() => void discardDraft()} />
+            onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={discardDraft} />
         <BlockStackEditor editorKey={`landing:${eventID}`} eventID={eventID} coverImage={event.PreviewPicture ?? ""} document={draft} catalog={catalog} values={publicValues} validation={validation}
             canEdit={canManage} landing previewTitle={event.Name} previewClassName="event-landing ib-blocks"
             onChange={update => setEdited(previous => {

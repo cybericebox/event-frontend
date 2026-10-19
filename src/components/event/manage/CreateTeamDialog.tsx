@@ -191,7 +191,7 @@ export function CreateTeamDialog({eventID, open, onOpenChange, onCreated}: {
     return <ManageDialog open={open} onOpenChange={next => {if (!next) close(); else onOpenChange(true);}} title={t("manage.teams.newTitle")} description={t(sendEmails ? "manage.teams.batch.description" : "manage.teams.batch.descriptionSilent")} onSubmit={submit} size="md"
         fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: dropCsv, disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={close}>{t("common.cancel")}</button>
-            <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={mode === "manual" ? !canCreateManual : !canCreateCsv} busy={busy}>{mode === "manual" ? t("manage.teams.create") : t("manage.teams.batch.createAll", {count: csvTeams.length})}</EventButton></>}>
+            <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={mode === "manual" ? !canCreateManual : !canCreateCsv} busy={busy} busyLabel={t("common.busy.creating")}>{mode === "manual" ? t("manage.teams.create") : t("manage.teams.batch.createAll", {count: csvTeams.length})}</EventButton></>}>
         <div className="ib-seg event-modal__modes" role="group" aria-label={t("manage.teams.batch.mode")}>
             <button type="button" aria-pressed={mode === "manual"} disabled={busy} onClick={() => {setMode("manual"); setServerIssues([]); setManualIssues([]);}}>{t("manage.teams.batch.modeManual")}</button>
             <button type="button" aria-pressed={mode === "csv"} disabled={busy} onClick={() => {setMode("csv"); setServerIssues([]); setManualIssues([]);}}>{t("manage.teams.batch.modeCsv")}</button>

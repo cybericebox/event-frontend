@@ -1,6 +1,7 @@
 "use client";
 
-import {isValidElement} from "react";
+import {isValidElement, useEffect, useState} from "react";
+import {createPortal} from "react-dom";
 import {CheckCircle2, CircleAlert, TriangleAlert, X} from "lucide-react";
 import toast, {Toaster, resolveValue, type Toast} from "react-hot-toast";
 import {t} from "@/i18n/t";
@@ -32,6 +33,38 @@ function ActionToast({item}: {item: Toast}) {
     </div>;
 }
 
+function isModal(dialog: HTMLDialogElement): boolean {
+    try {
+        return dialog.matches(":modal");
+    } catch {
+        // No :modal support (old engines, jsdom): an open dialog is treated as modal.
+        return true;
+    }
+}
+
+// The modal <dialog> opened last, or null. A modal dialog sits in the top layer and makes the rest of the page
+// inert, so a toast outside it would be hidden under it and could not be closed.
+export function useTopModalDialog(): HTMLDialogElement | null {
+    const [top, setTop] = useState<HTMLDialogElement | null>(null);
+    useEffect(() => {
+        const stack: HTMLDialogElement[] = [];
+        const update = () => {
+            const open = Array.from(document.querySelectorAll("dialog")).filter(dialog => dialog.open && isModal(dialog));
+            for (let index = stack.length - 1; index >= 0; index--) if (!open.includes(stack[index])) stack.splice(index, 1);
+            for (const dialog of open) if (!stack.includes(dialog)) stack.push(dialog);
+            setTop(stack.at(-1) ?? null);
+        };
+        update();
+        const observer = new MutationObserver(update);
+        observer.observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ["open"]});
+        return () => observer.disconnect();
+    }, []);
+    return top;
+}
+
+// While a modal dialog is open the toasts render inside it (the top layer), so they stay visible and closable.
 export function EventActionToaster() {
-    return <Toaster position="top-center" gutter={8} containerStyle={{top: 16, zIndex: 100}} toastOptions={{duration: 5000}}>{item => <ActionToast item={item} />}</Toaster>;
+    const dialog = useTopModalDialog();
+    const toaster = <Toaster position="top-center" gutter={8} containerStyle={{top: 16, zIndex: 100}} toastOptions={{duration: 5000}}>{item => <ActionToast item={item} />}</Toaster>;
+    return dialog ? createPortal(toaster, dialog) : toaster;
 }

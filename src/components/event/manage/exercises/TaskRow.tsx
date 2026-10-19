@@ -118,7 +118,7 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
             </>}
         </div>
         {problem && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{problem}</p>}
-        {!forced && <EventButton saveDirty={changed} busy={saving} className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid || !!problem} onClick={() => void save()}>{t("common.save")}</EventButton>}
+        {!forced && <EventButton saveDirty={changed} busy={saving} busyLabel={t("common.busy.saving")} className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid || !!problem} onClick={() => void save()}>{t("common.save")}</EventButton>}
     </section>;
 }
 
@@ -167,7 +167,7 @@ function TaskHints({eventID, attachmentID, challenge, hintsDisabled, disabled, o
                     </label>
                 </li>;
             })}</ol>
-            <EventButton saveDirty={changes.length > 0} busy={saving} className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid} onClick={() => void saveCosts()}>{t("manage.exercises.hints.save")}</EventButton>
+            <EventButton saveDirty={changes.length > 0} busy={saving} busyLabel={t("common.busy.saving")} className="ib-btn ib-btn--sm ib-btn--primary event-task__save" type="button" disabled={locked || !valid} onClick={() => void saveCosts()}>{t("manage.exercises.hints.save")}</EventButton>
         </>}
     </section>;
 }

@@ -59,10 +59,10 @@ export function LabControls({eventID, lab, onRefresh}: {eventID: string; lab: La
     if (!canStop && !canRestart && !confirm) return null;
     return <div className="ib-cmodal__row">
         {canStop && <EventButton className="ib-btn ib-btn--sm" onClick={() => {setError(""); setConfirm(true);}}>{t("challenges.lab.stop.confirm")}</EventButton>}
-        {canRestart && <EventButton className="ib-btn ib-btn--sm ib-btn--primary" busy={busy} onClick={() => void run("restart")}>{t("challenges.lab.restart")}</EventButton>}
+        {canRestart && <EventButton className="ib-btn ib-btn--sm ib-btn--primary" busy={busy} busyLabel={t("common.busy.restarting")} onClick={() => void run("restart")}>{t("challenges.lab.restart")}</EventButton>}
         {!confirm && error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
         <ConfirmDialog open={confirm && canStop} onCancel={() => setConfirm(false)} title={t("challenges.lab.stop.title")}
             description={t(lab.SnapshotPolicy === "required" ? "challenges.lab.stop.requiredBody" : "challenges.lab.stop.noneBody")}
-            tone="danger" confirmLabel={t("challenges.lab.stop.confirm")} busy={busy} error={error} onConfirm={() => void run("stop")} />
+            tone="danger" confirmLabel={t("challenges.lab.stop.confirm")} busyLabel={t("common.busy.stopping")} busy={busy} error={error} onConfirm={() => void run("stop")} />
     </div>;
 }

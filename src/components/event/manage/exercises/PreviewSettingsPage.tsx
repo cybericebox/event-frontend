@@ -76,7 +76,7 @@ export function PreviewSettingsPage() {
             </li>)}</ul>}
         </section>
         {saveError && <p role="alert" className="event-pp-field__error">{t("manage.previewSettings.saveFailed")}</p>}
-        {canManage && <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={!dirty} busy={saving}>{t("common.save")}</EventButton></div>}
+        {canManage && <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={!dirty} busy={saving} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>}
     </form>
     </>;
 }

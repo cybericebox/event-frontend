@@ -14,7 +14,8 @@ export function SetupChip({eventID}: {eventID: string}) {
     const state = blocked ? "blocked" : complete ? "done" : "todo";
     const label = complete ? t("manage.setup.chip.done") : t(blocked ? "manage.setup.chip.blocked" : "manage.setup.chip.progress", {done, total});
     return <Link className={`event-setup-chip is-${state}`} href="/manage" aria-label={t("manage.setup.chip.ariaLabel", {label})}>
-        <span>{label}</span>
+        <span className="event-setup-chip__label">{label}</span>
+        {!complete && <span className="event-setup-chip__count" aria-hidden="true">{t("manage.setup.chip.count", {done, total})}</span>}
         {!complete && <span className="event-setup-chip__track" aria-hidden="true"><span style={{width: `${total === 0 ? 0 : Math.round(done / total * 100)}%`}} /></span>}
     </Link>;
 }

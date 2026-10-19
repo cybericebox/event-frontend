@@ -140,17 +140,17 @@ export default function ManageResultsPage() {
             {frozenForParticipants ? <Snowflake size={18} aria-hidden="true" /> : <Radio size={18} aria-hidden="true" />}
             <span className="event-results-freeze__text"><strong>{frozenForParticipants ? t("manage.results.view.frozen") : t("manage.results.view.live")}</strong> {freezeStatus(freeze, generatedAt)}</span>
             {canManage && freeze.Enabled && !finished && freeze.FrozenAt && (freeze.OpenedAt
-                ? <EventButton className="ib-btn ib-btn--sm" type="button" disabled={busy === "open"} busy={busy === "open"} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</EventButton>
-                : <EventButton className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy === "open"} busy={busy === "open"} onClick={() => void toggleOpened(true)}>{t("manage.results.freeze.open")}</EventButton>)}
+                ? <EventButton className="ib-btn ib-btn--sm" type="button" disabled={busy === "open"} busy={busy === "open"} busyLabel={t("common.busy.returning")} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</EventButton>
+                : <EventButton className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy === "open"} busy={busy === "open"} busyLabel={t("common.busy.opening")} onClick={() => void toggleOpened(true)}>{t("manage.results.freeze.open")}</EventButton>)}
         </div>}
         <ManageTable event={event} state={state} loadingLabel={t("manage.results.loading")} errorMessage={t("manage.results.loadFailed")} onRetry={() => void query.refetch()} error={query.error}
             emptyMessage={table.filtered ? t("manage.results.emptyFiltered") : t("manage.results.empty")}
             toolbar={<>
                 <ManageTableSearch value={table.search} onChange={table.setSearch} label={teamMode ? t("manage.results.searchTeams") : t("manage.results.searchParticipants")} />
                 <TableFiltersButton specs={specs} drafts={table.drafts} onChange={table.setDrafts} active={table.active} />
-                <div className="event-results-table__tools">
-                    <EventButton className="ib-btn" type="button" disabled={busy === "export"} busy={busy === "export"} onClick={() => void exportCSV()}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>
-                </div>
+                {canManage && <div className="event-results-table__tools">
+                    <EventButton className="ib-btn" type="button" disabled={busy === "export"} busy={busy === "export"} busyLabel={t("common.busy.downloading")} onClick={() => void exportCSV()}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>
+                </div>}
                 <TableFilterChips specs={specs} drafts={table.drafts} onChange={table.setDrafts} onReset={table.reset}
                     extra={table.search.trim() ? [{key: "@search", text: t("manage.table.filters.searchChip", {text: table.search.trim()}), onRemove: () => table.setSearch("")}] : []} />
             </>}

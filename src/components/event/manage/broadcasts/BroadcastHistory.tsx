@@ -39,7 +39,7 @@ export function BroadcastHistory() {
         ? <Link className="ib-btn ib-btn--primary" href="/manage/broadcasts/new"><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</Link>
         : <span className="event-broadcast-heading-actions">
             <button className="ib-btn ib-btn--primary" type="button" disabled><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</button>
-            <EventTooltip content={t("manage.broadcasts.viewerCannotSend")}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.broadcasts.viewerCannotSendLabel")} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
+            <EventTooltip help content={t("manage.broadcasts.viewerCannotSend")}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.broadcasts.viewerCannotSendLabel")} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
         </span>;
 
     return <div className="event-manage-settings event-journal">

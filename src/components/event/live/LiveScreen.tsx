@@ -205,7 +205,7 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
         <div className="live-controls" aria-label={t("live.controls")}>
             {fullscreen.supported && <EventTooltip content={t("live.keyF")}>{id => <button type="button" onClick={fullscreen.toggle} aria-keyshortcuts="F" aria-describedby={id}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}</EventTooltip>}
             <EventTooltip content={t("live.keyT")}>{id => <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} aria-keyshortcuts="T" aria-describedby={id}><MonitorCheck size={16} />{t("live.test.title")}</button>}</EventTooltip>
-            <span className="live-controls__wake">{wakeLabel(wake)}{(wake === "denied" || wake === "unsupported") && <EventTooltip content={t(`live.wake.${wake}Help`)}>{id => <button type="button" className="live-controls__help" aria-label={t(`live.wake.${wake}Help`)} aria-describedby={id}><CircleHelp size={16} aria-hidden="true" /></button>}</EventTooltip>}</span>
+            <span className="live-controls__wake">{wakeLabel(wake)}{(wake === "denied" || wake === "unsupported") && <EventTooltip help content={t(`live.wake.${wake}Help`)}>{id => <button type="button" className="live-controls__help" aria-label={t(`live.wake.${wake}Help`)} aria-describedby={id}><CircleHelp size={16} aria-hidden="true" /></button>}</EventTooltip>}</span>
         </div>
     </main>;
 }

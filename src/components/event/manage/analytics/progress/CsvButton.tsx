@@ -5,11 +5,13 @@ import {toastFailure} from "@/components/ui/toastApiError";
 import {Download} from "lucide-react";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import {EventButton} from "@/components/ui/EventButton";
+import {useCanExport} from "@/components/event/manage/managerContext";
 import {t} from "@/i18n/t";
 
 // The CSV of one table of a section, in a block heading. `path` is the API path
 // under /manage (with its query), `name` the file name prefix.
 export function CsvButton({eventID, path, name, disabled = false}: {eventID: string; path: string; name: string; disabled?: boolean}) {
+    const canExport = useCanExport();
     const [busy, setBusy] = useState(false);
     async function download() {
         setBusy(true);
@@ -17,5 +19,6 @@ export function CsvButton({eventID, path, name, disabled = false}: {eventID: str
         catch (failure) {toastFailure(failure, t("manage.analytics.exportFailed"));}
         finally {setBusy(false);}
     }
-    return <EventButton className="ib-btn ib-btn--sm" type="button" disabled={disabled || busy} busy={busy} onClick={() => void download()}><Download size={14} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;
+    if (!canExport) return null;
+    return <EventButton className="ib-btn ib-btn--sm" type="button" disabled={disabled || busy} busy={busy} busyLabel={t("common.busy.downloading")} onClick={() => void download()}><Download size={14} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;
 }

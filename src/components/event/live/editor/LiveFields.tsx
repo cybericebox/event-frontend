@@ -54,6 +54,6 @@ export function LiveSegmented<T extends string>({label, help, value, options, di
 export function LiveSwitch({label, help, checked, disabled, onChange}: {label: string; help: string; checked: boolean; disabled: boolean; onChange: (checked: boolean) => void}) {
     return <div className="event-live-switch">
         <EventSwitch checked={checked} disabled={disabled} onCheckedChange={onChange} label={label} />
-        <EventTooltip content={<span className="event-brand-tooltip-copy">{help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
+        <EventTooltip help content={<span className="event-brand-tooltip-copy">{help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
     </div>;
 }

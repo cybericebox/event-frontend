@@ -79,7 +79,7 @@ function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: Man
         </dl>
         <p className="event-stands__note">{t("manage.labs.schedule.deployComputed")}</p>
         <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-delay" title={t("manage.labs.schedule.delay")} help={t("manage.labs.schedule.delayHelp", TEARDOWN_DELAY_RANGE)} /><input aria-invalid={dirty && !valid || undefined} aria-describedby={dirty && !valid ? "stand-delay-error" : undefined} id="stand-delay" className="event-manage-input" type="number" min={TEARDOWN_DELAY_RANGE.min} max={TEARDOWN_DELAY_RANGE.max} value={Number.isNaN(delay) ? "" : delay} onChange={change => setEdit({delay: change.target.valueAsNumber})} disabled={!canManage} />{dirty && !valid && <p id="stand-delay-error" className="event-manage-validation" role="alert">{t("manage.labs.schedule.invalid", {delayMin: TEARDOWN_DELAY_RANGE.min, delayMax: TEARDOWN_DELAY_RANGE.max})}</p>}</div>
-        {canManage && <div className="event-manage-section__actions"><button className="ib-btn" style={{visibility: dirty || saving ? undefined : "hidden"}} type="button" disabled={saving || !dirty} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
+        {canManage && <div className="event-manage-section__actions"><button className="ib-btn" style={{visibility: dirty || saving ? undefined : "hidden"}} type="button" disabled={saving || !dirty} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>}
     </form>;
 }
 
@@ -181,7 +181,7 @@ export default function ManageLabsPage() {
                             <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason ? standReasonText(stand.Reason) : t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason ? standReasonText(stand.Reason) : "—"}</span>}</td>
                             <td><div className="event-manage-participants__actions event-stands__actions">
                                 {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={vpnBusy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
-                                {canManage && stand.Status !== "not_deployed" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDetailTeam(stand.TeamID)}><Layers size={14} aria-hidden="true" />{t("manage.labs.detail.open")}</button>}
+                                {stand.Status !== "not_deployed" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDetailTeam(stand.TeamID)}><Layers size={14} aria-hidden="true" />{t("manage.labs.detail.open")}</button>}
                                 {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={recreating.includes(stand.TeamID)} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
                             </div></td>
                         </tr>
@@ -192,7 +192,7 @@ export default function ManageLabsPage() {
         </section>
         <ConfirmDialog open={confirm !== null} onCancel={() => {if (!confirm || !recreating.includes(confirm.TeamID)) setConfirm(null);}} tone="danger" busy={!!confirm && recreating.includes(confirm.TeamID)} error={confirmError}
             title={t("manage.labs.recreate.title")} description={t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}
-            confirmLabel={t("manage.labs.recreate.confirm")} onConfirm={() => void recreate()} />
+            confirmLabel={t("manage.labs.recreate.confirm")} busyLabel={t("common.busy.recreating")} onConfirm={() => void recreate()} />
         <StandDetailDialog eventID={eventID} teamID={detailTeam} canManage={canManage} onClose={() => setDetailTeam(null)} />
         <ModeratorChallengesDialog eventID={eventID} open={challengesOpen} onClose={() => setChallengesOpen(false)} />
     </div>;

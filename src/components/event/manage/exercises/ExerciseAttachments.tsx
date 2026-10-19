@@ -54,14 +54,14 @@ export function useReturnURL(): string {
     return useSyncExternalStore(noSubscribe, () => window.location.href, () => "");
 }
 
-function actionCopy(action: Action): {title: string; description: string; confirm: string; danger?: boolean} {
+function actionCopy(action: Action): {title: string; description: string; confirm: string; busy: string; danger?: boolean} {
     const {attachment} = action;
-    if (action.stands) return {title: t("manage.exercises.action.stands.title"), description: t("manage.exercises.action.stands.description"), confirm: t("manage.exercises.action.stands.confirm"), danger: true};
-    if (action.kind === "update") return {title: t("manage.exercises.action.update.title", {number: attachment.LatestVersionNumber}), description: t("manage.exercises.action.update.description"), confirm: t("manage.exercises.action.update.confirm")};
-    if (action.kind === "fork") return {title: t("manage.exercises.action.fork.title"), description: t("manage.exercises.action.fork.description"), confirm: t("manage.exercises.action.fork.confirm")};
-    if (action.kind === "revert") return {title: t("manage.exercises.action.revert.title"), description: t("manage.exercises.action.revert.description", {number: attachment.Fork?.SourceVersionNumber ?? ""}), confirm: t("manage.exercises.action.revert.confirm")};
-    if (action.attempts) return {title: t("manage.exercises.action.detachAttempts.title"), description: t("manage.exercises.action.detachAttempts.description"), confirm: t("manage.exercises.action.detachAttempts.confirm"), danger: true};
-    return {title: t("manage.exercises.action.detach.title"), description: t("manage.exercises.action.detach.description"), confirm: t("manage.exercises.action.detach.confirm"), danger: true};
+    if (action.stands) return {title: t("manage.exercises.action.stands.title"), description: t("manage.exercises.action.stands.description"), confirm: t("manage.exercises.action.stands.confirm"), busy: t("common.busy.recreating"), danger: true};
+    if (action.kind === "update") return {title: t("manage.exercises.action.update.title", {number: attachment.LatestVersionNumber}), description: t("manage.exercises.action.update.description"), confirm: t("manage.exercises.action.update.confirm"), busy: t("common.busy.updating")};
+    if (action.kind === "fork") return {title: t("manage.exercises.action.fork.title"), description: t("manage.exercises.action.fork.description"), confirm: t("manage.exercises.action.fork.confirm"), busy: t("common.busy.copying")};
+    if (action.kind === "revert") return {title: t("manage.exercises.action.revert.title"), description: t("manage.exercises.action.revert.description", {number: attachment.Fork?.SourceVersionNumber ?? ""}), confirm: t("manage.exercises.action.revert.confirm"), busy: t("common.busy.returning")};
+    if (action.attempts) return {title: t("manage.exercises.action.detachAttempts.title"), description: t("manage.exercises.action.detachAttempts.description"), confirm: t("manage.exercises.action.detachAttempts.confirm"), busy: t("common.busy.removing"), danger: true};
+    return {title: t("manage.exercises.action.detach.title"), description: t("manage.exercises.action.detach.description"), confirm: t("manage.exercises.action.detach.confirm"), busy: t("common.busy.removing"), danger: true};
 }
 
 // «Завдання»: the event's sets, each collapsible, with its tasks as thin rows.
@@ -219,7 +219,7 @@ export function ExerciseAttachments() {
         </section>
         <ConfirmDialog open={!!action} onCancel={() => setAction(null)} tone={copy?.danger ? "danger" : "default"} busy={busy} disabled={!!action?.error} error={action?.error}
             title={copy?.title ?? ""} description={copy?.description} subject={action?.attachment.ExerciseName}
-            cancelLabel={action?.error ? t("common.close") : undefined} confirmLabel={copy?.confirm ?? ""} onConfirm={() => void runAction()}>
+            cancelLabel={action?.error ? t("common.close") : undefined} confirmLabel={copy?.confirm ?? ""} busyLabel={copy?.busy ?? ""} onConfirm={() => void runAction()}>
             {action?.stands && action.stands.length > 0 && <p className="event-manage-notice">{t("manage.exercises.action.stands.teams", {names: action.stands.map(team => team.Name || t("manage.exercises.action.stands.moderators")).join(", ")})}</p>}
             {action?.extension && <Link className="ib-btn" href="/manage/resources?request=1" onClick={() => setAction(null)}>{t("manage.exercises.attachDialog.requestExtension")}</Link>}
         </ConfirmDialog>

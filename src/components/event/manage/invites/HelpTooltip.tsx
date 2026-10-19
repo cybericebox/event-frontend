@@ -1,6 +1,6 @@
 "use client";
 
-import {useId, useLayoutEffect, useRef, useState, type ReactNode} from "react";
+import {useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode} from "react";
 import {createPortal} from "react-dom";
 import {CircleHelp} from "lucide-react";
 import "./invites.css";
@@ -11,7 +11,8 @@ const gap = 6;
 // A (?) help tooltip that is safe inside dialogs: the bubble is portalled to
 // the dialog backdrop (or the body) with fixed positioning, so no scroll box
 // clips it; it prefers the space above, flips below, and shifts to stay
-// inside the viewport. Hover and keyboard focus show it; Escape hides it.
+// inside the viewport. Hover and keyboard focus show it; a tap or click pins it
+// open until a second tap, a tap outside or Escape.
 export function HelpTooltip({label, text}: {label: string; text: string}) {
     const id = useId();
     const trigger = useRef<HTMLButtonElement>(null);
@@ -19,6 +20,7 @@ export function HelpTooltip({label, text}: {label: string; text: string}) {
     const [host, setHost] = useState<HTMLElement | null>(null);
     const open = host !== null;
     const [position, setPosition] = useState<{left: number; top: number} | null>(null);
+    const pinned = useRef(false);
 
     useLayoutEffect(() => {
         if (!open) return;
@@ -36,11 +38,23 @@ export function HelpTooltip({label, text}: {label: string; text: string}) {
         ? <span className="event-help-tip__point" key={index}>{line.slice(2)}</span>
         : <span key={index}>{line}</span>)}</span>;
     const show = () => setHost((trigger.current?.closest(".ib-modal-backdrop") as HTMLElement | null) ?? document.body);
-    const hide = () => {setHost(null); setPosition(null);};
+    const hide = () => {pinned.current = false; setHost(null); setPosition(null);};
+    const leave = () => {if (!pinned.current) hide();};
+
+    useEffect(() => {
+        if (!open) return;
+        const outside = (event: PointerEvent) => {
+            if (event.target instanceof Node && (trigger.current?.contains(event.target) || bubble.current?.contains(event.target))) return;
+            hide();
+        };
+        document.addEventListener("pointerdown", outside, true);
+        return () => document.removeEventListener("pointerdown", outside, true);
+    }, [open]);
 
     return <>
         <button ref={trigger} className="event-brand-help" type="button" aria-label={label} aria-describedby={open ? id : undefined}
-            onPointerEnter={show} onPointerLeave={hide} onFocus={show} onBlur={hide}
+            onPointerEnter={show} onPointerLeave={leave} onFocus={show} onBlur={hide}
+            onClick={() => {if (pinned.current) hide(); else {pinned.current = true; show();}}}
             onKeyDown={event => {if (event.key === "Escape" && open) {event.stopPropagation(); hide();}}}>
             <CircleHelp size={15} />
         </button>

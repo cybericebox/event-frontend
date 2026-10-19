@@ -49,7 +49,7 @@ export function TemplateVersions({versions, currentId, hrefFor, canManage, dirty
                 </div>)}
             </div>}
         </section>
-        <ConfirmDialog open={source !== null} onCancel={() => {if (!restoring) setSource(null);}} busy={restoring} disabled={busy} error={error ? t("manage.notifications.restoreVersionError") : null}
+        <ConfirmDialog open={source !== null} onCancel={() => {if (!restoring) setSource(null);}} busy={restoring} busyLabel={t("common.busy.restoring")} disabled={busy} error={error ? t("manage.notifications.restoreVersionError") : null}
             title={t("manage.notifications.restoreVersionTitle")} description={t(hasDraft ? "manage.notifications.restoreVersionBody" : "manage.notifications.restoreVersionBodyNoDraft")}
             confirmLabel={t("manage.notifications.restoreVersion")} onConfirm={() => void restore()}>
             {dirty && <p className="event-manage-validation">{t("manage.notifications.restoreVersionUnsaved")}</p>}

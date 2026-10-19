@@ -3,6 +3,9 @@
    category headers all clear it through this one token. */
 :root{--event-navbar-h:61px}
 @media(max-width:760px){:root{--event-navbar-h:57px}}
+/* Screen-reader text sits at its containing block's left edge: at its static place inside a wide table it widened the
+   whole page (the scroll box around the table is not its containing block). */
+.ib-sr{left:0}
 html{background:var(--ib-paper)!important;scroll-padding-top:calc(var(--event-navbar-h) + var(--ib-4))}
 .event-page-content .ib-block-doc .ib-toc{--ib-toc-top:calc(var(--event-navbar-h) + var(--ib-4))}
 .event-page-content .ib-block-prose h2,.event-page-content .ib-block-prose h3{scroll-margin-top:calc(var(--event-navbar-h) + var(--ib-4))}

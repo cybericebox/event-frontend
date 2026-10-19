@@ -1,0 +1,28 @@
+/* Touch screens (pointer:coarse): every field is at least 16px, so iOS never zooms the page on focus, and every tap
+   target is at least 44 × 44 px. Small controls keep their look: an invisible ::after grows the hit area around them.
+   Rows of options (tabs, segmented filters, menu items) simply grow to 44px. */
+@media (pointer:coarse){
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+  select,textarea,[contenteditable="true"],[contenteditable="true"] :where(p,li,h1,h2,h3,h4,blockquote){font-size:16px}
+
+  :where(.ib-help,.event-brand-help,.event-content-editor__help,.live-controls__help,.ib-icon-btn,.ib-topbar__icon-btn,.ib-navbar__toggle,
+    .event-navbar__icon,.event-account__trigger,.event-brand-reset-icon,.event-manage-icon-action,.event-action-toast__close,.ib-btn--sm,
+    .event-theme-toggle button,.event-vpn-command button,.ib-copy__btn,.event-pp-field__lock,.event-setup-chip,.ib-board__chip,
+    .ib-link--standalone,.ib-navbar__brand,
+    label:has(>input[type="checkbox"]),label:has(>input[type="radio"]),.ib-check,.ib-switch){position:relative}
+  :is(.ib-help,.event-brand-help,.event-content-editor__help,.live-controls__help,.ib-icon-btn,.ib-topbar__icon-btn,.ib-navbar__toggle,
+    .event-navbar__icon,.event-account__trigger,.event-brand-reset-icon,.event-manage-icon-action,.event-action-toast__close,.ib-btn--sm,
+    .event-theme-toggle button,.event-vpn-command button,.ib-copy__btn,.event-pp-field__lock,.event-setup-chip,.ib-board__chip,
+    .ib-link--standalone,.ib-navbar__brand)::after{
+    content:"";position:absolute;
+    inset:min(0px,calc((100% - 44px) / 2)) min(0px,calc((100% - 44px) / 2));
+  }
+  /* A checkbox, radio or switch is tapped through its whole label row, at least 44px tall. */
+  :is(label:has(>input[type="checkbox"]),label:has(>input[type="radio"]),.ib-check,.ib-switch)::after{
+    content:"";position:absolute;left:0;right:0;top:min(0px,calc((100% - 44px) / 2));bottom:min(0px,calc((100% - 44px) / 2));
+  }
+  input[type="checkbox"]:not(.ib-check>input,.ib-switch>input),input[type="radio"]:not(.ib-check>input){width:20px;height:20px}
+
+  :is([role="tab"],.ib-seg>button,.event-manage-participants__filter,[role="menuitem"],[role="option"],.ib-listbox__opt,
+    .event-account__menu a,.event-account__menu button,.event-navbar__more-menu a){min-height:44px}
+}

@@ -186,7 +186,7 @@ export default function ManageSchedulePage() {
                     {showValidation && fieldErrors.WithdrawAt && <p id="withdraw-at-error" className="event-manage-validation" role="alert">{fieldErrors.WithdrawAt}</p>}
                 </div>
             </div>}
-            <div className="event-manage-section__actions"><EventButton saveDirty={!lifecycle.data.Configured || dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving}>{t("manage.schedule.save")}</EventButton></div>
+            <div className="event-manage-section__actions"><EventButton saveDirty={!lifecycle.data.Configured || dirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || config.data?.Participation === null || !!validation || (lifecycle.data.Configured && !dirty)} busy={saving} busyLabel={t("common.busy.saving")}>{t("manage.schedule.save")}</EventButton></div>
         </form>
         <StagesManager eventID={eventID} lifecycle={lifecycle.data} canManage={canManage} />
         {countdown && <form className="event-manage-section" onSubmit={saveCountdown}>
@@ -204,7 +204,7 @@ export default function ManageSchedulePage() {
                 <input id="countdown-finish-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={countdown.Minutes} disabled={!canManage} aria-invalid={!countdownMinutesValid} aria-describedby={!countdownMinutesValid ? "countdown-finish-minutes-error" : undefined} onChange={event => setCountdown({...countdown, Minutes: Number(event.target.value)})} />
                 {!countdownMinutesValid && <small id="countdown-finish-minutes-error" className="event-manage-validation" role="alert">{t("manage.schedule.countdown.minutesRange")}</small>}
             </div>}
-            <div className="event-manage-section__actions"><EventButton saveDirty={countdownDirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || countdownSaving || !countdownDirty || !countdownMinutesValid} busy={countdownSaving}>{t("manage.schedule.countdown.save")}</EventButton></div>
+            <div className="event-manage-section__actions"><EventButton saveDirty={countdownDirty} className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || countdownSaving || !countdownDirty || !countdownMinutesValid} busy={countdownSaving} busyLabel={t("common.busy.saving")}>{t("manage.schedule.countdown.save")}</EventButton></div>
         </form>}
     </div>;
 }

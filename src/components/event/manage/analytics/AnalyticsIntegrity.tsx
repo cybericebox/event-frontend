@@ -22,6 +22,7 @@ import {LiveStatus} from "@/components/event/manage/LiveStatus";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {ManageTable, type ManageTableState} from "@/components/event/manage/ManageTable";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {useCanExport} from "@/components/event/manage/managerContext";
 import {useJournalOptions} from "@/components/event/manage/journalShared";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EmptyState} from "@/components/ui/EmptyState";
@@ -93,6 +94,7 @@ function ThresholdsPanel({defaults, applied, onApply, onReset}: {defaults: Integ
 }
 
 function ExportButton({eventID, period, filters, thresholds, disabled}: {eventID: string; period: {from: string | null; to: string | null}; filters: IntegrityFilters; thresholds: IntegrityThresholds | null; disabled: boolean}) {
+    const canExport = useCanExport();
     const [busy, setBusy] = useState(false);
     async function download() {
         setBusy(true);
@@ -100,7 +102,8 @@ function ExportButton({eventID, period, filters, thresholds, disabled}: {eventID
         catch (failure) {toastFailure(failure, t("manage.analytics.exportFailed"));}
         finally {setBusy(false);}
     }
-    return <EventButton className="ib-btn" type="button" disabled={disabled || busy} busy={busy} onClick={() => void download()}><Download size={16} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;
+    if (!canExport) return null;
+    return <EventButton className="ib-btn" type="button" disabled={disabled || busy} busy={busy} busyLabel={t("common.busy.downloading")} onClick={() => void download()}><Download size={16} aria-hidden="true" /> {t("manage.analytics.export")}</EventButton>;
 }
 
 type ReviewDraft = {mode: "review" | "unreview"; item: IntegrityItem; note: string; busy: boolean; error: string | null; noteError?: string | null};
@@ -109,7 +112,7 @@ function ReviewDialog({draft, onChange, onClose, onConfirm}: {draft: ReviewDraft
     const id = useId();
     const review = draft?.mode === "review";
     const subject = draft ? t("manage.analytics.integrity.review.subject", {team: draft.item.TeamName, task: draft.item.ChallengeName}) : undefined;
-    return <ConfirmDialog open={!!draft} onCancel={onClose} tone={review ? "default" : "danger"} busy={draft?.busy ?? false} error={draft?.error}
+    return <ConfirmDialog open={!!draft} onCancel={onClose} tone={review ? "default" : "danger"} busy={draft?.busy ?? false} busyLabel={t(review ? "common.busy.reviewing" : "common.busy.dismissing")} error={draft?.error}
         title={t(review ? "manage.analytics.integrity.review.title" : "manage.analytics.integrity.unreview.title")}
         description={t(review ? "manage.analytics.integrity.review.description" : "manage.analytics.integrity.unreview.description")}
         subject={subject} confirmLabel={t(review ? "manage.analytics.integrity.review.confirm" : "manage.analytics.integrity.unreview.confirm")} onConfirm={onConfirm}>

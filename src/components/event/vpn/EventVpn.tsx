@@ -64,7 +64,7 @@ function VpnModal({eventID, eventTag, moderators, vpnReady, connected, open, onC
     };
     const probeData = preview.active ? (previewLab?.VPNProbeURL ? {ProbeURL: previewLab.VPNProbeURL, GatewayIP: new URL(previewLab.VPNProbeURL).hostname} : undefined) : probe.data;
     return <DialogModal open={open} onClose={onClose} title={t("vpn.modal.title")}
-        footer={vpnReady ? <EventButton type="button" className="ib-btn ib-btn--primary" onClick={() => void download()} busy={issuing}><Download aria-hidden="true" />{t("vpn.modal.download")}</EventButton> : <button type="button" className="ib-btn ib-btn--primary" onClick={onClose}>{t("vpn.modal.acknowledge")}</button>}>
+        footer={vpnReady ? <EventButton type="button" className="ib-btn ib-btn--primary" onClick={() => void download()} busy={issuing} busyLabel={t("common.busy.preparing")}><Download aria-hidden="true" />{t("vpn.modal.download")}</EventButton> : <button type="button" className="ib-btn ib-btn--primary" onClick={onClose}>{t("vpn.modal.acknowledge")}</button>}>
         <VpnConnectionStatus ready={vpnReady} connected={connected} />
         {!vpnReady && <div className="event-vpn-wait"><p>{t(preview.active ? "vpn.group.previewWait" : "vpn.group.wait")}</p><p className="event-vpn-note">{t("vpn.group.waitNext")}</p></div>}
         {vpnReady && <>

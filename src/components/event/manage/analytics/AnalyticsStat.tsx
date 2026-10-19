@@ -13,7 +13,7 @@ export function AnalyticsStat({label, value, note, hint, href}: {label: string; 
     return <div className={`event-analytics-stat${href ? " event-analytics-stat--link" : ""}`}>
         <div className="event-analytics-stat__label">
             <span>{label}</span>
-            <EventTooltip content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
+            <EventTooltip help content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
         </div>
         <strong className="event-analytics-stat__value">{href ? <Link href={href}>{value}</Link> : value}</strong>
         {note && <small className="event-analytics-stat__note">{note}</small>}

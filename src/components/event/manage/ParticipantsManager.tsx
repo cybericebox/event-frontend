@@ -230,7 +230,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             title={t(confirm?.kind === "revoke" ? "manage.participants.revokeTitle" : "manage.participants.rejectTitle")}
             description={confirm?.kind === "revoke" ? t("manage.participants.revokeBody") : undefined}
             subject={confirm ? confirm.kind === "revoke" ? confirm.participant.Email || personName(confirm.participant) : personName(confirm.participant) : undefined}
-            confirmLabel={t(confirm?.kind === "revoke" ? "manage.participants.revoke" : "manage.participants.reject")} onConfirm={() => void runConfirmed()} />;
+            confirmLabel={t(confirm?.kind === "revoke" ? "manage.participants.revoke" : "manage.participants.reject")} busyLabel={t(confirm?.kind === "revoke" ? "common.busy.revoking" : "common.busy.declining")} onConfirm={() => void runConfirmed()} />;
     }
 
     const pseudonymShown = shown.some(column => column.key === "@pseudonym");
@@ -277,10 +277,10 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
             description={current ? [current.Pseudonym && t("manage.participants.pseudonym", {pseudonym: current.Pseudonym}), current.Email, !current.Invited && t("manage.participants.submittedAt", {date: formatDateTime(current.CreatedAt)})].filter(Boolean).join(" · ") : undefined}
             footer={<>
                 <button className="ib-btn" type="button" onClick={() => setOpened(null)}>{t("common.close")}</button>
-                {canManage && current && modalKind === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}
+                {canManage && current && modalKind === "participants" && !teamMode && current.Status === 2 && current.TeamID && <EventButton className="ib-btn" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} busyLabel={t(current.Hidden ? "common.busy.showing" : "common.busy.hiding")} onClick={() => setHidden(current)}>{current.Hidden ? t("manage.participants.show") : t("manage.participants.hide")}</EventButton>}
                 {canManage && current && current.Status === 1 && modalKind === "applications" && <>
                     <button className="ib-btn" type="button" disabled={isBusy(current.UserID)} onClick={() => decide(current, "reject")}>{t("manage.participants.reject")}</button>
-                    <EventButton className="ib-btn ib-btn--primary" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} onClick={() => decide(current, "approve")}>{t("manage.participants.approve")}</EventButton>
+                    <EventButton className="ib-btn ib-btn--primary" type="button" disabled={isBusy(current.UserID)} busy={isBusy(current.UserID) && !confirm} busyLabel={t("common.busy.approving")} onClick={() => decide(current, "approve")}>{t("manage.participants.approve")}</EventButton>
                 </>}
             </>}>
             {notFound && <div className="event-manage-participants__modal-state">{detailQuery.error instanceof ManageApiError && (detailQuery.error.status === 404 || detailQuery.error.status === 400)

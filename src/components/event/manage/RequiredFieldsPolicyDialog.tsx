@@ -22,7 +22,7 @@ export function RequiredFieldsPolicyDialog({scope, fields, answered, busy, onCan
     const [choice, setChoice] = useState<PolicyChoice>(newRegistrationsOnly);
     const team = scope === "team";
     const names = fields.map(field => field.label.trim() || t("manage.fields.editor.untitledQuestion")).join(", ");
-    return <ConfirmDialog open onCancel={onCancel} busy={busy} onConfirm={() => onConfirm(choice)}
+    return <ConfirmDialog open onCancel={onCancel} busy={busy} busyLabel={t("common.busy.saving")} onConfirm={() => onConfirm(choice)}
         title={t("manage.fields.policy.title")} confirmLabel={t("manage.fields.save")}
         description={team ? tPlural("manage.fields.policy.bodyTeam", answered) : tPlural("manage.fields.policy.bodyParticipant", answered)}
         subject={t("manage.fields.policy.fields", {names})}>

@@ -136,7 +136,7 @@ describe("event schedule", () => {
     it("keeps later edits and a visible pending save while an earlier save completes", async () => {
         let done!: (value: ManageLifecycle) => void; server.save.mockImplementation(() => new Promise(resolve => {done = resolve;}));
         const first = page(); await screen.findByRole("button", {name: t("manage.schedule.withdraw")}); clearClosing(); fireEvent.click(save());
-        expect(save().getAttribute("aria-busy")).toBe("true"); expect(getComputedStyle(save().parentElement!).display).toBe("flex");
+        const busy = screen.getByRole("button", {name: t("common.busy.saving")}); expect(busy).toHaveProperty("disabled", true); expect(getComputedStyle(busy.parentElement!).display).toBe("flex");
         changeFinishMinutes("30"); await act(async () => {done({...lifecycle, WithdrawAt: null});});
         expect(finish().textContent).toContain(":30"); expect(save()).toHaveProperty("disabled", false); first.unmount();
         page(); await screen.findByRole("button", {name: t("manage.schedule.finish")}); expect(finish().textContent).toContain(":30");

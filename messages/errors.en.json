@@ -403,6 +403,7 @@
   "2205": "The solve was not found. Reload the page.",
   "2206": "The note is too long: at most 1000 characters.",
   "2207": "This integrity pattern cannot be dismissed",
+  "2208": "Only the event owner, write moderators and platform admins can export the event data",
   "2301": "The analytics period is invalid",
   "2302": "The analytics export table is unknown",
   "2401": "The error group was not found",

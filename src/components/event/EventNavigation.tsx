@@ -170,6 +170,7 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
     const measureRef = useRef<HTMLUListElement>(null);
     const measureMoreRef = useRef<HTMLButtonElement>(null);
     const headerRef = useRef<HTMLElement>(null);
+    const toggleRef = useRef<HTMLButtonElement>(null);
     const pages = useQuery({
         queryKey: ["event-navigation-pages", event.EventID, approved],
         queryFn: () => getNavigationPages(event.EventID),
@@ -267,11 +268,14 @@ export function EventNavbar({event, authenticated, approved = false, canViewResu
                 {authenticated && !preview.active && <ManagerEntry eventID={event.EventID} variant="nav" />}
                 <EventHeaderActions event={event} authenticated={authenticated} approved={approved} pinned={participant} />
                 </>}
-                {(hasMobileMenu || pending) && <PopoverTrigger asChild><button className="ib-navbar__toggle" type="button" disabled={pending} aria-expanded={menuExpanded} aria-controls="event-menu" aria-label={menuExpanded ? t("nav.closeMenu") : t("nav.openMenu")}>{menuExpanded ? <X size={20} /> : <Menu size={20} />}</button></PopoverTrigger>}
+                {(hasMobileMenu || pending) && <PopoverTrigger asChild><button ref={toggleRef} className="ib-navbar__toggle" type="button" disabled={pending} aria-expanded={menuExpanded} aria-controls="event-menu" aria-label={menuExpanded ? t("nav.closeMenu") : t("nav.openMenu")}>{menuExpanded ? <X size={20} /> : <Menu size={20} />}</button></PopoverTrigger>}
             </div>
         </div>
         </header></PopoverAnchor>
         {hasMobileMenu && <PopoverContent id="event-menu" className="event-mobile-menu" aria-label={t("nav.mobile")} side="bottom" align="start" sideOffset={0} avoidCollisions={false}
+            // Focus goes back to the menu button without scrolling: the sticky button's own place is the page top, and
+            // the default focus() scrolled a page read halfway down back to the top when the menu closed.
+            onCloseAutoFocus={event => {event.preventDefault(); toggleRef.current?.focus({preventScroll: true});}}
             onClickCapture={event => {if (event.target instanceof Element && event.target.closest("a")) setOpen(false);}}>
         <nav className="event-mobile-menu__links" aria-label={t("nav.mobile")}>
             {links.map(link => <Link key={link.href} href={link.href} aria-current={path === link.href ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}

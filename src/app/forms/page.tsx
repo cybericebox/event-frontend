@@ -96,7 +96,7 @@ function FormsPage() {
                 if (block.type === "text") return <div className="event-join-markdown" key={block.id}><EventRichTextView value={block.richText} /></div>;
                 if (block.type === "divider") return <hr key={block.id} />;
                 return null;
-            })}{error && <p className="ib-form__error" role="alert">{error}</p>}<EventButton className="ib-btn ib-btn--primary" type="submit" busy={working}>{t("forms.send")}</EventButton></form></>}</section></div>}
+            })}{error && <p className="ib-form__error" role="alert">{error}</p>}<EventButton className="ib-btn ib-btn--primary" type="submit" busy={working} busyLabel={t("common.busy.sending")}>{t("forms.send")}</EventButton></form></>}</section></div>}
     </div>;
 }
 

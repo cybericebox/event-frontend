@@ -35,7 +35,7 @@ export function TemplateActions({mode, canManage, busy, onCustomize, onEdit, onR
         {mode === "view" && <button className="ib-btn ib-btn--primary" type="button" disabled={busy} onClick={onEdit}><Pencil size={15} /> {t("manage.notifications.edit")}</button>}
         {mode === "previous" && <button className="ib-btn ib-btn--primary" type="button" disabled={busy} onClick={onRestore}>{t("manage.notifications.restoreAsDraft")}</button>}
         {mode !== "platform" && <button className="ib-btn" type="button" disabled={busy} onClick={() => setConfirming(true)}><RotateCcw size={15} /> {t("manage.notifications.restoreDefault")}</button>}
-        <ConfirmDialog open={confirming} onCancel={() => setConfirming(false)} tone="danger" busy={resetting}
+        <ConfirmDialog open={confirming} onCancel={() => setConfirming(false)} tone="danger" busy={resetting} busyLabel={t("common.busy.resetting")}
             title={t("manage.notifications.resetTemplateTitle")} description={t("manage.notifications.resetTemplateBody")}
             confirmLabel={t("manage.notifications.restoreDefault")} onConfirm={() => void confirm()} />
     </>;

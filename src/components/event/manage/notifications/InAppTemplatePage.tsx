@@ -123,7 +123,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
         <TemplateHeader backHref={BASE} backLabel={t("manage.notifications.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
                 {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
-                {editable && <EventButton saveDirty={dirty} busy={saving} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
+                {editable && <EventButton saveDirty={dirty} busy={saving} busyLabel={t("common.busy.saving")} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageInAppTemplate(eventID, template!), t("manage.notifications.published"))}>{t("manage.notifications.publish")}</button>}
                 <TemplateActions mode={mode} canManage={canManage} busy={busy}
                     onCustomize={() => void mutate(() => customizeManageInAppTemplate(eventID, template!), t("manage.notifications.customized"))}

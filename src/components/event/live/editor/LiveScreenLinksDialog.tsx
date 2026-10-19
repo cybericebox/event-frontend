@@ -67,7 +67,7 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
                                 options={liveScreenExpiries.map(value => ({value, label: t(`manage.live.links.expiry.${value}`),
                                     disabled: value === "event_end" && !endAvailable, disabledReason: value === "event_end" && !endAvailable ? t("manage.live.links.expiryNoFinish") : undefined}))} />
                         </div>
-                        <EventButton className="ib-btn ib-btn--primary" type="button" busy={busy === "issue"} disabled={!!busy || expiry === "event_end" && !endAvailable}
+                        <EventButton className="ib-btn ib-btn--primary" type="button" busy={busy === "issue"} busyLabel={t("common.busy.creating")} disabled={!!busy || expiry === "event_end" && !endAvailable}
                             onClick={() => void run("issue", () => issueLiveScreenLink(eventID, expiry), t("manage.live.links.created"))}><Link2 size={16} /> {t("manage.live.links.create")}</EventButton>
                     </div>
                         : <section className="event-live-links__state" aria-label={t("manage.live.links.active")}>
@@ -82,16 +82,16 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
                                 <small>{t("manage.live.links.freshHint")}</small>
                             </div> : <p className="event-live-links__hidden">{t("manage.live.links.hiddenURL")}</p>}
                             <div className="event-live-links__actions">
-                                <EventTooltip content={t("manage.live.links.regenerateHint")}>{id => <EventButton className="ib-btn" type="button" aria-describedby={id} busy={busy === "regenerate"} disabled={!!busy}
+                                <EventTooltip content={t("manage.live.links.regenerateHint")}>{id => <EventButton className="ib-btn" type="button" aria-describedby={id} busy={busy === "regenerate"} busyLabel={t("common.busy.regenerating")} disabled={!!busy}
                                     onClick={() => setConfirm("regenerate")}><RefreshCw size={16} /> {t("manage.live.links.regenerate")}</EventButton>}</EventTooltip>
-                                <EventButton className="ib-btn" type="button" busy={busy === "revoke"} disabled={!!busy} onClick={() => setConfirm("revoke")}><Power size={16} /> {t("manage.live.links.revoke")}</EventButton>
+                                <EventButton className="ib-btn" type="button" busy={busy === "revoke"} busyLabel={t("common.busy.revoking")} disabled={!!busy} onClick={() => setConfirm("revoke")}><Power size={16} /> {t("manage.live.links.revoke")}</EventButton>
                             </div>
                         </section>}
         </div>
-        <ConfirmDialog open={confirm === "revoke"} tone="danger" busy={busy === "revoke"} onCancel={() => setConfirm(null)}
+        <ConfirmDialog open={confirm === "revoke"} tone="danger" busy={busy === "revoke"} busyLabel={t("common.busy.revoking")} onCancel={() => setConfirm(null)}
             title={t("manage.live.links.revokeTitle")} description={t("manage.live.links.revokeBody")} confirmLabel={t("manage.live.links.revoke")}
             onConfirm={() => void run("revoke", async () => {await revokeLiveScreenLink(eventID); return undefined;}, t("manage.live.links.revoked"))} />
-        <ConfirmDialog open={confirm === "regenerate"} busy={busy === "regenerate"} onCancel={() => setConfirm(null)}
+        <ConfirmDialog open={confirm === "regenerate"} busy={busy === "regenerate"} busyLabel={t("common.busy.regenerating")} onCancel={() => setConfirm(null)}
             title={t("manage.live.links.regenerateTitle")} description={t("manage.live.links.regenerateBody")} confirmLabel={t("manage.live.links.regenerate")}
             onConfirm={() => void run("regenerate", () => regenerateLiveScreenLink(eventID), t("manage.live.links.regenerated"))} />
     </DialogModal>;

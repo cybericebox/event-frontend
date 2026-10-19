@@ -95,7 +95,7 @@ export function NoTeam({event, rosterOpen, closedReason, linkCode, preview, crea
                 {fieldsQuery.data?.Enabled && <TeamFieldsInputs form={fieldsQuery.data} answers={fields} onChange={(key, value) => setFields(current => ({...current, [key]: value}))} disabled={busy} />}
                 {fieldsQuery.isError && <EventLoadError compact message={t("participation.noTeam.fieldsFailed")} error={fieldsQuery.error} onRetry={() => void fieldsQuery.refetch()} />}
                 {error && <p className="ib-cmodal__msg is-error" role="alert">{error}</p>}
-                <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy || (fieldsQuery.isPending && (!preview || simulation.active))} busy={busy}>{t("participation.noTeam.createAction")}</EventButton></div>
+                <div className="event-part__actions"><EventButton type="submit" className="ib-btn ib-btn--primary" disabled={busy || (fieldsQuery.isPending && (!preview || simulation.active))} busy={busy} busyLabel={t("common.busy.creating")}>{t("participation.noTeam.createAction")}</EventButton></div>
             </form>
         </DialogModal>
     </>;

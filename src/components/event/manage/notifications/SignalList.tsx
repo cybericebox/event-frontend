@@ -51,7 +51,7 @@ export function SignalHead({signal, row, canManage, busy, help, requiredHelp, on
     return <div className="event-manage-notifications__signal-head">
         <div className="event-manage-section__head"><h2>{label.title}</h2>{label.description && <p>{label.description}</p>}</div>
         {row && <div className="event-manage-notifications__delivery-actions">
-            <EventTooltip content={<span className="event-brand-tooltip-copy">{row.Required ? requiredHelp : help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label.title})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
+            <EventTooltip help content={<span className="event-brand-tooltip-copy">{row.Required ? requiredHelp : help}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label.title})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
             <EventSwitch checked={row.Enabled} disabled={!canManage || busy || row.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={onToggle} />
             {row.Source === "event" && !row.Required && canManage && <EventTooltip content={t("manage.notifications.resetTitle")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled={busy} aria-describedby={id} onClick={onReset}><RotateCcw size={15} /> {t("manage.notifications.reset")}</button>}</EventTooltip>}
         </div>}

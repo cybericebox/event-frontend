@@ -45,7 +45,7 @@ function ReturnableSwitch({checked, disabled, onCheckedChange}: {checked: boolea
     const title = t("manage.stages.returnable");
     return <div className="event-stage__returnable-control">
         <EventSwitch className="event-manage-form__switch" checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} label={title} />
-        <EventTooltip content={<span className="event-brand-tooltip-copy">{t("manage.stages.returnableHelp")}</span>}>
+        <EventTooltip help content={<span className="event-brand-tooltip-copy">{t("manage.stages.returnableHelp")}</span>}>
             {id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title})} aria-describedby={id}><CircleHelp size={15} /></button>}
         </EventTooltip>
     </div>;
@@ -157,11 +157,11 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
                 {canManage && <div className="event-stage__actions">
                     {locks.canClose && <button className="ib-btn" type="button" onClick={() => {setDialogError(""); setDialog("close");}}>{t("manage.stages.closeNow")}</button>}
                     {locks.canDelete && <button className="ib-btn" type="button" onClick={() => {setDialogError(""); setDialog("delete");}}>{t("manage.stages.delete")}</button>}
-                    {<EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !draft.Name.trim()} busy={saving}>{t("manage.stages.save")}</EventButton>}
+                    {<EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !draft.Name.trim()} busy={saving} busyLabel={t("common.busy.saving")}>{t("manage.stages.save")}</EventButton>}
                 </div>}
             </div>
         </form>
-        <ConfirmDialog open={dialog !== null} onCancel={() => setDialog(null)} tone="danger" busy={busy} error={dialogError}
+        <ConfirmDialog open={dialog !== null} onCancel={() => setDialog(null)} tone="danger" busy={busy} busyLabel={t(dialog === "delete" ? "common.busy.deleting" : "common.busy.closing")} error={dialogError}
             title={t(dialog === "delete" ? "manage.stages.deleteTitle" : "manage.stages.closeNowTitle", {name: stage.Name})}
             description={t(dialog === "delete" ? "manage.stages.deleteBody" : "manage.stages.closeNowBody")}
             confirmLabel={t(dialog === "delete" ? "manage.stages.deleteConfirm" : "manage.stages.closeNowConfirm")} onConfirm={() => void confirm()} />
@@ -216,7 +216,7 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
                 <ReturnableSwitch checked={returnable} disabled={!canManage || saving} onCheckedChange={setReturnable} />
                 <p>{t(returnable ? "manage.stages.returnableOn" : "manage.stages.returnableOff")}</p>
             </div>
-            <div className="event-stage__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving}>{t("manage.stages.add")}</EventButton></div>
+            <div className="event-stage__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving} busyLabel={t("common.busy.adding")}>{t("manage.stages.add")}</EventButton></div>
         </div>
     </form>;
 }
