@@ -180,6 +180,8 @@ it("does not ask for statistics without a team: one note with the way to the tea
     expect(screen.queryByText(/Не вдалося/)).toBeNull();
     expect(screen.queryByRole("button", {name: "Спробувати ще раз"})).toBeNull();
     expect(state.statsCalls).toBe(0);
+    // No place or points to show without a team, not even dashes.
+    expect(screen.queryByText("Місце команди")).toBeNull();
     fireEvent.click(screen.getByRole("button", {name: "Перейти до команди"}));
     expect(screen.getByRole("tab", {name: /Команда/}).getAttribute("aria-selected")).toBe("true");
 });
