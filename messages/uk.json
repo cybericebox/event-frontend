@@ -5438,5 +5438,9 @@
   "manage.exercises.subtasks.show": "Підзавдання: {count}. Показати назви",
   "manage.exercises.subtasks.none": "Варіантів немає",
   "manage.exercises.subtasks.empty": "У першому варіанті немає підзавдань",
-  "manage.exercises.subtasks.unnamed": "Без назви"
+  "manage.exercises.subtasks.unnamed": "Без назви",
+  "manage.challenges.groups.points.one": "{count} бал",
+  "manage.challenges.groups.points.few": "{count} бали",
+  "manage.challenges.groups.points.many": "{count} балів",
+  "manage.challenges.groups.pointsDynamic": "динамічні {max}→{min}"
 }

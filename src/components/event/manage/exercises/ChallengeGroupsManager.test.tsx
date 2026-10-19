@@ -87,3 +87,18 @@ describe("ChallengeGroupsManager group sidebar", () => {
         expect((screen.getByRole("button", {name: "Перемістити"}) as HTMLButtonElement).disabled).toBe(false);
     });
 });
+
+describe("ChallengeGroupsManager task rows", () => {
+    it("show the difficulty and the points of each task", () => {
+        const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
+        const sets = [{attachment, challenges: [{...task("Рахунок директора"), EffectivePoints: 22, Snapshot: {name: "Рахунок директора", difficulty: "medium", placeholders: []}}]}];
+        client.setQueryData(["event-exercise-attachments", "e1"], sets.map(set => set.attachment));
+        client.setQueryData(["event-challenge-groups", "e1"], []);
+        client.setQueryData(["event-exercise-boards", "e1", sets.map(set => `${set.attachment.ID}:${set.attachment.Revision}`).join("|")], sets);
+        client.setQueryData(["event-management-config", "e1"], config);
+        client.setQueryData(["event-management-scoring", "e1"], {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, ForceEventScoring: false, StaticPoints: null, UpdatedAt: ""});
+        render(<QueryClientProvider client={client}><ChallengeGroupsManager /></QueryClientProvider>);
+        const row = screen.getByText("Рахунок директора").closest(".event-group-order__task")!;
+        expect(row.querySelector(".event-group-order__meta")?.textContent).toBe("середнє22 бали");
+    });
+});

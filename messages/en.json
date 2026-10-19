@@ -5438,5 +5438,9 @@
   "manage.exercises.subtasks.show": "Subtasks: {count}. Show the names",
   "manage.exercises.subtasks.none": "No variants",
   "manage.exercises.subtasks.empty": "The first variant has no subtasks",
-  "manage.exercises.subtasks.unnamed": "Untitled"
+  "manage.exercises.subtasks.unnamed": "Untitled",
+  "manage.challenges.groups.points.one": "{count} point",
+  "manage.challenges.groups.points.few": "{count} points",
+  "manage.challenges.groups.points.many": "{count} points",
+  "manage.challenges.groups.pointsDynamic": "dynamic {max}→{min}"
 }
