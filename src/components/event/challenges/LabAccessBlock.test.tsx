@@ -39,7 +39,7 @@ describe("LabAccessBlock", () => {
 
     describe("starting lab", () => {
         const empty = {...runtimeFixture, Access: [], Ready: false, Phase: "Pending"};
-        const queue = (Reason: string) => ({...empty, Queue: {Position: 1, Length: 1, Reason, Message: "", Pods: 1, Pending: 1}});
+        const queue = (Reason: string) => ({...empty, Queue: {Position: 1, Length: 1, Reason, Message: "", Pods: 1, Pending: 1, Attempt: 0, RetryAt: null, WaitingSince: null}});
         const renderStarting = (lab: typeof empty) => {
             const actions = callbacks();
             return render(<LabAccessBlock lab={lab} lifecycle={{...runningLab, RuntimeState: "preparing"}} pending={false} link={{status: "idle"}} busyKey={null} {...actions} />);

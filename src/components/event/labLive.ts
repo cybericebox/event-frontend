@@ -1,10 +1,13 @@
 import type {LabQueue, LiveDevice} from "@/api/manageLabs";
+import {formatClock} from "@/components/event/challenges/challengeBoardModel";
 import {t} from "@/i18n/t";
 
 // The backend sends reasons as English codes; the UI never shows them raw.
 // Reasons that mean the cluster has no room; participants see «not enough resources», never the code.
-const QUEUE_REASONS = new Set(["InFlightLimit", "WaitingForGroup", "PreparingImages", "InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
-const NO_RESOURCES_REASONS = new Set(["InsufficientResources", "NoSchedulableNodes", "TenantQuota"]);
+const QUEUE_REASONS = new Set(["InFlightLimit", "WaitingForGroup", "PreparingImages", "InsufficientResources", "NoSchedulableNodes", "TenantQuota",
+    "DoesNotFitNow", "ReservationMissing", "ReservationNotActive", "ReservationFull"]);
+const NO_RESOURCES_REASONS = new Set(["InsufficientResources", "NoSchedulableNodes", "TenantQuota", "DoesNotFitNow", "ReservationMissing",
+    "ReservationNotActive", "ReservationFull", "Withdrawn"]);
 const FAILURE_REASONS = new Set(["ImagePull", "ImageUnavailable", "CrashLoop", "Unschedulable", "StartupTimeout", "DoesNotFit"]);
 
 // How long a starting lab may take before the participant gets a reassuring second line.
@@ -12,19 +15,39 @@ export const LONG_WAIT_MS = 30_000;
 
 // The second line of a starting lab: null before the long wait, then «not enough resources» for a resource
 // reason or the generic «almost there». Never a queue position or a raw reason.
+// A lab that waits for a new cluster node gets its own calm line: participants never hear about nodes.
 export function startingNote(queue: Pick<LabQueue, "Reason"> | null | undefined, longWait: boolean): string | null {
     if (!longWait) return null;
+    if (queue?.Reason === "NodeStarting") return t("lab.starting.nodeStarting");
     return t(queue && NO_RESOURCES_REASONS.has(queue.Reason) ? "lab.starting.noResources" : "lab.starting.longWait");
 }
 
+type StaffQueue = Pick<LabQueue, "Position" | "Reason"> & Partial<Pick<LabQueue, "Attempt" | "RetryAt" | "WaitingSince">>;
+
 // Staff view: where the lab stands in the queue, with the reason. Null when it is not waiting for a turn
-// (no queue, or Position 0: every pod is already dispatched). WaitingForTurn adds nothing beyond the queue place.
-export function queueLineStaff(queue: Pick<LabQueue, "Position" | "Reason"> | null | undefined): string | null {
+// (no queue, or Position 0: every pod is already dispatched), except a lab whose sent pods wait for a new
+// cluster node. WaitingForTurn adds nothing beyond the queue place.
+export function queueLineStaff(queue: StaffQueue | null | undefined): string | null {
+    if (queue?.Reason === "NodeStarting") {
+        return queue.WaitingSince ? t("lab.queue.reason.NodeStarting.since", {time: formatClock(queue.WaitingSince)}) : t("lab.queue.reason.NodeStarting");
+    }
     if (!queue || queue.Position <= 0) return null;
     const ahead = queue.Position - 1;
     const place = ahead === 0 ? t("lab.queue.next") : t("lab.queue.ahead", {ahead});
     if (queue.Reason === "WaitingForTurn") return place;
-    return `${place} ${t(QUEUE_REASONS.has(queue.Reason) ? `lab.queue.reason.${queue.Reason}` : "lab.queue.reason.unknown")}`;
+    return `${place} ${queue.Reason === "Withdrawn" ? withdrawnLine(queue) : t(QUEUE_REASONS.has(queue.Reason) ? `lab.queue.reason.${queue.Reason}` : "lab.queue.reason.unknown")}`;
+}
+
+// The labs of a stand its queue line speaks about: the ones waiting for a new node when that is the reason, else the queued ones.
+export function standQueueLabs(queue: {QueuedLabs: number; Reason: string; NodeStartingLabs: number} | null | undefined): number {
+    if (!queue) return 0;
+    return queue.Reason === "NodeStarting" ? queue.NodeStartingLabs : queue.QueuedLabs;
+}
+
+// A withdrawn launch: not every pod of its group got a node within the node timeout, so the group waits for a retry.
+function withdrawnLine(queue: StaffQueue): string {
+    if (!queue.Attempt || !queue.RetryAt) return t("lab.queue.reason.Withdrawn");
+    return t("lab.queue.reason.Withdrawn.retry", {attempt: queue.Attempt, time: formatClock(queue.RetryAt)});
 }
 
 export function failureReasonLabel(reason: string): string {
