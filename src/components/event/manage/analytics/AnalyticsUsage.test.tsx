@@ -63,6 +63,7 @@ describe("Використання", () => {
         expect(screen.getAllByText("1").length).toBeGreaterThan(0);
         expect(screen.queryByRole("table")).toBeNull();
         expect(screen.queryByRole("button", {name: /Експорт CSV/})).toBeNull();
+        expect(screen.queryByText("Від")).toBeNull();
     });
 
     it("says so, in a block, when the event has no infrastructure", async () => {
