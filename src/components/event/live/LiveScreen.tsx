@@ -120,8 +120,9 @@ function useBurnInShift(enabled: boolean): readonly [number, number] {
 // The event state the scene follows, checked once a second. Only a change of
 // the state re-renders the screen (the canvas keeps its own clock); null
 // until the first check, so no scene is picked before the time is known.
-function useLiveSceneState(event: PublicEventInfo, freeze: Parameters<typeof liveSceneState>[1]): LiveSceneKey | null {
-    const [state, setState] = useState<LiveSceneKey | null>(null);
+// `serverNow`: a server-rendered first paint already shows the state's screen.
+function useLiveSceneState(event: PublicEventInfo, freeze: Parameters<typeof liveSceneState>[1], serverNow?: number): LiveSceneKey | null {
+    const [state, setState] = useState<LiveSceneKey | null>(() => serverNow ? liveSceneState(event, freeze, serverNow) : null);
     useEffect(() => {
         const update = () => setState(liveSceneState(event, freeze, Date.now()));
         queueMicrotask(update);
@@ -138,7 +139,8 @@ function useLiveSceneState(event: PublicEventInfo, freeze: Parameters<typeof liv
 // layout and the stages, re-read by the bootstrap every 30 s). The staff
 // screen re-reads the stages every 30 s and the bootstrap the event, so a
 // moved start or finish reaches the timer without a reload.
-export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?: string; link?: LiveScreenByLink}) {
+// `serverNow`: the server's clock of the first HTML, so the timers in it read right before the browser's clock runs.
+export function LiveScreen({event, token, link, serverNow}: {event: PublicEventInfo; token?: string; link?: LiveScreenByLink; serverNow?: number}) {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const staff = !token;
@@ -177,7 +179,7 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
     const idle = useIdle(3000);
     const [testing, setTesting] = useState(false);
     const shift = useBurnInShift(!!base && base.screen.anchor !== "top-left");
-    const sceneState = useLiveSceneState(event, results.data?.Freeze);
+    const sceneState = useLiveSceneState(event, results.data?.Freeze, serverNow);
     useEffect(() => {
         // ?test=1 opens the screen test straight away (set up on the venue).
         const initial = new URLSearchParams(window.location.search).get("test") === "1";
@@ -215,7 +217,7 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
     const areaStyle = {padding: `${safe.y}px ${safe.x}px`, transform: shift[0] || shift[1] ? `translate(${shift[0]}px, ${shift[1]}px)` : undefined} as CSSProperties;
     return <main className={`live-fullscreen live-fullscreen--${layout.theme}${anchored ? " live-fullscreen--anchor" : ""}${idle ? " is-idle" : ""}`} style={style}>
         <div className="live-area" style={areaStyle}>
-            <LiveCanvas layout={layout} event={event} stages={stages} results={results.data} offlineSince={lostAt} />
+            <LiveCanvas layout={layout} event={event} stages={stages} results={results.data} offlineSince={lostAt} startClock={serverNow} />
             {testing && <LiveScreenTest layout={layout} />}
         </div>
         <div className="live-controls" aria-label={t("live.controls")}>
