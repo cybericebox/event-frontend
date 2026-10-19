@@ -2,7 +2,7 @@
 
 import {useState, useSyncExternalStore} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {ChevronRight} from "lucide-react";
+import {ChevronRight, TriangleAlert} from "lucide-react";
 import Link from "next/link";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
@@ -140,6 +140,7 @@ export function ExerciseAttachments() {
                 const open = openState.isOpen(attachment.ID, fallback);
                 const toggle = () => openState.toggle(attachment.ID, fallback);
                 const name = attachment.ExerciseName || t("manage.exercises.set");
+                const flagRepeat = attachment.FlagsMayRepeat ? t("manage.exercises.flagsMayRepeat", {name}) : null;
                 const stands = challenges.map(challenge => attachment.Infrastructure ? standReadiness(challenge.ID, labsQuery.data) : null);
                 const summary = setSummary(challenges, configQuery.data.HintsDisabled, stands);
                 const mismatch = infrastructureMismatch(attachment, configQuery.data.InfrastructureAllowed);
@@ -161,6 +162,7 @@ export function ExerciseAttachments() {
                             {attachment.Infrastructure && <InfrastructureIcon />}
                             <ResourceHeavyTag show={attachment.ResourceHeavy} />
                             <NoAgentFitsTag show={attachment.NoAgentFits} />
+                            {flagRepeat && !open && <EventTooltip content={flagRepeat}>{id => <span className="event-exercise-set__warn-mark" role="img" tabIndex={0} aria-label={flagRepeat} aria-describedby={id}><TriangleAlert size={16} aria-hidden="true" /></span>}</EventTooltip>}
                             {(availabilityQuery.data?.get(attachment.ID)?.length ?? 0) > 0 && <span className="ib-tag ib-tag--sm ib-tag--danger" data-image-unavailable>{t("manage.registries.unavailable")}</span>}
                         </div>
                         <div className="event-exercise-set__side">
@@ -184,8 +186,9 @@ export function ExerciseAttachments() {
                             ].filter(Boolean).join(" · ")}
                         </p>
                         <ResourcesLine resources={attachment.Resources} className="event-exercise-set__meta" />
-                        {attachment.FlagsMayRepeat && <div className="event-exercise-set__warning">
-                            <span>{t("manage.exercises.flagsMayRepeat", {name})}</span>
+                        {/* A warning, not an error: its full text once, in the open set; a collapsed set keeps only the mark. */}
+                        {flagRepeat && open && <div className="event-exercise-set__warning event-exercise-set__warning--warn" role="note">
+                            <TriangleAlert size={16} aria-hidden="true" /><span>{flagRepeat}</span>
                         </div>}
                         <ImageUnavailableNotice items={availabilityQuery.data?.get(attachment.ID) ?? []} canManage={canManage} />
                         {mismatch && <div className="event-exercise-set__warning" role="alert">
