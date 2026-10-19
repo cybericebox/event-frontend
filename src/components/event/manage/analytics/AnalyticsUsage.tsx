@@ -147,7 +147,8 @@ export function AnalyticsUsage() {
         <div className="event-analytics__block"><EmptyState message={t("manage.analytics.usage.unavailable")} /></div>
     </AnalyticsPage>;
 
-    if (data.PeopleHidden) return <AnalyticsPage title={title} description={description} actions={actions} filter={<AnalyticsPeriodFilter period={filter} />}>
+    // Totals only: always for the whole event (the server ignores a period here), so no period filter.
+    if (data.PeopleHidden) return <AnalyticsPage title={title} description={description} actions={actions}>
         <Summary usage={data} />
         <p className="event-manage-notice" role="note">{t("manage.analytics.usage.peopleHidden")}</p>
     </AnalyticsPage>;
