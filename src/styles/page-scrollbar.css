@@ -1,5 +1,6 @@
 /* Only the document scrollbar is replaced. Dialogs and editor panels keep their own scrolling. */
 .event-page-scrollbar{display:none}
+body[data-scroll-locked] .event-page-scrollbar{visibility:hidden;pointer-events:none}
 @media screen and (forced-colors:none){
   html[data-page-scrollbar]{scrollbar-width:none;scrollbar-gutter:auto}
   html[data-page-scrollbar]::-webkit-scrollbar{display:none}
