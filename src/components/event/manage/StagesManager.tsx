@@ -14,7 +14,6 @@ import {
 } from "@/api/manageStages";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
-import {LabPolicyNumberField} from "./LabPolicyNumberField";
 import {ManageDateField} from "@/components/event/manage/ManageDateField";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
@@ -67,7 +66,7 @@ function StageBoundaryField({id, title, help, value, bound, eventDate, disabled,
 }
 
 function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
-    eventID: string; stage: ManageStage; lifecycle: ManageLifecycle; canManage: boolean; onPatch: (stage: ManageStage, patch: Partial<Pick<ManageStage, "Returnable" | "LabRetentionMinutes">>) => void;
+    eventID: string; stage: ManageStage; lifecycle: ManageLifecycle; canManage: boolean; onPatch: (stage: ManageStage, patch: Partial<Pick<ManageStage, "Returnable">>) => void;
 }) {
     const queryClient = useQueryClient();
     const locks = stageLocks(stage);
@@ -143,9 +142,6 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
                     value={locks.closes ? localDateTime(stage.ClosesAt) : draft.ClosesWithEvent ? localDateTime(lifecycle.FinishAt) : draft.ClosesAt} bound={!!draft.ClosesWithEvent} eventDate={lifecycle.FinishAt} opening={false}
                     onChange={value => {setFieldErrors(current => ({...current, closes: undefined})); setEdit({stageID: stage.ID, value: {...draft, ClosesAt: value}});}} onBoundChange={bound => setEdit({stageID: stage.ID, value: {...draft, ClosesWithEvent: bound}})} disabled={disabled || locks.closes} />
             </div>
-            <LabPolicyNumberField id={`stage-retention-${stage.ID}`} title={t("manage.labs.policy.retention")} value={stage.LabRetentionMinutes ?? null}
-                min={0} max={10080} nullable placeholder={t("manage.labs.policy.inherit")} disabled={disabled}
-                onCommit={minutes => onPatch(stage, {LabRetentionMinutes: minutes})} />
             <p className="event-stage__lead">{t("manage.labs.group.prepareHelp")}</p>
             <div className="event-stage__foot">
                 <div className="event-stage__returnable">
@@ -225,7 +221,8 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
 // (optimistic, queued, rolled back on error), «Закрити зараз» and delete behind a confirmation, and the form for the next stage.
 export function StagesManager({eventID, lifecycle, canManage}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean}) {
     const queryClient = useQueryClient();
-    type Controls = Pick<ManageStage, "Returnable" | "LabRetentionMinutes">;
+    // Labs live only until the reservation window ends: no retention control (the field stays in the API).
+    type Controls = Pick<ManageStage, "Returnable">;
     type Intent = {desired: Controls; confirmed: Controls; pending: number; version: number};
     const byEvent = useRef(new Map<string, Map<string, Intent>>());
     function eventIntents() {
@@ -233,7 +230,7 @@ export function StagesManager({eventID, lifecycle, canManage}: {eventID: string;
         return byEvent.current.get(eventID)!;
     }
     const queue = useRef<Promise<void>>(Promise.resolve());
-    const controlsOf = (stage: ManageStage): Controls => ({Returnable: stage.Returnable, LabRetentionMinutes: stage.LabRetentionMinutes ?? null});
+    const controlsOf = (stage: ManageStage): Controls => ({Returnable: stage.Returnable});
     const preservePending = (rows: ManageStage[]) => rows.map(row => {
         const intent = eventIntents().get(row.ID);
         return intent?.pending ? {...row, ...intent.desired} : row;

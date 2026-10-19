@@ -124,7 +124,7 @@ describe("the stages block", () => {
         // a pending save disables no control, not even the same one
         expect(switchOf("Етап 1").disabled).toBe(false);
         expect(switchOf("Етап 2").disabled).toBe(false);
-        expect(api.update).toHaveBeenCalledWith("e1", id(1), {Returnable: true, LabRetentionMinutes: null});
+        expect(api.update).toHaveBeenCalledWith("e1", id(1), {Returnable: true});
         await act(async () => {finish(stage(1, {State: "open", First: true, Returnable: true}));});
         expect(switchOf("Етап 1").checked).toBe(true);
     });
@@ -179,67 +179,18 @@ describe("the stages block", () => {
 });
 
 
-it("queues retention with Returnable, keeps both controls enabled and never applies a stale stage reply", async () => {
-    const original = stage(1, {State: "open", First: true, LabRetentionMinutes: null});
-    api.list.mockResolvedValue([original]);
-    const finishes: ((value: ManageStage) => void)[] = [];
-    api.update.mockImplementation(() => new Promise<ManageStage>(resolve => {finishes.push(resolve);}));
-    renderManager(); await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
-    fireEvent.click(switchOf("Етап 1"));
-    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
-    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-    fireEvent.change(retention, {target: {value: "0"}}); fireEvent.blur(retention);
-    await waitFor(() => expect(retention.value).toBe("0")); expect(retention.disabled).toBe(false); expect(switchOf("Етап 1").disabled).toBe(false);
-    expect(api.update).toHaveBeenCalledTimes(1);
-    await act(async () => {finishes[0]({...original, Returnable: true});});
-    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
-    expect(api.update.mock.calls[1]).toEqual(["e1", id(1), {Returnable: true, LabRetentionMinutes: 0}]);
-    expect(retention.value).toBe("0"); expect(switchOf("Етап 1").checked).toBe(true);
-    await act(async () => {finishes[1]({...original, Returnable: true, LabRetentionMinutes: 0});});
-    fireEvent.change(retention, {target: {value: ""}}); fireEvent.keyDown(retention, {key: "Enter"});
-    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(3));
-    expect(api.update.mock.calls[2][2]).toEqual({Returnable: true, LabRetentionMinutes: null});
-});
-it("lets a manager edit retention on a closed stage while preserving its Returnable and time locks", async () => {
-    api.list.mockResolvedValue([stage(1, {State: "closed", First: true, Last: true, LabRetentionMinutes: 40})]);
+// Labs live only until the reservation window ends: the stage offers no retention setting and never sends one.
+it("offers no retention setting on a stage", async () => {
+    api.list.mockResolvedValue([stage(1, {State: "open", First: true, LabRetentionMinutes: 40})]);
     api.update.mockImplementation(() => new Promise(() => {}));
     renderManager(); await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
-    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-    expect(retention.disabled).toBe(false); expect(switchOf("Етап 1").disabled).toBe(true);
-    fireEvent.change(retention, {target: {value: "10081"}}); fireEvent.blur(retention);
-    expect(api.update).not.toHaveBeenCalled();
-    expect(within(row("Етап 1")).getByText("Введіть ціле число від 0 до 10080.")).toBeTruthy();
+    expect(within(row("Етап 1")).queryByLabelText("Зберігати зупинене середовище (хвилини)")).toBeNull();
+    fireEvent.click(switchOf("Етап 1"));
+    await waitFor(() => expect(api.update).toHaveBeenCalledWith("e1", id(1), {Returnable: true}));
 });
 
-
-it.each([false, true])("preserves pending retention through a background GET and queued Returnable, including failed PUT refetch=%s", rejectFirst => {
-    return (async () => {
-        const original = stage(1, {State: "open", LabRetentionMinutes: null});
-        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-        api.list.mockResolvedValue([original]);
-        let finish!: (value: ManageStage) => void; let refuse!: (error: Error) => void;
-        api.update.mockImplementationOnce(() => new Promise<ManageStage>((resolve, reject) => {finish = resolve; refuse = reject;}));
-        let secondFinish!: (value: ManageStage) => void;
-        api.update.mockImplementationOnce(() => new Promise<ManageStage>(resolve => {secondFinish = resolve;}));
-        render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={lifecycle} canManage /></QueryClientProvider>);
-        await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
-        const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-        fireEvent.change(retention, {target: {value: "30"}}); fireEvent.blur(retention);
-        await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
-        await act(async () => {await client.refetchQueries({queryKey: ["event-management-stages", "e1"], exact: true});});
-        expect(retention.value).toBe("30");
-        fireEvent.click(switchOf("Етап 1"));
-        await act(async () => {if (rejectFirst) refuse(new Error("offline")); else finish({...original, LabRetentionMinutes: 30});});
-        await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
-        expect(api.update.mock.calls[1][2]).toEqual({Returnable: true, LabRetentionMinutes: 30});
-        expect(retention.value).toBe("30"); expect(switchOf("Етап 1").checked).toBe(true);
-        if (rejectFirst) expect(api.toastError).toHaveBeenCalledTimes(1);
-        await act(async () => {secondFinish({...original, Returnable: true, LabRetentionMinutes: 30});});
-        await waitFor(() => expect(client.getQueryData<ManageStage[]>(["event-management-stages", "e1"])?.[0]).toMatchObject({Returnable: true, LabRetentionMinutes: 30}));
-    })();
-});
-it("keeps pending retention through explicit form-save cache publication", async () => {
-    const original = stage(1, {State: "open", LabRetentionMinutes: null});
+it("keeps a pending switch through explicit form-save cache publication", async () => {
+    const original = stage(1, {State: "open"});
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     api.list.mockResolvedValue([original]);
     let finish!: (value: ManageStage) => void;
@@ -247,33 +198,19 @@ it("keeps pending retention through explicit form-save cache publication", async
     api.update.mockResolvedValueOnce({...original, Name: "Нова назва"});
     render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={lifecycle} canManage /></QueryClientProvider>);
     await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
-    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-    fireEvent.change(retention, {target: {value: "30"}}); fireEvent.blur(retention);
+    fireEvent.click(switchOf("Етап 1"));
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     fireEvent.change(within(row("Етап 1")).getByRole("textbox", {name: /Назва/}), {target: {value: "Нова назва"}});
     fireEvent.click(within(row("Етап 1")).getByRole("button", {name: "Зберегти"}));
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
     expect(api.list).toHaveBeenCalledTimes(1);
-    expect(retention.value).toBe("30");
-    await act(async () => {finish({...original, Name: "Нова назва", LabRetentionMinutes: 30});});
-});
-it("rolls back a final refused retention save to fresh server state, without disabling controls", async () => {
-    const original = stage(1, {State: "open", LabRetentionMinutes: null});
-    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    api.list.mockResolvedValueOnce([original]).mockResolvedValue([{...original, LabRetentionMinutes: 50}]);
-    api.update.mockRejectedValue(new Error("refused"));
-    render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={lifecycle} canManage /></QueryClientProvider>);
-    await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
-    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-    fireEvent.change(retention, {target: {value: "30"}}); fireEvent.blur(retention);
-    await waitFor(() => expect(api.toastError).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(retention.value).toBe("50"));
-    expect(retention.disabled).toBe(false); expect(switchOf("Етап 1").disabled).toBe(false);
+    // The saved name is published, the pending switch is kept.
+    await waitFor(() => expect(switchOf("Нова назва").checked).toBe(true));
+    await act(async () => {finish({...original, Name: "Нова назва", Returnable: true});});
 });
 
-
-it("a GET started during retention save cannot undo its acknowledgement when it finishes late", async () => {
-    const original = stage(1, {State: "open", LabRetentionMinutes: null});
+it("a GET started during a switch save cannot undo its acknowledgement when it finishes late", async () => {
+    const original = stage(1, {State: "open"});
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     let getFinish!: (rows: ManageStage[]) => void;
     api.list.mockResolvedValueOnce([original]).mockImplementationOnce(() => new Promise<ManageStage[]>(resolve => {getFinish = resolve;}));
@@ -281,33 +218,13 @@ it("a GET started during retention save cannot undo its acknowledgement when it 
     api.update.mockImplementationOnce(() => new Promise<ManageStage>(resolve => {putFinish = resolve;}));
     render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={lifecycle} canManage /></QueryClientProvider>);
     await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
-    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-    fireEvent.change(retention, {target: {value: "30"}}); fireEvent.blur(retention);
+    fireEvent.click(switchOf("Етап 1"));
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     const refresh = client.refetchQueries({queryKey: ["event-management-stages", "e1"], exact: true});
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2));
-    await act(async () => {putFinish({...original, LabRetentionMinutes: 30});});
+    await act(async () => {putFinish({...original, Returnable: true});});
     await act(async () => {getFinish([original]); await refresh;});
-    expect(retention.value).toBe("30");
-});
-it("close-now reply and refresh preserve pending retention; a late control reply cannot reopen its stage", async () => {
-    const original = stage(1, {State: "open", LabRetentionMinutes: null});
-    const closed = {...original, State: "closed" as const};
-    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    api.list.mockResolvedValueOnce([original]).mockResolvedValue([closed]);
-    let finish!: (value: ManageStage) => void;
-    api.update.mockImplementationOnce(() => new Promise<ManageStage>(resolve => {finish = resolve;})).mockResolvedValueOnce(closed);
-    render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={lifecycle} canManage /></QueryClientProvider>);
-    await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
-    const retention = within(row("Етап 1")).getByLabelText("Зберігати зупинене середовище (хвилини)") as HTMLInputElement;
-    fireEvent.change(retention, {target: {value: "30"}}); fireEvent.blur(retention);
-    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
-    fireEvent.click(within(row("Етап 1")).getByRole("button", {name: "Закрити зараз"}));
-    fireEvent.click(screen.getByRole("button", {name: "Закрити"}));
-    await waitFor(() => expect(within(row("Етап 1")).getByText("Закрито")).toBeTruthy());
-    expect(retention.value).toBe("30");
-    await act(async () => {finish({...original, LabRetentionMinutes: 30});});
-    await waitFor(() => expect(client.getQueryData<ManageStage[]>(["event-management-stages", "e1"])?.[0]).toMatchObject({State: "closed", LabRetentionMinutes: 30}));
+    expect(switchOf("Етап 1").checked).toBe(true);
 });
 
 it("offers explicit event or custom sources, follows changed event dates, and keeps clean Save visible disabled", async () => {
