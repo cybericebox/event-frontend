@@ -6,7 +6,7 @@ import {useQuery} from "@tanstack/react-query";
 import {getEventResourcePlan, type EventExerciseAttachment} from "@/api/manageChallenges";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
-import {t} from "@/i18n/t";
+import {t, tPlural} from "@/i18n/t";
 import {NoAgentFitsTag, ResourceHeavyTag} from "./ResourceMarks";
 import {amountText, formatCpu, formatMemory, hasResources} from "./resourceModel";
 
@@ -50,7 +50,7 @@ export function ResourcePlanSummary({eventID, attachments}: {eventID: string; at
                     <tfoot>
                         <tr data-plan-team><th scope="row">{t("manage.resources.perTeam")}</th>
                             <td>{formatCpu(plan.PerTeam.CPUMillicores)}</td><td>{formatMemory(plan.PerTeam.MemoryBytes)}</td><td>{plan.PerTeam.Devices}</td></tr>
-                        <tr data-plan-total><th scope="row">{t("manage.resources.total", {teams: plan.Teams})} <span className="event-resource-plan__basis">{t(`manage.resources.basis.${plan.TeamsBasis}`)}</span></th>
+                        <tr data-plan-total><th scope="row">{tPlural("manage.resources.total", plan.Teams)} <span className="event-resource-plan__basis">{t(`manage.resources.basis.${plan.TeamsBasis}`)}</span></th>
                             <td>{formatCpu(plan.Total.CPUMillicores)}</td><td>{formatMemory(plan.Total.MemoryBytes)}</td><td>{plan.Total.Devices}</td></tr>
                     </tfoot>
                 </table></div>
