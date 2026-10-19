@@ -45,10 +45,11 @@ tr.is-locked{background:var(--ib-soft)}
 .event-manage-table__pager .ib-btn,.event-manage-table__size .event-select{height:var(--ib-control-h-lg);min-height:var(--ib-control-h-lg);border-radius:var(--ib-r);font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium)}
 @media(max-width:760px){
   .event-manage-table__search{max-width:none}
-  .event-manage-table__footer{grid-template-columns:1fr}
-  .event-manage-table__size{justify-content:flex-start}
+  /* Phones: totals on their own line, then the pager and the page size side by side. */
+  .event-manage-table__footer{grid-template-columns:auto minmax(0,1fr)}
+  .event-manage-table__meta{grid-column:1/-1}
 }
-@media(max-width:640px){.event-manage-table__size>span{display:none}}
+@media(max-width:400px){.event-manage-table__size>span{display:none}}
 /* A phone scrolls a wide table sideways: the row actions stay pinned to the right edge, always in reach. */
 @media(max-width:760px){
   .event-manage-table :is(th,td).event-manage-table__sticky-end{position:sticky;right:0;z-index:1;background:var(--ib-surface);border-left:1px solid var(--ib-line)}
