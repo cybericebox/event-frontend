@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {defaultLiveLayout, type LiveLayout} from "@/api/manageLive";
 import {liveSampleResults} from "./liveSample";
-import {liveSceneLayout, liveSceneOwn, liveScenePreviewNow, liveScenePreviewResults, liveSceneShown, liveSceneState, liveSceneViews, mapLiveScenes, withLiveScene, withLiveSceneOwn} from "./liveScenes";
+import {liveWidgetLimit, liveWidgetsTotal, liveSceneLayout, liveSceneOwn, liveScenePreviewNow, liveScenePreviewResults, liveSceneShown, liveSceneState, liveSceneViews, mapLiveScenes, withLiveScene, withLiveSceneOwn} from "./liveScenes";
 
 const hour = 3600_000;
 const start = Date.parse("2026-10-20T08:00:00Z");
@@ -90,3 +90,15 @@ describe("the editor preview of a scene", () => {
         expect(preview?.Freeze.FrozenAt).toBe(new Date(start + hour - 10 * 60_000).toISOString());
     });
 });
+
+describe("widget limits of the daemon", () => {
+    const qr = (count: number) => Array.from({length: count}, (_, index) => ({id: `q${index}`, type: "qr" as const, x: index % 12 + 1, y: Math.floor(index / 12) + 1, w: 1, h: 1, props: {}}));
+    it("allows 48 widgets on a scene and 96 in all scenes", () => {
+        const layout: LiveLayout = {...defaultLiveLayout, widgets: qr(47), scenes: {before: {grid: {cols: 12, rows: 8}, widgets: qr(48)}}};
+        expect(liveWidgetsTotal(layout)).toBe(95);
+        expect(liveWidgetLimit(layout, "running")).toBeNull();
+        expect(liveWidgetLimit(layout, "before")).toBe("scene");
+        expect(liveWidgetLimit({...layout, widgets: qr(48), scenes: {...layout.scenes, finished: {grid: {cols: 12, rows: 8}, widgets: []}}}, "finished")).toBe("total");
+    });
+});
+

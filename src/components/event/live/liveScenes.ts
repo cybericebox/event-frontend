@@ -100,3 +100,17 @@ export function mapLiveScenes(layout: LiveLayout, change: (view: LiveLayout, key
     for (const {key, view} of liveSceneViews(layout)) next = withLiveScene(next, key, change(view, key));
     return next;
 }
+
+// The daemon limits: 48 widgets on one scene, 96 in all scenes together.
+export const liveWidgetLimits = {scene: 48, total: 96} as const;
+
+export function liveWidgetsTotal(layout: LiveLayout): number {
+    return liveSceneViews(layout).reduce((sum, {view}) => sum + view.widgets.length, 0);
+}
+
+// Why `add` more widgets cannot go onto `scene`, or null when they can.
+export function liveWidgetLimit(layout: LiveLayout, scene: LiveSceneKey, add = 1): "scene" | "total" | null {
+    if (liveSceneLayout(layout, scene).widgets.length + add > liveWidgetLimits.scene) return "scene";
+    if (liveWidgetsTotal(layout) + add > liveWidgetLimits.total) return "total";
+    return null;
+}

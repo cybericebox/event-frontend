@@ -13,10 +13,11 @@ import {liveSampleResults} from "@/components/event/live/liveSample";
 import {liveFormatLayout, liveFormatMode, liveFormatTabs, pruneLiveFormats, withLiveFormatMode, withLiveFormatView} from "@/components/event/live/liveFormats";
 import type {LiveLogoItem} from "@/components/event/live/LiveCanvas";
 import {liveSafeArea, liveSafeInsets, liveTextProfile, liveTextWarnings} from "@/components/event/live/liveText";
-import {liveSceneKeys, liveSceneLayout, liveSceneOwn, liveScenePreviewNow, liveScenePreviewResults, liveSceneState, liveSceneViews, mapLiveScenes, withLiveScene, withLiveSceneOwn, type LiveSceneKey} from "@/components/event/live/liveScenes";
+import {liveSceneKeys, liveSceneLayout, liveSceneOwn, liveScenePreviewNow, liveScenePreviewResults, liveSceneState, liveSceneViews, liveWidgetLimit, liveWidgetLimits, mapLiveScenes, withLiveScene, withLiveSceneOwn, type LiveSceneKey} from "@/components/event/live/liveScenes";
 import {applyLiveTemplate, liveTemplates, type LiveTemplateKey} from "@/components/event/live/liveTemplates";
 import {livePreviewKeys, livePreviewLayout, livePreviewScale, type LivePreviewKey} from "@/components/event/live/livePreview";
 import {getManageStages} from "@/api/manageStages";
+import {getResultsSettings} from "@/api/manageResults";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {LiveMiniature, usePaletteLayouts} from "./LiveMiniature";
 import {LiveTemplateDialog} from "./LiveTemplateDialog";
@@ -146,6 +147,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const conflicts = useMemo(() => layoutConflicts(view), [view]);
     // The timer and the stage subtitle of the preview follow the real stages.
     const stages = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false});
+    // «Враховувати заморожування» off: the hall sees live results, so «Заморожено» never shows.
+    const resultsSettings = useQuery({queryKey: ["event-management-results-settings", eventID], queryFn: () => getResultsSettings(eventID), refetchOnWindowFocus: false});
     const stagesList = stages.data;
     const warnings = useMemo(() => liveTextWarnings(shown, event.Name, stagesList), [shown, event.Name, stagesList]);
     const validation = validationMessage(doc);
@@ -229,6 +232,9 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         })});
     }
     function insert(working: LiveLayout, next: LiveWidget, item: LivePaletteItem) {
+        // The daemon refuses more than 48 widgets on a scene and 96 in all: say so before the save fails.
+        const limit = liveWidgetLimit(doc, scene);
+        if (limit) {setError(t(`manage.live.error.limit.${limit}`, liveWidgetLimits)); return;}
         next.props = item.type === "qr" ? {value: `${window.location.origin}/`, caption: t("live.qr.defaultCaption")} : {...item.props};
         mutate({...working, widgets: [...working.widgets, next]});
         setSelectedID(next.id);
@@ -434,6 +440,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                             if (sceneOwn === own) return;
                             // Dropping an own layout with widgets discards them: ask first.
                             if (!own && layout.widgets.length) {setConfirmReset(true); return;}
+                            // An own copy of «Триває» must stay within the widgets of all scenes.
+                            if (own && liveWidgetLimit(doc, scene, liveSceneLayout(doc, "running").widgets.length) === "total") {setError(t("manage.live.error.limit.total", liveWidgetLimits)); return;}
                             mutateDoc(withLiveSceneOwn(doc, scene, own)); setSelectedID(null);
                         }}>{t(own ? "manage.live.scene.modeOwn" : "manage.live.scene.modeRunning")}</button>)}
                 </div>
@@ -510,6 +518,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 </div>
                 {mode === "auto" && sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.format.autoNote", {name: tabLabel(layout.aspect)})}</p>}
                 {!sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.scene.asRunningNote", {scene: sceneName(scene)})}</p>}
+                {scene === "frozen" && resultsSettings.data && !resultsSettings.data.LiveFreeze && <p className="event-live-editor__format-note">{t("manage.live.scene.frozenOff")}</p>}
                 {scene === "finished" && !event.FinishTime && <p className="event-live-editor__format-note">{t("manage.live.scene.noFinish")}</p>}
                 {mode === "base" && layout.aspect === "custom" && <div className="event-live-editor__custom-size">
                     <LiveField label={t("manage.live.screenWidth")} help={t("manage.live.screenWidthHelp")} required>
