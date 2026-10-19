@@ -4,16 +4,49 @@ import {liveListGeometry, liveTimerFit, liveTitleFit, type LiveListGeometry} fro
 import {t} from "@/i18n/t";
 
 // Live typography (LIVE-CONSTRUCTOR §2): sizes are multiples of
-// u = screen height / 36 × text scale, never below the LED floors
-// (body 19 px, captions 14 px, timer 34 px). live.css reads the same numbers
-// through liveTextVars, so the editor warnings match the rendered screen.
+// u = screen height / 36 × text scale, never below the floors of the screen
+// profile. live.css reads the same numbers through liveTextVars, so the
+// editor warnings match the rendered screen.
 export const liveTextRoles = {
-    display: {k: 1.07, min: 19, label: t("live.text.role.display")},
-    timer: {k: 1.87, min: 34, label: t("live.text.role.timer")},
-    body: {k: 0.87, min: 19, label: t("live.text.role.body")},
-    caption: {k: 0.6, min: 14, label: t("live.text.role.caption")},
+    display: {k: 1.07, label: t("live.text.role.display")},
+    timer: {k: 1.87, label: t("live.text.role.timer")},
+    body: {k: 0.87, label: t("live.text.role.body")},
+    caption: {k: 0.8, label: t("live.text.role.caption")},
 } as const;
 export type LiveTextRole = keyof typeof liveTextRoles;
+
+// Floors per screen profile, in px. «led»: a fixed area of an LED wall
+// (anchor top-left), large pixels read from afar. «projector»: a projector
+// or TV filling the window (720p and up), read from across the hall.
+export const liveTextFloors = {
+    led: {display: 19, timer: 34, body: 19, caption: 14},
+    projector: {display: 24, timer: 40, body: 20, caption: 18},
+} as const satisfies Record<string, Record<LiveTextRole, number>>;
+export type LiveTextProfile = keyof typeof liveTextFloors;
+
+export function liveTextProfile(screen: Pick<LiveLayout["screen"], "anchor">): LiveTextProfile {
+    return screen.anchor === "top-left" ? "led" : "projector";
+}
+
+// «Безпечне поле»: the margin around the canvas for TVs that crop the
+// picture edges (overscan), in % of each side.
+export const liveSafeAreaOptions = [0, 2.5, 5] as const;
+
+export function liveSafeArea(screen: Pick<LiveLayout["screen"], "safeArea">): number {
+    return (liveSafeAreaOptions as readonly number[]).includes(screen.safeArea ?? 0) ? screen.safeArea ?? 0 : 0;
+}
+
+// The margins of a W×H area in px for a safe area of `percent`.
+export function liveSafeInsets(width: number, height: number, percent: number): {x: number; y: number} {
+    return {x: Math.round(width * percent / 100), y: Math.round(height * percent / 100)};
+}
+
+// The canvas inside the safe area of the layout's screen.
+export function liveCanvasSize(layout: LiveLayout): {width: number; height: number} {
+    const {width, height} = layout.screen;
+    const inset = liveSafeInsets(width, height, liveSafeArea(layout.screen));
+    return {width: width - 2 * inset.x, height: height - 2 * inset.y};
+}
 
 // u = height / 36, but never more than a 16:9 box of this width allows, so
 // a layout made for 16:9 keeps its text inside the widgets on narrower
@@ -22,18 +55,18 @@ export function liveUnit(height: number, textScale: number, width: number = Numb
     return Math.min(height, width * 9 / 16) / 36 * textScale;
 }
 
-export function liveTextSize(role: LiveTextRole, height: number, textScale: number, width?: number): {natural: number; effective: number} {
-    const {k, min} = liveTextRoles[role];
+export function liveTextSize(role: LiveTextRole, height: number, textScale: number, width?: number, profile: LiveTextProfile = "projector"): {natural: number; effective: number} {
+    const {k} = liveTextRoles[role];
     const natural = Math.round(liveUnit(height, textScale, width) * k * 10) / 10;
-    return {natural, effective: Math.max(min, natural)};
+    return {natural, effective: Math.max(liveTextFloors[profile][role], natural)};
 }
 
 // CSS custom properties for .live-canvas: u follows the canvas (a size
 // container) — its height, capped by its width as in liveUnit — so the
 // full-window screen and the fixed LED area both scale.
-export function liveTextVars(textScale: number): Record<string, string> {
+export function liveTextVars(textScale: number, profile: LiveTextProfile = "projector"): Record<string, string> {
     const vars: Record<string, string> = {"--live-u": `calc(min(100cqh, 100cqw * 9 / 16) / 36 * ${textScale})`};
-    for (const [role, {k, min}] of Object.entries(liveTextRoles)) vars[`--live-fs-${role}`] = `max(${min}px, calc(var(--live-u) * ${k}))`;
+    for (const [role, {k}] of Object.entries(liveTextRoles)) vars[`--live-fs-${role}`] = `max(${liveTextFloors[profile][role as LiveTextRole]}px, calc(var(--live-u) * ${k}))`;
     return vars;
 }
 
@@ -49,7 +82,8 @@ export type LiveTextWarning = {id: string; text: string};
 // The widget's inner box on the real screen, in screen pixels (the widget
 // padding is --live-pad).
 export function liveWidgetBox(layout: LiveLayout, item: LiveWidget): {width: number; height: number} {
-    const {width, height, textScale} = layout.screen;
+    const {textScale} = layout.screen;
+    const {width, height} = liveCanvasSize(layout);
     const pad = Math.max(6, liveUnit(height, textScale, width) * 0.4);
     return {width: item.w * width / layout.grid.cols - 2 * pad, height: item.h * height / layout.grid.rows - 2 * pad};
 }
@@ -57,10 +91,12 @@ export function liveWidgetBox(layout: LiveLayout, item: LiveWidget): {width: num
 // Rows of a table or recent-solves widget on the real screen: the same rule
 // the screen renders with.
 export function liveListFit(layout: LiveLayout, item: LiveWidget): LiveListGeometry & {rows: number} {
-    const {height, width, textScale} = layout.screen;
+    const {textScale} = layout.screen;
+    const {height, width} = liveCanvasSize(layout);
+    const profile = liveTextProfile(layout.screen);
     const rows = item.type === "table" ? numberProp(item, "rowsPerPage", 10) : numberProp(item, "rows", 5);
-    const geometry = liveListGeometry({height: liveWidgetBox(layout, item).height, caption: liveTextSize("caption", height, textScale, width).effective,
-        body: liveTextSize("body", height, textScale, width).effective, rows, header: item.type === "table"});
+    const geometry = liveListGeometry({height: liveWidgetBox(layout, item).height, caption: liveTextSize("caption", height, textScale, width, profile).effective,
+        body: liveTextSize("body", height, textScale, width, profile).effective, rows, header: item.type === "table"});
     return {...geometry, rows};
 }
 
@@ -72,23 +108,27 @@ function numberProp(item: LiveWidget, key: string, fallback: number): number {
 // Small-text and fit warnings for the chosen screen size: a role whose
 // natural size falls under its floor is raised to the floor on screen, and a
 // widget whose content no longer fits at the effective sizes is named.
-export function liveTextWarnings(layout: LiveLayout): LiveTextWarning[] {
-    const {height, width, textScale} = layout.screen;
-    const size = (role: LiveTextRole) => liveTextSize(role, height, textScale, width);
+// `eventName` is the real event name the title must fit.
+export function liveTextWarnings(layout: LiveLayout, eventName = t("live.text.sampleTitle")): LiveTextWarning[] {
+    const {textScale} = layout.screen;
+    const {height, width} = liveCanvasSize(layout);
+    const profile = liveTextProfile(layout.screen);
+    const floors = liveTextFloors[profile];
+    const size = (role: LiveTextRole) => liveTextSize(role, height, textScale, width, profile);
     const heading = size("caption").effective * 1.2 + size("caption").effective * 0.5;
     const warnings: LiveTextWarning[] = [];
     for (const item of layout.widgets) {
         if (item.type === "ad_table") continue;
         const name = liveWidgetLabels[item.type];
-        const low = widgetRoles[item.type].filter(role => size(role).natural < liveTextRoles[role].min);
+        const low = widgetRoles[item.type].filter(role => size(role).natural < floors[role]);
         if (low.length) {
             warnings.push({id: item.id, text: t("live.text.warning", {name, problem: t("live.text.belowFloor", {
                 sizes: low.map(role => t("live.text.roleSize", {role: liveTextRoles[role].label, size: Math.floor(size(role).natural)})).join(", "),
-                floors: low.map(role => `${liveTextRoles[role].min} px`).join(" / "),
+                floors: low.map(role => t("live.text.px", {size: floors[role]})).join(" / "),
             })})});
         }
         const box = liveWidgetBox(layout, item);
-        const fit = item.type === "table" || item.type === "solves" ? listProblem(liveListFit(layout, item)) : fitProblem(item, box.width, box.height, heading, size);
+        const fit = item.type === "table" || item.type === "solves" ? listProblem(liveListFit(layout, item)) : fitProblem(item, box.width, box.height, heading, size, floors, eventName);
         if (fit) warnings.push({id: item.id, text: t("live.text.warning", {name, problem: fit})});
     }
     return warnings;
@@ -98,11 +138,12 @@ function listProblem(fit: LiveListGeometry & {rows: number}): string | null {
     return fit.readable ? null : t("live.text.rowsFit", {rows: fit.rows, max: fit.maxRows});
 }
 
-function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: number, size: (role: LiveTextRole) => {effective: number}): string | null {
+function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: number, size: (role: LiveTextRole) => {effective: number}, floors: Record<LiveTextRole, number>, eventName: string): string | null {
     const caption = size("caption").effective;
     if (item.type === "title") {
-        const fit = liveTitleFit({width: boxW, height: boxH, name: t("live.text.sampleTitle"), subtitle: typeof item.props.subtitle === "string" && !!item.props.subtitle.trim(), logo: true});
-        return fit.name < liveTextRoles.display.min ? t("live.text.titleFit") : null;
+        const subtitle = typeof item.props.subtitle === "string" && !!item.props.subtitle.trim() || item.props.subtitleStage === true;
+        const fit = liveTitleFit({width: boxW, height: boxH, name: eventName, subtitle, logo: true, subtitleMin: floors.caption});
+        return fit.name < floors.display ? t("live.text.titleFit") : null;
     }
     if (item.type === "announcement") {
         return boxH < size("display").effective * 1.15 ? t("live.text.titleFit") : null;
@@ -110,8 +151,8 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
     if (item.type === "timer") {
         const label = item.props.showLabel === false ? null : typeof item.props.label === "string" && item.props.label.trim() ? item.props.label.trim() : t("live.timer.untilFinish");
         const labelSize = (["s", "m", "l"] as const).find(value => value === item.props.labelSize) ?? "m";
-        const fit = liveTimerFit({width: boxW, height: boxH, digits: item.props.showSeconds === false ? 5 : 8, label, labelSize});
-        return fit.digits < liveTextRoles.timer.min || label !== null && fit.label < liveTextRoles.caption.min ? t("live.text.timerFit") : null;
+        const fit = liveTimerFit({width: boxW, height: boxH, digits: item.props.showSeconds === false ? 5 : 8, label, labelSize, labelMin: floors.caption});
+        return fit.digits < floors.timer || label !== null && fit.label < floors.caption ? t("live.text.timerFit") : null;
     }
     if (item.type === "chart") {
         const lines = Math.min(10, numberProp(item, "lines", 5));

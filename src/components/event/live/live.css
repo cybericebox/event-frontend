@@ -9,6 +9,13 @@
 .live-canvas--grid{background-image:linear-gradient(to right,var(--live-line) 1px,transparent 1px),linear-gradient(to bottom,var(--live-line) 1px,transparent 1px);background-size:calc(100% / var(--live-cols)) calc(100% / var(--live-rows))}
 .live-widget{position:relative;display:block;min-width:0;min-height:0;overflow:hidden;padding:var(--live-pad);border:0;border-radius:0;background:transparent;color:var(--live-ink);text-align:left;font:inherit;cursor:default}
 .live-widget h2{flex:none;height:calc(var(--live-fs-caption) * 1.8);margin:0;overflow:hidden;color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+/* A list caption holds the title and, for a paged table, «11–17 з 47» with
+   a thin bar that fills over the page time. */
+.live-list h2{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:.8em}
+.live-list h2>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.live-list__range{flex:none;color:var(--live-dim);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums}
+.live-list__progress{position:absolute;left:0;bottom:calc(var(--live-fs-caption) * .3);width:100%;height:2px;background:var(--live-accent);opacity:.7;transform-origin:0 50%;animation:live-page-progress linear forwards}
+@keyframes live-page-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 /* Title, timer: sizes come from liveFit (the largest that fits the widget). */
 .live-title{display:flex;align-items:center;gap:calc(var(--live-u) * .6);height:100%;min-width:0}
 .live-title__logo{display:grid;place-items:center;flex:none;aspect-ratio:1;border-radius:calc(var(--live-u) * .25);background:var(--live-tile)}
@@ -19,19 +26,34 @@
 .live-timer{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;height:100%;min-width:0;text-align:right}
 .live-timer small{max-width:100%;overflow:hidden;color:var(--live-faint);line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
 .live-timer strong{color:var(--live-accent);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.08;white-space:nowrap}
+/* A word in place of the digits («Завершено»): the target passed or there is none. */
+.live-timer strong.live-timer__word{font-family:inherit;letter-spacing:-.01em}
+/* «Заморожено о 10:59»: under the timer digits, or in the title subtitle line. */
+.live-freeze{display:inline-flex;align-items:center;gap:.35em;max-width:100%;padding:.08em .45em;border:1px solid currentColor;border-radius:.3em;color:var(--live-accent);font-weight:600;line-height:1.25;white-space:nowrap}
+.live-freeze svg{flex:none;width:1em;height:1em}
+.live-title span .live-freeze{font-size:inherit}
 .live-chart,.live-list,.live-logos{display:flex;flex-direction:column;height:100%;min-height:0}
 /* Table and recent solves: the caption, then N rows that split the rest
    exactly (liveListGeometry). Row heights and text are set inline. */
 .live-table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
 .live-table th,.live-table td{padding:0 .45em;border-bottom:1px solid var(--live-line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+/* A name that needs two lines wraps (liveTableFit); past two lines it ends with «…». */
+.live-table td.live-table__name{padding-inline:calc(var(--live-row-font) * .45)}
+.live-table td.is-wrap{white-space:normal;line-height:1.15}
+.live-table td.is-wrap{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
 .live-table th{color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;text-align:left}
 .live-table td{font-weight:500;line-height:1.2}
-/* Rank and points columns follow the row text (--live-row-font). */
-.live-table th:first-child,.live-table td:first-child{width:calc(var(--live-row-font,var(--live-fs-body)) * 2.8);color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace)}
-.live-table th:last-child,.live-table td:last-child{width:calc(var(--live-row-font,var(--live-fs-body)) * 5.2);text-align:right}
+/* Rank and points columns are as wide as their digits (the <col> widths from
+   liveTableFit), so a larger row text never takes the name's room. */
+.live-table th:first-child,.live-table td:first-child{color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace)}
+.live-table th:last-child,.live-table td:last-child{text-align:right}
 .live-table td:last-child{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
 .live-table tr.is-lead{background:var(--live-lead)}
 .live-table tr.is-lead td:nth-child(2),.live-table tr.is-lead td:last-child{color:var(--live-accent)}
+/* Places 1–3 carry the accent on their rank. */
+.live-table tr.is-top td:first-child{color:var(--live-accent);font-weight:600}
+/* The last pinned row: a stronger rule above the scrolling rows. */
+.live-table tr.is-pinned-last td{border-bottom:2px solid var(--live-faint)}
 .live-solves{margin:0;padding:0;list-style:none}
 .live-solves li{display:flex;gap:.6em;align-items:center;border-bottom:1px solid var(--live-line);line-height:1.2}
 .live-solves li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -49,7 +71,11 @@
 .live-chart__grid{stroke:var(--live-line);stroke-width:1}
 .live-chart__axis,.live-chart__time{position:absolute;color:var(--live-faint);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap}
 .live-chart__axis{left:0;text-align:right}
-.live-chart__label{position:absolute;display:flex;align-items:center;gap:.4em;overflow:hidden;color:var(--live-ink);font-weight:600;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.live-chart__label{position:absolute;display:flex;align-items:center;gap:.4em;overflow:hidden;color:var(--live-ink);font-size:var(--live-fs-body);font-weight:600;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+/* The freeze moment: the lines stop at this vertical rule. */
+.live-chart__freeze{stroke:var(--live-accent);stroke-width:2;stroke-dasharray:6 5}
+.live-chart__freeze-label{position:absolute;display:inline-flex;align-items:center;gap:.3em;padding:0 .35em;transform:translateX(-50%) translateY(-110%);background:var(--live-bg);color:var(--live-accent);font-weight:600;line-height:1.2;white-space:nowrap}
+.live-chart__freeze-label svg{width:1em;height:1em}
 .live-chart__label span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .live-chart__label i{flex:none;width:.9em;height:.2em;border-radius:999px}
 .live-announcement{display:grid;place-items:center;height:100%;font-size:var(--live-fs-display);font-weight:600;line-height:1.2;text-align:center}
@@ -75,15 +101,28 @@
 
 /* The live page: the whole window, or a fixed W×H area at the top left that
    the LED processor crops (anchor mode). */
-.live-fullscreen{position:fixed;inset:0;z-index:200;overflow:hidden;background:#090911}
-/* Loading and error states fill the whole screen, centered. */
-.live-fullscreen>.event-block-state{height:100%}
+.live-fullscreen{position:fixed;inset:0;z-index:200;overflow:hidden;background:var(--ev-brand,#211a52)}
+/* Around the canvas (safe area, burn-in shift) the screen keeps the canvas colour. */
+.live-fullscreen--light{background:#F7F7F9}
+/* Loading, error and closed-link states: the event colour, centered, sized
+   for the hall (the logo about a fifth of the screen height). */
+.live-fullscreen--state{--ib-paper:var(--ev-brand,#211a52);display:grid;place-items:center;background:var(--ev-brand,#211a52)}
+.live-fullscreen--state>.event-block-state,.live-fullscreen--state>.ib-error{width:100%;height:100%;min-height:0}
+.live-fullscreen--state .event-loading-logo{width:20vh;height:20vh}
+.live-fullscreen--state .ib-empty__icon svg{width:max(40px,8vh);height:max(40px,8vh)}
+.live-fullscreen--state .ib-empty__text{max-width:32ch;font-size:max(20px,3.6vh)}
+.live-fullscreen--state .ib-empty__hint,.live-fullscreen--state .ib-empty__code{font-size:max(16px,2.4vh)}
+.live-fullscreen--state .ib-empty__action .ib-btn{min-height:max(36px,5vh);padding-inline:1.2em;font-size:max(15px,2.2vh)}
+.live-fullscreen--state .ib-error__code{font-size:max(72px,14vh)}
+.live-fullscreen--state .ib-error__title{max-width:28ch;font-size:max(22px,4.2vh)}
+.live-fullscreen--state .ib-error__text{max-width:40ch;font-size:max(16px,2.6vh)}
+/* «Немає зв'язку · дані на 12:03»: quiet, in the corner, only while the data is not live. */
+.live-offline{position:absolute;right:max(16px,2vh);bottom:max(16px,2vh);z-index:5;display:inline-flex;align-items:center;gap:.5em;padding:.35em .7em;border:1px solid rgba(255,255,255,.35);border-radius:.4em;background:rgba(9,9,17,.72);color:#fff;font:500 max(15px,2.2vh)/1.2 var(--font-geist-sans,Arial,sans-serif)}
+.live-offline svg{flex:none;width:1.1em;height:1.1em}
+.live-fullscreen.is-offline .live-controls{bottom:calc(max(16px,2vh) + max(15px,2.2vh) * 2.4 + 8px)}
 .live-fullscreen.is-idle,.live-fullscreen.is-idle *{cursor:none!important}
-.live-area{position:absolute;inset:0}
+.live-area{position:absolute;inset:0;box-sizing:border-box}
 .live-fullscreen--anchor .live-area{inset:auto;top:0;left:0;width:var(--live-screen-width);height:var(--live-screen-height)}
-.live-fullscreen__state{display:grid;place-items:center;align-content:center;gap:16px;width:100%;height:100%;padding:24px;background:var(--ev-brand,#211a52);color:#fff;font-size:20px;text-align:center}
-.live-fullscreen__state h1{margin:0;font-size:28px}
-.live-fullscreen__state p{margin:0;color:color-mix(in srgb,var(--ev-brand,#211a52),#fff 80%)}
 .live-controls{position:absolute;right:16px;bottom:16px;z-index:6;display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--ib-brand-line);border-radius:8px;background:var(--ib-brand);color:var(--ib-on-brand);font:14px/1.3 var(--font-geist-sans,Arial,sans-serif);transition:opacity .2s}
 .live-fullscreen.is-idle .live-controls:not(:focus-within){opacity:0;pointer-events:none}
 .live-controls button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid var(--ib-brand-line);border-radius:6px;background:transparent;color:inherit;font:inherit;cursor:pointer}
@@ -101,6 +140,9 @@
 .live-test__panel dd{margin:0;font-family:var(--font-geist-mono,ui-monospace,monospace)}
 .live-test__samples{display:grid;gap:6px;padding-top:8px;border-top:1px solid var(--ib-brand-line)}
 .live-test__samples span{white-space:nowrap}
+/* 5% and the chosen safe area: what a TV with overscan may crop. */
+.live-test__safe{position:absolute;border:2px dashed #fd929d;pointer-events:none}
+.live-test__safe b{position:absolute;right:8px;bottom:4px;color:#fd929d;font:600 14px/1.2 var(--font-geist-sans,Arial,sans-serif)}
 
 .live-canvas--edit{gap:calc(4px / var(--live-preview-scale,1));padding:calc(4px / var(--live-preview-scale,1))}
 .live-canvas--edit .live-widget{border-radius:calc(4px / var(--live-preview-scale,1));background:color-mix(in srgb,var(--live-bg) 90%,#fff);cursor:grab}

@@ -39,10 +39,12 @@ type Props = {
 export function AppShell(props: Props) {
     // The event was deleted while the site was open: the same screen as for an event that never existed.
     const gone = useSyncExternalStore(subscribeEventGone, isEventGone, () => false);
+    // The live screen retries its own loads and marks a lost connection itself: no outage cover over a projector.
+    const live = usePathname() === "/live";
     if (gone) return <EventUnavailableScreen />;
     return <ParticipantPreviewProvider serverCookie={props.previewCookie ?? null}>
         <div id={APP_ROOT_ID}><ShellContent {...props} /></div>
-        <EventServiceStatusGate serverUnavailable={props.unavailable} />
+        {!live && <EventServiceStatusGate serverUnavailable={props.unavailable} />}
     </ParticipantPreviewProvider>;
 }
 
@@ -80,6 +82,9 @@ function ShellContent({children, event, privateEvent, unavailable, failure}: Pro
 
     const draftFrame = (content: ReactNode) => <ManualDraftProvider userID={preview.active ? `participant-preview:${currentUser.data?.ID ?? ""}` : currentUser.data?.ID ?? ""} eventID={event?.EventID ?? ""}>{content}</ManualDraftProvider>;
 
+    // The live screen loads its own data in the browser and recovers by itself: a failed server
+    // read of the event must not cover a projector that works.
+    if (isLive) return children;
     if (failure) return <EventErrorScreen page body={t("error.load.body")} error={failure} onRetry={() => router.refresh()} />;
     if (unavailable) {
         // The server-side event fetch failed: no event data, so the bare frame with the
@@ -88,13 +93,11 @@ function ShellContent({children, event, privateEvent, unavailable, failure}: Pro
     }
     if (!event) {
         if (isManagement) return <ManagerBootstrap>{children}</ManagerBootstrap>;
-        if (isLive) return children;
         // Server reads are anonymous, so an unpublished event is absent here. Every other route
         // retries in the browser with the session; the bootstrap shows the one
         // «not found or no access» screen when the browser answer is no either.
         return <PrivateEventBootstrap initialEvent={privateEvent}>{children}</PrivateEventBootstrap>;
     }
-    if (isLive) return children;
     // A session page of a visible event opened without a session goes to the sign-in at once.
     if (needsSession(pathname) && currentUser.isSuccess && !currentUser.data) return <SignInRedirect event={event} />;
     if (isManagement) return <ManagerShell event={event}>{children}</ManagerShell>;

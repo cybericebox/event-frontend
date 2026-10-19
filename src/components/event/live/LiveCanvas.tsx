@@ -1,13 +1,16 @@
 "use client";
 
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent, type ReactNode} from "react";
+import {Snowflake} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {liveLogoURL, liveWidgetLabels} from "./liveLayout";
-import {liveTextSize, liveTextVars} from "./liveText";
-import {liveCaptionBlock, liveHeaderRow, liveListGeometry, liveTimerFit, liveTitleFit, type LiveListGeometry} from "./liveFit";
+import {liveTextFloors, liveTextProfile, liveTextSize, liveTextVars} from "./liveText";
+import {liveCaptionBlock, liveEstimateWidth, liveHeaderRow, liveListGeometry, liveTableFit, liveTimerFit, liveTitleFit, type LiveListGeometry} from "./liveFit";
+import {liveStageSubtitle, liveTimerDigits, liveTimerState, type LiveStage} from "./liveStages";
+import {livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
 import {chartSeries, spreadLabels} from "./liveChart";
 import {liveSampleSpan} from "./liveSample";
 import {LiveQR} from "./LiveQR";
@@ -17,6 +20,8 @@ import {clockLabel} from "@/utils/resultsFreeze";
 import crest from "@/styles/assets/crest-128.png";
 import "./live.css";
 import {t} from "@/i18n/t";
+
+const noStages: LiveStage[] = [];
 
 // Series colours of the «Класика» boards: DS series tokens, which `data-live` on the chart sets for the board theme.
 const seriesColors = Array.from({length: 10}, (_, index) => `var(--ib-s${index + 1})`);
@@ -38,7 +43,18 @@ function frozenSuffix(results?: ManageResultsSnapshot): string {
     return results?.Freeze.Applied && results.Freeze.FrozenAt ? t("live.frozenSuffix", {time: clockLabel(results.Freeze.FrozenAt)}) : "";
 }
 
-function LiveChart({widget, event, results, now, theme, sample}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean}) {
+// The moment the shown results are frozen at, null for live results.
+function frozenAt(results?: ManageResultsSnapshot): string | null {
+    return results?.Freeze.Applied && results.Freeze.FrozenAt ? results.Freeze.FrozenAt : null;
+}
+
+// «Результати заморожено о 10:59»: under the timer, or in the title when the
+// screen has no timer.
+function FreezeBadge({at, size}: {at: string; size?: number}) {
+    return <span className="live-freeze" style={size ? {fontSize: size} : undefined}><Snowflake aria-hidden="true" />{t("live.freeze.badge", {time: clockLabel(at)})}</span>;
+}
+
+function LiveChart({widget, event, results, now, theme, sample, metrics}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean; metrics: LiveMetrics}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const [labelRef, labelSize] = useElementSize<HTMLSpanElement>();
     const lines = Math.min(10, Math.max(1, Number(widget.props.lines) || 5));
@@ -46,12 +62,14 @@ function LiveChart({widget, event, results, now, theme, sample}: {widget: LiveWi
     const sampleEnd = sample && results ? Date.parse(results.GeneratedAt) : 0;
     const start = sample ? sampleEnd - liveSampleSpan : Date.parse(event.StartTime);
     const end = sample ? sampleEnd : Math.max(start + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now || start + 60000));
-    // One caption line is the unit of the chart margins.
+    const frozen = frozenAt(results);
+    // One caption line is the unit of the chart margins; the line names are body text.
     const line = labelSize.height || 18;
-    const axis = line * 2.6, labels = Math.min(size.width * 0.3, line * 9);
+    const nameLine = line * metrics.body / Math.max(1, metrics.caption);
+    const axis = line * 2.6, labels = Math.min(size.width * 0.32, nameLine * 8);
     const box = {left: axis, top: line * 0.6, width: Math.max(10, size.width - axis - labels - line * 0.6), height: Math.max(10, size.height - line * 2.2)};
-    const {series, max} = chartSeries(results, lines, box, start, end);
-    const labelYs = spreadLabels(series.map(item => item.endY), line * 1.2, box.top, box.top + box.height);
+    const {series, max, cutX} = chartSeries(results, lines, box, start, end, frozen ? Date.parse(frozen) : null);
+    const labelYs = spreadLabels(series.map(item => item.endY), nameLine * 1.15, box.top, box.top + box.height);
     const colors = seriesColors;
     const hasData = !!results?.Scoreboard.length;
     return <div className="live-chart" data-live={theme}>
@@ -61,11 +79,13 @@ function LiveChart({widget, event, results, now, theme, sample}: {widget: LiveWi
             {!hasData ? <EmptyState compact message={t("live.chart.empty")} /> : size.width > 0 && <>
                 <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
+                    {cutX !== null && <line className="live-chart__freeze" x1={cutX} x2={cutX} y1={box.top} y2={box.top + box.height} />}
                     {series.map((item, index) => <path key={item.teamID} d={item.path} fill="none" stroke={colors[index % colors.length]} strokeWidth={Math.max(3, line * 0.16)} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
-                {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{Math.round(max * step).toLocaleString("uk-UA")}</span>)}
+                {cutX !== null && <span className="live-chart__freeze-label" style={{left: cutX, top: box.top}}><Snowflake aria-hidden="true" />{t("live.chart.frozen")}</span>}
+                {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{livePoints(max * step)}</span>)}
                 {[0, 0.25, 0.5, 0.75, 1].map(step => <span key={step} className="live-chart__time" style={{left: box.left + box.width * step, top: box.top + box.height + line * 0.3, transform: `translateX(-${step * 100}%)`}}>{clockLabel(start + (end - start) * step)}</span>)}
-                {series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - line / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors[index % colors.length]}} aria-hidden="true" /><span>{item.name}</span></span>)}
+                {series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - nameLine / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors[index % colors.length]}} aria-hidden="true" /><span>{item.name}</span></span>)}
             </>}
         </div>
     </div>;
@@ -90,6 +110,8 @@ function LiveLogos({widget, fallback, edit, sample, theme}: {widget: LiveWidget;
     const urls = items.map(item => liveLogoURL(theme === "dark" && item.dark ? item.dark : item.src)).filter((value): value is string => !!value);
     // With sample data and no logo at all, the platform crest stands in.
     const images = urls.length ? urls : fallback ? [fallback] : sample ? [crest.src, crest.src, crest.src] : [];
+    // No logo at all: the screen shows nothing rather than a lonely caption.
+    if (!images.length && !edit) return null;
     const carousel = widget.props.mode === "carousel" && images.length > 1;
     const mono = widget.props.color !== "original";
     const duration = widget.props.speed === "slow" ? "80s" : widget.props.speed === "fast" ? "30s" : "50s";
@@ -106,76 +128,102 @@ function LiveLogos({widget, fallback, edit, sample, theme}: {widget: LiveWidget;
     </div>;
 }
 
-type LiveMetrics = {caption: number; body: number};
+type LiveMetrics = {caption: number; body: number; timer: number};
 
-export type LiveTimerSource = "auto" | "start" | "finish" | "freeze" | "custom";
-
-// What the timer counts down to and its automatic label, per source. At
-// zero it shows 00:00:00.
-export function liveTimerState(props: LiveWidget["props"], event: PublicEventInfo, now: number, frozenAt: string | null): {target: number | null; label: string} {
-    const source = (typeof props.source === "string" ? props.source : "auto") as LiveTimerSource;
-    const start = Date.parse(event.StartTime);
-    const finish = event.FinishTime ? Date.parse(event.FinishTime) : null;
-    if (source === "start") return {target: start, label: t("live.timer.beforeStart")};
-    if (source === "finish") return {target: finish, label: finish === null ? t("live.timer.noFinish") : t("live.timer.untilFinish")};
-    if (source === "freeze") return {target: frozenAt ? Date.parse(frozenAt) : null, label: t("live.timer.untilFreeze")};
-    if (source === "custom") return {target: typeof props.target === "string" ? Date.parse(props.target) || null : null, label: t("live.timer.untilCustom")};
-    if (start > now) return {target: start, label: t("live.timer.beforeStart")};
-    return {target: finish, label: finish === null ? t("live.timer.noFinish") : finish > now ? t("live.timer.untilFinish") : t("live.timer.finished")};
-}
-
-function LiveTimer({widget, event, now, frozenAt}: {widget: LiveWidget; event: PublicEventInfo; now: number; frozenAt: string | null}) {
+function LiveTimer({widget, event, stages, now, results, badge, metrics}: {widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; now: number; results?: ManageResultsSnapshot; badge: boolean; metrics: LiveMetrics}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
-    const {target, label: autoLabel} = liveTimerState(widget.props, event, now, frozenAt);
-    const seconds = target === null ? 0 : Math.max(0, Math.floor((target - now) / 1000));
-    const parts = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, ...(widget.props.showSeconds === false ? [] : [seconds % 60])];
-    const digits = parts.map(part => String(part).padStart(2, "0")).join(":");
+    const state = liveTimerState(widget.props, event, stages, now, results?.Freeze.FrozenAt ?? null);
+    const digits = liveTimerDigits(state, now, widget.props.showSeconds !== false);
+    const shown = digits ?? (state.mode === "word" ? state.word : "");
     const custom = typeof widget.props.label === "string" ? widget.props.label.trim() : "";
-    const label = widget.props.showLabel === false ? null : custom || autoLabel;
+    const label = widget.props.showLabel === false ? null : custom || state.label || null;
     const labelSize = (["s", "m", "l"] as const).find(value => value === widget.props.labelSize) ?? "m";
-    const fit = liveTimerFit({width: size.width, height: size.height, digits: digits.length, label, labelSize});
+    const frozen = badge ? frozenAt(results) : null;
+    const badgeText = frozen ? t("live.freeze.badge", {time: clockLabel(frozen)}) : null;
+    const fit = liveTimerFit({width: size.width, height: size.height, digits: shown.length, label, labelSize, badge: badgeText, labelMin: metrics.caption, digitsMin: metrics.timer});
     return <div className="live-timer" ref={ref}>
-        {label && <small style={{fontSize: fit.label}}>{label}</small>}
-        <strong style={{fontSize: fit.digits}}>{digits}</strong>
+        {label && fit.labelShown && <small style={{fontSize: fit.label}}>{label}</small>}
+        {frozen && !fit.labelShown && <FreezeBadge at={frozen} size={fit.badge} />}
+        <strong className={digits ? undefined : "live-timer__word"} style={{fontSize: fit.digits}}>{shown}</strong>
+        {frozen && fit.labelShown && <FreezeBadge at={frozen} size={fit.badge} />}
     </div>;
 }
 
-function LiveTitle({widget, event, logo}: {widget: LiveWidget; event: PublicEventInfo; logo: string | null}) {
+function LiveTitle({widget, event, logo, stages, now, results, badge, metrics}: {widget: LiveWidget; event: PublicEventInfo; logo: string | null; stages: LiveStage[]; now: number; results?: ManageResultsSnapshot; badge: boolean; metrics: LiveMetrics}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
-    const subtitle = typeof widget.props.subtitle === "string" ? widget.props.subtitle.trim() : "";
-    const fit = liveTitleFit({width: size.width, height: size.height, name: event.Name, subtitle: !!subtitle, logo: !!logo});
+    const text = typeof widget.props.subtitle === "string" ? widget.props.subtitle.trim() : "";
+    // «Поточний етап»: the running stage (or the next one); the own text otherwise.
+    const subtitle = widget.props.subtitleStage === true ? liveStageSubtitle(stages, now) || text : text;
+    const frozen = badge ? frozenAt(results) : null;
+    const fit = liveTitleFit({width: size.width, height: size.height, name: event.Name, subtitle: !!subtitle || !!frozen, logo: !!logo, subtitleMin: metrics.caption});
     return <div className="live-title" ref={ref}>
         {logo && <span className="live-title__logo" style={{height: fit.logo}}><img src={logo} alt="" /></span>}
-        <div><strong style={{fontSize: fit.name}}>{event.Name}</strong>{subtitle && <span style={{fontSize: fit.subtitle}}>{subtitle}</span>}</div>
+        <div>
+            <strong style={{fontSize: fit.name}}>{event.Name}</strong>
+            {(subtitle || frozen) && <span style={{fontSize: fit.subtitle}}>{frozen ? <FreezeBadge at={frozen} /> : subtitle}</span>}
+        </div>
     </div>;
 }
 
 // Table and recent solves: exactly N rows split the height under the
 // caption (liveListGeometry, the same rule as the editor warnings).
-function LiveList({caption, rows, header, metrics, empty, children}: {
-    caption: string; rows: number; header: boolean; metrics: LiveMetrics; empty: string | null;
-    children: (geometry: LiveListGeometry) => ReactNode;
+function LiveList({caption, rows, header, metrics, empty, progress, children}: {
+    caption: ReactNode; rows: number; header: boolean; metrics: LiveMetrics; empty: string | null;
+    // The page bar of a paged table: restarts with each page.
+    progress?: {page: number; seconds: number; elapsed: number} | null;
+    children: (geometry: LiveListGeometry, width: number) => ReactNode;
 }) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const geometry = liveListGeometry({height: size.height, caption: metrics.caption, body: metrics.body, rows, header});
     return <div className="live-list" ref={ref}>
-        <h2 style={{height: metrics.caption * liveCaptionBlock}}>{caption}</h2>
-        {empty !== null ? <EmptyState compact message={empty} /> : children(geometry)}
+        <h2 style={{height: metrics.caption * liveCaptionBlock}}>
+            {caption}
+            {progress && <i key={progress.page} className="live-list__progress" aria-hidden="true" style={{animationDuration: `${progress.seconds}s`, animationDelay: `-${progress.elapsed}s`}} />}
+        </h2>
+        {empty !== null ? <EmptyState compact message={empty} /> : children(geometry, size.width)}
     </div>;
 }
 
-function LiveTable({widget, event, results, now, metrics}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics}) {
+// Text width on the screen: the canvas measures the real font; without a
+// canvas (tests, old browsers) the estimate stands in.
+let measureContext: CanvasRenderingContext2D | null | undefined;
+function measureName(text: string, font: number): number {
+    if (measureContext === undefined) {
+        try {measureContext = document.createElement("canvas").getContext("2d");} catch {measureContext = null;}
+    }
+    if (!measureContext) return liveEstimateWidth(text, font);
+    const family = getComputedStyle(document.documentElement).getPropertyValue("--font-geist-sans").trim() || "Arial, sans-serif";
+    measureContext.font = `500 ${font}px ${family}`;
+    return measureContext.measureText(text).width;
+}
+
+function LiveTable({widget, event, results, now, metrics, edit}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean}) {
     const teams = results?.Scoreboard ?? [];
     const pageSize = Math.max(1, Number(widget.props.rowsPerPage) || 10);
-    const pageCount = Math.max(1, Math.ceil(teams.length / pageSize));
-    const page = Math.floor(now / 1000 / Math.max(1, Number(widget.props.pageSeconds) || 10)) % pageCount;
-    return <LiveList caption={t("live.table.title", {suffix: frozenSuffix(results)})} rows={pageSize} header metrics={metrics} empty={teams.length ? null : t("live.table.empty")}>
-        {geometry => <table className="live-table" style={{"--live-row-font": `${geometry.rowFont}px`} as CSSProperties}>
-            <thead><tr style={{height: metrics.caption * liveHeaderRow}}><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead>
-            <tbody style={{fontSize: geometry.rowFont}}>{teams.slice(page * pageSize, (page + 1) * pageSize).map(team => <tr key={team.TeamID} style={{height: geometry.rowHeight}} className={team.Rank === 1 ? "is-lead" : undefined}>
-                <td>{team.Rank}</td><td>{team.TeamName}</td><td>{team.Points.toLocaleString("uk-UA")}</td>
-            </tr>)}</tbody>
-        </table>}
+    const pageSeconds = Math.max(1, Number(widget.props.pageSeconds) || 10);
+    const {page, elapsed} = liveTablePageAt(now, pageSeconds, edit);
+    const view = liveTablePage(teams, {pageSize, pinTop: livePinTop(widget.props.pinTop), page});
+    const paged = view.pageCount > 1;
+    const caption = <>
+        <span>{t("live.table.title", {suffix: frozenSuffix(results)})}</span>
+        {paged && <span className="live-list__range">{t("live.table.range", {from: view.from, to: view.to, total: view.total})}</span>}
+    </>;
+    const rankChars = String(teams.at(-1)?.Rank ?? 1).length;
+    const pointsChars = Math.max(...teams.map(team => livePoints(team.Points).length), 1);
+    return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={teams.length ? null : t("live.table.empty")} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
+        {(geometry, width) => {
+            const fit = liveTableFit({width, rowHeight: geometry.rowHeight, body: metrics.body, rankChars, pointsChars, names: view.rows.map(team => team.TeamName), measure: measureName});
+            return <table className="live-table" style={{"--live-row-font": `${fit.font}px`} as CSSProperties}>
+                <colgroup><col style={{width: fit.rankWidth}} /><col /><col style={{width: fit.pointsWidth}} /></colgroup>
+                <thead><tr style={{height: metrics.caption * liveHeaderRow}}><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead>
+                <tbody style={{fontSize: fit.font}}>{view.rows.map((team, index) => <tr key={team.TeamID} style={{height: geometry.rowHeight}}
+                    className={[team.Rank === 1 ? "is-lead" : "", team.Rank <= 3 ? "is-top" : "", index === view.pinned - 1 ? "is-pinned-last" : ""].filter(Boolean).join(" ") || undefined}>
+                    <td>{team.Rank}</td>
+                    <td className={fit.names[index].lines === 2 ? "live-table__name is-wrap" : "live-table__name"} style={{fontSize: fit.names[index].font}} title={team.TeamName}>{team.TeamName}</td>
+                    <td>{livePoints(team.Points)}</td>
+                </tr>)}</tbody>
+            </table>;
+        }}
     </LiveList>;
 }
 
@@ -183,21 +231,25 @@ function LiveSolves({widget, results, metrics}: {widget: LiveWidget; results?: M
     const names = new Map((results?.Scoreboard ?? []).map(team => [team.TeamID, team.TeamName]));
     const rows = Math.max(1, Number(widget.props.rows) || 5);
     const items = [...(results?.Timeline ?? [])].sort((a, b) => b.SolvedAt.localeCompare(a.SolvedAt)).slice(0, rows);
-    return <LiveList caption={t("live.solves.title")} rows={rows} header={false} metrics={metrics} empty={items.length ? null : t("live.solves.empty")}>
+    return <LiveList caption={t("live.solves.title", {suffix: frozenSuffix(results)})} rows={rows} header={false} metrics={metrics} empty={items.length ? null : t("live.solves.empty")}>
         {geometry => <ol className="live-solves" style={{fontSize: geometry.rowFont}}>{items.map((item, index) => <li key={`${item.EventTeamID}-${item.EventChallengeID}-${index}`} style={{height: geometry.rowHeight}}>
-            <span>{names.get(item.EventTeamID) ?? t("live.table.team")} → {item.ChallengeName}</span><b>+{item.Points}</b><time>{clockLabel(item.SolvedAt)}</time>
+            <span>{t("live.solves.row", {team: names.get(item.EventTeamID) ?? t("live.table.team"), task: item.ChallengeName})}</span><b>{t("live.solves.points", {points: livePoints(item.Points)})}</b><time>{clockLabel(item.SolvedAt)}</time>
         </li>)}</ol>}
     </LiveList>;
 }
 
-function WidgetContent({widget, event, results, now, theme, edit, sample, metrics}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean; metrics: LiveMetrics}) {
+function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, badge}: {
+    widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean; metrics: LiveMetrics;
+    // Whether this widget carries the freeze badge (the timer, else the title).
+    badge: boolean;
+}) {
     const logo = resolveEventLogoURL(event.LogoURL);
-    if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} />;
-    if (widget.type === "timer") return <LiveTimer widget={widget} event={event} now={now} frozenAt={results?.Freeze.FrozenAt ?? null} />;
-    if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} />;
+    if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} stages={stages} now={now} results={results} badge={badge} metrics={metrics} />;
+    if (widget.type === "timer") return <LiveTimer widget={widget} event={event} stages={stages} now={now} results={results} badge={badge} metrics={metrics} />;
+    if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} metrics={metrics} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
     if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
-    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} />;
+    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} />;
     if (widget.type === "solves") return <LiveSolves widget={widget} results={results} metrics={metrics} />;
     if (widget.type === "announcement") return <div className="live-announcement">{typeof widget.props.text === "string" && widget.props.text.trim() || t("live.announcement.placeholder")}</div>;
     if (widget.type === "logos") return <LiveLogos widget={widget} fallback={logo} edit={edit} sample={sample} theme={theme} />;
@@ -208,8 +260,8 @@ function WidgetContent({widget, event, results, now, theme, edit, sample, metric
 
 export type LiveGhost = {x: number; y: number; w: number; h: number; ok: boolean};
 
-export function LiveCanvas({layout, event, results, sample = false, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
-    layout: LiveLayout; event: PublicEventInfo; results?: ManageResultsSnapshot; sample?: boolean; selectedID?: string | null;
+export function LiveCanvas({layout, event, stages = noStages, results, sample = false, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
+    layout: LiveLayout; event: PublicEventInfo; stages?: LiveStage[]; results?: ManageResultsSnapshot; sample?: boolean; selectedID?: string | null;
     onSelect?: (id: string) => void; edit?: boolean; showGrid?: boolean;
     onPointerDown?: (event: PointerEvent<HTMLButtonElement | HTMLSpanElement>, widget: LiveWidget, mode: "move" | "resize") => void;
     conflicts?: Set<string>; warned?: Set<string>; ghost?: LiveGhost | null;
@@ -217,25 +269,28 @@ export function LiveCanvas({layout, event, results, sample = false, selectedID, 
 }) {
     const [canvasRef, canvasSize] = useElementSize<HTMLDivElement>();
     // Effective text sizes of this canvas: the same numbers as liveText.
+    const profile = liveTextProfile(layout.screen);
     const metrics = useMemo(() => ({
-        caption: liveTextSize("caption", canvasSize.height, layout.screen.textScale, canvasSize.width || undefined).effective,
-        body: liveTextSize("body", canvasSize.height, layout.screen.textScale, canvasSize.width || undefined).effective,
-    }), [canvasSize.height, canvasSize.width, layout.screen.textScale]);
+        caption: liveTextSize("caption", canvasSize.height, layout.screen.textScale, canvasSize.width || undefined, profile).effective,
+        body: liveTextSize("body", canvasSize.height, layout.screen.textScale, canvasSize.width || undefined, profile).effective,
+        timer: liveTextFloors[profile].timer,
+    }), [canvasSize.height, canvasSize.width, layout.screen.textScale, profile]);
+    const badgeHost = layout.widgets.some(widget => widget.type === "timer") ? "timer" : "title";
     const [now, setNow] = useState(0);
     useEffect(() => {const frame = requestAnimationFrame(() => setNow(Date.now())); const timer = setInterval(() => setNow(Date.now()), 1000); return () => {cancelAnimationFrame(frame); clearInterval(timer);};}, []);
     const style = useMemo(() => ({
-        "--live-cols": layout.grid.cols, "--live-rows": layout.grid.rows, ...liveTextVars(layout.screen.textScale),
+        "--live-cols": layout.grid.cols, "--live-rows": layout.grid.rows, ...liveTextVars(layout.screen.textScale, profile),
         ...(layout.theme === "dark" && (whiteTextContrast(event.Theme.Brand) ?? 21) < 4.5 ? {"--live-ink": "#16152B", "--live-dim": "#4D4B61", "--live-faint": "#4D4B61", "--live-line": "rgba(33,26,82,.2)"} : {}),
-    } as CSSProperties), [layout.grid.cols, layout.grid.rows, layout.screen.textScale, layout.theme, event.Theme.Brand]);
+    } as CSSProperties), [layout.grid.cols, layout.grid.rows, layout.screen.textScale, layout.theme, event.Theme.Brand, profile]);
     // Light theme: row 1 is the brand band; one-row widgets there sit on it,
     // taller ones cover it with the page colour.
     const place = (widget: LiveWidget) => `live-widget live-widget--${widget.type}${layout.theme === "light" && widget.y === 1 ? widget.h === 1 ? " live-widget--band" : " live-widget--masked" : ""}${selectedID === widget.id ? " is-selected" : ""}${conflicts?.has(widget.id) ? " is-conflict" : warned?.has(widget.id) ? " is-warned" : ""}`;
     const area = (widget: {x: number; y: number; w: number; h: number}) => ({gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`});
     return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={area(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
-            <WidgetContent widget={widget} event={event} results={results} now={now} theme={layout.theme} edit sample={sample} metrics={metrics} />
+            <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit sample={sample} metrics={metrics} badge={widget.type === badgeHost} />
             <span className="live-widget__resize" role="presentation" onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, "resize");}} />
-        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} results={results} now={now} theme={layout.theme} edit={false} sample={sample} metrics={metrics} /></div>)}
+        </button> : <div key={widget.id} className={place(widget)} style={area(widget)}><WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={false} sample={sample} metrics={metrics} badge={widget.type === badgeHost} /></div>)}
         {ghost && <div className={`live-drop-ghost${ghost.ok ? "" : " is-blocked"}`} style={area(ghost)} aria-hidden="true" />}
     </div>;
 }

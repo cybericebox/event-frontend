@@ -9,7 +9,7 @@ describe("recomputeGrid", () => {
     it("doubles the classic preset exactly on 0-based cells", () => {
         const next = recomputeGrid(defaultLiveLayout, 24, 16);
         expect(next.grid).toEqual({cols: 24, rows: 16});
-        expect(next.widgets.map(({x, y, w, h}) => [x, y, w, h])).toEqual([[1, 1, 20, 2], [1, 3, 16, 12], [17, 3, 8, 12], [1, 15, 6, 2], [7, 15, 18, 2], [21, 1, 4, 2]]);
+        expect(next.widgets.map(({x, y, w, h}) => [x, y, w, h])).toEqual([[1, 1, 18, 2], [1, 3, 16, 12], [17, 3, 8, 12], [1, 15, 6, 2], [7, 15, 18, 2], [19, 1, 6, 2]]);
         expect(layoutConflicts(next).size).toBe(0);
     });
 
