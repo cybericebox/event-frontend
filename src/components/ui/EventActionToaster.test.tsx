@@ -3,6 +3,7 @@ import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
 import toast from "react-hot-toast";
 import {EventActionToaster} from "./EventActionToaster";
+import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 
 // jsdom has no top layer: showModal only sets [open], and :modal is matched by that.
 beforeAll(() => {
@@ -50,5 +51,18 @@ describe("EventActionToaster", () => {
         act(() => fireEvent.click(close));
         await vi.waitFor(() => expect(screen.getByRole("alert").getAttribute("data-visible")).toBe("false"));
     });
-});
 
+    it("renders the toasts inside an open Radix dialog: above its backdrop, and closing a toast keeps the dialog open", async () => {
+        const onOpenChange = vi.fn();
+        render(<><EventActionToaster /><ManageDialog open onOpenChange={onOpenChange} title="Нова команда" footer={null}><p>Поля</p></ManageDialog></>);
+        const dialog = await screen.findByRole("dialog");
+        act(() => {toast.error("Не вдалося прочитати CSV");});
+        await vi.waitFor(() => expect(dialog.contains(screen.getByText("Не вдалося прочитати CSV"))).toBe(true));
+        const close = screen.getByRole("button", {name: "Закрити сповіщення Не вдалося прочитати CSV"});
+        fireEvent.pointerDown(close);
+        fireEvent.click(close);
+        await vi.waitFor(() => expect(screen.getByRole("alert").getAttribute("data-visible")).toBe("false"));
+        expect(onOpenChange).not.toHaveBeenCalled();
+        expect(screen.getByRole("dialog")).toBe(dialog);
+    });
+});

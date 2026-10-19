@@ -21,6 +21,7 @@ import {integrityPageHref} from "@/api/manageAnalyticsIntegrity";
 import {attemptMarker, markerTooltip} from "./analytics/integrityModel";
 import {useIntegrityFlags} from "./useIntegrityFlags";
 import {useManager} from "./ManagerShell";
+import {useCanExport} from "./managerContext";
 import {ManageTable, ManageTablePagination, useCursorPages} from "./ManageTable";
 import {HintUnlocksLog} from "./HintUnlocksLog";
 import {LiveStatus, type DataFreshness} from "./LiveStatus";
@@ -99,6 +100,7 @@ export type JournalLive = {stream: StreamMode; aliveAt: number};
 
 function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live: JournalLive; onStatus: (status: {freshness: DataFreshness; updatedAt: number}) => void; initialFilters: JournalFilterParams}) {
     const {event, canManage} = useManager();
+    const canExport = useCanExport();
     const eventID = event.EventID;
     const teamMode = event.Participation === 1;
     const queryClient = useQueryClient();
@@ -203,7 +205,7 @@ function AttemptsLog({live: {stream, aliveAt}, onStatus, initialFilters}: {live:
         <PeriodFilters from={filters.from} to={filters.to} onChange={changeFilters} />
         {filtered && <button className="ib-btn ib-btn--sm" type="button" onClick={() => changeFilters(emptyAttemptFilters)}>{t("manage.attempts.filter.reset")}</button>}
         <div className="event-journal__actions">
-            {canManage && <EventButton className="ib-btn ib-btn--sm" type="button" disabled={exporting} onClick={() => void exportCSV()} busy={exporting} busyLabel={t("common.busy.downloading")}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>}
+            {canExport && <EventButton className="ib-btn ib-btn--sm" type="button" disabled={exporting} onClick={() => void exportCSV()} busy={exporting} busyLabel={t("common.busy.downloading")}><Download size={16} aria-hidden="true" /> {t("manage.attempts.export")}</EventButton>}
         </div>
     </>;
 

@@ -33,38 +33,50 @@ function ActionToast({item}: {item: Toast}) {
     </div>;
 }
 
-function isModal(dialog: HTMLDialogElement): boolean {
+// A modal layer: a native modal <dialog> (top layer, the rest of the page inert) or the content of a Radix modal
+// dialog marked with data-event-modal (fixed over a z-index 1100 backdrop, the rest of the page aria-hidden, a tap
+// outside closes it). A toast outside such a layer is hidden under it, cannot be closed, or closes the dialog.
+const MODAL_LAYER = 'dialog[open], [data-event-modal][data-state="open"]';
+
+function isModalLayer(element: Element): boolean {
+    if (!(element instanceof HTMLDialogElement)) return true;
     try {
-        return dialog.matches(":modal");
+        return element.matches(":modal");
     } catch {
-        // No :modal support (old engines, jsdom): an open dialog is treated as modal.
+        // No :modal support (old engines): an open dialog is treated as modal.
         return true;
     }
 }
 
-// The modal <dialog> opened last, or null. A modal dialog sits in the top layer and makes the rest of the page
-// inert, so a toast outside it would be hidden under it and could not be closed.
-export function useTopModalDialog(): HTMLDialogElement | null {
-    const [top, setTop] = useState<HTMLDialogElement | null>(null);
+// Only mutations that can open or close a modal layer are worth a look.
+function touchesModalLayer(record: MutationRecord): boolean {
+    if (record.type === "attributes") return record.target instanceof Element && (record.target.localName === "dialog" || record.target.hasAttribute("data-event-modal"));
+    return [...record.addedNodes, ...record.removedNodes].some(node => node instanceof Element && (node.matches("dialog, [data-event-modal]") || !!node.querySelector("dialog, [data-event-modal]")));
+}
+
+// The modal layer opened last, or null.
+export function useTopModalLayer(): HTMLElement | null {
+    const [top, setTop] = useState<HTMLElement | null>(null);
     useEffect(() => {
-        const stack: HTMLDialogElement[] = [];
+        const stack: HTMLElement[] = [];
         const update = () => {
-            const open = Array.from(document.querySelectorAll("dialog")).filter(dialog => dialog.open && isModal(dialog));
+            const open = Array.from(document.querySelectorAll<HTMLElement>(MODAL_LAYER)).filter(isModalLayer);
             for (let index = stack.length - 1; index >= 0; index--) if (!open.includes(stack[index])) stack.splice(index, 1);
-            for (const dialog of open) if (!stack.includes(dialog)) stack.push(dialog);
+            for (const layer of open) if (!stack.includes(layer)) stack.push(layer);
             setTop(stack.at(-1) ?? null);
         };
         update();
-        const observer = new MutationObserver(update);
-        observer.observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ["open"]});
+        const observer = new MutationObserver(records => {if (records.some(touchesModalLayer)) update();});
+        observer.observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ["open", "data-state"]});
         return () => observer.disconnect();
     }, []);
     return top;
 }
 
-// While a modal dialog is open the toasts render inside it (the top layer), so they stay visible and closable.
+// One toast layer for the whole site: inside the modal layer opened last (a native <dialog> or a Radix modal), else
+// in the page. So a toast is always above every modal, visible and closable, and closing it never closes the dialog.
 export function EventActionToaster() {
-    const dialog = useTopModalDialog();
+    const dialog = useTopModalLayer();
     const toaster = <Toaster position="top-center" gutter={8} containerStyle={{top: 16, zIndex: 100}} toastOptions={{duration: 5000}}>{item => <ActionToast item={item} />}</Toaster>;
     return dialog ? createPortal(toaster, dialog) : toaster;
 }

@@ -179,3 +179,7 @@ fieldset.event-join-question>legend{margin-bottom:6px;padding:0}
 .ib-footer--event .ib-footer__inner{max-width:1280px;padding-inline:var(--ib-6)}
 @media(max-width:760px){.ib-footer--event .ib-footer__inner{padding-inline:var(--ib-4)}}
 .event-notification-card__source{display:inline-flex;align-items:center;margin-left:var(--ib-2);padding:0 6px;border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:18px;vertical-align:1px}
+/* The DS modal entrance keeps its last frame (fill-mode both), and the interpolated «transform:none» stays an identity
+   matrix, which makes the modal the containing block of every fixed child: a toast rendered in an open modal then sat at
+   the modal's top instead of the screen's. Without the forward fill the modal ends with no transform at all. */
+html .ib-modal,html .ib-cmodal[open]{animation-fill-mode:backwards}
