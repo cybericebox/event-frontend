@@ -14,7 +14,7 @@ import {useFullscreen, useIdle, useWakeLock, useWindowSize, type WakeLockState} 
 import {useLiveConnection, useLiveRetry} from "./liveRecovery";
 import {liveSafeArea, liveSafeInsets, liveTextFloors, liveTextProfile} from "./liveText";
 import type {LiveStage} from "./liveStages";
-import {liveSceneLayout, liveSceneShown, liveSceneState} from "./liveScenes";
+import {liveSceneLayout, liveSceneShown, liveSceneState, type LiveSceneKey} from "./liveScenes";
 import {t} from "@/i18n/t";
 import {EventLoading} from "@/components/event/EventLoading";
 import {ErrorPage} from "@/components/event/ErrorPage";
@@ -101,16 +101,18 @@ function useBurnInShift(enabled: boolean): readonly [number, number] {
     return enabled ? burnInSteps[step] : burnInSteps[0];
 }
 
-// The screen clock, once a second: the scene follows the event state by it.
-// 0 until the first frame, so no scene is picked before the time is known.
-function useLiveNow(): number {
-    const [now, setNow] = useState(0);
+// The event state the scene follows, checked once a second. Only a change of
+// the state re-renders the screen (the canvas keeps its own clock); null
+// until the first check, so no scene is picked before the time is known.
+function useLiveSceneState(event: PublicEventInfo, freeze: Parameters<typeof liveSceneState>[1]): LiveSceneKey | null {
+    const [state, setState] = useState<LiveSceneKey | null>(null);
     useEffect(() => {
-        const frame = requestAnimationFrame(() => setNow(Date.now()));
-        const timer = setInterval(() => setNow(Date.now()), 1000);
-        return () => {cancelAnimationFrame(frame); clearInterval(timer);};
-    }, []);
-    return now;
+        const update = () => setState(liveSceneState(event, freeze, Date.now()));
+        queueMicrotask(update);
+        const timer = setInterval(update, 1000);
+        return () => clearInterval(timer);
+    }, [event, freeze]);
+    return state;
 }
 
 // Two ways in, both showing the staff live board: a moderator signed in
@@ -159,7 +161,7 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
     const idle = useIdle(3000);
     const [testing, setTesting] = useState(false);
     const shift = useBurnInShift(!!base && base.screen.anchor !== "top-left");
-    const now = useLiveNow();
+    const sceneState = useLiveSceneState(event, results.data?.Freeze);
     useEffect(() => {
         // ?test=1 opens the screen test straight away (set up on the venue).
         const initial = new URLSearchParams(window.location.search).get("test") === "1";
@@ -184,11 +186,11 @@ export function LiveScreen({event, token, link}: {event: PublicEventInfo; token?
     if (denied === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;
     if (staff && layoutQuery.isError && !layoutQuery.data) return <LiveFailure event={event} message={t("live.loadFailed")} error={layoutQuery.error} retryIn={layoutRetryIn} onRetry={() => void layoutQuery.refetch()} />;
     if (results.isError && !results.data) return <LiveFailure event={event} message={t("live.resultsUnavailable")} error={results.error} retryIn={resultsRetryIn} onRetry={() => void results.refetch()} />;
-    if (!base || !now) return <LiveState event={event}><EventLoading event={event} label={t("live.loading")} /></LiveState>;
+    if (!base || !sceneState) return <LiveState event={event}><EventLoading event={event} label={t("live.loading")} /></LiveState>;
     const [windowWidth, windowHeight] = windowSize.split("@")[0].split("×").map(Number);
     // Scenes: before the start, running, frozen, finished — each its own
     // canvas when the layout has one, else the running board.
-    const scene = liveSceneLayout(base, liveSceneShown(base, liveSceneState(event, results.data?.Freeze, now)));
+    const scene = liveSceneLayout(base, liveSceneShown(base, sceneState));
     const layout = scene.screen.anchor === "top-left" ? scene : liveFormatLayout(scene, pickLiveFormat(scene, windowWidth / windowHeight));
     const anchored = layout.screen.anchor === "top-left";
     // «Безпечне поле»: the canvas keeps clear of the edges a TV crops.

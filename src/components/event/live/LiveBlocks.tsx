@@ -10,7 +10,7 @@ import {t} from "@/i18n/t";
 import {LiveCaption, LiveList, measureName, useElementSize, type LiveMetrics} from "./LiveParts";
 import {liveFactsFit, livePodiumFit, livePodiumHeights, liveTimerFit, liveTwoLineRow} from "./liveFit";
 import {liveFactItems, liveFacts} from "./liveFacts";
-import {liveCurrentStage, liveNextStage, type LiveStage} from "./liveStages";
+import {liveCurrentStage, liveNextStage, liveStageNameChars, type LiveStage} from "./liveStages";
 import {livePoints} from "./liveTable";
 import {liveSampleStages} from "./liveSample";
 
@@ -70,10 +70,13 @@ export function LiveStagesBlock({widget, event, stages, now, metrics, caption, s
     }));
     const visible = widget.props.showDone === false ? rows.filter(row => row.status !== "done") : rows;
     return <LiveList caption={caption} rows={Math.max(1, visible.length)} header={false} metrics={metrics} empty={visible.length ? null : t(shown.length ? "live.stages.allDone" : "live.stages.empty")}>
-        {(geometry, width) => <ol className="live-stages" style={{fontSize: liveTwoLineRow({rowHeight: geometry.rowHeight, width, chars: Math.max(14, ...visible.map(row => row.stage.Name.length)), body: metrics.body})}}>{visible.map(row => <li key={`${row.stage.Name}-${row.stage.OpensAt}`} className={`is-${row.status}`} style={{height: geometry.rowHeight}}>
-            <span>{row.stage.Name}</span>
-            <small><time>{t("live.stages.time", {from: clockLabel(row.stage.OpensAt), to: clockLabel(row.stage.ClosesAt)})}</time><b>{t(`live.stages.status.${row.status}`)}</b></small>
-        </li>)}</ol>}
+        {(geometry, width) => {
+            const fit = liveTwoLineRow({rowHeight: geometry.rowHeight, width, chars: liveStageNameChars(visible.map(row => row.stage)), body: metrics.body, caption: metrics.caption});
+            return <ol className="live-stages" style={{fontSize: fit.name}}>{visible.map(row => <li key={`${row.stage.Name}-${row.stage.OpensAt}`} className={`is-${row.status}`} style={{height: geometry.rowHeight}}>
+                <span>{row.stage.Name}</span>
+                <small style={{fontSize: fit.meta}}><time>{t("live.stages.time", {from: clockLabel(row.stage.OpensAt), to: clockLabel(row.stage.ClosesAt)})}</time><b>{t(`live.stages.status.${row.status}`)}</b></small>
+            </li>)}</ol>;
+        }}
     </LiveList>;
 }
 

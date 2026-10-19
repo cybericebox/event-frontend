@@ -60,9 +60,9 @@ describe("live fit", () => {
     });
 });
 
-// The default layout's table on a real screen, with 15 teams.
+// The default layout's table on a real screen edge to edge (no safe area), with 15 teams.
 function tableAt(width: number, height: number) {
-    const layout: LiveLayout = {...defaultLiveLayout, screen: {...defaultLiveLayout.screen, width, height}};
+    const layout: LiveLayout = {...defaultLiveLayout, screen: {...defaultLiveLayout.screen, width, height, safeArea: 0}};
     const table = layout.widgets.find(item => item.type === "table")!;
     const box = liveWidgetBox(layout, table);
     const geometry = liveListFit(layout, table);

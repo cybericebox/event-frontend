@@ -50,6 +50,8 @@ function typingTarget(target: EventTarget | null): boolean {
 // The version changes on every publish; it is not a change of the layout.
 const layoutKey = (layout: LiveLayout) => JSON.stringify({...layout, version: 0});
 
+type HistoryStep = {doc: LiveLayout; scene: LiveSceneKey};
+
 const sceneName = (key: LiveSceneKey) => t(`manage.live.scene.${key}`);
 
 // The first problem of one scene's canvas, or "".
@@ -109,11 +111,14 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     // «Шаблон: …» line says «змінено» once the layout moves away from it.
     const [applied, setApplied] = useState<{key: LiveTemplateKey; layout: string} | null>(null);
     const [confirmRemove, setConfirmRemove] = useState(false);
+    const [confirmReset, setConfirmReset] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [openedAt] = useState(() => Date.now());
     const [sampleResults] = useState(() => liveSampleResults(openedAt));
     const [origin, setOrigin] = useState("");
-    const [history, setHistory] = useState<{past: LiveLayout[]; future: LiveLayout[]}>({past: [], future: []});
+    // Each step keeps the whole layout and the scene the change was made in,
+    // so undo and redo can show that scene.
+    const [history, setHistory] = useState<{past: HistoryStep[]; future: HistoryStep[]}>({past: [], future: []});
     // The scene (event state) being edited, the screen shape and the preview resolution.
     const [scene, setScene] = useState<LiveSceneKey>("running");
     const [format, setFormat] = useState<string>(() => (data.Draft ?? data.Published).aspect);
@@ -139,9 +144,10 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const scale = livePreviewScale(boxWidth, shown.screen);
 
     const conflicts = useMemo(() => layoutConflicts(view), [view]);
-    const warnings = useMemo(() => liveTextWarnings(shown, event.Name), [shown, event.Name]);
     // The timer and the stage subtitle of the preview follow the real stages.
     const stages = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false});
+    const stagesList = stages.data;
+    const warnings = useMemo(() => liveTextWarnings(shown, event.Name, stagesList), [shown, event.Name, stagesList]);
     const validation = validationMessage(doc);
     const autosave = useLiveAutosave({
         eventID, layout: doc, savedJSON: JSON.stringify(data.Draft ?? data.Published), valid: !validation, enabled: canManage,
@@ -154,7 +160,10 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     // The preview shows a moment of the scene's state: its timer, stage and freeze.
     const previewNow = liveScenePreviewNow(scene, event, openedAt);
     const previewResults = liveScenePreviewResults(scene, shownResults, previewNow);
-    const current = liveSceneState(event, results.data?.Freeze, openedAt);
+    // The «зараз» mark follows the clock, checked every 15 s.
+    const [clock, setClock] = useState(openedAt);
+    useEffect(() => {const timer = setInterval(() => setClock(Date.now()), 15_000); return () => clearInterval(timer);}, []);
+    const current = liveSceneState(event, results.data?.Freeze, clock);
     const locked = !canManage;
     const selected = view.widgets.find(item => item.id === selectedID) ?? null;
     const editable = !locked && mode !== "auto" && sceneOwn;
@@ -164,22 +173,25 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         const now = editClock();
         const merge = now - lastEdit.current < historyMergeMs;
         lastEdit.current = now;
-        setHistory(past => ({past: merge && past.past.length ? past.past : [...past.past.slice(1 - historyLimit), doc], future: []}));
+        setHistory(past => ({past: merge && past.past.length ? past.past : [...past.past.slice(1 - historyLimit), {doc, scene}], future: []}));
     }
+    // Undo and redo open the scene of the step, so the change is in view.
     function undo() {
         const previous = history.past.at(-1);
         if (!previous || locked) return;
+        setHistory({past: history.past.slice(0, -1), future: [{doc, scene: previous.scene}, ...history.future]});
+        setDoc(previous.doc);
+        if (previous.scene !== scene) switchScene(previous.scene);
         lastEdit.current = 0;
-        setHistory({past: history.past.slice(0, -1), future: [doc, ...history.future]});
-        setDoc(previous);
         setError("");
     }
     function redo() {
         const next = history.future[0];
         if (!next || locked) return;
+        setHistory({past: [...history.past, {doc, scene: next.scene}], future: history.future.slice(1)});
+        setDoc(next.doc);
+        if (next.scene !== scene) switchScene(next.scene);
         lastEdit.current = 0;
-        setHistory({past: [...history.past, doc], future: history.future.slice(1)});
-        setDoc(next);
         setError("");
     }
     // A change of the whole layout; every scene drops shapes and placements that no longer apply.
@@ -319,6 +331,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         if (liveTemplates[key].scene === "all") setScene("running");
     }
     function switchScene(key: LiveSceneKey) {
+        // Edits in another scene never merge into one undo step.
+        lastEdit.current = 0;
         setScene(key);
         setSelectedID(null);
         setCustomGrid(null);
@@ -401,7 +415,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             <div className="event-live-scenes__tabs" role="tablist" aria-label={t("manage.live.scene.tabs")}>
                 {liveSceneKeys.map(key => <button key={key} type="button" role="tab" aria-selected={scene === key} className="event-live-scene" onClick={() => switchScene(key)}>
                     <strong>{sceneName(key)}</strong>
-                    <span>{key === current ? t("manage.live.scene.now") : liveSceneOwn(doc, key) ? t("manage.live.scene.own") : t("manage.live.scene.asRunning")}</span>
+                    <span>{key === current ? t("manage.live.scene.now") : key === "running" ? t("manage.live.scene.main") : liveSceneOwn(doc, key) ? t("manage.live.scene.own") : t("manage.live.scene.asRunning")}</span>
                 </button>)}
             </div>
             <ManageFieldLabel title={t("manage.live.scene.label")} help={t("manage.live.scene.help")} />
@@ -416,7 +430,12 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 <ManageFieldLabel title={t("manage.live.scene.mode")} help={t("manage.live.scene.modeHelp")} />
                 <div className="ib-seg" role="group" aria-label={t("manage.live.scene.mode")}>
                     {([true, false] as const).map(own => <button key={String(own)} type="button" aria-pressed={sceneOwn === own} disabled={locked}
-                        onClick={() => {if (sceneOwn !== own) {mutateDoc(withLiveSceneOwn(doc, scene, own)); setSelectedID(null);}}}>{t(own ? "manage.live.scene.modeOwn" : "manage.live.scene.modeRunning")}</button>)}
+                        onClick={() => {
+                            if (sceneOwn === own) return;
+                            // Dropping an own layout with widgets discards them: ask first.
+                            if (!own && layout.widgets.length) {setConfirmReset(true); return;}
+                            mutateDoc(withLiveSceneOwn(doc, scene, own)); setSelectedID(null);
+                        }}>{t(own ? "manage.live.scene.modeOwn" : "manage.live.scene.modeRunning")}</button>)}
                 </div>
             </div>}
             <div className="event-live-editor__tool">
@@ -485,10 +504,10 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                     {warnings.length > 0 && <button type="button" className={`event-live-editor__warnings-toggle${fits.length ? "" : " is-quiet"}`} aria-expanded={warningsOpen} aria-controls="live-warnings" onClick={() => setWarningsOpen(value => !value)}>
                         {fits.length > 0 && <TriangleAlert size={14} aria-hidden="true" />}{fits.length ? tPlural("manage.live.warningsCount", fits.length) : tPlural("manage.live.floorsCount", warnings.length)}
                     </button>}
+                    {warnings.length > 0 && warningsOpen && <ul id="live-warnings" className={`event-live-editor__warnings${fits.length ? "" : " is-quiet"}`} aria-label={t("manage.live.warningsTitle", {width: shown.screen.width, height: shown.screen.height})}>
+                        {[...fits, ...warnings.filter(item => item.kind === "floor")].map((warning, index) => <li key={`${warning.id}-${index}`} className={warning.kind === "floor" ? "is-floor" : undefined}><button type="button" onClick={() => setSelectedID(warning.id)}>{warning.text}</button></li>)}
+                    </ul>}
                 </div>
-                {warnings.length > 0 && warningsOpen && <ul id="live-warnings" className="event-live-editor__warnings" aria-label={t("manage.live.warningsTitle", {width: shown.screen.width, height: shown.screen.height})}>
-                    {[...fits, ...warnings.filter(item => item.kind === "floor")].map((warning, index) => <li key={`${warning.id}-${index}`} className={warning.kind === "floor" ? "is-floor" : undefined}><button type="button" onClick={() => setSelectedID(warning.id)}>{warning.text}</button></li>)}
-                </ul>}
                 {mode === "auto" && sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.format.autoNote", {name: tabLabel(layout.aspect)})}</p>}
                 {!sceneOwn && <p className="event-live-editor__format-note">{t("manage.live.scene.asRunningNote", {scene: sceneName(scene)})}</p>}
                 {scene === "finished" && !event.FinishTime && <p className="event-live-editor__format-note">{t("manage.live.scene.noFinish")}</p>}
@@ -518,6 +537,9 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         </div>
         {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
         <LiveTemplateDialog open={templatesOpen} layout={doc} scene={scene} event={event} stages={stages.data} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
+        <ConfirmDialog open={confirmReset && scene !== "running" && sceneOwn} onCancel={() => setConfirmReset(false)} tone="danger" title={t("manage.live.scene.resetConfirm.title")}
+            description={t("manage.live.scene.resetConfirm.body", {scene: sceneName(scene)})} confirmLabel={t("manage.live.scene.resetConfirm.action")}
+            onConfirm={() => {if (scene !== "running") mutateDoc(withLiveSceneOwn(doc, scene, false)); setSelectedID(null); setConfirmReset(false);}} />
         <ConfirmDialog open={confirmRemove && !!selected && editable} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
             description={t(selected?.type === "logos" ? "manage.live.removeConfirm.bodyLogos" : "manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
             onConfirm={() => {if (selected) mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null); setConfirmRemove(false);}} />

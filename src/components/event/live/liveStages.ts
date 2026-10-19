@@ -127,7 +127,8 @@ export function liveTimerDigits(state: LiveTimerState, now: number, showSeconds:
         return t("live.timer.wordsS", {seconds: rest});
     }
     const pad = (part: number) => String(part).padStart(2, "0");
-    if (format === "compact" && !hours) return [minutes, rest].map(pad).join(":");
+    // «Коротко» drops the hours only when the seconds show; without them it stays HH:MM.
+    if (format === "compact" && !hours && showSeconds) return [minutes, rest].map(pad).join(":");
     return [hours, minutes, ...(showSeconds ? [rest] : [])].map(pad).join(":");
 }
 
@@ -163,4 +164,9 @@ export function liveStageSubtitle(stages: LiveStage[], now: number): string {
     if (current) return current.Name;
     const next = liveNextStage(stages, now);
     return next ? t("live.stage.next", {stage: next.Name, time: clockLabel(next.OpensAt)}) : "";
+}
+
+// The widest name a stages block sizes for: the longest stage name, at least 14 characters.
+export function liveStageNameChars(stages: LiveStage[]): number {
+    return Math.max(14, ...stages.map(stage => stage.Name.length));
 }

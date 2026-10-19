@@ -166,8 +166,47 @@ describe("live editor", () => {
         fireEvent.click(screen.getByRole("tab", {name: /Триває/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
+        // Dropping an own layout asks first; «Скасувати» keeps it.
         fireEvent.click(screen.getByRole("button", {name: "Як «Триває»"}));
+        const dialog = () => screen.getByText("Скинути розкладку сцени?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
+        expect(within(dialog()).getByText(/Віджети сцени «Заморожено» буде видалено/)).toBeTruthy();
+        fireEvent.click(within(dialog()).getByRole("button", {name: "Скасувати"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
+        expect(screen.getByRole("tab", {name: /Заморожено/}).textContent).toContain("своя");
+        fireEvent.click(screen.getByRole("button", {name: "Як «Триває»"}));
+        fireEvent.click(within(dialog()).getByRole("button", {name: "Скинути"}));
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+        expect(screen.getByRole("tab", {name: /Заморожено/}).textContent).toContain("як «Триває»");
+    });
+
+    it("drops an empty own scene back without asking", () => {
+        mount();
+        fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
+        fireEvent.click(screen.getByRole("button", {name: "Своя розкладка"}));
+        fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
+        fireEvent.click(screen.getByRole("radio", {name: /Порожня сітка/}));
+        fireEvent.click(screen.getByRole("button", {name: "Застосувати до «Заморожено»"}));
+        fireEvent.click(screen.getByRole("button", {name: "Як «Триває»"}));
+        expect(screen.queryByText("Скинути розкладку сцени?")).toBeNull();
+        expect(screen.getByRole("tab", {name: /Заморожено/}).textContent).toContain("як «Триває»");
+    });
+
+    it("opens the scene of the step it undoes and redoes", () => {
+        mount();
+        fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
+        fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--podium")!);
+        fireEvent.keyDown(window, {key: "Delete"});
+        fireEvent.click(within(screen.getByText("Прибрати віджет?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати віджет"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--podium")).toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: /^Триває/}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+        fireEvent.keyDown(window, {key: "z", ctrlKey: true});
+        expect(screen.getByRole("tab", {name: /Завершено/}).getAttribute("aria-selected")).toBe("true");
+        expect(document.querySelector(".event-live-editor__native .live-widget--podium")).not.toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: /^Триває/}));
+        fireEvent.keyDown(window, {key: "y", ctrlKey: true});
+        expect(screen.getByRole("tab", {name: /Завершено/}).getAttribute("aria-selected")).toBe("true");
+        expect(document.querySelector(".event-live-editor__native .live-widget--podium")).toBeNull();
     });
 
     it("previews the screen at a target resolution without changing the layout", async () => {

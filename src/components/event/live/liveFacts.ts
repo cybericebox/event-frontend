@@ -47,10 +47,24 @@ export function liveFacts(keys: LiveFactKey[], event: PublicEventInfo, results: 
                 ? {key, value: team ?? t(event.Participation === 1 ? "live.table.team" : "live.table.participant"), label: t("live.facts.firstBlood", {task: first.ChallengeName, time: clockLabel(first.SolvedAt)}), text: true}
                 : {key, value: t("live.facts.none"), label: t("live.facts.firstBloodLabel"), text: true});
         } else if (key === "start") {
-            out.push({key, value: clockLabel(event.StartTime), label: t("live.facts.start"), text: false});
+            out.push({key, value: liveFactMoment(event.StartTime, multiDay(event)), label: t("live.facts.start"), text: false});
         } else if (key === "finish" && event.FinishTime) {
-            out.push({key, value: clockLabel(event.FinishTime), label: t("live.facts.finish"), text: false});
+            out.push({key, value: liveFactMoment(event.FinishTime, multiDay(event)), label: t("live.facts.finish"), text: false});
         }
     }
     return out;
+}
+
+// An event over more than one (local) day names the date of its start and
+// finish too: «21.10 10:00».
+function multiDay(event: Pick<PublicEventInfo, "StartTime" | "FinishTime">): boolean {
+    if (!event.FinishTime) return false;
+    const day = (value: string) => new Date(value).toDateString();
+    return day(event.StartTime) !== day(event.FinishTime);
+}
+
+export function liveFactMoment(value: string, withDate: boolean): string {
+    if (!withDate) return clockLabel(value);
+    const date = new Intl.DateTimeFormat("uk-UA", {day: "2-digit", month: "2-digit"}).format(new Date(value));
+    return t("live.facts.dateTime", {date, time: clockLabel(value)});
 }

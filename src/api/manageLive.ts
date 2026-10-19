@@ -48,7 +48,7 @@ const partners = (id: string): LiveWidget => ({id, type: "logos", x: 4, y: 8, w:
 
 // The same as the daemon default: «Перед стартом» → this board → «Підсумки».
 export const defaultLiveLayout: LiveLayout = {
-    version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1},
+    version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1, safeArea: 2.5},
     grid: {cols: 12, rows: 8}, widgets: [
         {id: "title", type: "title", x: 1, y: 1, w: 9, h: 1, props: {}},
         {id: "chart", type: "chart", x: 1, y: 2, w: 8, h: 6, props: {}},
@@ -59,7 +59,7 @@ export const defaultLiveLayout: LiveLayout = {
     ],
     scenes: {
         before: {grid: {cols: 12, rows: 8}, widgets: [
-            {id: "before-title", type: "title", x: 1, y: 1, w: 8, h: 2, props: {}},
+            {id: "before-title", type: "title", x: 1, y: 1, w: 8, h: 2, props: {subtitleStage: true}},
             {id: "before-timer", type: "timer", x: 1, y: 3, w: 8, h: 3, props: {align: "left"}},
             {id: "before-facts", type: "facts", x: 1, y: 6, w: 8, h: 2, props: {items: ["teams", "tasks", "start"]}},
             {id: "before-qr", type: "qr", x: 9, y: 1, w: 4, h: 7, props: {value: "/", caption: t("manage.live.defaultQRCaption")}},

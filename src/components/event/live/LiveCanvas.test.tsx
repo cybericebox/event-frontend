@@ -217,4 +217,30 @@ describe("live canvas blocks of step 2", () => {
         // Two hours back is before the start: the timer counts to it.
         expect(view.container.querySelector(".live-timer small")?.textContent).toBe("До початку");
     });
+
+    it("keeps the stage time line at the caption floor with many stages", async () => {
+        stubBoxes(400, 400);
+        const stages = Array.from({length: 8}, (_, index) => ({Name: `Етап ${index + 1}`, OpensAt: new Date(now + index * 3600_000).toISOString(), ClosesAt: new Date(now + (index + 0.9) * 3600_000).toISOString()}));
+        const {container} = await mount(only({type: "stages", w: 4, h: 6}), false, {stages});
+        const lines = [...container.querySelectorAll(".live-stages small")] as HTMLElement[];
+        expect(lines).toHaveLength(8);
+        lines.forEach(line => expect(parseFloat(line.style.fontSize)).toBeGreaterThanOrEqual(18));
+        expect(parseFloat((container.querySelector(".live-stages") as HTMLElement).style.fontSize)).toBeGreaterThanOrEqual(20);
+    });
+
+    it("leaves the points out of the first solves", async () => {
+        const results = {...board(2), Timeline: [{EventTeamID: teamID(1), EventChallengeID: teamID(90), ChallengeName: "Web: Login", Points: 100, SolvedAt: new Date(now - 60_000).toISOString()}]};
+        const first = await mount(only({type: "solves", w: 4, h: 3, props: {mode: "first"}}), false, {results});
+        expect(first.container.querySelector(".live-solves li b")).toBeNull();
+        expect(first.container.querySelector(".live-solves li strong")?.textContent).toBe("Команда 1");
+        expect(first.container.querySelector(".live-solves li em")?.textContent).toBe("Web: Login");
+        cleanup();
+        const recent = await mount(only({type: "solves", w: 4, h: 3}), false, {results});
+        expect(recent.container.querySelector(".live-solves li b")?.textContent).toBe("+100");
+    });
+
+    it("counts only the places a limited table shows in its page range", async () => {
+        const {container} = await mount(only({type: "table", w: 4, h: 6, props: {limit: 20, rowsPerPage: 10, pinTop: 0}}), false, {results: board(47)});
+        expect(container.querySelector(".live-list__range")?.textContent).toMatch(/ з 20$/);
+    });
 });

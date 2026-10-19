@@ -21,8 +21,8 @@ describe("liveSceneState: the event state picks the scene", () => {
         expect(liveSceneState(event, frozen, start + 9 * hour)).toBe("finished");
     });
 
-    it("counts a freeze period the hall does not see as frozen too", () => {
-        expect(liveSceneState(event, {Active: true, Applied: false}, start + 7 * hour)).toBe("frozen");
+    it("stays on the running board while the hall sees live results during the freeze", () => {
+        expect(liveSceneState(event, {Active: true, Applied: false}, start + 7 * hour)).toBe("running");
     });
 
     it("never finishes an event without a finish time", () => {

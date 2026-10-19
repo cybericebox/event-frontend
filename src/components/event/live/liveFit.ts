@@ -224,9 +224,19 @@ export function liveAnnouncementFit({width, height, chars, display}: {width: num
 }
 
 // A list row of two lines (a stage: its name, then its time and status):
-// the name as large as the row and the width allow, the second line 0.75 of it.
-export function liveTwoLineRow({rowHeight, width, chars, body}: {rowHeight: number; width: number; chars: number; body: number}): number {
-    const byHeight = rowHeight / (1.2 + 0.75 * 1.25 + 0.5);
-    const byWidth = width / Math.max(1, chars * letterWidth);
-    return Math.max(Math.min(body, rowHeight / 2.4), Math.min(byHeight, byWidth, body * liveRowTextMax));
+// the name as large as the row and the width allow but never below the body
+// size, the second line 0.75 of it but never below the caption size. Not
+// readable when the two lines at those floors do not fit the row height, or
+// the longest name (`chars`) does not fit the width.
+export type LiveTwoLineFit = {name: number; meta: number; readable: boolean};
+const twoLineHeight = (name: number, meta: number) => name * 1.2 + meta * 1.25 + name * 0.3;
+
+export function liveTwoLineRow({rowHeight, width, chars, body, caption}: {rowHeight: number; width: number; chars: number; body: number; caption: number}): LiveTwoLineFit {
+    // The row keeps .4em of padding on each side.
+    const perPx = Math.max(1, chars) * letterWidth + 0.8;
+    const byHeight = rowHeight / (1.2 + 0.75 * 1.25 + 0.3);
+    const byWidth = width / perPx;
+    const name = Math.max(body, Math.min(byHeight, byWidth, body * liveRowTextMax));
+    const meta = Math.max(caption, name * 0.75);
+    return {name, meta, readable: twoLineHeight(name, meta) <= rowHeight + 0.5 && name * perPx <= width + 0.5};
 }

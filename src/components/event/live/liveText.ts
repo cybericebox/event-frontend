@@ -1,6 +1,8 @@
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import {liveWidgetName} from "./liveLayout";
-import {liveFactsFit, liveListGeometry, livePodiumFit, liveRowLeading, liveTimerFit, liveTitleFit, type LiveListGeometry} from "./liveFit";
+import {liveFactsFit, liveListGeometry, livePodiumFit, liveTimerFit, liveTitleFit, liveTwoLineRow, type LiveListGeometry} from "./liveFit";
+import {liveSampleStages} from "./liveSample";
+import {liveStageNameChars, type LiveStage} from "./liveStages";
 import {liveFactItems} from "./liveFacts";
 import {t} from "@/i18n/t";
 
@@ -152,7 +154,9 @@ function numberProp(item: LiveWidget, key: string, fallback: number): number {
 // natural size falls under its floor is raised to the floor on screen, and a
 // widget whose content no longer fits at the effective sizes is named.
 // `eventName` is the real event name the title must fit.
-export function liveTextWarnings(layout: LiveLayout, eventName = t("live.text.sampleTitle")): LiveTextWarning[] {
+// `stages` are the event's stages the «Етапи» block lists (sample ones when
+// there are none, as the editor shows).
+export function liveTextWarnings(layout: LiveLayout, eventName = t("live.text.sampleTitle"), stages: LiveStage[] = []): LiveTextWarning[] {
     const {height, width} = liveCanvasSize(layout);
     const profile = liveTextProfile(layout.screen);
     const floors = liveTextFloors[profile];
@@ -171,10 +175,22 @@ export function liveTextWarnings(layout: LiveLayout, eventName = t("live.text.sa
             })})});
         }
         const box = liveWidgetBox(layout, item);
-        const fit = item.type === "table" || item.type === "solves" ? listProblem(liveListFit(layout, item)) : fitProblem(item, box.width, box.height, heading, size, floors, eventName);
+        const fit = item.type === "table" || item.type === "solves" ? listProblem(liveListFit(layout, item))
+            : item.type === "stages" ? stagesProblem(item, box, size, stages)
+                : fitProblem(item, box.width, box.height, heading, size, floors, eventName);
         if (fit) warnings.push({id: item.id, kind: "fit", text: t("live.text.warning", {name, problem: fit})});
     }
     return warnings;
+}
+
+// «Етапи»: one two-line row per stage, by the same rule the block renders
+// with; the time line keeps the caption floor, the name the body floor.
+function stagesProblem(item: LiveWidget, box: {width: number; height: number}, size: (role: LiveTextRole) => {effective: number}, stages: LiveStage[]): string | null {
+    const shown = stages.length ? stages : liveSampleStages(new Date(0).toISOString());
+    const caption = size("caption").effective, body = size("body").effective;
+    const geometry = liveListGeometry({height: box.height, caption, body, rows: shown.length, header: false, captionShown: liveCaptionShown(item)});
+    const fit = liveTwoLineRow({rowHeight: geometry.rowHeight, width: box.width, chars: liveStageNameChars(shown), body, caption});
+    return fit.readable ? null : t("live.text.stagesFit", {count: shown.length});
 }
 
 function logoRows(item: LiveWidget): number {
@@ -200,7 +216,9 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
     if (item.type === "timer") {
         const label = item.props.showLabel === false ? null : typeof item.props.label === "string" && item.props.label.trim() ? item.props.label.trim() : t("live.timer.untilFinish");
         const labelSize = (["s", "m", "l"] as const).find(value => value === item.props.labelSize) ?? "m";
-        const fit = liveTimerFit({width: boxW, height: boxH, digits: item.props.showSeconds === false ? 5 : 8, label, labelSize, labelMin: floors.caption});
+        // The widest line the format prints: «23 год 59 хв» in words, HH:MM(:SS) otherwise.
+        const digits = item.props.digits === "words" ? 12 : item.props.showSeconds === false ? 5 : 8;
+        const fit = liveTimerFit({width: boxW, height: boxH, digits, label, labelSize, labelMin: floors.caption});
         return fit.digits < floors.timer || label !== null && fit.label < floors.caption ? t("live.text.timerFit") : null;
     }
     if (item.type === "chart") {
@@ -221,8 +239,6 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
         const fit = liveFactsFit({width: boxW, height: boxH - heading, items: liveFactItems(item).map(() => ({value: 5, label: 8})), display: size("display").effective, caption});
         return fit.readable ? null : t("live.text.factsFit");
     }
-    // Stages: room for three readable rows (a running, a done and a next one).
-    if (item.type === "stages") return boxH - heading < 3 * body * liveRowLeading ? t("live.text.stagesFit") : null;
     if (item.type === "qr") return Math.min(boxW, boxH - caption * 1.3) < 80 ? t("live.text.qrFit") : null;
     return null;
 }

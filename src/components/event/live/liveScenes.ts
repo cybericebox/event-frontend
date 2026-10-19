@@ -12,12 +12,18 @@ export type LiveOwnSceneKey = Exclude<LiveSceneKey, "running">;
 
 type Freeze = Pick<ManageResultsSnapshot["Freeze"], "Active" | "Applied"> | undefined;
 
-// The event state at `now`: before the start, after the finish, during the
-// results freeze, or running. The finish wins over the freeze.
+// «Заморожено» follows the frozen results the hall sees: with «Враховувати
+// заморожування» off the screen shows live results during the freeze period,
+// so it stays on «Триває». (Owner default 2026-10-19; set to false to switch
+// the scene for the whole freeze period instead.)
+const frozenSceneOnlyWhenApplied = true;
+
+// The event state at `now`: before the start, after the finish, while the
+// results are frozen, or running. The finish wins over the freeze.
 export function liveSceneState(event: Pick<PublicEventInfo, "StartTime" | "FinishTime">, freeze: Freeze, now: number): LiveSceneKey {
     if (now < Date.parse(event.StartTime)) return "before";
     if (event.FinishTime && now >= Date.parse(event.FinishTime)) return "finished";
-    if (freeze?.Active || freeze?.Applied) return "frozen";
+    if (freeze?.Applied || !frozenSceneOnlyWhenApplied && freeze?.Active) return "frozen";
     return "running";
 }
 
