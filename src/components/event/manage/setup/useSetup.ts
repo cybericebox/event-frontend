@@ -11,14 +11,16 @@ import {buildSetupSteps, summarizeSetup, type SetupStep, type SetupSummary} from
 // withHints also reads the tasks of every set (the checklist page only; the top bar skips that load).
 export function useSetup(eventID: string, withHints = false): {steps: SetupStep[]; summary: SetupSummary} | null {
     const options = {refetchOnWindowFocus: false};
+    // The optional parts only drop their step on failure, so the checklist never waits for their retries.
+    const optional = {...options, retry: false};
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), ...options});
     const lifecycle = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), ...options});
-    const attachments = useQuery({queryKey: ["event-exercise-attachments", eventID], queryFn: () => getEventExerciseAttachments(eventID), ...options});
-    const content = useQuery({queryKey: ["event-management-content", eventID], queryFn: () => getManageContent(eventID), ...options});
-    const mail = useQuery({queryKey: ["event-manage-mail", eventID], queryFn: () => getEventMailSettings(eventID), ...options});
+    const attachments = useQuery({queryKey: ["event-exercise-attachments", eventID], queryFn: () => getEventExerciseAttachments(eventID), ...optional});
+    const content = useQuery({queryKey: ["event-management-content", eventID], queryFn: () => getManageContent(eventID), ...optional});
+    const mail = useQuery({queryKey: ["event-manage-mail", eventID], queryFn: () => getEventMailSettings(eventID), ...optional});
     const infrastructure = !!config.data?.InfrastructureAllowed && (attachments.data ?? []).some(item => item.Status === 0 && item.Infrastructure);
     // A failed or missing reservation read only drops its step.
-    const resources = useQuery({queryKey: ["event-management-resources", eventID], queryFn: () => getManageResources(eventID), enabled: infrastructure, retry: false, ...options});
+    const resources = useQuery({queryKey: ["event-management-resources", eventID], queryFn: () => getManageResources(eventID), enabled: infrastructure, ...optional});
     const board = useBoardSets(eventID, {enabled: withHints});
     if (!config.data || !lifecycle.data) return null;
     if ([attachments, content, mail].some(query => query.isPending)) return null;

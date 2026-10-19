@@ -5,6 +5,7 @@ import {Fragment, useState} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
+import {apiErrorText} from "@/api/apiErrors";
 import {ChevronRight, Download, ExternalLink, Radio, Snowflake} from "lucide-react";
 import {downloadResultsCSV, getModeratorResults, resultsLiveURL, setResultsOpened, type ModeratorResults, type ModeratorResultsTeam} from "@/api/manageResults";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -18,6 +19,7 @@ import {useTableState} from "@/components/event/manage/useTableState";
 import {journalTime} from "@/components/event/manage/journalShared";
 import {pageOf, selectResults, teamLabel} from "@/components/event/manage/resultsTable";
 import {zoneLabel} from "@/components/ui/dateTimePicker";
+import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {useEventStream} from "@/utils/eventStream";
@@ -28,14 +30,24 @@ import "@/components/event/manage/results.css";
 const RESULTS_POLL_SECONDS = 30;
 const number = new Intl.NumberFormat("uk-UA");
 
+const dayLabel = new Intl.DateTimeFormat("uk-UA", {day: "numeric", month: "long"});
+const sameDay = (left: Date, right: Date) => left.toDateString() === right.toDateString();
+// «о 21:05» today, «20 жовтня о 21:05» on another day.
+const atLabel = (value: string, now: number) => sameDay(new Date(value), new Date(now))
+    ? t("manage.results.freeze.at", {time: clockLabel(value)})
+    : t("manage.results.freeze.atDate", {date: dayLabel.format(new Date(value)), time: clockLabel(value)});
+const momentLabel = (value: string, now: number) => sameDay(new Date(value), new Date(now))
+    ? clockLabel(value)
+    : t("manage.results.freeze.moment", {date: dayLabel.format(new Date(value)), time: clockLabel(value)});
+
 // `now` is the snapshot time, so the text follows the data, not the render.
 function freezeStatus(freeze: ModeratorResults["Freeze"], now: number): string {
     const lead = freezeLeadMinutes(freeze);
     if (!freeze.Enabled) return t("manage.results.freeze.disabled");
-    if (freeze.OpenedAt) return t("manage.results.freeze.opened", {time: clockLabel(freeze.OpenedAt)});
-    if (freeze.Active && freeze.FrozenAt) return t("manage.results.freeze.active", {time: clockLabel(freeze.FrozenAt)});
+    if (freeze.OpenedAt) return t("manage.results.freeze.opened", {when: atLabel(freeze.OpenedAt, now)});
+    if (freeze.Active && freeze.FrozenAt) return t("manage.results.freeze.active", {time: momentLabel(freeze.FrozenAt, now)});
     if (freeze.FrozenAt && freeze.FinishAt && Date.parse(freeze.FinishAt) <= now) return t("manage.results.freeze.finished");
-    if (freeze.FrozenAt) return lead === null ? t("manage.results.freeze.scheduled", {time: clockLabel(freeze.FrozenAt)}) : t("manage.results.freeze.scheduledLead", {time: clockLabel(freeze.FrozenAt), minutes: lead});
+    if (freeze.FrozenAt) return lead === null ? t("manage.results.freeze.scheduled", {when: atLabel(freeze.FrozenAt, now)}) : t("manage.results.freeze.scheduledLead", {when: atLabel(freeze.FrozenAt, now), minutes: lead});
     return t("manage.results.freeze.noFinish");
 }
 
@@ -71,6 +83,8 @@ export default function ManageResultsPage() {
     const teamMode = event.Participation === 1;
     const queryClient = useQueryClient();
     const [busy, setBusy] = useState<"open" | "export" | null>(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmError, setConfirmError] = useState("");
     const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
     const queryKey = ["event-management-moderator-results", eventID];
     const revision = queryClient.getQueryData<ModeratorResults>(queryKey)?.Revision;
@@ -111,11 +125,17 @@ export default function ManageResultsPage() {
 
     async function toggleOpened(opened: boolean) {
         setBusy("open");
+        setConfirmError("");
         try {
             await setResultsOpened(eventID, opened);
             await queryClient.invalidateQueries({queryKey});
+            setConfirmOpen(false);
             toast.success(opened ? t("manage.results.freeze.openedToast") : t("manage.results.freeze.restoredToast"));
-        } catch (failure) {toastFailure(failure, t("manage.results.freeze.toggleFailed"));}
+        } catch (failure) {
+            // «Відкрити підсумки» fails inside its confirmation; «Повернути» has no dialog.
+            if (opened) setConfirmError(apiErrorText(failure, t("manage.results.freeze.toggleFailed")));
+            else toastFailure(failure, t("manage.results.freeze.toggleFailed"));
+        }
         finally {setBusy(null);}
     }
 
@@ -130,6 +150,8 @@ export default function ManageResultsPage() {
     const generatedAt = query.data ? Date.parse(query.data.GeneratedAt) : 0;
     const finished = !!freeze?.FinishAt && Date.parse(freeze.FinishAt) <= generatedAt;
     const frozenForParticipants = !!freeze && freeze.Active && !freeze.OpenedAt;
+    // The participants' view banner only while they read the board (running or finished, results not hidden).
+    const participantsSee = !!query.data?.ParticipantsSee;
     return <div className="event-manage-settings event-manage-results">
         <header className="event-manage-heading">
             <div><h1>{t("manage.results.title")}</h1><p>{teamMode ? t("manage.results.subtitleTeams") : t("manage.results.subtitle")}</p></div>
@@ -138,13 +160,17 @@ export default function ManageResultsPage() {
                 <a className="ib-btn" href="/live" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" /> {t("manage.results.openLive")}</a>
             </div>
         </header>
-        {freeze && <div className={`event-manage-notice event-results-freeze${frozenForParticipants ? " is-frozen" : ""}`} role="status" aria-label={t("manage.results.freeze.label")}>
+        {freeze && participantsSee && <div className={`event-manage-notice event-results-freeze${frozenForParticipants ? " is-frozen" : ""}`} role="status" aria-label={t("manage.results.freeze.label")}>
             {frozenForParticipants ? <Snowflake size={18} aria-hidden="true" /> : <Radio size={18} aria-hidden="true" />}
             <span className="event-results-freeze__text"><strong>{frozenForParticipants ? t("manage.results.view.frozen") : t("manage.results.view.live")}</strong> {freezeStatus(freeze, generatedAt)}</span>
-            {canManage && freeze.Enabled && !finished && freeze.FrozenAt && (freeze.OpenedAt
-                ? <EventButton className="ib-btn ib-btn--sm" type="button" disabled={busy === "open"} busy={busy === "open"} busyLabel={t("common.busy.returning")} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</EventButton>
-                : <EventButton className="ib-btn ib-btn--sm ib-btn--primary" type="button" disabled={busy === "open"} busy={busy === "open"} busyLabel={t("common.busy.opening")} onClick={() => void toggleOpened(true)}>{t("manage.results.freeze.open")}</EventButton>)}
+            {canManage && freeze.Enabled && !finished && freeze.FrozenAt && freeze.OpenedAt
+                && <EventButton className="ib-btn ib-btn--sm" type="button" disabled={busy === "open"} busy={busy === "open"} busyLabel={t("common.busy.returning")} onClick={() => void toggleOpened(false)}>{t("manage.results.freeze.restore")}</EventButton>}
+            {canManage && frozenForParticipants
+                && <button className="ib-btn ib-btn--sm ib-btn--primary" type="button" onClick={() => {setConfirmError(""); setConfirmOpen(true);}}>{t("manage.results.freeze.open")}</button>}
         </div>}
+        <ConfirmDialog open={confirmOpen} onCancel={() => setConfirmOpen(false)} busy={busy === "open"} busyLabel={t("common.busy.opening")} error={confirmError}
+            title={t("manage.results.freeze.confirmTitle")} description={t("manage.results.freeze.confirmBody")}
+            confirmLabel={t("manage.results.freeze.confirm")} onConfirm={() => void toggleOpened(true)} />
         <ManageTable event={event} state={state} loadingLabel={t("manage.results.loading")} errorMessage={t("manage.results.loadFailed")} onRetry={() => void query.refetch()} error={query.error}
             emptyMessage={table.filtered ? t("manage.results.emptyFiltered") : t("manage.results.empty")}
             toolbar={<>

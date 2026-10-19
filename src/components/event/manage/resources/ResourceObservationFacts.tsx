@@ -29,7 +29,7 @@ export function ResourceObservationFacts({observation, stale = false}: {observat
     const observed = !stale && observation.ObservedAt !== null && Number.isFinite(Date.parse(observation.ObservedAt));
     const complete = observation.Complete && observed;
     return <section className="event-manage-section" aria-label={t("manage.resources.observation.title")}>
-        <h2>{t("manage.resources.observation.title")}</h2>
+        <div className="event-manage-section__head"><h2>{t("manage.resources.observation.title")}</h2></div>
         <p role="status">{t(complete ? "manage.resources.observation.complete" : "manage.resources.observation.incomplete")}</p>
         {!complete && <p>{t("manage.resources.observation.unknownContributors")}</p>}
         <dl className="event-resources__facts">

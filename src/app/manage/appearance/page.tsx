@@ -29,14 +29,15 @@ import {EventButton} from "@/components/ui/EventButton";
 const defaultBrand = "#211A52";
 const colorPattern = /^#[0-9a-fA-F]{6}$/;
 
-function ColorField({title, help, value, fallback, onChange, disabled, optional = false}: {
-    title: string; help: string; value: string; fallback: string; onChange: (value: string) => void; disabled: boolean; optional?: boolean;
+// `fallback` is the color an empty or invalid value stands for: the swatch and the picker show it.
+function ColorField({title, help, value, fallback, placeholder = fallback, onChange, disabled, optional = false}: {
+    title: string; help: string; value: string; fallback: string; placeholder?: string; onChange: (value: string) => void; disabled: boolean; optional?: boolean;
 }) {
     const inputID = useId();
     const error = !colorPattern.test(value) && !(optional && !value) ? t("manage.appearance.invalidColor") : "";
     return <div className="event-manage-field">
         <ManageFieldLabel htmlFor={`${inputID}`} title={title} help={help} required={!optional} />
-        <div className="event-manage-color"><label className="event-color-picker"><span className="event-color-swatch" style={{backgroundColor: colorPattern.test(value) ? value : fallback}} /><input type="color" aria-label={t("manage.appearance.pick", {title: title.toLowerCase()})} value={colorPattern.test(value) ? value : fallback} onChange={event => onChange(event.target.value)} disabled={disabled} /></label><input id={inputID} aria-invalid={!!error || undefined} aria-describedby={error ? `${inputID}-error` : undefined} className="event-manage-input" value={value} onChange={event => onChange(event.target.value)} placeholder={fallback} maxLength={7} disabled={disabled} />{value !== (optional ? "" : defaultBrand) && !disabled && <EventTooltip content={t("manage.appearance.reset", {title: title.toLowerCase()})}>{id => <button className="event-brand-reset-icon" type="button" aria-label={t("manage.appearance.reset", {title: title.toLowerCase()})} aria-describedby={id} onClick={() => onChange(optional ? "" : defaultBrand)}><RotateCcw size={15} /></button>}</EventTooltip>}</div>
+        <div className="event-manage-color"><label className="event-color-picker"><span className="event-color-swatch" style={{backgroundColor: colorPattern.test(value) ? value : fallback}} /><input type="color" aria-label={t("manage.appearance.pick", {title: title.toLowerCase()})} value={colorPattern.test(value) ? value : fallback} onChange={event => onChange(event.target.value)} disabled={disabled} /></label><input id={inputID} aria-invalid={!!error || undefined} aria-describedby={error ? `${inputID}-error` : undefined} className="event-manage-input" value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} maxLength={7} disabled={disabled} />{value !== (optional ? "" : defaultBrand) && !disabled && <EventTooltip content={t("manage.appearance.reset", {title: title.toLowerCase()})}>{id => <button className="event-brand-reset-icon" type="button" aria-label={t("manage.appearance.reset", {title: title.toLowerCase()})} aria-describedby={id} onClick={() => onChange(optional ? "" : defaultBrand)}><RotateCcw size={15} /></button>}</EventTooltip>}</div>
         {error && <p id={`${inputID}-error`} className="event-manage-validation" role="alert">{error}</p>}
     </div>;
 }
@@ -110,7 +111,7 @@ export default function ManageAppearancePage() {
                 </section>
                 <section className="event-manage-section">
                     <div className="event-manage-section__head event-brand-section-head"><div><h2>{t("manage.appearance.colors")}</h2><p>{t("manage.appearance.colorsLead")}</p></div>{(brand.toUpperCase() !== defaultBrand || accent) && !disabled && <EventTooltip content={t("manage.appearance.resetAll")}>{id => <button className="event-brand-reset-icon" type="button" aria-label={t("manage.appearance.resetAll")} aria-describedby={id} onClick={() => setEdit({eventID, brand: defaultBrand, accent: ""})}><RotateCcw size={16} /></button>}</EventTooltip>}</div>
-                    <div className="event-manage-fields-two"><ColorField title={t("manage.appearance.brand")} help={t("manage.appearance.brandHelp")} value={brand} fallback={defaultBrand} onChange={changeBrand} disabled={disabled} /><ColorField title={t("manage.appearance.accent")} help={t("manage.appearance.accentHelp")} value={accent} fallback="#FFFFFF" onChange={changeAccent} disabled={disabled} optional /></div>
+                    <div className="event-manage-fields-two"><ColorField title={t("manage.appearance.brand")} help={t("manage.appearance.brandHelp")} value={brand} fallback={defaultBrand} onChange={changeBrand} disabled={disabled} /><ColorField title={t("manage.appearance.accent")} help={t("manage.appearance.accentHelp")} value={accent} fallback={colorPattern.test(brand.trim()) ? brand.trim() : defaultBrand} placeholder={t("manage.appearance.accentAuto")} onChange={changeAccent} disabled={disabled} optional /></div>
                     {!invalidFormat && lowContrast ? <p className="event-manage-validation event-manage-validation--warning" role="status">{t("manage.appearance.lowContrast")}</p> : null}
                 </section>
                 <section className="event-manage-section">

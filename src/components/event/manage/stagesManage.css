@@ -16,3 +16,5 @@
 .event-stage__returnable p,.event-stage__lead{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-stage__actions{display:flex;flex-wrap:wrap;gap:var(--ib-2);margin-left:auto}
 .event-stage--new{border-style:dashed}
+.event-stages__add{display:flex}
+.event-stages__add .ib-btn{display:inline-flex;align-items:center;gap:var(--ib-2)}

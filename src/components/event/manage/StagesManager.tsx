@@ -3,7 +3,7 @@
 import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/manualDraft";
 
 import {useRef, useState, type FormEvent} from "react";
-import {CircleHelp} from "lucide-react";
+import {CircleHelp, Plus} from "lucide-react";
 import {keepPreviousData, replaceEqualDeep, useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
@@ -121,7 +121,7 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
             setDialog(null);
             void refresh();
             void queryClient.invalidateQueries({queryKey: ["event-exercise-attachments", eventID]});
-        } catch (failure) {setDialogError(failureText(failure, t("manage.stages.saveFailed")));}
+        } catch (failure) {setDialogError(failureText(failure, t(dialog === "delete" ? "manage.stages.deleteFailed" : "manage.stages.closeFailed")));}
         finally {setBusy(false);}
     }
 
@@ -148,7 +148,7 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
                     <ReturnableSwitch checked={stage.Returnable} disabled={disabled || locks.returnable}
                         onCheckedChange={checked => onPatch(stage, {Returnable: checked})} />
                     <p>{t(stage.Returnable ? "manage.stages.returnableOn" : "manage.stages.returnableOff")}</p>
-                    {locks.returnable && <p>{t("manage.stages.returnableLocked")}</p>}
+                    {locks.returnable ? <p>{t("manage.stages.returnableLocked")}</p> : canManage && <p>{t("manage.stages.savedAtOnce")}</p>}
                 </div>
                 {canManage && <div className="event-stage__actions">
                     {locks.canClose && <button className="ib-btn" type="button" onClick={() => {setDialogError(""); setDialog("close");}}>{t("manage.stages.closeNow")}</button>}
@@ -164,7 +164,7 @@ function StageRow({eventID, stage, lifecycle, canManage, onPatch}: {
     </li>;
 }
 
-function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean}) {
+function AddStage({eventID, lifecycle, canManage, onDone}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean; onDone: () => void}) {
     const queryClient = useQueryClient();
     const [name, setName] = useSessionDraftState("new-stage-name", "");
     const [opens, setOpens] = useSessionDraftState("new-stage-opens", "");
@@ -192,9 +192,21 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
             setOpensWithEvent(false);
             setClosesWithEvent(false);
             setReturnable(false);
+            onDone();
             toast.success(t("manage.stages.created"));
         } catch (failure) {const fields = stageFailureFields(failure); if (fields) setFieldErrors(fields); else toastFailure(failure, failureText(failure, t("manage.stages.saveFailed")));}
         finally {setSaving(false);}
+    }
+
+    function cancel() {
+        setName("");
+        setOpens("");
+        setCloses("");
+        setOpensWithEvent(false);
+        setClosesWithEvent(false);
+        setReturnable(false);
+        setFieldErrors({});
+        onDone();
     }
 
     return <form className="event-stage event-stage--new" onSubmit={submit} aria-label={t("manage.stages.addTitle")}>
@@ -212,7 +224,10 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
                 <ReturnableSwitch checked={returnable} disabled={!canManage || saving} onCheckedChange={setReturnable} />
                 <p>{t(returnable ? "manage.stages.returnableOn" : "manage.stages.returnableOff")}</p>
             </div>
-            <div className="event-stage__actions"><EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving} busyLabel={t("common.busy.adding")}>{t("manage.stages.add")}</EventButton></div>
+            <div className="event-stage__actions">
+                <button className="ib-btn" type="button" onClick={cancel} disabled={saving}>{t("common.cancel")}</button>
+                <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canManage || saving || !valid} busy={saving} busyLabel={t("common.busy.adding")}>{t("manage.stages.add")}</EventButton>
+            </div>
         </div>
     </form>;
 }
@@ -221,6 +236,8 @@ function AddStage({eventID, lifecycle, canManage}: {eventID: string; lifecycle: 
 // (optimistic, queued, rolled back on error), «Закрити зараз» and delete behind a confirmation, and the form for the next stage.
 export function StagesManager({eventID, lifecycle, canManage}: {eventID: string; lifecycle: ManageLifecycle; canManage: boolean}) {
     const queryClient = useQueryClient();
+    // The new-stage form stays behind «Додати етап»; an open draft reopens it after navigation, but being open is not unsaved work.
+    const [adding, setAdding] = useSessionDraftState("new-stage-open", false, {dirty: () => false});
     // Labs live only until the reservation window ends: no retention control (the field stays in the API).
     type Controls = Pick<ManageStage, "Returnable">;
     type Intent = {desired: Controls; confirmed: Controls; pending: number; version: number};
@@ -313,6 +330,8 @@ export function StagesManager({eventID, lifecycle, canManage}: {eventID: string;
             {items.map(stage => <StageRow key={stage.ID} eventID={eventID} stage={stage} lifecycle={lifecycle} canManage={canManage} onPatch={saveStagePatch} />)}
         </ol>}
         {breaks.map(item => <p className="event-manage-feedback" role="status" key={item.name}>{t("manage.stages.shortBreak", {name: item.name, minutes: item.minutes})}</p>)}
-        {hasSchedule && canManage && <AddStage eventID={eventID} lifecycle={lifecycle} canManage={canManage} />}
+        {hasSchedule && canManage && (adding
+            ? <AddStage eventID={eventID} lifecycle={lifecycle} canManage={canManage} onDone={() => setAdding(false)} />
+            : <div className="event-stages__add"><button className="ib-btn" type="button" onClick={() => setAdding(true)}><Plus size={16} aria-hidden />{t("manage.stages.add")}</button></div>)}
     </section>;
 }

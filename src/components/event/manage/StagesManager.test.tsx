@@ -46,6 +46,7 @@ describe("the stages block", () => {
         api.create.mockResolvedValue(stage(1));
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
         render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={{...lifecycle, FinishAt: null}} canManage /></QueryClientProvider>);
+        fireEvent.click(await screen.findByRole("button", {name: "Додати етап"}));
         const form = await screen.findByRole("form", {name: "Новий етап"});
         const opens = within(form).getByLabelText("Відкривається") as HTMLInputElement;
         const closes = within(form).getByLabelText("Закривається") as HTMLInputElement;
@@ -162,6 +163,47 @@ describe("the stages block", () => {
         expect(api.remove).toHaveBeenCalledWith("e1", id(2));
     });
 
+    it("says «видалити», not «зберегти», when deleting a stage fails", async () => {
+        api.list.mockResolvedValue([stage(1, {First: true}), stage(2, {Last: true})]);
+        api.remove.mockRejectedValue(new Error("network"));
+        renderManager();
+        await screen.findByRole("listitem", {name: "Етап «Етап 2»"});
+        fireEvent.click(within(row("Етап 2")).getByRole("button", {name: "Видалити"}));
+        await act(async () => {fireEvent.click(screen.getAllByRole("button", {name: "Видалити"}).at(-1)!);});
+        expect(await screen.findByText("Не вдалося видалити етап")).toBeTruthy();
+        expect(screen.queryByText("Не вдалося зберегти етап")).toBeNull();
+    });
+
+    it("says «закрити» when closing a stage now fails", async () => {
+        api.list.mockResolvedValue([stage(1, {State: "open", First: true, Last: true})]);
+        api.update.mockRejectedValue(new Error("network"));
+        renderManager();
+        await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
+        fireEvent.click(within(row("Етап 1")).getByRole("button", {name: "Закрити зараз"}));
+        await act(async () => {fireEvent.click(screen.getByRole("button", {name: "Закрити"}));});
+        expect(await screen.findByText("Не вдалося закрити етап")).toBeTruthy();
+    });
+
+    it("says that «Можна повернутися» is saved at once, unlike the dates behind «Зберегти»", async () => {
+        api.list.mockResolvedValue([stage(1, {First: true, Last: true})]);
+        renderManager();
+        await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
+        expect(within(row("Етап 1")).getByText("Зберігається одразу.")).toBeTruthy();
+    });
+
+    it("keeps the new-stage form closed behind «Додати етап» until asked, and «Скасувати» closes it", async () => {
+        api.list.mockResolvedValue([stage(1, {First: true, Last: true})]);
+        renderManager();
+        await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
+        expect(screen.queryByRole("form", {name: "Новий етап"})).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Додати етап"}));
+        const form = screen.getByRole("form", {name: "Новий етап"});
+        expect(within(form).getByRole("textbox", {name: /Назва/})).toBeTruthy();
+        fireEvent.click(within(form).getByRole("button", {name: "Скасувати"}));
+        expect(screen.queryByRole("form", {name: "Новий етап"})).toBeNull();
+        expect(screen.getByRole("button", {name: "Додати етап"})).toBeTruthy();
+    });
+
     it("warns when a break is shorter than the lead the platform computes", async () => {
         api.list.mockResolvedValue([stage(1, {ClosesAt: "2026-10-01T12:00:00Z", First: true}), stage(2, {OpensAt: "2026-10-01T12:03:00Z", DeployLeadMinutes: 15, Last: true})]);
         renderManager();
@@ -234,6 +276,7 @@ it("offers explicit event or custom sources, follows changed event dates, and ke
     const {rerender} = render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={lifecycle} canManage /></QueryClientProvider>);
     const first = await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
     expect((within(first).getByRole("button", {name: "Зберегти"}) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", {name: "Додати етап"}));
     const form = screen.getByRole("form", {name: "Новий етап"});
     fireEvent.change(within(form).getByRole("textbox", {name: /Назва/}), {target: {value: "Прив’язаний"}});
     fireEvent.click(within(form).getByRole("radio", {name: "Початок заходу"}));
@@ -249,6 +292,7 @@ it("explains why binding to an absent event finish is unavailable while custom c
     api.list.mockResolvedValue([]);
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     render(<QueryClientProvider client={client}><StagesManager eventID="e1" lifecycle={{...lifecycle, FinishAt: null}} canManage /></QueryClientProvider>);
+    fireEvent.click(await screen.findByRole("button", {name: "Додати етап"}));
     const form = await screen.findByRole("form", {name: "Новий етап"});
     expect((within(form).getByRole("radio", {name: "Завершення заходу"}) as HTMLInputElement).disabled).toBe(true);
     expect((within(form).getByLabelText("Закривається") as HTMLInputElement).disabled).toBe(false);

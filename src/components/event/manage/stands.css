@@ -1,0 +1,9 @@
+/* «Стенди»: the moderators' stand as its own block above the teams table; counters that never squeeze their labels. */
+.event-stands .event-stands__summary{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.event-stands__moderators{display:grid;gap:var(--ib-3)}
+.event-stands__moderators-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--ib-2) var(--ib-6)}
+.event-stands__moderators-head h2{margin:0;font-size:var(--ib-fs-16)}
+.event-stands__moderators-state{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2) var(--ib-4);font-size:var(--ib-fs-13)}
+.event-stands__moderators .event-stands__labs{padding:var(--ib-3);border-radius:var(--ib-r);background:var(--ib-soft)}
+/* Two actions per team row stay on one line from tablets up. */
+@media(min-width:761px){.event-stands__table .event-stands__actions{flex-wrap:nowrap;justify-content:flex-end}}

@@ -16,6 +16,11 @@ function dateLabel(date: Date): string {
     return new Intl.DateTimeFormat("uk-UA", {day: "numeric", month: "long", year: "numeric"}).format(date).replace(/\s*р\.$/, "");
 }
 
+// «29.09.2026» for narrow fields, where the long month would push the time out.
+function shortDateLabel(date: Date): string {
+    return new Intl.DateTimeFormat("uk-UA", {day: "2-digit", month: "2-digit", year: "numeric"}).format(date);
+}
+
 type Part = "hour" | "minute" | "second";
 const partMax: Record<Part, number> = {hour: 23, minute: 59, second: 59};
 
@@ -132,11 +137,15 @@ function DateTimePicker({value, onChange, disabled = false, ariaLabel, id, allow
     }
 
     const parts: Part[] = showSeconds ? ["hour", "minute", "second"] : ["hour", "minute"];
+    const valueLabel = (date: string) => dateOnly ? date : t("ui.datePicker.value", {date, time: `${pad(time.hour)}:${pad(time.minute)}${showSeconds ? `:${pad(time.second)}` : ""}`});
     const today = datePart(new Date());
 
     return <Popover.Root open={open} onOpenChange={openChange}>
         <Popover.Trigger {...aria} ref={triggerRef} id={id} type="button" className="event-manage-input event-date-picker__trigger" aria-label={ariaLabel} aria-haspopup="dialog" disabled={disabled}>
-            <span className={chosen ? "event-date-picker__value" : "event-date-picker__placeholder"}>{chosen ? dateOnly ? dateLabel(chosen) : t("ui.datePicker.value", {date: dateLabel(chosen), time: `${pad(time.hour)}:${pad(time.minute)}${showSeconds ? `:${pad(time.second)}` : ""}`}) : placeholder ?? t("ui.datePicker.placeholder")}</span>
+            <span className={chosen ? "event-date-picker__value" : "event-date-picker__placeholder"}>{chosen ? <>
+                <span className="event-date-picker__long">{valueLabel(dateLabel(chosen))}</span>
+                <span className="event-date-picker__short" aria-hidden="true">{valueLabel(shortDateLabel(chosen))}</span>
+            </> : placeholder ?? t("ui.datePicker.placeholder")}</span>
             {chosen && !dateOnly && <EventTooltip content={zone} silent>{() => <span className="event-date-picker__zone">{offset}</span>}</EventTooltip>}
             <CalendarDays size={17} aria-hidden="true" />
         </Popover.Trigger>

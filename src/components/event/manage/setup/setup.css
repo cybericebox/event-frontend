@@ -11,7 +11,15 @@
 .event-setup__status.is-done{color:var(--ib-action)}
 .event-setup__status.is-todo,.event-setup__status.is-review{background:var(--ib-warn-bg);color:var(--ib-warn)}
 .event-setup__status.is-blocked{background:var(--ib-danger);color:var(--ib-btn-on-danger)}
-@media(max-width:640px){.event-setup__row{flex-wrap:wrap}.event-setup__body{flex-basis:calc(100% - 100px)}.event-setup__status{margin-left:auto}}
+/* Phones: the whole row is the link and the status stays on the title's line; the button would only repeat it. */
+@media(max-width:640px){
+  .event-setup__row{position:relative;align-items:flex-start}
+  .event-setup__row:has(.event-setup__open:focus-visible){outline:2px solid var(--ib-action);outline-offset:2px}
+  .event-setup__open{position:absolute;inset:0;width:auto;height:auto;padding:0;border:0;background:transparent;color:transparent;overflow:hidden;opacity:0}
+}
+/* The progress sits on the brand card: the brand accent would vanish on it, so the fill is the on-brand ink. */
+.event-setup .event-manage-setup__progress-track{background:color-mix(in srgb,var(--ib-on-brand) 25%,transparent)}
+.event-setup .event-manage-setup__progress-track span{background:var(--ib-on-brand)}
 
 .event-setup-chip{display:inline-flex;align-items:center;gap:var(--ib-2);height:28px;padding:0 var(--ib-3);border-radius:var(--ib-r-pill);background:var(--ib-soft);color:var(--ib-ink);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);text-decoration:none;white-space:nowrap}
 .event-setup-chip:hover{text-decoration:none;background:var(--ib-line)}
