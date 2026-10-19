@@ -33,6 +33,7 @@ import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRow
 import {SetStatusIcon} from "./SetStatusIcon";
 import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 import {ResourcePlanSummary} from "./ResourcePlanSummary";
+import {CatalogStatsList} from "./CatalogStats";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
 import {useBoardSets} from "./useBoardSets";
@@ -163,6 +164,8 @@ export function ExerciseAttachments() {
                             {(availabilityQuery.data?.get(attachment.ID)?.length ?? 0) > 0 && <span className="ib-tag ib-tag--sm ib-tag--danger" data-image-unavailable>{t("manage.registries.unavailable")}</span>}
                         </div>
                         <div className="event-exercise-set__side">
+                            {/* The pinned version's stats; the count opens the subtask names (a button: it never toggles the set). */}
+                            <CatalogStatsList average={attachment.AvgDifficulty} count={attachment.TaskCount} names={attachment.TaskNames} className="event-exercise-set__stats" />
                             <span className="event-task__badges">
                                 {summary.hints && <HintMark hints={summary.hints} />}
                                 {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}

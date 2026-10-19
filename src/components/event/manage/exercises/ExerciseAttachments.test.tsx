@@ -20,7 +20,8 @@ vi.mock("@/api/manageStages", () => ({getManageStages: async () => []}));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "e1"}, canManage: true})}));
 
-const attachment = {ID: "a1", ExerciseName: "Web", ExerciseID: "x1", VersionNumber: 1, LatestVersionNumber: 2, UpdateAvailable: true, Status: 0, Revision: 0, Resources: null, ChallengeCount: 0, VariantCount: 1} as unknown as EventExerciseAttachment;
+const attachment = {ID: "a1", ExerciseName: "Web", ExerciseID: "x1", VersionNumber: 1, LatestVersionNumber: 2, UpdateAvailable: true, Status: 0, Revision: 0, Resources: null, ChallengeCount: 0, VariantCount: 1,
+    AvgDifficulty: 4.5, TaskCount: 2, TaskNames: ["Pinned one", "Pinned two"]} as unknown as EventExerciseAttachment;
 const refreshAll = vi.fn(async () => undefined);
 vi.mock("./useBoardSets", () => ({
     useBoardSets: () => ({
@@ -99,5 +100,20 @@ describe("flag repeat warning", () => {
         setup();
         await screen.findByRole("heading", {name: "Web"});
         expect(screen.queryByText(warning)).toBeNull();
+    });
+});
+
+describe("the set's pinned stats", () => {
+    it("shows the average difficulty and the subtask count; the count opens the names and never toggles the set", async () => {
+        setup();
+        const set = (await screen.findByRole("heading", {name: "Web"})).closest("article")!;
+        expect(within(set).getByLabelText("Складна, 4,5")).toBeTruthy();
+        const count = within(set).getByRole("button", {name: "Підзавдання: 2. Показати назви"});
+        const panel = document.getElementById(count.getAttribute("popovertarget")!)!;
+        expect([...panel.querySelectorAll("li")].map(item => item.textContent)).toEqual(["Pinned one", "Pinned two"]);
+        const toggle = set.querySelector(".event-exercise-set__toggle")!;
+        const before = toggle.getAttribute("aria-expanded");
+        fireEvent.click(count);
+        expect(toggle.getAttribute("aria-expanded")).toBe(before);
     });
 });

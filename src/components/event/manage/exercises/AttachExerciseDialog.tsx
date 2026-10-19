@@ -22,7 +22,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {EventButton} from "@/components/ui/EventButton";
 import {CatalogTagFilter} from "./CatalogTagFilter";
 import {ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
-import {AverageDifficulty, SubtaskCount} from "./CatalogStats";
+import {CatalogStatsList} from "./CatalogStats";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
 
@@ -128,10 +128,7 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                         {unavailable(choice) && !choice.Attached && <span className="event-exercise-picker__reason">{t(published ? "manage.exercises.attachDialog.needsInfrastructureAfter" : "manage.exercises.attachDialog.needsInfrastructure")}</span>}
                     </button>
                     {/* Outside the row's button (no button in a button): the count opens the subtask names. */}
-                    <dl className="event-exercise-picker__stats">
-                        <div><dt>{t("manage.exercises.attachDialog.avgDifficulty")}</dt><dd><AverageDifficulty average={choice.AvgDifficulty} /></dd></div>
-                        <div><dt>{t("manage.exercises.attachDialog.subtasks")}</dt><dd><SubtaskCount count={choice.TaskCount} names={choice.TaskNames} /></dd></div>
-                    </dl>
+                    <CatalogStatsList average={choice.AvgDifficulty} count={choice.TaskCount} names={choice.TaskNames} className="event-exercise-picker__stats" />
                 </li>)}</ul>}
             {attachError && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{attachError}</p>}
             {needsExtension && <Link className="ib-btn" href="/manage/resources?request=1" onClick={close}>{t("manage.exercises.attachDialog.requestExtension")}</Link>}
