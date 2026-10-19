@@ -193,3 +193,22 @@ it("shows the empty state inside the dropdown only when nothing matches", async 
     await openList();
     expect(await within(screen.getByRole("listbox")).findByText("Завдань не знайдено.")).toBeTruthy();
 });
+
+it.each([
+    ["no_infrastructure", "Не запуститься: у заходу немає інфраструктури", false],
+    ["no_reservation", "Не запуститься: немає активного бронювання ресурсів", true],
+])("lists a dynamic task that cannot run now greyed, with the reason (%s)", async (reason, text, link) => {
+    const dynamic = {...selection, Name: "Лабораторія", Reason: reason};
+    api.get.mockResolvedValue({DefaultSelections: [dynamic], DefaultGroupName: "Платформна група", DynamicAllocated: false, GroupName: "Тестова група", GroupNameOverride: null, Inherit: true, Selections: [], EffectiveSelections: [dynamic]});
+    view();
+    const row = (await screen.findByRole("button", {name: "Лабораторія"})).closest("li")!;
+    expect(row.classList.contains("is-unavailable")).toBe(true);
+    expect(within(row).getByText(text)).toBeTruthy();
+    expect(within(row).queryByRole("link", {name: "Календар бронювань"})?.getAttribute("href") ?? null).toBe(link ? "/manage/resources" : null);
+    cleanup();
+    api.manage = false;
+    view();
+    const readOnly = (await screen.findByRole("button", {name: "Лабораторія"})).closest("li")!;
+    expect(within(readOnly).getByText(text)).toBeTruthy();
+    expect(within(readOnly).queryByRole("link")).toBeNull();
+});
