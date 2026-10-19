@@ -13,7 +13,7 @@ const {InboxButton} = await import("./InboxButton");
 
 const lab = (id: string, extra = {}) => ({
     ID: id, Title: `Заявка ${id}`, Body: "", Link: "", ReadAt: null, CreatedAt: "2026-10-01T10:00:00Z",
-    Type: "event.lab.failed", Category: "requests", ActionRequired: true, ResolvedAt: null, ...extra,
+    Type: "event.lab.failed", Resolvable: true, Category: "requests", ActionRequired: true, ResolvedAt: null, ...extra,
 });
 const poll = {Cursor: null, UnreadCount: 2, Counts: {All: 2, Requests: 2, Personal: 0, Activity: 0}, NewInbox: [], OtherEventsCount: 0};
 
