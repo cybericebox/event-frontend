@@ -160,9 +160,13 @@ describe("live editor", () => {
 
     it("edits every scene on its own; the tabs mark only the live scene", () => {
         mount(true, separate);
-        const tabs = screen.getAllByRole("tab").filter(tab => tab.closest(".event-live-scenes"));
-        expect(tabs.map(tab => tab.textContent)).not.toContain("основна");
-        expect(tabs.filter(tab => tab.textContent?.includes("зараз"))).toHaveLength(1);
+        const tabs = screen.getAllByRole("tab").filter(tab => tab.closest(".event-live-scenes__tabs"));
+        // One line per tab: the state name only; the live one has a dot and «зараз» as its tooltip.
+        expect(tabs.map(tab => tab.textContent)).toEqual(["До старту", "Триває", "Заморожено", "Завершено"]);
+        const now = document.querySelectorAll(".event-live-scene__now");
+        expect(now).toHaveLength(1);
+        const live = now[0].closest(".event-live-scene-cell")!.querySelector("[role=tab]")!;
+        expect(document.getElementById(live.getAttribute("aria-describedby")!)?.textContent).toBe("зараз");
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
         // Its own copy of the board, editable at once.
         expect((screen.getByRole("button", {name: "Додати блок «Таймер»"}) as HTMLButtonElement).disabled).toBe(false);
@@ -225,13 +229,14 @@ describe("live editor", () => {
 
     it("shows one screen for all states by default, with no state tabs", () => {
         mount();
-        expect(screen.getByRole("button", {name: "Один екран для всіх станів"}).getAttribute("aria-pressed")).toBe("true");
+        expect((screen.getByRole("combobox", {name: "Екран за станом заходу"}) as HTMLSelectElement).value).toBe("single");
         expect(screen.queryByRole("tab", {name: /До старту/})).toBeNull();
     });
 
     it("turns to separate screens as copies of the one screen, and back keeping the chosen state's", () => {
         mount();
-        fireEvent.click(screen.getByRole("button", {name: "Окремий екран для кожного стану"}));
+        fireEvent.change(screen.getByRole("combobox", {name: "Екран за станом заходу"}), {target: {value: "separate"}});
+        expect((screen.getByRole("combobox", {name: "Екран за станом заходу"}) as HTMLSelectElement).value).toBe("separate");
         for (const name of [/До старту/, /Заморожено/, /Завершено/]) {
             fireEvent.click(screen.getByRole("tab", {name}));
             expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
@@ -240,7 +245,7 @@ describe("live editor", () => {
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
         fireEvent.keyDown(window, {key: "Delete"});
         fireEvent.click(within(screen.getByText("Прибрати блок?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати блок"}));
-        fireEvent.click(screen.getByRole("button", {name: "Один екран для всіх станів"}));
+        fireEvent.change(screen.getByRole("combobox", {name: "Екран за станом заходу"}), {target: {value: "single"}});
         const dialog = screen.getByText("Залишити один екран для всіх станів?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
         expect((within(dialog).getByRole("combobox", {name: "Який екран залишити"}) as HTMLSelectElement).value).toBe("finished");
         fireEvent.click(within(dialog).getByRole("button", {name: "Залишити один"}));
