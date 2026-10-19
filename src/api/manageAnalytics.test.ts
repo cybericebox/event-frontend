@@ -50,7 +50,7 @@ describe("analytics API", () => {
 
     it("reads the access and raises the API error of a denied request", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({Data: {Sections: true, Sensitive: false}}), {status: 200})));
-        expect(await getAnalyticsAccess(eventID)).toEqual({Sections: true, Sensitive: false});
+        expect(await getAnalyticsAccess(eventID)).toEqual({Sections: true, Sensitive: false, People: false});
         vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({Status: {Code: 62201}}), {status: 403})));
         await expect(getAnalyticsAccess(eventID)).rejects.toBeInstanceOf(ManageApiError);
     });

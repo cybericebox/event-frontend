@@ -56,6 +56,15 @@ describe("Використання", () => {
         expect(screen.getByRole("columnheader", {name: "Востаннє в лабораторії"})).toBeTruthy();
     });
 
+    it("shows a read-only moderator the totals only, without people or the per-person export", async () => {
+        mockApi(usage({PeopleHidden: true, Users: []}));
+        renderUsage();
+        expect(await screen.findByText(/Дані окремих учасників/)).toBeTruthy();
+        expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+        expect(screen.queryByRole("table")).toBeNull();
+        expect(screen.queryByRole("button", {name: /Експорт CSV/})).toBeNull();
+    });
+
     it("says so, in a block, when the event has no infrastructure", async () => {
         mockApi(usage({Available: false, Users: []}));
         renderUsage();

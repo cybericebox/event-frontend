@@ -5397,5 +5397,6 @@
   "manage.banners.discardTitle": "Відкинути зміни банера?",
   "manage.banners.discardBody": "Внесені зміни не буде збережено.",
   "manage.banners.discardAction": "Відкинути зміни",
-  "manage.analytics.report.funnel.otherStep": "Інший етап"
+  "manage.analytics.report.funnel.otherStep": "Інший етап",
+  "manage.analytics.usage.peopleHidden": "Дані окремих учасників (імена, час відвідувань, VPN-сесії) бачать власник заходу та модератори з правом запису. Вам доступні лише загальні числа."
 }
