@@ -226,7 +226,7 @@ export function BannersManager() {
             </>}
         </DialogModal>
         <ConfirmDialog open={confirmClose} onCancel={() => setConfirmClose(false)} tone="danger" title={t("manage.banners.discardTitle")} description={t("manage.banners.discardBody")}
-            confirmLabel={t("manage.banners.discardAction")} onConfirm={() => {setConfirmClose(false); setEditing(null);}} />
+            confirmLabel={t("manage.banners.discardAction")} busyLabel={t("common.busy.discarding")} onConfirm={() => {setConfirmClose(false); setEditing(null);}} />
         <ConfirmDialog open={removing !== null} onCancel={() => setRemoving(null)} tone="danger" title={t("manage.banners.deleteTitle")} description={t("manage.banners.deleteBody")}
             subject={removing?.Text} confirmLabel={t("manage.banners.delete")} busy={busy} busyLabel={t("common.busy.deleting")} error={removing ? error || undefined : undefined} onConfirm={() => void remove()} />
     </div>;
