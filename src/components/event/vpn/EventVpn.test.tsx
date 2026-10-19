@@ -76,12 +76,15 @@ it.each([false,true])("uses the approved guide and matching config filename in p
   expect(screen.getByRole("link",{name:"WireGuard"}).getAttribute("href")).toBe("https://www.wireguard.com/install/");
   expect(screen.getByText("У застосунку")).toBeTruthy();
   expect(screen.getByText("Або через термінал")).toBeTruthy();
-  expect(screen.getByText("sudo wg-quick up ./autumnctf.conf")).toBeTruthy();
-  expect(screen.getByText("sudo wg-quick down ./autumnctf.conf")).toBeTruthy();
+  // The preview gets the staff member's own test-lab config (the studio's one), named and labelled as such.
+  const file=preview?"cybericebox.conf":"autumnctf.conf";
+  expect(screen.getByText(`sudo wg-quick up ./${file}`)).toBeTruthy();
+  expect(screen.getByText(`sudo wg-quick down ./${file}`)).toBeTruthy();
+  expect(!!screen.queryByText(/той самий, що й у студії завдань/)).toBe(preview);
   expect(screen.queryByText(/pkill|ip link delete/)).toBeNull();
   expect(screen.getByText("Не забудьте вимкнути VPN, коли закінчите, і не видаляйте файл до цього.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button",{name:"Завантажити файл"}));
-  await vi.waitFor(()=>expect(downloaded).toEqual(["autumnctf.conf"]));
+  await vi.waitFor(()=>expect(downloaded).toEqual([file]));
   if(preview){expect(api.previewConfig).toHaveBeenCalledWith("e1","selection1");expect(api.config).not.toHaveBeenCalled();}
   else{expect(api.config).toHaveBeenCalledWith("e1");expect(api.previewConfig).not.toHaveBeenCalled();}
  }finally{anchorClick.mockRestore();vi.unstubAllGlobals();}

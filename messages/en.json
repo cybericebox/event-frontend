@@ -5482,5 +5482,12 @@
   "manage.challenges.groups.points.many": "{count} points",
   "manage.challenges.groups.pointsDynamic": "dynamic {max}→{min}",
   "manage.previewSettings.unavailableReason.no_infrastructure": "Will not start: the event has no infrastructure",
-  "lab.preview.noFreeResources": "No free resources for a test laboratory. Try again later or choose a shorter run."
+  "lab.preview.noFreeResources": "No free resources for a test laboratory. Try again later or choose a shorter run.",
+  "lab.preview.limit.title": "The maximum of test laboratories is running. Stop one to start this one.",
+  "lab.preview.limit.studio": "“{name}” — in the task studio",
+  "lab.preview.limit.preview": "“{name}” — in an event's participant mode",
+  "lab.preview.limit.unnamed": "Test laboratory",
+  "lab.preview.limit.stop": "Stop",
+  "lab.preview.limit.stopFailed": "Could not stop the laboratory",
+  "vpn.preview.testConfig": "This is the VPN config of your test laboratory: the same one as in the task studio (all your test laboratories share one network)."
 }

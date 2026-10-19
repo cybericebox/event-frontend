@@ -5482,5 +5482,12 @@
   "manage.challenges.groups.points.many": "{count} балів",
   "manage.challenges.groups.pointsDynamic": "динамічні {max}→{min}",
   "manage.previewSettings.unavailableReason.no_infrastructure": "Не запуститься: у заходу немає інфраструктури",
-  "lab.preview.noFreeResources": "Немає вільних ресурсів для тестової лабораторії. Спробуйте пізніше або виберіть коротший запуск."
+  "lab.preview.noFreeResources": "Немає вільних ресурсів для тестової лабораторії. Спробуйте пізніше або виберіть коротший запуск.",
+  "lab.preview.limit.title": "Уже запущено максимум тестових лабораторій. Зупиніть одну, щоб запустити цю.",
+  "lab.preview.limit.studio": "«{name}» — у студії завдань",
+  "lab.preview.limit.preview": "«{name}» — у тестовому режимі заходу",
+  "lab.preview.limit.unnamed": "Тестова лабораторія",
+  "lab.preview.limit.stop": "Зупинити",
+  "lab.preview.limit.stopFailed": "Не вдалося зупинити лабораторію",
+  "vpn.preview.testConfig": "Це VPN-конфіг вашої тестової лабораторії: той самий, що й у студії завдань (усі ваші тестові лабораторії в одній мережі)."
 }
