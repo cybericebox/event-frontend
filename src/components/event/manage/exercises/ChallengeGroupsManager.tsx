@@ -190,13 +190,13 @@ export function ChallengeGroupsManager() {
         {naming && <GroupNameDialog error={nameError} onClearError={() => setNameError("")} key={naming.key} draftID={naming.group?.ID ?? "new"} open mode={naming.group ? "rename" : "create"} initialName={naming.group?.Name ?? ""} busy={busy}
             otherNames={sorted.filter(group => group.ID !== naming.group?.ID).map(group => group.Name)}
             onClose={() => setNaming(null)} onSubmit={name => naming.group ? rename(naming.group, name) : create(name)} />}
-        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} error={removeError} title={t("manage.challenges.groups.deleteTitle")}
+        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={busy} busyLabel={t("common.busy.deleting")} error={removeError} title={t("manage.challenges.groups.deleteTitle")}
             description={removing ? bucketOf(removing.ID).tasks.length > 0 ? tPlural("manage.exercises.groups.deleteConfirmWithTasks", bucketOf(removing.ID).tasks.length, {name: removing.Name}) : t("manage.exercises.groups.deleteConfirm", {name: removing.Name}) : undefined}
             subject={removing?.Name} confirmLabel={t("manage.exercises.groups.deleteGroup")} onConfirm={() => void remove()} />
         <DialogModal open={!!moving} onClose={() => { if (!busy) setMoving(null); }} title={t("manage.challenges.groups.moveTitle")}
             description={moving ? t("manage.challenges.groups.moveDescription", {name: moving.task.challenge.Snapshot.name}) : undefined}
             footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => setMoving(null)}>{t("common.cancel")}</button>
-                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !moving?.target} busy={busy} onClick={() => void move()}>{t("manage.challenges.groups.moveConfirm")}</EventButton></>}>
+                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={busy || !moving?.target} busy={busy} busyLabel={t("common.busy.moving")} onClick={() => void move()}>{t("manage.challenges.groups.moveConfirm")}</EventButton></>}>
             {moving && <div className="event-manage-field">{t("manage.challenges.groups.moveTarget")}
                 <EventSelect ariaLabel={t("manage.challenges.groups.moveTarget")} value={moving.target} options={moveTargets} onValueChange={target => setMoving({...moving, target})} disabled={busy} />
             </div>}

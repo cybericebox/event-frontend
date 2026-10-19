@@ -6,7 +6,7 @@ import {useState} from "react";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
-import {toastFailure} from "@/components/ui/toastApiError";
+import {failureText, toastFailure} from "@/components/ui/toastApiError";
 import {
     channelSignals, customizeManageInAppTemplate, getManageInAppTemplates, getManageNotificationSubscriptions,
     getManageNotificationTypes, publishManageInAppTemplate, resetManageInAppTemplate,
@@ -25,7 +25,7 @@ import {useManager} from "../ManagerShell";
 import {InAppEditor} from "./InAppEditor";
 import {NotificationPreview} from "./NotificationPreview";
 import {inAppValidation} from "./inAppValidation";
-import {orderedVersions, sameValue, sampleValues, templateMode, toVariableDefs} from "./notificationModel";
+import {orderedVersions, sameValue, sampleValues, templateMode, templateReadOnlyHint, toVariableDefs} from "./notificationModel";
 import {TemplateActions} from "./TemplateActions";
 import {TemplateHeader} from "./TemplateHeader";
 import {TemplateStatusTag} from "./TemplateStatusTag";
@@ -73,7 +73,8 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
     const editable = !!(canManage && mode === "edit");
     const ownVersions = versions.filter(item => item.Source === "event");
 
-    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true): Promise<boolean> {
+    // `inline` takes the error text instead of a toast (an error inside a dialog).
+    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true, inline?: (text: string) => void): Promise<boolean> {
         if (!canManage || busy) return false;
         setBusy(true);
         try {
@@ -86,7 +87,8 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
             return true;
         } catch (error) {
             // A refused link or button address has its own message; every other error keeps the generic one.
-            toastFailure(error, error instanceof ManageApiError && error.code === ApiErrorCode.TemplateLinkInvalid ? apiErrorMessage(error.code, failure) : failure);
+            const message = error instanceof ManageApiError && error.code === ApiErrorCode.TemplateLinkInvalid ? apiErrorMessage(error.code, failure) : failure;
+            if (inline) inline(failureText(error, message)); else toastFailure(error, message);
             return false;
         } finally {setBusy(false);}
     }
@@ -118,18 +120,18 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
 
     const label = signalLabel(signal);
     // One orange notice under the header: the untouched platform template, or a read-only copy (published/older version). A draft has none.
-    const readOnlyHint = mode === "platform" ? t("manage.notifications.platformHint") : mode === "view" || mode === "previous" ? t("manage.notifications.readonlyHint") : "";
+    const readOnlyHint = templateReadOnlyHint(mode, canManage);
     return <div className="event-manage-settings event-template-page">
         <TemplateHeader backHref={BASE} backLabel={t("manage.notifications.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
-                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
-                {editable && <EventButton saveDirty={dirty} busy={saving} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
+                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} label={t("manage.notifications.switchShort")} onCheckedChange={toggle} />}
+                {editable && <EventButton saveDirty={dirty} busy={saving} busyLabel={t("common.busy.saving")} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageInAppTemplate(eventID, template!), t("manage.notifications.published"))}>{t("manage.notifications.publish")}</button>}
                 <TemplateActions mode={mode} canManage={canManage} busy={busy}
                     onCustomize={() => void mutate(() => customizeManageInAppTemplate(eventID, template!), t("manage.notifications.customized"))}
                     onEdit={() => void mutate(() => rollbackManageInAppTemplate(eventID, template!), t("manage.notifications.draftFromPublished"))}
                     onRestore={() => void mutate(() => rollbackManageInAppTemplate(eventID, template!), t("manage.notifications.draftFromPrevious"))}
-                    onReset={async () => { const done = await run(() => resetManageInAppTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.notifications.restoreError")); if (done) router.replace(href()); return done; }} />
+                    onReset={async () => { let failed = ""; const done = await run(() => resetManageInAppTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.notifications.restoreError"), true, text => {failed = text;}); if (done) router.replace(href()); return done || failed; }} />
             </>} />
         {readOnlyHint && <p className="event-template-page__hint" role="note" data-testid="template-notice">{readOnlyHint}</p>}
         {ownVersions.length > 0 && template && <TemplateVersions versions={ownVersions.map(item => ({ID: item.ID, Status: item.Status, UpdatedAt: item.UpdatedAt, PublishedAt: item.PublishedAt, Heading: item.Title}))} currentId={template.ID} hrefFor={href}

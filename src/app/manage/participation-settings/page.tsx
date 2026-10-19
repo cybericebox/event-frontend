@@ -4,7 +4,7 @@ import {useDraftDirty, useSessionDraftState} from "@/components/event/manage/man
 
 import {useState, type FormEvent} from "react";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {AlertTriangle} from "lucide-react";
+import {AlertTriangle, Lock} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {getManageConfig, getManageLifecycle, ManageApiError, putManageConfig, manageConfigInput, type ManageConfigInput} from "@/api/manage";
@@ -63,11 +63,15 @@ export default function ParticipationSettingsPage() {
                 <div className="event-manage-field"><ManageFieldLabel htmlFor="max-team-size" title={t("manage.participation.maxTeamSize")} help={t("manage.participation.maxTeamSizeHelp")} required /><input id="max-team-size" aria-invalid={!!maxError || undefined} aria-describedby={maxError ? "max-team-size-error" : undefined} className="event-manage-input" type="number" min={1} value={config.MaxTeamSize} onChange={change => update({MaxTeamSize: Number(change.target.value)})} disabled={disabled || locked} />{maxError && <p id="max-team-size-error" className="event-manage-validation" role="alert">{maxError}</p>}</div>
                 <div className="event-manage-field"><ManageFieldLabel htmlFor="min-team-size" title={t("manage.participation.minTeamSize")} help={t("manage.participation.minTeamSizeHelp")} /><input id="min-team-size" aria-invalid={!!minError || undefined} aria-describedby={minError ? "min-team-size-error" : undefined} className="event-manage-input" type="number" min={1} max={config.MaxTeamSize} placeholder={String(Math.min(2, config.MaxTeamSize || 2))} value={config.MinTeamSize ?? ""} onChange={change => update({MinTeamSize: change.target.value ? Number(change.target.value) : null})} disabled={disabled || locked} />{minError && <p id="min-team-size-error" className="event-manage-validation" role="alert">{minError}</p>}</div>
             </div>}
-            <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>{t("manage.participation.lockWarning")}</span></div>
+            {/* Before publication a warning; after it a plain fact, not an error. */}
+            {locked
+                ? <div className="event-manage-notice" role="note"><Lock size={18} aria-hidden="true" /><span>{t("manage.participation.lockWarning")}</span></div>
+                : <div className="event-manage-warning" role="note"><AlertTriangle size={18} aria-hidden="true" /><span>{t("manage.participation.lockWarning")}</span></div>}
         </section>
         {!locked && <section className="event-manage-section">
             <p className="event-manage-readonly-note" data-testid="infrastructure-note">{configQuery.data?.InfrastructureAllowed ? t("manage.participation.infrastructureOn") : t("manage.participation.infrastructureHint")}</p>
         </section>}
-        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>
+        {/* Published individual events have nothing left to edit here. */}
+        {!(locked && config.Participation !== 1) && <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid} busy={saving} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>}
     </form>;
 }

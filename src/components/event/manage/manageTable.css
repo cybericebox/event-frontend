@@ -15,6 +15,8 @@
 .event-manage-table td.event-manage-table__state,.event-participants-table td.event-manage-table__state{height:100%;padding:0;border-bottom:0;vertical-align:middle}
 .event-manage-table tbody tr:hover td.event-manage-table__state,.event-participants-table tbody tr:hover td.event-manage-table__state{background:transparent}
 .event-manage-table__state-view{position:sticky;left:0;display:flex;width:var(--event-manage-table-view,100%);height:100%;min-height:var(--event-block-state-h,240px);flex-direction:column}
+/* Numeric columns keep tabular figures in the cells; the column names stay in the table's own font. */
+.event-manage-table thead th.ib-num{font-family:inherit}
 .event-manage-table thead th{position:sticky;top:0;z-index:1;padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);background:var(--ib-surface);color:var(--ib-dim);font-size:var(--ib-fs-13);font-weight:var(--ib-w-medium);text-align:left;white-space:nowrap}
 .event-manage-table td{height:var(--ib-row-h);padding:var(--ib-2) var(--ib-4);border-bottom:1px solid var(--ib-line);vertical-align:middle}
 .event-manage-table tbody tr:hover td{background:var(--ib-hover)}
@@ -43,10 +45,17 @@ tr.is-locked{background:var(--ib-soft)}
 .event-manage-table__pager .ib-btn,.event-manage-table__size .event-select{height:var(--ib-control-h-lg);min-height:var(--ib-control-h-lg);border-radius:var(--ib-r);font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium)}
 @media(max-width:760px){
   .event-manage-table__search{max-width:none}
-  .event-manage-table__footer{grid-template-columns:1fr}
-  .event-manage-table__size{justify-content:flex-start}
+  /* Phones: totals on their own line, then the pager and the page size side by side. */
+  .event-manage-table__footer{grid-template-columns:auto minmax(0,1fr)}
+  .event-manage-table__meta{grid-column:1/-1}
 }
-@media(max-width:640px){.event-manage-table__size>span{display:none}}
+@media(max-width:400px){.event-manage-table__size>span{display:none}}
+/* A phone scrolls a wide table sideways: the row actions stay pinned to the right edge, always in reach. */
+@media(max-width:760px){
+  .event-manage-table :is(th,td).event-manage-table__sticky-end{position:sticky;right:0;z-index:1;background:var(--ib-surface);border-left:1px solid var(--ib-line)}
+  .event-manage-table thead th.event-manage-table__sticky-end{z-index:2}
+  .event-manage-table tbody tr:hover td.event-manage-table__sticky-end{background:linear-gradient(var(--ib-hover),var(--ib-hover)),var(--ib-surface)}
+}
 .event-manage-team-details{display:grid;gap:var(--ib-4)}
 /* Toolbar popovers: «Колонки» and «Фільтри». DS surface, 1px line, no shadow. */
 .event-manage-table__tool{gap:var(--ib-2)}
@@ -79,3 +88,23 @@ tr.is-locked{background:var(--ib-soft)}
 .event-manage-table__filter .event-select{width:100%}
 .event-manage-table__filter-options{display:grid;gap:var(--ib-2)}
 /* Data freshness at the top right of the page header («Наживо», «Оновлено …»). */
+
+/* Card rows (ManageTable cards): a block narrower than a phone screen shows every row as a card, each cell under
+   its column name; the row actions take the full width at the bottom. Loading, empty and error stay centered. */
+.event-manage-table--cards{container:event-manage-table/inline-size}
+@container event-manage-table (max-width:560px){
+  .event-manage-table__scroll>table:not(.is-state){min-width:0}
+  .event-manage-table__scroll>table:not(.is-state) thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .event-manage-table__scroll>table:not(.is-state),.event-manage-table__scroll>table:not(.is-state)>tbody{display:block}
+  .event-manage-table__scroll>table:not(.is-state)>tbody>tr{display:grid;gap:var(--ib-2);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
+  .event-manage-table .event-manage-table__scroll>table:not(.is-state)>tbody>tr>td{display:grid;grid-template-columns:minmax(0,38%) minmax(0,1fr);align-items:baseline;justify-items:start;gap:var(--ib-3);height:auto;min-width:0;max-width:none;padding:0;border:0;white-space:normal;position:static;background:none}
+  .event-manage-table__scroll>table:not(.is-state)>tbody>tr>td::before{content:attr(data-label);color:var(--ib-dim);font-family:var(--ib-font);font-size:var(--ib-fs-12)}
+  .event-manage-table__scroll>table:not(.is-state)>tbody>tr>td:is([data-label=""],:not([data-label])){grid-template-columns:minmax(0,1fr)}
+  .event-manage-table__scroll>table:not(.is-state)>tbody>tr>td:is([data-label=""],:not([data-label]))::before{display:none}
+  .event-manage-table__scroll>table:not(.is-state)>tbody>tr>td:has(.event-manage-table__actions) .event-manage-table__actions{justify-content:flex-start}
+}
+/* On a phone card rows scroll with the page: a fixed-height block under a tall toolbar would show one card. */
+@media(max-width:640px){
+  .event-manage-table.event-manage-table--cards{height:auto}
+  .event-manage-table--cards .event-manage-table__scroll{overflow:visible}
+}

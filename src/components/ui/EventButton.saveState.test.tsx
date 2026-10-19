@@ -19,8 +19,7 @@ describe("explicit save action", () => {
         rerender(<EventButton saveDirty onClick={save}>Save</EventButton>);
         fireEvent.click(screen.getByRole("button", {name: "Save"}));
         expect(save).toHaveBeenCalledOnce();
-        rerender(<EventButton saveDirty={false} busy>Save</EventButton>);
-        expect(screen.getByRole("button", {name: "Save"}).getAttribute("aria-busy")).toBe("true");
-        expect(screen.getByRole("button", {name: "Save"})).toHaveProperty("disabled", true);
+        rerender(<EventButton saveDirty={false} busy busyLabel="Saving…">Save</EventButton>);
+        expect(screen.getByRole("button", {name: "Saving…"})).toHaveProperty("disabled", true);
     });
 });

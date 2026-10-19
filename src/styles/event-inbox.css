@@ -30,6 +30,10 @@
 .event-notification-card__heading{display:flex;align-items:flex-start;gap:var(--ib-2);min-width:0}
 .event-notification-card__heading p{min-width:0;flex:1;margin:0;color:var(--ib-ink);font-size:var(--ib-fs-14);font-weight:var(--ib-w-medium);line-height:1.35;overflow-wrap:anywhere}
 .event-notification-card__heading p.is-unread{font-weight:var(--ib-w-semibold)}
+/* Unread = semibold title plus the word «Нове»; an open request = «Потребує дії» (a typographic chip, no dot or edge). */
+.event-notification-card__tag{flex:none;padding:1px 6px;border-radius:4px;font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:1.4;white-space:nowrap}
+.event-notification-card__tag.is-new{background:var(--ib-soft);color:var(--ib-action)}
+.event-notification-card__tag.is-action{background:var(--ib-warn-bg);color:var(--ib-warn)}
 .event-notification-card__body{margin-top:var(--ib-1);color:var(--ib-dim);font-size:var(--ib-fs-14);line-height:1.5;overflow-wrap:anywhere}
 .event-notification-card.is-compact .event-notification-card__body{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .event-notification-card__time{margin-top:6px;color:var(--ib-dim);font-size:var(--ib-fs-12)}

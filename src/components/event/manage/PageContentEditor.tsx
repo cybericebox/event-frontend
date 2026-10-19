@@ -9,7 +9,7 @@ import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {ArrowUpRight, ChevronDown, Trash2} from "lucide-react";
 import toast from "react-hot-toast";
-import {toastFailure} from "@/components/ui/toastApiError";
+import {failureText} from "@/components/ui/toastApiError";
 import {createManagePage, deleteManagePage, discardManagePageDraft, editablePage, getManageConfig, getManageContent, getManageContentVariables, getManagePage, getManagePages, ManageApiError, type ManagePage, type ManagePageInput, publishManagePage, saveManagePageDraft} from "@/api/manage";
 import type {ContentDocument} from "@/types/eventContent";
 import {FieldLabel} from "./PageBlockEditor";
@@ -24,6 +24,7 @@ import {reservedPageSlugs} from "../content/pageSlugs";
 import {beforeChallenges, comparePageOrder} from "../content/pageNavigationOrder";
 import {BlockStackEditor} from "./BlockStackEditor";
 import {DraftBar} from "./DraftBar";
+import {useRevealFirstError} from "./useRevealFirstError";
 import {t} from "@/i18n/t";
 import {sameValue} from "./notifications/notificationModel";
 
@@ -63,6 +64,14 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     const detailsID = useId();
     const [busy, setBusy] = useState<"save" | "publish" | "discard" | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
+    // A new page shows a field's error once the field is left or after «Зберегти» / «Опублікувати», never on the untouched form.
+    const [touched, setTouched] = useState<ReadonlySet<"title" | "slug">>(() => new Set());
+    const [attempted, setAttempted] = useState(false);
+    const detailsRef = useRef<HTMLDivElement>(null);
+    const revealFirstError = useRevealFirstError(detailsRef);
+    const visible = (field: "title" | "slug") => !isNew || attempted || touched.has(field);
+    const leave = (field: "title" | "slug") => () => setTouched(current => current.has(field) ? current : new Set(current).add(field));
 
     const existingPages = pages.data ?? [];
     const scoreboardShown = config.data?.ScoreboardVisibility !== 0;
@@ -80,7 +89,9 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         null;
     const titleError = !draft.Title.trim() || draft.Title.length > 255 ? t("manage.content.page.titleInvalid") : null;
     const validation = slugError ?? titleError ?? documentError;
-    const dirty = isNew || !sameValue({...saved, Navigation: saved.Visibility === 2 ? 0 : saved.Navigation}, payload());
+    const shownTitleError = visible("title") ? titleError : null;
+    const shownSlugError = visible("slug") ? slugError : null;
+    const dirty = isNew ? !!edited && edited.key === key && !sameValue(draft, saved) : !sameValue({...saved, Navigation: saved.Visibility === 2 ? 0 : saved.Navigation}, payload());
     useDraftDirty(`content-page-${key}`, isNew ? !!edited && !sameValue(draft, saved) : page.data ? !!edited && dirty : undefined);
     const published = !!page.data?.PublishedAt;
 
@@ -114,9 +125,12 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         void queryClient.invalidateQueries({queryKey: ["event-navigation-pages", eventID]});
     }
 
-    function failure(error: unknown, fallbackKey: string) {
+    function failureMessage(error: unknown, fallbackKey: string): string {
         const status = error instanceof ManageApiError ? error.status : 0;
-        toastFailure(error, status === 400 ? t("manage.content.page.rejected") : status === 409 ? t("manage.content.page.conflict") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+        return failureText(error, status === 400 ? t("manage.content.page.rejected") : status === 409 ? t("manage.content.page.conflict") : status === 404 ? t("manage.content.page.gone") : t(fallbackKey));
+    }
+    function failure(error: unknown, fallbackKey: string) {
+        toast.error(failureMessage(error, fallbackKey));
     }
 
     // Stores the draft; returns the stored page.
@@ -127,7 +141,15 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         return result;
     }
 
+    // Pressing «Зберегти» / «Опублікувати» on an incomplete new page shows its errors and moves to the first one.
+    function reveal() {
+        setAttempted(true);
+        setDetailsOpen(true);
+        revealFirstError();
+    }
+
     async function save() {
+        if (validation && isNew && canManage && dirty && !busy) {reveal(); return;}
         if (!canManage || validation || !dirty || busy) return;
         setBusy("save");
         try {
@@ -141,6 +163,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
     }
 
     async function publish() {
+        if (validation && isNew && canManage && !busy) {reveal(); return;}
         if (!canManage || validation || busy) return;
         setBusy("publish");
         try {
@@ -155,8 +178,9 @@ export function CustomPageEditor({slug}: {slug?: string}) {
         } catch (error) { failure(error, "manage.content.page.publishFailed"); } finally { setBusy(null); }
     }
 
-    async function discardDraft() {
-        if (!canManage || busy || !page.data) return;
+    // Runs from the confirm dialog: the error text stays inside it.
+    async function discardDraft(): Promise<string | null> {
+        if (!canManage || busy || !page.data) return null;
         setBusy("discard");
         try {
             await discardManagePageDraft(eventID, page.data.ID);
@@ -164,12 +188,14 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             setEdited(null);
             toast.success(t("manage.content.page.discarded"));
             if (page.data.Slug !== slug) router.replace(`/manage/content/pages/${page.data.Slug}`);
-        } catch (error) { failure(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
+            return null;
+        } catch (error) { return failureMessage(error, "manage.content.page.discardFailed"); } finally { setBusy(null); }
     }
 
     async function remove() {
         if (!page.data || !canManage) return;
         setBusy("discard");
+        setDeleteError("");
         try {
             await deleteManagePage(eventID, page.data.ID);
             await Promise.all([
@@ -179,7 +205,7 @@ export function CustomPageEditor({slug}: {slug?: string}) {
             toast.success(t("manage.content.page.deleted"));
             router.replace("/manage/content/landing");
         } catch (error) {
-            toastFailure(error, t("manage.content.page.deleteFailed"));
+            setDeleteError(failureText(error, t("manage.content.page.deleteFailed")));
             setBusy(null);
         }
     }
@@ -191,9 +217,9 @@ export function CustomPageEditor({slug}: {slug?: string}) {
 
     const settings = <div className={`event-manage-page-details${detailsOpen ? "" : " is-collapsed"}`} aria-label={t("manage.content.page.settings")}>
         <button className="event-manage-page-details__toggle" type="button" aria-expanded={detailsOpen} aria-controls={detailsID} onClick={() => setDetailsOpen(open => !open)}><span><strong>{t("manage.content.page.settings")}</strong><small>{draft.Title || t("manage.content.page.new")} · {draft.Visibility === 2 ? t("manage.content.page.visibilityModerators") : draft.Visibility === 1 ? t("manage.content.page.visibilityParticipants") : t("manage.content.page.visibilityPublic")}</small></span><ChevronDown size={18} aria-hidden="true" /></button>
-        {detailsOpen && <div className="event-manage-page-details__fields" id={detailsID}>
-            <div className="event-manage-field"><FieldLabel htmlFor={`${detailsID}-title`} label={t("manage.content.page.title")} required help={t("manage.content.page.titleHelp")} /><input id={`${detailsID}-title`} className={`event-manage-input${titleError ? " is-invalid" : ""}`} aria-label={t("manage.content.page.title")} aria-invalid={!!titleError} aria-describedby={titleError ? `${detailsID}-title-error` : undefined} value={draft.Title} required disabled={!canManage || (isNew && !!busy)} onChange={e => change({...draft, Title: e.target.value})} maxLength={255} />{titleError && <p className="event-content-editor__field-error" id={`${detailsID}-title-error`} role="alert">{titleError}</p>}</div>
-            <div className="event-manage-field"><FieldLabel htmlFor={`${detailsID}-slug`} label={t("manage.content.page.slug")} required help={t("manage.content.page.slugHelp")} /><div className="event-manage-page-slug"><span>/</span><input id={`${detailsID}-slug`} className={`event-manage-input${slugError ? " is-invalid" : ""}`} aria-label={t("manage.content.page.slugLabel")} aria-invalid={!!slugError} aria-describedby={slugError ? `${detailsID}-slug-error` : undefined} value={draft.Slug} required disabled={!canManage || (isNew && !!busy)} onChange={e => change({...draft, Slug: e.target.value.toLowerCase()})} maxLength={128} /></div>{slugError && <p className="event-content-editor__field-error" id={`${detailsID}-slug-error`} role="alert">{slugError}</p>}</div>
+        {detailsOpen && <div className="event-manage-page-details__fields" id={detailsID} ref={detailsRef}>
+            <div className="event-manage-field"><FieldLabel htmlFor={`${detailsID}-title`} label={t("manage.content.page.title")} required help={t("manage.content.page.titleHelp")} /><input id={`${detailsID}-title`} className={`event-manage-input${shownTitleError ? " is-invalid" : ""}`} aria-label={t("manage.content.page.title")} aria-invalid={!!shownTitleError} aria-describedby={shownTitleError ? `${detailsID}-title-error` : undefined} value={draft.Title} required disabled={!canManage || (isNew && !!busy)} onChange={e => change({...draft, Title: e.target.value})} onBlur={leave("title")} maxLength={255} />{shownTitleError && <p className="event-content-editor__field-error" id={`${detailsID}-title-error`} role="alert">{shownTitleError}</p>}</div>
+            <div className="event-manage-field"><FieldLabel htmlFor={`${detailsID}-slug`} label={t("manage.content.page.slug")} required help={t("manage.content.page.slugHelp")} /><div className="event-manage-page-slug"><span>/</span><input id={`${detailsID}-slug`} className={`event-manage-input${shownSlugError ? " is-invalid" : ""}`} aria-label={t("manage.content.page.slugLabel")} aria-invalid={!!shownSlugError} aria-describedby={shownSlugError ? `${detailsID}-slug-error` : undefined} value={draft.Slug} required disabled={!canManage || (isNew && !!busy)} onChange={e => change({...draft, Slug: e.target.value.toLowerCase()})} onBlur={leave("slug")} maxLength={128} /></div>{shownSlugError && <p className="event-content-editor__field-error" id={`${detailsID}-slug-error`} role="alert">{shownSlugError}</p>}</div>
             <div className="event-manage-field"><FieldLabel label={t("manage.content.page.access")} required help={t("manage.content.page.accessHelp")} /><EventSelect ariaLabel={t("manage.content.page.accessLabel")} value={String(draft.Visibility)} disabled={!canManage || (isNew && !!busy)} options={[{value: "0", label: t("manage.content.page.visibilityPublic")}, {value: "1", label: t("manage.content.page.visibilityParticipants")}, {value: "2", label: t("manage.content.page.visibilityModerators")}]} onValueChange={value => {const visibility = Number(value) as 0 | 1 | 2; change({...draft, Visibility: visibility, Navigation: visibility === 2 ? 0 : draft.Navigation});}} /></div>
             <div className="event-manage-field"><FieldLabel label={t("manage.content.page.menu")} required help={t("manage.content.page.menuHelp")} /><EventSelect ariaLabel={t("manage.content.page.menuLabel")} value={draft.Visibility === 2 || draft.Navigation === 0 ? "0" : "1"} disabled={!canManage || (isNew && !!busy) || draft.Visibility === 2} options={[{value: "1", label: t("manage.content.page.menuShow")}, {value: "0", label: t("manage.content.page.menuHide")}]} onValueChange={value => change({...draft, Navigation: value === "1" ? 1 : 0})} /></div>
             <div className="event-manage-field"><FieldLabel label={t("manage.content.page.after")} required={draft.Navigation !== 0 && draft.Visibility !== 2} help={t("manage.content.page.afterHelp")} /><EventSelect ariaLabel={t("manage.content.page.afterLabel")} value={shownPlacement} disabled={!canManage || (isNew && !!busy) || draft.Navigation === 0 || draft.Visibility === 2} options={[{value: "first", label: t("manage.content.page.afterFirst")}, {value: "challenges", label: t("manage.content.page.afterChallenges")}, {value: "results", label: t("manage.content.page.afterResults"), disabled: !scoreboardShown, disabledReason: !scoreboardShown ? t("manage.content.page.resultsHidden") : undefined}, ...existingPages.filter(item => item.ID !== page.data?.ID).map(item => ({value: item.ID, label: t("manage.content.page.afterPage", {title: item.Title}), disabled: item.Navigation === 0 || !item.PublishedAt, disabledReason: !item.PublishedAt ? t("manage.content.page.notPublished") : item.Visibility === 2 ? t("manage.content.page.moderatorsOnly") : item.Navigation === 0 ? t("manage.content.page.notInMenu") : undefined}))]} onValueChange={value => change({...draft, NavigationAfter: value})} /></div>
@@ -202,11 +228,11 @@ export function CustomPageEditor({slug}: {slug?: string}) {
 
     return <div className="event-manage-content">
         <header className="event-manage-heading"><div><h1>{isNew ? t("manage.content.page.new") : draft.Title}</h1><p>{t("manage.content.page.lead")}</p></div><div className="event-manage-heading__actions">{page.data && published ? <EventTooltip content={t("manage.content.page.openTip")}>{tipID => <Link className="ib-btn event-manage-icon-action" href={`/${page.data.Slug}`} target="_blank" aria-label={t("manage.content.page.open")} aria-describedby={tipID}><ArrowUpRight size={17} /></Link>}</EventTooltip> : <EventTooltip content={t("manage.content.page.openDisabledTip")}>{tipID => <button className="ib-btn event-manage-icon-action" type="button" aria-label={t("manage.content.page.open")} aria-describedby={tipID} disabled><ArrowUpRight size={17} /></button>}</EventTooltip>}{!isNew && canManage && <EventTooltip content={t("manage.content.page.deleteTip")}>{tipID => <button className="ib-btn ib-btn--danger event-manage-icon-action" type="button" aria-label={t("manage.content.page.delete")} aria-describedby={tipID} disabled={!!busy} onClick={() => setDeleteOpen(true)}><Trash2 size={17} /></button>}</EventTooltip>}</div></header>
-        <DraftBar state={{dirty, hasDraft: !!page.data?.Draft, published}} busy={busy} canManage={canManage} invalid={!!validation}
-            onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={() => void discardDraft()} />
+        <DraftBar state={{dirty, hasDraft: !!page.data?.Draft, published}} busy={busy} canManage={canManage} invalid={!!validation && (!isNew || attempted)}
+            onSave={() => void save()} onPublish={() => void publish()} onRevertLocal={() => setEdited(null)} onDiscardDraft={discardDraft} />
         <BlockStackEditor editorKey={`${eventID}:${key}`} eventID={eventID} coverImage={event.PreviewPicture ?? ""} document={draft.Document} catalog={catalog} values={values} validation={documentError}
             canEdit={canManage} pageVisibility={draft.Visibility} previewTitle={draft.Title || t("manage.content.page.new")} before={settings} onChange={changeDocument} />
-        <ConfirmDialog open={deleteOpen} onCancel={() => {if (!busy) setDeleteOpen(false);}} tone="danger" busy={!!busy}
+        <ConfirmDialog open={deleteOpen} onCancel={() => {if (!busy) {setDeleteOpen(false); setDeleteError("");}}} tone="danger" busy={!!busy} busyLabel={t("common.busy.deleting")} error={deleteError || undefined}
             title={t("manage.content.page.deleteTitle", {title: page.data?.Title ?? ""})} description={t("manage.content.page.deleteBody")}
             cancelLabel={t("manage.content.page.keep")} confirmLabel={t("manage.content.page.delete")} onConfirm={() => void remove()} />
     </div>;

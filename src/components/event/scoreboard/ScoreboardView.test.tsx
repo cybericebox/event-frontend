@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, render, screen, waitFor} from "@testing-library/react";
 import {focusManager, QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ScoreboardView} from "./ScoreboardView";
+import {ResultsUnavailableError} from "@/api/manageResults";
 import {apiReadable, audiences, freezeApplied, infoAvailability, phases, visibilities, type Phase} from "./scoreboardMatrix.fixture";
 
 const state = vi.hoisted(() => ({preview: false, previewBoard: vi.fn(), staff: false, event: null as Record<string, unknown> | null, participant: null as Record<string, unknown> | null, getResults: vi.fn(), getChanges: vi.fn()}));
@@ -144,11 +145,30 @@ it("polls the changes after its snapshot and reloads only for visible changes", 
     focusManager.setFocused(undefined);
 });
 
-it("explains a closed ranking inside the table block", () => {
+it("explains a closed ranking inside the table block, without the search, the columns or the poll status", () => {
     state.event = event(-hour, "participants_only");
     renderView();
     expect(screen.getByText("Рейтинг доступний лише учасникам")).toBeTruthy();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(screen.queryByRole("columnheader")).toBeNull();
+    expect(screen.queryByText("Автооновлення")).toBeNull();
     expect(state.getResults).not.toHaveBeenCalled();
+});
+
+it("before the start a «not started» answer leaves only the countdown, never «hidden by the organizer»", async () => {
+    for (const countdown of [true, false]) {
+        cleanup();
+        state.event = {...event(hour, "available"), ShowStartCountdown: countdown};
+        state.getResults.mockRejectedValue(new ResultsUnavailableError("not_started"));
+        renderView();
+        // With the start countdown its line says it; without one the block does, once either way.
+        expect((await screen.findAllByText("Рейтинг зʼявиться після старту")).length).toBe(1);
+        expect(screen.queryByRole("timer") !== null).toBe(countdown);
+    }
+    expect(screen.queryByText("Рейтинг приховано організатором")).toBeNull();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(screen.queryByRole("columnheader")).toBeNull();
+    expect(screen.queryByText("Автооновлення")).toBeNull();
 });
 
 const offsets: Record<Phase, [number, number]> = {before: [hour, 5 * hour], during: [-hour, hour], after: [-5 * hour, -hour]};

@@ -17,7 +17,10 @@ const state = vi.hoisted(() => ({
     stats: null as unknown,
     asArgs: [] as (string | undefined)[],
     statsStatus: 0,
+    joinStatus: 0,
+    push: vi.fn(),
 }));
+vi.mock("next/navigation", async importOriginal => ({...await importOriginal<object>(), useRouter: () => ({push: state.push, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn(), refresh: vi.fn(), forward: vi.fn()}), usePathname: () => "/participation"}));
 
 vi.mock("echarts-for-react", () => ({default: () => <div data-testid="chart" />}));
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
@@ -25,7 +28,7 @@ vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: ()
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => state.guest}));
 vi.mock("@/components/event/useStaffAccess", () => ({useStaffAccess: () => ({staff: state.staff, pending: false})}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
-vi.mock("@/api/clientAuth", () => ({getCurrentUser:async()=>({FirstName:"Олена",LastName:"Коваль",Email:"test@example.test"}),getParticipation: async () => ({Phase: "started", Staff: state.staff, RosterOpen: state.rosterOpen, RosterReason: state.rosterOpen ? "" : "roster_frozen_at_start"})}));
+vi.mock("@/api/clientAuth", () => ({getJoinStatus: async () => state.joinStatus, getCurrentUser:async()=>({FirstName:"Олена",LastName:"Коваль",Email:"test@example.test"}),getParticipation: async () => ({Phase: "started", Staff: state.staff, RosterOpen: state.rosterOpen, RosterReason: state.rosterOpen ? "" : "roster_frozen_at_start"})}));
 vi.mock("@/api/participantForm", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/participantForm")>()),
     getOwnParticipantAnswers: async () => ({Form: {Fields: []}, Answers: {}, Editable: true, Missing: state.missing, Blocking: false}),
@@ -58,7 +61,7 @@ function view() {
 }
 
 beforeEach(() => {
-    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = []; state.stats = null; state.statsStatus = 0; state.asArgs = []; state.missing = [];
+    state.participant = null; state.guest = null; state.staff = false; state.rosterOpen = true; state.members = []; state.stats = null; state.statsStatus = 0; state.asArgs = []; state.missing = []; state.joinStatus = 0; state.push.mockReset();
     window.history.replaceState(null, "", "/participation?tab=team");
     sessionStorage.clear();
 });
@@ -200,6 +203,22 @@ it("asks a visitor with a join link to register first and remembers the code", a
     expect(sessionStorage.getItem("cib_team_join_code")).toBe("abc");
 });
 
+it("sends «Приєднатися» to /join with this browser's intent, so a registration without fields needs no second click", async () => {
+    state.guest = event;
+    view();
+    fireEvent.click(await screen.findByRole("link", {name: "Приєднатися"}));
+    expect(state.push).toHaveBeenCalledWith(expect.stringMatching(/^\/join\?continue=[0-9a-f]{32}$/));
+    expect(JSON.parse(sessionStorage.getItem("event-join-intent")!).eventID).toBe("event-1");
+});
+
+it.each([[1, "Заявка на участь очікує рішення організаторів."], [3, "Заявку відхилено. Зверніться до організаторів заходу."]])("names an application in status %s instead of offering to join again", async (status, text) => {
+    state.guest = event;
+    state.joinStatus = status;
+    view();
+    expect(await screen.findByText(text)).toBeTruthy();
+    expect(screen.queryByRole("link", {name: "Приєднатися"})).toBeNull();
+});
+
 const individual = {...event, Participation: 0};
 
 it("opens the team tab by default for a captain whose team is below the minimum", async () => {
@@ -257,4 +276,14 @@ it("does not expose invitations or duplicate locked-roster cards once formed",as
  expect(screen.getByRole("cell",{name:"Олена (ви)"})).toBeTruthy();
  expect(screen.queryByText(/^Склад сформовано /)).toBeNull();
  expect(screen.queryByText(/Склад команди вже зафіксовано/)).toBeNull();
+});
+
+it("confirms leaving a formed team with the verb of its question: «Покинути»", async () => {
+    state.participant = {event, participantInfo: info, ownTeam: team(TeamRole.Member, {Formed: true})};
+    state.members = [member("1", "Олена", TeamRole.Captain, false), member("2", "Іван", TeamRole.Member, true)];
+    HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {this.setAttribute("open", "");};
+    view();
+    fireEvent.click(await screen.findByRole("button", {name: "Покинути захід"}));
+    expect(await screen.findByRole("button", {name: "Покинути"})).toBeTruthy();
+    expect(screen.queryByRole("button", {name: "Вийти"})).toBeNull();
 });

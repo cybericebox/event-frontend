@@ -66,7 +66,7 @@ describe("Огляд", () => {
         expect(within(stats).getByText("Правильних: 10 (25%)")).toBeTruthy();
         expect(within(stats).getByText("Стенди готові")).toBeTruthy();
         expect(screen.getByTestId("chart").getAttribute("data-series")).toBe("5");
-        const feed = screen.getByRole("region", {name: "Стрічка подій"});
+        const feed = screen.getByRole("region", {name: "Стрічка активності"});
         expect(within(feed).getByText("«Blue» — криголам у «Web 1»")).toBeTruthy();
         expect(within(feed).getByText("Стенд команди «Red» не запустився")).toBeTruthy();
         expect(within(feed).getByText("no capacity")).toBeTruthy();
@@ -90,7 +90,7 @@ describe("Огляд", () => {
         await screen.findByRole("region", {name: "Ключові числа"});
         expect(screen.queryByTestId("chart")).toBeNull();
         expect(within(screen.getByRole("img", {name: "Активність"})).getByText("У цей період ще не було активності")).toBeTruthy();
-        expect(within(screen.getByRole("region", {name: "Стрічка подій"})).getByText("Поки що нічого не сталося")).toBeTruthy();
+        expect(within(screen.getByRole("region", {name: "Стрічка активності"})).getByText("Поки що нічого не сталося")).toBeTruthy();
     });
 
     it("shows only the registration counters before the start, no setup checklist", async () => {

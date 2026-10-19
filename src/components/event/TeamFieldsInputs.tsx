@@ -19,7 +19,7 @@ import {isFileAnswer, uploadSelfAnswerFile, type AnswerFile} from "@/api/answerF
 // condition on a locked question holds.
 // upload stores a «Файл» answer; by default the participant or captain uploads
 // on the event site, staff pass the /manage upload. A cleared file is "".
-export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnly = false, staffOnly = false, fillable = [], upload = (key, file) => uploadSelfAnswerFile("team", key, file)}: {
+export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnly = false, staffOnly = false, fillable = [], errors = {}, upload = (key, file) => uploadSelfAnswerFile("team", key, file)}: {
     form: ParticipantForm;
     answers: ParticipantAnswers;
     onChange: (key: string, value: ParticipantAnswer) => void;
@@ -28,6 +28,8 @@ export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnl
     // Organizer view: only the staff-only questions (conditions still see every answer).
     staffOnly?: boolean;
     fillable?: readonly string[];
+    // Client validation by field key: shown under the field and tied to its control.
+    errors?: Readonly<Record<string, string>>;
     upload?: (key: string, file: File) => Promise<AnswerFile>;
 }) {
     const preview = useParticipantPreview();
@@ -45,15 +47,19 @@ export function TeamFieldsInputs({form, answers, onChange, disabled, editableOnl
             const required = form.Required && !!block.required;
             // choices carry their own <label>, so their field is a group, not a label
             const Field = block.input === "checkbox" || block.input === "multi_select" || block.input === "file" || block.input === "date" ? "div" : "label";
-            return <Field className="event-manage-field" key={block.id} role={Field === "div" ? "group" : undefined} aria-label={Field === "div" ? block.label : undefined}><span>{block.label}{block.required && <span className="event-field-required"> *</span>}</span>{block.help && <small>{block.help}</small>}
+            const error = errors[block.key];
+            const errorID = `team-field-${block.id}-error`;
+            const invalid = error ? {"aria-invalid": true, "aria-describedby": errorID} as const : {};
+            return <Field className="event-manage-field" key={block.id} role={Field === "div" ? "group" : undefined} aria-label={Field === "div" ? block.label : undefined} {...(Field === "div" ? invalid : {})}><span>{block.label}{block.required && <span className="event-field-required"> *</span>}</span>{block.help && <small>{block.help}</small>}
                 {block.input === "file" ? <AnswerFileInput id={`team-${block.id}`} field={block} value={isFileAnswer(value) ? value : undefined} upload={file => preview.active ? previewAnswerFile(file) : upload(block.key, file)} onChange={next => onChange(block.key, next ?? "")} disabled={disabled} />
                     : block.input === "date" ? <DateAnswerInput mode={dateModeOf(block)} value={typeof value === "string" ? value : ""} onChange={next => onChange(block.key, next)} ariaLabel={block.label} disabled={disabled} />
-                    : block.input === "long_text" ? <textarea className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} rows={3} />
+                    : block.input === "long_text" ? <textarea className="event-manage-input" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} rows={3} {...invalid} />
                     : block.input === "checkbox" ? <EventCheckbox checked={value === true} onCheckedChange={checked => onChange(block.key, checked)} disabled={disabled} label={t("common.yes")} />
-                    : block.input === "number" ? <input className="event-manage-input" type="number" value={value === undefined ? "" : String(value)} onChange={e => onChange(block.key, e.target.value === "" ? "" : Number(e.target.value))} required={required} disabled={disabled} />
+                    : block.input === "number" ? <input className="event-manage-input" type="number" value={value === undefined ? "" : String(value)} onChange={e => onChange(block.key, e.target.value === "" ? "" : Number(e.target.value))} required={required} disabled={disabled} {...invalid} />
                     : block.input === "select" ? <EventSelect value={String(value ?? "")} ariaLabel={block.label} disabled={disabled} onValueChange={next => onChange(block.key, next)} options={[{value: "", label: t("common.chooseOption")}, ...(block.options ?? []).map(option => ({value: option, label: option}))]} />
                     : block.input === "multi_select" ? <span className="grid gap-2">{(block.options ?? []).map(option => <EventCheckbox key={option} checked={Array.isArray(value) && value.includes(option)} onCheckedChange={checked => onChange(block.key, checked ? [...(Array.isArray(value) ? value : []), option] : (Array.isArray(value) ? value : []).filter(item => item !== option))} disabled={disabled} label={option} />)}</span>
-                    : <input className="event-manage-input" type="text" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} />}
+                    : <input className="event-manage-input" type="text" value={String(value ?? "")} onChange={e => onChange(block.key, e.target.value)} required={required} disabled={disabled} {...invalid} />}
+                {error && <span className="ib-field__error" id={errorID} role="alert">{error}</span>}
             </Field>;
         })}
     </div>;

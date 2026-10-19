@@ -20,6 +20,7 @@ import {usePrivateEvent} from "@/components/event/PrivateEventBootstrap";
 import {EventCountdown} from "@/components/event/EventCountdown";
 import {StageTimers} from "./StageTimers";
 import {TeamConfirmPrompt} from "@/components/event/participation/TeamConfirmPrompt";
+import {NotParticipant} from "@/components/event/participation/NotParticipant";
 import {useParticipation} from "@/components/event/participation/participationRules";
 import {BoardFilterBar} from "./BoardFilterBar";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -164,7 +165,9 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     }, select: data => preview.active ? data.filter(item => item.BoardPublished !== false) : data, enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (access.isPending) return <EventLoading label={t("challenges.loading")} />;
-    if (!access.data?.CanManage) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
+    // Staff without the manage right cannot register for their own event either: no «Приєднатися» for them.
+    if (access.data && !access.data.CanManage) return <Page><EmptyState message={t("challenges.viewerOnly")} /></Page>;
+    if (!access.data?.CanManage) return <Page><NotParticipant eventID={event.EventID} message={t("challenges.participantsOnly")} action={t("challenges.join")} /></Page>;
     const banner = preview.active ? undefined : <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
     if (!board.data) {
         return <Page banners={banner}>{board.isPending

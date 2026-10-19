@@ -16,9 +16,11 @@ export type LabStatus = z.infer<typeof LabStatusSchema>;
 
 const optionalNumber = z.number().int().nullish().transform(value => value ?? 0);
 
-// The launch queue of a lab; Position 0 means every pod is already dispatched.
+// The launch queue of a lab; Position 0 means every pod is already dispatched. Attempt and RetryAt describe a withdrawn launch
+// (Reason Withdrawn), WaitingSince a lab whose sent pods wait for a new cluster node (Reason NodeStarting).
 export const LabQueueSchema = z.object({
     Position: optionalNumber, Length: optionalNumber, Reason: optionalText, Message: optionalText, Pods: optionalNumber, Pending: optionalNumber,
+    Attempt: optionalNumber, RetryAt: optionalTime, WaitingSince: optionalTime,
 });
 export type LabQueue = z.infer<typeof LabQueueSchema>;
 
@@ -51,7 +53,11 @@ const standLabSchema = z.object({
     Questions: z.array(z.object({EventChallengeID: id, Name: z.string()})).nullish().transform(value => value ?? null),
 });
 // A stand's place in the launch queue (the stands list); Position 0 = everything is dispatched.
-const standQueueSchema = z.object({QueuedLabs: optionalNumber, Position: optionalNumber, Length: optionalNumber, Reason: optionalText});
+// NodeStartingLabs are the labs whose sent pods wait for a new cluster node.
+const standQueueSchema = z.object({
+    QueuedLabs: optionalNumber, Position: optionalNumber, Length: optionalNumber, Reason: optionalText,
+    NodeStartingLabs: optionalNumber, Attempt: optionalNumber, RetryAt: optionalTime, WaitingSince: optionalTime,
+});
 const standSchema = z.object({
     TeamID: id, TeamName: optionalText, Moderators: z.boolean().default(false), Status: StandStatusSchema,
     Reason: optionalText, UpdatedAt: optionalTime, Generation: z.number().int().default(0),
@@ -59,6 +65,9 @@ const standSchema = z.object({
     Queue: standQueueSchema.nullish().transform(value => value ?? null),
     // Some images of the stand are pulled by tag, not by digest.
     ImageWarning: z.boolean().nullish().transform(value => value ?? false),
+    // The team's resource reservation: when it deletes the labs (its ending notice), or that it already did. Staff only.
+    ReservationEndsAt: optionalTime,
+    ReservationEnded: z.boolean().nullish().transform(value => value ?? false),
 });
 // Unavailable: images that cannot be pulled (counted in Total but never sent to prewarm; their labs are refused at deploy).
 const prewarmSchema = z.object({

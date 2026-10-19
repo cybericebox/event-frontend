@@ -4,6 +4,7 @@ import {cleanup, fireEvent, render, screen, waitFor, within} from "@testing-libr
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null}));
+import {ManagerContext} from "@/components/event/manage/managerContext";
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event, canManage: true})}));
 vi.mock("echarts-for-react", () => ({default: ({option}: {option: {series: unknown[]}}) => <div data-testid="chart" data-series={option.series.length} />}));
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
@@ -61,7 +62,7 @@ function mockApi({sensitive}: {sensitive: boolean}) {
 }
 
 function renderTasks() {
-    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AnalyticsTasks /></QueryClientProvider>);
+    return render(<ManagerContext.Provider value={{event: event as never, canManage: true, canExport: true}}><QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AnalyticsTasks /></QueryClientProvider></ManagerContext.Provider>);
 }
 
 describe("Завдання", () => {

@@ -19,6 +19,8 @@ function view() {
 it("hides participant-only pages until the simulated registration is approved", async () => {
     view();
     await screen.findByText("Сторінку не знайдено або доступ обмежено");
+    // The line under the title agrees with it (not «it does not exist or was moved»).
+    expect(screen.getByText("Такої сторінки немає, або вона вам недоступна.")).toBeTruthy();
     expect(screen.queryByText("Participant-only page")).toBeNull();
     expect(screen.queryByText("Staff cache")).toBeNull();
 });

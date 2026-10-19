@@ -65,8 +65,18 @@ describe("event setup steps", () => {
         expect(summarizeSetup(buildSetupSteps(untouched)).complete).toBe(false);
     });
 
-    it("flags an unpublished landing draft", () => {
-        expect(status(base({content: {LandingDraft: {}} as never}), "pages")).toBe("todo");
+    it("asks to publish a first landing that exists only as a draft", () => {
+        expect(status(base({content: {Landing: {blocks: []}, LandingDraft: {}} as never}), "pages")).toBe("todo");
+    });
+
+    it("keeps a published home page done while a draft waits, with only a hint", () => {
+        const clean = summarizeSetup(buildSetupSteps(base()));
+        const input = base({content: {Landing: {blocks: [{}]}, LandingDraft: {}} as never});
+        const step = buildSetupSteps(input).find(item => item.id === "pages")!;
+        expect(step.status).toBe("done");
+        expect(step.detail).toBe("pagesPublished");
+        expect(step.warning?.detail).toBe("pagesDraft");
+        expect(summarizeSetup(buildSetupSteps(input)).done).toBe(clean.done);
     });
 
     it("asks for a resource reservation while lab sets are attached and the platform has not reserved", () => {

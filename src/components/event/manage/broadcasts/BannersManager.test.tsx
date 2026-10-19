@@ -230,3 +230,55 @@ it.each([
     }
     expect(api.filter(call => call.method === "GET").length).toBeGreaterThan(0);
 });
+
+describe("Банери: стан форми і списку", () => {
+    it("shows the text error only after the field is left empty", async () => {
+        mockServer([]);
+        wrap();
+        await screen.findByText("Банерів ще немає.");
+        fireEvent.click(screen.getByRole("button", {name: /Створити банер/}));
+        const dialog = screen.getByText("Новий банер", {selector: "h2"}).closest("dialog")!;
+        const text = within(dialog).getByRole("textbox", {name: /Текст/});
+        expect(within(dialog).queryByText("Вкажіть текст банера.")).toBeNull();
+        expect(text.getAttribute("aria-invalid")).toBeNull();
+        fireEvent.blur(text);
+        expect(within(dialog).getByText("Вкажіть текст банера.")).toBeTruthy();
+    });
+
+    it("asks before closing a form with changes and keeps them on «Скасувати»", async () => {
+        mockServer([]);
+        wrap();
+        await screen.findByText("Банерів ще немає.");
+        fireEvent.click(screen.getByRole("button", {name: /Створити банер/}));
+        const dialog = screen.getByText("Новий банер", {selector: "h2"}).closest("dialog")!;
+        fireEvent.change(within(dialog).getByRole("textbox", {name: /Текст/}), {target: {value: "Технічні роботи"}});
+        fireEvent.click(within(dialog).getAllByRole("button", {name: "Скасувати"})[0]);
+        const confirm = screen.getByText("Відкинути зміни банера?").closest("dialog")!;
+        fireEvent.click(within(confirm).getByRole("button", {name: "Скасувати"}));
+        expect((within(dialog).getByRole("textbox", {name: /Текст/}) as HTMLTextAreaElement).value).toBe("Технічні роботи");
+        fireEvent.click(within(dialog).getAllByRole("button", {name: "Скасувати"})[0]);
+        fireEvent.click(within(screen.getByText("Відкинути зміни банера?").closest("dialog")!).getByRole("button", {name: "Відкинути зміни"}));
+        await waitFor(() => expect(screen.queryByText("Новий банер", {selector: "h2"})).toBeNull());
+    });
+
+    it("closes an untouched form without asking", async () => {
+        mockServer([]);
+        wrap();
+        await screen.findByText("Банерів ще немає.");
+        fireEvent.click(screen.getByRole("button", {name: /Створити банер/}));
+        const dialog = screen.getByText("Новий банер", {selector: "h2"}).closest("dialog")!;
+        fireEvent.click(within(dialog).getByRole("button", {name: "Скасувати"}));
+        expect(screen.queryByText("Відкинути зміни банера?")).toBeNull();
+        await waitFor(() => expect(screen.queryByText("Новий банер", {selector: "h2"})).toBeNull());
+    });
+
+    it("tells an ended and a scheduled banner apart from a showing one", async () => {
+        mockServer([banner(1, {ActiveTo: "2020-01-01T00:00:00Z"}), banner(2, {ActiveFrom: "2099-01-01T00:00:00Z"}), banner(3)]);
+        wrap();
+        await screen.findByText("Банер 1");
+        const rows = screen.getAllByRole("row");
+        expect(within(rows[1]).getByText("Завершено")).toBeTruthy();
+        expect(within(rows[2]).getByText("Заплановано")).toBeTruthy();
+        expect(within(rows[3]).getByText("Увімкнено")).toBeTruthy();
+    });
+});

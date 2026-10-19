@@ -42,8 +42,13 @@ export function ResourcesPage() {
         if (new URLSearchParams(window.location.search).get("request") === "1") setRequesting(true);
     }, [setRequesting]);
 
+    // One request at a time: the server refuses a second while one is reviewed.
+    const pending = !!query.data?.Changes.some(change => change.Status === "pending");
     const heading = <header className="event-manage-heading"><div><h1>{t("manage.resources.title")}</h1><p>{t("manage.resources.subtitle")}</p></div>
-        {canManage && query.data?.Reserved && <div className="event-manage-heading__actions"><button className="ib-btn ib-btn--primary" type="button" onClick={() => setRequesting(true)}>{t("manage.resources.requestChange")}</button></div>}
+        {canManage && query.data?.Reserved && <div className="event-manage-heading__actions">
+            {pending && <span className="event-resources__pending" id="resources-pending">{t("manage.resources.pendingRequest")}</span>}
+            <button className="ib-btn ib-btn--primary" type="button" disabled={pending} aria-describedby={pending ? "resources-pending" : undefined} onClick={() => setRequesting(true)}>{t("manage.resources.requestChange")}</button>
+        </div>}
     </header>;
     if (query.isPending) return <EventLoading event={event} label={t("manage.resources.loading")} />;
     if (query.isError && !query.data) return <EventLoadError message={t("manage.resources.loadFailed")} error={query.error} onRetry={() => void query.refetch()} />;
@@ -63,7 +68,7 @@ export function ResourcesPage() {
             </dl>
             <ResourceObservationFacts observation={resources.Observation ?? null} stale={query.isError} />
             <section className="event-manage-section">
-                <h2>{t("manage.resources.history.title")}</h2>
+                <div className="event-manage-section__head"><h2>{t("manage.resources.history.title")}</h2></div>
                 <div className="event-participants-table" role="region" tabIndex={0} aria-label={t("manage.resources.history.title")}><table>
                     <thead><tr><th scope="col">{t("manage.resources.history.requested")}</th><th scope="col">{t("manage.resources.history.change")}</th><th scope="col">{t("manage.resources.history.reason")}</th><th scope="col">{t("manage.resources.history.status")}</th></tr></thead>
                     {resources.Changes.length === 0 ? <TableEmptyBody colSpan={4} message={t("manage.resources.history.empty")} /> : <tbody>{resources.Changes.map(change => <tr key={change.ID}>
@@ -71,8 +76,8 @@ export function ResourcesPage() {
                         <td>{changeSummary(change)}</td>
                         <td>{change.Reason}</td>
                         <td><span className={`ib-tag ib-tag--sm ${STATUS_TONE[change.Status]}`}>{t(`manage.resources.status.${change.Status}`)}</span>
-                            {change.DecidedAt && <small className="event-participants-table__dim"> {formatDateTime(change.DecidedAt)}</small>}
-                            {change.DecisionNote && <small className="event-participants-table__dim">{change.DecisionNote}</small>}</td>
+                            {change.DecidedAt && <small className="event-participants-table__dim event-resources__decision"><time dateTime={change.DecidedAt}>{formatDateTime(change.DecidedAt)}</time></small>}
+                            {change.DecisionNote && <small className="event-participants-table__dim event-resources__decision">{change.DecisionNote}</small>}</td>
                     </tr>)}</tbody>}
                 </table></div>
             </section>

@@ -91,7 +91,7 @@ describe("participation navigation", () => {
     });
 
     describe("analytics group", () => {
-        function renderAnalytics(analytics: {Sections: boolean; Sensitive: boolean} | undefined, infrastructure = false) {
+        function renderAnalytics(analytics: {Sections: boolean; Sensitive: boolean; People: boolean} | undefined, infrastructure = false) {
             render(<ManagerSidebar event={{...event, Participation: 1}} pathname="/manage/analytics" pages={[]} pagesError={false} canManage infrastructureAllowed={infrastructure} analytics={analytics} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
             const heading = screen.queryByRole("button", {name: "Аналітика"});
             if (heading) fireEvent.click(heading);
@@ -102,12 +102,12 @@ describe("participation navigation", () => {
             renderAnalytics(undefined);
             expect(screen.queryByRole("button", {name: "Аналітика"})).toBeNull();
             cleanup();
-            renderAnalytics({Sections: false, Sensitive: false});
+            renderAnalytics({Sections: false, Sensitive: false, People: false});
             expect(screen.queryByRole("button", {name: "Аналітика"})).toBeNull();
         });
 
         it("lists the sections in order and leaves out stands and integrity without the right", () => {
-            renderAnalytics({Sections: true, Sensitive: false});
+            renderAnalytics({Sections: true, Sensitive: false, People: false});
             expect(items()).toEqual([
                 ["Огляд", "/manage/analytics"],
                 ["Учасники", "/manage/analytics/participants"],
@@ -119,7 +119,7 @@ describe("participation navigation", () => {
         });
 
         it("adds stands for infrastructure events and integrity for the sensitive level", () => {
-            renderAnalytics({Sections: true, Sensitive: true}, true);
+            renderAnalytics({Sections: true, Sensitive: true, People: true}, true);
             expect(items().map(([label]) => label)).toEqual(["Огляд", "Учасники", "Завдання", "Прогрес", "Стенди", "Використання", "Доброчесність", "Комунікації", "Звіт"]);
         });
     });
@@ -155,7 +155,7 @@ describe("participation navigation", () => {
 
     describe("current item", () => {
         const current = (pathname: string) => {
-            render(<ManagerSidebar event={event} pathname={pathname} pages={[]} pagesError={false} canManage infrastructureAllowed={false} analytics={{Sections: true, Sensitive: false}} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
+            render(<ManagerSidebar event={event} pathname={pathname} pages={[]} pagesError={false} canManage infrastructureAllowed={false} analytics={{Sections: true, Sensitive: false, People: false}} onRetryPages={vi.fn()} onNavigate={vi.fn()} />);
             return Array.from(document.querySelectorAll("a[aria-current=page]")).map(link => link.getAttribute("href"));
         };
         it("marks only the best matching item on a sub-page", () => {

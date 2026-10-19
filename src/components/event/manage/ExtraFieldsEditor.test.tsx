@@ -129,3 +129,11 @@ it("keeps a restored staff-only file-type error at its answer-type control", asy
     expect(message?.getAttribute("role")).toBe("alert");
     expect(message?.textContent).toContain("Питання 1");
 });
+
+it("does not present a staff-only field as one the participant answers in the preview", async () => {
+    form.Document.blocks = [question("note", {label: "Нотатка організатора", staffOnly: true}), question("course", {label: "Курс"})];
+    render(<QueryClientProvider client={new QueryClient()}><ExtraFieldsEditor scope="participant" /></QueryClientProvider>);
+    const preview = await screen.findByRole("complementary", {name: "Попередній перегляд додаткових полів"});
+    const placeholders = [...preview.querySelectorAll("input")].map(input => input.placeholder);
+    expect(placeholders).toEqual(["Заповнює організатор", "Відповідь учасника"]);
+});

@@ -15,13 +15,15 @@ import "./confirmDialog.css";
 // A native <dialog> in the top layer, so it stacks over DialogModal and over
 // Radix dialogs alike. Inside a Radix dialog render it within the dialog's
 // content: its Esc is caught first, so the parent stays open.
-export function ConfirmDialog({open, onCancel, title, description, subject, confirmLabel, cancelLabel, tone = "default", busy = false, disabled = false, error, onConfirm, children}: {
+export function ConfirmDialog({open, onCancel, title, description, subject, confirmLabel, busyLabel, cancelLabel, tone = "default", busy = false, disabled = false, error, onConfirm, children}: {
     open: boolean;
     onCancel: () => void;
     title: string;
     description?: ReactNode;
     subject?: ReactNode;
     confirmLabel: string;
+    // The running action in the present tense («Видаляємо…»), shown in the button while busy.
+    busyLabel: string;
     cancelLabel?: string;
     tone?: "default" | "danger";
     busy?: boolean;
@@ -84,7 +86,7 @@ export function ConfirmDialog({open, onCancel, title, description, subject, conf
             </div> : null}
             <footer className="ib-modal__foot">
                 <button ref={cancelRef} className="ib-btn" type="button" disabled={busy} onClick={onCancel}>{cancelLabel ?? t("common.cancel")}</button>
-                <EventButton className={`ib-btn ${tone === "danger" ? "ib-btn--danger-solid" : "ib-btn--primary"}`} type="button" busy={busy} disabled={disabled} onClick={onConfirm}>{confirmLabel}</EventButton>
+                <EventButton className={`ib-btn ${tone === "danger" ? "ib-btn--danger-solid" : "ib-btn--primary"}`} type="button" busy={busy} busyLabel={busyLabel} disabled={disabled} onClick={onConfirm}>{confirmLabel}</EventButton>
             </footer>
         </>}
     </dialog>;

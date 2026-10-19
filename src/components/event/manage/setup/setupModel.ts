@@ -70,12 +70,13 @@ export function buildSetupSteps({config, lifecycle, attachments, content, mail, 
     steps.push({id: "testMode", status: "optional", href: "/manage/test-mode", detail: "testModeDefault"});
 
     if (content) {
-        // A new event has an empty home page nobody has built yet: only a saved draft or published blocks mean the organizer prepared it.
-        steps.push(content.LandingDraft
-            ? {id: "pages", status: "todo", href: "/manage/content/landing", detail: "pagesDraft"}
-            : content.Landing.blocks.length === 0
-                ? {id: "pages", status: "review", href: "/manage/content/landing", detail: "pagesUntouched"}
-                : {id: "pages", status: "done", href: "/manage/content/landing", detail: "pagesPublished"});
+        // The step follows the published page: a saved draft never un-completes it, it only adds a hint.
+        // A new event has an empty home page nobody has built yet: a first draft still has to be published.
+        steps.push(content.Landing.blocks.length > 0
+            ? {id: "pages", status: "done", href: "/manage/content/landing", detail: "pagesPublished", ...(content.LandingDraft ? {warning: {detail: "pagesDraft"}} : {})}
+            : content.LandingDraft
+                ? {id: "pages", status: "todo", href: "/manage/content/landing", detail: "pagesDraft"}
+                : {id: "pages", status: "review", href: "/manage/content/landing", detail: "pagesUntouched"});
     }
 
     if (mail) {

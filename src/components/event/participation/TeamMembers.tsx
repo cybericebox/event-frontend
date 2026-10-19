@@ -11,8 +11,10 @@ export type MemberRow = {member: TeamMember; stats: ParticipationMember | undefi
 
 // The roster joined with each member's results; members with points first, invitees who have not accepted yet last.
 export function memberRows(roster: readonly TeamMember[], stats: readonly ParticipationMember[]): MemberRow[] {
-    const byUser = new Map(stats.map(item => [item.UserID, item]));
-    return roster.map(member => ({member, stats: byUser.get(member.UserID)}))
+    const byUser = new Map(stats.filter(item => item.UserID).map(item => [item.UserID, item]));
+    // A member gets the others without account ids: their results are matched by the name instead.
+    const byName = new Map(stats.map(item => [item.Name, item]));
+    return roster.map(member => ({member, stats: member.Pending ? undefined : (member.UserID && byUser.get(member.UserID)) || byName.get(member.DisplayName)}))
         .sort((a, b) => Number(a.member.Pending) - Number(b.member.Pending) || (b.stats?.Points ?? 0) - (a.stats?.Points ?? 0) || a.member.DisplayName.localeCompare(b.member.DisplayName, "uk"));
 }
 
@@ -26,7 +28,7 @@ export function MembersCard({event, roster, error, onRetry, stats, actions, rost
                 <th>{t("participation.team.member")}</th><th>{t("participation.team.role")}</th>
                 <th className="is-num">{t("participation.team.points")}</th><th className="is-num">{t("participation.team.solves")}</th><th className="is-nowrap">{t("participation.team.joined")}</th>
                 <th><span className="ib-sr">{t("participation.team.actions")}</span></th>
-            </tr></thead><tbody>{memberRows(roster, stats).map(({member, stats: share}) => <tr key={member.UserID} className={member.Own ? "is-own" : undefined}>
+            </tr></thead><tbody>{memberRows(roster, stats).map(({member, stats: share}, index) => <tr key={member.UserID || `${index}:${member.DisplayName}`} className={member.Own ? "is-own" : undefined}>
                 <td>{member.Own ? t("participation.person.self",{name:member.DisplayName}) : member.DisplayName}</td>
                 <td>{roleLabels?.has(member.UserID) ? <span className="ib-tag ib-tag--role">{roleLabels.get(member.UserID)}</span> : member.Pending ? <span className="ib-tag ib-tag--warn">{t("participation.team.pending")}</span>
                     : member.Role === TeamRole.Captain ? <span className="ib-tag ib-tag--role">{t("participation.team.captain")}</span> : <span className="event-part__muted">{t("participation.team.member")}</span>}</td>

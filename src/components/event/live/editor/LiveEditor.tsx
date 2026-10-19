@@ -417,8 +417,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 </span>}
                 {canManage && <EventTooltip content={t("manage.live.links.hint")}>{id => <button className="ib-btn" type="button" aria-describedby={id} onClick={() => setLinksOpen(true)}><MonitorUp size={16} /> {t("manage.live.links.open")}</button>}</EventTooltip>}
                 <EventTooltip content={t("manage.live.openHint")}>{id => <a className="ib-btn" href="/live" target="_blank" rel="noreferrer" aria-describedby={id}><ExternalLink size={16} /> {t("manage.live.open")}</a>}</EventTooltip>
-                {canManage && <EventTooltip content={t("manage.live.publishHint")}>{id => <EventButton className="ib-btn ib-btn--primary" type="button" aria-describedby={id} busy={publishing}
-                    disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}>{publishing ? t("manage.live.publishing") : <><Send size={16} /> {t("manage.live.publish")}</>}</EventButton>}</EventTooltip>}
+                {canManage && <EventTooltip content={t("manage.live.publishHint")}>{id => <EventButton className="ib-btn ib-btn--primary" type="button" aria-describedby={id} busy={publishing} busyLabel={t("manage.live.publishing")}
+                    disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}><Send size={16} /> {t("manage.live.publish")}</EventButton>}</EventTooltip>}
             </div>
         </header>
         <nav className="event-live-scenes" aria-label={t("manage.live.scene.label")}>
@@ -511,7 +511,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                             <div className="ib-seg ib-seg--sm" role="group" aria-label={t("manage.live.format.mode")}>
                                 {(["auto", "custom"] as const).map(value => <button key={value} type="button" aria-pressed={mode === value} disabled={locked} onClick={() => {if (mode !== value) mutate(withLiveFormatMode(layout, shape, value));}}>{t(`manage.live.format.mode.${value}`)}</button>)}
                             </div>
-                            <EventTooltip content={<span className="event-brand-tooltip-copy">{t("manage.live.format.modeHelp", {name: tabLabel(layout.aspect)})}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: t("manage.live.format.mode")})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
+                            <EventTooltip help content={<span className="event-brand-tooltip-copy">{t("manage.live.format.modeHelp", {name: tabLabel(layout.aspect)})}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: t("manage.live.format.mode")})} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
                         </div>}
                     </div>
                     <div className="event-live-editor__preview">
@@ -569,10 +569,10 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
         <LiveTemplateDialog open={templatesOpen} layout={doc} scene={scene} event={event} stages={stages.data} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
         <ConfirmDialog open={copyFrom !== null && !locked} onCancel={() => setCopyFrom(null)} tone="danger" title={t("manage.live.scene.copyConfirm.title", {scene: sceneName(scene)})}
-            description={copyFrom ? t("manage.live.scene.copyConfirm.body", {scene: sceneName(scene), source: sceneName(copyFrom)}) : undefined} confirmLabel={t("manage.live.scene.copyConfirm.action")}
+            description={copyFrom ? t("manage.live.scene.copyConfirm.body", {scene: sceneName(scene), source: sceneName(copyFrom)}) : undefined} confirmLabel={t("manage.live.scene.copyConfirm.action")} busyLabel={t("common.busy.copying")}
             onConfirm={() => {if (copyFrom) mutateDoc(withLiveSceneCopy(doc, scene, copyFrom)); setSelectedID(null); setCopyFrom(null);}} />
         <ConfirmDialog open={keepScene !== null && !locked} onCancel={() => setKeepScene(null)} tone="danger" title={t("manage.live.scene.singleConfirm.title")}
-            description={t("manage.live.scene.singleConfirm.body")} confirmLabel={t("manage.live.scene.singleConfirm.action")}
+            description={t("manage.live.scene.singleConfirm.body")} confirmLabel={t("manage.live.scene.singleConfirm.action")} busyLabel={t("common.busy.applying")}
             onConfirm={() => {if (keepScene) mutateDoc(withLiveSceneMode(doc, "single", keepScene)); setScene("running"); setSelectedID(null); setKeepScene(null);}}>
             <div className="event-live-field">
                 <ManageFieldLabel title={t("manage.live.scene.keep")} help={t("manage.live.scene.keepHelp")} />
@@ -581,7 +581,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             </div>
         </ConfirmDialog>
         <ConfirmDialog open={confirmRemove && !!selected && editable} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
-            description={t(selected?.type === "logos" ? "manage.live.removeConfirm.bodyLogos" : "manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
+            description={t(selected?.type === "logos" ? "manage.live.removeConfirm.bodyLogos" : "manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")} busyLabel={t("common.busy.removing")}
             onConfirm={() => {if (selected) mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null); setConfirmRemove(false);}} />
     </div>;
 }

@@ -89,8 +89,8 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
                     <span className="event-pp-field__label">
                         <label htmlFor={id}>{block.label}</label>
                         {block.required && <span className="event-field-required" aria-hidden="true">*</span>}
-                        {block.help && <EventTooltip content={block.help}>{tip => <button type="button" className="event-brand-help" aria-label={t("manage.fields.aboutField", {title: block.label})} aria-describedby={tip}><CircleHelp size={14} /></button>}</EventTooltip>}
-                        {!editable && <EventTooltip content={t("participation.form.locked")}>{tip => <button type="button" className="event-pp-field__lock" aria-label={t("participation.form.lockedAria", {title: block.label})} aria-describedby={tip}><Lock aria-hidden="true" /></button>}</EventTooltip>}
+                        {block.help && <EventTooltip help content={block.help}>{tip => <button type="button" className="event-brand-help" aria-label={t("manage.fields.aboutField", {title: block.label})} aria-describedby={tip}><CircleHelp size={14} /></button>}</EventTooltip>}
+                        {!editable && <EventTooltip help content={t("participation.form.locked")}>{tip => <button type="button" className="event-pp-field__lock" aria-label={t("participation.form.lockedAria", {title: block.label})} aria-describedby={tip}><Lock aria-hidden="true" /></button>}</EventTooltip>}
                     </span>
                     {editable ? <Control invalid={failed} field={block} id={id} value={draft[block.key]} onChange={value => change(block.key, value)} disabled={false} upload={upload} />
                         : <div className="event-pp-field__value" id={id}><AnswerValue field={block} value={saved[block.key]} /></div>}
@@ -102,11 +102,11 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
         <div className="event-pp-savebar" role={dirty || busy ? "region" : undefined} aria-label={dirty || busy ? t("participation.form.saveBar") : undefined}>
             <div className="event-pp-savebar__actions">
                 <button type="button" className="ib-btn" disabled={busy} onClick={() => dirty ? setDiscard(true) : onCancel()}>{t(dirty ? "common.cancel" : "participation.form.close")}</button>
-                <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary" busy={busy}>{t("common.save")}</EventButton>
+                <EventButton saveDirty={dirty} type="submit" className="ib-btn ib-btn--primary" busy={busy} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton>
             </div>
         </div>
         <ConfirmDialog open={discard} onCancel={() => setDiscard(false)} title={t("participation.form.discardTitle")} description={t("participation.form.discardText")}
-            cancelLabel={t("participation.form.keepEditing")} confirmLabel={t("participation.form.discard")} tone="danger" onConfirm={() => { setEdited(null); setDiscard(false); onCancel(); }} />
+            cancelLabel={t("participation.form.keepEditing")} confirmLabel={t("participation.form.discard")} busyLabel={t("common.busy.discarding")} tone="danger" onConfirm={() => { setEdited(null); setDiscard(false); onCancel(); }} />
     </form>;
 }
 
@@ -124,7 +124,7 @@ function GroupRows({title, children}: {title: string | null; children: ReactNode
 
 function FieldRowRead({field, value, owed}: {field: FormField; value: ParticipantAnswer | undefined; owed: boolean}) {
     return <>
-        <dt>{field.label}{field.help && <EventTooltip content={field.help}>{tip => <button type="button" className="event-brand-help" aria-label={t("manage.fields.aboutField", {title: field.label})} aria-describedby={tip}><CircleHelp size={14} /></button>}</EventTooltip>}</dt>
+        <dt>{field.label}{field.help && <EventTooltip help content={field.help}>{tip => <button type="button" className="event-brand-help" aria-label={t("manage.fields.aboutField", {title: field.label})} aria-describedby={tip}><CircleHelp size={14} /></button>}</EventTooltip>}</dt>
         <dd>{owed && isEmptyAnswer(value) ? <span className="ib-tag ib-tag--warn">{t("participation.missing.badge")}</span> : <AnswerValue field={field} value={value} />}</dd>
     </>;
 }

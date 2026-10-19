@@ -1,8 +1,9 @@
 "use client";
 
 import {useSessionDraftState} from "@/components/event/manage/manualDraft";
+import {useRevealFirstError} from "@/components/event/manage/useRevealFirstError";
 
-import {useMemo, useState} from "react";
+import {useMemo, useRef, useState, type FocusEvent} from "react";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import Link from "next/link";
@@ -59,6 +60,15 @@ export function BroadcastCompose() {
     const [pendingTemplate, setPendingTemplate] = useState<BroadcastTemplate | null>(null);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState("");
+    // Errors show once a field is left empty or after «Надіслати» is pressed, never on an untouched form.
+    const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
+    const [attempted, setAttempted] = useState(false);
+    const fieldsRef = useRef<HTMLDivElement>(null);
+    const revealFirstError = useRevealFirstError(fieldsRef);
+    const visible = (field: string) => attempted || touched.has(field);
+    const leave = (field: string) => (event: FocusEvent<HTMLElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setTouched(current => current.has(field) ? current : new Set(current).add(field));
+    };
     const variables = broadcastVariables();
     const set = (patch: Partial<BroadcastDraft>) => setDraft(current => ({...current, ...patch}));
 
@@ -75,9 +85,9 @@ export function BroadcastCompose() {
     const recipients = ready && settled && !count.isError ? count.data : undefined;
     const validation = composeValidation(draft);
     const canSend = canManage && !validation && recipients !== undefined && recipients > 0 && !count.isFetching;
-    const subjectError = !draft.Subject.trim() ? t("manage.broadcasts.validation.subject") : "";
-    const bodyError = !emailBodyFilled(draft.Body) ? t("manage.broadcasts.validation.body") : "";
-    const titleError = !draft.InAppTitle.trim() ? t("manage.broadcasts.validation.inAppTitle") : "";
+    const subjectError = visible("subject") && !draft.Subject.trim() ? t("manage.broadcasts.validation.subject") : "";
+    const bodyError = visible("body") && !emailBodyFilled(draft.Body) ? t("manage.broadcasts.validation.body") : "";
+    const titleError = visible("title") && !draft.InAppTitle.trim() ? t("manage.broadcasts.validation.inAppTitle") : "";
     const audienceError = !ready ? t(draft.Audience.Kind === "teams" ? "manage.broadcasts.validation.teams" : "manage.broadcasts.validation.participants") : "";
     const emailInvalid = !!emailValidation(draft);
     const shown = useMemo(() => previewDraft(draft), [draft]);
@@ -98,6 +108,17 @@ export function BroadcastCompose() {
             || (template.inApp && (draft.InAppTitle.trim() !== "" || draft.InAppBody.trim() !== "" || draft.InAppLink.trim() !== ""));
         if (replaces) setPendingTemplate(template);
         else applyTemplate(template);
+    }
+
+    // «Надіслати» on an incomplete form shows every error and moves to the first one.
+    function requestSend() {
+        setError("");
+        if (!validation) {
+            if (canSend) setConfirming(true);
+            return;
+        }
+        setAttempted(true);
+        revealFirstError();
     }
 
     async function send() {
@@ -124,12 +145,12 @@ export function BroadcastCompose() {
             {back}
             <div className="event-template-header__title"><h1>{t("manage.broadcasts.new")}</h1></div>
             <div className="event-template-header__actions">
-                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!canSend} onClick={() => {setError(""); setConfirming(true);}}><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</EventButton>
+                <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!validation && !canSend} onClick={requestSend}><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</EventButton>
             </div>
         </div>
         <p className="event-template-page__intro">{t("manage.broadcasts.composeIntro")}</p>
         <div className="event-template-grid">
-            <div className="event-template-grid__fields">
+            <div className="event-template-grid__fields" ref={fieldsRef}>
                 <TemplateStart event={event} onPick={pickTemplate} />
                 <section className="event-broadcast-section">
                     <ManageFieldLabel title={t("manage.broadcasts.channels")} help={t("manage.broadcasts.channelsHelp")} required />
@@ -142,7 +163,7 @@ export function BroadcastCompose() {
 
                 {draft.email && <section className="event-broadcast-section" aria-label={t("manage.broadcasts.channel.email")}>
                     <h2>{t("manage.broadcasts.channel.email")}</h2>
-                    <div className="event-manage-field">
+                    <div className="event-manage-field" onBlur={leave("subject")}>
                         <ManageFieldLabel title={t("manage.email.subject")} help={t("manage.broadcasts.subjectHelp")} required />
                         <VariableRichText value={draft.Subject} onChange={Subject => set({Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted error={subjectError} />
                     </div>
@@ -150,7 +171,7 @@ export function BroadcastCompose() {
                         <ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} />
                         <VariableRichText value={draft.Preheader} onChange={Preheader => set({Preheader})} variables={variables} placeholder={t("manage.email.optional")} dotted />
                     </div>
-                    <div className="event-manage-field" role="group" aria-label={t("manage.tpl.tpl.body")} aria-invalid={!!bodyError || undefined} aria-describedby={bodyError ? "broadcast-body-error" : undefined}>
+                    <div className="event-manage-field" role="group" onBlur={leave("body")} aria-label={t("manage.tpl.tpl.body")} aria-invalid={!!bodyError || undefined} aria-describedby={bodyError ? "broadcast-body-error" : undefined}>
                         <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} required />
                         <BlockEditor value={draft.Body} onChange={Body => set({Body})} variables={variables} presets={(presets.data ?? []) as BlockPreset[]}
                             hiddenBlocks={["image"]} onUploadImage={() => Promise.reject(new Error("images are not supported"))} imageURL={() => ""} />
@@ -161,7 +182,7 @@ export function BroadcastCompose() {
 
                 {draft.inApp && <section className="event-broadcast-section" aria-label={t("manage.broadcasts.channel.inApp")}>
                     <h2>{t("manage.broadcasts.channel.inApp")}</h2>
-                    <div className="event-manage-field">
+                    <div className="event-manage-field" onBlur={leave("title")}>
                         <ManageFieldLabel title={t("manage.notifications.field.title")} help={t("manage.notifications.field.titleHelp")} required />
                         <VariableRichText value={draft.InAppTitle} onChange={InAppTitle => set({InAppTitle})} variables={variables} placeholder={t("manage.notifications.field.title")} dotted error={titleError} />
                     </div>
@@ -197,9 +218,9 @@ export function BroadcastCompose() {
             </div>
         </div>
         <ConfirmDialog open={pendingTemplate !== null} onCancel={() => setPendingTemplate(null)} title={t("manage.broadcasts.template.replace.title")}
-            description={t("manage.broadcasts.template.replace.body", {name: pendingTemplate?.label ?? ""})} confirmLabel={t("manage.broadcasts.template.replace.action")}
+            description={t("manage.broadcasts.template.replace.body", {name: pendingTemplate?.label ?? ""})} confirmLabel={t("manage.broadcasts.template.replace.action")} busyLabel={t("common.busy.applying")}
             onConfirm={() => {if (pendingTemplate) applyTemplate(pendingTemplate); setPendingTemplate(null);}} />
         <ConfirmDialog open={confirming} onCancel={() => setConfirming(false)} title={t("manage.broadcasts.confirm.title", {count: recipients ?? 0})}
-            description={t("manage.broadcasts.confirm.body")} confirmLabel={t("manage.broadcasts.confirm.action")} busy={sending} error={error || undefined} onConfirm={() => void send()} />
+            description={t("manage.broadcasts.confirm.body")} confirmLabel={t("manage.broadcasts.confirm.action")} busy={sending} busyLabel={t("common.busy.sending")} error={error || undefined} onConfirm={() => void send()} />
     </div>;
 }

@@ -53,7 +53,7 @@ export function DismissDialog({draft, onChange, onClose, onDone}: {draft: Dismis
         }
     }
 
-    return <ConfirmDialog open={!!draft} onCancel={onClose} busy={draft?.busy ?? false} error={draft?.error}
+    return <ConfirmDialog open={!!draft} onCancel={onClose} busy={draft?.busy ?? false} busyLabel={t("common.busy.excluding")} error={draft?.error}
         title={t(answer ? "manage.analytics.integrity.dismiss.answerTitle" : "manage.analytics.integrity.dismiss.title")}
         description={draft ? answer ? t("manage.analytics.integrity.dismiss.answerDescription") : t("manage.analytics.integrity.dismiss.description", {kind: kindLabel(draft.kind)}) : undefined}
         subject={draft?.item.ChallengeName} confirmLabel={t("manage.analytics.integrity.dismiss.confirm")} onConfirm={() => void confirm()}>
@@ -106,7 +106,7 @@ export function DismissalsPanel() {
 
     return <>
         <p className="event-integrity__notice">{t("manage.analytics.integrity.dismissals.notice")}</p>
-        <ManageTable event={event} state={state} loadingLabel={t("manage.analytics.integrity.dismissals.loading")} errorMessage={t("manage.analytics.integrity.dismissals.loadFailed")}
+        <ManageTable cards event={event} state={state} loadingLabel={t("manage.analytics.integrity.dismissals.loading")} errorMessage={t("manage.analytics.integrity.dismissals.loadFailed")}
             emptyMessage={t("manage.analytics.integrity.dismissals.empty")} onRetry={() => void query.refetch()} error={query.error}
             head={<tr>
                 <th scope="col">{t("manage.analytics.integrity.dismissals.col.kind")}</th>
@@ -129,7 +129,7 @@ export function DismissalsPanel() {
                 <td className="event-manage-table__actions-col">{canManage && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setRemoving({item, busy: false, error: null})}>{t("manage.analytics.integrity.dismissals.remove")}</button>}</td>
             </tr>)}</tbody>
         </ManageTable>
-        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={removing?.busy ?? false} error={removing?.error}
+        <ConfirmDialog open={!!removing} onCancel={() => setRemoving(null)} tone="danger" busy={removing?.busy ?? false} busyLabel={t("common.busy.removing")} error={removing?.error}
             title={t("manage.analytics.integrity.dismissals.removeTitle")} description={t("manage.analytics.integrity.dismissals.removeDescription")}
             subject={removing ? removing.item.ChallengeName : undefined} confirmLabel={t("manage.analytics.integrity.dismissals.remove")} onConfirm={() => void remove()} />
     </>;

@@ -144,7 +144,8 @@ export async function manageApiError(response: Response): Promise<ManageApiError
 }
 
 // InfrastructureAllowed is the admin's creation-time decision; it gates «Стенди».
-const accessSchema = z.object({CanManage: z.boolean(), InfrastructureAllowed: z.boolean().default(false)});
+// CanExport: CSV exports and report downloads (owner, write moderators, platform admins; never a viewer).
+const accessSchema = z.object({CanManage: z.boolean(), CanExport: z.boolean(), InfrastructureAllowed: z.boolean().default(false)});
 const nameSchema = z.object({Name: z.string()});
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {

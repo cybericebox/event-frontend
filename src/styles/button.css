@@ -61,7 +61,12 @@
 .ib-btn:disabled,.ib-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;background:var(--_bg)}
 .ib-btn--primary:disabled,.ib-btn--primary[aria-disabled="true"]{border-color:var(--ib-action)}
 
-/* Busy state: the event logo replaces the icon, the label stays. */
+/* Busy state (EventButton): the event logo and the operation («Зберігаємо…») replace the icon and the label. Both faces
+   sit in one grid cell, so the button keeps the width of the wider one. */
+.event-btn__faces{display:inline-grid;align-items:center;justify-items:center;gap:inherit;flex-direction:inherit;min-width:0;max-width:100%}
+.event-btn__face{grid-area:1/1;display:inline-flex;flex-direction:inherit;align-items:center;justify-content:center;gap:inherit;min-width:0;max-width:100%}
+.event-btn__face--busy,.is-busy>.event-btn__faces>.event-btn__face{visibility:hidden}
+.is-busy>.event-btn__faces>.event-btn__face--busy{visibility:visible}
 .ib-busy-mark{width:16px;height:16px;flex:none;object-fit:contain;animation:event-loading-pulse 1.8s ease-in-out infinite}
 .ib-btn.is-busy>svg,.event-brand-drop.is-busy>svg{display:none}
 .ib-btn.is-busy{cursor:progress}

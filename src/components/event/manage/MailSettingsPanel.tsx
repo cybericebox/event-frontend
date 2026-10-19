@@ -8,7 +8,7 @@ import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {apiErrorText} from "@/api/apiErrors";
 import {
-    defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityFieldErrors, identityForm, identityInput,
+    classifySMTPError, defaultPortByTLSMode, deleteEventMailSMTP, getEventMailSettings, identityError, identityFieldErrors, identityForm, identityInput,
     mailTransportLabel, maxMailNameLength, withLimitSource, withSource, putEventMailIdentity, putEventMailSMTP, smtpError, smtpFieldErrors, smtpForm, smtpInput,
     testEventMailSMTP, tlsModeOptions, type EventMailSettings, type IdentityForm, type MailTestResult,
     type MailTLSMode, type SMTPForm,
@@ -18,6 +18,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {ManageFieldLabel} from "./ManageFieldLabel";
+import {MailErrorText} from "./MailJournalParts";
 import {useManager} from "./ManagerShell";
 import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
@@ -41,6 +42,8 @@ export function MailSettingsPanel() {
     const [busy, setBusyState] = useState({identity: false, smtp: false, test: false, reset: false});
     const setBusy = (key: keyof typeof busy, value: boolean) => setBusyState(current => ({...current, [key]: value}));
     const [test, setTest] = useState<MailTestResult | null>(null);
+    // A failed save stays next to its form's «Зберегти» until the next change or save.
+    const [saveFailure, setSaveFailure] = useState({identity: "", smtp: ""});
     const [confirmReset, setConfirmReset] = useState(false);
     const [resetError, setResetError] = useState("");
 
@@ -69,6 +72,7 @@ export function MailSettingsPanel() {
     function changeSMTP(patch: Partial<SMTPForm>) {
         setSMTPDraft({...form, ...patch});
         setTest(null);
+        setSaveFailure(current => current.smtp ? {...current, smtp: ""} : current);
     }
 
     function changeTLS(value: string) {
@@ -84,12 +88,13 @@ export function MailSettingsPanel() {
         if (disabled || busy.identity || !identityDirty || identityInvalid) return;
         const submitted = idForm;
         setBusy("identity", true);
+        setSaveFailure(current => ({...current, identity: ""}));
         try {
             applied(await putEventMailIdentity(eventID, identityInput(submitted)));
             // Edits made while the save was pending stay in the form.
             setIdentityDraft(current => current && JSON.stringify(current) !== JSON.stringify(submitted) ? current : null);
             toast.success(t("manage.mail.settings.saved"));
-        } catch (error) {toastFailure(error, errorText(error, t("manage.mail.settings.saveError")));}
+        } catch (error) {setSaveFailure(current => ({...current, identity: errorText(error, t("manage.mail.settings.saveError"))}));}
         finally {setBusy("identity", false);}
     }
 
@@ -98,6 +103,7 @@ export function MailSettingsPanel() {
         if (disabled || busy.smtp || !smtpDirty || smtpValidation) return;
         const submitted = form;
         setBusy("smtp", true);
+        setSaveFailure(current => ({...current, smtp: ""}));
         try {
             applied(await putEventMailSMTP(eventID, smtpInput(submitted)));
             setSMTPDraft(current => {
@@ -107,7 +113,7 @@ export function MailSettingsPanel() {
                     clearPassword: current.clearPassword === submitted.clearPassword ? false : current.clearPassword};
             });
             toast.success(t("manage.mail.smtp.saved"));
-        } catch (error) {toastFailure(error, errorText(error, t("manage.mail.smtp.saveError")));}
+        } catch (error) {setSaveFailure(current => ({...current, smtp: errorText(error, t("manage.mail.smtp.saveError"))}));}
         finally {setBusy("smtp", false);}
     }
 
@@ -168,7 +174,7 @@ export function MailSettingsPanel() {
             </div>
             <small>{t("manage.mail.identity.inheritHint")}</small>
             {!settings.PlatformConfigured && !settings.SMTP && <p className="event-manage-feedback event-manage-feedback--error" role="alert">{t("manage.mail.sender.notConfigured")}</p>}
-            {canManage && <div className="event-manage-section__actions"><EventButton saveDirty={identityDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity}>{t("common.save")}</EventButton></div>}
+            {canManage && <div className="event-manage-section__actions">{saveFailure.identity && <p className="event-manage-validation" role="alert">{saveFailure.identity}</p>}<EventButton saveDirty={identityDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.identity || !!identityInvalid} busy={busy.identity} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>}
         </form>
 
         <form className="event-manage-section" onSubmit={saveSMTP} aria-labelledby="mail-smtp-title">
@@ -218,16 +224,18 @@ export function MailSettingsPanel() {
             </div>
             {test && <div className={`event-manage-mail__result${test.Sent ? "" : " is-error"}`} role="status">
                 <strong>{t(test.Sent ? "manage.mail.smtp.testOk" : "manage.mail.smtp.testFailed")}</strong>
-                <span>{test.Sent ? (test.Transport ? t("manage.mail.smtp.testSentVia", {recipient: test.Recipient, transport: mailTransportLabel(test.Transport)}) : t("manage.mail.smtp.testSent", {recipient: test.Recipient})) : test.Error || t("manage.mail.smtp.testRejected")}</span>
+                {!test.Sent && test.Error ? <MailErrorText {...classifySMTPError(test.Error)} raw={test.Error} />
+                    : <span>{test.Sent ? (test.Transport ? t("manage.mail.smtp.testSentVia", {recipient: test.Recipient, transport: mailTransportLabel(test.Transport)}) : t("manage.mail.smtp.testSent", {recipient: test.Recipient})) : t("manage.mail.smtp.testRejected")}</span>}
             </div>}
             {canManage && <div className="event-manage-section__actions event-manage-mail__actions">
+                {saveFailure.smtp && <p className="event-manage-validation" role="alert">{saveFailure.smtp}</p>}
                 {settings.SMTP && <button className="ib-btn" type="button" disabled={disabled} onClick={() => {setResetError(""); setConfirmReset(true);}}>{t("manage.mail.smtp.usePlatform")}</button>}
-                <EventButton className="ib-btn" type="button" disabled={disabled || busy.test || !canTest} onClick={() => void runTest()} busy={busy.test}>{t("manage.mail.smtp.test")}</EventButton>
-                <EventButton saveDirty={smtpDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.smtp || !smtpDirty || !!smtpValidation} busy={busy.smtp}>{t("common.save")}</EventButton>
+                <EventButton className="ib-btn" type="button" disabled={disabled || busy.test || !canTest} onClick={() => void runTest()} busy={busy.test} busyLabel={t("common.busy.checking")}>{t("manage.mail.smtp.test")}</EventButton>
+                <EventButton saveDirty={smtpDirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || busy.smtp || !smtpDirty || !!smtpValidation} busy={busy.smtp} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton>
             </div>}
         </form>
 
-        <ConfirmDialog open={confirmReset} onCancel={() => setConfirmReset(false)} tone="danger" busy={busy.reset} error={resetError}
+        <ConfirmDialog open={confirmReset} onCancel={() => setConfirmReset(false)} tone="danger" busy={busy.reset} busyLabel={t("common.busy.restoring")} error={resetError}
             title={t("manage.mail.smtp.resetTitle")} description={t("manage.mail.smtp.resetDescription")}
             confirmLabel={t("manage.mail.smtp.switch")} onConfirm={() => void resetSMTP()}>
             <p className="event-manage-mail__hint">{t("manage.mail.smtp.resetHint")}</p>

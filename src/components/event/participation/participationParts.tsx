@@ -18,13 +18,14 @@ export function errorText(error: unknown, fallback: string): string {
     return fallback;
 }
 
-export type Confirm = {title: string; text: string; action: string; danger?: boolean; run: () => Promise<void>} | null;
+// busy: the action in the present tense («Передаємо…»), shown in the confirm button while it runs.
+export type Confirm = {title: string; text: string; action: string; busy: string; danger?: boolean; run: () => Promise<void>} | null;
 
 export function TeamConfirm({confirm, onClose}: {confirm: Confirm; onClose: () => void}) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     return <ConfirmDialog open={!!confirm} onCancel={() => {setError(""); onClose();}} tone={confirm?.danger ? "danger" : "default"} busy={busy} error={error}
-        title={confirm?.title ?? ""} description={confirm?.text} confirmLabel={confirm?.action ?? ""} onConfirm={async () => {
+        title={confirm?.title ?? ""} description={confirm?.text} confirmLabel={confirm?.action ?? ""} busyLabel={confirm?.busy ?? ""} onConfirm={async () => {
             if (!confirm) return;
             setBusy(true);
             setError("");

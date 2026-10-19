@@ -11,7 +11,7 @@
 .event-manage-page-details__toggle svg{flex:none;margin-left:auto;transition:transform var(--ib-dur-fast) var(--ib-ease)}
 .event-manage-page-details:not(.is-collapsed) .event-manage-page-details__toggle svg{transform:rotate(180deg)}
 .event-manage-content .event-manage-page-details__fields{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ib-4);margin-top:var(--ib-5)}
-@media(max-width:640px){.event-manage-page-details__fields{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.event-manage-content .event-manage-page-details__fields{grid-template-columns:minmax(0,1fr)}}
 .ib-block-section--right{text-align:right}
 .ib-block-section--justify{text-align:justify}
 .ib-block-banner--caption-center .ib-block-banner__caption{text-align:center}

@@ -12,6 +12,9 @@
 .event-analytics-tasks__name{display:grid;gap:2px;padding:0;border:0;background:none;color:var(--ib-ink);font:inherit;font-weight:var(--ib-w-medium);text-align:left;cursor:pointer;min-width:0}
 .event-analytics-tasks__name:hover{text-decoration:underline}
 .event-analytics-tasks__name small{color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-regular)}
+/* Names keep a readable width; a very long one takes two lines at most, so rows keep one height. */
+.event-analytics-tasks__name{min-width:200px;max-width:280px}
+.event-analytics-tasks__name>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .event-analytics-tasks__rate{display:inline-flex;align-items:center;gap:var(--ib-2);white-space:nowrap}
 .event-analytics-tasks__dim{color:var(--ib-dim)}
 .event-analytics-tasks__cell{display:inline-flex;align-items:center;justify-content:center;min-width:56px;padding:2px var(--ib-2);border-radius:var(--ib-r-sm);font-family:var(--ib-mono);font-size:var(--ib-fs-12);font-variant-numeric:tabular-nums;white-space:nowrap}

@@ -27,9 +27,13 @@ it.each([true,false,null])("colours the header only for the caller's connected p
  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
  render(<QueryClientProvider client={client}><EventVpnProvider eventID="e1" eventTag="test" enabled><VpnHeaderButton/></EventVpnProvider></QueryClientProvider>);
  await vi.waitFor(()=>expect(client.getQueryData(["event-vpn-status","e1",false])).toMatchObject({Connected:connected}));
+ // The cache fills before the header re-renders: wait for the rendered state, not only the data (flaky under load).
+ await vi.waitFor(()=>{
+  const button=screen.getByRole("button",{name:/VPN:/});
+  expect(button.classList.contains("is-connected")).toBe(connected===true);
+  expect(button.classList.contains("is-available")).toBe(connected!==true);
+ });
  const header=screen.getByRole("button",{name:/VPN:/});
- expect(header.classList.contains("is-connected")).toBe(connected===true);
- expect(header.classList.contains("is-available")).toBe(connected!==true);
  fireEvent.click(header);
  expect(screen.queryByText("Лабораторії")).toBeNull();
  expect(screen.queryByText(/завдан/)).toBeNull();
@@ -81,4 +85,10 @@ it.each([false,true])("uses the approved guide and matching config filename in p
   if(preview){expect(api.previewConfig).toHaveBeenCalledWith("e1","selection1");expect(api.config).not.toHaveBeenCalled();}
   else{expect(api.config).toHaveBeenCalledWith("e1");expect(api.previewConfig).not.toHaveBeenCalled();}
  }finally{anchorClick.mockRestore();vi.unstubAllGlobals();}
+});
+it("says the VPN could not be checked when the stand status fails, instead of «soon before the start»",async()=>{
+ api.stand.mockRejectedValue(new Error("down"));
+ const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+ render(<QueryClientProvider client={client}><EventVpnProvider eventID="e1" eventTag="test" enabled><VpnHeaderButton/></EventVpnProvider></QueryClientProvider>);
+ await vi.waitFor(()=>expect(screen.getByRole("button",{name:/VPN:/}).getAttribute("aria-label")).toBe("VPN: не вдалося перевірити стан. Натисніть, щоб переглянути налаштування."));
 });

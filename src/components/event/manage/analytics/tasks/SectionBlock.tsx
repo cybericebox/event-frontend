@@ -27,7 +27,7 @@ export function SectionBlock({title, subtitle, hint, actions, children}: {
 
 // The (?) that explains a heading or a column.
 export function HelpButton({label, hint, size = 14}: {label: string; hint: string; size?: number}) {
-    return <EventTooltip content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label})} aria-describedby={id}><CircleHelp size={size} /></button>}</EventTooltip>;
+    return <EventTooltip help content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label})} aria-describedby={id}><CircleHelp size={size} /></button>}</EventTooltip>;
 }
 
 // A column heading with its (?).

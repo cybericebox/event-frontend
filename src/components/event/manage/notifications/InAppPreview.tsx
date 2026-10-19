@@ -3,7 +3,7 @@
 import DOMPurify from "isomorphic-dompurify";
 import type {ManageInAppTemplateInput} from "@/api/manageNotifications";
 import {NotificationMessageCard} from "@/components/event/NotificationMessageCard";
-import {popInDuration} from "@/components/event/NotificationPopIn";
+import {popInBodyHTML, popInDuration} from "@/components/event/NotificationPopIn";
 import {t} from "@/i18n/t";
 import {fillSamples} from "./notificationModel";
 
@@ -36,7 +36,7 @@ export function InAppPreview({template, values, surface}: {template: ManageInApp
             {!surface && <h3>{t("manage.notifications.previewPopIn")}</h3>}
             <div className="event-notification-popin">
                 <div className="event-notification-popin__content"><NotificationMessageCard icon={template.Icon} tone={template.Tone} accentColor={template.AccentColor} title={title}
-                    body={body ? <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(body)}} /> : undefined}
+                    body={body ? <div dangerouslySetInnerHTML={{__html: popInBodyHTML(body)}} /> : undefined}
                     actions={action ? <button type="button" tabIndex={-1}>{action.label}</button> : undefined} /></div>
             </div>
             <small>{t("manage.notifications.previewPopInTime", {seconds})}</small>

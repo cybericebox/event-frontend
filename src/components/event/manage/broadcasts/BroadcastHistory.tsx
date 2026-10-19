@@ -39,12 +39,12 @@ export function BroadcastHistory() {
         ? <Link className="ib-btn ib-btn--primary" href="/manage/broadcasts/new"><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</Link>
         : <span className="event-broadcast-heading-actions">
             <button className="ib-btn ib-btn--primary" type="button" disabled><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</button>
-            <EventTooltip content={t("manage.broadcasts.viewerCannotSend")}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.broadcasts.viewerCannotSendLabel")} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
+            <EventTooltip help content={t("manage.broadcasts.viewerCannotSend")}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.broadcasts.viewerCannotSendLabel")} aria-describedby={id}><CircleHelp size={15} /></button>}</EventTooltip>
         </span>;
 
     return <div className="event-manage-settings event-journal">
         <header className="event-manage-heading"><div><h1>{t("manage.broadcasts.title")}</h1><p>{t("manage.broadcasts.subtitle")}</p></div>{action}</header>
-        <ManageTable event={event} state={state} busy={busy} loadingLabel={t("manage.broadcasts.loading")} emptyMessage={t("manage.broadcasts.empty")}
+        <ManageTable cards event={event} state={state} busy={busy} loadingLabel={t("manage.broadcasts.loading")} emptyMessage={t("manage.broadcasts.empty")}
             errorMessage={t("manage.broadcasts.loadError")} onRetry={() => void query.refetch()} error={query.error}
             head={<tr>
                 <th scope="col">{t("manage.broadcasts.col.message")}</th>

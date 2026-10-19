@@ -10,6 +10,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventLoading} from "@/components/event/EventLoading";
 import {ManageTable} from "@/components/event/manage/ManageTable";
 import {useManager} from "@/components/event/manage/ManagerShell";
+import {useCanExport} from "@/components/event/manage/managerContext";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
@@ -98,6 +99,7 @@ function TasksTable({rows}: {rows: ReportTask[]}) {
 // makes the PDF (the backend has no PDF renderer); the tables come as a ZIP of CSV.
 export function AnalyticsReport() {
     const {event} = useManager();
+    const canExport = useCanExport();
     const eventID = event.EventID;
     const [downloading, setDownloading] = useState(false);
     const query = useQuery({queryKey: ["event-analytics-report", eventID], queryFn: () => getAnalyticsReport(eventID), refetchInterval: false, refetchOnWindowFocus: false});
@@ -113,9 +115,9 @@ export function AnalyticsReport() {
         finally {setDownloading(false);}
     }
 
-    const actions = <div className="event-report__actions">
+    const actions = canExport && <div className="event-report__actions">
         <button className="ib-btn" type="button" disabled={!ready} onClick={() => window.print()}><Printer size={16} aria-hidden="true" /> {t("manage.analytics.report.print")}</button>
-        <EventButton className="ib-btn" type="button" disabled={!ready || downloading} busy={downloading} onClick={() => void download()}><Download size={16} aria-hidden="true" /> {t("manage.analytics.report.download")}</EventButton>
+        <EventButton className="ib-btn" type="button" disabled={!ready || downloading} busy={downloading} busyLabel={t("common.busy.preparing")} onClick={() => void download()}><Download size={16} aria-hidden="true" /> {t("manage.analytics.report.download")}</EventButton>
     </div>;
 
     if (query.isPending) return <AnalyticsPage title={title} description={description} actions={actions}>

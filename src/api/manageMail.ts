@@ -234,6 +234,22 @@ export function smtpErrorLine(kind: string, code: string, raw: string): {text: s
     return {text: t(key, {code}), technical: raw};
 }
 
+// The kind and reply code of a raw SMTP error, as the daemon classifies journal errors
+// (daemon internal/model/notification/dispatch/mailerror.go ClassifyMailError). The SMTP test answer
+// carries only the raw text, so the panel classifies it here (a test answer is never a deferral).
+const smtpReplyCode = /(?:^|[^0-9])([245][0-9]{2})(?:[ -]|$)/;
+const smtpConnectFailure = /timeout|timed out|deadline exceeded|connection (refused|reset)|no such host|dial tcp|\beof\b|broken pipe|unreachable|tls:|i\/o/i;
+export function classifySMTPError(raw: string): {kind: string; code: string} {
+    const text = raw.trim();
+    if (!text) return {kind: "", code: ""};
+    const code = smtpReplyCode.exec(text)?.[1] ?? "";
+    if (code === "530" || code === "535") return {kind: "smtp_auth", code};
+    if (code === "550" || code === "553") return {kind: "smtp_rcpt", code};
+    if (code === "554") return {kind: "smtp_rejected", code};
+    if (smtpConnectFailure.test(text)) return {kind: "smtp_connect", code};
+    return code ? {kind: "smtp_other", code} : {kind: "", code: ""};
+}
+
 // --- requests ---
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", body?: unknown): Promise<T> {

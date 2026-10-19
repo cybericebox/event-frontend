@@ -5,8 +5,12 @@
 .ib-tip__point{position:relative;padding-left:12px;font-weight:var(--ib-w-regular)}
 .ib-tip__point::before{content:"•";position:absolute;left:0}
 
-/* Local: a closed bubble is scaled to a point so it never widens the page (horizontal scroll on phones). */
-.ib-tip__bubble{scale:0}
+/* Local: a closed bubble is scaled to a point so it never widens the page (horizontal scroll on phones).
+   The point is the bubble's untranslated left edge = the trigger's centre line, on the edge that faces the trigger,
+   so it always sits inside the page (with the default centre origin it landed half a bubble right of the trigger).
+   EventTooltip rebuilds the box from that point. */
+.ib-tip__bubble{scale:0;transform-origin:0 100%}
+.ib-tip--bottom>.ib-tip__bubble{transform-origin:0 0}
 @media (hover:hover){.ib-tip:hover>.ib-tip__bubble{scale:1}}
 .ib-tip:not(.ib-tip--help):has(:focus-visible)>.ib-tip__bubble,.ib-tip.is-open>.ib-tip__bubble{scale:1}
 .ib-tip.is-dismissed>.ib-tip__bubble{scale:0}

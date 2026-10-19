@@ -107,7 +107,7 @@ function DeviceRow({eventID, teamID, challengeID, device, canManage, target}: {e
             </div>}
             {rescue && <p className="event-manage-notice" role="status">{t("lab.live.rescueBanner")}</p>}
         </div>}
-        <ConfirmDialog open={resetTarget === target && canManage} tone="danger" busy={resetting} error={resetError} title={t("lab.live.resetTitle")} description={t("lab.live.resetDescription")}
+        <ConfirmDialog open={resetTarget === target && canManage} tone="danger" busy={resetting} busyLabel={t("common.busy.resetting")} error={resetError} title={t("lab.live.resetTitle")} description={t("lab.live.resetDescription")}
             confirmLabel={t("lab.live.reset")} onCancel={() => setResetTarget(null)} onConfirm={() => void reset()} />
     </li>;
 }
@@ -120,7 +120,6 @@ export function ManagedLabFacts({lab, stale = false}: {lab: ManagedLabView; stal
             <div><dt>{t("manage.labs.lifecycle.desired")}</dt><dd>{t(`manage.labs.lifecycle.desired.${lab.DesiredState}`)}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.actual")}</dt><dd>{t(`manage.labs.lifecycle.actual.${current ? lab.ActualState : "Unknown"}`)}</dd></div>
             {lab.SnapshotPolicy && <div><dt>{t("manage.labs.lifecycle.snapshotPolicy")}</dt><dd>{t(`manage.labs.lifecycle.policy.${lab.SnapshotPolicy}`)}</dd></div>}
-            <div><dt>{t("manage.labs.lifecycle.retentionUntil")}</dt><dd>{lab.RetentionUntil && Number.isFinite(Date.parse(lab.RetentionUntil)) ? formatDateTime(lab.RetentionUntil) : t("manage.labs.lifecycle.unknown")}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.stoppedAt")}</dt><dd>{lab.ActualStoppedAt && Number.isFinite(Date.parse(lab.ActualStoppedAt)) ? formatDateTime(lab.ActualStoppedAt) : t("manage.labs.lifecycle.unknown")}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.snapshot")}</dt><dd>{t(`manage.labs.lifecycle.snapshot.${current ? lab.SnapshotState : "Unknown"}`)}</dd></div>
             <div><dt>{t("manage.labs.lifecycle.observation")}</dt><dd>{t(current ? "manage.labs.lifecycle.current" : "manage.labs.lifecycle.unknown")}</dd></div>

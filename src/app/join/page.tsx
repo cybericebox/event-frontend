@@ -101,7 +101,9 @@ export default function JoinPage() {
     const status = join.data;
     const checking = !event || identity.isPending || staff.pending || (identity.data && (join.isPending || registration.isPending || (status === 1 && invitation.isPending) || (canJoin && form.isPending))) || invited;
     const failed = identity.isError || join.isError || registration.isError || invitation.isError || (canJoin && form.isError);
-    return <JoinDialog outcome={!checking && !failed ? status === 2 ? "approved" : status === 1 ? "pending" : status === 3 ? "rejected" : undefined : undefined} teamMode={event?.Participation === 1} onClose={() => router.push("/")}>
+    const ownTeam = participant?.ownTeam;
+    return <JoinDialog outcome={!checking && !failed ? status === 2 ? "approved" : status === 1 ? "pending" : status === 3 ? "rejected" : undefined : undefined} teamMode={event?.Participation === 1} onClose={() => router.push("/")}
+        resultText={status === 2 && event?.Participation === 1 && ownTeam ? t("join.result.approved.hasTeam", {name: ownTeam.Name}) : undefined}>
         {checking ? <EventLoading event={event} label={t("join.loading")} />
             : failed ? <EventLoadError message={t("join.loadFailed")} error={identity.error ?? join.error ?? registration.error ?? invitation.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
             : !identity.data ? <SignInRedirect event={event} />
@@ -109,7 +111,7 @@ export default function JoinPage() {
             : <form ref={formRef} className="ib-form" noValidate onSubmit={event => {event.preventDefault(); void submit();}}>
                 {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} />}
                 {error && <p className="ib-form__error" role="alert">{error}</p>}
-                <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working}>{t("shell.join.action")}</EventButton>
+                <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working} busyLabel={t("common.busy.joining")}>{t("shell.join.action")}</EventButton>
             </form>}
     </JoinDialog>;
 }

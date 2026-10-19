@@ -20,7 +20,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {canRecreate, labStatusLabel, labStatusTone, orderStands, readinessLabel, standStatusLabel, standStatusTone, standTeamName, type StatusTone} from "@/components/event/manage/standStatus";
-import {queueLineStaff, standReasonText} from "@/components/event/labLive";
+import {queueLineStaff, reservationLine, standQueueLabs, standReasonText} from "@/components/event/labLive";
 import {StandDetailDialog} from "@/components/event/manage/StandDetailDialog";
 import {ManageDialog} from "@/components/event/manage/invites/ManageDialog";
 import {t, tPlural} from "@/i18n/t";
@@ -29,6 +29,7 @@ import {EventButton} from "@/components/ui/EventButton";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {zoneOffset} from "@/utils/dateTime";
 import {TableEmptyBody} from "@/components/event/manage/TableEmptyBody";
+import "@/components/event/manage/stands.css";
 
 const timeFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 const formatTime = (value: string | null) => value ? timeFormat.format(new Date(value)) : null;
@@ -79,7 +80,7 @@ function ScheduleSection({eventID, labs, canManage}: {eventID: string; labs: Man
         </dl>
         <p className="event-stands__note">{t("manage.labs.schedule.deployComputed")}</p>
         <div className="event-manage-field"><ManageFieldLabel htmlFor="stand-delay" title={t("manage.labs.schedule.delay")} help={t("manage.labs.schedule.delayHelp", TEARDOWN_DELAY_RANGE)} /><input aria-invalid={dirty && !valid || undefined} aria-describedby={dirty && !valid ? "stand-delay-error" : undefined} id="stand-delay" className="event-manage-input" type="number" min={TEARDOWN_DELAY_RANGE.min} max={TEARDOWN_DELAY_RANGE.max} value={Number.isNaN(delay) ? "" : delay} onChange={change => setEdit({delay: change.target.valueAsNumber})} disabled={!canManage} />{dirty && !valid && <p id="stand-delay-error" className="event-manage-validation" role="alert">{t("manage.labs.schedule.invalid", {delayMin: TEARDOWN_DELAY_RANGE.min, delayMax: TEARDOWN_DELAY_RANGE.max})}</p>}</div>
-        {canManage && <div className="event-manage-section__actions"><button className="ib-btn" style={{visibility: dirty || saving ? undefined : "hidden"}} type="button" disabled={saving || !dirty} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving}>{t("common.save")}</EventButton></div>}
+        {canManage && <div className="event-manage-section__actions"><button className="ib-btn" style={{visibility: dirty || saving ? undefined : "hidden"}} type="button" disabled={saving || !dirty} onClick={() => setEdit(null)}>{t("common.cancel")}</button><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={saving || !valid} busy={saving} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>}
     </form>;
 }
 
@@ -155,7 +156,21 @@ export default function ManageLabsPage() {
         return <EventLoadError message={t("manage.labs.loadFailed")} error={labsQuery.error} onRetry={() => void labsQuery.refetch()} />;
     }
     const labs = labsQuery.data;
-    const items = orderStands(labs.Items);
+    const ordered = orderStands(labs.Items);
+    // The moderators' stand has its own tools (VPN-конфіг, Завдання): a block above the table, the table lists the teams only.
+    const moderators = ordered.find(stand => stand.Moderators) ?? null;
+    const items = ordered.filter(stand => !stand.Moderators);
+    const reasonCell = (stand: ManageStand) => {
+        const open = expanded === stand.TeamID;
+        return stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason ? standReasonText(stand.Reason) : t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason ? standReasonText(stand.Reason) : "—"}</span>;
+    };
+    const statusCell = (stand: ManageStand) => <><StatusBadge label={standStatusLabel[stand.Status]} tone={standStatusTone[stand.Status]} />{queueLineStaff(stand.Queue) && <small className="event-stands__queue" role="status">{queueLineStaff(stand.Queue)}{standQueueLabs(stand.Queue) > 1 ? ` ${t("manage.labs.queue.labs", {count: standQueueLabs(stand.Queue)})}` : ""}</small>}{stand.ImageWarning && <small className="event-stands__queue">{t("manage.labs.imageWarning")}</small>}{reservationLine(stand) && <small className="event-stands__queue" role="status">{reservationLine(stand)}</small>}</>;
+    const labList = (stand: ManageStand) => <ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{standReasonText(lab.Reason)}</small>}</li>)}</ul>;
+    // «Деталі» is a read: the viewer opens it too (device actions inside stay with managers).
+    const standActions = (stand: ManageStand) => <>
+        {stand.Status !== "not_deployed" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDetailTeam(stand.TeamID)}><Layers size={14} aria-hidden="true" />{t("manage.labs.detail.open")}</button>}
+        {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={recreating.includes(stand.TeamID)} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
+    </>;
     const summary = [
         {label: t("manage.labs.summary.total"), value: labs.Summary.Total}, {label: t("manage.labs.summary.ready"), value: labs.Summary.Ready},
         {label: t("manage.labs.summary.creating"), value: labs.Summary.Creating}, {label: t("manage.labs.summary.failed"), value: labs.Summary.Failed},
@@ -168,6 +183,17 @@ export default function ManageLabsPage() {
         <ScheduleSection key={labs.TeardownDelayMinutes} eventID={eventID} labs={labs} canManage={canManage} />
         <div className="event-stands__summary" role="status">{summary.map(entry => <div key={entry.label}><span>{entry.label}</span><strong>{entry.value}</strong></div>)}</div>
         {labs.Prewarm && labs.Prewarm.Total > 0 && <PrewarmLine prewarm={labs.Prewarm} />}
+        {moderators && <section className="event-manage-section event-stands__moderators" aria-labelledby="stands-moderators-title">
+            <div className="event-stands__moderators-head">
+                <div className="event-participants-table__person"><h2 id="stands-moderators-title">{t("manage.labs.moderatorsStand")}</h2>{moderators.Generation > 0 && <small>{t("manage.labs.generation", {count: moderators.Generation})}</small>}</div>
+                <div className="event-stands__moderators-state">{statusCell(moderators)}<span className="event-participants-table__dim">{formatTime(moderators.UpdatedAt) ?? "—"}</span>{reasonCell(moderators)}</div>
+            </div>
+            <div className="event-stands__actions">
+                {canManage && <><EventButton className="ib-btn ib-btn--sm" type="button" busy={vpnBusy} busyLabel={t("manage.labs.vpnPreparing")} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</EventButton><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
+                {standActions(moderators)}
+            </div>
+            {expanded === moderators.TeamID && <div className="event-stands__labs">{labList(moderators)}</div>}
+        </section>}
         <section className="event-manage-section event-stands__table">
             <div className="event-participants-table" role="region" tabIndex={0} aria-label={t("manage.labs.title")}><table>
                 <thead><tr><th scope="col">{t("manage.labs.column.team")}</th><th scope="col">{t("manage.labs.column.status")}</th><th scope="col">{t("manage.labs.column.updated", {zone: zoneOffset()})}</th><th scope="col">{t("manage.labs.column.reason")}</th><th scope="col"><span className="sr-only">{t("manage.labs.column.actions")}</span></th></tr></thead>
@@ -176,23 +202,19 @@ export default function ManageLabsPage() {
                     return <Fragment key={stand.TeamID}>
                         <tr>
                             <td><div className="event-participants-table__person"><strong>{standTeamName(stand)}</strong>{stand.Generation > 0 && <small>{t("manage.labs.generation", {count: stand.Generation})}</small>}</div></td>
-                            <td><StatusBadge label={standStatusLabel[stand.Status]} tone={standStatusTone[stand.Status]} />{queueLineStaff(stand.Queue) && <small className="event-stands__queue" role="status">{queueLineStaff(stand.Queue)}{stand.Queue && stand.Queue.QueuedLabs > 1 ? ` ${t("manage.labs.queue.labs", {count: stand.Queue.QueuedLabs})}` : ""}</small>}{stand.ImageWarning && <small className="event-stands__queue">{t("manage.labs.imageWarning")}</small>}</td>
+                            <td>{statusCell(stand)}</td>
                             <td className="event-participants-table__dim">{formatTime(stand.UpdatedAt) ?? "—"}</td>
-                            <td>{stand.Labs.length > 0 ? <button className="event-stands__reason" type="button" aria-expanded={open} onClick={() => setExpanded(open ? null : stand.TeamID)}><span>{stand.Reason ? standReasonText(stand.Reason) : t("manage.labs.labCount", {count: stand.Labs.length})}</span><ChevronDown size={14} aria-hidden="true" /></button> : <span className="event-participants-table__dim">{stand.Reason ? standReasonText(stand.Reason) : "—"}</span>}</td>
-                            <td><div className="event-manage-participants__actions event-stands__actions">
-                                {stand.Moderators && canManage && <><button className="ib-btn ib-btn--sm" type="button" disabled={vpnBusy} onClick={() => void vpn()}><Download size={14} aria-hidden="true" />{t("manage.labs.vpnConfig")}</button><button className="ib-btn ib-btn--sm" type="button" onClick={() => setChallengesOpen(true)}><ListChecks size={14} aria-hidden="true" />{t("manage.labs.challenges")}</button></>}
-                                {canManage && stand.Status !== "not_deployed" && <button className="ib-btn ib-btn--sm" type="button" onClick={() => setDetailTeam(stand.TeamID)}><Layers size={14} aria-hidden="true" />{t("manage.labs.detail.open")}</button>}
-                                {canManage && canRecreate(stand.Status) && <button className="ib-btn ib-btn--sm" type="button" disabled={recreating.includes(stand.TeamID)} onClick={() => {setConfirmError(""); setConfirm(stand);}}><RotateCcw size={14} aria-hidden="true" />{t("manage.labs.recreate.confirm")}</button>}
-                            </div></td>
+                            <td>{reasonCell(stand)}</td>
+                            <td><div className="event-manage-participants__actions event-stands__actions">{standActions(stand)}</div></td>
                         </tr>
-                        {open && <tr className="event-stands__labs"><td colSpan={5}><ul>{stand.Labs.map(lab => <li key={lab.ChallengeID}><span>{lab.ChallengeName || lab.ChallengeID.slice(0, 8)}</span><StatusBadge label={labStatusLabel[lab.Status]} tone={labStatusTone[lab.Status]} />{lab.Reason && <small className="event-stands__error">{standReasonText(lab.Reason)}</small>}</li>)}</ul></td></tr>}
+                        {open && <tr className="event-stands__labs"><td colSpan={5}>{labList(stand)}</td></tr>}
                     </Fragment>;
                 })}</tbody>}
             </table></div>
         </section>
         <ConfirmDialog open={confirm !== null} onCancel={() => {if (!confirm || !recreating.includes(confirm.TeamID)) setConfirm(null);}} tone="danger" busy={!!confirm && recreating.includes(confirm.TeamID)} error={confirmError}
             title={t("manage.labs.recreate.title")} description={t("manage.labs.recreate.description", {team: confirm ? standTeamName(confirm) : ""})}
-            confirmLabel={t("manage.labs.recreate.confirm")} onConfirm={() => void recreate()} />
+            confirmLabel={t("manage.labs.recreate.confirm")} busyLabel={t("common.busy.recreating")} onConfirm={() => void recreate()} />
         <StandDetailDialog eventID={eventID} teamID={detailTeam} canManage={canManage} onClose={() => setDetailTeam(null)} />
         <ModeratorChallengesDialog eventID={eventID} open={challengesOpen} onClose={() => setChallengesOpen(false)} />
     </div>;

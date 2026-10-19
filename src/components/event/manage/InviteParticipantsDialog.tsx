@@ -127,7 +127,7 @@ export function InviteParticipantsDialog({eventID, open, onOpenChange, onSent, t
         description={sendEmails ? (team ? t("manage.invites.teamDescription") : t("manage.invites.description")) : (team ? t("manage.invites.teamDescriptionSilent") : t("manage.invites.descriptionSilent"))} onSubmit={submit}
         fileDrop={{label: t("manage.invites.csv.dropOverlay"), onDrop: dropCsv, disabled: busy}}
         footer={<><button className="ib-btn" type="button" disabled={busy} onClick={() => {reset(); onOpenChange(false);}}>{t("common.cancel")}</button>
-            <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canSend} busy={busy}>{sendEmails ? t("manage.participants.invite.send") : t("manage.participants.invite.add")}</EventButton></>}>
+            <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={!canSend} busy={busy} busyLabel={t("common.busy.inviting")}>{sendEmails ? t("manage.participants.invite.send") : t("manage.participants.invite.add")}</EventButton></>}>
         <div className="ib-seg event-modal__modes" role="group" aria-label={t("manage.invites.mode")}>
             <button type="button" aria-pressed={mode === "manual"} disabled={busy} onClick={() => switchMode("manual")}>{t("manage.invites.modeManual")}</button>
             <button type="button" aria-pressed={mode === "csv"} disabled={busy} onClick={() => switchMode("csv")}>{t("manage.invites.modeCsv")}</button>

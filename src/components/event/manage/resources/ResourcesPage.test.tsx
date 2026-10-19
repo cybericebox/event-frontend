@@ -45,6 +45,26 @@ describe("ResourcesPage", () => {
         expect((await screen.findByTestId("resources-shortage")).textContent).toBe("Резерв не вміщується: бракує 1,5\u00A0ГБ");
     });
 
+    it("keeps the decision time and its note apart", async () => {
+        mocks.get.mockResolvedValue({...data, Changes: [{ID: "c1", RequestedAt: "2026-10-17T10:00:00Z", Size: amount(0, 8 * GB), Dynamic: null, WindowStart: null, WindowEnd: null,
+            Reason: "Більше команд", Status: "rejected", DecidedAt: "2026-10-18T01:42:00Z", DecisionNote: "Забагато пам'яті"}]});
+        render(<QueryClientProvider client={new QueryClient()}><ResourcesPage /></QueryClientProvider>);
+        const note = await screen.findByText("Забагато пам'яті");
+        const time = note.parentElement!.querySelector("time")!;
+        expect(time).toBeTruthy();
+        expect(note.className).toContain("event-resources__decision");
+        expect(time.closest(".event-resources__decision")).not.toBe(note);
+    });
+
+    it("disables «Попросити більше ресурсів» while a request is still being reviewed", async () => {
+        mocks.get.mockResolvedValue({...data, Changes: [{ID: "c1", RequestedAt: "2026-10-17T10:00:00Z", Size: amount(0, 8 * GB), Dynamic: null, WindowStart: null, WindowEnd: null,
+            Reason: "", Status: "pending", DecidedAt: null, DecisionNote: ""}]});
+        render(<QueryClientProvider client={new QueryClient()}><ResourcesPage /></QueryClientProvider>);
+        const button = await screen.findByRole("button", {name: "Попросити більше ресурсів"}) as HTMLButtonElement;
+        expect(button.disabled).toBe(true);
+        expect(screen.getByText("Запит уже розглядається")).toBeTruthy();
+    });
+
     it("hides the button from viewers who cannot manage", async () => {
         mocks.canManage = false;
         renderPage();

@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {smtpErrorLine, targetRecipient, type MailJournalItem, type MailJournalTarget} from "./manageMail";
+import {classifySMTPError, smtpErrorLine, targetRecipient, type MailJournalItem, type MailJournalTarget} from "./manageMail";
 
 const raw = "535 5.7.8 Authentication credentials invalid";
 
@@ -29,5 +29,18 @@ describe("targetRecipient", () => {
     it("prefers the target user, falls back to the item", () => {
         expect(targetRecipient(item, {Recipient: "u@x.io", RecipientName: "Ірина"} as MailJournalTarget)).toEqual({name: "Ірина", email: "u@x.io"});
         expect(targetRecipient(item, null)).toEqual({name: "", email: "a@x.io"});
+    });
+});
+
+describe("classifySMTPError (the daemon's ClassifyMailError for the SMTP test answer)", () => {
+    it.each([
+        ["535 5.7.8 Authentication credentials invalid", "smtp_auth", "535"],
+        ["550 5.1.1 user unknown", "smtp_rcpt", "550"],
+        ["554 Message rejected: Email address is not verified", "smtp_rejected", "554"],
+        ["dial tcp 10.0.0.1:587: i/o timeout", "smtp_connect", ""],
+        ["451 4.3.0 try later", "smtp_other", "451"],
+        ["template render failed", "", ""],
+    ])("%s → %s %s", (raw, kind, code) => {
+        expect(classifySMTPError(raw)).toEqual({kind, code});
     });
 });

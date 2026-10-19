@@ -87,6 +87,19 @@ describe("Журнал спроб", () => {
         expect(await screen.findByRole("button", {name: "Показати еталон"})).toBeTruthy();
     });
 
+    it("offers «Скасувати» next to «Зберегти рішення», and it closes the attempt", async () => {
+        mockApi({Items: [attempt(1)], Total: 1});
+        renderManager();
+        const table = screen.getByRole("table");
+        await within(table).findByText("flag{a}");
+        fireEvent.keyDown(within(table).getAllByRole("row")[1], {key: "Enter"});
+        const save = await screen.findByRole("button", {name: "Зберегти рішення"});
+        const cancel = within(save.parentElement!).getByRole("button", {name: "Скасувати"});
+        expect(cancel.nextElementSibling).toBe(save);
+        fireEvent.click(cancel);
+        await waitFor(() => expect(screen.queryByRole("button", {name: "Зберегти рішення"})).toBeNull());
+    });
+
     it("hides the submitted value and export from viewers", async () => {
         manager.canManage = false;
         mockApi({Items: [attempt(1, {Answer: null, ExpectedFlag: null})], Total: 1});

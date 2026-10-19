@@ -13,7 +13,7 @@ import type {ParticipantForm} from "@/api/manageParticipantForm";
 import {answerFileSchema, type AnswerFile} from "@/api/answerFiles";
 import {z} from "zod";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {Check, LogOut, MoreHorizontal, RotateCcw} from "lucide-react";
+import {Check, Eye, LogOut, MoreHorizontal, RotateCcw} from "lucide-react";
 import {t} from "@/i18n/t";
 import type {JoinOutcome} from "./join/joinPreviewModel";
 import {clearPreviewCookie, readPreviewCookie, setPreviewCookie} from "@/utils/previewCookie";
@@ -126,7 +126,8 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
 
 export function ParticipantPreviewEntry({eventID, registration}: {eventID: string; registration?: number}) {
     const preview = useParticipantPreview();
-    return <button type="button" className="ib-btn ib-btn--sm" onClick={() => preview.start(eventID, registration)}>{t("participantPreview.enter")}</button>;
+    // On a phone the top bar keeps only the icon; the label stays the accessible name.
+    return <button type="button" className="ib-btn ib-btn--sm event-preview-entry" onClick={() => preview.start(eventID, registration)}><Eye size={16} aria-hidden="true" /><span className="event-preview-entry__label">{t("participantPreview.enter")}</span></button>;
 }
 
 // File answers in test mode keep metadata only; no upload endpoint is called.

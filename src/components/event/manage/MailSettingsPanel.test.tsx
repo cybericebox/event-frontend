@@ -124,7 +124,20 @@ describe("Пошта заходу: збереження без миготінн�
         gate.release?.();
         await waitFor(() => expect((screen.getAllByRole("button", {name: "Зберегти"}).at(-1) as HTMLButtonElement).disabled).toBe(false));
         expect(host.value).toBe("smtp.other.edu");
+        const failure = host.closest("form")!.querySelector(".event-manage-section__actions [role='alert']");
+        expect(failure?.textContent).toBeTruthy();
     });
+});
+
+it("shows a failed SMTP check as a human line with the raw server text as details", async () => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST" && String(input).endsWith("/mail/smtp/test")) return new Response(JSON.stringify({Status: {Code: 0}, Data: {Sent: false, Error: "dial tcp 10.0.0.1:587: i/o timeout"}}), {status: 200});
+        return new Response(JSON.stringify({Status: {Code: 0}, Data: settings()}), {status: 200});
+    }) as typeof fetch;
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", {name: "Перевірити підключення"}));
+    expect(await screen.findByText("Не вдалося зʼєднатися з SMTP-сервером")).toBeTruthy();
+    expect(screen.getByText("dial tcp 10.0.0.1:587: i/o timeout").closest("details")).not.toBeNull();
 });
 
 it("does not show or submit SMTP Save for equivalent normalized values", async () => {

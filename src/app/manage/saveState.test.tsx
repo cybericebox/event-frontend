@@ -51,6 +51,17 @@ describe("acknowledged event settings", () => {
         expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
     });
 
+    it("shows an empty accent as the automatic one, not as white", async () => {
+        mount(Appearance);
+        const accent = await screen.findByRole("textbox", {name: /^Акцентний колір/}) as HTMLInputElement;
+        expect(accent.value).toBe("");
+        expect(accent.placeholder).toBe("Як брендовий");
+        const swatch = accent.parentElement!.querySelector(".event-color-swatch") as HTMLElement;
+        expect(swatch.style.backgroundColor).toBe("rgb(33, 26, 82)");
+        fireEvent.change(await screen.findByRole("textbox", {name: /^Брендовий колір/}), {target: {value: "#123456"}});
+        expect(swatch.style.backgroundColor).toBe("rgb(18, 52, 86)");
+    });
+
     it("compares colors without case or surrounding-space differences", async () => {
         mount(Appearance);
         const brand = await screen.findByRole("textbox", {name: /^Брендовий колір/});

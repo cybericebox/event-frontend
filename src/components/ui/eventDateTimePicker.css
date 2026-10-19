@@ -26,3 +26,9 @@
 .event-date-picker__time .event-date-picker__zone{margin-left:auto}
 .event-date-picker__actions{display:flex;align-items:center;justify-content:flex-end;gap:var(--ib-2)}
 .event-date-picker__actions .ib-btn{min-height:32px;padding:0 var(--ib-3);font-size:var(--ib-fs-12)}
+/* Phones: the short date keeps the time visible; the zone offset stays in the popover footer. */
+.event-date-picker__short{display:none}
+@media(max-width:480px){
+  .event-date-picker__long,.event-date-picker__trigger .event-date-picker__zone,.event-date-picker__trigger>.ib-tip{display:none}
+  .event-date-picker__short{display:inline}
+}

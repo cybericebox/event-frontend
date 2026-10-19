@@ -13,7 +13,7 @@ const {InboxButton} = await import("./InboxButton");
 
 const lab = (id: string, extra = {}) => ({
     ID: id, Title: `Заявка ${id}`, Body: "", Link: "", ReadAt: null, CreatedAt: "2026-10-01T10:00:00Z",
-    Type: "event.lab.failed", Category: "requests", ActionRequired: true, ResolvedAt: null, ...extra,
+    Type: "event.lab.failed", Resolvable: true, Category: "requests", ActionRequired: true, ResolvedAt: null, ...extra,
 });
 const poll = {Cursor: null, UnreadCount: 2, Counts: {All: 2, Requests: 2, Personal: 0, Activity: 0}, NewInbox: [], OtherEventsCount: 0};
 
@@ -101,9 +101,34 @@ describe("inbox", () => {
         expect(screen.getByText("Заявка a")).toBeTruthy();
     });
 
-    it("does not announce the unread state with a dot", async () => {
+    it("marks unread rows with the word «Нове» and no dot", async () => {
         await openInbox();
         expect(document.querySelector(".event-notification-card__unread")).toBeNull();
-        expect(screen.getAllByText("Непрочитане").length).toBeGreaterThan(0);
+        expect(screen.getAllByText(t("inbox.unreadItem")).length).toBe(2);
+    });
+
+    it("a read open request still says «Потребує дії», is not «Нове», and the bell says what it counts", async () => {
+        const alarm = {...lab("alarm", {Type: "resources.alarm.raised", Resolvable: true, ReadAt: "2026-10-01T10:05:00Z"})};
+        api.pollInbox.mockResolvedValue({...poll, UnreadCount: 0, Counts: {All: 1, Requests: 1, Personal: 0, Activity: 0}});
+        api.getInbox.mockResolvedValue({Items: [alarm], NextCursor: null});
+        render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
+        const bell = await screen.findByRole("button", {name: t("inbox.titleRequests", {count: 1})});
+        fireEvent.click(bell);
+        await screen.findByText("Заявка alarm");
+        expect(screen.getByText(t("inbox.needsAction"))).toBeTruthy();
+        expect(screen.queryByText(t("inbox.unreadItem"))).toBeNull();
+        expect(screen.getByRole("button", {name: "Вирішено"})).toBeTruthy();
+        expect(screen.getByRole("tab", {name: t("inbox.tabCountRequests", {name: t("inbox.tab.requests"), count: 1})})).toBeTruthy();
+    });
+
+    it("a resolved request carries neither tag", async () => {
+        const closed = lab("done", {ReadAt: "2026-10-01T10:05:00Z", ResolvedAt: "2026-10-01T10:06:00Z", Resolution: "resolved"});
+        api.pollInbox.mockResolvedValue({...poll, UnreadCount: 0, Counts: {All: 0, Requests: 0, Personal: 0, Activity: 0}});
+        api.getInbox.mockResolvedValue({Items: [closed], NextCursor: null});
+        render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
+        fireEvent.click(await screen.findByRole("button", {name: /Вхідні/}));
+        await screen.findByText("Заявка done");
+        expect(screen.queryByText(t("inbox.needsAction"))).toBeNull();
+        expect(screen.queryByText(t("inbox.unreadItem"))).toBeNull();
     });
 });

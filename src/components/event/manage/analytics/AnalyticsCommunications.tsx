@@ -68,7 +68,7 @@ export function AnalyticsCommunications() {
                         <th scope="col" className="ib-num">{t("manage.analytics.comms.types.col.read")}</th>
                     </tr>}>
                     <tbody>{(data?.Types ?? []).map(row => <tr key={row.Type}>
-                        <td><div className="event-manage-table__person"><strong>{notificationTypeLabel(row.Type)}</strong>{row.Type && <small>{row.Type}</small>}</div></td>
+                        <td><div className="event-manage-table__person"><strong>{notificationTypeLabel(row.Type)}</strong></div></td>
                         <td className="ib-num">{number.format(row.EmailSent)}</td>
                         <td className="ib-num">{number.format(row.EmailErrors)}</td>
                         <td className="ib-num">{number.format(row.InAppSent)}</td>

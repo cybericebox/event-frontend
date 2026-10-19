@@ -6,6 +6,7 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 const event = vi.hoisted(() => ({EventID: "01a0d498-32b3-7a38-8355-30cc209f56ab", Participation: 1, LogoURL: null}));
 const download = vi.hoisted(() => vi.fn(async () => undefined));
 const manager = vi.hoisted(() => ({canManage: true}));
+import {ManagerContext} from "@/components/event/manage/managerContext";
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event, canManage: manager.canManage})}));
 vi.mock("echarts-for-react", () => ({default: ({option}: {option: {series: unknown[]}}) => <div data-testid="chart" data-series={option.series.length} />}));
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
@@ -40,7 +41,7 @@ function mockApi(routes: Record<string, unknown>) {
 }
 
 function renderWith(node: React.ReactElement) {
-    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>{node}</QueryClientProvider>);
+    return render(<ManagerContext.Provider value={{event: event as never, canManage: manager.canManage, canExport: manager.canManage}}><QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>{node}</QueryClientProvider></ManagerContext.Provider>);
 }
 
 const summary = {Teams: 2, Ready: 1, Creating: 0, Failed: 1, NotDeployed: 0, DeployAvgSeconds: 90, DeployMedianSeconds: 90, DeployMaxSeconds: 120,

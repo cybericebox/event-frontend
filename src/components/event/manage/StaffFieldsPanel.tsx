@@ -86,7 +86,7 @@ export function StaffFieldsPanel({eventID, scope, subjectID, form, answers, canM
             ? t("manage.staffFields.changed", {name: change.ActorName || t("manage.staffFields.unknownActor"), date: changedAt.format(new Date(change.At))})
             : t("manage.staffFields.never")}</small>
         {canManage && <div className="event-manage-staff-fields__actions">
-            <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" busy={busy} disabled={busy} onClick={() => void save()}>{t("manage.staffFields.save")}</EventButton>
+            <EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="button" busy={busy} busyLabel={t("common.busy.saving")} disabled={busy} onClick={() => void save()}>{t("manage.staffFields.save")}</EventButton>
             <button className="ib-btn" style={{visibility: dirty || busy ? undefined : "hidden"}} type="button" disabled={busy || !dirty} onClick={() => setEdited(null)}>{t("common.cancel")}</button>
         </div>}
     </section>;

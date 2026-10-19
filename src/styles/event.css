@@ -3,6 +3,9 @@
    category headers all clear it through this one token. */
 :root{--event-navbar-h:61px}
 @media(max-width:760px){:root{--event-navbar-h:57px}}
+/* Screen-reader text sits at its containing block's left edge: at its static place inside a wide table it widened the
+   whole page (the scroll box around the table is not its containing block). */
+.ib-sr{left:0}
 html{background:var(--ib-paper)!important;scroll-padding-top:calc(var(--event-navbar-h) + var(--ib-4))}
 .event-page-content .ib-block-doc .ib-toc{--ib-toc-top:calc(var(--event-navbar-h) + var(--ib-4))}
 .event-page-content .ib-block-prose h2,.event-page-content .ib-block-prose h3{scroll-margin-top:calc(var(--event-navbar-h) + var(--ib-4))}
@@ -11,7 +14,8 @@ body.event-root main{overflow-x:visible}
 .event-guest-shell{display:flex;min-height:100dvh;flex-direction:column;background:var(--ib-paper)}
 .event-guest-main{flex:1;min-width:0}
 .event-navbar .ib-navbar__bar{max-width:1280px;gap:var(--ib-3);padding-inline:var(--ib-6)}
-.event-navbar .ib-navbar__brand{flex:0 1 auto;max-width:50%;overflow:hidden}
+/* A long event name gives way to the sections: it is cut with an ellipsis, the sections stay in the bar. */
+.event-navbar .ib-navbar__brand{flex:0 1 auto;max-width:min(32%,30ch);overflow:hidden}
 .event-navbar .ib-navbar__name{display:block;max-width:none;overflow:hidden;text-overflow:ellipsis;font-size:var(--ib-fs-14)}
 .event-navbar .ib-navbar__nav{margin-left:0;min-width:64px}
 .event-navbar .ib-navbar__link{padding-inline:var(--ib-2);font-size:var(--ib-fs-13)}
@@ -176,3 +180,7 @@ fieldset.event-join-question>legend{margin-bottom:6px;padding:0}
 .ib-footer--event .ib-footer__inner{max-width:1280px;padding-inline:var(--ib-6)}
 @media(max-width:760px){.ib-footer--event .ib-footer__inner{padding-inline:var(--ib-4)}}
 .event-notification-card__source{display:inline-flex;align-items:center;margin-left:var(--ib-2);padding:0 6px;border:1px solid var(--ib-line);border-radius:var(--ib-r);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-medium);line-height:18px;vertical-align:1px}
+/* The DS modal entrance keeps its last frame (fill-mode both), and the interpolated «transform:none» stays an identity
+   matrix, which makes the modal the containing block of every fixed child: a toast rendered in an open modal then sat at
+   the modal's top instead of the screen's. Without the forward fill the modal ends with no transform at all. */
+html .ib-modal,html .ib-cmodal[open]{animation-fill-mode:backwards}

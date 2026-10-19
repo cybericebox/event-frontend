@@ -134,7 +134,7 @@ export function AnalyticsUsage() {
     const description = t("manage.analytics.section.usage.description");
     const actions = <>
         <LiveStatus freshness={{kind: "polling", seconds: USAGE_POLL_SECONDS, failing: query.isError}} updatedAt={query.dataUpdatedAt} />
-        <AnalyticsExportButton eventID={eventID} section="usage" period={filter.period} disabled={!data?.Available} />
+        {!data?.PeopleHidden && <AnalyticsExportButton eventID={eventID} section="usage" period={filter.period} disabled={!data?.Available} />}
     </>;
 
     if (query.isPending) return <AnalyticsPage title={title} description={description} actions={actions}>
@@ -145,6 +145,12 @@ export function AnalyticsUsage() {
     </AnalyticsPage>;
     if (!data.Available) return <AnalyticsPage title={title} description={description}>
         <div className="event-analytics__block"><EmptyState message={t("manage.analytics.usage.unavailable")} /></div>
+    </AnalyticsPage>;
+
+    // Totals only: always for the whole event (the server ignores a period here), so no period filter.
+    if (data.PeopleHidden) return <AnalyticsPage title={title} description={description} actions={actions}>
+        <Summary usage={data} />
+        <p className="event-manage-notice" role="note">{t("manage.analytics.usage.peopleHidden")}</p>
     </AnalyticsPage>;
 
     const teams = [...new Map(data.Users.map(user => [user.TeamID, user.TeamName])).entries()].sort((a, b) => a[1].localeCompare(b[1]));

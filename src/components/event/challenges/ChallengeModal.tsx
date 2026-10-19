@@ -18,6 +18,8 @@ import {
 } from "@/api/participantChallenges";
 import {reportTaskOpened} from "@/api/taskOpenedBeacon";
 import {useParticipantPreview} from "../ParticipantPreview";
+import {EventSelect} from "@/components/ui/EventSelect";
+import {getTestRunLengths, initialLength, testRunLengthsKey} from "@/api/testRunLengths";
 import {moderatorFileUrl, submitModeratorFlag, type ModeratorSubmission} from "@/api/moderatorsBoard";
 import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
@@ -38,6 +40,9 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 
 export type BoardMode = "participant" | "moderators" | "preview";
+
+// The event's reservation has no room for the preview's laboratory (409).
+const PREVIEW_RESERVATION_FULL = 72517;
 // retry: the server was only busy; the message offers to send the same answer again.
 type Message = {text: string; tone: "error" | "warn"; retry?: boolean} | null;
 
@@ -147,7 +152,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         <ul className="event-cmodal__hints">{challenge.Hints.map((original, index) => {const hint = localHints[original.ID] ?? original; return <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
                 <span className="event-cmodal__hint-title">{moderatorPresentation ? t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)}) : t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
-                {!moderatorPresentation && !hint.Unlocked && !closed && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID}
+                {!moderatorPresentation && !hint.Unlocked && !closed && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID} busyLabel={t("common.busy.unlocking")}
                     onClick={() => {if (hintNeedsConfirm(hint)) {setConfirmError(""); setConfirm({hint, index});} else void unlock(hint);}}>{t("challenges.hints.unlock")}</EventButton>}
             </div>
             {hint.Content && <HintText text={hint.Content} />}
@@ -158,7 +163,7 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         <ConfirmDialog open={!!confirm} onCancel={() => setConfirm(null)} busy={!!busyID} error={confirmError}
             title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
             description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
-            confirmLabel={t("challenges.hints.confirm")} onConfirm={() => confirm && void unlock(confirm.hint)}>
+            confirmLabel={t("challenges.hints.confirm")} busyLabel={t("common.busy.unlocking")} onConfirm={() => confirm && void unlock(confirm.hint)}>
             <p className="ib-cmodal__hint">{t("challenges.hints.teamSees")}</p>
         </ConfirmDialog>
     </section>;
@@ -213,6 +218,8 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const cacheMode = isPreview ? "preview" : mode;
     const [starting, setStarting] = useState(false);
     const [startError, setStartError] = useState<unknown>();
+    // The run length of the preview's laboratory; 0 until the author picks one (the offered default applies).
+    const [chosenLength, setChosenLength] = useState(0);
     const [startedRun, setStartedRun] = useState<{selectionID: string; expiresAt: string | null} | null>(null);
     const selectionID = challenge?.PreviewSelectionID;
     const previewRunStarted = (!!challenge?.PreviewRunID && (!challenge.PreviewExpiresAt || Date.parse(challenge.PreviewExpiresAt) > now)) || (startedRun?.selectionID === selectionID && !!startedRun && (!startedRun.expiresAt || Date.parse(startedRun.expiresAt) > now));
@@ -387,14 +394,22 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const exhausted = left === 0;
     const category = challenge?.GroupName || t("challenges.otherCategory");
     const shownHints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
-    const hints = practice ? shownHints.map(hint => hint.Unlocked ? hint : {...hint, Cost: 0}) : shownHints;
+    // Hints are free once the task is solved, after the finish and as practice (the server charges 0 then).
+    const freeHints = practice || solved || (finished && !moderators);
+    const hints = freeHints ? shownHints.map(hint => hint.Unlocked ? hint : {...hint, Cost: 0}) : shownHints;
     const fileUrl = (fileID: string) => isPreview ? previewFileUrl(eventID, challenge!, fileID) : moderators ? moderatorFileUrl(eventID, challengeID!, fileID) : challengeAttachmentUrl(eventID, challengeID!, fileID);
 
+    const lengths = useQuery({
+        queryKey: testRunLengthsKey, queryFn: getTestRunLengths, staleTime: 5 * 60_000, retry: false,
+        enabled: isPreview && !!challenge?.Infrastructure && !previewRunStarted && challenge?.PreviewCanStart === true,
+    });
+    const lengthChoices = lengths.data && lengths.data.AllowedMinutes.length > 0 ? lengths.data : null;
+    const runLength = chosenLength || (lengthChoices ? initialLength(lengthChoices) : 0);
     const start = async () => {
         if (starting || !selectionID || challenge?.PreviewCanStart !== true) return;
         setStarting(true); setStartError(undefined);
         try {
-            const run = await startPreviewRun(eventID, selectionID);
+            const run = await startPreviewRun(eventID, selectionID, runLength || undefined);
             queryClient.setQueryData<LabRuntime>(runtimeKey, {Lab: null, Phase: "pending", Ready: false, Queue: null, VPNCIDR: "", InternetCIDR: "", Access: []});
             queryClient.setQueryData<OwnBoard>(previewBoardKey(eventID), board => board && ({...board, Challenges: board.Challenges.map(task => task.PreviewSelectionID === selectionID ? {...task, PreviewRunID: run.ID, PreviewExpiresAt: run.ExpiresAt} : task)}));
             setStartedRun({selectionID, expiresAt: run.ExpiresAt});
@@ -449,8 +464,14 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 </section>}
                 {isPreview && challenge.Infrastructure && !previewRunStarted && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.lab.environment")}</h3>
-                    {challenge.PreviewCanStart === true ? <EventButton className="ib-btn ib-btn--primary" busy={starting} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
-                    {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? apiErrorMessage(startError.code, t("participantPreview.lab.startFailed")) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
+                    {challenge.PreviewCanStart === true ? <div className="event-cmodal__start">
+                        {lengthChoices && <label className="event-cmodal__length"><span>{t("lab.preview.length")}</span>
+                            <EventSelect ariaLabel={t("lab.preview.length")} value={String(runLength)} disabled={starting}
+                                options={lengthChoices.AllowedMinutes.map(minutes => ({value: String(minutes), label: minutes % 60 === 0 ? t("lab.preview.duration.hours", {n: minutes / 60}) : t("lab.preview.duration.minutes", {n: minutes})}))}
+                                onValueChange={value => setChosenLength(Number(value))} /></label>}
+                        <EventButton className="ib-btn ib-btn--primary" busy={starting} busyLabel={t("common.busy.starting")} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton>
+                    </div> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
+                    {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? (startError.code === PREVIEW_RESERVATION_FULL ? t("lab.preview.reservationFull") : apiErrorMessage(startError.code, t("participantPreview.lab.startFailed"))) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
                 </section>}
                 {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn && !preview.active ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} previewMode={isPreview} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
@@ -461,15 +482,17 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 {!solved && !accepted && !practiceSolved && (moderators || (!finished && !stageClosed)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
                     <label htmlFor={`${id}-flag`}>{t("challenges.modal.flag")}</label>
                     <div className="ib-cmodal__row">
-                        <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
-                            aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer} disabled={exhausted}
-                            onChange={event => { setAnswer(event.target.value); if (message?.tone === "error" || message?.retry) setMessage(null); if (moderators) setAccepted(false); }} />
-                        <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy}>{t("challenges.modal.submit")}</EventButton>
+                        <div className="ib-cmodal__field">
+                            <input ref={flagRef} className="ib-input ib-input--mono" id={`${id}-flag`} name="flag" placeholder="ICE{…}" autoComplete="off" spellCheck={false}
+                                aria-describedby={`${id}-msg`} aria-invalid={message?.tone === "error"} value={answer} disabled={exhausted}
+                                onChange={event => { setAnswer(event.target.value); if (message?.tone === "error" || message?.retry) setMessage(null); if (moderators) setAccepted(false); }} />
+                            {/* Under the field, never under the button. While waiting, the visible countdown ticks silently; one status announces the full wait once. */}
+                            <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role={waiting ? undefined : "alert"}>
+                                {waiting ? <span aria-hidden="true">{t("challenges.modal.rateLimited", {seconds: waitSeconds})}</span> : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
+                            </p>
+                        </div>
+                        <EventButton className="ib-btn ib-btn--primary" type="submit" disabled={waiting || exhausted} busy={busy} busyLabel={t("common.busy.checking")}>{t("challenges.modal.submit")}</EventButton>
                     </div>
-                    {/* While waiting, the visible countdown ticks silently; one status announces the full wait once. */}
-                    <p className={`ib-cmodal__msg${waiting ? " is-warn" : message ? ` is-${message.tone}` : ""}`} id={`${id}-msg`} role={waiting ? undefined : "alert"}>
-                        {waiting ? <span aria-hidden="true">{t("challenges.modal.rateLimited", {seconds: waitSeconds})}</span> : exhausted ? t("challenges.modal.attemptsExhausted") : message?.text}
-                    </p>
                     {!waiting && !exhausted && message?.retry && <EventButton className="ib-btn ib-btn--sm" onClick={() => void send()}>{t("error.overloaded.retry")}</EventButton>}
                     {waiting && <span className="ib-sr" role="status">{t("challenges.modal.rateLimited", {seconds: waitTotal})}</span>}
                     {left !== null && left > 0 && <p className="ib-cmodal__hint" id={`${id}-left`}>{t("challenges.modal.attemptsLeft", {count: left})}</p>}

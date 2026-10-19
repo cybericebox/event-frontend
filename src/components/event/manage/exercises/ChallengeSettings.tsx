@@ -155,7 +155,7 @@ export function ChallengeSettings() {
                 <EventSwitch className="event-manage-form__switch" checked={value.ForceEventScoring} onCheckedChange={checked => update({ForceEventScoring: checked})} disabled={disabled} label={t("manage.challenges.scoring.force")} />
                 <p>{t("manage.challenges.scoring.forceNote")}</p>
             </div>
-            <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid || !!problem} busy={saving}>{t("common.save")}</EventButton></div>
+            <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !valid || !!problem} busy={saving} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>
         </form>
         {config.data.LabPolicy && <section className="event-manage-section" aria-labelledby="lab-policy-title">
             <div className="event-manage-section__head"><h2 id="lab-policy-title">{t("manage.labs.policy.title")}</h2><p>{t("manage.labs.policy.help")}</p></div>
@@ -164,14 +164,10 @@ export function ChallengeSettings() {
                     options={[{value: "skip", label: t("manage.labs.policy.skip")}, {value: "required", label: t("manage.labs.policy.required")}]}
                     disabled={!canManage} onValueChange={mode => savePolicy({SnapshotMode: mode as "skip" | "required"})} />
             </div>
-            <div className="event-manage-fields-two">
-                <LabPolicyNumberField id="lab-active-limit" title={t("manage.labs.policy.activeLimit")} value={config.data.LabPolicy.MaxActiveLabsPerTeam}
-                    min={1} max={1000} nullable placeholder={t("manage.labs.policy.unlimited")} disabled={!canManage}
-                    onCommit={limit => savePolicy({MaxActiveLabsPerTeam: limit})} />
-                <LabPolicyNumberField id="lab-retention" title={t("manage.labs.policy.retention")} value={config.data.LabPolicy.RetentionMinutes}
-                    min={0} max={10080} nullable={false} disabled={!canManage}
-                    onCommit={minutes => {if (minutes !== null) savePolicy({RetentionMinutes: minutes});}} />
-            </div>
+            {/* Labs live only until the reservation window ends: no retention setting (the policy keeps the server's value). */}
+            <LabPolicyNumberField id="lab-active-limit" title={t("manage.labs.policy.activeLimit")} value={config.data.LabPolicy.MaxActiveLabsPerTeam}
+                min={1} max={1000} nullable placeholder={t("manage.labs.policy.unlimited")} disabled={!canManage}
+                onCommit={limit => savePolicy({MaxActiveLabsPerTeam: limit})} />
         </section>}
         <section className="event-manage-section" aria-labelledby="attempts-title">
             <div className="event-manage-section__head"><h2 id="attempts-title">{t("manage.challenges.attempts.title")}</h2><p>{t("manage.challenges.attempts.subtitle")}</p></div>

@@ -61,6 +61,6 @@ export default function ManageGeneralPage() {
             <div className="event-manage-field"><ManageFieldLabel htmlFor="event-description" title={t("manage.settings.description")} help={t("manage.settings.descriptionHelp")} /><textarea id="event-description" className="event-manage-input" value={description} onChange={change => setDescriptionEdit({eventID, value: change.target.value})} maxLength={1000} rows={3} disabled={disabled} /></div>
             <BrandDraftField id="event-preview-picture" title={t("manage.settings.preview")} help={t("manage.settings.previewHelp")} hint={t("manage.settings.previewHint")} kind="preview" draft={preview} disabled={disabled} />
         </section>
-        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !name.trim() || preview.uploading || preview.expired} busy={saving}>{t("common.save")}</EventButton></div>
+        <div className="event-manage-savebar"><EventButton saveDirty={dirty} className="ib-btn ib-btn--primary" type="submit" disabled={disabled || saving || !name.trim() || preview.uploading || preview.expired} busy={saving} busyLabel={t("common.busy.saving")}>{t("common.save")}</EventButton></div>
     </form>;
 }
