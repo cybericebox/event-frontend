@@ -88,6 +88,14 @@ it("keeps a refused launch actionable without calling any competition lab", asyn
     expect(fetchMock.mock.calls[0][0]).toContain(`/selections/${selection}/start`);
 });
 
+it.each([[172509], [172517], [172508]])("says there are no free resources when the test capacity is full (%s)", async code => {
+    mount({...base, Infrastructure: true, PreviewDynamic: true});
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({Status: {Code: code, Message: "full"}, Data: null}), {status: 409}));
+    fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
+    expect(await screen.findByText("Немає вільних ресурсів для тестової лабораторії. Спробуйте пізніше або виберіть коротший запуск.")).toBeTruthy();
+    expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+});
+
 it("starts the preview's laboratory for the chosen length", async () => {
     mount({...base, Infrastructure: true, PreviewDynamic: true});
     const length = await screen.findByRole("button", {name: "Тривалість"});
@@ -110,10 +118,10 @@ it("shows the start in progress on the busy button", async () => {
     expect(busy.getAttribute("data-busy")).toBe("true");
 });
 
-it.each([false, undefined])("does not offer a dynamic launch without confirmed event allocation: %s", canStart => {
+it.each([false, undefined])("does not offer a dynamic launch the event cannot run: %s", canStart => {
     mount({...base, Infrastructure: true, PreviewDynamic: true, PreviewCanStart: canStart});
     expect(screen.queryByRole("button", {name: "Запустити середовище"})).toBeNull();
-    expect(screen.getByText(/Для запуску потрібні виділені ресурси заходу/)).toBeTruthy();
+    expect(screen.getByText("Лабораторії для цього заходу вимкнено.")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
 });
 

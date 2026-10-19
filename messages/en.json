@@ -4961,7 +4961,6 @@
   "lab.preview.length": "Length",
   "lab.preview.duration.minutes": "{n} min",
   "lab.preview.duration.hours": "{n} h",
-  "lab.preview.reservationFull": "The event's reservation has no room for this laboratory.",
   "lab.live.failure.restarts": "Restarts: {count}",
   "lab.live.failure.message": "Last error: {message}",
   "lab.live.snapshot.saved": "Saved {time}",
@@ -5245,7 +5244,7 @@
   "participantPreview.title": "Participant test mode",
   "participantPreview.lab.start": "Start environment",
   "participantPreview.lab.startFailed": "Could not start the environment",
-  "participantPreview.lab.unavailable": "Starting requires allocated event resources. Check resources in the event settings.",
+  "participantPreview.lab.unavailable": "Laboratories are turned off for this event.",
   "participantPreview.description": "Registration and team changes stay in this browser. Test task progress is stored separately from the competition.",
   "participantPreview.enter": "Test as a participant",
   "participantPreview.exit": "Exit test mode",
@@ -5483,6 +5482,5 @@
   "manage.challenges.groups.points.many": "{count} points",
   "manage.challenges.groups.pointsDynamic": "dynamic {max}→{min}",
   "manage.previewSettings.unavailableReason.no_infrastructure": "Will not start: the event has no infrastructure",
-  "manage.previewSettings.unavailableReason.no_reservation": "Will not start: no active resource reservation",
-  "manage.previewSettings.toReservations": "Reservation calendar"
+  "lab.preview.noFreeResources": "No free resources for a test laboratory. Try again later or choose a shorter run."
 }
