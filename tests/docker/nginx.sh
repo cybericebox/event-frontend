@@ -15,7 +15,7 @@ certs=$work/certs
 mkdir -p "$certs"
 tools=event-frontend-nginx-tools
 docker build -q -t "$tools" - >/dev/null <<'DOCKER' || exit 1
-FROM alpine:3.24.2
+FROM mirror.gcr.io/library/alpine:3.24.2
 RUN apk add --no-cache curl openssl
 DOCKER
 
