@@ -7,7 +7,7 @@ import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Send} from "lucide-react";
 import {toast} from "react-hot-toast";
-import {toastFailure} from "@/components/ui/toastApiError";
+import {failureText, toastFailure} from "@/components/ui/toastApiError";
 import {
     customizeManageEmailTemplate, getManageEmailImageURL, getManageEmailPresets, getManageEmailTemplates, publishManageEmailTemplate,
     resetManageEmailTemplate, rollbackManageEmailTemplate, sendManageEmailTemplateTest, updateManageEmailTemplate,
@@ -90,7 +90,8 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
     const livePreview = useDebounced(draft && !validation ? draft : null);
     const ownVersions = versions.filter(item => item.Source === "event");
 
-    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true): Promise<boolean> {
+    // `inline` takes the error text instead of a toast (an error inside a dialog).
+    async function run(action: () => Promise<unknown>, success: string, failure: string, refresh = true, inline?: (text: string) => void): Promise<boolean> {
         if (!canManage || busy) return false;
         setBusy(true);
         try {
@@ -102,7 +103,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
             toast.success(success);
             return true;
         } catch (caught) {
-            toastFailure(caught, failure);
+            if (inline) inline(failureText(caught, failure)); else toastFailure(caught, failure);
             return false;
         } finally {setBusy(false);}
     }
@@ -165,7 +166,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
                     onCustomize={() => void mutate(() => customizeManageEmailTemplate(eventID, template!), t("manage.notifications.customized"))}
                     onEdit={() => void mutate(() => rollbackManageEmailTemplate(eventID, template!), t("manage.email.draftFromVersion"))}
                     onRestore={() => void mutate(() => rollbackManageEmailTemplate(eventID, template!), t("manage.email.draftFromVersion"))}
-                    onReset={async () => { const done = await run(() => resetManageEmailTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.email.restoreError")); if (done) router.replace(href()); return done; }} />
+                    onReset={async () => { let failed = ""; const done = await run(() => resetManageEmailTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.email.restoreError"), true, text => {failed = text;}); if (done) router.replace(href()); return done || failed; }} />
             </>} />
         {readOnlyHint && <p className="event-template-page__hint" role="note" data-testid="template-notice">{readOnlyHint}</p>}
         {ownVersions.length > 0 && template && <TemplateVersions versions={ownVersions.map(item => ({ID: item.ID, Status: item.Status, UpdatedAt: item.UpdatedAt, PublishedAt: item.PublishedAt, Heading: item.Subject}))} currentId={template.ID} hrefFor={href}

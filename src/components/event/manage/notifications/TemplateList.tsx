@@ -35,7 +35,7 @@ export function TemplateList({event, state, onRetry, error, loadingLabel, errorM
     const needle = search.trim().toLocaleLowerCase();
     const shown = signals.filter(signal => !needle || signalLabel(signal).title.toLocaleLowerCase().includes(needle) || signal.toLowerCase().includes(needle));
     const tableState: ManageTableState = state !== "ready" ? state : shown.length === 0 ? "empty" : "ready";
-    return <ManageTable event={event} state={tableState} loadingLabel={loadingLabel} errorMessage={errorMessage} onRetry={onRetry} error={error} emptyMessage={needle ? t("manage.notifications.list.emptySearch") : emptyMessage}
+    return <ManageTable cards event={event} state={tableState} loadingLabel={loadingLabel} errorMessage={errorMessage} onRetry={onRetry} error={error} emptyMessage={needle ? t("manage.notifications.list.emptySearch") : emptyMessage}
         toolbar={<ManageTableSearch value={search} onChange={setSearch} label={t("manage.notifications.list.search")} />}
         head={<tr>
             <th scope="col">{t("manage.notifications.list.colType")}</th>

@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
+import {useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {Search} from "lucide-react";
 import type {PublicEventInfo} from "@/types/publicEventInfo";
@@ -46,7 +46,7 @@ export type ManageTableState = "loading" | "error" | "empty" | "ready";
 
 // The table, its header row and the footer always render; loading, error and
 // empty states fill the body area under the header, centered.
-export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, error, busy = false, label, toolbar, footer, head, children}: {
+export function ManageTable({event, state, loadingLabel, emptyMessage, errorMessage, onRetry, error, busy = false, cards = false, label, toolbar, footer, head, children}: {
     event: PublicEventInfo;
     state: ManageTableState;
     loadingLabel: string;
@@ -55,6 +55,8 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
     onRetry: () => void;
     error?: unknown;
     busy?: boolean;
+    // On a narrow block every row becomes a card: each cell under its column name (see manageTable.css).
+    cards?: boolean;
     // Names the scroll region; the loading line stands in until a page gives its own.
     label?: string;
     toolbar?: ReactNode;
@@ -99,7 +101,25 @@ export function ManageTable({event, state, loadingLabel, emptyMessage, errorMess
         observer.observe(scroll);
         return () => observer.disconnect();
     }, []);
-    return <section ref={sectionRef} className="event-manage-table">
+    // Card rows label each cell with its column header; the labels follow every render of the rows.
+    useLayoutEffect(() => {
+        const table = scrollRef.current?.querySelector("table");
+        if (!cards || !table) return;
+        // A header's help bubble is not part of its name; a column named only for screen readers (actions, a toggle)
+        // gets no label, its cell takes the whole card width.
+        const names = [...table.querySelectorAll("thead tr:last-child th")].map(cell => {
+            const copy = cell.cloneNode(true) as Element;
+            copy.querySelectorAll(".ib-tip__bubble,[role='tooltip'],.sr-only").forEach(bubble => bubble.remove());
+            return (copy.textContent ?? "").trim();
+        });
+        for (const row of table.querySelectorAll("tbody tr")) {
+            [...row.children].forEach((cell, index) => {
+                const name = names[index] ?? "";
+                if (cell.getAttribute("data-label") !== name) cell.setAttribute("data-label", name);
+            });
+        }
+    });
+    return <section ref={sectionRef} className={cards ? "event-manage-table event-manage-table--cards" : "event-manage-table"}>
         {toolbar && <div className="event-manage-table__toolbar">{toolbar}</div>}
         <div ref={scrollRef} className="event-manage-table__scroll" role="region" tabIndex={0} aria-label={label ?? loadingLabel} aria-busy={state === "loading" || busy}>
             <table className={ready ? busy ? "is-busy" : undefined : "is-state"}>

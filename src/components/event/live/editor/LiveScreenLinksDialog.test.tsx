@@ -64,3 +64,24 @@ describe("live view link dialog", () => {
         expect(await screen.findByRole("button", {name: /Створити посилання/})).toBeTruthy();
     });
 });
+
+describe("live view link dialog: failures stay inside", () => {
+    it("shows a failed turn-off in the confirmation and keeps it open", async () => {
+        api.get.mockResolvedValue(link);
+        api.revoke.mockRejectedValue(new Error("boom"));
+        mount();
+        await screen.findByText(/Повне посилання показується лише одразу після створення/);
+        fireEvent.click(screen.getByRole("button", {name: /Вимкнути/}));
+        await act(async () => {fireEvent.click(screen.getAllByRole("button", {name: "Вимкнути"}).at(-1)!);});
+        const confirm = screen.getByText("Вимкнути посилання?").closest("dialog")!;
+        expect(confirm.hasAttribute("open")).toBe(true);
+        expect(confirm.querySelector("[role='alert']")?.textContent).toBeTruthy();
+    });
+
+    it("shows a failed creation in the dialog, not in a toast", async () => {
+        api.issue.mockRejectedValue(new Error("boom"));
+        mount();
+        await act(async () => {fireEvent.click(await screen.findByRole("button", {name: /Створити посилання/}));});
+        expect(document.querySelector(".event-live-links [role='alert']")?.textContent).toBeTruthy();
+    });
+});

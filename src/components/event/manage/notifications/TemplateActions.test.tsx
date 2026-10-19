@@ -19,6 +19,15 @@ function setup(mode: TemplateMode, onReset = vi.fn().mockResolvedValue(true)) {
 }
 
 describe("TemplateActions", () => {
+    it("keeps the confirmation open and shows a failed reset inside it", async () => {
+        setup("edit", vi.fn().mockResolvedValue("Не вдалося відновити шаблон."));
+        fireEvent.click(screen.getByRole("button", {name: /Відновити шаблон за замовчуванням/}));
+        fireEvent.click(screen.getAllByRole("button", {name: "Відновити шаблон за замовчуванням", hidden: true}).at(-1)!);
+        const dialog = screen.getByRole("alertdialog", {hidden: true});
+        await waitFor(() => expect(dialog.textContent).toContain("Не вдалося відновити шаблон."));
+        expect(dialog.hasAttribute("open")).toBe(true);
+    });
+
     it("offers only «Налаштувати для заходу» on the platform template", () => {
         const handlers = setup("platform");
         expect(screen.queryByRole("button", {name: /Відновити шаблон за замовчуванням/})).toBeNull();

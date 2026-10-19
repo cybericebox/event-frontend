@@ -243,7 +243,7 @@ export function AnalyticsIntegrity({initialFilters = {}}: {initialFilters?: Inte
             onApply={value => {const next = thresholdsEqual(value, data.Defaults) ? null : value; setThresholds(next); saveThresholds(eventID, next);}}
             onReset={() => {setThresholds(null); saveThresholds(eventID, null);}} />
         {data.Total > items.length && <p className="event-integrity__notice" role="status">{t("manage.analytics.integrity.truncated", {shown: items.length, total: data.Total})}</p>}
-        <ManageTable event={event} state={state} loadingLabel={t("manage.analytics.integrity.loading")} errorMessage={t("manage.analytics.integrity.loadFailed")}
+        <ManageTable cards event={event} state={state} loadingLabel={t("manage.analytics.integrity.loading")} errorMessage={t("manage.analytics.integrity.loadFailed")}
             emptyMessage={t(narrowed ? "manage.analytics.integrity.emptyFiltered" : "manage.analytics.integrity.empty")} onRetry={() => void query.refetch()} busy={query.isFetching}
             toolbar={<>
                 <EventSelect ariaLabel={t("manage.analytics.integrity.teamFilter")} value={filters.teamID ?? all} options={options.teams} onValueChange={value => patchFilters({teamID: value === all ? null : value})} />
