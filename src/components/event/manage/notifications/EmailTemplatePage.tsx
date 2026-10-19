@@ -34,7 +34,7 @@ import type {BlockPreset, EmailBodyBlock, PresetBlock} from "./editor/emailBlock
 import {useManager} from "../ManagerShell";
 import {emailRichText} from "../emailBlocks";
 import {NotificationPreview} from "./NotificationPreview";
-import {orderedVersions, sameValue, templateMode, toVariableDefs} from "./notificationModel";
+import {orderedVersions, sameValue, templateMode, templateReadOnlyHint, toVariableDefs} from "./notificationModel";
 import {ReminderDaysField} from "./ReminderDaysField";
 import {TemplateActions} from "./TemplateActions";
 import {TemplateHeader} from "./TemplateHeader";
@@ -153,11 +153,11 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
 
     const label = signalLabel(signal);
     // One orange notice under the header: the untouched platform template, or a read-only copy (published/older version). A draft has none.
-    const readOnlyHint = mode === "platform" ? t("manage.notifications.platformHint") : mode === "view" || mode === "previous" ? t("manage.notifications.readonlyHint") : "";
+    const readOnlyHint = templateReadOnlyHint(mode, canManage);
     return <div className="event-manage-settings event-template-page">
         <TemplateHeader backHref={BASE} backLabel={t("manage.email.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
-                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
+                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} label={t("manage.notifications.switchShort")} onCheckedChange={toggle} />}
                 {canManage && template && <EventButton className="ib-btn" type="button" disabled={testing || busy} busy={testing} busyLabel={t("common.busy.sending")} onClick={() => void sendTest()}><Send size={15} /> {t("manage.email.sendTest")}</EventButton>}
                 {editable && <EventButton saveDirty={dirty} busy={saving} busyLabel={t("common.busy.saving")} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageEmailTemplate(eventID, template!), t("manage.email.published"))}>{t("manage.notifications.publish")}</button>}
@@ -183,12 +183,13 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
                     <ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} />
                     <VariableRichText key={`preheader-${template.ID}`} value={draft.Preheader} onChange={Preheader => change({...draft, Preheader})} variables={variables} placeholder={t("manage.email.optional")} dotted />
                 </div>
-                <div className="event-manage-field" role="group" aria-label={t("manage.tpl.tpl.body")} aria-invalid={editable && !!bodyError || undefined} aria-describedby={editable && bodyError ? `email-body-error-${template.ID}` : undefined}>
+                {/* Read-only, the body is the preview on the right: no empty «Текст» field here. */}
+                {editable && <div className="event-manage-field" role="group" aria-label={t("manage.tpl.tpl.body")} aria-invalid={editable && !!bodyError || undefined} aria-describedby={editable && bodyError ? `email-body-error-${template.ID}` : undefined}>
                     <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} />
-                    {editable && <BlockEditor key={`body-${template.ID}`} value={bodyContent} onChange={blocks => change({...draft, Body: footer ? [...blocks, footer] : blocks})} variables={variables}
-                        presets={(presets.data ?? []) as BlockPreset[]} onUploadImage={uploadImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />}
-                    {editable && bodyError && <p id={`email-body-error-${template.ID}`} className="event-manage-validation" role="alert">{bodyError}</p>}
-                </div>
+                    <BlockEditor key={`body-${template.ID}`} value={bodyContent} onChange={blocks => change({...draft, Body: footer ? [...blocks, footer] : blocks})} variables={variables}
+                        presets={(presets.data ?? []) as BlockPreset[]} onUploadImage={uploadImage} imageURL={fileID => getManageEmailImageURL(eventID, fileID)} />
+                    {bodyError && <p id={`email-body-error-${template.ID}`} className="event-manage-validation" role="alert">{bodyError}</p>}
+                </div>}
                 <EmailFooterEditor presetId={footer?.preset_id ?? ""} presets={(presets.data ?? []) as BlockPreset[]} readOnly={!editable}
                     onSelect={id => { const selected = presets.data?.find(preset => preset.ID === id); change({...draft, Body: selected ? [...bodyContent, {type: "preset", preset_id: selected.ID, name: selected.Name, placement: "footer"}] : bodyContent}); }} />
                 <EmailStylingEditor styling={draft.Styling} disabled={!editable} brand={brand} onChange={styling => change({...draft, Styling: styling})} />

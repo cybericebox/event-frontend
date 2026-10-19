@@ -193,10 +193,38 @@ describe("Нова розсилка", () => {
         expect(router.push).not.toHaveBeenCalled();
     });
 
+    it("shows no errors before any input; «Надіслати» shows them and moves focus to the first one", async () => {
+        server();
+        wrap(<BroadcastCompose />);
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        expect(subject.getAttribute("aria-invalid")).toBeNull();
+        expect(screen.queryByText("Вкажіть тему листа.")).toBeNull();
+        expect(screen.queryByText("Додайте до листа текст або кнопку.")).toBeNull();
+        expect(screen.queryByRole("alert")).toBeNull();
+        const send = screen.getByRole("button", {name: /Надіслати повідомлення/}) as HTMLButtonElement;
+        expect(send.disabled).toBe(false);
+        fireEvent.click(send);
+        expect(subject.getAttribute("aria-invalid")).toBe("true");
+        expect(screen.getByText("Вкажіть тему листа.")).toBeTruthy();
+        expect(document.activeElement).toBe(subject);
+        expect(screen.queryByText("Надіслати 0 отримувачам?")).toBeNull();
+    });
+
+    it("shows a field error once the field is left empty", async () => {
+        server();
+        wrap(<BroadcastCompose />);
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        fireEvent.focusIn(subject);
+        fireEvent.focusOut(subject);
+        expect(subject.getAttribute("aria-invalid")).toBe("true");
+        expect(screen.queryByText("Додайте до листа текст або кнопку.")).toBeNull();
+    });
+
     it("keeps email and in-app errors beside their fields with accessible descriptions", async () => {
         server();
         wrap(<BroadcastCompose />);
         const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        fireEvent.click(screen.getByRole("button", {name: /Надіслати повідомлення/}));
         expect(subject.getAttribute("aria-invalid")).toBe("true");
         const error = document.getElementById(subject.getAttribute("aria-describedby")!);
         expect(error?.textContent).toBe("Вкажіть тему листа.");
@@ -206,7 +234,6 @@ describe("Нова розсилка", () => {
         const titleError = document.getElementById(title.getAttribute("aria-describedby")!);
         expect(titleError?.textContent).toBe("Вкажіть заголовок повідомлення в застосунку.");
         expect(title.closest(".event-manage-field")?.contains(titleError)).toBe(true);
-        expect(screen.getByRole("button", {name: /Надіслати повідомлення/})).toHaveProperty("disabled", true);
     });
 
     it("offers no image block in the email editor", async () => {

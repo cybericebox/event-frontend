@@ -12,9 +12,16 @@ const gridLine = {lineStyle: {color: "var(--ib-chart-grid)"}};
 
 const clip = (name: string, max = 22) => name.length > max ? `${name.slice(0, max - 1)}…` : name;
 
+// A step this frontend has no name for (a newer backend) gets a neutral name, never its i18n key.
+function funnelStepLabel(group: "participants" | "teams", key: string): string {
+    const id = `manage.analytics.report.funnel.${group}.${key}`;
+    const label = t(id);
+    return label === id ? t("manage.analytics.report.funnel.otherStep") : label;
+}
+
 // Horizontal bars, first step on top.
 export function funnelOption(steps: FunnelStep[], group: "participants" | "teams") {
-    const rows = steps.map(step => ({name: t(`manage.analytics.report.funnel.${group}.${step.Key}`), value: step.Count}));
+    const rows = steps.map(step => ({name: funnelStepLabel(group, step.Key), value: step.Count}));
     return {
         grid: {left: 8, right: 48, top: 8, bottom: 8, containLabel: true},
         tooltip: {trigger: "axis", axisPointer: {type: "line"}},

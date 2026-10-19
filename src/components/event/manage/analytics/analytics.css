@@ -36,7 +36,7 @@
 .event-analytics-stat__value a{color:inherit;text-decoration:none}
 .event-analytics-stat__value a::after{content:"";position:absolute;inset:0;border-radius:inherit}
 .event-analytics-stat__label .event-brand-help{position:relative;z-index:1}
-.event-analytics-status{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2) var(--ib-6);min-height:88px;padding:var(--ib-4) var(--ib-5)}
+.event-analytics-status{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:var(--ib-2) var(--ib-6);min-height:88px;padding:var(--ib-4) var(--ib-5)}
 .event-analytics-status__title{font-size:var(--ib-fs-16)}
 .event-analytics-status__facts{display:flex;flex-wrap:wrap;gap:var(--ib-2) var(--ib-6);margin:0}
 .event-analytics-status__facts div{display:grid;gap:var(--ib-1)}

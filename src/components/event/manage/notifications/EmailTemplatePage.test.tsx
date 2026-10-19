@@ -56,6 +56,24 @@ describe("Сторінка листа", () => {
         expect(screen.queryByTestId("template-notice")).toBeNull();
     });
 
+    it("tells a viewer the page is read-only instead of pointing to «Редагувати»", async () => {
+        manager.canManage = false;
+        fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "published"})]);
+        renderPage();
+        const notice = await screen.findByTestId("template-notice");
+        expect(notice.textContent).toContain("Ваш доступ лише для перегляду");
+        expect(notice.textContent).not.toContain("Редагувати");
+    });
+
+    it("labels the sending switch and hides the empty body field while read-only", async () => {
+        fakeServer("email", subs, [emailTemplate(1, FINISHED), emailTemplate(2, FINISHED, {Source: "event", Status: "published"})]);
+        renderPage();
+        await screen.findByTestId("template-notice");
+        const toggle = screen.getByRole("switch", {name: "Надсилати для цього заходу"});
+        expect(toggle.closest("label")?.textContent).toContain("Надсилати");
+        expect(screen.queryByRole("group", {name: "Текст", hidden: true})).toBeNull();
+    });
+
     it("copies the template for the event and moves to the copy", async () => {
         const calls = fakeServer("email", subs, [emailTemplate(1, FINISHED)]);
         renderPage();

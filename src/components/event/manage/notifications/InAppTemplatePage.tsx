@@ -25,7 +25,7 @@ import {useManager} from "../ManagerShell";
 import {InAppEditor} from "./InAppEditor";
 import {NotificationPreview} from "./NotificationPreview";
 import {inAppValidation} from "./inAppValidation";
-import {orderedVersions, sameValue, sampleValues, templateMode, toVariableDefs} from "./notificationModel";
+import {orderedVersions, sameValue, sampleValues, templateMode, templateReadOnlyHint, toVariableDefs} from "./notificationModel";
 import {TemplateActions} from "./TemplateActions";
 import {TemplateHeader} from "./TemplateHeader";
 import {TemplateStatusTag} from "./TemplateStatusTag";
@@ -118,11 +118,11 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
 
     const label = signalLabel(signal);
     // One orange notice under the header: the untouched platform template, or a read-only copy (published/older version). A draft has none.
-    const readOnlyHint = mode === "platform" ? t("manage.notifications.platformHint") : mode === "view" || mode === "previous" ? t("manage.notifications.readonlyHint") : "";
+    const readOnlyHint = templateReadOnlyHint(mode, canManage);
     return <div className="event-manage-settings event-template-page">
         <TemplateHeader backHref={BASE} backLabel={t("manage.notifications.title")} title={label.title} tag={<TemplateStatusTag status={mode === "platform" || mode === "none" ? "platform" : template!.Status} />}
             actions={<>
-                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} onCheckedChange={toggle} />}
+                {subscription && <EventSwitch checked={subscription.Enabled} disabled={!canManage || subscription.Required} ariaLabel={t("manage.notifications.switchHeadLabel")} label={t("manage.notifications.switchShort")} onCheckedChange={toggle} />}
                 {editable && <EventButton saveDirty={dirty} busy={saving} busyLabel={t("common.busy.saving")} className="ib-btn ib-btn--primary" type="button" disabled={!!validation || busy} onClick={() => void save()}>{t("manage.notifications.saveDraft")}</EventButton>}
                 {editable && !dirty && <button className="ib-btn" type="button" disabled={!!validation || busy} onClick={() => void mutate(() => publishManageInAppTemplate(eventID, template!), t("manage.notifications.published"))}>{t("manage.notifications.publish")}</button>}
                 <TemplateActions mode={mode} canManage={canManage} busy={busy}

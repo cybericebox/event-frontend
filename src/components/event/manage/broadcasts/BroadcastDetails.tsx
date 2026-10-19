@@ -68,7 +68,7 @@ export function BroadcastDetails({broadcastID}: {broadcastID: string}) {
             <div><dt>{t("manage.broadcasts.col.date", {zone: zoneOffset()})}</dt><dd><time dateTime={item.CreatedAt}>{formatBroadcastTime(item.CreatedAt)}</time></dd></div>
             {item.FinishedAt && <div><dt>{t("manage.broadcasts.finished")}</dt><dd><time dateTime={item.FinishedAt}>{formatBroadcastTime(item.FinishedAt)}</time></dd></div>}
         </dl>
-        <div className="event-template-grid">
+        <div className="event-template-grid event-broadcast-details-grid">
             <div className="event-template-grid__fields event-broadcast-details">
                 <section className="event-broadcast-section">
                     <h2>{t("manage.broadcasts.deliveries")}</h2>
