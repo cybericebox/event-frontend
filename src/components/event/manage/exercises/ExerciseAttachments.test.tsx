@@ -83,6 +83,33 @@ describe("running stage confirmation", () => {
     });
 });
 
+describe("compact set card", () => {
+    const MIB = 1024 ** 2;
+    const res = (cpu: number, mib: number, devices: number) => ({Blocks: devices * 4, CPUMillicores: cpu, MemoryBytes: mib * MIB, Devices: devices});
+    it("keeps one header row (name, marks, stats, short resources) and moves the details into the open set", async () => {
+        const saved = {...attachment};
+        Object.assign(attachment, {ChallengeCount: 3, Resources: {Min: res(500, 512, 2), Max: res(1000, 1024, 3)}});
+        try {
+            setup();
+            const heading = await screen.findByRole("heading", {name: "Web"});
+            const head = heading.closest(".event-exercise-set__head") as HTMLElement;
+            expect(within(head).getByText("1 vCPU · 1 ГіБ · пристроїв: 3")).toBeTruthy();
+            expect(within(head).getByText("Середня складність")).toBeTruthy();
+            // The long resource line and the meta line live in the open details, not in the header.
+            expect(head.querySelector("[data-resources-total]")).toBeNull();
+            expect(head.querySelector(".event-exercise-set__meta")).toBeNull();
+            const body = document.getElementById("set-tasks-a1")!;
+            expect(body.querySelector("[data-resources-total]")).not.toBeNull();
+            fireEvent.click(screen.getByRole("button", {name: /Згорнути/}));
+            expect(document.querySelector("[data-resources-total]")).toBeNull();
+            expect(within(head).getByText("1 vCPU · 1 ГіБ · пристроїв: 3")).toBeTruthy();
+            fireEvent.click(screen.getByRole("button", {name: /Розгорнути/}));
+        } finally {
+            Object.assign(attachment, saved);
+        }
+    });
+});
+
 describe("flag repeat warning", () => {
     const limitText = "Завдання «Web» має 15 різних флагів, а команд може бути до 40: після 15-ї команди флаги почнуть повторюватися.";
     function withRepeat(repeat: unknown, run: () => Promise<void>) {
@@ -94,6 +121,7 @@ describe("flag repeat warning", () => {
         setup();
         const text = await screen.findByText(limitText);
         const block = text.closest(".event-exercise-set__warning")!;
+        expect(block.closest(".event-exercise-set__head")).toBeNull();
         expect(block.className).toContain("event-exercise-set__warning--warn");
         expect(screen.getAllByText(limitText)).toHaveLength(1);
         expect(screen.queryByRole("img", {name: limitText})).toBeNull();

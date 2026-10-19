@@ -1319,6 +1319,7 @@
   "manage.exercises.copyNotUpdated": "Копія заходу її не отримує.",
   "manage.exercises.flagRepeat.limit": "Завдання «{name}» має {flags} різних флагів, а команд може бути до {teams}: після {flags}-ї команди флаги почнуть повторюватися.",
   "manage.exercises.flagRepeat.teams": "Завдання «{name}» має {flags} різних флагів, а команд уже {teams}: флаги повторюватимуться.",
+  "manage.exercises.resourcesShort": "{cpu} · {memory} · пристроїв: {devices}",
   "manage.exercises.flagRepeat.repeated": "Флаги завдання «{name}» уже повторюються: усі {flags} видано.",
   "manage.exercises.create": "Створити нове",
   "manage.exercises.detached": "Прибрано",
