@@ -61,6 +61,6 @@ export function DraftBar({state, busy, canManage, invalid, onSave, onPublish, on
             }} />
         <ConfirmDialog open={confirmRevert} onCancel={() => setConfirmRevert(false)} tone="danger"
             title={t("manage.editor.draft.revertTitle")} description={t("manage.editor.draft.revertBody")}
-            confirmLabel={t("manage.editor.draft.revertAction")} onConfirm={() => {setConfirmRevert(false); onRevertLocal();}} />
+            confirmLabel={t("manage.editor.draft.revertAction")} busyLabel={t("common.busy.discarding")} onConfirm={() => {setConfirmRevert(false); onRevertLocal();}} />
     </div>;
 }
