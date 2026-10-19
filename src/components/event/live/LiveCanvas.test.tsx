@@ -72,8 +72,14 @@ describe("live canvas widgets", () => {
     });
 
     it("shows the centered empty state without results", async () => {
-        const {container} = await mount(only({type: "table", w: 4, h: 4}));
+        const {container} = await mount(only({type: "table", w: 4, h: 4}), false, {results: board(0)});
         expect(container.querySelector(".live-list .ib-empty")).not.toBeNull();
+    });
+
+    it("shows the event logo in data blocks until the first results arrive", async () => {
+        const {container} = await mount(only({type: "table", w: 4, h: 4}));
+        expect(container.querySelector(".live-widget > .event-block-state .event-loading-logo")).not.toBeNull();
+        expect(container.querySelector(".ib-empty")).toBeNull();
     });
 
     it("names the current stage and counts to its end", async () => {
@@ -165,7 +171,7 @@ describe("live canvas blocks of step 2", () => {
         const hidden = await mount(only({type: "podium", w: 12, h: 3, props: {showPoints: false}}), false, {results: board(3)});
         expect(hidden.container.querySelector(".live-podium__points")).toBeNull();
         cleanup();
-        const empty = await mount(only({type: "podium", w: 12, h: 3}));
+        const empty = await mount(only({type: "podium", w: 12, h: 3}), false, {results: board(0)});
         expect(empty.container.querySelector(".live-podium .ib-empty")).not.toBeNull();
     });
 

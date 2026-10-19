@@ -16,6 +16,8 @@ function ownURL(request: NextRequest): URL {
     return url;
 }
 
+export const liveCacheControl = "private, no-store, max-age=0";
+
 export async function proxy(request: NextRequest) {
     const nonce = generateNonce();
     const csp = buildCsp(nonce, {
@@ -30,9 +32,16 @@ export async function proxy(request: NextRequest) {
     // An unknown or hidden event answers 404 with the page it always had: the status is the only change.
     // The check is anonymous, so a hidden event stays 200 for its staff: a valid preview grant for this host.
     const host = request.headers.get("host");
-    const missing = (await eventHostMissing(host)) && !(await hasStaffGrant(host, request.cookies.get(READ_COOKIE)?.value));
+    // The live screen tells a missing event itself (a screen link may open an unpublished one): no 404 status here.
+    const live = request.nextUrl.pathname === "/live";
+    const missing = !live && (await eventHostMissing(host)) && !(await hasStaffGrant(host, request.cookies.get(READ_COOKIE)?.value));
     const response = missing ? NextResponse.rewrite(ownURL(request), {request: {headers}, status: 404}) : NextResponse.next({request: {headers}});
     response.headers.set("Content-Security-Policy", csp);
+    if (live) {
+        // A screen link page (?token=…) is for its screen only: nothing on the way stores it, and it sends no referrer.
+        response.headers.set("Cache-Control", liveCacheControl);
+        response.headers.set("Referrer-Policy", "no-referrer");
+    }
     return response;
 }
 

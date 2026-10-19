@@ -82,3 +82,19 @@ describe("staff preview grant on a hidden event", () => {
         expect((await proxy(foreign)).status).toBe(404);
     });
 });
+
+describe("the live screen page", () => {
+    it("is never stored and sends no referrer", async () => {
+        read.mockResolvedValue({status: 200, body: {}});
+        const response = await proxy(request(host(), "/live?token=abc"));
+        expect(response.headers.get("Cache-Control")).toBe("private, no-store, max-age=0");
+        expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
+        const other = await proxy(request(host(), "/scoreboard"));
+        expect(other.headers.get("Referrer-Policy")).toBeNull();
+    });
+
+    it("leaves a missing or unpublished event to the screen: no 404 status from the shell", async () => {
+        read.mockResolvedValue({status: 404, body: null});
+        expect((await proxy(request(host(), "/live?token=abc"))).status).toBe(200);
+    });
+});
