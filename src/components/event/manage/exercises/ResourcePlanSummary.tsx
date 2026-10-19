@@ -34,11 +34,13 @@ export function ResourcePlanSummary({eventID, attachments}: {eventID: string; at
             : !plan ? null
             : <>
                 <div className="event-resource-plan__scroll" role="region" tabIndex={0} aria-label={t("manage.resources.planTitle")}><table className="event-resource-plan__table">
-                    <thead><tr><th scope="col">{t("manage.resources.col.task")}</th><th scope="col">{t("manage.resources.col.cpu")}</th><th scope="col">{t("manage.resources.col.memory")}</th><th scope="col">{t("manage.resources.col.devices")}</th></tr></thead>
+                    {/* One set of column widths for every row: the numbers line up under their headers. */}
+                    <colgroup><col className="event-resource-plan__name-col" /><col /><col /><col /></colgroup>
+                    <thead><tr><th scope="col">{t("manage.resources.col.task")}</th><th scope="col" className="ib-num">{t("manage.resources.col.cpu")}</th><th scope="col" className="ib-num">{t("manage.resources.col.memory")}</th><th scope="col" className="ib-num">{t("manage.resources.col.devices")}</th></tr></thead>
                     <tbody>
                         {plan.Tasks.map(task => <tr key={task.EventExerciseID} data-plan-task>
                             <th scope="row">{task.ExerciseName} <ResourceHeavyTag show={task.ResourceHeavy} /> <NoAgentFitsTag show={task.NoAgentFits} /></th>
-                            <td>{formatCpu(task.Reserved.CPUMillicores)}</td><td>{formatMemory(task.Reserved.MemoryBytes)}</td><td>{task.Reserved.Devices}</td>
+                            <td className="ib-num">{formatCpu(task.Reserved.CPUMillicores)}</td><td className="ib-num">{formatMemory(task.Reserved.MemoryBytes)}</td><td className="ib-num">{task.Reserved.Devices}</td>
                         </tr>)}
                         <tr data-plan-overhead className="event-resource-plan__overhead">
                             <th scope="row">{t("manage.resources.overhead")}</th>
@@ -49,9 +51,9 @@ export function ResourcePlanSummary({eventID, attachments}: {eventID: string; at
                     </tbody>
                     <tfoot>
                         <tr data-plan-team><th scope="row">{t("manage.resources.perTeam")}</th>
-                            <td>{formatCpu(plan.PerTeam.CPUMillicores)}</td><td>{formatMemory(plan.PerTeam.MemoryBytes)}</td><td>{plan.PerTeam.Devices}</td></tr>
+                            <td className="ib-num">{formatCpu(plan.PerTeam.CPUMillicores)}</td><td className="ib-num">{formatMemory(plan.PerTeam.MemoryBytes)}</td><td className="ib-num">{plan.PerTeam.Devices}</td></tr>
                         <tr data-plan-total><th scope="row">{tPlural("manage.resources.total", plan.Teams)} <span className="event-resource-plan__basis">{t(`manage.resources.basis.${plan.TeamsBasis}`)}</span></th>
-                            <td>{formatCpu(plan.Total.CPUMillicores)}</td><td>{formatMemory(plan.Total.MemoryBytes)}</td><td>{plan.Total.Devices}</td></tr>
+                            <td className="ib-num">{formatCpu(plan.Total.CPUMillicores)}</td><td className="ib-num">{formatMemory(plan.Total.MemoryBytes)}</td><td className="ib-num">{plan.Total.Devices}</td></tr>
                     </tfoot>
                 </table></div>
                 {plan.Group.TooLarge && <p className="event-resource-plan__note" role="status" data-plan-too-large>{t("manage.resources.tooLarge")}</p>}
