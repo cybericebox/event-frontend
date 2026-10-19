@@ -9,11 +9,11 @@ import {ManualDraftProvider} from "@/components/event/manage/manualDraft";
 import {t} from "@/i18n/t";
 import ManageSchedulePage from "./page";
 
-const server = vi.hoisted(() => ({lifecycle: null as unknown as ManageLifecycle, save: vi.fn(), canManage: true}));
+const server = vi.hoisted(() => ({lifecycle: null as unknown as ManageLifecycle, save: vi.fn(), saveConfig: vi.fn(), canManage: true}));
 vi.mock("next/navigation", () => ({usePathname: () => "/manage/schedule", useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "event-a", Name: "Event", LogoURL: ""}, canManage: server.canManage})}));
 vi.mock("@/components/event/manage/StagesManager", () => ({StagesManager: () => null}));
-vi.mock("@/api/manage", async original => ({...(await original() as object), getManageConfig: async () => config, getManageLifecycle: async () => server.lifecycle, putManageLifecycle: (...args: unknown[]) => server.save(...args)}));
+vi.mock("@/api/manage", async original => ({...(await original() as object), getManageConfig: async () => config, getManageLifecycle: async () => server.lifecycle, putManageLifecycle: (...args: unknown[]) => server.save(...args), putManageConfig: (...args: unknown[]) => server.saveConfig(...args)}));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 
 const lifecycle: ManageLifecycle = {
@@ -35,6 +35,7 @@ HTMLDialogElement.prototype.close ??= function () {this.removeAttribute("open");
 
 beforeEach(() => {
     sessionStorage.clear(); window.history.replaceState({}, "", "/manage/schedule"); server.canManage = true; server.lifecycle = {...lifecycle};
+    server.saveConfig.mockReset().mockImplementation(async (_id: string, input: Record<string, unknown>) => ({...config, ...input}));
     server.save.mockReset().mockImplementation(async (_eventID: string, input: ManageLifecycleInput) => (server.lifecycle = {...server.lifecycle, ...input}));
     style = document.createElement("style"); style.textContent = styles; document.head.append(style);
 });
@@ -139,5 +140,45 @@ describe("event schedule", () => {
         changeFinishMinutes("30"); await act(async () => {done({...lifecycle, WithdrawAt: null});});
         expect(finish().textContent).toContain(":30"); expect(save()).toHaveProperty("disabled", false); first.unmount();
         page(); await screen.findByRole("button", {name: t("manage.schedule.finish")}); expect(finish().textContent).toContain(":30");
+    });
+    describe("finish countdown", () => {
+        const minutes = () => document.getElementById("countdown-finish-minutes") as HTMLInputElement | null;
+        const modeSelect = () => screen.getByRole("button", {name: t("manage.schedule.countdown.mode")});
+        const pickMode = async (label: string) => {fireEvent.pointerDown(modeSelect(), {button: 0, ctrlKey: false}); fireEvent.click(await screen.findByRole("menuitemradio", {name: label}));};
+        const countdownSave = () => screen.getByRole("button", {name: t("manage.schedule.countdown.save")});
+        const ready = () => screen.findByRole("button", {name: t("manage.schedule.countdown.mode")});
+
+        it("puts the mode before the minutes", async () => {
+            page(); await ready();
+            expect(modeSelect().compareDocumentPosition(minutes()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        });
+
+        it("hides the minutes in from_start mode and restores them going back", async () => {
+            page(); await ready();
+            fireEvent.change(minutes()!, {target: {value: "45"}});
+            await pickMode(t("manage.schedule.countdown.mode.fromStart"));
+            expect(minutes()).toBeNull();
+            await pickMode(t("manage.schedule.countdown.mode.beforeEnd"));
+            expect(minutes()!.value).toBe("45");
+        });
+
+        it("saves from_start with invalid minutes using the saved value", async () => {
+            page(); await ready();
+            fireEvent.change(minutes()!, {target: {value: "0"}});
+            expect(countdownSave()).toHaveProperty("disabled", true);
+            await pickMode(t("manage.schedule.countdown.mode.fromStart"));
+            expect(screen.queryByRole("alert")).toBeNull();
+            expect(countdownSave()).toHaveProperty("disabled", false);
+            fireEvent.click(countdownSave());
+            await waitFor(() => expect(server.saveConfig).toHaveBeenCalledWith("event-a", expect.objectContaining({FinishCountdownMode: "from_start", FinishCountdownMinutes: 30})));
+        });
+
+        it("is clean again after returning to the saved mode", async () => {
+            page(); await ready();
+            await pickMode(t("manage.schedule.countdown.mode.fromStart"));
+            expect(countdownSave()).toHaveProperty("disabled", false);
+            await pickMode(t("manage.schedule.countdown.mode.beforeEnd"));
+            expect(countdownSave()).toHaveProperty("disabled", true);
+        });
     });
 });
