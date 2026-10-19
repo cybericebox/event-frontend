@@ -1,12 +1,13 @@
-import {liveSceneTemplate, type LiveLayout, type LiveScene} from "@/api/manageLive";
+import type {LiveLayout, LiveScene} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 
-// Scenes (LIVE-CONSTRUCTOR §6.4): one canvas per event state, each its own.
-// The layout itself is «running»; «before», «frozen» and «finished» have
-// their own canvas (grid, widgets, screen shapes), filled from the scene
-// templates on load when missing. The screen settings — theme, aspect,
-// screen, refresh — are shared by all scenes.
+// Event states and their screens (LIVE-CONSTRUCTOR §6.4). «Один екран для
+// всіх станів» (no `scenes`): the layout is shown in every state. «Окремий
+// екран для кожного стану»: «before», «frozen» and «finished» have their own
+// screen (grid, widgets, screen shapes) next to the layout itself, which is
+// «running». The screen settings — theme, aspect, screen, refresh — are
+// shared by all states.
 export const liveSceneKeys = ["before", "running", "frozen", "finished"] as const;
 export type LiveSceneKey = typeof liveSceneKeys[number];
 
@@ -30,9 +31,38 @@ export function liveSceneState(event: Pick<PublicEventInfo, "StartTime" | "Finis
 // One scene as a whole layout, ready for the canvas, the formats and the
 // editor: the shared screen settings with the scene's grid and widgets.
 export function liveSceneLayout(layout: LiveLayout, key: LiveSceneKey): LiveLayout {
-    if (key === "running") return layout;
-    const scene = layout.scenes?.[key] ?? liveSceneTemplate(layout, key);
+    const scene = key === "running" ? undefined : layout.scenes?.[key];
+    if (!scene) return layout;
     return {...layout, grid: scene.grid, widgets: scene.widgets, formats: scene.formats};
+}
+
+export type LiveSceneMode = "single" | "separate";
+
+export function liveSceneMode(layout: LiveLayout): LiveSceneMode {
+    return layout.scenes ? "separate" : "single";
+}
+
+// To separate screens: every state starts as a copy of the one screen. Back
+// to one screen: the screen of `keep` becomes the one for all states.
+export function withLiveSceneMode(layout: LiveLayout, mode: LiveSceneMode, keep: LiveSceneKey = "running"): LiveLayout {
+    if (mode === "separate") {
+        if (layout.scenes) return layout;
+        const copy = sceneOf(layout);
+        return {...layout, scenes: {before: copy, frozen: copy, finished: copy}};
+    }
+    const kept = liveSceneLayout(layout, keep);
+    return {...layout, grid: kept.grid, widgets: kept.widgets, formats: kept.formats, scenes: undefined};
+}
+
+// «Скопіювати з…»: the screen of `source` replaces the screen of `target`.
+export function withLiveSceneCopy(layout: LiveLayout, target: LiveSceneKey, source: LiveSceneKey): LiveLayout {
+    const from = liveSceneLayout(layout, source);
+    return withLiveScene(layout, target, {...liveSceneLayout(layout, target), grid: from.grid, widgets: from.widgets, formats: from.formats});
+}
+
+// Whether two states show the same screen (no change to lose on a copy).
+export function liveScenesEqual(layout: LiveLayout, a: LiveSceneKey, b: LiveSceneKey): boolean {
+    return JSON.stringify(sceneOf(liveSceneLayout(layout, a))) === JSON.stringify(sceneOf(liveSceneLayout(layout, b)));
 }
 
 function sceneOf(view: LiveLayout): LiveScene {
@@ -47,17 +77,10 @@ export function withLiveScene(layout: LiveLayout, key: LiveSceneKey, view: LiveL
     return {...shared, scenes: {...layout.scenes, [key]: sceneOf(view)}};
 }
 
-// «Скинути до шаблону сцени»: the scene's canvas goes back to its template
-// (its own shapes too).
-export function withLiveSceneReset(layout: LiveLayout, key: LiveSceneKey): LiveLayout {
-    const template = liveSceneTemplate(layout, key);
-    return withLiveScene(layout, key, {...liveSceneLayout(layout, key), grid: template.grid, widgets: template.widgets, formats: undefined});
-}
-
 // Every scene's canvas, the running one first: for checks that look at all
 // of them (conflicts, formats, validation).
 export function liveSceneViews(layout: LiveLayout): {key: LiveSceneKey; view: LiveLayout}[] {
-    return liveSceneKeys.map(key => ({key, view: liveSceneLayout(layout, key)}));
+    return (layout.scenes ? liveSceneKeys : ["running" as const]).map(key => ({key, view: liveSceneLayout(layout, key)}));
 }
 
 // The editor preview of a scene: a moment of that state, so the timer, the

@@ -34,11 +34,12 @@ const liveLayoutObject = z.object({
     // setting existed get the default.
     refreshSeconds: z.number().int().optional().transform(value => value || liveRefreshDefault),
     formats: formatsSchema.optional(),
-    // The other event states; the layout itself is «running». Every state has
-    // its own canvas: a missing one is filled in on load (withLiveSceneDefaults).
+    // «Окремий екран для кожного стану»: the other event states' screens; the
+    // layout itself is «running». Absent = «Один екран для всіх станів». A
+    // state missing from `scenes` is filled with a copy of «running» on load.
     scenes: z.object({before: sceneSchema.optional(), frozen: sceneSchema.optional(), finished: sceneSchema.optional()}).optional(),
 });
-export const liveLayoutSchema = liveLayoutObject.transform(layout => withLiveSceneDefaults(layout));
+export const liveLayoutSchema = liveLayoutObject.transform(layout => withLiveSceneCopies(layout));
 export type LiveLayout = z.output<typeof liveLayoutObject>;
 export type LiveWidget = LiveLayout["widgets"][number];
 export type LiveScene = z.output<typeof sceneSchema>;
@@ -48,8 +49,8 @@ export type LiveEditor = z.infer<typeof editorSchema>;
 const organizers = (id: string): LiveWidget => ({id, type: "logos", x: 1, y: 8, w: 3, h: 1, props: {mode: "fixed", title: t("manage.live.defaultOrganizers")}});
 const partners = (id: string): LiveWidget => ({id, type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: t("manage.live.defaultPartners")}});
 
-// The same as the daemon default: «Перед стартом» → this board → «Підсумки».
-export const defaultLiveLayout: LiveLayout = withSceneChain({
+// The same as the daemon default: one screen for all event states.
+export const defaultLiveLayout: LiveLayout = {
     version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1, safeArea: 2.5},
     grid: {cols: 12, rows: 8}, widgets: [
         {id: "title", type: "title", x: 1, y: 1, w: 9, h: 1, props: {}},
@@ -59,54 +60,15 @@ export const defaultLiveLayout: LiveLayout = withSceneChain({
         partners("partners"),
         {id: "timer", type: "timer", x: 10, y: 1, w: 3, h: 1, props: {}},
     ],
-    scenes: {
-        before: {grid: {cols: 12, rows: 8}, widgets: [
-            {id: "before-title", type: "title", x: 1, y: 1, w: 8, h: 2, props: {subtitleStage: true}},
-            {id: "before-timer", type: "timer", x: 1, y: 3, w: 8, h: 3, props: {align: "left"}},
-            {id: "before-facts", type: "facts", x: 1, y: 6, w: 8, h: 2, props: {items: ["teams", "tasks", "start"]}},
-            {id: "before-qr", type: "qr", x: 9, y: 1, w: 4, h: 7, props: {value: "/", caption: t("manage.live.defaultQRCaption")}},
-            organizers("before-organizers"),
-            partners("before-partners"),
-        ]},
-        finished: {grid: {cols: 12, rows: 8}, widgets: [
-            {id: "finished-title", type: "title", x: 1, y: 1, w: 9, h: 1, props: {subtitle: t("manage.live.defaultFinaleSubtitle")}},
-            {id: "finished-timer", type: "timer", x: 10, y: 1, w: 3, h: 1, props: {}},
-            {id: "finished-podium", type: "podium", x: 1, y: 2, w: 12, h: 3, props: {}},
-            {id: "finished-table", type: "table", x: 1, y: 5, w: 12, h: 3, props: {columns: 2, offset: 3, limit: 8, rowsPerPage: 4, showCaption: false}},
-            organizers("finished-organizers"),
-            partners("finished-partners"),
-        ]},
-    },
-});
+};
 
-// The default chain also fills «Заморожено» (a copy of the board).
-function withSceneChain(layout: LiveLayout): LiveLayout {
-    return {...layout, scenes: {...layout.scenes, frozen: {grid: layout.grid, widgets: layout.widgets.map(item => ({...item, id: `frozen-${item.id}`}))}}};
-}
 
-// The daemon limit of widgets in all scenes together.
-const liveWidgetsTotalMax = 96;
-
-// The starting canvas of a scene: «До старту» the pre-start screen,
-// «Завершено» the finale, «Триває» the board, «Заморожено» a copy of the
-// layout's own board (the default board when a copy would pass the widget
-// limit). IDs are fixed, so the same layout always gets the same scenes.
-export function liveSceneTemplate(layout: LiveLayout, key: "before" | "running" | "frozen" | "finished"): LiveScene {
-    const board = (prefix: string, widgets: LiveWidget[]): LiveScene => ({grid: {cols: 12, rows: 8}, widgets: widgets.map(item => ({...item, id: `${prefix}${item.id}`}))});
-    if (key === "before") return defaultLiveLayout.scenes!.before!;
-    if (key === "finished") return defaultLiveLayout.scenes!.finished!;
-    if (key === "running") return board("", defaultLiveLayout.widgets);
-    const others = (layout.scenes?.before?.widgets.length ?? defaultLiveLayout.scenes!.before!.widgets.length) + (layout.scenes?.finished?.widgets.length ?? defaultLiveLayout.scenes!.finished!.widgets.length);
-    if (others + 2 * layout.widgets.length <= liveWidgetsTotalMax) return {grid: layout.grid, widgets: layout.widgets.map(item => ({...item, id: `frozen-${item.id}`}))};
-    return board("frozen-", defaultLiveLayout.widgets);
-}
-
-// Every scene has its own canvas: a layout saved before that (or without
-// some scenes) gets the missing ones from their templates.
-export function withLiveSceneDefaults(layout: LiveLayout): LiveLayout {
-    const scenes = {...layout.scenes};
-    for (const key of ["before", "frozen", "finished"] as const) scenes[key] ??= liveSceneTemplate({...layout, scenes}, key);
-    return {...layout, scenes};
+// Separate screens: every state has one; a state missing from a stored
+// layout gets a copy of the running screen.
+export function withLiveSceneCopies(layout: LiveLayout): LiveLayout {
+    if (!layout.scenes) return layout;
+    const copy = {grid: layout.grid, widgets: layout.widgets, ...(layout.formats ? {formats: layout.formats} : {})};
+    return {...layout, scenes: {before: layout.scenes.before ?? copy, frozen: layout.scenes.frozen ?? copy, finished: layout.scenes.finished ?? copy}};
 }
 
 // 400 code 21122 on publish: the stored draft is invalid (legacy grid below 3×3).
