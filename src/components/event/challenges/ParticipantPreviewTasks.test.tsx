@@ -101,6 +101,15 @@ it("starts the preview's laboratory for the chosen length", async () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({LeaseMinutes: 30});
 });
 
+it("shows the start in progress on the busy button", async () => {
+    mount({...base, Infrastructure: true, PreviewDynamic: true});
+    await screen.findByRole("button", {name: "Тривалість"});
+    fetchMock.mockImplementationOnce(() => new Promise(() => {}));
+    fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
+    const busy = await screen.findByRole("button", {name: "Запускаємо…"});
+    expect(busy.getAttribute("data-busy")).toBe("true");
+});
+
 it.each([false, undefined])("does not offer a dynamic launch without confirmed event allocation: %s", canStart => {
     mount({...base, Infrastructure: true, PreviewDynamic: true, PreviewCanStart: canStart});
     expect(screen.queryByRole("button", {name: "Запустити середовище"})).toBeNull();
