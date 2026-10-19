@@ -14,6 +14,8 @@ describe("live table paging", () => {
         expect(first.rows).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
         expect(second.rows).toEqual([1, 2, 3, 11, 12, 13, 14, 15, 16, 17]);
         expect(second).toMatchObject({pinned: 3, from: 11, to: 17, total: 40, pageCount: 6});
+        // The first page reads 1–10: the pinned places are on it.
+        expect(first).toMatchObject({from: 1, to: 10});
     });
 
     it("tops the last page up with rows of the previous one: 15 teams never leave half a page empty", () => {

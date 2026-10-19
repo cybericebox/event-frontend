@@ -3109,6 +3109,8 @@
   "live.timer.noTarget": "Not set",
   "live.timer.frozen": "Frozen",
   "live.timer.timeUp": "Time is up",
+  "live.timer.stageEndShort": "Until the stage ends",
+  "live.timer.stageNextShort": "Until the stage starts",
   "live.text.sampleTitle": "Event name 2026",
   "live.text.px": "{size} px",
   "scoreboard.pollHint": "The page checks for new results by itself about every {seconds} s. «Updated» is the time of the last check.",

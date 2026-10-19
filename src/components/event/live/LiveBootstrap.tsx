@@ -71,14 +71,16 @@ function LiveStaffBootstrap() {
     const failed = (event.data ? null : event.error) ?? (access.data ? null : access.error);
     const status = failed instanceof ClientEventInfoError || failed instanceof ManageApiError ? failed.status : 0;
     const permanent = !!failed && (status === 401 || status === 403 || event.isError && !event.data && loadFailure(event.error) === "notFound");
-    const retryIn = useLiveRetry(!!failed && !permanent, event.errorUpdatedAt + access.errorUpdatedAt, () => void (event.isError ? event.refetch() : access.refetch()));
+    // The query that has no data yet is the one to load again.
+    const retryStaff = () => void (!event.data ? event.refetch() : access.refetch());
+    const retryIn = useLiveRetry(!!failed && !permanent, event.errorUpdatedAt + access.errorUpdatedAt, retryStaff);
     if (failed) {
         // The event itself is not readable: the one neutral screen, never a redirect.
         if (event.isError && !event.data && loadFailure(event.error) === "notFound") return <EventUnavailableScreen />;
         // The event is visible, the live screen is not: sign in, or no rights for it.
         if (status === 401) return <SignInRedirect event={event.data} />;
         if (status === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;
-        return <LiveFailure event={event.data} message={t("live.openFailed.title")} error={failed} retryIn={retryIn} onRetry={() => void (event.isError ? event.refetch() : access.refetch())} />;
+        return <LiveFailure event={event.data} message={t("live.openFailed.title")} error={failed} retryIn={retryIn} onRetry={retryStaff} />;
     }
     if (!event.data || !access.data) return <LiveState event={event.data}><EventLoading event={event.data} label={t("live.checkingAccess")} /></LiveState>;
     return <LiveScreen event={event.data} />;

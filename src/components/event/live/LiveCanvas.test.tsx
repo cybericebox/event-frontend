@@ -96,7 +96,7 @@ describe("live canvas widgets", () => {
         const rows = [...container.querySelectorAll(".live-table tbody tr")].map(row => row.querySelector("td")?.textContent);
         expect(rows).toHaveLength(10);
         expect(rows.slice(0, 3)).toEqual(["1", "2", "3"]);
-        expect(container.querySelector(".live-list__range")?.textContent).toMatch(/^(4–10|9–15) з 15$/);
+        expect(container.querySelector(".live-list__range")?.textContent).toMatch(/^(1–10|9–15) з 15$/);
         expect(container.querySelector(".live-list__progress")).not.toBeNull();
     });
 

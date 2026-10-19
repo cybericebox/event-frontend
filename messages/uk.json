@@ -3109,6 +3109,8 @@
   "live.timer.noTarget": "Не задано",
   "live.timer.frozen": "Заморожено",
   "live.timer.timeUp": "Час вийшов",
+  "live.timer.stageEndShort": "До кінця етапу",
+  "live.timer.stageNextShort": "До початку етапу",
   "live.text.sampleTitle": "Назва заходу 2026",
   "live.text.px": "{size} px",
   "scoreboard.pollHint": "Сторінка сама перевіряє нові результати приблизно кожні {seconds} с. «Оновлено» — час останньої перевірки.",
