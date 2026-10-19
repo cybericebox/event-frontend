@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
-import {useQueryClient} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {CircleHelp, ExternalLink, LayoutTemplate, MonitorUp, Redo2, Send, Undo2} from "lucide-react";
@@ -12,7 +12,8 @@ import {canPlace, distributeWidgets, firstFreeWidget, layoutConflicts, liveGridL
 import {liveSampleResults} from "@/components/event/live/liveSample";
 import {liveFormatLayout, liveFormatMode, liveFormatTabs, pruneLiveFormats, withLiveFormatMode, withLiveFormatView} from "@/components/event/live/liveFormats";
 import type {LiveLogoItem} from "@/components/event/live/LiveCanvas";
-import {liveTextWarnings} from "@/components/event/live/liveText";
+import {liveSafeArea, liveSafeInsets, liveTextWarnings} from "@/components/event/live/liveText";
+import {getManageStages} from "@/api/manageStages";
 import {useLiveResults} from "@/components/event/live/useLiveResults";
 import {LiveMiniature, usePaletteLayouts} from "./LiveMiniature";
 import {LiveTemplateDialog} from "./LiveTemplateDialog";
@@ -117,7 +118,9 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     }, [screen, nativeWidth]);
 
     const conflicts = useMemo(() => layoutConflicts(view), [view]);
-    const warnings = useMemo(() => liveTextWarnings(view), [view]);
+    const warnings = useMemo(() => liveTextWarnings(view, event.Name), [view, event.Name]);
+    // The timer and the stage subtitle of the preview follow the real stages.
+    const stages = useQuery({queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID), refetchOnWindowFocus: false});
     const validation = validationMessage(layout, layoutConflicts(layout)) || formatProblem(layout);
     const autosave = useLiveAutosave({
         eventID, layout, savedJSON: JSON.stringify(data.Draft ?? data.Published), valid: !validation, enabled: canManage,
@@ -179,15 +182,11 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         mutate({...working, widgets: [...working.widgets, next]});
         setSelectedID(next.id);
     }
+    // The grid never grows by itself: with no free cells the editor says so.
     function addWidget(item: LivePaletteItem) {
-        let working = layout;
-        let next = firstFreeWidget(working, item.type);
-        if (!next && working.grid.rows + liveWidgetMinimums[item.type].h <= liveGridLimits.maxRows) {
-            working = {...working, grid: {...working.grid, rows: working.grid.rows + liveWidgetMinimums[item.type].h}};
-            next = firstFreeWidget(working, item.type);
-        }
+        const next = firstFreeWidget(layout, item.type);
         if (!next) {setError(t("manage.live.error.noSpace")); return;}
-        insert(working, next, item);
+        insert(layout, next, item);
     }
     // Palette drag: the ghost shows the minimum-size widget under the pointer.
     function dropCell(dragEvent: DragEvent<HTMLDivElement>) {
@@ -324,7 +323,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const gridPreset = liveGridPresets.find(item => item.cols === view.grid.cols && item.rows === view.grid.rows);
     const gridValue = customGrid || !gridPreset ? "custom" : `${gridPreset.cols}x${gridPreset.rows}`;
     const screenStyle = {"--live-aspect": view.screen.width / view.screen.height} as CSSProperties;
-    const nativeStyle = {width: view.screen.width, height: view.screen.height, "--live-preview-scale": scale || 1, visibility: scale ? "visible" : "hidden"} as CSSProperties;
+    const safe = liveSafeInsets(view.screen.width, view.screen.height, liveSafeArea(view.screen));
+    const nativeStyle = {width: view.screen.width, height: view.screen.height, padding: `${safe.y}px ${safe.x}px`, "--live-preview-scale": scale || 1, visibility: scale ? "visible" : "hidden"} as CSSProperties;
     const tabLabel = (key: string) => key === layout.aspect
         ? t("manage.live.format.base", {name: key === "custom" ? t("manage.live.format.customSize", layout.screen) : key})
         : liveFormatMode(layout, key) === "custom" ? t("manage.live.format.custom", {name: key}) : key;
@@ -418,8 +418,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                     </LiveField>
                 </div>}
                 <div className="event-live-editor__screen" style={screenStyle} ref={setScreen}>
-                    <div className="event-live-editor__native" style={nativeStyle}>
-                        <LiveCanvas layout={view} event={event} results={shownResults} sample={sample} selectedID={selectedID} onSelect={setSelectedID} edit={editable} showGrid onPointerDown={pointerDown}
+                    <div className={`event-live-editor__native${view.theme === "light" ? " is-light" : ""}`} style={nativeStyle}>
+                        <LiveCanvas layout={view} event={event} stages={stages.data} results={shownResults} sample={sample} selectedID={selectedID} onSelect={setSelectedID} edit={editable} showGrid onPointerDown={pointerDown}
                             conflicts={conflicts} warned={warned} ghost={ghost} onDragOver={dragOver} onDragLeave={() => setGhost(null)} onDrop={drop} />
                     </div>
                 </div>
@@ -436,7 +436,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
         <LiveTemplateDialog open={templatesOpen} layout={layout} event={event} results={shownResults} sample={sample} onClose={() => setTemplatesOpen(false)} onApply={applyTemplate} />
         <ConfirmDialog open={confirmRemove && !!selected} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
-            description={t("manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
+            description={t(selected?.type === "logos" ? "manage.live.removeConfirm.bodyLogos" : "manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")}
             onConfirm={() => {if (selected) mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null); setConfirmRemove(false);}} />
     </div>;
 }

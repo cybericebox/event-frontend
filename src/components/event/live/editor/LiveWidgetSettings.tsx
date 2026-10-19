@@ -14,7 +14,10 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import {liveWidgetMinimums, liveWidgetName, type DistributeAxis} from "../liveLayout";
 import {liveListFit} from "../liveText";
 import {livePageSecondsHint} from "../liveFit";
-import {liveLogoItems, liveTimerState, type LiveLogoItem, type LiveTimerSource} from "../LiveCanvas";
+import {liveLogoItems, type LiveLogoItem} from "../LiveCanvas";
+import {liveTimerSources, liveTimerState, type LiveTimerSource} from "../liveStages";
+import {livePinOptions, livePinTop} from "../liveTable";
+import {getManageStages} from "@/api/manageStages";
 import {LiveField, LiveNumberInput, LiveSegmented, LiveSwitch} from "./LiveFields";
 import {LiveLogosEditor} from "./LiveLogosEditor";
 
@@ -48,6 +51,9 @@ function RowsFields({layout, widget, disabled, onProp}: {layout: LiveLayout; wid
             {id => <LiveNumberInput id={id} value={fit.rows} min={1} max={60} disabled={disabled} onChange={value => onProp(key, value)} />}
         </LiveField>
         {table && <PageSecondsField widget={widget} rows={fit.rows} disabled={disabled} onProp={onProp} />}
+        {table && <LiveSegmented label={t("manage.live.prop.pinTop")} help={t("manage.live.prop.pinTopHelp")} value={String(livePinTop(widget.props.pinTop))} disabled={disabled}
+            options={livePinOptions.map(value => ({value: String(value), label: value ? t("manage.live.prop.pinTopRows", {count: value}) : t("manage.live.prop.pinTopNone")}))}
+            onChange={value => onProp("pinTop", Number(value))} />}
     </>;
 }
 
@@ -64,19 +70,22 @@ function PageSecondsField({widget, rows, disabled, onProp}: {widget: LiveWidget;
 
 function TimerFields({widget, event, disabled, onProp}: {widget: LiveWidget; event: PublicEventInfo; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const settings = useQuery({queryKey: ["event-management-results-settings", event.EventID], queryFn: () => getResultsSettings(event.EventID), refetchOnWindowFocus: false});
+    const stages = useQuery({queryKey: ["event-management-stages", event.EventID], queryFn: () => getManageStages(event.EventID), refetchOnWindowFocus: false});
     const source = (textProp(widget, "source") || "auto") as LiveTimerSource;
     const freezeAvailable = !!settings.data?.FreezeEnabled;
-    const sources: LiveTimerSource[] = ["auto", "start", "finish", "freeze", "custom"];
+    // Stage sources need stages; until the list loads they stay offered.
+    const stagesAvailable = !stages.data || stages.data.length > 0;
     const [openedAt] = useState(() => Date.now());
-    const auto = liveTimerState({...widget.props, label: ""}, event, openedAt, settings.data?.Freeze.FrozenAt ?? null).label;
+    const auto = liveTimerState({...widget.props, label: ""}, event, stages.data ?? [], openedAt, settings.data?.Freeze.FrozenAt ?? null).label;
+    const unavailable = (value: LiveTimerSource) => value === "freeze" && !freezeAvailable ? t("manage.live.prop.timerFreezeOff")
+        : (value === "stage-end" || value === "stage-next") && !stagesAvailable ? t("manage.live.prop.timerNoStages") : undefined;
     const showLabel = widget.props.showLabel !== false;
     const target = textProp(widget, "target");
     return <>
         <LiveField label={t("manage.live.prop.timerSource")} help={t("manage.live.prop.timerSourceHelp")} required>
             {() => <EventSelect ariaLabel={t("manage.live.prop.timerSource")} value={source} disabled={disabled}
                 onValueChange={value => onProp("source", value)}
-                options={sources.map(value => ({value, label: t(`manage.live.prop.timerSource.${value}`),
-                    disabled: value === "freeze" && !freezeAvailable, disabledReason: value === "freeze" && !freezeAvailable ? t("manage.live.prop.timerFreezeOff") : undefined}))} />}
+                options={liveTimerSources.map(value => ({value, label: t(`manage.live.prop.timerSource.${value}`), disabled: !!unavailable(value), disabledReason: unavailable(value)}))} />}
         </LiveField>
         {source === "custom" && <LiveField label={t("manage.live.prop.timerTarget")} help={t("manage.live.prop.timerTargetHelp")} required
             error={target ? null : t("manage.live.prop.timerTargetMissing")}>
@@ -133,9 +142,12 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             {!disabled && <EventTooltip content={t("manage.live.removeWidget")}>{id => <button className="ib-icon-btn ib-icon-btn--sm event-live-settings__remove" type="button" aria-label={t("manage.live.removeWidget")} aria-describedby={id} onClick={onRemove}><Trash2 size={16} /></button>}</EventTooltip>}
         </header>
         <Section title={t("manage.live.section.display")}>
-            {widget.type === "title" && <LiveField label={t("manage.live.prop.subtitle")} help={t("manage.live.prop.subtitleHelp")}>
-                {id => <input id={id} className="event-manage-input" maxLength={120} value={textProp(widget, "subtitle")} disabled={disabled} onChange={change => onProp("subtitle", change.target.value)} />}
-            </LiveField>}
+            {widget.type === "title" && <>
+                <LiveSwitch label={t("manage.live.prop.subtitleStage")} help={t("manage.live.prop.subtitleStageHelp")} checked={widget.props.subtitleStage === true} disabled={disabled} onChange={value => onProp("subtitleStage", value)} />
+                <LiveField label={t("manage.live.prop.subtitle")} help={t(widget.props.subtitleStage === true ? "manage.live.prop.subtitleStageFallback" : "manage.live.prop.subtitleHelp")}>
+                    {id => <input id={id} className="event-manage-input" maxLength={120} value={textProp(widget, "subtitle")} disabled={disabled} onChange={change => onProp("subtitle", change.target.value)} />}
+                </LiveField>
+            </>}
             {widget.type === "timer" && <TimerFields widget={widget} event={event} disabled={disabled} onProp={onProp} />}
             {widget.type === "chart" && <LiveField label={t("manage.live.prop.lines")} help={t("manage.live.prop.linesHelp")} required>
                 {() => <EventSelect ariaLabel={t("manage.live.prop.lines")} value={String(Math.min(10, Math.max(5, numberProp(widget, "lines", 5))))} disabled={disabled} onValueChange={value => onProp("lines", Number(value))}

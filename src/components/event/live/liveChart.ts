@@ -35,30 +35,33 @@ export function niceMax(value: number): number {
     return ([1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].map(factor => factor * power).find(candidate => candidate >= value) ?? value);
 }
 
-export type ChartSeries = {teamID: string; name: string; path: string; endY: number};
+export type ChartSeries = {teamID: string; name: string; path: string; endY: number; endX: number};
 
 // Cumulative score lines in pixel space: x runs from the event start to now
-// (or the finish), y from 0 to a round maximum.
-export function chartSeries(results: ManageResultsSnapshot | undefined, lines: number, box: {left: number; top: number; width: number; height: number}, start: number, end: number): {series: ChartSeries[]; max: number} {
+// (or the finish), y from 0 to a round maximum. With a results freeze the
+// lines stop at `cut` (the freeze moment): nothing after it is known, so the
+// lines must not run on flat to «now». `cutX` is the x of that moment.
+export function chartSeries(results: ManageResultsSnapshot | undefined, lines: number, box: {left: number; top: number; width: number; height: number}, start: number, end: number, cut: number | null = null): {series: ChartSeries[]; max: number; cutX: number | null} {
     const teams = (results?.Scoreboard ?? []).slice(0, lines);
     const max = niceMax(Math.max(0, ...teams.map(team => team.Points)));
     const span = Math.max(1, end - start);
     const x = (time: number) => box.left + Math.min(1, Math.max(0, (time - start) / span)) * box.width;
     const y = (points: number) => box.top + box.height * (1 - points / max);
+    const stop = cut !== null && cut < end ? Math.max(start, cut) : end;
     const series = teams.map(team => {
         const solves = (results?.Timeline ?? []).filter(item => item.EventTeamID === team.TeamID).sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
         // Interpolate the cumulative scores at their actual solve times.
         // Synthetic hold points compress each rise into a near-vertical step.
         let sum = 0;
-        const clamp = (time: number) => Math.min(end, Math.max(start, time));
+        const clamp = (time: number) => Math.min(stop, Math.max(start, time));
         const points: ChartPoint[] = [
             [start, 0],
             ...solves.map((solve): [number, number] => [clamp(Date.parse(solve.SolvedAt)), sum += solve.Points]),
-            [end, sum],
+            [stop, sum],
         ].map((point): ChartPoint => [x(point[0]), y(point[1])]);
-        return {teamID: team.TeamID, name: team.TeamName, path: monotonePath(points), endY: y(sum)};
+        return {teamID: team.TeamID, name: team.TeamName, path: monotonePath(points), endY: y(sum), endX: x(stop)};
     });
-    return {series, max};
+    return {series, max, cutX: stop < end ? x(stop) : null};
 }
 
 // Line-end labels, pushed apart by at least `gap` and kept inside [top, bottom].

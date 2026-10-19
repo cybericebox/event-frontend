@@ -25,10 +25,12 @@ const event = {
     Theme: {Brand: "#211A52", Accent: "", AccentLight: "#211A52", AccentDark: "#E6E6EE", AccentLive: "#FFFFFF", Version: 1},
 } as unknown as PublicEventInfo;
 const data: LiveEditorData = {Published: defaultLiveLayout, Draft: null};
+// The default layout fills its grid; without the partners row there is room.
+const roomy: LiveEditorData = {Published: {...defaultLiveLayout, widgets: defaultLiveLayout.widgets.filter(item => item.id !== "partners")}, Draft: null};
 
-function mount(canManage = true) {
+function mount(canManage = true, editor = data) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    return render(<QueryClientProvider client={client}><LiveEditor event={event} canManage={canManage} data={data} /></QueryClientProvider>);
+    return render(<QueryClientProvider client={client}><LiveEditor event={event} canManage={canManage} data={editor} /></QueryClientProvider>);
 }
 const widgets = () => document.querySelectorAll(".event-live-editor__native .live-widget").length;
 
@@ -53,7 +55,7 @@ describe("live editor", () => {
     });
 
     it("adds a widget from the palette, then undoes and redoes it", () => {
-        mount();
+        mount(true, roomy);
         const before = widgets();
         fireEvent.click(screen.getByRole("button", {name: "Додати віджет «Оголошення»"}));
         expect(widgets()).toBe(before + 1);
@@ -63,8 +65,17 @@ describe("live editor", () => {
         expect(widgets()).toBe(before + 1);
     });
 
-    it("moves the selected widget with the arrows and asks before removing it", () => {
+    it("never grows the grid by itself: a full grid says there is no room", () => {
         mount();
+        const before = widgets();
+        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «Оголошення»"}));
+        expect(widgets()).toBe(before);
+        expect(screen.getByText("Немає вільного місця: звільніть клітинки або збільште сітку.")).toBeTruthy();
+        expect(document.querySelector(".event-live-editor__native .live-canvas")!.getAttribute("style")).toContain("--live-rows: 8");
+    });
+
+    it("moves the selected widget with the arrows and asks before removing it", () => {
+        mount(true, roomy);
         fireEvent.click(screen.getByRole("button", {name: "Додати віджет «QR-код»"}));
         const qr = () => document.querySelector(".event-live-editor__native .live-widget--qr") as HTMLElement;
         const column = qr().style.gridColumn;
@@ -119,7 +130,7 @@ describe("live editor", () => {
         fireEvent.click(apply);
         expect(screen.getByText("Шаблон: Лише таблиця")).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
-        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «Оголошення»"}));
+        fireEvent.click(screen.getByRole("radio", {name: /Класика світла/}));
         expect(screen.getByText("Шаблон: Лише таблиця · змінено")).toBeTruthy();
     });
 

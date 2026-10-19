@@ -17,7 +17,8 @@ const widgetSchema = z.object({
 export const liveLayoutSchema = z.object({
     version: z.number().int(), theme: z.enum(["dark", "light"]),
     aspect: z.enum(["16:9", "16:10", "4:3", "5:3", "custom"]),
-    screen: z.object({width: z.number().int(), height: z.number().int(), anchor: z.enum(["full", "top-left"]), textScale: z.number()}),
+    // safeArea: the margin around the canvas for TVs that crop the edges (overscan), % of each side: 0, 2.5 or 5.
+    screen: z.object({width: z.number().int(), height: z.number().int(), anchor: z.enum(["full", "top-left"]), textScale: z.number(), safeArea: z.number().optional()}),
     grid: z.object({cols: z.number().int(), rows: z.number().int()}),
     widgets: z.array(widgetSchema),
     // Results refresh on the open screen, 2–30 s; layouts stored before the
@@ -38,12 +39,12 @@ export type LiveEditor = z.infer<typeof editorSchema>;
 export const defaultLiveLayout: LiveLayout = {
     version: 1, theme: "dark", aspect: "16:9", refreshSeconds: liveRefreshDefault, screen: {width: 1920, height: 1080, anchor: "full", textScale: 1},
     grid: {cols: 12, rows: 8}, widgets: [
-        {id: "title", type: "title", x: 1, y: 1, w: 10, h: 1, props: {}},
+        {id: "title", type: "title", x: 1, y: 1, w: 9, h: 1, props: {}},
         {id: "chart", type: "chart", x: 1, y: 2, w: 8, h: 6, props: {}},
         {id: "table", type: "table", x: 9, y: 2, w: 4, h: 6, props: {}},
         {id: "organizers", type: "logos", x: 1, y: 8, w: 3, h: 1, props: {mode: "fixed", title: t("manage.live.defaultOrganizers")}},
         {id: "partners", type: "logos", x: 4, y: 8, w: 9, h: 1, props: {mode: "carousel", title: t("manage.live.defaultPartners")}},
-        {id: "timer", type: "timer", x: 11, y: 1, w: 2, h: 1, props: {}},
+        {id: "timer", type: "timer", x: 10, y: 1, w: 3, h: 1, props: {}},
     ],
 };
 
@@ -136,7 +137,13 @@ async function screenRequest<T>(path: string, token: string, schema: z.ZodType<T
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
-export const getLiveScreenByLink = (token: string) => screenRequest("", token, z.object({Event: PublicEventInfoSchema, Layout: liveLayoutSchema}));
+// Stages in the event order: the screen timer counts by them.
+const liveStageSchema = z.object({Name: z.string(), OpensAt: z.string(), ClosesAt: z.string()});
+export const getLiveScreenByLink = (token: string) => screenRequest("", token, z.object({
+    Event: PublicEventInfoSchema, Layout: liveLayoutSchema,
+    Stages: z.array(liveStageSchema).nullish().transform(value => value ?? []),
+}));
+export type LiveScreenByLink = Awaited<ReturnType<typeof getLiveScreenByLink>>;
 export const getLiveScreenResultsByLink = (token: string) => screenRequest("/results", token, resultsSnapshotSchema);
 export function liveScreenResultsStreamURL(token: string, revision: number, refreshSeconds: number): string {
     return screenURL("/results/live", token, {lastEventId: String(revision), pollInterval: String(refreshSeconds)});

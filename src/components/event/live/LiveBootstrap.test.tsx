@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {cleanup, render, screen} from "@testing-library/react";
+import {act, cleanup, render, screen} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {defaultLiveLayout, liveScreenTokenFromHash, liveScreenURL, LiveScreenLinkError} from "@/api/manageLive";
 import {LiveBootstrap} from "./LiveBootstrap";
@@ -26,7 +26,7 @@ beforeEach(() => {
     Object.values(api).forEach(fn => fn.mockReset());
     api.info.mockReturnValue(new Promise(() => undefined));
 });
-afterEach(() => {cleanup(); window.location.hash = "";});
+afterEach(() => {cleanup(); window.location.hash = ""; vi.useRealTimers();});
 
 describe("live screen links", () => {
     it("keeps the token in the fragment of the screen URL", () => {
@@ -38,13 +38,25 @@ describe("live screen links", () => {
 
     it("opens the screen with a link, without any session check", async () => {
         window.location.hash = "#screen=tok";
-        api.screen.mockResolvedValue({Event: event, Layout: defaultLiveLayout});
+        api.screen.mockResolvedValue({Event: event, Layout: defaultLiveLayout, Stages: []});
         api.results.mockReturnValue(new Promise(() => undefined));
         mount();
         expect(await screen.findByText("Захід")).toBeTruthy();
         expect(api.screen).toHaveBeenCalledWith("tok");
         expect(api.info).not.toHaveBeenCalled();
         expect(api.access).not.toHaveBeenCalled();
+    });
+
+    it("retries a failed open by itself, telling when, with no button press", async () => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        window.location.hash = "#screen=tok";
+        api.screen.mockRejectedValueOnce(new LiveScreenLinkError(502)).mockResolvedValue({Event: event, Layout: defaultLiveLayout, Stages: []});
+        api.results.mockReturnValue(new Promise(() => undefined));
+        mount();
+        expect(await screen.findByText(/Повторимо через \d+ с/)).toBeTruthy();
+        await act(async () => {vi.advanceTimersByTime(5000);});
+        expect(await screen.findByText("Захід")).toBeTruthy();
+        expect(api.screen).toHaveBeenCalledTimes(2);
     });
 
     it("says the link no longer works when it is revoked or expired", async () => {

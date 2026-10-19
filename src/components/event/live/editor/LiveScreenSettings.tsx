@@ -13,7 +13,8 @@ import {t} from "@/i18n/t";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventSlider} from "@/components/ui/EventSlider";
 import {LiveMiniature} from "./LiveMiniature";
-import {LiveField, LiveNumberInput, LiveSwitch} from "./LiveFields";
+import {LiveField, LiveNumberInput, LiveSegmented, LiveSwitch} from "./LiveFields";
+import {liveSafeArea, liveSafeAreaOptions} from "../liveText";
 
 // «Враховувати заморожування результатів»: a results setting, applied at once.
 export function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boolean}) {
@@ -85,6 +86,9 @@ export function LiveScreenSettings({eventID, event, layout, results, sample, can
                 options={[...new Set([...liveRefreshOptions, layout.refreshSeconds])].sort((a, b) => a - b).map(value => ({value: String(value), label: t("manage.live.seconds", {count: value})}))}
                 onValueChange={value => onChange({...layout, refreshSeconds: Number(value)})} />}
         </LiveField>
+        <LiveSegmented label={t("manage.live.safeArea")} help={t("manage.live.safeAreaHelp")} value={String(liveSafeArea(layout.screen))} disabled={disabled}
+            options={liveSafeAreaOptions.map(value => ({value: String(value), label: t("manage.live.percent", {value: value.toLocaleString("uk-UA")})}))}
+            onChange={value => onChange({...layout, screen: {...layout.screen, safeArea: Number(value) || undefined}})} />
         <LiveField label={t("manage.live.baseFormat")} help={t("manage.live.baseFormatHelp")} required>
             {() => <EventSelect ariaLabel={t("manage.live.baseFormat")} value={layout.aspect} disabled={disabled}
                 onValueChange={value => {
