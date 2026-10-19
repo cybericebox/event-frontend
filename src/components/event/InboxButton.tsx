@@ -19,7 +19,7 @@ import {NotificationPopIn, popInDuration} from "./NotificationPopIn";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {
     INBOX_TABS, canResolve, countsAfterRead, countsAfterReadAll, countsAfterResolve, formatInboxTime, inTab, inboxQuery, isUnread, orderForTab,
-    bellCount, parseCounts, parseOtherEvents, resolutionKey, resolveDefaultTab, resolverName,
+    bellCount, bellLabel, needsAction, parseCounts, parseOtherEvents, resolutionKey, resolveDefaultTab, resolverName,
     type InboxCounts, type InboxDefaultTab, type InboxMessage as Message, type InboxTab,
 } from "./inboxModel";
 import { keepBrand } from "@/i18n/brand"
@@ -259,7 +259,8 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     }, [openInbox]);
 
     const badge = bellCount(unread, counts);
-    const label = badge ? t("inbox.titleUnread", {count: badge}) : t("inbox.title");
+    const bell = bellLabel(unread, counts);
+    const label = t(bell.key, bell.vars);
     const tabs = counts ? INBOX_TABS : [];
     const tabHasUnread = items.some(isUnread) || (tab === "all" ? unread > 0 : tab !== "requests" && (counts?.[tab] ?? 0) > 0);
 
@@ -381,7 +382,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                             const count = counts?.[value] ?? 0;
                             const selected = tab === value;
                             return <button key={value} type="button" role="tab" id={`inbox-tab-${value}`} aria-controls="inbox-tabpanel" aria-selected={selected}
-                                aria-label={count > 0 ? t("inbox.tabCount", {name: t(`inbox.tab.${value}`), count}) : undefined}
+                                aria-label={count > 0 ? t(value === "requests" ? "inbox.tabCountRequests" : "inbox.tabCount", {name: t(`inbox.tab.${value}`), count}) : undefined}
                                 onClick={() => { if (!selected) selectTab(value); }}>
                                 <span className="event-notifications__tab-name">{t(`inbox.tab.${value}`)}</span>
                                 {count > 0 && <span aria-hidden="true" className="event-notifications__tab-count">{count > 99 ? "99+" : count}</span>}
@@ -400,7 +401,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                             <NotificationMessageCard
                                 icon={item.Icon} tone={item.Tone} accentColor={item.AccentColor} title={item.Title}
                                 body={item.Body ? <span dangerouslySetInnerHTML={{__html: keepBrand(DOMPurify.sanitize(item.Body, {ALLOWED_TAGS: [], ALLOWED_ATTR: []}))}} /> : undefined}
-                                unread={unreadItem} compact
+                                unread={unreadItem} needsAction={needsAction(item)} compact
                                 timestamp={<span className="event-notifications__meta">
                                     {resolved
                                         ? <EventTooltip content={formatInboxTime(item.CreatedAt)}>{id => <span aria-describedby={id}>{resolvedLine(item)}</span>}</EventTooltip>
