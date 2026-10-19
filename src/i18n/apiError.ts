@@ -4,7 +4,7 @@
 // a uk entry fall through to the English catalog until translated.
 import errorsUk from "../../messages/errors.uk.json"
 import errorsEn from "../../messages/errors.en.json"
-import {isOverloadError} from "../api/retry"
+import {isOverloadError, OVERLOAD_DETAIL_CODES} from "../api/retry"
 import {t} from "./t"
 
 const uk = errorsUk as Record<string, string>
@@ -43,6 +43,9 @@ export function overloadedMessage(error: unknown): string | undefined {
 export function apiErrorText(error: unknown, fallback: string = t("error.generic")): string {
   if (!(error instanceof Error)) return fallback
   const {code, retryAfter} = error as {code?: unknown; retryAfter?: unknown}
+  // The overload codes (ServiceOverloaded 431, DatabaseBusy 432) always read as the one overloaded line the app shows
+  // with its retry, not as their catalog texts.
+  if (typeof code === "number" && OVERLOAD_DETAIL_CODES.includes(code % 10_000) && isOverloadError(error)) return t("error.overloaded")
   const known = apiErrorMessage(typeof code === "number" ? code : undefined, "", typeof retryAfter === "number" ? retryAfter : undefined)
   return known || (overloadedMessage(error) ?? fallback)
 }
