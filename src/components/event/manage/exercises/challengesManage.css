@@ -140,3 +140,15 @@ button.event-sortable__main{cursor:pointer}
 .event-group-order__task{flex:1 1 auto;width:100%}
 .event-group-order__task strong{flex:0 1 auto;min-width:3em}
 .event-group-order__task small{flex-shrink:6;max-width:9em}
+/* Flag repeat: a warning (DS warn tone), never the error red; collapsed sets show only the mark. */
+.event-exercise-set__warning--warn{justify-content:flex-start;background:var(--ib-warn-bg);color:var(--ib-warn)}
+.event-exercise-set__warning--warn>svg{flex:none}
+.event-exercise-set__warn-mark{display:inline-flex;align-items:center;color:var(--ib-warn);cursor:help}
+.event-exercise-set__warn-mark:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}
+/* «Ресурси на команду»: a disclosure, collapsed by default, the per-team total in its header. */
+.event-resource-plan__toggle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-1) var(--ib-2);width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.event-resource-plan__toggle:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}
+.event-resource-plan__chevron{flex:none;color:var(--ib-dim);transition:transform var(--ib-dur-move) var(--ib-ease)}
+.event-resource-plan__toggle[aria-expanded="true"] .event-resource-plan__chevron{transform:rotate(90deg)}
+.event-resource-plan__summary{color:var(--ib-dim);font-weight:var(--ib-w-regular);font-size:var(--ib-fs-13)}
+.event-resource-plan__body{display:grid;gap:var(--ib-2);min-width:0}

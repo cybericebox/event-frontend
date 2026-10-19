@@ -1389,6 +1389,7 @@
   "manage.resources.summary": "CPU {cpu} · памʼять {memory} · пристроїв {devices}",
   "manage.resources.overheadValue": "CPU {cpu} · памʼять {memory}",
   "manage.resources.planTitle": "Ресурси на команду",
+  "manage.resources.planSummary": "{cpu} · {memory} · пристроїв: {devices}",
   "manage.resources.planNote": "Резервується найбільший варіант кожного завдання та службові поди групи (VPN, шлюз).",
   "manage.resources.planLoading": "Рахуємо ресурси",
   "manage.resources.planFailed": "Не вдалося завантажити розрахунок ресурсів",

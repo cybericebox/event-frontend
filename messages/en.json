@@ -1389,6 +1389,7 @@
   "manage.resources.summary": "CPU {cpu} · memory {memory} · devices {devices}",
   "manage.resources.overheadValue": "CPU {cpu} · memory {memory}",
   "manage.resources.planTitle": "Resources per team",
+  "manage.resources.planSummary": "{cpu} · {memory} · devices: {devices}",
   "manage.resources.planNote": "The largest variant of each set and the group service pods (VPN, gateway) are reserved.",
   "manage.resources.planLoading": "Calculating resources",
   "manage.resources.planFailed": "Could not load the resource calculation",

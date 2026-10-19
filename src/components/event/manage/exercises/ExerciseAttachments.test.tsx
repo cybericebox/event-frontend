@@ -85,21 +85,31 @@ describe("running stage confirmation", () => {
 
 describe("flag repeat warning", () => {
     const warning = "Флаги завдання «Web» можуть повторюватися між командами: можливих флагів замало для кількості команд.";
-
-    it("is shown when the set's flags may repeat", async () => {
+    function withRepeat(run: () => Promise<void>) {
         Object.assign(attachment, {FlagsMayRepeat: true});
-        try {
-            setup();
-            expect(await screen.findByText(warning)).toBeTruthy();
-        } finally {
-            Object.assign(attachment, {FlagsMayRepeat: false});
-        }
-    });
+        return run().finally(() => Object.assign(attachment, {FlagsMayRepeat: false}));
+    }
+
+    it("is a warning (not an error), shown once while the set is open", () => withRepeat(async () => {
+        setup();
+        const text = await screen.findByText(warning);
+        expect(text.closest(".event-exercise-set__warning")!.className).toContain("event-exercise-set__warning--warn");
+        expect(screen.getAllByText(warning)).toHaveLength(1);
+        expect(screen.queryByRole("img", {name: warning})).toBeNull();
+    }));
+
+    it("shrinks to a warning mark with the text in its tooltip when the set is collapsed", () => withRepeat(async () => {
+        setup();
+        await screen.findByText(warning);
+        fireEvent.click(screen.getByRole("button", {name: /Згорнути/}));
+        expect(document.querySelector(".event-exercise-set__warning")).toBeNull();
+        expect(screen.getByRole("img", {name: warning})).toBeTruthy();
+    }));
 
     it("is hidden otherwise", async () => {
         setup();
         await screen.findByRole("heading", {name: "Web"});
-        expect(screen.queryByText(warning)).toBeNull();
+        expect(document.querySelector(".event-exercise-set__warning")).toBeNull();
     });
 });
 
