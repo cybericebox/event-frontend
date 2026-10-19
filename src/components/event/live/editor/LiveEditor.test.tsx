@@ -146,49 +146,42 @@ describe("live editor", () => {
         expect(document.querySelector(".event-live-editor__native .live-widget--facts")).not.toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--podium")).not.toBeNull();
-        // The frozen state shows the running board.
+        // «Заморожено» gets its own copy of the board.
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
-        expect(screen.getByText("Сцена «Заморожено» показує розкладку «Триває».")).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-widget--solves")).not.toBeNull();
     });
 
-    it("edits a scene apart from the running board, and a scene can fall back to it", () => {
+    it("edits every scene on its own; the tabs mark only the live scene", () => {
         mount();
+        const tabs = screen.getAllByRole("tab").filter(tab => tab.closest(".event-live-scenes"));
+        expect(tabs.map(tab => tab.textContent)).not.toContain("основна");
+        expect(tabs.filter(tab => tab.textContent?.includes("зараз"))).toHaveLength(1);
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
-        expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
-        fireEvent.click(screen.getByRole("button", {name: "Своя розкладка"}));
-        // A copy of the running board, now editable on its own.
-        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+        // Its own copy of the board, editable at once.
+        expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(false);
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
         fireEvent.click(screen.getByRole("button", {name: "Прибрати віджет"}));
         fireEvent.click(within(screen.getByText("Прибрати віджет?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати віджет"}));
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: /Триває/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
-        fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
-        // Dropping an own layout asks first; «Скасувати» keeps it.
-        fireEvent.click(screen.getByRole("button", {name: "Як «Триває»"}));
-        const dialog = () => screen.getByText("Скинути розкладку сцени?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
-        expect(within(dialog()).getByText(/Віджети сцени «Заморожено» буде видалено/)).toBeTruthy();
-        fireEvent.click(within(dialog()).getByRole("button", {name: "Скасувати"}));
-        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
-        expect(screen.getByRole("tab", {name: /Заморожено/}).textContent).toContain("своя");
-        fireEvent.click(screen.getByRole("button", {name: "Як «Триває»"}));
-        fireEvent.click(within(dialog()).getByRole("button", {name: "Скинути"}));
-        expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
-        expect(screen.getByRole("tab", {name: /Заморожено/}).textContent).toContain("як «Триває»");
     });
 
-    it("drops an empty own scene back without asking", () => {
+    it("resets a scene to its template after a danger confirmation", () => {
         mount();
-        fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
-        fireEvent.click(screen.getByRole("button", {name: "Своя розкладка"}));
+        fireEvent.click(screen.getByRole("tab", {name: /До старту/}));
         fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
         fireEvent.click(screen.getByRole("radio", {name: /Порожня сітка/}));
-        fireEvent.click(screen.getByRole("button", {name: "Застосувати до «Заморожено»"}));
-        fireEvent.click(screen.getByRole("button", {name: "Як «Триває»"}));
-        expect(screen.queryByText("Скинути розкладку сцени?")).toBeNull();
-        expect(screen.getByRole("tab", {name: /Заморожено/}).textContent).toContain("як «Триває»");
+        fireEvent.click(screen.getByRole("button", {name: /Застосувати до «До старту»|Замінити/}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Скинути до шаблону сцени"}));
+        const dialog = () => screen.getByText("Скинути сцену до шаблону?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
+        expect(within(dialog()).getByText(/Розкладку сцени «До старту» буде замінено шаблоном/)).toBeTruthy();
+        fireEvent.click(within(dialog()).getByRole("button", {name: "Скасувати"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).toBeNull();
+        fireEvent.click(screen.getByRole("button", {name: "Скинути до шаблону сцени"}));
+        fireEvent.click(within(dialog()).getByRole("button", {name: "Скинути"}));
+        expect(document.querySelector(".event-live-editor__native .live-widget--facts")).not.toBeNull();
     });
 
     it("opens the scene of the step it undoes and redoes", () => {
