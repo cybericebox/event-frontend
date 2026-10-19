@@ -41,8 +41,9 @@ import {EmptyState} from "@/components/ui/EmptyState";
 
 export type BoardMode = "participant" | "moderators" | "preview";
 
-// The event's reservation has no room for the preview's laboratory (409).
-const PREVIEW_RESERVATION_FULL = 72517;
+// No free test capacity for the preview's laboratory (409; detail codes of the calendar): no room now, the run's
+// reservation full, not enough reserved. The preview takes the starting staff member's test lease like the studio.
+const PREVIEW_NO_FREE_RESOURCES = new Set([2508, 2509, 2517]);
 // retry: the server was only busy; the message offers to send the same answer again.
 type Message = {text: string; tone: "error" | "warn"; retry?: boolean} | null;
 
@@ -471,7 +472,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                                 onValueChange={value => setChosenLength(Number(value))} /></label>}
                         <EventButton className="ib-btn ib-btn--primary" busy={starting} busyLabel={t("common.busy.starting")} onClick={() => void start()}>{t("participantPreview.lab.start")}</EventButton>
                     </div> : <EmptyState compact message={t("participantPreview.lab.unavailable")} />}
-                    {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? (startError.code === PREVIEW_RESERVATION_FULL ? t("lab.preview.reservationFull") : apiErrorMessage(startError.code, t("participantPreview.lab.startFailed"))) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
+                    {!!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? (startError.code !== undefined && PREVIEW_NO_FREE_RESOURCES.has(startError.code) ? t("lab.preview.noFreeResources") : apiErrorMessage(startError.code, t("participantPreview.lab.startFailed"))) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
                 </section>}
                 {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn && !preview.active ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
                 {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} previewMode={isPreview} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}

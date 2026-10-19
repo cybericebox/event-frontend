@@ -4961,7 +4961,6 @@
   "lab.preview.length": "Тривалість",
   "lab.preview.duration.minutes": "{n} хв",
   "lab.preview.duration.hours": "{n} год",
-  "lab.preview.reservationFull": "У резерві заходу не вистачає місця для цієї лабораторії.",
   "lab.live.failure.restarts": "Перезапусків: {count}",
   "lab.live.failure.message": "Остання помилка: {message}",
   "lab.live.snapshot.saved": "Збережено {time}",
@@ -5245,7 +5244,7 @@
   "participantPreview.title": "Режим тестового учасника",
   "participantPreview.lab.start": "Запустити середовище",
   "participantPreview.lab.startFailed": "Не вдалося запустити середовище",
-  "participantPreview.lab.unavailable": "Для запуску потрібні виділені ресурси заходу. Перевірте ресурси в налаштуваннях заходу.",
+  "participantPreview.lab.unavailable": "Лабораторії для цього заходу вимкнено.",
   "participantPreview.description": "Реєстрація й команда зберігаються лише в цьому браузері. Розвʼязання тестових завдань зберігаються окремо від змагання.",
   "participantPreview.enter": "Тестувати як учасник",
   "participantPreview.exit": "Вийти з тестування",
@@ -5483,6 +5482,5 @@
   "manage.challenges.groups.points.many": "{count} балів",
   "manage.challenges.groups.pointsDynamic": "динамічні {max}→{min}",
   "manage.previewSettings.unavailableReason.no_infrastructure": "Не запуститься: у заходу немає інфраструктури",
-  "manage.previewSettings.unavailableReason.no_reservation": "Не запуститься: немає активного бронювання ресурсів",
-  "manage.previewSettings.toReservations": "Календар бронювань"
+  "lab.preview.noFreeResources": "Немає вільних ресурсів для тестової лабораторії. Спробуйте пізніше або виберіть коротший запуск."
 }

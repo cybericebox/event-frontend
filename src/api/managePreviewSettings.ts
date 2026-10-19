@@ -3,7 +3,7 @@ import {manageApiError} from "./manage";
 import {requireApiOrigin} from "@/utils/origins";
 
 const selection = z.object({ID: z.string().uuid().optional(), ExerciseVersionID: z.string().uuid(), VariantID: z.string().uuid(), Name: z.string().optional(), VariantIndex: z.number().optional(), VariantPosition: z.number().optional(),
-    // Set when a dynamic task cannot run now: no_infrastructure or no_reservation (listed, not on the board).
+    // Set when a dynamic task cannot run in this event: no_infrastructure (listed, not on the board).
     Reason: z.string().optional()});
 const selections = z.array(selection).nullish().transform(value => value ?? []);
 const settings = z.object({DefaultSelections: selections, DefaultGroupName: z.string(), DynamicAllocated: z.boolean(), GroupName: z.string(), GroupNameOverride: z.string().nullable(), Inherit: z.boolean(), Selections: selections, EffectiveSelections: selections});
