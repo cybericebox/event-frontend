@@ -5097,5 +5097,6 @@
   "manage.blocks.layoutSettings.desktop.bottom": "Нижній відступ — компʼютер",
   "manage.blocks.layoutSettings.mobile.bottom": "Нижній відступ — телефон",
   "manage.blocks.layoutSettings.desktop.inline": "Бокові відступи — компʼютер",
-  "manage.blocks.layoutSettings.mobile.inline": "Бокові відступи — телефон"
+  "manage.blocks.layoutSettings.mobile.inline": "Бокові відступи — телефон",
+  "scrollbar.page": "Прокручування сторінки"
 }
