@@ -66,3 +66,13 @@ it("preview sends the chosen length", async () => {
     await api.startPreviewRun("event", selection);
     expect(fetchMock.mock.calls[1][1].body).toBeUndefined();
 });
+
+it("fences a manual modal start at the shared API boundary during preview cleanup", async () => {
+    const api = await import("./participantPreview");
+    const {suspendPreviewRunStarts} = await import("./previewRunLifecycle");
+    const barrier = suspendPreviewRunStarts("event");
+    try {
+        await expect(api.startPreviewRun("event", selection, 45)).rejects.toThrow("cleanup");
+        expect(fetchMock).not.toHaveBeenCalled();
+    } finally {barrier.release();}
+});

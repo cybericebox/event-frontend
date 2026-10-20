@@ -4,6 +4,7 @@ import {createContext, useContext, useEffect, useMemo, useSyncExternalStore, use
 import {useQuery, useQueryClient, type QueryClient} from "@tanstack/react-query";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {getPreviewBoard, previewBoardKey, resetPreviewRuns, startPreviewRun, stopPreviewRun} from "@/api/participantPreview";
+import {previewRunStartsSuspended, suspendPreviewRunStarts} from "@/api/previewRunLifecycle";
 import type {OwnBoard} from "@/api/participantChallenges";
 import {BusyMark} from "@/components/ui/EventButton";
 import {usePathname, useRouter} from "next/navigation";
@@ -61,17 +62,19 @@ type PreviewContextValue = {
     // The mode cookie names this event: the staff UI stays hidden, as in the server render, while the state loads.
     hinted: boolean;
     resetting: boolean;
+    exiting: boolean;
+    exitError: string | null;
     // What the infrastructure switch is doing right now, null when idle.
     infraBusy: "starting" | "stopping" | null;
     setTasks: (on: boolean) => Promise<boolean>;
     start: (eventID: string, registration?: number) => void;
     update: (patch: Partial<Pick<ParticipantPreviewState, "status" | "outcome" | "answers" | "team">>) => void;
-    reset: () => void | Promise<boolean>; exit: () => void;
+    reset: () => void | Promise<boolean>; exit: () => void | Promise<boolean>;
 };
 const noop = () => {};
 // The event named by the mode cookie the server render read, while the browser has not yet confirmed the mode.
 const CookieContext = createContext<string | null>(null);
-const PreviewContext = createContext<PreviewContextValue>({state: null, config: null, active: false, hinted: false, resetting: false, infraBusy: null, setTasks: async () => false, start: noop, update: noop, reset: noop, exit: noop});
+const PreviewContext = createContext<PreviewContextValue>({state: null, config: null, active: false, hinted: false, resetting: false, exiting: false, exitError: null, infraBusy: null, setTasks: async () => false, start: noop, update: noop, reset: noop, exit: noop});
 export function useParticipantPreview(eventID?: string) {
     const context = useContext(PreviewContext);
     const cookieEvent = useContext(CookieContext);
@@ -83,6 +86,9 @@ export function useParticipantPreview(eventID?: string) {
 export function ParticipantPreviewProvider({children, serverCookie = null}: {children: ReactNode; serverCookie?: string | null}) {
     const queryClient = useQueryClient();
     const [resetting, setResetting] = useState(false);
+    const [exiting, setExiting] = useState(false);
+    const [exitError, setExitError] = useState<string | null>(null);
+    const operation = useRef<"reset" | "exit" | "stop" | null>(null);
     const [infraBusy, setInfraBusy] = useState<"starting" | "stopping" | null>(null);
     const router = useRouter();
     const pathname = usePathname();
@@ -96,11 +102,15 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
     const settled = identity.isSuccess && (!saved || saved.userID !== identity.data?.ID || access.isSuccess || access.isError);
     useEffect(() => {if (settled && !state && readPreviewCookie()) clearPreviewCookie();}, [settled, state]);
     const config = useQuery({queryKey: ["event-management-config", state?.eventID], queryFn: () => getManageConfig(state!.eventID), enabled: !!state, retry: false, refetchOnWindowFocus: false});
-    const exit = () => {persist(null); router.push("/manage");};
-    const reset = async () => {
-        if (!state || resetting) return false;
-        setResetting(true);
+    const cleanup = async (kind: "reset" | "exit") => {
+        if (!state || operation.current) return false;
+        operation.current = kind;
+        const launches = suspendPreviewRunStarts(state.eventID);
+        setExitError(null);
+        if (kind === "exit") setExiting(true); else setResetting(true);
         try {
+            // A POST already sent may create a lab after DELETE; wait for every launch before the final cleanup.
+            await launches.drain();
             await resetPreviewRuns(state.eventID);
             const current = parseSnapshot(snapshot());
             if (current?.eventID !== state.eventID || current.userID !== state.userID) return false;
@@ -109,15 +119,24 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
                 || (key[1] === "preview" && key[2] === state.eventID);
             await queryClient.cancelQueries({predicate: query => belongsToPreview(query.queryKey)});
             queryClient.removeQueries({predicate: query => belongsToPreview(query.queryKey)});
-            persist({...current, status: 0, answers: {}, team: null, tasks: false});
-            router.push("/");
+            persist(kind === "exit" ? null : {...current, status: 0, answers: {}, team: null, tasks: false});
+            router.push(kind === "exit" ? "/manage" : "/");
             return true;
-        } catch (failure) {toastFailure(failure, t("participantPreview.resetFailed")); return false;}
-        finally {setResetting(false);}
+        } catch (failure) {
+            if (kind === "exit") setExitError(t("participantPreview.exitFailed"));
+            toastFailure(failure, t(kind === "exit" ? "participantPreview.exitFailed" : "participantPreview.resetFailed"));
+            return false;
+        } finally {
+            launches.release(); operation.current = null;
+            if (kind === "exit") setExiting(false); else setResetting(false);
+            setInfraBusy(null);
+        }
     };
+    const exit = () => cleanup("exit");
+    const reset = () => cleanup("reset");
     // On: persisted, the runner below launches the labs. Off: the owned dynamic labs end first, then the switch flips.
     const setTasks = async (on: boolean) => {
-        if (!state) return false;
+        if (!state || operation.current) return false;
         const persistTasks = () => {
             const current = parseSnapshot(snapshot());
             if (current?.eventID !== state.eventID || current.userID !== state.userID) return false;
@@ -125,18 +144,21 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
             return true;
         };
         if (on) return persistTasks();
+        operation.current = "stop";
+        const launches = suspendPreviewRunStarts(state.eventID);
         setInfraBusy("stopping");
         try {
+            await launches.drain();
             const stopped = await stopPreviewLabs(queryClient, state.eventID);
             return stopped && persistTasks();
         } catch (failure) {toastFailure(failure, t("participantPreview.infra.stopFailed")); return false;}
-        finally {setInfraBusy(null);}
+        finally {launches.release(); operation.current = null; setInfraBusy(null);}
     };
     // The hint comes only from the cookie the SERVER rendered with, and only until the identity and access answers
     // are in: it covers the first HTML and hydration. A client navigation (the server layout is not re-rendered)
     // starts with no hint and behaves as before the cookie existed.
     const hint = !settled && !state ? serverCookie : null;
-    return <CookieContext.Provider value={hint}><PreviewContext.Provider value={{state, hinted: !!hint, config: config.data ?? null, resetting, infraBusy, setTasks, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
+    return <CookieContext.Provider value={hint}><PreviewContext.Provider value={{state, hinted: !!hint, config: config.data ?? null, resetting, exiting, exitError, infraBusy, setTasks, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
         if (!identity.data) return;
         persist({eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null, tasks: false});
         router.push("/");
@@ -145,7 +167,7 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
             <b className="event-participant-preview__title">{t("participantPreview.title")}</b>
             <ParticipantPreviewMenu />
         </div>}
-        {state?.tasks && !/^\/manage(?:\/|$)/.test(pathname) && <PreviewInfrastructure eventID={state.eventID} stopping={infraBusy === "stopping"} onBusy={setInfraBusy} />}
+        {state?.tasks && !/^\/manage(?:\/|$)/.test(pathname) && <PreviewInfrastructure eventID={state.eventID} stopping={resetting || exiting || infraBusy === "stopping"} onBusy={busy => {if (!operation.current) setInfraBusy(busy);}} />}
         {children}
     </PreviewContext.Provider></CookieContext.Provider>;
 }
@@ -176,7 +198,7 @@ function PreviewInfrastructure({eventID, stopping, onBusy}: {eventID: string; st
     const working = useRef(false);
     const data = board.data;
     useEffect(() => {
-        if (!data || working.current || stopping) return;
+        if (!data || working.current || stopping || previewRunStartsSuspended(eventID)) return;
         const wanted = [...new Set(data.Challenges.filter(task => task.PreviewDynamic && task.PreviewCanStart === true && !task.PreviewRunID && task.PreviewSelectionID).map(task => task.PreviewSelectionID!))]
             .filter(id => !attempted.current.has(id));
         if (wanted.length === 0) return;
@@ -186,6 +208,7 @@ function PreviewInfrastructure({eventID, stopping, onBusy}: {eventID: string; st
         void (async () => {
             try {
                 for (const id of wanted) {
+                    if (previewRunStartsSuspended(eventID)) break;
                     const run = await startPreviewRun(eventID, id);
                     queryClient.setQueryData<OwnBoard>(key, current => current && ({...current, Challenges: current.Challenges.map(task => task.PreviewSelectionID === id ? {...task, PreviewRunID: run.ID, PreviewExpiresAt: run.ExpiresAt} : task)}));
                 }
@@ -242,13 +265,14 @@ export function ParticipantPreviewMenu() {
                         </DropdownMenu.RadioGroup>
                         <DropdownMenu.Separator className="event-participant-preview__separator" />
                     </>}
-                    <DropdownMenu.CheckboxItem className="ib-listbox__opt event-participant-preview__option" checked={state.tasks} disabled={!!preview.infraBusy} aria-busy={!!preview.infraBusy || undefined}
+                    <DropdownMenu.CheckboxItem className="ib-listbox__opt event-participant-preview__option" checked={state.tasks} disabled={!!preview.infraBusy || preview.resetting || preview.exiting} aria-busy={!!preview.infraBusy || undefined}
                         onSelect={event => event.preventDefault()} onCheckedChange={on => void preview.setTasks(on)}>
                         <span className="event-participant-preview__indicator">{preview.infraBusy ? <BusyMark /> : <DropdownMenu.ItemIndicator><Check size={16} aria-hidden="true" /></DropdownMenu.ItemIndicator>}</span>
                         {t(preview.infraBusy === "starting" ? "participantPreview.infra.starting" : preview.infraBusy === "stopping" ? "participantPreview.infra.stopping" : "participantPreview.tasks")}
                     </DropdownMenu.CheckboxItem>
-                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" disabled={preview.resetting} aria-busy={preview.resetting || undefined} onSelect={event => {event.preventDefault(); void Promise.resolve(preview.reset()).then(success => {if (success) setMenuOpen(false);});}}>{preview.resetting ? <BusyMark /> : <RotateCcw size={16} aria-hidden="true" />}{t("participantPreview.reset")}</DropdownMenu.Item>
-                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" onSelect={preview.exit}><LogOut size={16} aria-hidden="true" />{t("participantPreview.exit")}</DropdownMenu.Item>
+                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" disabled={preview.resetting || preview.exiting || preview.infraBusy === "stopping"} aria-busy={preview.resetting || undefined} onSelect={event => {event.preventDefault(); void Promise.resolve(preview.reset()).then(success => {if (success) setMenuOpen(false);});}}>{preview.resetting ? <BusyMark /> : <RotateCcw size={16} aria-hidden="true" />}{t(preview.resetting ? "participantPreview.resetting" : "participantPreview.reset")}</DropdownMenu.Item>
+                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" disabled={preview.resetting || preview.exiting || preview.infraBusy === "stopping"} aria-busy={preview.exiting || undefined} onSelect={event => {event.preventDefault(); void Promise.resolve(preview.exit()).then(success => {if (success) setMenuOpen(false);});}}>{preview.exiting ? <BusyMark /> : <LogOut size={16} aria-hidden="true" />}{t(preview.exiting ? "participantPreview.exiting" : "participantPreview.exit")}</DropdownMenu.Item>
+                    {preview.exitError && <div className="event-manage-validation" role="alert">{preview.exitError}</div>}
                 </DropdownMenu.Content></DropdownMenu.Portal>
             </DropdownMenu.Root>;
 }

@@ -7,10 +7,12 @@ import {readPreviewCookie} from "@/utils/previewCookie";
 import {ParticipantPreviewProvider, ParticipantPreviewEntry, previewAnswerFile, useParticipantPreview} from "./ParticipantPreview";
 
 const api = vi.hoisted(() => ({pathname: "/join", reset: vi.fn(), board: vi.fn(), start: vi.fn(), stop: vi.fn(), toastError: vi.fn(), push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
-vi.mock("@/api/participantPreview", () => ({
-    resetPreviewRuns: api.reset, getPreviewBoard: api.board, startPreviewRun: api.start, stopPreviewRun: api.stop,
+vi.mock("@/api/participantPreview", async () => {
+    const {trackPreviewRunStart} = await import("@/api/previewRunLifecycle");
+    return ({
+    resetPreviewRuns: api.reset, getPreviewBoard: api.board, startPreviewRun: (eventID: string, selectionID: string) => trackPreviewRunStart(eventID, () => api.start(eventID, selectionID)), stopPreviewRun: api.stop,
     previewBoardKey: (eventID: string | undefined) => ["event-participant-preview-board", eventID],
-}));
+});});
 vi.mock("react-hot-toast", () => ({default: {error: api.toastError}, toast: {error: api.toastError}}));
 vi.mock("next/navigation", () => ({usePathname: () => api.pathname, useRouter: () => ({push: api.push})}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "user-1"})}));
@@ -51,7 +53,7 @@ it("persists local state, clears owned server runs before resetting registration
     expect(api.reset).toHaveBeenCalledWith("event-1");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Вийти з тестування"}));
-    expect(sessionStorage.getItem(storageKey)).toBeNull();
+    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
     expect(screen.getByTestId("state").textContent).toBe("inactive");
     expect(api.push).toHaveBeenLastCalledWith("/manage");
 });
@@ -67,7 +69,7 @@ it("does not replace auth, join status or own-team caches with simulated state",
     expect(client.getQueryData(["event-own-team", "event-1"])).toBeNull();
 });
 
-it("waits for owned cleanup, keeps other actions enabled, and clears only preview caches", async () => {
+it("serializes owned cleanup actions, keeps local fields enabled, and clears only preview caches", async () => {
     let finish!: () => void;
     api.reset.mockReturnValue(new Promise<void>(resolve => {finish = resolve;}));
     sessionStorage.setItem(storageKey, JSON.stringify(state));
@@ -76,8 +78,9 @@ it("waits for owned cleanup, keeps other actions enabled, and clears only previe
     client.setQueryData(["event-own-challenges", "event-1"], {Challenges: ["competition"]});
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
-    expect(screen.getByRole("menuitem", {name: "Почати спочатку"}).getAttribute("aria-busy")).toBe("true");
-    expect(screen.getByRole("menuitem", {name: "Вийти з тестування"}).getAttribute("aria-disabled")).toBeNull();
+    expect(screen.getByRole("menuitem", {name: "Скидаємо тестування…"}).getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByRole("menuitem", {name: "Вийти з тестування"}).getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByText("Update local answers").closest("button")).toHaveProperty("disabled", false);
     expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(2);
     await act(async () => {finish();});
     await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(0));
@@ -184,7 +187,7 @@ it("sets the mode cookie when the mode starts and clears it on exit", async () =
     expect(readPreviewCookie()).toBe("event-1");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Вийти з тестування"}));
-    expect(readPreviewCookie()).toBeNull();
+    await waitFor(() => expect(readPreviewCookie()).toBeNull());
 });
 
 it("initial client state equals the server render: the cookie hint is on before any query answers", () => {
@@ -287,4 +290,53 @@ it("entering the test mode and starting over both leave the switch off", async (
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
     await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
+});
+
+it.each([true,false])("ends every owned preview run before exiting even when tasks=%s", async tasks => {
+    let finish!: () => void;
+    api.reset.mockImplementation(() => new Promise<void>(resolve => {finish = resolve;}));
+    sessionStorage.setItem(storageKey, JSON.stringify({...state,tasks}));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-active","run-unsolved")));
+    const {client} = view();
+    client.setQueryData(["event-challenge-lab","preview","event-1","task"], {Ready:true});
+    client.setQueryData(["event-own-challenges","event-1"], {Challenges:["competition"]});
+    client.setQueryData(["event-current-user"], {ID:"user-1"});
+    await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
+    await waitFor(() => expect(api.reset).toHaveBeenCalledWith("event-1"));
+    expect(sessionStorage.getItem(storageKey)).not.toBeNull(); expect(api.push).not.toHaveBeenCalledWith("/manage");
+    const busy = screen.getByRole("menuitem", {name:"Виходимо з тестування…"});
+    expect(busy.getAttribute("aria-busy")).toBe("true"); expect(busy.querySelector(".ib-busy-mark")).toBeTruthy();
+    fireEvent.click(busy); expect(api.reset).toHaveBeenCalledTimes(1);
+    await act(async () => {finish();});
+    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
+    expect(readPreviewCookie()).toBeNull(); expect(api.push).toHaveBeenLastCalledWith("/manage");
+    expect(client.getQueryData(["event-challenge-lab","preview","event-1","task"])).toBeUndefined();
+    expect(client.getQueryData(["event-own-challenges","event-1"])).toEqual({Challenges:["competition"]});
+    expect(client.getQueryData(["event-current-user"])).toEqual({ID:"user-1"});
+});
+it("retains test mode and progress on failed exit cleanup and lets the same action retry", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    api.reset.mockRejectedValueOnce(new Error("cleanup refused"));
+    view(); await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Не вдалося завершити тестування. Спробуйте ще раз.");
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(state); expect(api.push).not.toHaveBeenCalledWith("/manage");
+    fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
+    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull()); expect(api.reset).toHaveBeenCalledTimes(2);
+});
+
+it.each(["exit","reset"])("fences delayed starts before final %s cleanup and never starts the next queued lab", async kind => {
+    let launch!: (value: unknown) => void;
+    const order: string[] = [];
+    api.start.mockImplementation(() => new Promise(resolve => {launch = value => {order.push("started"); resolve(value);};}));
+    api.reset.mockImplementation(async () => {order.push("cleanup");});
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a"),dynamic("sel-b")));
+    view(); await waitFor(() => expect(api.start).toHaveBeenCalledTimes(1));
+    await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:kind==="exit"?"Вийти з тестування":"Почати спочатку"}));
+    expect(api.reset).not.toHaveBeenCalled();
+    await act(async () => {launch({ID:"late-run", ExpiresAt:null});});
+    await waitFor(() => expect(api.reset).toHaveBeenCalledTimes(1));
+    expect(order).toEqual(["started","cleanup"]); expect(api.start).toHaveBeenCalledTimes(1);
+    if (kind==="exit") await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
+    else await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
 });
