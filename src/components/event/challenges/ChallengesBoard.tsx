@@ -153,7 +153,7 @@ function PreviewBoard({event}: {event: PublicEventInfo}) {
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={board.data.Challenges.some(item => item.Infrastructure)}>
         <Board eventID={event.EventID} mode="preview" challenges={challenges} teamMode={event.Participation === 1} finished={false}
             showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={preview.config?.HintsDisabled === false} hintChargeMode={preview.config?.HintChargeMode}
-            userID={preview.state?.userID} onRefresh={() => void board.refetch()}
+            userID={preview.state?.userID} banners={<EventBanner title={t("challenges.preview.note")} />} onRefresh={() => void board.refetch()}
             onSolved={(id, result) => {
                 if (!result.Correct) return;
                 const at = new Date().toISOString();
@@ -232,6 +232,8 @@ export function ChallengesBoard() {
     useRefreshFailedToast(challenges.isError && !!challenges.data, challenges.errorUpdatedAt);
     if (!event) return <EventLoading label={t("challenges.loading")} />;
     if (preview.active) {
+        // The test tasks are staff's own: unless «Показати завдання» is off they show whatever the simulated registration, team and event phase say.
+        if (preview.state!.tasks !== false) return <PreviewBoard event={event} />;
         if (preview.state!.status !== 2) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
         if (event.Participation === 1 && !preview.state!.team) return <Page banners={<EventBanner title={t("challenges.noTeam.title")} message={t("challenges.noTeam.message")} action={<Link className="ib-btn ib-btn--sm ib-btn--primary" href="/participation?tab=team">{t("challenges.noTeam.action")}</Link>} />} />;
         if (event.Participation === 1 && !preview.state!.team?.Formed) return <Page><EmptyState message={t("challenges.preparing")} action={<Link className="ib-btn ib-btn--primary" href="/participation?tab=team">{t("challenges.myParticipation")}</Link>} /></Page>;

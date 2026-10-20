@@ -5276,6 +5276,8 @@
   "participantPreview.you": "Ви",
   "participantPreview.member": "Тестовий учасник {number}",
   "participantPreview.addMember": "Додати тестового учасника",
+  "participantPreview.tasks": "Показати завдання",
+  "challenges.preview.note": "Учасники побачать ці завдання лише після старту заходу.",
   "participantPreview.infra": "Запустити інфраструктуру",
   "participantPreview.infra.starting": "Запускаємо інфраструктуру…",
   "participantPreview.infra.stopping": "Зупиняємо інфраструктуру…",
