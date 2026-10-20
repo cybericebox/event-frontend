@@ -109,3 +109,45 @@ it("keeps returnable ended-stage history in all/closed views and excludes it fro
     fireEvent.click(status("Розвʼязані")); expect(names()).toEqual(["Завдання 8"]);
     fireEvent.click(status("Усі")); expect(names()).toEqual(["Завдання 7", "Завдання 8"]);
 });
+
+it("shows Closed only for an actual unsolved closed task and has no task search or view toggle", () => {
+    renderBoard([task(1, 1), task(2, 1, {SolvedAt: "2026-10-01T09:00:00Z", Closed: true})], []);
+    expect(screen.queryByRole("button", {name: "Закриті"})).toBeNull();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(screen.queryByRole("button", {name: "Рейка"})).toBeNull();
+});
+it("reloads the selected group from the URL, ignoring the legacy category parameter", () => {
+    window.history.replaceState(null, "", `/challenges?group=${uuid(501)}&category=${uuid(502)}`);
+    renderBoard([task(1, 1), task(2, 2)], []);
+    expect(names()).toEqual(["Завдання 1"]);
+    cleanup(); window.history.replaceState(null, "", `/challenges?category=${uuid(502)}`);
+    renderBoard([task(1, 1), task(2, 2)], []);
+    expect(names()).toEqual(["Завдання 1", "Завдання 2"]);
+});
+it("keeps fully solved groups as one quiet line under Open, counting practice as solved", () => {
+    renderBoard([task(1, 1, {SolvedAt: "2026-10-01T09:00:00Z", AwardedPoints: 75}), task(2, 1, {Practice: true}), task(3, 2)], []);
+    fireEvent.click(status("Відкриті"));
+    const done=screen.getByRole("region",{name:"Група 1"});
+    expect(done.textContent).toContain("2 / 2"); expect(done.querySelector(".ib-tiles")).toBeNull();
+    expect(names()).toEqual(["Завдання 3"]);
+});
+it("the multi-group menu keeps choices open, searches above its scrolling options and shares repeated URL parameters", async () => {
+    renderBoard([task(1,1),task(2,2,{SolvedAt:"2026-10-01T09:00:00Z"}),task(3,3)],[]);
+    fireEvent.click(screen.getByRole("button",{name:"Група"}));
+    expect(await screen.findByRole("searchbox",{name:"Знайти групу"})).toBeTruthy();
+    fireEvent.click(screen.getByRole("checkbox",{name:/Група 1/}));
+    fireEvent.click(screen.getByRole("checkbox",{name:/Група 2/}));
+    expect(screen.getByRole("checkbox",{name:/Група 1/}).getAttribute("aria-checked")).toBe("true");
+    expect(new URLSearchParams(window.location.search).getAll("group")).toEqual([uuid(501),uuid(502)]);
+    const search=window.location.search;
+    cleanup();window.history.replaceState(null,"","/challenges"+search);
+    renderBoard([task(1,1),task(2,2),task(3,3)],[]);expect(names()).toEqual(["Завдання 1","Завдання 2"]);
+    fireEvent.click(screen.getByRole("button",{name:"Група"}));
+    fireEvent.click(await screen.findByRole("button",{name:/Усі групи/}));expect(names()).toEqual(["Завдання 1","Завдання 2","Завдання 3"]);
+    cleanup();window.history.replaceState(null,"","/challenges");
+    renderBoard(Array.from({length:11},(_,index)=>task(index+1,index+1)),[]);fireEvent.click(screen.getByRole("button",{name:"Група"}));
+    const input=await screen.findByRole("searchbox",{name:"Знайти групу"});fireEvent.change(input,{target:{value:"Група 11"}});
+    expect(screen.getAllByRole("checkbox")).toHaveLength(1);
+    const option=screen.getByRole("checkbox",{name:/Група 11/});fireEvent.click(option);expect(option.getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("searchbox",{name:"Знайти групу"})).toBe(input);
+});

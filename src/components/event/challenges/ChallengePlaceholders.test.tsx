@@ -29,10 +29,11 @@ const challenge = {
     ...fixtureChallenge,
     Snapshot: {
         ...fixtureChallenge.Snapshot,
-        description: {root: {type: "root", children: [{type: "paragraph", children: [text("Відкрийте "), variable("ph_link"), text(" або "), variable("ph_plain"), {type: "link", url: "https://organizer.test/help", children: [text("Довідка")]}]}]}},
+        description: {root: {type: "root", children: [{type: "paragraph", children: [text("Відкрийте "), variable("ph_link"), text(" або "), variable("ph_plain"), variable("ph_external"), {type: "link", url: "https://organizer.test/help", children: [text("Довідка")]}]}, {type: "copy-block",version:1,direction:"ltr",format:"",indent:0,children:[variable("ph_external")]}]}},
         placeholders: [
             {key: "ph_link", kind: "ip", ip_reference: "vpn", last_octet: 5, as_link: true, scheme: "https", port: 8443, path: "/panel"},
             {key: "ph_plain", kind: "ip", ip_reference: "vpn", last_octet: 6},
+            {key: "ph_external", kind: "external.link", device_name: "web"},
         ],
     },
 };
@@ -58,11 +59,11 @@ function scopedModal(client: QueryClient, lifecycle: typeof runningLab) {
 it("renders settled closure before pending runtime and retains results and ordinary organizer links", () => {
     runtimeAPI.mockReturnValue(new Promise(() => {}));
     const {container} = render(scopedModal(new QueryClient(), completedLab));
-    expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy();
+    expect(screen.getByText("Середовище закрито.")).toBeTruthy();
     expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
-    expect(container.querySelector('[data-empty-state]')).toBeTruthy();
+    expect(container.querySelector(".event-cmodal__lab-status")).toBeTruthy();
     expect(runtimeAPI).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", {name: /VPN/})).toBeNull();
+    expect(screen.getByRole("button", {name: "Відкрити VPN"})).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Відкрити"})).toBeNull();
     expect(container.querySelector(".event-loading-logo")).toBeNull();
     expect(screen.getByRole("link", {name: "Довідка"}).getAttribute("href")).toBe("https://organizer.test/help");
@@ -74,19 +75,20 @@ it("never relabels revision 1 access as newer ready revision 3 and reveals actua
     runtimeAPI.mockResolvedValue({...runtimeFixture, Lab: old, Access: access});
     const client = new QueryClient(); const {container} = render(scopedModal(client, fresh));
     await waitFor(() => expect(client.getQueryData<{Lab: typeof old}>(["event-challenge-lab", "participant", "e", challenge.EventChallengeID])?.Lab?.Revision).toBe("1"));
-    expect(container.querySelector(".ib-copy")).toBeNull();
+    expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull();
     expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
     const dialog = container.querySelector("dialog");
     await act(async () => {client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Lab: fresh, Access: [{...access[0], URL: "https://fresh.test"}]});});
     await screen.findByRole("link", {name: "https://10.128.1.5:8443/panel"});
-    expect(container.querySelector(".ib-copy")?.textContent).toContain("https://fresh.test");
+    expect(container.querySelector('.ib-cmodal__desc [data-event-variable="ph_external"]')?.textContent).toContain("https://fresh.test");
+    expect(container.querySelector("[data-copy-block] code")?.textContent).toBe("https://fresh.test");
     expect(container.querySelector("dialog")).toBe(dialog);
 });
 it("an individually solved question keeps matching running environment access", async () => {
     runtimeAPI.mockResolvedValue({...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://fresh.test"}]});
     const {container} = render(scopedModal(new QueryClient(), runningLab));
     await screen.findByRole("link", {name: "https://10.128.1.5:8443/panel"});
-    expect(container.querySelector(".ib-copy")).toBeTruthy(); expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
+    expect(container.querySelector('.ib-cmodal__desc a[data-event-variable="ph_external"]')).toBeTruthy(); expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
 });
 
 it.each([true, false])("canonical task B never exposes cached raw A access (closed=%s)", async closed => {
@@ -95,14 +97,14 @@ it.each([true, false])("canonical task B never exposes cached raw A access (clos
     const client = new QueryClient(); client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
     runtimeAPI.mockReturnValue(new Promise(() => {}));
     const {container} = render(scopedModal(client, canonical));
-    expect(container.querySelector(".ib-copy")).toBeNull(); expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
+    expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull(); expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
     expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
-    if (closed) {expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy(); expect(screen.queryByRole("button", {name: /VPN/})).toBeNull();}
+    if (closed) {expect(screen.getByText("Середовище закрито.")).toBeTruthy(); expect(screen.getByRole("button", {name: "Відкрити VPN"})).toBeTruthy();}
     else {
         const dialog = container.querySelector("dialog");
         await act(async () => {client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Lab: canonical, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://current.test"}]});});
         await screen.findByRole("link", {name: "https://10.128.1.5:8443/panel"});
-        expect(container.querySelector(".ib-copy")?.textContent).toContain("https://current.test"); expect(container.querySelector("dialog")).toBe(dialog);
+        expect(container.querySelector('.ib-cmodal__desc [data-event-variable="ph_external"]')?.textContent).toContain("https://current.test"); expect(container.querySelector("dialog")).toBe(dialog);
     }
 });
 it.each([false, true])("failed refresh with cached runtime forwards error only when access is unusable (matching=%s)", async matching => {
@@ -112,14 +114,14 @@ it.each([false, true])("failed refresh with cached runtime forwards error only w
     runtimeAPI.mockRejectedValue(new Error("offline"));
     const {container} = render(scopedModal(client, current));
     await waitFor(() => expect(client.getQueryState(key)?.status).toBe("error"));
-    if (matching) {expect(container.querySelector(".ib-copy")?.textContent).toContain("https://cached.test"); expect(container.querySelector("[data-load-error]")).toBeNull();}
+    if (matching) {expect(container.querySelector('.ib-cmodal__desc [data-event-variable="ph_external"]')?.textContent).toContain("https://cached.test"); expect(container.querySelector("[data-load-error]")).toBeNull();}
     else {
         const retry = await screen.findByRole("button", {name: "Спробувати ще раз"});
-        expect(container.querySelector("[data-load-error]")).toBeTruthy(); expect(container.querySelector(".event-loading-logo")).toBeNull(); expect(container.querySelector(".ib-copy")).toBeNull();
+        expect(container.querySelector("[data-load-error]")).toBeTruthy(); expect(container.querySelector(".event-loading-logo")).toBeNull(); expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull();
         const dialog = container.querySelector("dialog");
         runtimeAPI.mockResolvedValue({...runtimeFixture, Lab: current, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://refreshed.test"}]});
         fireEvent.click(retry);
-        await waitFor(() => expect(container.querySelector(".ib-copy")?.textContent).toContain("https://refreshed.test"));
+        await waitFor(() => expect(container.querySelector('.ib-cmodal__desc [data-event-variable="ph_external"]')?.textContent).toContain("https://refreshed.test"));
         expect(container.querySelector("[data-load-error]")).toBeNull(); expect(container.querySelector("dialog")).toBe(dialog);
     }
 });
@@ -131,6 +133,6 @@ it("synchronous board ownership B renders closed before old A props update and d
     client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
     runtimeAPI.mockReturnValue(new Promise(() => {}));
     const {container} = render(scopedModal(client, runningLab));
-    expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy();
-    expect(container.querySelector(".ib-copy")).toBeNull(); expect(runtimeAPI).not.toHaveBeenCalled();
+    expect(screen.getByText("Середовище закрито.")).toBeTruthy();
+    expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull(); expect(runtimeAPI).not.toHaveBeenCalled();
 });

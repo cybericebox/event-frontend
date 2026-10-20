@@ -7,6 +7,7 @@ import "@/styles/button.css";
 import "@/styles/link.css";
 import "@/styles/event.css";
 import {useEffect} from "react";
+import {installChunkRecovery} from "@/lib/chunkRecovery";
 import {GeistSans} from "geist/font/sans";
 import {GeistMono} from "geist/font/mono";
 import {EventErrorScreen} from "@/components/event/EventErrorScreen";
@@ -20,6 +21,7 @@ export default function GlobalError({error, retry}: {
     retry: () => void
 }) {
     useEffect(() => {
+        installChunkRecovery(window).recover(error);
         // hydration keeps a server-rendered data-theme; set the saved theme after mount
         applyTheme(readThemeChoice());
         if (process.env.NODE_ENV !== "production") console.error(error);
@@ -35,7 +37,7 @@ export default function GlobalError({error, retry}: {
             <title>{t("error.page.title")}</title>
         </head>
         <body className="event-root" suppressHydrationWarning>
-        <EventErrorScreen onRetry={retry} page />
+        <EventErrorScreen onRetry={() => installChunkRecovery(window).retry(error, retry)} page />
         </body>
         </html>
     );

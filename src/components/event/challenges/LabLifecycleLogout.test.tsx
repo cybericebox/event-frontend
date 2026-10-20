@@ -55,7 +55,7 @@ function Session() {
 beforeAll(() => {
     vi.stubGlobal("ResizeObserver", class {observe() {} disconnect() {}});
     HTMLDialogElement.prototype.showModal = function() {this.setAttribute("open", "");};
-    HTMLDialogElement.prototype.close = function() {this.removeAttribute("open");};
+    HTMLDialogElement.prototype.close = function() {this.removeAttribute("open"); this.dispatchEvent(new Event("close"));};
 });
 afterAll(() => {vi.unstubAllGlobals();});
 afterEach(() => {cleanup(); vi.clearAllMocks(); api.board.mockReset(); api.runtime.mockReset(); api.submit.mockReset(); api.moderators = false;});
@@ -76,6 +76,8 @@ describe("pending lifecycle work across actual account-menu logout", () => {
         fireEvent.click(screen.getByRole("button", {name: "Надіслати"}));
         api.board.mockReturnValue(boardReply.promise);
         void client.refetchQueries({queryKey: [moderators ? "event-moderators-board" : "event-own-challenges", event.EventID], exact: true});
+        // The modal blocks the account menu: close its UI while the request is still pending.
+        fireEvent.click(screen.getByRole("button", {name: t("common.close")}));
         fireEvent.click(screen.getByRole("button", {name: t("account.menu")}));
         await act(async () => {fireEvent.click(screen.getByRole("button", {name: "Вийти"}));});
         expect(screen.getByText("Signed out")).toBeTruthy();

@@ -54,3 +54,14 @@ it("keeps the board and toasts when a background poll fails", async () => {
     expect(screen.getByText("Завдання 1")).toBeTruthy();
     expect(document.querySelector("[data-load-error]")).toBeNull();
 });
+
+ it("totals awarded points after a paid hint and excludes practice solves", async () => {
+    state.board.mockResolvedValue({...board, Challenges: [
+        {...board.Challenges[0], SolvedAt: "2026-10-01T10:00:00Z", Points: 100, AwardedPoints: 75},
+        {...board.Challenges[0], ID: uuid(902), EventChallengeID: uuid(2), Practice: true, SolvedAt: "2026-10-01T10:00:00Z", Points: 500, AwardedPoints: 500},
+    ]});
+    view();
+    await screen.findAllByText("Завдання 1");
+    expect(document.querySelector(".ib-page-header__sub")?.textContent).toContain("75");
+    expect(document.querySelector(".ib-page-header__sub")?.textContent).not.toContain("600");
+});

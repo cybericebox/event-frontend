@@ -114,25 +114,20 @@
     "source": "d21b042ec19b30730591d4d9949e836f1d02725cc2bdc74ba1be3e76d95a1c62",
     "sha": "1a4fa91001e879b2a73ce45abb2ab1ff3d1d8a7b11d8c44cf8d4d25213d1bb34"
   },
-  "category-rail.css": {
-    "kind": "extended",
-    "source": "0fb3974c9d10fed285343bacc62a8b88a8927f5b3974aea687600cb499839bbf",
-    "sha": "8a56c5c72013cae90e111c1d1807c9cddbe9d1eea308991a35612163e9cc3437"
-  },
   "challenge-board.css": {
     "kind": "extended",
     "source": "2ca078b35a68a67f9fd78329d196fb9e2cfce3552775f0dfa1119201a0b2c9cc",
-    "sha": "9e6db22665837536707657691c427b08538fe6a1c1dbcf79a761310d59f81d34"
+    "sha": "3b9f70aad68eab0b0323fb9cf8083b11cafafc0d5473f503a967ea2dc2e7899c"
   },
   "challenge-modal.css": {
     "kind": "extended",
     "source": "257515f64833a7dfa020be8a2ec2c5b6b109f355440914d1205521b2f5ae1027",
-    "sha": "2578589859c4c492736fcf023b363b5a87df526ab99fe788eedea95ee50c5249"
+    "sha": "afc26b12f26d74a31e4c67547375c9522b5324bbe9a526db982e25ead885d3e9"
   },
   "challenge-tile.css": {
     "kind": "extended",
     "source": "c72e4499773a94c23f72a327153480ec6596f3f8a58adb3364412a748715b4b8",
-    "sha": "f4186f5bafcc2bac062b1cb222f4432a44c0d88fdd574e15c2ae0bc36eea42da"
+    "sha": "d1bc7dcec7b16853c56f7a1230dcb2b01d4ee0f2bb8fa9d207d0f2c0285cd091"
   },
   "copy-field.css": {
     "kind": "extended",
@@ -162,7 +157,7 @@
   "select.css": {
     "kind": "extended",
     "source": "7932400b966bfde4452041d8ea2f228b59f037bcc9a0d24d55bacf9f21aec3dd",
-    "sha": "3a4ce6fb1c80e1d9fcac2d5fefc512d00d534cbf30576c11ada746997aad13fc"
+    "sha": "42942aa7f78b5e15e9a28aa7cd9f417343cade14841335ba98f4cfd03c64a8b0"
   },
   "tag.css": {
     "kind": "extended",

@@ -11,7 +11,6 @@ import {getOwnBoard, type BoardStage, type OwnBoard, type OwnChallenge, type Cha
 import {getModeratorsBoard, type ModeratorSubmission} from "@/api/moderatorsBoard";
 import {applySubmission, applyModeratorSubmission, reconcileBoard, reconcileChallenges} from "./labLifecycleCache";
 import {getManageAccess} from "@/api/manage";
-import {getCurrentUser} from "@/api/clientAuth";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {useParticipantPreview} from "@/components/event/ParticipantPreview";
 import {useParticipantContext} from "@/components/event/ParticipantShell";
@@ -26,14 +25,13 @@ import {BoardFilterBar} from "./BoardFilterBar";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventBanner} from "@/components/event/EventBanner";
 import {EventVpnProvider} from "@/components/event/vpn/EventVpn";
-import {RailBoard, TilesBoard} from "./ChallengeBoards";
+import {TilesBoard} from "./ChallengeBoards";
 import {ChallengeModal, type BoardMode} from "./ChallengeModal";
 import type {HintChargeMode} from "./hintModel";
 import {t, tPlural} from "@/i18n/t";
-import {richMessage} from "./richMessage";
 import {
-    applyBoardFilters, boardFilterSearch, boardViewKey, buildCategories, DEFAULT_BOARD_FILTERS, formatClock, formatPoints, missingMembers,
-    parseBoardFilters, readBoardView, writeBoardView, type BoardFilters, type BoardView,
+    applyBoardFilters, awardedPoints, boardStatus, boardFilterSearch, buildGroups, DEFAULT_BOARD_FILTERS, formatClock, formatPoints, missingMembers,
+    parseBoardFilters, type BoardFilters,
 } from "./challengeBoardModel";
 
 function useClock(event: PublicEventInfo | null) {
@@ -50,7 +48,7 @@ function useClock(event: PublicEventInfo | null) {
     return {started, finished};
 }
 
-// The stage, status and category filters live in the URL (?stage=…&status=…&category=…), so a reload or a link keeps them.
+// The stage, status and group filters live in the URL (?stage=…&status=…&group=…), so a reload or a link keeps them.
 function useBoardFilters(): [BoardFilters, (next: BoardFilters) => void] {
     const [filters, setFilters] = useState<BoardFilters>(() => parseBoardFilters(typeof window === "undefined" ? "" : window.location.search));
     const update = (next: BoardFilters) => {
@@ -69,15 +67,13 @@ function useRefreshFailedToast(failed: boolean, at: number) {
     }, [failed, at]);
 }
 
-function Page({banners, sub, view, onView, countdown, children}: {banners?: ReactNode; sub?: ReactNode; view?: BoardView; onView?: (view: BoardView) => void; countdown?: ReactNode; children?: ReactNode}) {
+function Page({banners, sub, countdown, children}: {banners?: ReactNode; sub?: ReactNode; countdown?: ReactNode; children?: ReactNode}) {
     return <div className="event-challenges">
         {banners && <div className="ib-banner-stack event-challenges__banners">{banners}</div>}
         <header className="ib-page-header">
             <div className="ib-page-header__top">
-                <div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("challenges.title")}</h1>{sub && <p className="ib-page-header__sub">{sub}</p>}</div>
-                {view && onView && <div className="ib-page-header__actions"><div className="ib-seg" role="group" aria-label={t("challenges.view")}>
-                    {([["tiles", "challenges.view.tiles"], ["rail", "challenges.view.rail"]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={view === value} onClick={() => onView(value)}>{t(label)}</button>)}
-                </div></div>}
+                <div className="ib-page-header__heading"><h1 className="ib-page-header__title">{t("challenges.title")}</h1></div>{sub && <div className="ib-page-header__sub event-board-summary">{sub}</div>}
+
             </div>
         </header>
         {countdown}
@@ -85,14 +81,10 @@ function Page({banners, sub, view, onView, countdown, children}: {banners?: Reac
     </div>;
 }
 
-export function Board({eventID, mode, challenges, stages = [], nextOpensAt = null, teamMode, finished, showDifficulty, showHints, hintChargeMode, userID, onRefresh, onSolved, banners, countdown}: {
+export function Board({eventID, mode, challenges, stages = [], nextOpensAt = null, teamMode, finished, showDifficulty, showHints, hintChargeMode, onRefresh, onSolved, banners, countdown}: {
     eventID: string; mode: BoardMode; challenges: OwnChallenge[]; stages?: BoardStage[]; nextOpensAt?: string | null; teamMode: boolean; finished: boolean;
-    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; userID?: string; onRefresh: () => void; onSolved?: (challengeID: string, result: ChallengeSubmission | ModeratorSubmission) => void; banners?: ReactNode; countdown?: ReactNode;
+    showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; onRefresh: () => void; onSolved?: (challengeID: string, result: ChallengeSubmission | ModeratorSubmission) => void; banners?: ReactNode; countdown?: ReactNode;
 }) {
-    const key = boardViewKey(userID);
-    // The board renders only after client-side queries, so reading storage here never races hydration.
-    const [choice, setChoice] = useState<{key: string; view: BoardView} | null>(null);
-    const view = choice?.key === key ? choice.view : readBoardView(typeof window === "undefined" ? undefined : window.localStorage, key);
     const [selectedID, setSelectedID] = useState<string | null>(null);
     const [acceptedID, setAcceptedID] = useState<string | null>(null);
     useEffect(() => {
@@ -101,31 +93,26 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
         return () => window.clearTimeout(timer);
     }, [acceptedID]);
     const [filters, setFilters] = useBoardFilters();
-    // A category groups only the tasks that pass the filters, so a group with nothing to show never appears.
+    const groups = useMemo(() => buildGroups(challenges), [challenges]);
+    const stageGroups = useMemo(() => buildGroups(applyBoardFilters(challenges, {...filters, status: ""}, stages)), [challenges, filters, stages]);
     const visible = useMemo(() => applyBoardFilters(challenges, filters, stages), [challenges, filters, stages]);
-    const categories = useMemo(() => buildCategories(visible), [visible]);
-    const category = categories.some(item => item.key === filters.category) ? filters.category : "";
+    const shownGroups = stageGroups.map(group => ({...group, visible: visible.filter(task => (task.GroupID ?? "ungrouped") === group.key)}))
+        .filter(group => group.visible.length > 0 || filters.status === "open" && group.challenges.every(task => boardStatus(task, stages) === "solved"));
     const selected = challenges.find(item => item.EventChallengeID === selectedID) ?? null;
-    const toolbar = <BoardFilterBar filters={filters} stages={stages} hasUnstaged={challenges.some(item => !item.StageID)} onChange={setFilters} />;
+    const toolbar = <BoardFilterBar filters={filters} stages={stages} groups={groups} hasClosed={challenges.some(item => boardStatus(item, stages) === "closed")} hasUnstaged={challenges.some(item => !item.StageID)} onChange={setFilters} />;
     const emptyMessage = nextOpensAt && (filters.status === "" || filters.status === "open") && !filters.stage
         ? t("challenges.stage.emptyBreak", {time: formatClock(nextOpensAt)})
         : t("challenges.filter.empty");
-    const solved = challenges.filter(item => item.SolvedAt);
-    const points = solved.reduce((sum, item) => sum + item.Points, 0);
+    const solved = challenges.filter(item => item.SolvedAt || item.Practice);
+    const points = solved.reduce((sum, item) => sum + (item.Practice ? 0 : awardedPoints(item)), 0);
     const preview = useParticipantPreview(eventID);
     const sub = mode === "moderators" && !preview.active
         ? tPlural("challenges.sub.moderators", challenges.length)
-        : richMessage(t("challenges.sub.progress"), {solved: <span className="ib-num">{solved.length}</span>, total: <span className="ib-num">{challenges.length}</span>, points: <span className="ib-num">{formatPoints(points)}</span>});
-    const changeView = (next: BoardView) => {
-        setChoice({key, view: next});
-        writeBoardView(window.localStorage, key, next);
-    };
+        : <dl className="event-board-stats"><div><dt>{t("challenges.stats.points")}</dt><dd>{formatPoints(points)}</dd></div><div><dt>{t("challenges.stats.solved")}</dt><dd>{solved.length}<small> / {challenges.length}</small></dd></div></dl>;
     const open = (challenge: OwnChallenge) => setSelectedID(challenge.EventChallengeID);
-    const board = {categories, acceptedID, onOpen: open, toolbar, category, onCategory: (key: string) => setFilters({...filters, category: key}), emptyMessage, onResetFilters: () => setFilters(DEFAULT_BOARD_FILTERS)};
-    return <Page banners={banners} countdown={countdown} sub={challenges.length ? sub : undefined} view={challenges.length ? view : undefined} onView={changeView}>
-        {!challenges.length ? <EmptyState message={t("challenges.emptyMessage")} />
-            : view === "rail" ? <RailBoard {...board} />
-            : <TilesBoard {...board} />}
+    const board = {groups: shownGroups, showDifficulty, acceptedID, onOpen: open, toolbar, emptyMessage, onResetFilters: () => setFilters(DEFAULT_BOARD_FILTERS)};
+    return <Page banners={banners} countdown={countdown} sub={challenges.length ? sub : undefined}>
+        {!challenges.length ? <EmptyState message={t("challenges.emptyMessage")} /> : <TilesBoard {...board} />}
         <ChallengeModal challenge={selected} stage={stages.find(item => item.ID === selected?.StageID) ?? null} eventID={eventID} mode={mode} teamMode={teamMode} finished={finished}
             showDifficulty={showDifficulty} showHints={showHints} hintChargeMode={hintChargeMode}
             onClose={() => setSelectedID(null)}
@@ -150,7 +137,7 @@ function PreviewBoard({event}: {event: PublicEventInfo}) {
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={board.data.Challenges.some(item => item.Infrastructure)}>
         <Board eventID={event.EventID} mode="preview" challenges={challenges} teamMode={event.Participation === 1} finished={false}
             showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={preview.config?.HintsDisabled === false} hintChargeMode={preview.config?.HintChargeMode}
-            userID={preview.state?.userID} banners={<EventBanner title={t("challenges.preview.note")} />} onRefresh={() => void board.refetch()}
+            banners={<EventBanner title={t("challenges.preview.note")} />} onRefresh={() => void board.refetch()}
             onSolved={(id, result) => {
                 if (!result.Correct) return;
                 const at = new Date().toISOString();
@@ -163,7 +150,6 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     const preview = useParticipantPreview(event.EventID);
     const queryClient = useQueryClient();
     const access = useQuery({queryKey: ["event-management-access", event.EventID], queryFn: () => getManageAccess(event.EventID), retry: false, refetchOnWindowFocus: false});
-    const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
     const board = useQuery({queryKey: ["event-moderators-board", event.EventID], queryFn: async ({signal}) => {
         const response = await getModeratorsBoard(event.EventID);
         signal.throwIfAborted();
@@ -182,7 +168,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     }
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={access.data.InfrastructureAllowed && board.data.some(item => item.Infrastructure)} moderators>
         <Board eventID={event.EventID} mode="moderators" challenges={board.data} teamMode={event.Participation === 1} finished={finished} showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={!(preview.config?.HintsDisabled ?? false)} hintChargeMode={preview.config?.HintChargeMode}
-            userID={user.data?.ID} onRefresh={() => void board.refetch()} banners={banner}
+            onRefresh={() => void board.refetch()} banners={banner}
             onSolved={(id, result) => applyModeratorSubmission(queryClient, event.EventID, id, result, new Date().toISOString())} />
     </EventVpnProvider>;
 }
@@ -212,7 +198,6 @@ export function ChallengesBoard() {
         retry: false,
         refetchInterval: 30000,
     });
-    const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, enabled: !!participant, retry: false, refetchOnWindowFocus: false});
     // The stage clocks count against the server's time; the board is refetched at the next stage boundary, so it never polls for it.
     const board: OwnBoard | undefined = challenges.data;
     const offset = board ? Date.parse(board.ServerNow) - challenges.dataUpdatedAt : 0;
@@ -267,7 +252,7 @@ export function ChallengesBoard() {
     }
 
     return <Board eventID={event.EventID} mode="participant" challenges={challenges.data.Challenges} stages={challenges.data.Stages} nextOpensAt={challenges.data.NextOpensAt} teamMode={teamMode} finished={finished}
-        showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode} userID={user.data?.ID}
+        showDifficulty={info?.ShowDifficulty ?? true} showHints={!(info?.HintsDisabled ?? false)} hintChargeMode={info?.HintChargeMode}
         onRefresh={() => void challenges.refetch()} banners={finishedBanner || undefined} countdown={countdown}
         onSolved={(id, result) => applySubmission(queryClient, event.EventID, id, {...result, Practice: "Practice" in result && result.Practice}, new Date().toISOString())} />;
 }

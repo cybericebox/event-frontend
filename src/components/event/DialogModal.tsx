@@ -1,5 +1,6 @@
 "use client";
 
+import {useNativeDialogLayer} from "@/components/ui/useNativeDialogLayer";
 import {useEffect, useId, useRef, type ReactNode} from "react";
 import {X} from "lucide-react";
 import {t} from "@/i18n/t";
@@ -30,9 +31,10 @@ export function DialogModal({open, onClose, title, description, size = "sm", foo
             dialog.close();
         }
     }, [open]);
-    return <dialog ref={ref} className={`ib-modal event-dialog${size === "sm" ? " ib-modal--sm" : size === "lg" ? " event-dialog--lg" : ""}`} aria-labelledby={titleID}
-        onClose={() => { onClose(); if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus(); }}
-        onCancel={event => { event.preventDefault(); onClose(); }}
+    const releaseDialogLayer = useNativeDialogLayer(ref, open);
+    return <dialog ref={ref} className={`ib-modal event-dialog${size === "sm" ? " ib-modal--sm" : size === "lg" ? " event-dialog--lg" : ""}`} role="dialog" aria-modal="true" aria-labelledby={titleID}
+        onClose={event => { if (event.target !== ref.current) return; releaseDialogLayer(); onClose(); if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus(); }}
+        onCancel={event => { if (event.target !== ref.current) return; event.preventDefault(); onClose(); }}
         onClick={event => {
             if (event.target !== ref.current) return;
             const box = ref.current.getBoundingClientRect();

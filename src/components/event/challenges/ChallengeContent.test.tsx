@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {readFileSync} from "node:fs";
 import {resolve} from "node:path";
 import {ChallengeTile} from "./ChallengeTile";
-import {fixtureChallenge, fixtureTiles, LONG_CATEGORY, LONG_CODE_LINE, LONG_TITLE, LONG_URL, LONG_WORD} from "./fixtures/challengeFixture";
+import {fixtureChallenge, fixtureTiles, LONG_CODE_LINE, LONG_TITLE, LONG_URL, LONG_WORD} from "./fixtures/challengeFixture";
 
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: true, openVpn: () => {}})}));
 vi.mock("@/utils/origins", async importOriginal => ({...await importOriginal<typeof import("@/utils/origins")>(), requireApiOrigin: () => "https://api.test"}));
@@ -85,12 +85,11 @@ describe("challenge modal content", () => {
         const {container} = renderModal();
         const meta = container.querySelector(".ib-cmodal__meta")!;
         expect(meta.querySelectorAll(".ib-tag").length).toBeGreaterThanOrEqual(4);
-        expect(meta.querySelector(".event-vpn-badge")).toBeTruthy();
+        expect(meta.querySelector(".event-cmodal__lab-tag")).toBeTruthy();
         expect(container.querySelector(".ib-cmodal__title")!.textContent).toBe(LONG_TITLE);
-        expect(meta.querySelector(".ib-cmodal__cat span")!.textContent).toBe(LONG_CATEGORY);
+        expect(meta.querySelector(".ib-cmodal__cat")).toBeNull();
         const modal = css("challenge-modal.css");
-        expect(modal).toMatch(/\.ib-cmodal__meta\{[^}]*flex-wrap:wrap/);
-        expect(modal).toMatch(/\.ib-cmodal__cat>span\{[^}]*text-overflow:ellipsis/);
+        expect(modal).toMatch(/\.ib-cmodal__meta\{[^}]*flex-wrap:nowrap/);
         expect(modal).toMatch(/\.ib-cmodal__title\{[^}]*overflow-wrap:anywhere/);
         expect(css("tag.css")).toMatch(/\.ib-tag\{[^}]*max-width:100%/);
     });
@@ -104,7 +103,7 @@ describe("challenge tiles", () => {
         expect(container.querySelectorAll(".ib-tile.is-locked").length).toBeGreaterThan(0);
         const tile = css("challenge-tile.css");
         expect(tile).toMatch(/\.ib-tile__name\{[^}]*-webkit-line-clamp:2[^}]*overflow-wrap:anywhere/);
-        expect(tile).toMatch(/\.ib-tiles\{[^}]*minmax\(min\(152px,100%\),1fr\)/);
+        expect(tile).toContain("repeat(auto-fill,208px)");
     });
     it("a state under the page header fills the page and centers, not just the top-left corner", () => {
         const page = css("event-participant.css");
@@ -114,7 +113,6 @@ describe("challenge tiles", () => {
     it("category headers truncate with a tooltip", () => {
         const board = css("challenge-board.css");
         expect(board).toMatch(/\.ib-board__cat h3\{[^}]*text-overflow:ellipsis/);
-        expect(board).toMatch(/\.ib-board__chip-name\{[^}]*text-overflow:ellipsis/);
     });
 });
 
@@ -125,4 +123,23 @@ describe("rich text view css", () => {
             for (const line of quote) expect(line).not.toMatch(/border-left|box-shadow/);
         }
     });
+});
+
+it("keeps task card sizing consistent and layers dropdown portals above sticky cards", () => {
+    expect(css("challenge-tile.css")).toContain("repeat(auto-fill,208px)");
+    expect(css("event-participant.css")).toMatch(/\.event-board__groups\{z-index:80/);
+    expect(css("select.css")).toMatch(/\.event-select__menu\{z-index:80/);
+});
+
+it("uses the selected two-column card with numeric points and optional difficulty metadata", () => {
+    const {container,rerender}=render(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null,Infrastructure:true}} showDifficulty={false} onOpen={()=>{}}/>);
+    let tile=container.querySelector(".ib-tile")!;
+    expect(tile.querySelector(".ib-tile__pts")?.textContent).toBe("1250");
+    expect(tile.querySelector(".lucide-network")).toBeTruthy();expect(tile.querySelector(".ib-tile__difficulty")).toBeNull();
+    expect(tile.getAttribute("aria-label")).toContain("балів");
+    rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null,Infrastructure:false}} showDifficulty={false} onOpen={()=>{}}/>);
+    tile=container.querySelector(".ib-tile")!;expect(tile.className).toContain("ib-tile--title-only");
+    expect(tile.querySelector(".ib-tile__foot")).toBeNull();
+    rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null}} showDifficulty onOpen={()=>{}}/>);
+    expect(container.querySelector(".ib-tile__difficulty")?.textContent).toBe("Складне");
 });

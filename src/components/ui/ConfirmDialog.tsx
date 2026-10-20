@@ -1,5 +1,6 @@
 "use client";
 
+import {useNativeDialogLayer} from "@/components/ui/useNativeDialogLayer";
 import {useEffect, useId, useRef, type ReactNode} from "react";
 import {t} from "@/i18n/t";
 import {EventButton} from "./EventButton";
@@ -52,6 +53,8 @@ export function ConfirmDialog({open, onCancel, title, description, subject, conf
         }
     }, [open]);
 
+    useNativeDialogLayer(ref, open);
+
     // Window capture runs before document listeners (Radix closes its dialog
     // on Esc there), so only this dialog reacts.
     useEffect(() => {
@@ -68,7 +71,7 @@ export function ConfirmDialog({open, onCancel, title, description, subject, conf
 
     return <dialog ref={ref} className="ib-modal ib-modal--sm event-confirm" role="alertdialog" aria-modal="true"
         aria-labelledby={titleID} aria-describedby={description ? descriptionID : undefined}
-        onCancel={event => {event.preventDefault(); cancel();}}
+        onCancel={event => {if (event.target !== ref.current) return; event.preventDefault(); cancel();}}
         onClick={event => {
             if (event.target !== ref.current) return;
             const box = ref.current.getBoundingClientRect();

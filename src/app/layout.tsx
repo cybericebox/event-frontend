@@ -39,7 +39,6 @@ import "@/styles/consent.css";
 import "@/styles/page-header.css";
 import "@/styles/challenge-tile.css";
 import "@/styles/challenge-board.css";
-import "@/styles/category-rail.css";
 import "@/styles/challenge-modal.css";
 import "@/styles/event-participant.css";
 import "@/styles/event-participation.css";
@@ -71,6 +70,8 @@ import {PREVIEW_COOKIE, parsePreviewCookie} from "@/utils/previewCookie";
 import {getPublicEventInfo, PublicEventError} from "@/api/publicEventInfo";
 import {getGrantedEvent} from "@/api/grantedEvent";
 import {loadFailure} from "@/utils/loadFailure";
+import {ChunkRecovery} from "@/components/ChunkRecovery";
+import {CHUNK_RECOVERY_BOOT_SCRIPT} from "@/lib/chunkRecovery";
 import {THEME_BOOT_SCRIPT} from "@/utils/theme";
 import {preload} from "react-dom";
 import {EventBrandProvider} from "@/components/event/EventBrandLogo";
@@ -178,10 +179,12 @@ export default async function RootLayout({
     return (
         <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} suppressHydrationWarning>
         <head>
+            <script nonce={nonce} dangerouslySetInnerHTML={{__html: CHUNK_RECOVERY_BOOT_SCRIPT}} />
             <script nonce={nonce} dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} />
             {brandUnknown && <script nonce={nonce} dangerouslySetInnerHTML={{__html: FAVICON_BOOT_SCRIPT}} />}
         </head>
         <body className="event-root">
+        <ChunkRecovery />
         <Providers>
             <EventBrandProvider logoURL={brandUnknown ? null : known?.LogoURL ?? ""} faviconURL={known?.FaviconURL} name={known?.Name ?? ""} persist={!event && !!known}>
             <AppShell previewCookie={previewCookie} event={event} privateEvent={privateEvent ?? undefined} unavailable={unavailable} failure={failure}>

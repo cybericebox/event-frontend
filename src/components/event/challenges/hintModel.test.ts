@@ -81,10 +81,10 @@ describe("hint text and level", () => {
         expect(hintDocument(JSON.stringify({text: "x"}))).toBeNull();
     });
 
-    it("drops text alignment but keeps text formats", () => {
+    it("preserves authored alignment and text formatting like a task description", () => {
         const aligned = {root: {type: "root", format: "", children: [{type: "paragraph", format: "center", children: [{type: "text", text: "x", format: 1}]}]}};
         const read = hintDocument(JSON.stringify(aligned)) as typeof aligned;
-        expect(read.root.children[0].format).toBe("");
+        expect(read.root.children[0].format).toBe("center");
         expect(read.root.children[0].children[0].format).toBe(1);
     });
 

@@ -8,6 +8,7 @@ import {labLifecycleKey} from "./labLifecycleCache";
 import {labAccessScope, taskBoardKey} from "./labAccessScope";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {openLabLink, ParticipantChallengeError, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
+import {proxyDestinationURL} from "@/components/event/content/proxyDestination";
 import {t} from "@/i18n/t";
 
 import {useParticipantPreview} from "../ParticipantPreview";
@@ -35,14 +36,14 @@ export function labLinkErrorMessage(error: unknown): string {
 // synchronously inside the click, before the request, so the browser treats it as
 // user-initiated; its location is set once the link arrives.
 export function useLabLink(eventID: string, challengeID: string | undefined, moderators = false, lifecycle?: LabLifecycle, withdrawn = false, previewSelectionID?: string): {
-    state: LabLinkState; busyKey: string | null; open: (device: string, port: number) => void; retry: () => void;
+    state: LabLinkState; busyKey: string | null; open: (device: string, port: number, destinationURL?: string) => void; retry: () => void;
 } {
     const client = useQueryClient();
     const preview = useParticipantPreview(eventID).active || previewSelectionID !== undefined;
     const mode: BoardMode = preview ? "preview" : moderators ? "moderators" : "participant";
     const [state, setState] = useState<LabLinkState>({status: "idle"});
     const [busyKey, setBusyKey] = useState<string | null>(null);
-    const last = useRef<{device: string; port: number} | null>(null);
+    const last = useRef<{device: string; port: number; destinationURL?: string} | null>(null);
     const current = useRef({eventID, challengeID, moderators, lifecycle, withdrawn, previewSelectionID, mode});
     const pending = useRef<{tab: Window; cancelled: boolean; previewRunID?: string | null} | null>(null);
 
@@ -95,11 +96,11 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
         return () => {unsubscribe(); cancel();};
     }, [client, latestScope, eventID, challengeID, moderators, lifecycle?.ID, lifecycle?.Revision, lifecycle?.LogicalClosed, lifecycle?.RuntimeState, withdrawn, mode]);
 
-    function open(device: string, port: number) {
+    function open(device: string, port: number, destinationURL?: string) {
         const latest = latestScope();
         if (latest.withdrawn || !latest.challengeID || latest.identityMismatch || pending.current || (latest.lifecycle && (latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"))) return;
         const requested = {...latest, revision: latest.lifecycle?.Revision ?? null};
-        last.current = {device, port};
+        last.current = {device, port, destinationURL};
         const tab = window.open("about:blank", "_blank");
         if (!tab) {
             setState({status: "error", error: new PopupBlockedError()});
@@ -133,7 +134,7 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
                 if (active()) {last.current = null; setState({status: "idle"});}
                 return;
             }
-            tab.location.href = link.url;
+            tab.location.href = proxyDestinationURL(link.url, destinationURL);
             setState({status: "idle"});
         }).catch(error => {
             tab.close();
@@ -150,5 +151,5 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
         });
     }
 
-    return {state, busyKey, open, retry: () => { if (last.current) open(last.current.device, last.current.port); }};
+    return {state, busyKey, open, retry: () => { if (last.current) open(last.current.device, last.current.port, last.current.destinationURL); }};
 }

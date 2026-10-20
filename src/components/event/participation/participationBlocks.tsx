@@ -70,9 +70,9 @@ export function PointsChartCard({event, title, state, series, window, error, onR
 
 export function CategoryChartCard({event, state, solves, color, error, onRetry}: {event: PublicEventInfo; state: ChartState; solves: ParticipationSolve[]; color: string; error?: unknown; onRetry?: () => void}) {
     const shares = categoryBreakdown(solves);
-    return <Card title={t("participation.chart.category.title")} flush>
-        <AnalyticsChart event={event} state={state} option={state === "ready" ? categoryChartOption(shares, color) : undefined} height={300} ariaLabel={t("participation.chart.category.title")}
-            loadingLabel={t("participation.chart.loading")} errorMessage={t("participation.chart.failed")} emptyMessage={t("participation.chart.category.empty")} onRetry={onRetry} error={error} />
+    return <Card title={t("participation.chart.group.title")} flush>
+        <AnalyticsChart event={event} state={state} option={state === "ready" ? categoryChartOption(shares, color) : undefined} height={300} ariaLabel={t("participation.chart.group.title")}
+            loadingLabel={t("participation.chart.loading")} errorMessage={t("participation.chart.failed")} emptyMessage={t("participation.chart.group.empty")} onRetry={onRetry} error={error} />
     </Card>;
 }
 
@@ -108,7 +108,7 @@ export function SolvesTable({event, state, solves, now, showSolver, error, onRet
     return <Card title={title} note={state === "ready" ? t("participation.solves.count", {count: solves.length}) : undefined} flush>
         {state !== "ready" ? <BlockStates state={state} event={event} loadingLabel={t("participation.solves.loading")} errorMessage={t("participation.solves.failed")} emptyMessage={t("participation.solves.empty")} onRetry={onRetry} error={error} height={300} /> : <>
             <div className="event-pp-table__scroll event-pp-table__scroll--solves"><table className="event-pp-table"><thead><tr>
-                <th>{t("participation.solves.task")}</th><th>{t("participation.solves.category")}</th><th className="is-num">{t("participation.solves.points")}</th>
+                <th>{t("participation.solves.task")}</th><th>{t("participation.solves.group")}</th><th className="is-num">{t("participation.solves.points")}</th>
                 {showSolver && <th>{t("participation.solves.solver")}</th>}<th className="is-nowrap">{t("participation.solves.time")}</th>
             </tr></thead><tbody>{rows.slice(0, shown).map(solve => <tr key={`${solve.EventChallengeID}-${solve.SolvedAt}`}>
                 <td><span className="event-pp-table__name">{solve.ChallengeName}{solve.FirstBlood && <FirstSolveBadge />}</span></td>

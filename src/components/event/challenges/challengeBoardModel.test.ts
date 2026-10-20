@@ -1,8 +1,8 @@
 import {describe, expect, it} from "vitest";
 import {challengeSchema, type OwnChallenge} from "@/api/participantChallenges";
 import {
-    attemptsLeft, boardViewKey, NO_SPEND, spendAttempt, buildCategories, formatFileSize, formatPoints, lockedLabel, matchesBoard, missingMembers,
-    readBoardView, restPoints, solvedCount, solvesLabel, writeBoardView,
+    attemptsLeft, NO_SPEND, spendAttempt, buildGroups, formatFileSize, formatPoints, lockedLabel, missingMembers,
+    solvedCount, solvesLabel,
     applyBoardFilters, boardFilterSearch, boardStatus, DEFAULT_BOARD_FILTERS, parseBoardFilters, UNSTAGED,
 } from "./challengeBoardModel";
 
@@ -32,24 +32,15 @@ describe("challenge board model", () => {
         expect(formatFileSize(52_428_800)).toBe("50 МБ");
     });
 
-    it("groups by category order and keeps the organizer's task order", () => {
-        const categories = buildCategories([challenge(1, 2), challenge(2, 1), challenge(3, 1)]);
-        expect(categories.map(item => item.name)).toEqual(["G1", "G2"]);
-        expect(categories[0].challenges.map(item => item.Snapshot.name)).toEqual(["Task 3", "Task 2"]);
+    it("groups by group order and keeps the organizer's task order", () => {
+        const groups = buildGroups([challenge(1, 2), challenge(2, 1), challenge(3, 1)]);
+        expect(groups.map(item => item.name)).toEqual(["G1", "G2"]);
+        expect(groups[0].challenges.map(item => item.Snapshot.name)).toEqual(["Task 3", "Task 2"]);
     });
 
-    it("searches names and categories", () => {
-        const solved = challenge(1, 1, {SolvedAt: "2026-09-26T10:00:00Z"});
-        expect(matchesBoard(solved, "nothing like it")).toBe(false);
-        expect(matchesBoard(solved, "task 1")).toBe(true);
-        expect(matchesBoard(challenge(2, 1), "web", "Web")).toBe(true);
-        expect(matchesBoard(challenge(2, 1), "crypto", "Web")).toBe(false);
-    });
-
-    it("counts solved tasks and the points left", () => {
+    it("counts solved tasks", () => {
         const items = [challenge(1, 1, {SolvedAt: "2026-09-26T10:00:00Z"}), challenge(2, 1), challenge(3, 1)];
         expect(solvedCount(items)).toBe("1 / 3");
-        expect(restPoints(items)).toBe(500);
     });
 
     it("names only unsolved prerequisites on a locked tile", () => {
@@ -58,17 +49,6 @@ describe("challenge board model", () => {
             {EventChallengeID: uuid(2), Name: "SSTI", Solved: false},
         ]});
         expect(lockedLabel(locked)).toBe("Відкриється після: SSTI");
-    });
-
-    it("remembers the board view per user and survives broken storage", () => {
-        const store = new Map<string, string>();
-        const storage = {getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => void store.set(key, value)};
-        writeBoardView(storage, boardViewKey("u1"), "rail");
-        expect(readBoardView(storage, boardViewKey("u1"))).toBe("rail");
-        expect(readBoardView(storage, boardViewKey("u2"))).toBe("tiles");
-        const broken = {getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); }};
-        expect(readBoardView(broken, "k")).toBe("tiles");
-        expect(() => writeBoardView(broken, "k", "rail")).not.toThrow();
     });
 
     it("computes missing members for admission", () => {
@@ -153,15 +133,16 @@ describe("board filters", () => {
         expect(applyBoardFilters(all, {...wide, status: "open"}, stages)).toEqual([unstaged, inOpen]);
     });
 
-    it("groups with no visible task vanish: categories are built from the filtered tasks", () => {
+    it("groups with no visible task vanish: groups are built from the filtered tasks", () => {
         const other = challenge(6, 2, {StageID: closed.ID, Closed: true});
-        const shown = buildCategories(applyBoardFilters([unstaged, other], {...DEFAULT_BOARD_FILTERS, status: "open"}, stages));
+        const shown = buildGroups(applyBoardFilters([unstaged, other], {...DEFAULT_BOARD_FILTERS, status: "open"}, stages));
         expect(shown.map(group => group.name)).toEqual(["G1"]);
     });
 
     it("keeps the filters in the URL and leaves the defaults and other parameters alone", () => {
         expect(parseBoardFilters("")).toEqual(DEFAULT_BOARD_FILTERS);
-        const filters = {stage: closed.ID, status: "closed" as const, category: uuid(7)};
+        expect(parseBoardFilters("?category=old")).toEqual(DEFAULT_BOARD_FILTERS);
+        const filters = {stage: closed.ID, status: "closed" as const, group: [uuid(7)]};
         const search = boardFilterSearch("?x=1", filters);
         expect(parseBoardFilters(search)).toEqual(filters);
         expect(search).toContain("x=1");
@@ -170,4 +151,13 @@ describe("board filters", () => {
         expect(parseBoardFilters("?status=open")).toEqual({...DEFAULT_BOARD_FILTERS, status: "open"});
         expect(parseBoardFilters("?status=bogus&scope=nope")).toEqual(DEFAULT_BOARD_FILTERS);
     });
+});
+
+it("combines repeated group parameters with OR, status and stage with AND", () => {
+ const first=challenge(1,1,{StageID:uuid(91)});const second=challenge(2,2,{StageID:uuid(91)});const third=challenge(3,3,{StageID:uuid(91)});const otherStage=challenge(4,1,{StageID:uuid(92)});
+ const filters=parseBoardFilters(`?group=${uuid(1)}&group=${uuid(2)}&group=${uuid(1)}&stage=${uuid(91)}`);
+ expect(filters.group).toEqual([uuid(1),uuid(2)]);
+ expect(applyBoardFilters([first,second,third,otherStage],filters)).toEqual([first,second]);
+ expect(parseBoardFilters(boardFilterSearch("?keep=1",filters))).toEqual(filters);
+ expect(boardFilterSearch("?group=old&category=legacy",DEFAULT_BOARD_FILTERS)).toBe("");
 });
