@@ -287,3 +287,5 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 :where(.ib-cmodal__body,.event-cmodal__hint-body,.ib-solvers__scroll,.event-board__groups,.event-board__group-options,.event-select__menu)::-webkit-scrollbar-thumb{background:var(--ib-control);border:0;border-radius:999px}
 :where(.ib-cmodal__body,.event-cmodal__hint-body,.ib-solvers__scroll,.event-board__groups,.event-board__group-options,.event-select__menu)::-webkit-scrollbar-thumb:hover{background:var(--ib-dim)}
 @media(forced-colors:active){:where(.ib-cmodal__body,.event-cmodal__hint-body,.ib-solvers__scroll,.event-board__groups,.event-board__group-options,.event-select__menu){scrollbar-color:auto}}
+
+.ib-tile__states .ib-tile__lock svg{margin:0}

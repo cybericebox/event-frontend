@@ -26,7 +26,8 @@
 .ib-tile__lab svg{width:13px;height:13px}
 .ib-tile__difficulty{font-size:10px;color:inherit;opacity:.85}
 .ib-tile__foot .ib-tip{display:inline-flex;min-width:0}
-.ib-tile__pts{display:flex;align-items:center;justify-content:center;align-self:stretch;flex:none;padding-left:8px;border-left:1px solid var(--ib-brand-line);font:var(--ib-w-medium) calc(26px * var(--ib-tile-score-scale,1))/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.5px;color:var(--ib-brand-points);white-space:nowrap}
+.ib-tile__score{position:relative;display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:44px;padding-left:8px;border-left:1px solid var(--ib-brand-line)}
+.ib-tile__pts{display:flex;align-items:center;justify-content:center;flex:none;font:var(--ib-w-medium) calc(26px * var(--ib-tile-score-scale,1))/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.5px;color:var(--ib-brand-points);white-space:nowrap}
 .ib-tile__upd{display:inline-flex;align-items:center;color:inherit}
 .ib-tile__upd>svg{width:12px;height:12px}
 .ib-tile__solved{display:none;align-items:center;gap:var(--ib-1);font-size:10px;font-weight:var(--ib-w-medium);color:var(--ib-ok);white-space:nowrap}
@@ -64,4 +65,11 @@
 
 @media(max-width:560px){.ib-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ib-tile{height:88px}.ib-tile__name{font-size:14px}.ib-tile__pts{font-size:calc(24px * var(--ib-tile-score-scale,1))}}
 
-.ib-tile.is-solved .ib-tile__pts,.ib-tile.is-practice .ib-tile__pts,.ib-tile.is-closed .ib-tile__pts,.ib-tile.is-locked .ib-tile__pts{border-left-color:var(--ib-line)}
+.ib-tile.is-solved .ib-tile__score,.ib-tile.is-practice .ib-tile__score,.ib-tile.is-closed .ib-tile__score,.ib-tile.is-locked .ib-tile__score{border-left-color:var(--ib-line)}
+
+/* Task context stays left; completion/lifecycle states are compact score-column icons. */
+.ib-tile__states{position:absolute;top:0;right:0;display:flex;align-items:center;gap:2px;max-width:44px}
+.ib-tile__states .ib-tip{display:inline-flex;min-width:0}
+.ib-tile__states .ib-tile__solved,.ib-tile__states .ib-tile__closed,.ib-tile__states .ib-tile__practice,.ib-tile__states .ib-tile__lock,.ib-tile__states .ib-tile__upd{display:inline-flex;align-items:center;justify-content:center;flex:none;width:13px;height:13px;min-width:0;padding:0;border:0;overflow:visible}
+.ib-tile__states svg{width:12px;height:12px;flex:none}
+.ib-tile__states .ib-busy-mark{width:13px;height:13px;margin:0}

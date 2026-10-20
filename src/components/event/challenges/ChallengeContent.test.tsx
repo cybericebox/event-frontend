@@ -152,3 +152,20 @@ it("centers a card when an unavailable difficulty produces no visible metadata",
     expect(tile.querySelector(".ib-tile__foot")).toBeNull();
     expect(css("challenge-tile.css")).toContain(".ib-tile--title-only .ib-tile__main{justify-content:center}");
 });
+
+it("keeps solved status in the score column and reserves left metadata only for actual context", () => {
+    const {container}=render(<ChallengeTile challenge={{...fixtureChallenge,Infrastructure:false,ContentUpdatedAt:null}} showDifficulty={false} onOpen={()=>{}}/>);
+    const tile=container.querySelector(".ib-tile")!;
+    expect(tile.className).toContain("ib-tile--title-only");expect(tile.querySelector(".ib-tile__main .ib-tile__foot")).toBeNull();
+    expect(tile.querySelector(".ib-tile__main .ib-tile__solved")).toBeNull();expect(tile.querySelector(".ib-tile__score .ib-tile__solved svg")).toBeTruthy();
+    expect(tile.querySelector(".ib-tile__solved")?.textContent).toBe("");expect(tile.querySelector(".ib-tile__solved")?.getAttribute("aria-label")).toBe("Розвʼязано");
+    expect(tile.getAttribute("aria-label")).toContain("розвʼязано");
+});
+it.each([{Closed:true,Practice:false,Locked:false},{Closed:false,Practice:true,Locked:false},{Closed:false,Practice:false,Locked:true}])("preserves compact state information with a long phone title %o",state=>{
+    const {container}=render(<ChallengeTile challenge={{...fixtureChallenge,...state,SolvedAt:null,Infrastructure:true,Snapshot:{...fixtureChallenge.Snapshot,name:LONG_TITLE}}} showDifficulty onOpen={()=>{}}/>);
+    const tile=container.querySelector(".ib-tile")!;
+    expect(tile.querySelector(".ib-tile__name")?.textContent).toBe(LONG_TITLE);expect(tile.getAttribute("title")).toBe(LONG_TITLE);
+    expect(tile.querySelector(".ib-tile__foot .lucide-network")).toBeTruthy();expect(tile.querySelector(".ib-tile__foot .ib-tile__difficulty")).toBeTruthy();
+    expect(tile.querySelector(".ib-tile__states [role=img]")).toBeTruthy();
+    expect(css("challenge-tile.css")).toContain(".ib-tile{height:88px}");
+});

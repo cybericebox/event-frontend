@@ -1,5 +1,5 @@
 import type {CSSProperties} from "react";
-import {Lock, Network, RefreshCw} from "lucide-react";
+import {CircleSlash, GraduationCap, Lock, Network, RefreshCw} from "lucide-react";
 import type {OwnChallenge} from "@/api/participantChallenges";
 import {t} from "@/i18n/t";
 import {awardedPoints, difficultyLabel, formatClock, lockedLabel} from "./challengeBoardModel";
@@ -29,24 +29,26 @@ export function ChallengeTile({challenge, showDifficulty = true, accepted = fals
         {difficulty && <span className="ib-tile__difficulty">{difficulty}</span>}
     </>;
     const label = challenge.Locked ? lockedLabel(challenge) : "";
-    const hasMetadata = !!(challenge.Infrastructure || difficulty || challenge.Locked || solved || practice || closed || updated);
-    const classes = ["ib-tile", !hasMetadata && "ib-tile--title-only", challenge.Locked && "is-locked", solved && "is-solved", closed && "is-closed", practice && "is-practice", updated && "is-updated", accepted && "is-accepted"].filter(Boolean).join(" ");
+    const hasLeftMetadata = !!(challenge.Infrastructure || difficulty);
+    const classes = ["ib-tile", !hasLeftMetadata && "ib-tile--title-only", challenge.Locked && "is-locked", solved && "is-solved", closed && "is-closed", practice && "is-practice", updated && "is-updated", accepted && "is-accepted"].filter(Boolean).join(" ");
     const card = <button type="button" className={classes} data-challenge-id={challenge.EventChallengeID} title={name} aria-disabled={challenge.Locked || undefined}
         aria-label={[name, pointsLabel(solved ? awardedPoints(challenge) : challenge.Points), challenge.Infrastructure && t("challenges.modal.lab"), difficulty, label, solved && t("challenges.tile.state.solved"), practice && t("challenges.tile.practice"), closed && t("challenges.tile.state.closed"), updated && t("challenges.tile.state.updated")].filter(Boolean).join(", ")}
         onClick={challenge.Locked ? undefined : event => onOpen(challenge, event.currentTarget)}>
         <span className="ib-tile__main">
             <span className="ib-tile__name">{name}</span>
-            {hasMetadata && <span className="ib-tile__foot">
-                {context}
-                {challenge.Locked ? <span className="ib-tile__lock">{challenge.LockedBusy ? <BusyMark /> : <Lock aria-hidden="true" />}{label}</span> : <>
-                    {updated && <EventTooltip content={t("challenges.modal.updatedAt", {time: updated})} silent>{() => <span className="ib-tile__upd"><RefreshCw aria-hidden="true" /><span className="ib-sr">{t("challenges.tile.updated")}</span></span>}</EventTooltip>}
-                    {closed && <span className="ib-tile__closed">{t("challenges.tile.closed")}</span>}
-                    {practice && <EventTooltip content={t("challenges.tile.practice")} silent truncated>{() => <span className="ib-tile__practice">{CHECK}{t("challenges.tile.practice")}</span>}</EventTooltip>}
-                    <span className="ib-tile__solved">{CHECK}<span className="ib-tile__solved-t">{t("challenges.tile.solved")}</span></span>
-                </>}
-            </span>}
+            {hasLeftMetadata && <span className="ib-tile__foot">{context}</span>}
         </span>
-        <span className="ib-tile__pts" style={scoreStyle}>{points}</span>
+        <span className="ib-tile__score">
+            <span className="ib-tile__states">
+                {challenge.Locked ? <EventTooltip content={label} silent>{() => <span className="ib-tile__lock" role="img" aria-label={label}>{challenge.LockedBusy ? <BusyMark /> : <Lock aria-hidden="true" />}</span>}</EventTooltip> : <>
+                    {updated && <EventTooltip content={t("challenges.modal.updatedAt", {time: updated})} silent>{() => <span className="ib-tile__upd" role="img" aria-label={t("challenges.tile.updated")}><RefreshCw aria-hidden="true" /></span>}</EventTooltip>}
+                    {closed && <EventTooltip content={t("challenges.tile.closed")} silent>{() => <span className="ib-tile__closed" role="img" aria-label={t("challenges.tile.closed")}><CircleSlash aria-hidden="true" /><span className="ib-sr">{t("challenges.tile.closed")}</span></span>}</EventTooltip>}
+                    {practice && <EventTooltip content={t("challenges.tile.practice")} silent>{() => <span className="ib-tile__practice" role="img" aria-label={t("challenges.tile.practice")}><GraduationCap aria-hidden="true" /></span>}</EventTooltip>}
+                    {solved && <EventTooltip content={t("challenges.tile.solved")} silent>{() => <span className="ib-tile__solved" role="img" aria-label={t("challenges.tile.solved")}>{CHECK}</span>}</EventTooltip>}
+                </>}
+            </span>
+            <span className="ib-tile__pts" style={scoreStyle}>{points}</span>
+        </span>
     </button>;
     return challenge.Locked ? <EventTooltip content={label} className="ib-tile-tip" silent>{() => card}</EventTooltip> : card;
 }

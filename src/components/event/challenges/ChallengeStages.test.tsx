@@ -96,7 +96,7 @@ describe("the tile of a stage task", () => {
     const open = vi.fn();
     it("marks a closed task and a practice solve", () => {
         render(<ChallengeTile challenge={{...base, Closed: true}} onOpen={open} />);
-        expect(screen.getByText("закрито")).toBeTruthy();
+        expect(screen.getByRole("img", { name: "закрито" })).toBeTruthy();
         cleanup();
         render(<ChallengeTile challenge={{...base, Practice: true}} onOpen={open} />);
         expect(screen.getAllByText("Розвʼязано · не враховується в рейтингу").length).toBeGreaterThan(0);
@@ -105,7 +105,7 @@ describe("the tile of a stage task", () => {
 
     it("keeps the solved state of a closed task", () => {
         render(<ChallengeTile challenge={{...base, Closed: true, SolvedAt: "2026-10-01T09:00:00Z"}} onOpen={open} />);
-        expect(screen.getByText("закрито")).toBeTruthy();
+        expect(screen.getByRole("img", { name: "закрито" })).toBeTruthy();
         expect(screen.getByRole("button").className).toContain("is-solved");
     });
 });

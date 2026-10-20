@@ -12,7 +12,16 @@ export function proxyDestinationURL(authURL: string, destination?: string): stri
     if (!matchesProxyDestination(destination, authURL)) throw new Error("Proxy destination origin changed");
     const target = new URL(destination); const auth = new URL(authURL);
     const next = `${target.pathname}${target.search}${target.hash}`;
-    if (!next.startsWith("/") || next.startsWith("//") || /[\\\r\n]/.test(next)) throw new Error("Invalid proxy destination");
-    if (next !== "/") auth.searchParams.set("next", next);
-    return auth.href;
+    if (next === "/") return auth.href;
+    let decoded = next;
+    for (let pass = 0; pass < 4; pass++) {
+        const unsafeCharacter = [...decoded].some(character => character === "\\" || character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127);
+        if (!decoded.startsWith("/") || decoded.startsWith("//") || unsafeCharacter) throw new Error("Invalid proxy destination");
+        const value = new URL(decoded, auth.origin);
+        if (value.origin !== auth.origin || value.pathname.includes("//") || value.pathname.replace(/\/+$/, "") === "/_auth") throw new Error("Invalid proxy destination");
+        const unescaped = decodeURIComponent(decoded);
+        if (unescaped === decoded) {auth.searchParams.set("next", next); return auth.href;}
+        decoded = unescaped;
+    }
+    throw new Error("Invalid proxy destination");
 }
