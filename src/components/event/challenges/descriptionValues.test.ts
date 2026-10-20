@@ -64,3 +64,7 @@ it.each([completedLab, {...runningLab, Revision: "9007199254740995"}, {...runnin
 it("retains organizer static IP content after closure", () => {
     expect(descriptionValues([ip({ip_reference: "static", octets_1to3: "192.0.2", as_link: true})], runtimeFixture, completedLab).links).toEqual({ph_a: "http://192.0.2.5"});
 });
+
+it("resolves organizer static addresses without an environment", () => {
+    expect(descriptionValues([ip({ip_reference: "static", octets_1to3: "192.0.2", last_octet: 5})], undefined).variables).toEqual({ph_a: "192.0.2.5"});
+});

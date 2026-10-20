@@ -40,6 +40,7 @@ const challenge = {
 
 describe("challenge description placeholders", () => {
     it("shows a link-form IP as a working new-tab link and a plain IP as text", async () => {
+        runtimeAPI.mockResolvedValue({...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://web.test"}]});
         const {container} = render(<QueryClientProvider client={new QueryClient()}>
             <ChallengeModal challenge={challenge} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} />
         </QueryClientProvider>);
@@ -73,7 +74,9 @@ it("never relabels revision 1 access as newer ready revision 3 and reveals actua
     const old = {...runningLab, Revision: "1"}; const fresh = {...runningLab, Revision: "3"};
     const access = [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}];
     runtimeAPI.mockResolvedValue({...runtimeFixture, Lab: old, Access: access});
-    const client = new QueryClient(); const {container} = render(scopedModal(client, fresh));
+    const client = new QueryClient();
+    client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Lab: fresh, Access: [{...access[0], URL: "https://admitted.test"}]});
+    const {container} = render(scopedModal(client, fresh));
     await waitFor(() => expect(client.getQueryData<{Lab: typeof old}>(["event-challenge-lab", "participant", "e", challenge.EventChallengeID])?.Lab?.Revision).toBe("1"));
     expect(container.querySelector('[data-copy-block] button[aria-label="Відкрити в новій вкладці"]')).toBeNull();
     expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
@@ -94,9 +97,15 @@ it("an individually solved question keeps matching running environment access", 
 it.each([true, false])("canonical task B never exposes cached raw A access (closed=%s)", async closed => {
     const canonical = {...runningLab, ID: "00000000-0000-4000-8000-000000000101", Revision: "1", LogicalClosed: closed,
         CloseReason: closed ? "solved" as const : null, RuntimeState: closed ? "closed" as const : "ready" as const};
-    const client = new QueryClient(); client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
+    const client = new QueryClient();
+    const key = ["event-challenge-lab", "participant", "e", challenge.EventChallengeID];
+    const stale = {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]};
+    client.setQueryData(key, closed ? stale : {...stale, Lab: canonical});
     runtimeAPI.mockReturnValue(new Promise(() => {}));
     const {container} = render(scopedModal(client, canonical));
+    // This case exercises an admitted dialog losing current access; initial
+    // admission of a stale identity is covered separately by readiness tests.
+    if (!closed) await act(async () => {client.setQueryData(key, stale);});
     expect(container.querySelector('[data-copy-block] button[aria-label="Відкрити в новій вкладці"]')).toBeNull(); expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
     expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
     if (closed) {expect(screen.getByText("Середовище закрито.")).toBeTruthy(); expect(screen.getByRole("button", {name: "Відкрити VPN"})).toBeTruthy();}
@@ -110,9 +119,11 @@ it.each([true, false])("canonical task B never exposes cached raw A access (clos
 it.each([false, true])("failed refresh with cached runtime forwards error only when access is unusable (matching=%s)", async matching => {
     const current = {...runningLab, Revision: "3"}; const raw = {...runningLab, Revision: matching ? "3" : "1"};
     const key = ["event-challenge-lab", "participant", "e", challenge.EventChallengeID]; const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    client.setQueryData(key, {...runtimeFixture, Lab: raw, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://cached.test"}]});
+    const access = [{Device: "web", Port: 80, Protocol: "http", URL: "https://cached.test"}];
+    client.setQueryData(key, {...runtimeFixture, Lab: current, Access: access});
     runtimeAPI.mockRejectedValue(new Error("offline"));
     const {container} = render(scopedModal(client, current));
+    if (!matching) await act(async () => {client.setQueryData(key, {...runtimeFixture, Lab: raw, Access: access});});
     await waitFor(() => expect(client.getQueryState(key)?.status).toBe("error"));
     if (matching) {expect(container.querySelector('.ib-cmodal__desc [data-event-variable="ph_external"]')?.textContent).toContain("https://cached.test"); expect(container.querySelector("[data-load-error]")).toBeNull();}
     else {

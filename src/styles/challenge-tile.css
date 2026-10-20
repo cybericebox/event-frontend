@@ -12,7 +12,7 @@
 .ib-tile__lab-tip{position:absolute;top:0;right:0;display:flex}
 .ib-tile__lab{display:flex;align-items:center;justify-content:center;width:15px;height:15px;color:inherit}
 .ib-tile__lab svg{width:14px;height:14px}
-.ib-tile.is-solved{background:var(--ib-ok-bg);border-color:var(--ib-ok-bg);color:var(--ib-ink)}
+.ib-tile.is-solved{background:var(--ib-ok-bg);border-color:var(--ib-ok);color:var(--ib-ink)}
 .ib-tile.is-solved .ib-tile__name{font-weight:var(--ib-w-medium)}
 .ib-tile.is-solved .ib-tile__pts{color:var(--ib-ok);font-weight:var(--ib-w-semibold)}
 .ib-tile.is-solved .ib-tile__score{border-left-color:color-mix(in srgb,var(--ib-ok),transparent 68%)}
@@ -20,7 +20,8 @@
 .ib-tile.is-closed .ib-tile__name{font-weight:var(--ib-w-medium)}
 .ib-tile.is-closed .ib-tile__pts{color:var(--ib-dim)}
 .ib-tile.is-closed .ib-tile__score{border-left-color:var(--ib-line)}
-.ib-tile.is-solved:hover,.ib-tile.is-closed:hover{border-color:var(--ib-control)}
+.ib-tile.is-solved:hover{border-color:var(--ib-ok)}
+.ib-tile.is-closed:hover{border-color:var(--ib-control)}
 .ib-tile.is-locked{cursor:not-allowed}
 .ib-tile.is-loading{cursor:wait}
 .ib-tile.is-loading .ib-tile__main,.ib-tile.is-loading .ib-tile__pts,.ib-tile.is-loading .ib-tile__lab-tip{opacity:.25}
