@@ -76,6 +76,10 @@ export async function resetManageEmailTemplate(eventID: string, notificationType
     await request(eventID, `/type/${encodeURIComponent(notificationType)}`, z.unknown().optional(), "DELETE");
 }
 
+export async function deleteManageEmailTemplate(eventID: string, templateID: string): Promise<void> {
+    await request(eventID, `/${encodeURIComponent(templateID)}`, z.unknown().optional(), "DELETE");
+}
+
 // M8: queues the template (event or inherited platform row) to the current
 // user through the regular dispatcher; the result lands in the mail journal.
 export async function sendManageEmailTemplateTest(eventID: string, templateID: string): Promise<{Recipient: string}> {
