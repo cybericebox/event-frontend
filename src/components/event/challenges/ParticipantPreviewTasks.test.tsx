@@ -9,7 +9,8 @@ import {ChallengesBoard} from "./ChallengesBoard";
 import type {OwnChallenge} from "@/api/participantChallenges";
 
 const opened = vi.hoisted(() => vi.fn());
-vi.mock("@/components/event/ParticipantPreview", () => ({useParticipantPreview: () => ({active: true, state: {status: 2, userID: "user", team: null}, config: {HintsDisabled: false}})}));
+const switches = vi.hoisted(() => ({infra: false, busy: null as "starting" | "stopping" | null}));
+vi.mock("@/components/event/ParticipantPreview", () => ({useParticipantPreview: () => ({active: true, state: {status: 2, userID: "user", team: null, infra: switches.infra}, infraBusy: switches.busy, config: {HintsDisabled: false}})}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => null}));
 vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event", Tag: "event", Name: "Event", Participation: 0, StartTime: "2099-10-16T12:00:00Z", FinishTime: null})}));
 vi.mock("@/components/event/PrivateEventBootstrap", () => ({usePrivateEvent: () => null}));
@@ -35,7 +36,7 @@ beforeAll(() => {
     HTMLDialogElement.prototype.showModal = function () {this.setAttribute("open", "");};
     HTMLDialogElement.prototype.close = function () {this.removeAttribute("open");};
 });
-afterEach(() => {cleanup(); fetchMock.mockReset(); opened.mockReset(); vi.restoreAllMocks();});
+afterEach(() => {switches.infra = false; switches.busy = null; cleanup(); fetchMock.mockReset(); opened.mockReset(); vi.restoreAllMocks();});
 function mount(challenge = base) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     client.setQueryData(previewBoardKey("event"), {Challenges: [challenge], Stages: []});
@@ -153,4 +154,40 @@ it("loads the normal participant board from selected preview tasks before the ev
     expect(fetchMock.mock.calls[0][0]).toBe("https://api.test/api/events/event/manage/participant-preview/board");
     expect(client.getQueryData(["event-own-challenges", "event"])).toBeUndefined();
     expect(client.getQueryData(["event-moderators-board", "event"])).toBeUndefined();
+});
+
+let counter = 0;
+const rawId = () => `00000000-0000-4000-8000-${String(++counter).padStart(12, "0")}`;
+const dynamicTask = (name: string, overrides: Partial<OwnChallenge> = {}): OwnChallenge => ({...base, PreviewTaskID: rawId(), Snapshot: {...base.Snapshot, name}, Infrastructure: true, PreviewDynamic: true, ...overrides});
+const mountBoard = (...challenges: OwnChallenge[]) => {
+    fetchMock.mockResolvedValue(reply({ServerNow: "2026-10-16T12:00:00Z", Challenges: challenges.map(task => ({...task, ID: task.PreviewTaskID, EventChallengeID: task.PreviewTaskID}))}));
+    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ChallengesBoard /></QueryClientProvider>);
+};
+
+it("lists a dynamic task as a closed card until the infrastructure runs, and keeps static tasks open", async () => {
+    mountBoard(dynamicTask("Web lab"), {...base, Snapshot: {...base.Snapshot, name: "Static task"}, PreviewTaskID: rawId()});
+    const card = await screen.findByRole("button", {name: /^Web lab/});
+    expect(card.getAttribute("aria-disabled")).toBe("true");
+    expect(card.textContent).toContain("Запустіть інфраструктуру, щоб відкрити це завдання");
+    fireEvent.click(card);
+    expect(document.querySelector("dialog[open]")).toBeNull();
+    expect(screen.getByRole("button", {name: /^Static task/}).getAttribute("aria-disabled")).toBeNull();
+});
+
+it("shows the launch in progress on the card with the loader, then opens it as a normal card", async () => {
+    switches.infra = true; switches.busy = "starting";
+    mountBoard(dynamicTask("Web lab"));
+    const card = await screen.findByRole("button", {name: /^Web lab/});
+    expect(card.getAttribute("aria-disabled")).toBe("true");
+    expect(card.textContent).toContain("Запускаємо інфраструктуру…");
+    expect(card.querySelector(".ib-busy-mark")).toBeTruthy();
+});
+
+it("opens a dynamic task that already has a run even while the switch is off, and one the switch could not start", async () => {
+    mountBoard(dynamicTask("Running", {PreviewRunID: "run"}));
+    expect((await screen.findByRole("button", {name: /^Running/})).getAttribute("aria-disabled")).toBeNull();
+    cleanup();
+    switches.infra = true;
+    mountBoard(dynamicTask("Retry"));
+    expect((await screen.findByRole("button", {name: /^Retry/})).getAttribute("aria-disabled")).toBeNull();
 });

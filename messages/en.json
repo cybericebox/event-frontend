@@ -226,6 +226,8 @@
   "challenges.refreshFailed": "Could not refresh the challenges",
   "challenges.loading": "Loading challenges…",
   "challenges.locked.after": "Unlocks after: {names}",
+  "challenges.preview.startInfra": "Run the infrastructure to open this task",
+  "challenges.preview.startingInfra": "Starting infrastructure…",
   "challenges.locked.later": "Unlocks later",
   "challenges.modal.attemptsExhausted": "No attempts left: you can no longer submit a flag for this task.",
   "challenges.modal.attemptsLeft": "Attempts left: {count}",
