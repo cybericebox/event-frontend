@@ -50,6 +50,8 @@ export default function JoinPage() {
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const formRef = useRef<HTMLFormElement>(null);
+    // A click on «Приєднатися» leaves ?continue=<nonce>: a registration without fields is then sent at once.
+    const [auto, setAuto] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("continue"));
 
     useEffect(() => {if (invited) router.replace("/invite");}, [invited, router]);
 
@@ -66,6 +68,8 @@ export default function JoinPage() {
         params.delete("continue");
         window.history.replaceState(null, "", params.size ? `/join?${params}` : "/join");
         if (consumeJoinIntent(event.EventID, nonce)) resume();
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- a forged or stale link must not keep the registering loader
+        else setAuto(false);
     }, [canJoin, event, form.isPending, form.isError, form.data]);
 
     async function submit() {
@@ -90,7 +94,6 @@ export default function JoinPage() {
                 void queryClient.invalidateQueries({queryKey: ["event-own-team", event.EventID]});
             }
             setAnswers({});
-
         } catch (failure) {
             setError(apiErrorText(failure, t("join.failed")));
         } finally {setWorking(false);}
@@ -108,10 +111,11 @@ export default function JoinPage() {
             : failed ? <EventLoadError message={t("join.loadFailed")} error={identity.error ?? join.error ?? registration.error ?? invitation.error ?? form.error} onRetry={() => void (identity.isError ? identity.refetch() : join.isError ? join.refetch() : registration.isError ? registration.refetch() : invitation.isError ? invitation.refetch() : form.refetch())} />
             : !identity.data ? <SignInRedirect event={event} />
             : !register?.Allowed ? <EmptyState message={reasonText(register?.Reason ?? "") || t("join.closed")} />
+            : !form.data?.Enabled && (working || auto) ? <EventLoading event={event} label={t("common.busy.registering")} />
             : <form ref={formRef} className="ib-form" noValidate onSubmit={event => {event.preventDefault(); void submit();}}>
-                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} />}
+                {form.data?.Enabled ? <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} /> : <p>{t("join.confirm.hint")}</p>}
                 {error && <p className="ib-form__error" role="alert">{error}</p>}
-                <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working} busyLabel={t("common.busy.joining")}>{t("shell.join.action")}</EventButton>
+                <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working} busyLabel={t("common.busy.submittingApplication")}>{t(form.data?.Enabled ? "join.submit.action" : "join.confirm.action")}</EventButton>
             </form>}
     </JoinDialog>;
 }
