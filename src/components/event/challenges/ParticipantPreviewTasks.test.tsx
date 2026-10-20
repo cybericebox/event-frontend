@@ -9,9 +9,10 @@ import {ChallengesBoard} from "./ChallengesBoard";
 import type {OwnChallenge} from "@/api/participantChallenges";
 
 const opened = vi.hoisted(() => vi.fn());
-vi.mock("@/components/event/ParticipantPreview", () => ({useParticipantPreview: () => ({active: true, state: {status: 2, userID: "user", team: null}, config: {HintsDisabled: false}})}));
+const switches = vi.hoisted(() => ({busy: null as "starting" | "stopping" | null, tasks: true, status: 2, participation: 0, team: null as null | {Formed: boolean}}));
+vi.mock("@/components/event/ParticipantPreview", () => ({useParticipantPreview: () => ({active: true, state: {status: switches.status, userID: "user", team: switches.team, tasks: switches.tasks}, infraBusy: switches.busy, config: {HintsDisabled: false}})}));
 vi.mock("@/components/event/ParticipantShell", () => ({useParticipantContext: () => null}));
-vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event", Tag: "event", Name: "Event", Participation: 0, StartTime: "2099-10-16T12:00:00Z", FinishTime: null})}));
+vi.mock("@/components/event/GuestShell", () => ({useGuestEvent: () => ({EventID: "event", Tag: "event", Name: "Event", Participation: switches.participation, StartTime: "2099-10-16T12:00:00Z", FinishTime: null})}));
 vi.mock("@/components/event/PrivateEventBootstrap", () => ({usePrivateEvent: () => null}));
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: false, openVpn: () => {}}), EventVpnProvider: ({children}: {children: React.ReactNode}) => children}));
 vi.mock("@/api/taskOpenedBeacon", () => ({reportTaskOpened: opened}));
@@ -35,7 +36,7 @@ beforeAll(() => {
     HTMLDialogElement.prototype.showModal = function () {this.setAttribute("open", "");};
     HTMLDialogElement.prototype.close = function () {this.removeAttribute("open");};
 });
-afterEach(() => {cleanup(); fetchMock.mockReset(); opened.mockReset(); vi.restoreAllMocks();});
+afterEach(() => {Object.assign(switches, {busy: null, tasks: true, status: 2, participation: 0, team: null});  cleanup(); fetchMock.mockReset(); opened.mockReset(); vi.restoreAllMocks();});
 function mount(challenge = base) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     client.setQueryData(previewBoardKey("event"), {Challenges: [challenge], Stages: []});
@@ -153,4 +154,53 @@ it("loads the normal participant board from selected preview tasks before the ev
     expect(fetchMock.mock.calls[0][0]).toBe("https://api.test/api/events/event/manage/participant-preview/board");
     expect(client.getQueryData(["event-own-challenges", "event"])).toBeUndefined();
     expect(client.getQueryData(["event-moderators-board", "event"])).toBeUndefined();
+});
+
+let counter = 0;
+const rawId = () => `00000000-0000-4000-8000-${String(++counter).padStart(12, "0")}`;
+const dynamicTask = (name: string, overrides: Partial<OwnChallenge> = {}): OwnChallenge => ({...base, PreviewTaskID: rawId(), Snapshot: {...base.Snapshot, name}, Infrastructure: true, PreviewDynamic: true, ...overrides});
+const mountBoard = (...challenges: OwnChallenge[]) => {
+    fetchMock.mockResolvedValue(reply({ServerNow: "2026-10-16T12:00:00Z", Challenges: challenges.map(task => ({...task, ID: task.PreviewTaskID, EventChallengeID: task.PreviewTaskID}))}));
+    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ChallengesBoard /></QueryClientProvider>);
+};
+
+it("shows a dynamic task without a run as a closed card with the loader while the labs launch, and static tasks stay open", async () => {
+    switches.busy = "starting";
+    mountBoard(dynamicTask("Web lab"), {...base, Snapshot: {...base.Snapshot, name: "Static task"}, PreviewTaskID: rawId()});
+    const card = await screen.findByRole("button", {name: /^Web lab/});
+    expect(card.getAttribute("aria-disabled")).toBe("true");
+    expect(card.textContent).toContain("Запускаємо інфраструктуру…");
+    expect(card.textContent).not.toContain("Запустіть інфраструктуру");
+    expect(card.querySelector(".ib-busy-mark")).toBeTruthy();
+    fireEvent.click(card);
+    expect(document.querySelector("dialog[open]")).toBeNull();
+    expect(screen.getByRole("button", {name: /^Static task/}).getAttribute("aria-disabled")).toBeNull();
+});
+
+it("opens a dynamic task that has a run, and one whose launch failed or ended so its own button can retry", async () => {
+    mountBoard(dynamicTask("Running", {PreviewRunID: "run"}), dynamicTask("Retry"));
+    expect((await screen.findByRole("button", {name: /^Running/})).getAttribute("aria-disabled")).toBeNull();
+    expect(screen.getByRole("button", {name: /^Retry/}).getAttribute("aria-disabled")).toBeNull();
+});
+
+// Test tasks are staff's own: they show whatever the simulated registration, team and event phase say, unless the staff
+// member switches «Показати завдання» off to see the real phase screens.
+it.each([
+    ["simulated registration not finished", {status: 0}],
+    ["no simulated team in a team event", {participation: 1, team: null}],
+    ["a team that is not formed before the start", {participation: 1, team: {Formed: false}}],
+])("shows the test tasks with the note when «Показати завдання» is on and %s", async (_name, patch) => {
+    Object.assign(switches, patch);
+    mountBoard(dynamicTask("Web lab"));
+    expect(await screen.findByRole("button", {name: /^Web lab/})).toBeTruthy();
+    expect(screen.getByText("Учасники побачать ці завдання лише після старту заходу.")).toBeTruthy();
+    expect(screen.queryByText(/Готуємо вашу участь/)).toBeNull();
+});
+
+it("shows the real phase screen when «Показати завдання» is off", async () => {
+    Object.assign(switches, {tasks: false, participation: 1, team: {Formed: false}});
+    mountBoard(dynamicTask("Web lab"));
+    expect(await screen.findByText(/Готуємо вашу участь/)).toBeTruthy();
+    expect(screen.queryByRole("button", {name: /^Web lab/})).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
 });

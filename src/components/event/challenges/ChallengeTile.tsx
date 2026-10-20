@@ -3,6 +3,7 @@ import type {OwnChallenge} from "@/api/participantChallenges";
 import {t} from "@/i18n/t";
 import {awardedPoints, formatClock, lockedLabel} from "./challengeBoardModel";
 import {pointsLabel} from "./hintModel";
+import {BusyMark} from "@/components/ui/EventButton";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const CHECK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
@@ -21,7 +22,7 @@ export function ChallengeTile({challenge, lg = false, accepted = false, onOpen}:
         const label = lockedLabel(challenge);
         return <EventTooltip content={label} className="ib-tile-tip" silent>{() => <button type="button" className={`ib-tile is-locked${size}`} aria-disabled="true" data-challenge-id={challenge.EventChallengeID} aria-label={[name, pointsLabel(challenge.Points), label].join(", ")}>
             <span className="ib-tile__name">{name}</span>
-            <span className="ib-tile__foot"><span className="ib-tile__lock"><Lock aria-hidden="true" />{label}</span></span>
+            <span className="ib-tile__foot"><span className="ib-tile__lock">{challenge.LockedBusy ? <BusyMark /> : <Lock aria-hidden="true" />}{label}</span></span>
         </button>}</EventTooltip>;
     }
     const solved = !!challenge.SolvedAt;

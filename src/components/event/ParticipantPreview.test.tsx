@@ -6,8 +6,11 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {readPreviewCookie} from "@/utils/previewCookie";
 import {ParticipantPreviewProvider, ParticipantPreviewEntry, previewAnswerFile, useParticipantPreview} from "./ParticipantPreview";
 
-const api = vi.hoisted(() => ({pathname: "/join", reset: vi.fn(), toastError: vi.fn(), push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
-vi.mock("@/api/participantPreview", () => ({resetPreviewRuns: api.reset}));
+const api = vi.hoisted(() => ({pathname: "/join", reset: vi.fn(), board: vi.fn(), start: vi.fn(), stop: vi.fn(), toastError: vi.fn(), push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
+vi.mock("@/api/participantPreview", () => ({
+    resetPreviewRuns: api.reset, getPreviewBoard: api.board, startPreviewRun: api.start, stopPreviewRun: api.stop,
+    previewBoardKey: (eventID: string | undefined) => ["event-participant-preview-board", eventID],
+}));
 vi.mock("react-hot-toast", () => ({default: {error: api.toastError}, toast: {error: api.toastError}}));
 vi.mock("next/navigation", () => ({usePathname: () => api.pathname, useRouter: () => ({push: api.push})}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "user-1"})}));
@@ -31,7 +34,7 @@ async function openMenu() {
     return screen.findByRole("menu");
 }
 
-beforeEach(() => {document.cookie = "cib_participant_preview=; Path=/; Max-Age=0"; sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.reset.mockResolvedValue(undefined); api.access.mockResolvedValue({CanManage: true});});
+beforeEach(() => {document.cookie = "cib_participant_preview=; Path=/; Max-Age=0"; sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.board.mockReset(); api.start.mockReset(); api.stop.mockReset(); api.reset.mockResolvedValue(undefined); api.access.mockResolvedValue({CanManage: true});});
 afterEach(cleanup);
 
 it("persists local state, clears owned server runs before resetting registration, and exits to management", async () => {
@@ -196,4 +199,92 @@ it("drops a stale cookie when no valid mode stands behind it", async () => {
     document.cookie = "cib_participant_preview=event-1; Path=/; Secure";
     view();
     await waitFor(() => expect(readPreviewCookie()).toBeNull());
+});
+
+// One switch, «Показати завдання», default off: on shows the test task board and launches the dynamic tasks' labs; off ends them.
+const dynamic = (selection: string, run: string | null = null) => ({PreviewSelectionID: selection, PreviewDynamic: true, PreviewCanStart: true, PreviewRunID: run, Infrastructure: true});
+const staticTask = {PreviewSelectionID: "sel-static", PreviewDynamic: false, PreviewCanStart: true, PreviewRunID: null, Infrastructure: false};
+const boardOf = (...Challenges: object[]) => ({Challenges, Stages: [], ServerNow: "2026-10-20T10:00:00Z"});
+const on = {...state, tasks: true};
+
+it("offers one switch, «Показати завдання», off by default, and no separate infrastructure item", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    api.board.mockResolvedValue(boardOf());
+    view();
+    await openMenu();
+    const item = screen.getByRole("menuitemcheckbox", {name: "Показати завдання"});
+    expect(item.getAttribute("aria-checked")).toBe("false");
+    expect(screen.queryByRole("menuitemcheckbox", {name: /інфраструктуру/})).toBeNull();
+    fireEvent.click(item);
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true));
+});
+
+it("launches only the dynamic tasks without a run once the switch is on, once per task", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a"), dynamic("sel-a"), dynamic("sel-b", "run-b"), staticTask));
+    api.start.mockResolvedValue({ID: "run-a", SelectionID: "sel-a", Dynamic: true, ExpiresAt: "2026-10-20T11:00:00Z"});
+    const {client} = view();
+    await waitFor(() => expect(api.start).toHaveBeenCalledTimes(1));
+    expect(api.start).toHaveBeenCalledWith("event-1", "sel-a");
+    await waitFor(() => expect((client.getQueryData(["event-participant-preview-board", "event-1"]) as {Challenges: {PreviewSelectionID: string; PreviewRunID: string | null}[]}).Challenges.find(task => task.PreviewSelectionID === "sel-a")!.PreviewRunID).toBe("run-a"));
+    // A refetched board where the lease ended must not relaunch it by itself.
+    await act(async () => {await client.refetchQueries({queryKey: ["event-participant-preview-board", "event-1"]});});
+    expect(api.start).toHaveBeenCalledTimes(1);
+});
+
+it("launches nothing while the switch is off, however many dynamic tasks wait", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a")));
+    view();
+    await new Promise(resolve => setTimeout(resolve, 30));
+    expect(api.start).not.toHaveBeenCalled();
+});
+
+it("tells the user once when a launch fails and does not retry in a loop", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a"), dynamic("sel-b")));
+    api.start.mockRejectedValue(new Error("no room"));
+    const {client} = view();
+    await waitFor(() => expect(api.toastError).toHaveBeenCalledTimes(1));
+    await act(async () => {await client.refetchQueries({queryKey: ["event-participant-preview-board", "event-1"]});});
+    expect(api.start).toHaveBeenCalledTimes(1);
+    expect(api.toastError).toHaveBeenCalledTimes(1);
+});
+
+it("ends the running dynamic labs when the switch goes off, shows the work, and keeps static progress", async () => {
+    let finish!: () => void;
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a", "run-a"), dynamic("sel-b"), staticTask));
+    api.stop.mockReturnValue(new Promise<void>(resolve => {finish = resolve;}));
+    api.start.mockResolvedValue({ID: "run-b", SelectionID: "sel-b", Dynamic: true, ExpiresAt: "2026-10-20T11:00:00Z"});
+    view();
+    await waitFor(() => expect(api.start).toHaveBeenCalledTimes(1));
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Показати завдання"}));
+    await waitFor(() => expect(api.stop).toHaveBeenCalled());
+    expect(screen.getByRole("menuitemcheckbox", {name: "Зупиняємо інфраструктуру…"}).getAttribute("aria-busy")).toBe("true");
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true);
+    await act(async () => {finish();});
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
+    expect(api.stop.mock.calls.map(call => call[1]).sort()).toEqual(["sel-a", "sel-b"]);
+    expect(api.reset).not.toHaveBeenCalled();
+});
+
+it("keeps the switch on and says so when ending a lab fails", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a", "run-a")));
+    api.stop.mockRejectedValue(new Error("cleanup failed"));
+    view();
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Показати завдання"}));
+    await waitFor(() => expect(api.toastError).toHaveBeenCalled());
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true);
+});
+
+it("entering the test mode and starting over both leave the switch off", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    view();
+    await openMenu();
+    fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
 });

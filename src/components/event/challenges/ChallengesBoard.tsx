@@ -141,10 +141,16 @@ function PreviewBoard({event}: {event: PublicEventInfo}) {
     const board = useQuery({queryKey: previewBoardKey(event.EventID), queryFn: () => getPreviewBoard(event.EventID), retry: false, refetchInterval: 10000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (!board.data) return <Page>{board.isPending ? <EventLoading label={t("challenges.loading")} /> : <EventLoadError message={t("challenges.loadFailed.title")} error={board.error} onRetry={() => void board.refetch()} />}</Page>;
+    // A dynamic task has no addresses until its lab runs: while «Показати завдання» launches the labs its card shows the loader
+    // and does not open. With no run once the launch is over (failed, ended) it opens, so the task's own start button can retry.
+    const launching = preview.infraBusy === "starting";
+    const challenges = board.data.Challenges.map(task => launching && task.PreviewDynamic && !task.PreviewRunID && task.PreviewCanStart === true
+        ? {...task, Locked: true, LockedNote: t("challenges.preview.startingInfra"), LockedBusy: true}
+        : task);
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={board.data.Challenges.some(item => item.Infrastructure)}>
-        <Board eventID={event.EventID} mode="preview" challenges={board.data.Challenges} teamMode={event.Participation === 1} finished={false}
+        <Board eventID={event.EventID} mode="preview" challenges={challenges} teamMode={event.Participation === 1} finished={false}
             showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={preview.config?.HintsDisabled === false} hintChargeMode={preview.config?.HintChargeMode}
-            userID={preview.state?.userID} onRefresh={() => void board.refetch()}
+            userID={preview.state?.userID} banners={<EventBanner title={t("challenges.preview.note")} />} onRefresh={() => void board.refetch()}
             onSolved={(id, result) => {
                 if (!result.Correct) return;
                 const at = new Date().toISOString();
@@ -223,6 +229,8 @@ export function ChallengesBoard() {
     useRefreshFailedToast(challenges.isError && !!challenges.data, challenges.errorUpdatedAt);
     if (!event) return <EventLoading label={t("challenges.loading")} />;
     if (preview.active) {
+        // The test tasks are staff's own: unless «Показати завдання» is off they show whatever the simulated registration, team and event phase say.
+        if (preview.state!.tasks) return <PreviewBoard event={event} />;
         if (preview.state!.status !== 2) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
         if (event.Participation === 1 && !preview.state!.team) return <Page banners={<EventBanner title={t("challenges.noTeam.title")} message={t("challenges.noTeam.message")} action={<Link className="ib-btn ib-btn--sm ib-btn--primary" href="/participation?tab=team">{t("challenges.noTeam.action")}</Link>} />} />;
         if (event.Participation === 1 && !preview.state!.team?.Formed) return <Page><EmptyState message={t("challenges.preparing")} action={<Link className="ib-btn ib-btn--primary" href="/participation?tab=team">{t("challenges.myParticipation")}</Link>} /></Page>;

@@ -106,6 +106,11 @@ describe("challenge tiles", () => {
         expect(tile).toMatch(/\.ib-tile__name\{[^}]*-webkit-line-clamp:2[^}]*overflow-wrap:anywhere/);
         expect(tile).toMatch(/\.ib-tiles\{[^}]*minmax\(min\(152px,100%\),1fr\)/);
     });
+    it("a state under the page header fills the page and centers, not just the top-left corner", () => {
+        const page = css("event-participant.css");
+        expect(page).toMatch(/\.event-page-content>\.event-challenges\{[^}]*flex:1 0 auto[^}]*width:100%/);
+        expect(page).toMatch(/\.event-challenges>\.event-block-state\{[^}]*align-self:stretch[^}]*width:100%/);
+    });
     it("category headers truncate with a tooltip", () => {
         const board = css("challenge-board.css");
         expect(board).toMatch(/\.ib-board__cat h3\{[^}]*text-overflow:ellipsis/);

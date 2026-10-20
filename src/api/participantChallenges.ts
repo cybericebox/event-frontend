@@ -77,6 +77,9 @@ export const challengeSchema = z.object({
     Infrastructure: z.boolean().default(false),
     HintsEnabled: z.boolean().default(false),
     Locked: z.boolean().default(false),
+    // Client-only, set by the test-mode board: why a locked card waits, and whether a launch is under way.
+    LockedNote: z.string().optional(),
+    LockedBusy: z.boolean().optional(),
     Prerequisites: z.array(prerequisiteSchema).nullish().transform(value => value ?? []),
     Files: z.array(fileSchema).nullish().transform(value => value ?? null),
     SolveCount: z.number().int().nullish().transform(value => value ?? null),
