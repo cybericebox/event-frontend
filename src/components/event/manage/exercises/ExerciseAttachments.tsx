@@ -69,9 +69,14 @@ function actionCopy(action: Action): {title: string; description: string; confir
 
 // «Завдання»: the event's sets, each collapsible, with its tasks as thin rows.
 // What the flag pool means for the teams: already repeating, or how many flags against how many teams.
-function flagRepeatText(repeat: EventExerciseAttachment["FlagsRepeat"], name: string): string | null {
+export function flagRepeatText(repeat: EventExerciseAttachment["FlagsRepeat"], name: string): string | null {
     if (!repeat) return null;
-    return t(`manage.exercises.flagRepeat.${repeat.Reason}`, {name, flags: repeat.Flags, teams: repeat.Teams});
+    // One flag for everyone is its own fact, whatever the team count.
+    if (repeat.Flags === 1) return t("manage.exercises.flagRepeat.single", {name});
+    return t(`manage.exercises.flagRepeat.${repeat.Reason}`, {
+        name, flags: repeat.Flags, teams: repeat.Teams,
+        flagsText: tPlural("manage.exercises.flagRepeat.flags", repeat.Flags), teamsText: tPlural("manage.exercises.flagRepeat.upToTeams", repeat.Teams),
+    });
 }
 
 // The count comes from the board (it follows the toggle at once); before the start nothing is on the participants' board yet.
