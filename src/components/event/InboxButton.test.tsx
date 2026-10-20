@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {ManualDraftProvider, useSessionDraftState} from "./manage/manualDraft";
 import {t} from "@/i18n/t";
 
@@ -99,6 +99,16 @@ describe("inbox", () => {
         api.getInbox.mockImplementationOnce(() => new Promise(() => {}));
         fireEvent.click(screen.getByRole("tab", {name: /Особисті|Особисте/}));
         expect(screen.getByText("Заявка a")).toBeTruthy();
+    });
+
+    it("a card with a link is clickable as a whole through its link; a card without one is not", async () => {
+        api.getInbox.mockResolvedValue({Items: [lab("a", {Link: "https://spring.example.org/manage/"}), lab("b")], NextCursor: null});
+        await openInbox();
+        const [linked, plain] = screen.getAllByRole("listitem");
+        expect(linked.className).toContain("is-linked");
+        expect(plain.className).not.toContain("is-linked");
+        expect(within(linked).getByRole("link", {name: t("inbox.open")})).toHaveProperty("href", "https://spring.example.org/manage/");
+        expect(within(plain).queryByRole("link")).toBeNull();
     });
 
     it("marks unread rows with the word «Нове» and no dot", async () => {

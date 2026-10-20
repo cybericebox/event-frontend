@@ -22,6 +22,10 @@
 .event-notifications__list li+li{border-top:1px solid var(--ib-line)}
 .event-notifications__list li{padding:var(--ib-3) var(--ib-4)}
 .event-notifications__list li:hover{background:var(--ib-soft)}
+/* A card with a link is clickable as a whole: the link's pseudo-element covers the row (keyboard and screen readers use the link itself). */
+.event-notifications__list li.is-linked{position:relative;cursor:pointer}
+.event-notifications__list li.is-linked .event-notification-card__actions a::after{content:"";position:absolute;inset:0}
+.event-notifications__list li.is-linked .event-notifications__resolve{position:relative}
 .event-notifications__error{margin:var(--ib-3);padding:var(--ib-2) var(--ib-3);border-radius:var(--ib-r);background:var(--ib-danger-bg);color:var(--ib-danger);font-size:var(--ib-fs-12)}
 .event-notification-card{display:flex;align-items:flex-start;gap:var(--ib-3);min-width:0;text-align:left}
 .event-notification-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;flex:none;border-radius:var(--ib-r)}
