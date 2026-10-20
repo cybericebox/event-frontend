@@ -141,8 +141,17 @@ function PreviewBoard({event}: {event: PublicEventInfo}) {
     const board = useQuery({queryKey: previewBoardKey(event.EventID), queryFn: () => getPreviewBoard(event.EventID), retry: false, refetchInterval: 10000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (!board.data) return <Page>{board.isPending ? <EventLoading label={t("challenges.loading")} /> : <EventLoadError message={t("challenges.loadFailed.title")} error={board.error} onRetry={() => void board.refetch()} />}</Page>;
+    // A dynamic task has no addresses until its lab runs: with the infrastructure off it stays listed as a closed card, and
+    // while the switch launches it the card shows the loader. With the switch on and no run (failed, ended) it opens, so the
+    // task's own start button can retry.
+    const infra = preview.state?.infra === true;
+    const launching = infra && preview.infraBusy === "starting";
+    const challenges = board.data.Challenges.map(task => !task.PreviewDynamic || task.PreviewRunID || task.PreviewCanStart !== true ? task
+        : !infra ? {...task, Locked: true, LockedNote: t("challenges.preview.startInfra")}
+        : launching ? {...task, Locked: true, LockedNote: t("challenges.preview.startingInfra"), LockedBusy: true}
+        : task);
     return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={board.data.Challenges.some(item => item.Infrastructure)}>
-        <Board eventID={event.EventID} mode="preview" challenges={board.data.Challenges} teamMode={event.Participation === 1} finished={false}
+        <Board eventID={event.EventID} mode="preview" challenges={challenges} teamMode={event.Participation === 1} finished={false}
             showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={preview.config?.HintsDisabled === false} hintChargeMode={preview.config?.HintChargeMode}
             userID={preview.state?.userID} onRefresh={() => void board.refetch()}
             onSolved={(id, result) => {

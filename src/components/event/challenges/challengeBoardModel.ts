@@ -127,6 +127,7 @@ export function restPoints(challenges: OwnChallenge[]): number {
 }
 
 export function lockedLabel(challenge: OwnChallenge): string {
+    if (challenge.LockedNote) return challenge.LockedNote;
     const names = challenge.Prerequisites.filter(item => !item.Solved).map(item => item.Name);
     return names.length ? t("challenges.locked.after", {names: names.join(", ")}) : t("challenges.locked.later");
 }
