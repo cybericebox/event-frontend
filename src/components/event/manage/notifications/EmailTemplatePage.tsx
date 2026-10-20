@@ -10,7 +10,7 @@ import {toast} from "react-hot-toast";
 import {failureText, toastFailure} from "@/components/ui/toastApiError";
 import {
     customizeManageEmailTemplate, getManageEmailImageURL, getManageEmailPresets, getManageEmailTemplates, publishManageEmailTemplate,
-    resetManageEmailTemplate, rollbackManageEmailTemplate, sendManageEmailTemplateTest, updateManageEmailTemplate,
+    deleteManageEmailTemplate, resetManageEmailTemplate, rollbackManageEmailTemplate, sendManageEmailTemplateTest, updateManageEmailTemplate,
     uploadManageEmailImage, type ManageEmailTemplate, type ManageEmailTemplateInput,
 } from "@/api/manageEmailTemplates";
 import {
@@ -166,6 +166,7 @@ export function EmailTemplatePage({signal, versionID}: {signal: string; versionI
                     onCustomize={() => void mutate(() => customizeManageEmailTemplate(eventID, template!), t("manage.notifications.customized"))}
                     onEdit={() => void mutate(() => rollbackManageEmailTemplate(eventID, template!), t("manage.email.draftFromVersion"))}
                     onRestore={() => void mutate(() => rollbackManageEmailTemplate(eventID, template!), t("manage.email.draftFromVersion"))}
+                    onDeleteDraft={async () => { let failed = ""; const id = template!.ID; const done = await run(() => deleteManageEmailTemplate(eventID, id), t("manage.notifications.draftDeleted"), t("manage.notifications.deleteDraftError"), true, text => {failed = text;}); if (done) {setDrafts(current => {const next = {...current}; delete next[id]; return next;}); router.replace(href());} return done || failed; }}
                     onReset={async () => { let failed = ""; const done = await run(() => resetManageEmailTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.email.restoreError"), true, text => {failed = text;}); if (done) router.replace(href()); return done || failed; }} />
             </>} />
         {readOnlyHint && <p className="event-template-page__hint" role="note" data-testid="template-notice">{readOnlyHint}</p>}

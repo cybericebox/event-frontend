@@ -9,7 +9,7 @@ import {toast} from "react-hot-toast";
 import {failureText, toastFailure} from "@/components/ui/toastApiError";
 import {
     channelSignals, customizeManageInAppTemplate, getManageInAppTemplates, getManageNotificationSubscriptions,
-    getManageNotificationTypes, publishManageInAppTemplate, resetManageInAppTemplate,
+    getManageNotificationTypes, publishManageInAppTemplate, deleteManageInAppTemplate, resetManageInAppTemplate,
     rollbackManageInAppTemplate, signalLabel, updateManageInAppTemplate, type ManageInAppTemplate, type ManageInAppTemplateInput,
 } from "@/api/manageNotifications";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -131,6 +131,7 @@ export function InAppTemplatePage({signal, versionID}: {signal: string; versionI
                     onCustomize={() => void mutate(() => customizeManageInAppTemplate(eventID, template!), t("manage.notifications.customized"))}
                     onEdit={() => void mutate(() => rollbackManageInAppTemplate(eventID, template!), t("manage.notifications.draftFromPublished"))}
                     onRestore={() => void mutate(() => rollbackManageInAppTemplate(eventID, template!), t("manage.notifications.draftFromPrevious"))}
+                    onDeleteDraft={async () => { let failed = ""; const id = template!.ID; const done = await run(() => deleteManageInAppTemplate(eventID, id), t("manage.notifications.draftDeleted"), t("manage.notifications.deleteDraftError"), true, text => {failed = text;}); if (done) {setDrafts(current => {const next = {...current}; delete next[id]; return next;}); router.replace(href());} return done || failed; }}
                     onReset={async () => { let failed = ""; const done = await run(() => resetManageInAppTemplate(eventID, signal), t("manage.notifications.platformTemplateRestored"), t("manage.notifications.restoreError"), true, text => {failed = text;}); if (done) router.replace(href()); return done || failed; }} />
             </>} />
         {readOnlyHint && <p className="event-template-page__hint" role="note" data-testid="template-notice">{readOnlyHint}</p>}
