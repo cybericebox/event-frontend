@@ -1,6 +1,8 @@
 import type {CSSProperties, ReactNode} from "react";
 import {formatDateTime} from "./dateDisplay";
 import type {ContentRichText} from "./richTextState";
+import {matchesProxyDestination} from "./proxyDestination";
+import {CopyBlock} from "./CopyBlock";
 import {t} from "@/i18n/t";
 
 type Node = Record<string, unknown>;
@@ -39,32 +41,44 @@ function variableHref(href: string | undefined): string | null {
     try {const url = new URL(href); return (url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password ? url.href : null;} catch {return null;}
 }
 
-export function EventRichTextView({value, variables = {}, links = {}, dateDisplays, emptyFallback}: {
+export function EventRichTextView({value, variables = {}, links = {}, dateDisplays, emptyFallback, openVariables}: {
     value?: ContentRichText | null | unknown;
     variables?: Record<string, Value>;
     // Variables that render as a working link (name -> URL); the text stays the variable's value.
     links?: Record<string, string>;
     dateDisplays?: Record<string, Display>;
     emptyFallback?: ReactNode;
+    openVariables?: Record<string, (destinationURL?: string) => void>;
 }) {
     const root = asNode(asNode(value)?.root);
     if (root?.type !== "root" || !Array.isArray(root.children) || !root.children.length) return <>{emptyFallback ?? null}</>;
+    function variableText(node: Node): string {
+        const name = typeof node.varName === "string" ? node.varName : "";
+        const raw = variables[name];
+        const display = dateDisplays?.[name];
+        return typeof raw === "string" && display && !Number.isNaN(Date.parse(raw)) ? formatDateTime(raw, display.format, display.pattern)
+            : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? "—" : String(raw);
+    }
     function render(value: unknown, key: number, inCode = false): ReactNode {
         const node = asNode(value);
         if (!node) return null;
         const children = Array.isArray(node.children) ? node.children.map((child, index) => render(child, index, inCode || node.type === "code")) : null;
         switch (node.type) {
+            case "copy-block": {
+                const parts = Array.isArray(node.children) ? node.children.map(asNode).filter((child): child is Node => !!child) : [];
+                const text = parts.map(child => child.type === "text" && typeof child.text === "string" ? child.text : child.type === "variable" ? variableText(child) : "").join("").replace(/[\r\n]+/g, " ");
+                const unresolved = parts.some(child => child.type === "variable" && variableText(child) === "—");
+                const proxyVariable = parts.find(child => child.type === "variable" && typeof child.varName === "string" && openVariables?.[child.varName] && matchesProxyDestination(text, variableText(child)));
+                return <CopyBlock key={key} value={text} openUrl={unresolved ? "" : undefined} onOpen={proxyVariable ? openVariables?.[String(proxyVariable.varName)] : undefined} labels={{copy: t("content.copyBlock.copy"), copied: t("content.copyBlock.copied"), open: t("content.copyBlock.open"), copyFailed: t("content.copyBlock.failed")}} />;
+            }
             case "text": return <span key={key}>{formattedText(typeof node.text === "string" ? node.text : "", node.format)}</span>;
             case "variable": {
                 const name = typeof node.varName === "string" ? node.varName : "";
                 if (!name) return null;
-                const raw = variables[name];
-                const display = dateDisplays?.[name];
-                const text = typeof raw === "string" && display && !Number.isNaN(Date.parse(raw)) ? formatDateTime(raw, display.format, display.pattern)
-                    : typeof raw === "boolean" ? raw ? t("common.yes") : t("common.no") : raw == null ? "—" : String(raw);
+                const text = variableText(node);
                 const formats = Array.isArray(node.formats) ? node.formats : [];
                 const href = variableHref(links[name]);
-                if (href) return <a key={key} className="event-lexical__link" href={href} target="_blank" rel="noopener noreferrer" data-event-variable={name}>{text}</a>;
+                if (href) return <a key={key} className="event-lexical__link" href={href} target="_blank" rel="noopener noreferrer" data-event-variable={name} onClick={openVariables?.[name] ? event => {event.preventDefault(); openVariables[name](href);} : undefined}>{text}</a>;
                 return <span key={key} data-event-variable={name}
                     style={{fontWeight: formats.includes("bold") ? 700 : undefined, fontStyle: formats.includes("italic") ? "italic" : undefined,
                         textDecoration: [formats.includes("underline") ? "underline" : "", formats.includes("strikethrough") ? "line-through" : ""].filter(Boolean).join(" ") || undefined}}>{text}</span>;

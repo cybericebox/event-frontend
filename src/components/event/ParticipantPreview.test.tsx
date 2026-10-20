@@ -7,10 +7,12 @@ import {readPreviewCookie} from "@/utils/previewCookie";
 import {ParticipantPreviewProvider, ParticipantPreviewEntry, previewAnswerFile, useParticipantPreview} from "./ParticipantPreview";
 
 const api = vi.hoisted(() => ({pathname: "/join", reset: vi.fn(), board: vi.fn(), start: vi.fn(), stop: vi.fn(), toastError: vi.fn(), push: vi.fn(), access: vi.fn(async () => ({CanManage: true}))}));
-vi.mock("@/api/participantPreview", () => ({
-    resetPreviewRuns: api.reset, getPreviewBoard: api.board, startPreviewRun: api.start, stopPreviewRun: api.stop,
+vi.mock("@/api/participantPreview", async () => {
+    const {trackPreviewRunStart} = await import("@/api/previewRunLifecycle");
+    return ({
+    resetPreviewRuns: api.reset, getPreviewBoard: api.board, startPreviewRun: (eventID: string, selectionID: string) => trackPreviewRunStart(eventID, () => api.start(eventID, selectionID)), stopPreviewRun: api.stop,
     previewBoardKey: (eventID: string | undefined) => ["event-participant-preview-board", eventID],
-}));
+});});
 vi.mock("react-hot-toast", () => ({default: {error: api.toastError}, toast: {error: api.toastError}}));
 vi.mock("next/navigation", () => ({usePathname: () => api.pathname, useRouter: () => ({push: api.push})}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: async () => ({ID: "user-1"})}));
@@ -19,7 +21,7 @@ const storageKey = "event-participant-preview-v1";
 const state = {eventID: "event-1", userID: "user-1", status: 2, outcome: "approved", answers: {school: "School"}, team: null};
 function Status() {
     const preview = useParticipantPreview("event-1");
-    return <><output data-testid="state">{preview.active ? JSON.stringify(preview.state) : "inactive"}</output><button onClick={() => preview.update({status: 2, answers: {school: "Edited"}})}>Update local answers</button></>;
+    return <><output data-testid="state">{preview.active ? JSON.stringify(preview.state) : "inactive"}</output><button onClick={() => preview.start("event-1")}>Re-enter directly</button><button onClick={() => void preview.exit()}>Exit directly</button><button onClick={() => void preview.reset()}>Reset directly</button><button onClick={() => void preview.setTasks(false)}>Stop directly</button><button onClick={() => preview.update({status: 2, answers: {school: "Edited"}})}>Update local answers</button></>;
 }
 function view() {
     const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
@@ -51,7 +53,7 @@ it("persists local state, clears owned server runs before resetting registration
     expect(api.reset).toHaveBeenCalledWith("event-1");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Вийти з тестування"}));
-    expect(sessionStorage.getItem(storageKey)).toBeNull();
+    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
     expect(screen.getByTestId("state").textContent).toBe("inactive");
     expect(api.push).toHaveBeenLastCalledWith("/manage");
 });
@@ -67,7 +69,7 @@ it("does not replace auth, join status or own-team caches with simulated state",
     expect(client.getQueryData(["event-own-team", "event-1"])).toBeNull();
 });
 
-it("waits for owned cleanup, keeps other actions enabled, and clears only preview caches", async () => {
+it("serializes owned cleanup actions, keeps local fields enabled, and clears only preview caches", async () => {
     let finish!: () => void;
     api.reset.mockReturnValue(new Promise<void>(resolve => {finish = resolve;}));
     sessionStorage.setItem(storageKey, JSON.stringify(state));
@@ -76,8 +78,9 @@ it("waits for owned cleanup, keeps other actions enabled, and clears only previe
     client.setQueryData(["event-own-challenges", "event-1"], {Challenges: ["competition"]});
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
-    expect(screen.getByRole("menuitem", {name: "Почати спочатку"}).getAttribute("aria-busy")).toBe("true");
-    expect(screen.getByRole("menuitem", {name: "Вийти з тестування"}).getAttribute("aria-disabled")).toBeNull();
+    expect(screen.getByRole("menuitem", {name: "Скидаємо тестування…"}).getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByRole("menuitem", {name: "Вийти з тестування"}).getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByText("Update local answers").closest("button")).toHaveProperty("disabled", false);
     expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(2);
     await act(async () => {finish();});
     await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(0));
@@ -184,7 +187,7 @@ it("sets the mode cookie when the mode starts and clears it on exit", async () =
     expect(readPreviewCookie()).toBe("event-1");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Вийти з тестування"}));
-    expect(readPreviewCookie()).toBeNull();
+    await waitFor(() => expect(readPreviewCookie()).toBeNull());
 });
 
 it("initial client state equals the server render: the cookie hint is on before any query answers", () => {
@@ -287,4 +290,124 @@ it("entering the test mode and starting over both leave the switch off", async (
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
     await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
+});
+
+it.each([true,false])("ends every owned preview run before exiting even when tasks=%s", async tasks => {
+    let finish!: () => void;
+    api.reset.mockImplementation(() => new Promise<void>(resolve => {finish = resolve;}));
+    sessionStorage.setItem(storageKey, JSON.stringify({...state,tasks}));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-active","run-unsolved")));
+    const {client} = view();
+    client.setQueryData(["event-challenge-lab","preview","event-1","task"], {Ready:true});
+    client.setQueryData(["event-own-challenges","event-1"], {Challenges:["competition"]});
+    client.setQueryData(["event-current-user"], {ID:"user-1"});
+    await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
+    await waitFor(() => expect(api.reset).toHaveBeenCalledWith("event-1"));
+    expect(sessionStorage.getItem(storageKey)).not.toBeNull(); expect(api.push).not.toHaveBeenCalledWith("/manage");
+    const busy = screen.getByRole("menuitem", {name:"Виходимо з тестування…"});
+    expect(busy.getAttribute("aria-busy")).toBe("true"); expect(busy.querySelector(".ib-busy-mark")).toBeTruthy();
+    fireEvent.click(busy); expect(api.reset).toHaveBeenCalledTimes(1);
+    await act(async () => {finish();});
+    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
+    expect(readPreviewCookie()).toBeNull(); expect(api.push).toHaveBeenLastCalledWith("/manage");
+    expect(client.getQueryData(["event-challenge-lab","preview","event-1","task"])).toBeUndefined();
+    expect(client.getQueryData(["event-own-challenges","event-1"])).toEqual({Challenges:["competition"]});
+    expect(client.getQueryData(["event-current-user"])).toEqual({ID:"user-1"});
+});
+it("retains test mode and progress on failed exit cleanup and lets the same action retry", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    api.reset.mockRejectedValueOnce(new Error("cleanup refused"));
+    view(); await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Не вдалося завершити тестування. Спробуйте ще раз.");
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(state); expect(api.push).not.toHaveBeenCalledWith("/manage");
+    fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
+    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull()); expect(api.reset).toHaveBeenCalledTimes(2);
+});
+
+it.each(["exit","reset"])("fences delayed starts before final %s cleanup and never starts the next queued lab", async kind => {
+    let launch!: (value: unknown) => void;
+    const order: string[] = [];
+    api.start.mockImplementation(() => new Promise(resolve => {launch = value => {order.push("started"); resolve(value);};}));
+    api.reset.mockImplementation(async () => {order.push("cleanup");});
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a"),dynamic("sel-b")));
+    view(); await waitFor(() => expect(api.start).toHaveBeenCalledTimes(1));
+    await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:kind==="exit"?"Вийти з тестування":"Почати спочатку"}));
+    expect(api.reset).not.toHaveBeenCalled();
+    await act(async () => {launch({ID:"late-run", ExpiresAt:null});});
+    await waitFor(() => expect(api.reset).toHaveBeenCalledTimes(1));
+    expect(order).toEqual(["started","cleanup"]); expect(api.start).toHaveBeenCalledTimes(1);
+    if (kind==="exit") await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
+    else await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
+});
+
+it("blocks same-account re-entry while the old exit is pending", async () => {
+    let finish!:()=>void; api.reset.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
+    sessionStorage.setItem(storageKey,JSON.stringify(state)); const mounted=view();
+    fireEvent.click(screen.getByText("Exit directly")); await waitFor(()=>expect(api.reset).toHaveBeenCalledOnce());
+    api.pathname="/manage"; mounted.refreshRoute();
+    expect(screen.getByRole("button",{name:"Виходимо з тестування…"})).toHaveProperty("disabled",true);
+    fireEvent.click(screen.getByText("Re-enter directly"));
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(state); expect(api.push).not.toHaveBeenCalledWith("/");
+    await act(async()=>{finish();}); await waitFor(()=>expect(sessionStorage.getItem(storageKey)).toBeNull());
+});
+it.each(["Exit","Reset","Stop"])("fences %s completion against a new instance for the same account/event", async kind=>{
+    let finish!:()=>void;
+    api.reset.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;})); api.stop.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
+    sessionStorage.setItem(storageKey,JSON.stringify({...state,tasks:kind==="Stop"}));
+    api.board.mockResolvedValue(boardOf(dynamic("sel-a","run-a"))); const {client}=view();
+    fireEvent.click(screen.getByText(`${kind} directly`)); await waitFor(()=>expect(kind==="Stop"?api.stop:api.reset).toHaveBeenCalledOnce());
+    const fresh={...state,tasks:true,sessionID:"fresh-instance",answers:{fresh:"progress"}};
+    act(()=>{sessionStorage.setItem(storageKey,JSON.stringify(fresh));window.dispatchEvent(new Event("event-participant-preview-change"));client.setQueryData(["event-participant-preview-board","event-1"],boardOf(dynamic("sel-a","new-run")));});
+    await act(async()=>{finish();});
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(fresh);
+    expect(client.getQueryData(["event-participant-preview-board","event-1"])).toEqual(boardOf(dynamic("sel-a","new-run"))); expect(api.push).not.toHaveBeenCalled();
+});
+it.each(["Exit","Reset","Stop"])("does not dispatch delayed %s cleanup after logout/account replacement during a start drain", async kind=>{
+    for(const actor of [null,"other-user","bounce"]){
+        let launch!:(value:unknown)=>void; api.start.mockImplementation(()=>new Promise(resolve=>{launch=resolve;}));
+        sessionStorage.setItem(storageKey,JSON.stringify(on)); api.board.mockResolvedValue(boardOf(dynamic("sel-a"),dynamic("sel-b")));
+        const mounted=view(); await waitFor(()=>expect(api.start).toHaveBeenCalledOnce());
+        fireEvent.click(screen.getByText(`${kind} directly`));
+        act(()=>{if(actor===null) mounted.client.clear(); else {mounted.client.setQueryData(["event-current-user"],{ID:"other-user"});if(actor==="bounce")mounted.client.setQueryData(["event-current-user"],{ID:"user-1"});}});
+        await act(async()=>{launch({ID:"late-run",ExpiresAt:null});});
+        expect(api.reset).not.toHaveBeenCalled();expect(api.stop).not.toHaveBeenCalled(); expect(api.start).toHaveBeenCalledOnce();expect(api.push).not.toHaveBeenCalled();
+        mounted.unmount();api.start.mockClear();api.reset.mockClear();api.stop.mockClear();
+    }
+});
+it.each(["Exit","Reset","Stop"])("fences a manual task start drain against account change before %s cleanup", async kind=>{
+    let launch!:(value:unknown)=>void;api.start.mockImplementation(()=>new Promise(resolve=>{launch=resolve;}));
+    sessionStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();
+    const {startPreviewRun}=await import("@/api/participantPreview");const pending=startPreviewRun("event-1","manual");await waitFor(()=>expect(api.start).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByText(`${kind} directly`));act(()=>client.setQueryData(["event-current-user"],{ID:"other-user"}));
+    await act(async()=>{launch({ID:"manual-late",ExpiresAt:null});await pending;});expect(api.reset).not.toHaveBeenCalled();expect(api.push).not.toHaveBeenCalled();
+});
+
+it.each(["Exit","Reset","Stop"])("does not mutate replacement-account caches after a dispatched %s cleanup settles", async kind=>{
+    let finish!:()=>void;api.reset.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));api.stop.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
+    sessionStorage.setItem(storageKey,JSON.stringify({...state,tasks:kind==="Stop"}));api.board.mockResolvedValue(boardOf(dynamic("sel-a","old-run")));const {client}=view();
+    fireEvent.click(screen.getByText(`${kind} directly`));await waitFor(()=>expect(kind==="Stop"?api.stop:api.reset).toHaveBeenCalledOnce());
+    const replacement=boardOf(dynamic("sel-a","other-account-run"));
+    act(()=>{client.setQueryData(["event-current-user"],{ID:"other-user"});client.setQueryData(["event-participant-preview-board","event-1"],replacement);client.setQueryData(["event-challenge-lab","preview","event-1","task"],{actor:"other-user"});});
+    await act(async()=>{finish();});
+    expect(client.getQueryData(["event-participant-preview-board","event-1"])).toEqual(replacement);
+    expect(client.getQueryData(["event-challenge-lab","preview","event-1","task"])).toEqual({actor:"other-user"});
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!).answers).toEqual(state.answers);expect(api.push).not.toHaveBeenCalled();
+});
+it.each(["Exit","Reset"])("rechecks the preview instance after asynchronous query cancellation during %s", async kind=>{
+    let finish!:()=>void;sessionStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();
+    const cancel=vi.spyOn(client,"cancelQueries").mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
+    const remove=vi.spyOn(client,"removeQueries");
+    fireEvent.click(screen.getByText(`${kind} directly`));await waitFor(()=>expect(cancel).toHaveBeenCalledOnce());
+    const fresh={...state,sessionID:"after-cancel",answers:{fresh:"kept"}};
+    act(()=>{sessionStorage.setItem(storageKey,JSON.stringify(fresh));window.dispatchEvent(new Event("event-participant-preview-change"));client.setQueryData(["event-participant-preview-board","event-1"],{fresh:true});});
+    await act(async()=>{finish();});
+    expect(remove).not.toHaveBeenCalled();expect(client.getQueryData(["event-participant-preview-board","event-1"])).toEqual({fresh:true});
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(fresh);expect(api.push).not.toHaveBeenCalled();cancel.mockRestore();remove.mockRestore();
+});
+it("checks current authority after an awaited board read before stopping preview labs", async()=>{
+    let finish!:(value:unknown)=>void;api.board.mockImplementation(()=>new Promise(resolve=>{finish=resolve;}));
+    sessionStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();fireEvent.click(screen.getByText("Stop directly"));await waitFor(()=>expect(api.board).toHaveBeenCalledOnce());
+    act(()=>client.setQueryData(["event-current-user"],{ID:"other-user"}));
+    await act(async()=>{finish(boardOf(dynamic("sel-a","old-run")));});expect(api.stop).not.toHaveBeenCalled();expect(api.reset).not.toHaveBeenCalled();expect(api.push).not.toHaveBeenCalled();
 });

@@ -47,9 +47,9 @@ function mount(challenge = base) {
 it("renders static downloads, unlocks actual hints, submits and reads only own preview solves", async () => {
     const {onAccepted} = mount();
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(screen.getByRole("link", {name: /task.txt/}).getAttribute("href")).toContain(`/manage/participant-preview/selections/${selection}/tasks/${rawTask}/files/${rawTask}`);
+    expect(screen.getByRole("button", {name: /task.txt/}).hasAttribute("href")).toBe(false);
     fetchMock.mockResolvedValueOnce(reply({ID: "h", Cost: 0, Unlocked: true, Content: "Server hint"}));
-    fireEvent.click(screen.getByRole("button", {name: "Відкрити підказку"}));
+    fireEvent.click(screen.getByRole("button", {name: /^Відкрити підказку/}));
     expect(await screen.findByText("Server hint")).toBeTruthy();
     fetchMock.mockResolvedValueOnce(reply({Correct: true}));
     fireEvent.change(screen.getByLabelText("Прапор"), {target: {value: "ICE{test}"}});
@@ -62,19 +62,19 @@ it("renders static downloads, unlocks actual hints, submits and reads only own p
     expect(opened).not.toHaveBeenCalled();
 });
 it("starts a dynamic run on click, polls preparation and opens the ready service through preview proxy", async () => {
-    const {client, container} = mount({...base, Infrastructure: true, PreviewDynamic: true});
+    const {client} = mount({...base, Infrastructure: true, PreviewDynamic: true, Snapshot: {...base.Snapshot, description: {root: {type:"root", children:[{type:"copy-block", children:[{type:"variable",varName:"web"}]}]}}, placeholders:[{key:"web",kind:"external.link",device_name:"web"}]}});
     expect(fetchMock).not.toHaveBeenCalled();
     fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
     fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false}));
     fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(container.querySelector(".event-cmodal__access-state")).toBeTruthy();
+    expect(screen.getByText("Лабораторія запускається…")).toBeTruthy();
     fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
     await act(async () => {await client.refetchQueries({queryKey: ["event-challenge-lab", "preview", "event", base.EventChallengeID], exact: true});});
     const tab = {opener: null, close: vi.fn(), location: {href: "about:blank"}};
     vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
     fetchMock.mockResolvedValueOnce(reply({URL: "https://lab.test/_auth?t=preview", ExpiresAt: "2099-10-16T12:00:00Z"}));
-    fireEvent.click(await screen.findByRole("button", {name: "Відкрити сервіс"}));
+    fireEvent.click(await screen.findByRole("button", {name: "Відкрити в новій вкладці"}));
     await waitFor(() => expect(tab.location.href).toBe("https://lab.test/_auth?t=preview"));
     expect(fetchMock.mock.calls.every(([url]) => String(url).includes("/manage/participant-preview/"))).toBe(true);
     expect(fetchMock.mock.calls.at(-1)?.[0]).toContain(`/selections/${selection}/proxy`);
@@ -164,14 +164,15 @@ const mountBoard = (...challenges: OwnChallenge[]) => {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ChallengesBoard /></QueryClientProvider>);
 };
 
-it("shows a dynamic task without a run as a closed card with the loader while the labs launch, and static tasks stay open", async () => {
+it("shows a dynamic task without a run with the whole-card loader while the labs launch, and static tasks stay open", async () => {
     switches.busy = "starting";
     mountBoard(dynamicTask("Web lab"), {...base, Snapshot: {...base.Snapshot, name: "Static task"}, PreviewTaskID: rawId()});
     const card = await screen.findByRole("button", {name: /^Web lab/});
     expect(card.getAttribute("aria-disabled")).toBe("true");
-    expect(card.textContent).toContain("Запускаємо інфраструктуру…");
+    expect(card.getAttribute("aria-label")).toContain("Запускаємо інфраструктуру…");
+    expect(card.getAttribute("aria-busy")).toBe("true");
     expect(card.textContent).not.toContain("Запустіть інфраструктуру");
-    expect(card.querySelector(".ib-busy-mark")).toBeTruthy();
+    expect(card.querySelector(".ib-tile__loading-logo")).toBeTruthy();
     fireEvent.click(card);
     expect(document.querySelector("dialog[open]")).toBeNull();
     expect(screen.getByRole("button", {name: /^Static task/}).getAttribute("aria-disabled")).toBeNull();

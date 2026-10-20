@@ -1,16 +1,18 @@
 "use client";
 
+import {useNativeDialogLayer} from "@/components/ui/useNativeDialogLayer";
 import {useEffect, useId, useMemo, useRef, useState, type FormEvent} from "react";
 import {ChallengeSolvesTab} from "./ChallengeSolvesTab";
 import {labAccessScope} from "./labAccessScope";
 import {LabControls} from "./LabControls";
-import {LabAccessBlock} from "./LabAccessBlock";
+import {ChallengeLabStatus} from "./ChallengeLabStatus";
+import {AttachmentDownload} from "./AttachmentDownload";
+import {useLabLink, labLinkErrorMessage} from "./useLabLink";
 import {descriptionValues, hasCurrentRuntime} from "./descriptionValues";
-import {useLabLink} from "./useLabLink";
 import {skipToken, useQuery, useQueryClient} from "@tanstack/react-query";
 import type {LabLifecycle} from "@/api/labLifecycle";
 import {labLifecycleKey, newestLab, questionLabPinKey, rememberLab, rememberRuntimeQuestionLab} from "./labLifecycleCache";
-import {Network} from "lucide-react";
+import {ChevronDown, Lightbulb, Network} from "lucide-react";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {
     challengeAttachmentUrl, challengeFiles, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
@@ -25,7 +27,7 @@ import {getModeratorChallengeLab, type LabRuntime} from "@/api/manageLabs";
 import {EventRichTextView} from "@/components/event/content/EventRichTextView";
 import {richTextHasContent} from "@/components/event/content/richTextState";
 import {useEventVpn} from "@/components/event/vpn/EventVpn";
-import {attemptsLeft, awardedPoints, difficultyLabel, formatClock, formatFileSize, NO_SPEND, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
+import {attemptsLeft, awardedPoints, difficultyLabel, formatClock, NO_SPEND, spendAttempt, type AttemptSpend} from "./challengeBoardModel";
 import {t} from "@/i18n/t";
 import {overloadedMessage} from "@/i18n/apiError";
 import {richMessage} from "./richMessage";
@@ -123,28 +125,36 @@ function SolvedPanel({challenge, practice, at}: {challenge: OwnChallenge; practi
 
 // A hint text renders formatted like the description; plain text from older
 // exercises stays a paragraph.
-function HintText({text}: {text: string}) {
+function HintText({text, variables, links, openVariables}: {text: string; variables?: Record<string, string>; links?: Record<string, string>; openVariables?: Record<string, (destinationURL?: string) => void>}) {
     const document = hintDocument(text);
-    return document ? <div className="ib-cmodal__desc event-cmodal__hint-text"><EventRichTextView value={document} /></div> : <p>{text}</p>;
+    return document ? <div className="ib-cmodal__desc event-cmodal__hint-text"><EventRichTextView value={document} variables={variables} links={links} openVariables={openVariables} /></div> : <p>{text}</p>;
 }
 
 // Hints: participants see each hint's price, never its level (moderators do);
 // participants unlock one by one (paid ones after a confirm); the
 // moderators board shows every text and never unlocks.
-export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlocked, closed = false, previewMode = false}: {
+export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlocked, closed = false, previewMode = false, variables, links, openVariables, teamMode = false}: {
     challenge: OwnChallenge; eventID: string; moderators: boolean; chargeMode: HintChargeMode; onUnlocked: () => void;
     // The stage is closed: unlocked texts stay readable, nothing new opens.
     closed?: boolean;
     previewMode?: boolean;
+    teamMode?: boolean;
+    variables?: Record<string, string>;
+    links?: Record<string, string>;
+    openVariables?: Record<string, (destinationURL?: string) => void>;
 }) {
     const preview = useParticipantPreview(eventID);
     const isPreview = previewMode || preview.active;
     const [localHints, setLocalHints] = useState<Record<string, ChallengeHint>>({});
+    const [expanded, setExpanded] = useState(true);
+    const [expandedHints, setExpandedHints] = useState<Record<string, boolean>>({});
+    const hintsID = useId();
     const moderatorPresentation = moderators && !isPreview;
     const [confirm, setConfirm] = useState<{hint: ChallengeHint; index: number} | null>(null);
     const [busyID, setBusyID] = useState<string | null>(null);
     const [error, setError] = useState("");
     const [confirmError, setConfirmError] = useState("");
+    const unlockedCount = challenge.Hints.filter(hint => (localHints[hint.ID] ?? hint).Unlocked).length;
     const paid = challenge.Hints.some(hint => hint.Cost > 0);
 
     async function unlock(hint: ChallengeHint) {
@@ -153,7 +163,8 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
         setError("");
         try {
             const revealed = isPreview ? await unlockPreviewHint(eventID, challenge, hint.ID) : await unlockChallengeHint(eventID, challenge.EventChallengeID, hint.ID);
-            if (isPreview) setLocalHints(current => ({...current, [hint.ID]: revealed}));
+            setLocalHints(current => ({...current, [hint.ID]: revealed}));
+            setExpandedHints(current => ({...current, [hint.ID]: true}));
             setConfirm(null);
             onUnlocked();
         } catch (failure) {
@@ -166,32 +177,40 @@ export function HintsBlock({challenge, eventID, moderators, chargeMode, onUnlock
     }
 
     return <section className="ib-cmodal__blk">
-        <h3>{t("challenges.hints.title")}</h3>
+        <h3><button type="button" className="event-cmodal__hints-toggle" aria-expanded={expanded} aria-controls={hintsID} aria-label={t("challenges.hints.countLabel", {unlocked: unlockedCount, total: challenge.Hints.length})} onClick={() => {if (expanded) setExpandedHints(Object.fromEntries(challenge.Hints.map(hint => [hint.ID, false]))); setExpanded(current => !current);}}>{t("challenges.hints.title")}<span className="event-cmodal__hints-count"><span className="ib-num">{t("challenges.hints.count", {unlocked: unlockedCount, total: challenge.Hints.length})}</span><ChevronDown aria-hidden="true" /></span></button></h3>
+        <div id={hintsID} hidden={!expanded}>
         {!moderatorPresentation && (paid || challenge.HintCostTotal > 0) && <p className="ib-cmodal__hint event-cmodal__hint-mode">
             {hintModeNote(chargeMode)}{challenge.HintCostTotal > 0 && <> {richMessage(t("challenges.hints.spent"), {points: <span className="ib-num">{pointsLabel(challenge.HintCostTotal)}</span>})}</>}
         </p>}
-        <ul className="event-cmodal__hints">{challenge.Hints.map((original, index) => {const hint = localHints[original.ID] ?? original; return <li key={hint.ID}>
+        <ul className="event-cmodal__hints">{challenge.Hints.map((original, index) => {const hint = localHints[original.ID] ?? original; const bodyID = `${hintsID}-${index}`; const bodyExpanded = expandedHints[hint.ID] ?? true; return <li key={hint.ID}>
             <div className="event-cmodal__hint-head">
-                <span className="event-cmodal__hint-title">{moderatorPresentation ? t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)}) : t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>
-                {!moderatorPresentation && !hint.Unlocked && !closed && <EventButton className="ib-btn ib-btn--sm" disabled={!!busyID} busy={busyID === hint.ID} busyLabel={t("common.busy.unlocking")}
-                    onClick={() => {if (hintNeedsConfirm(hint)) {setConfirmError(""); setConfirm({hint, index});} else void unlock(hint);}}>{t("challenges.hints.unlock")}</EventButton>}
+                {hint.Unlocked || moderatorPresentation
+                    ? <button type="button" className="event-cmodal__hint-toggle" aria-expanded={bodyExpanded} aria-controls={bodyID} onClick={() => setExpandedHints(current => ({...current, [hint.ID]: !bodyExpanded}))}>
+                        <span className="event-cmodal__hint-title">{moderatorPresentation ? t("challenges.hints.itemWithLevel", {number: index + 1, level: hintLevelLabel(hint.Level)}) : t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span><ChevronDown aria-hidden="true" />
+                    </button>
+                    : <span className="event-cmodal__hint-title">{t("challenges.hints.item", {number: index + 1})}<span className="ib-num"> · {hintCostLabel(hint.Cost)}</span></span>}
+                {!moderatorPresentation && !hint.Unlocked && !closed && <EventTooltip floating content={t("challenges.hints.openCost", {cost: hintCostLabel(hint.Cost)})}>{tooltipID => <EventButton className="ib-icon-btn ib-icon-btn--sm event-cmodal__hint-open" aria-label={t("challenges.hints.openCost", {cost: hintCostLabel(hint.Cost)})} aria-describedby={tooltipID} disabled={!!busyID} busy={busyID === hint.ID} busyLabel={t("common.busy.unlocking")}
+                    onClick={() => {if (hintNeedsConfirm(hint)) {setConfirmError(""); setConfirm({hint, index});} else void unlock(hint);}}><Lightbulb aria-hidden="true" /></EventButton>}</EventTooltip>}
             </div>
-            {hint.Content && <HintText text={hint.Content} />}
+            {(hint.Unlocked || moderatorPresentation) && <div className="event-cmodal__hint-body" id={bodyID} hidden={!bodyExpanded} tabIndex={hint.Content ? 0 : undefined}>
+            {hint.Content && <HintText text={hint.Content} variables={variables} links={links} openVariables={openVariables} />}
             {!isPreview && hint.Unlocked && hint.UnlockedByName && <p className="ib-cmodal__hint">{t("challenges.hints.unlockedBy", {name: hint.UnlockedByName})}{hint.UnlockedAt && <> · <span className="ib-num">{formatClock(hint.UnlockedAt, true)}</span></>}</p>}
+            </div>}
         </li>;})}</ul>
         {closed && !moderatorPresentation && <p className="ib-cmodal__hint">{t("challenges.hint.error.stageClosed")}</p>}
         {error && <p className="ib-cmodal__msg is-warn" role="alert">{error}</p>}
+        </div>
         <ConfirmDialog open={!!confirm} onCancel={() => setConfirm(null)} busy={!!busyID} error={confirmError}
             title={confirm ? t("challenges.hints.confirmTitle", {number: confirm.index + 1}) : ""}
-            description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost) : undefined}
+            description={confirm ? hintConfirmText(chargeMode, confirm.hint.Cost, teamMode) : undefined}
             confirmLabel={t("challenges.hints.confirm")} busyLabel={t("common.busy.unlocking")} onConfirm={() => confirm && void unlock(confirm.hint)}>
-            <p className="ib-cmodal__hint">{t("challenges.hints.teamSees")}</p>
+            {teamMode && <p className="ib-cmodal__hint">{t("challenges.hints.teamSees")}</p>}
         </ConfirmDialog>
     </section>;
 }
 
 // React port of ds-v2 IB.ChallengeModal on a native <dialog>.
-export function ChallengeModal({challenge, stage = null, eventID, mode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onRejected, onHintUnlocked}: {
+export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode, finished, showDifficulty, showHints, hintChargeMode = "reward", onClose, onAccepted, onRejected, onHintUnlocked}: {
     challenge: OwnChallenge | null;
     // The stage of the task's set, when it has one (only opened stages are known to the board).
     stage?: BoardStage | null;
@@ -288,7 +307,6 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const effectiveLifecycle = accessScope.lifecycle && lifecycle.data?.ID === accessScope.lifecycle.ID
         ? newestLab(accessScope.lifecycle, lifecycle.data) : accessScope.lifecycle;
     const runtime = runtimeWithdrawn || isPreview && !previewRunStarted ? undefined : lab.data;
-    // The hook fences both current lifecycle and the session cache before navigation.
     const labLink = useLabLink(eventID, challengeID, moderators, effectiveLifecycle ?? undefined, runtimeWithdrawn, isPreview ? selectionID : undefined);
     // The moderators board lists its own team's solves; participants see them only when the event shows counts.
     const solvesVisible = isPreview || moderators || (challenge?.SolveCount !== null && challenge?.SolveCount !== undefined);
@@ -304,6 +322,8 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
             dialog.close();
         }
     }, [challengeID]);
+
+    const releaseDialogLayer = useNativeDialogLayer(ref, !!challengeID);
 
     // Opening an available task tells the analytics; it never blocks the modal.
     const openable = !!challenge && !challenge.Locked;
@@ -404,6 +424,10 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     }
 
     const values = useMemo(() => descriptionValues(challenge?.Snapshot.placeholders ?? [], isPreview && !runtime?.Ready ? undefined : runtime, effectiveLifecycle ?? null), [challenge?.Snapshot.placeholders, runtime, effectiveLifecycle, isPreview]);
+    const openVariables = Object.fromEntries((challenge?.Snapshot.placeholders ?? []).filter(item => item.kind === "external.link").map(item => {
+        const access = runtime?.Access.find(access => access.Device === item.device_name);
+        return [item.key, (destinationURL?: string) => {if (access) labLink.open(access.Device, access.Port, destinationURL);}];
+    }));
     const files = challenge ? challengeFiles(challenge) : [];
     const solved = !!challenge?.SolvedAt;
     // A closed stage that is not returnable refuses answers and hints; one that is returnable and has ended takes them
@@ -413,7 +437,6 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
     const practiceSolved = !!challenge?.Practice && !solved;
     const left = challenge && !moderators ? attemptsLeft(challenge, spend) : null;
     const exhausted = left === 0;
-    const category = challenge?.GroupName || t("challenges.otherCategory");
     const shownHints = showHints && challenge?.HintsEnabled ? challenge.Hints : [];
     // Hints are free once the task is solved, after the finish and as practice (the server charges 0 then).
     const freeHints = practice || solved || (finished && !moderators);
@@ -439,13 +462,15 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
         catch (failure) {setStartError(failure);}
         finally {setStarting(false);}
     };
-    return <dialog ref={ref} className="ib-cmodal" aria-labelledby={`${id}-t`}
+    return <dialog ref={ref} className="ib-cmodal" role="dialog" aria-modal="true" aria-labelledby={`${id}-t`}
         onClose={event => {
             // React re-dispatches a nested dialog's close (the hint confirm) here; only our own counts.
             if (event.target !== ref.current) return;
+            releaseDialogLayer();
             onClose();
             if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus();
         }}
+        onCancel={event => {if (event.target !== ref.current) return; event.preventDefault(); ref.current?.close();}}
         onClick={event => {
             if (event.target !== ref.current) return;
             const box = ref.current.getBoundingClientRect();
@@ -453,18 +478,17 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
         }}>
         {challenge && <>
             <header className="ib-cmodal__head">
+                <h2 className="ib-cmodal__title" id={`${id}-t`} tabIndex={-1} ref={titleRef}>{challenge.Snapshot.name}</h2>
                 <p className="ib-cmodal__meta">
-                    <EventTooltip truncated placement="bottom" className="ib-cmodal__cat" content={category}>{() => <span>{category}</span>}</EventTooltip><span aria-hidden="true">·</span>
                     <span className="ib-num">{pointsLabel(challenge.Points)}</span>
+                    {challenge.Infrastructure && <span className="ib-tag event-cmodal__lab-tag" aria-label={t("challenges.modal.lab")} title={t("challenges.modal.lab")}><Network aria-hidden="true" /><span>{t("challenges.modal.lab")}</span></span>}
                     {showDifficulty && <span className="ib-tag">{difficultyLabel(challenge.Snapshot.difficulty)}</span>}
                     {solved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.modal.solved")}</span>}
                     {practiceSolved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.tile.practice")}</span>}
                     {stageClosed && <span className="ib-tag">{t("challenges.modal.closedTag")}</span>}
                     {challenge.ContentUpdatedAt && <span className="ib-tag">{t("challenges.modal.updatedAt", {time: formatClock(challenge.ContentUpdatedAt)})}</span>}
                     {moderatorPresentation && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">{t("challenges.modal.unpublished")}</span>}
-                    {challenge.Infrastructure && !runtimeWithdrawn && !effectiveLifecycle?.LogicalClosed && vpn.available && <button type="button" className="ib-tag event-vpn-badge" onClick={vpn.openVpn}><Network aria-hidden="true" />{t("challenges.modal.vpnRequired")}</button>}
                 </p>
-                <h2 className="ib-cmodal__title" id={`${id}-t`} tabIndex={-1} ref={titleRef}>{challenge.Snapshot.name}</h2>
                 <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label={t("common.close")} onClick={() => ref.current?.close()}>{ICON.x}</button>
             </header>
             <div className="ib-tabs ib-cmodal__tabs" role="tablist" aria-label={t("challenges.modal.sections")} data-pointer={pointer || undefined}
@@ -474,13 +498,18 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                 {solvesVisible && <button type="button" role="tab" id={`${id}-tab2`} ref={solvesTabRef} aria-controls={`${id}-p2`} aria-selected={tab === "solves"} tabIndex={tab === "solves" ? 0 : -1} onClick={() => setTab("solves")}
                     onKeyDown={event => { if (["ArrowRight", "ArrowLeft", "Home"].includes(event.key)) { event.preventDefault(); setTab("task"); taskTabRef.current?.focus(); } }}>{challenge.SolveCount !== null ? t("challenges.modal.solvesTabCount", {count: challenge.SolveCount}) : t("challenges.modal.solvesTab")}</button>}
             </div>
-            <div className="ib-cmodal__body" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
-                <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
+            <div className="ib-cmodal__task-pane" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
+            <div className="ib-cmodal__body">
+                <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} openVariables={openVariables} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
+                {challenge.Infrastructure && vpn.available && vpn.connected !== true && <p className="event-cmodal__vpn">{t("challenges.modal.vpnFirst")} <EventButton className="ib-btn ib-btn--sm" onClick={vpn.openVpn}>{t("challenges.modal.vpnOpen")}</EventButton></p>}
+                {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <ChallengeLabStatus lab={runtime} lifecycle={effectiveLifecycle} withdrawn={runtimeWithdrawn} error={lab.isError ? lab.error : undefined} onRetry={() => void lab.refetch()} />}
+                {labLink.state.status === "error" && <EventLoadError compact className="event-cmodal__lab-error" error={labLink.state.error} message={labLinkErrorMessage(labLink.state.error)} onRetry={labLink.retry} />}
+                {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && effectiveLifecycle && !runtimeWithdrawn && !preview.active && <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} />}
                 {moderatorPresentation && <ModeratorsBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} infrastructure={!!challenge.Infrastructure} />}
                 {files.length > 0 && <section className="ib-cmodal__blk">
                     <h3>{t("challenges.modal.files")}</h3>
                     <ul className="ib-cmodal__files">{files.map(file => <li key={file.FileID}>
-                        <a className="ib-cmodal__file" href={fileUrl(file.FileID)} download={file.Name}>{ICON.dl}{file.Name}<span className="ib-cmodal__size">{formatFileSize(file.Size)}</span></a>
+                        <AttachmentDownload key={file.FileID} url={fileUrl(file.FileID)} name={file.Name} size={file.Size} />
                     </li>)}</ul>
                 </section>}
                 {isPreview && challenge.Infrastructure && !previewRunStarted && <section className="ib-cmodal__blk">
@@ -496,12 +525,13 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, finished
                         ? <TestLabLimit eventID={eventID} labs={runningTestLabs(startError.context)} onStopped={() => {setStartError(undefined); void start();}} />
                         : !!startError && <EventLoadError error={startError} message={startError instanceof ParticipantChallengeError ? (startError.code !== undefined && PREVIEW_NO_FREE_RESOURCES.has(startError.code) ? t("lab.preview.noFreeResources") : apiErrorMessage(startError.code, t("participantPreview.lab.startFailed"))) : t("participantPreview.lab.startFailed")} onRetry={() => void start()} />}
                 </section>}
-                {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <LabAccessBlock lab={runtime} lifecycle={effectiveLifecycle ?? null} pending={lab.isPending} withdrawn={runtimeWithdrawn} withdrawnReason={finished ? "event" : "stage"} error={lab.isError ? lab.error : undefined} onReload={() => void lab.refetch()} link={labLink.state} busyKey={labLink.busyKey} onOpen={labLink.open} onRetry={labLink.retry} controls={effectiveLifecycle && !runtimeWithdrawn && !preview.active ? <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} /> : undefined} />}
-                {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} previewMode={isPreview} chargeMode={hintChargeMode} closed={stageClosed} onUnlocked={() => onHintUnlocked?.()} />}
+
+                {hints.length > 0 && <HintsBlock key={challenge.EventChallengeID} challenge={{...challenge, Hints: hints}} eventID={eventID} moderators={moderators} teamMode={teamMode} previewMode={isPreview} chargeMode={hintChargeMode} closed={stageClosed} variables={values.variables} links={values.links} openVariables={openVariables} onUnlocked={() => onHintUnlocked?.()} />}
                 {stageClosed && <p className="event-cmodal__closed" role="status">{t("challenges.modal.stageClosed")}</p>}
                 {practice && !solved && <p className="ib-cmodal__hint event-cmodal__note" role="status">{t("challenges.modal.practiceNote")}</p>}
                 {(solved || practiceSolved || accepted) && <SolvedPanel challenge={challenge} practice={practiceSolved || (accepted && practiceAnswer)} at={challenge.SolvedAt ?? new Date(now).toISOString()} />}
                 {!solved && finished && !moderators && <p className="event-cmodal__closed" role="status">{richMessage(t("challenges.modal.finished"), {strong: <b>{t("challenges.modal.finishedStrong")}</b>})}</p>}
+            </div>
                 {!solved && !accepted && !practiceSolved && (moderators || (!finished && !stageClosed)) && <form className="ib-cmodal__flag" noValidate onSubmit={event => void submit(event)}>
                     <label htmlFor={`${id}-flag`}>{t("challenges.modal.flag")}</label>
                     <div className="ib-cmodal__row">
