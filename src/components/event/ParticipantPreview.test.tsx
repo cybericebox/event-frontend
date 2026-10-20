@@ -201,25 +201,26 @@ it("drops a stale cookie when no valid mode stands behind it", async () => {
     await waitFor(() => expect(readPreviewCookie()).toBeNull());
 });
 
-// The test tasks list at once (the board never waits for a schedule); the infrastructure switch only decides whether the
-// dynamic tasks' labs run. Off by default: nothing is launched until the staff member asks.
+// One switch, «Показати завдання», default off: on shows the test task board and launches the dynamic tasks' labs; off ends them.
 const dynamic = (selection: string, run: string | null = null) => ({PreviewSelectionID: selection, PreviewDynamic: true, PreviewCanStart: true, PreviewRunID: run, Infrastructure: true});
 const staticTask = {PreviewSelectionID: "sel-static", PreviewDynamic: false, PreviewCanStart: true, PreviewRunID: null, Infrastructure: false};
 const boardOf = (...Challenges: object[]) => ({Challenges, Stages: [], ServerNow: "2026-10-20T10:00:00Z"});
+const on = {...state, tasks: true};
 
-it("offers the infrastructure switch, off by default, and keeps it in the saved state", async () => {
+it("offers one switch, «Показати завдання», off by default, and no separate infrastructure item", async () => {
     sessionStorage.setItem(storageKey, JSON.stringify(state));
+    api.board.mockResolvedValue(boardOf());
     view();
     await openMenu();
-    const item = screen.getByRole("menuitemcheckbox", {name: "Запустити інфраструктуру"});
+    const item = screen.getByRole("menuitemcheckbox", {name: "Показати завдання"});
     expect(item.getAttribute("aria-checked")).toBe("false");
-    api.board.mockResolvedValue(boardOf());
+    expect(screen.queryByRole("menuitemcheckbox", {name: /інфраструктуру/})).toBeNull();
     fireEvent.click(item);
-    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).infra).toBe(true));
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true));
 });
 
 it("launches only the dynamic tasks without a run once the switch is on, once per task", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify({...state, infra: true}));
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a"), dynamic("sel-a"), dynamic("sel-b", "run-b"), staticTask));
     api.start.mockResolvedValue({ID: "run-a", SelectionID: "sel-a", Dynamic: true, ExpiresAt: "2026-10-20T11:00:00Z"});
     const {client} = view();
@@ -240,7 +241,7 @@ it("launches nothing while the switch is off, however many dynamic tasks wait", 
 });
 
 it("tells the user once when a launch fails and does not retry in a loop", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify({...state, infra: true}));
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a"), dynamic("sel-b")));
     api.start.mockRejectedValue(new Error("no room"));
     const {client} = view();
@@ -252,52 +253,38 @@ it("tells the user once when a launch fails and does not retry in a loop", async
 
 it("ends the running dynamic labs when the switch goes off, shows the work, and keeps static progress", async () => {
     let finish!: () => void;
-    sessionStorage.setItem(storageKey, JSON.stringify({...state, infra: true}));
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a", "run-a"), dynamic("sel-b"), staticTask));
     api.stop.mockReturnValue(new Promise<void>(resolve => {finish = resolve;}));
     api.start.mockResolvedValue({ID: "run-b", SelectionID: "sel-b", Dynamic: true, ExpiresAt: "2026-10-20T11:00:00Z"});
     view();
     await waitFor(() => expect(api.start).toHaveBeenCalledTimes(1));
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Запустити інфраструктуру"}));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Показати завдання"}));
     await waitFor(() => expect(api.stop).toHaveBeenCalled());
     expect(screen.getByRole("menuitemcheckbox", {name: "Зупиняємо інфраструктуру…"}).getAttribute("aria-busy")).toBe("true");
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!).infra).toBe(true);
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true);
     await act(async () => {finish();});
-    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).infra).toBe(false));
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
     expect(api.stop.mock.calls.map(call => call[1]).sort()).toEqual(["sel-a", "sel-b"]);
     expect(api.reset).not.toHaveBeenCalled();
 });
 
 it("keeps the switch on and says so when ending a lab fails", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify({...state, infra: true}));
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a", "run-a")));
     api.stop.mockRejectedValue(new Error("cleanup failed"));
     view();
     await openMenu();
-    fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Запустити інфраструктуру"}));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Показати завдання"}));
     await waitFor(() => expect(api.toastError).toHaveBeenCalled());
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!).infra).toBe(true);
+    expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true);
 });
 
-it("offers «Показати завдання», on by default, and keeps the infrastructure switch off the table while it is off", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify({...state, infra: true}));
-    api.board.mockResolvedValue(boardOf());
+it("entering the test mode and starting over both leave the switch off", async () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(on));
     view();
     await openMenu();
-    const tasks = screen.getByRole("menuitemcheckbox", {name: "Показати завдання"});
-    expect(tasks.getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByRole("menuitemcheckbox", {name: "Запустити інфраструктуру"}).getAttribute("aria-disabled")).toBeNull();
-    fireEvent.click(tasks);
+    fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
     await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
-    expect(screen.getByRole("menuitemcheckbox", {name: "Показати завдання"}).getAttribute("aria-checked")).toBe("false");
-    expect(screen.getByRole("menuitemcheckbox", {name: "Запустити інфраструктуру"}).getAttribute("aria-disabled")).toBe("true");
-});
-
-it("launches no lab while the tasks are hidden, even with the infrastructure switch on", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify({...state, infra: true, tasks: false}));
-    api.board.mockResolvedValue(boardOf(dynamic("sel-a")));
-    view();
-    await new Promise(resolve => setTimeout(resolve, 30));
-    expect(api.start).not.toHaveBeenCalled();
 });
