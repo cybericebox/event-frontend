@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
-const server = vi.hoisted(() => ({status: "published", mode: "all_ready", attempts: null as number | null, staticPoints: 100, putScoring: vi.fn(), put: vi.fn(), policy: null as {SnapshotMode: "skip" | "required"; MaxActiveLabsPerTeam: number | null; RetentionMinutes: number} | null, gate: null as null | (() => void)}));
+const server = vi.hoisted(() => ({status: "published", mode: "all_ready", attempts: null as number | null, staticPoints: 100, scoringMode: 0, putScoring: vi.fn(), put: vi.fn(), policy: null as {SnapshotMode: "skip" | "required"; MaxActiveLabsPerTeam: number | null; RetentionMinutes: number} | null, gate: null as null | (() => void)}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "3f1c2d4e-0000-4000-8000-000000000001", Name: "CTF", Participation: 0, LogoURL: null}, canManage: true})}));
 vi.mock("@/api/manage", async original => ({
     ...(await original() as object),
@@ -13,10 +13,11 @@ vi.mock("@/api/manage", async original => ({
         AllowPseudonyms: false, ShowDifficulty: true, HintsDisabled: false, HintChargeMode: "reward", MaxFlagAttempts: server.attempts, TaskRevealMode: server.mode,
     }),
     getManageLifecycle: async () => ({Configured: true, Status: server.status, JoinPolicy: 0}),
-    getManageScoring: async () => ({Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, StaticPoints: server.staticPoints, ForceEventScoring: false}),
+    getManageScoring: async () => ({Mode: server.scoringMode, MinPoints: server.scoringMode ? 100 : 0, MaxPoints: server.scoringMode ? 500 : 0, FloorAtPercent: server.scoringMode ? 50 : 0, StaticPoints: server.staticPoints, ForceEventScoring: false}),
     putManageScoring: server.putScoring,
     putManageConfig: server.put,
 }));
+vi.mock("next/navigation", () => ({usePathname: () => "/manage/challenges/settings", useRouter: () => ({push: vi.fn(), replace: vi.fn(), back: vi.fn()})}));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 
 vi.mock("@/components/ui/EventSelect", () => ({EventSelect: ({value, options, onValueChange, disabled, ariaLabel}: {
@@ -25,9 +26,11 @@ vi.mock("@/components/ui/EventSelect", () => ({EventSelect: ({value, options, on
 
 import {toast} from "react-hot-toast";
 import {ChallengeSettings} from "./ChallengeSettings";
+import {ManualDraftProvider} from "@/components/event/manage/manualDraft";
 
-function renderPage() {
-    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ChallengeSettings /></QueryClientProvider>);
+function renderPage(withDraftProvider = false) {
+    const page = <ChallengeSettings />;
+    return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>{withDraftProvider ? <ManualDraftProvider userID="user-1" eventID="3f1c2d4e-0000-4000-8000-000000000001">{page}</ManualDraftProvider> : page}</QueryClientProvider>);
 }
 
 describe("Показ завдань", () => {
@@ -182,4 +185,28 @@ it.each([100,1200])("uses persisted dormant static points (%s) after switching a
         fireEvent.submit(screen.getByRole("spinbutton",{name:/Максимум балів/}).closest("form")!);
         await waitFor(()=>expect(server.putScoring).toHaveBeenCalledWith(expect.any(String),expect.objectContaining({Mode:1,StaticPoints:saved,MinPoints:100,MaxPoints:500})));
     } finally {cleanup();server.staticPoints=100;server.putScoring.mockReset();}
+});
+
+describe("dormant static draft under the real manual-draft provider", () => {
+    beforeEach(() => {sessionStorage.clear(); server.scoringMode=1; server.staticPoints=100; server.putScoring.mockReset();});
+    afterEach(() => {cleanup();sessionStorage.clear();server.scoringMode=0;});
+    it.each(["250","1000"])("retains typed %s when the unchanged dynamic request is not dirty", async typed=>{
+        const first=renderPage(true);
+        await screen.findByRole("spinbutton",{name:/Максимум балів/});
+        fireEvent.click(screen.getByLabelText(/^Статичне/));
+        fireEvent.change(screen.getByRole("spinbutton",{name:/Бали за завдання/}),{target:{value:typed}});
+        fireEvent.click(screen.getByLabelText(/^Динамічне/));
+        expect(screen.getByRole("button",{name:"Зберегти"})).toHaveProperty("disabled",true);
+        fireEvent.submit(screen.getByRole("spinbutton",{name:/Максимум балів/}).closest("form")!);
+        expect(server.putScoring).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByLabelText(/^Статичне/));
+        const field=screen.getByRole("spinbutton",{name:/Бали за завдання/});
+        expect(field).toHaveProperty("value",typed);
+        expect(field.getAttribute("aria-invalid")).toBe(String(typed==="1000"));
+        fireEvent.click(screen.getByLabelText(/^Динамічне/));
+        first.unmount();renderPage(true);
+        await screen.findByRole("spinbutton",{name:/Максимум балів/});
+        fireEvent.click(screen.getByLabelText(/^Статичне/));
+        expect(screen.getByRole("spinbutton",{name:/Бали за завдання/})).toHaveProperty("value",typed);
+    });
 });

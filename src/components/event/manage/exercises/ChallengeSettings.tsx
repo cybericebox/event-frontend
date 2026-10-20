@@ -39,6 +39,13 @@ function inputOf(draft: ScoringDraft, persistedStaticPoints: number | null): Man
     return withTimeDecayFloor({Mode: draft.Mode, MinPoints: draft.MinPoints, MaxPoints: draft.MaxPoints, FloorAtPercent: draft.FloorAtPercent, ForceEventScoring: draft.ForceEventScoring, StaticPoints: draft.Mode !== 0 ? persistedStaticPoints : raw === "" ? null : Number(raw)});
 }
 
+// Draft retention includes inactive input; the Save button separately compares only request payloads.
+function scoringDraftNeedsRetention(draft: ScoringDraft, saved: ManageScoring): boolean {
+    const original = draftOf(saved);
+    const dormantInputChanged = draft.Mode !== 0 && draft.StaticPoints !== original.StaticPoints;
+    return dormantInputChanged || JSON.stringify(inputOf(draft, saved.StaticPoints)) !== JSON.stringify(inputOf(original, saved.StaticPoints));
+}
+
 const chargeModes = () => ([
     {value: "reward", label: t("manage.board.charge.reward"), note: t("manage.board.charge.rewardNote")},
     {value: "balance", label: t("manage.board.charge.balance"), note: t("manage.board.charge.balanceNote")},
@@ -58,7 +65,7 @@ export function ChallengeSettings() {
     const scoring = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const lifecycle = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useSessionDraftState<{eventID: string; value: ScoringDraft} | null>("challenge-scoring", null, {reconcile: true, dirty: current => !scoring.data ? undefined : !!current && JSON.stringify(inputOf(current.value, scoring.data.StaticPoints)) !== JSON.stringify(inputOf(draftOf(scoring.data), scoring.data.StaticPoints))});
+    const [edit, setEdit] = useSessionDraftState<{eventID: string; value: ScoringDraft} | null>("challenge-scoring", null, {reconcile: true, dirty: current => !scoring.data ? undefined : !!current && scoringDraftNeedsRetention(current.value, scoring.data)});
     const [saving, setSaving] = useState(false);
     // Config saves run one after another; the controls never wait for them.
     const configQueue = useRef<Promise<void>>(Promise.resolve());
