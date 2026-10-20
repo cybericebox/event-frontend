@@ -24,16 +24,17 @@ import {
     attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentScopeTip, attachmentVersionLabel, detachWithConfirm, exercisesAppURL,
     infrastructureMismatch, isDetached, runningStandTeams, type StandTeam,
 } from "./attachmentModel";
-import {InfrastructureIcon, TipTag} from "./InfrastructureIcon";
+import {TipTag} from "./InfrastructureIcon";
 import {SetActions} from "./SetActions";
 import {SetStageField} from "./SetStageField";
 import {getManageStages} from "@/api/manageStages";
-import {HintMark, TaskRow} from "./TaskRow";
+import {TaskRow} from "./TaskRow";
 import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRowModel";
 import {SetStatusIcon} from "./SetStatusIcon";
-import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine, ResourcesShort} from "./ResourceMarks";
+import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 import {ResourcePlanSummary} from "./ResourcePlanSummary";
-import {CatalogStatsList} from "./CatalogStats";
+import {AverageDifficulty, SubtaskCount} from "./CatalogStats";
+import {InfrastructurePopover, ScoringPopover} from "./SetCardPopovers";
 import {BulkSelectionBar} from "./BulkSelectionBar";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
@@ -181,20 +182,19 @@ export function ExerciseAttachments() {
                                 <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
                                 <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
                             </span>
-                            {attachment.Infrastructure && <InfrastructureIcon />}
+                            {attachment.Infrastructure && <InfrastructurePopover resources={attachment.Resources} stand={summary.stand} />}
                             <ResourceHeavyTag show={attachment.ResourceHeavy} />
                             <NoAgentFitsTag show={attachment.NoAgentFits} />
                             {flagRepeat && !open && <EventTooltip content={flagRepeat}>{id => <span className="event-exercise-set__warn-mark" role="img" tabIndex={0} aria-label={flagRepeat} aria-describedby={id}><TriangleAlert size={16} aria-hidden="true" /></span>}</EventTooltip>}
                             {(availabilityQuery.data?.get(attachment.ID)?.length ?? 0) > 0 && <span className="ib-tag ib-tag--sm ib-tag--danger" data-image-unavailable>{t("manage.registries.unavailable")}</span>}
                         </div>
                         <div className="event-exercise-set__side">
-                            {/* The pinned version's stats; the count opens the subtask names (a button: it never toggles the set). */}
-                            <CatalogStatsList average={attachment.AvgDifficulty} count={attachment.TaskCount} names={attachment.TaskNames} className="event-exercise-set__stats" />
-                            <ResourcesShort resources={attachment.Resources} className="event-exercise-set__res" />
-                            <span className="event-task__badges">
-                                {summary.hints && <HintMark hints={summary.hints} />}
-                                {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
-                                {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
+                            {/* Only the difficulty, the subtask count (it opens the names) and the scoring (it opens the details);
+                                the lab's resources sit behind the infrastructure mark on the left. Popovers never toggle the set. */}
+                            <span className="event-exercise-set__stats">
+                                <AverageDifficulty average={attachment.AvgDifficulty} />
+                                <SubtaskCount count={attachment.TaskCount} names={attachment.TaskNames} labelled />
+                                <ScoringPopover tasks={challenges} scoring={scoringQuery.data} />
                             </span>
                             {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy} broken={mismatch}
                                 onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}
