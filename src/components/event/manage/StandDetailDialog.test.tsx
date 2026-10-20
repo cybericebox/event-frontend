@@ -174,7 +174,7 @@ it("withdraws a reset confirmation on a newer running revision", async () => {
     vi.mocked(getStandDetail).mockResolvedValue(canonicalDetail(running));
     render(<QueryClientProvider client={client}><StandDetailDialog eventID="e1" teamID={teamID} canManage onClose={() => undefined} /></QueryClientProvider>);
     fireEvent.click(await screen.findByRole("button", {name: "Скинути пристрій"}));
-    expect(screen.getAllByRole("button", {name: "Скинути пристрій"})).toHaveLength(2);
+    expect(screen.getAllByRole("button", {name: "Скинути пристрій", hidden: true})).toHaveLength(2);
     await act(async () => {client.setQueryData(["event-management-stand-detail", "e1", teamID], canonicalDetail({...running, Revision: "8"}));});
     await waitFor(() => expect(screen.getAllByRole("button", {name: "Скинути пристрій"})).toHaveLength(1));
     expect(resetStandDevice).not.toHaveBeenCalled();

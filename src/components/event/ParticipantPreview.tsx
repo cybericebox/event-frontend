@@ -4,8 +4,9 @@ import {createContext, useContext, useEffect, useMemo, useSyncExternalStore, use
 import {useQuery, useQueryClient, type QueryClient} from "@tanstack/react-query";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {getPreviewBoard, previewBoardKey, resetPreviewRuns, startPreviewRun, stopPreviewRun} from "@/api/participantPreview";
+import {previewRunStartsSuspended, suspendPreviewRunStarts} from "@/api/previewRunLifecycle";
 import type {OwnBoard} from "@/api/participantChallenges";
-import {BusyMark} from "@/components/ui/EventButton";
+import {BusyMark, EventButton} from "@/components/ui/EventButton";
 import {usePathname, useRouter} from "next/navigation";
 import {getCurrentUser} from "@/api/clientAuth";
 import {ownTeamSchema} from "@/types/ownTeam";
@@ -29,6 +30,8 @@ const PreviewStateSchema = z.object({
     // «Показати завдання»: the test task board shows whatever the event phase says and the dynamic tasks' labs run.
     // Off by default: the real phase screens, no test labs.
     tasks: z.boolean().default(false),
+    // New entries get an instance identity; legacy saved previews remain readable.
+    sessionID: z.string().optional(),
 });
 export type ParticipantPreviewState = z.infer<typeof PreviewStateSchema>;
 const CHANGE_EVENT = "event-participant-preview-change";
@@ -54,6 +57,29 @@ function persist(next: ParticipantPreviewState | null) {
     } catch { /* Restricted browser storage: keep this session in memory. */ }
     window.dispatchEvent(new Event(CHANGE_EVENT));
 }
+// Bind async work to both the browser preview instance and the current query-session authority.
+// Query identity/removal is observed synchronously, so A -> B -> A cannot revive retired work.
+function previewSessionFence(client: QueryClient, owner: ParticipantPreviewState) {
+    const cache = client.getQueryCache();
+    const identity = cache.find({queryKey: ["event-current-user"], exact: true});
+    const access = cache.find({queryKey: ["event-management-access", owner.eventID], exact: true});
+    let retired = false;
+    const authorized = () => !!identity && cache.find({queryKey: identity.queryKey, exact: true}) === identity
+        && identity.state.status === "success" && (identity.state.data as {ID?: string} | null)?.ID === owner.userID
+        && !!access && cache.find({queryKey: access.queryKey, exact: true}) === access
+        && access.state.status === "success" && (access.state.data as {CanManage?: boolean} | null)?.CanManage === true;
+    const current = () => {
+        if (retired || !authorized()) return null;
+        const saved = parseSnapshot(snapshot());
+        return saved?.eventID === owner.eventID && saved.userID === owner.userID && saved.sessionID === owner.sessionID ? saved : null;
+    };
+    const unsubscribe = cache.subscribe(event => {
+        if ((event.query === identity || event.query === access) && !authorized()) retired = true;
+    });
+    return {current, valid: () => !!current(), dispose: () => {retired = true; unsubscribe();}};
+}
+type PreviewOperation = {kind: "reset" | "exit" | "stop"; scope: ReturnType<typeof previewSessionFence>};
+
 type PreviewContextValue = {
     state: ParticipantPreviewState | null;
     config: ManageConfig | null;
@@ -61,17 +87,19 @@ type PreviewContextValue = {
     // The mode cookie names this event: the staff UI stays hidden, as in the server render, while the state loads.
     hinted: boolean;
     resetting: boolean;
+    exiting: boolean;
+    exitError: string | null;
     // What the infrastructure switch is doing right now, null when idle.
     infraBusy: "starting" | "stopping" | null;
     setTasks: (on: boolean) => Promise<boolean>;
     start: (eventID: string, registration?: number) => void;
     update: (patch: Partial<Pick<ParticipantPreviewState, "status" | "outcome" | "answers" | "team">>) => void;
-    reset: () => void | Promise<boolean>; exit: () => void;
+    reset: () => void | Promise<boolean>; exit: () => void | Promise<boolean>;
 };
 const noop = () => {};
 // The event named by the mode cookie the server render read, while the browser has not yet confirmed the mode.
 const CookieContext = createContext<string | null>(null);
-const PreviewContext = createContext<PreviewContextValue>({state: null, config: null, active: false, hinted: false, resetting: false, infraBusy: null, setTasks: async () => false, start: noop, update: noop, reset: noop, exit: noop});
+const PreviewContext = createContext<PreviewContextValue>({state: null, config: null, active: false, hinted: false, resetting: false, exiting: false, exitError: null, infraBusy: null, setTasks: async () => false, start: noop, update: noop, reset: noop, exit: noop});
 export function useParticipantPreview(eventID?: string) {
     const context = useContext(PreviewContext);
     const cookieEvent = useContext(CookieContext);
@@ -83,6 +111,10 @@ export function useParticipantPreview(eventID?: string) {
 export function ParticipantPreviewProvider({children, serverCookie = null}: {children: ReactNode; serverCookie?: string | null}) {
     const queryClient = useQueryClient();
     const [resetting, setResetting] = useState(false);
+    const [exiting, setExiting] = useState(false);
+    const [exitError, setExitError] = useState<string | null>(null);
+    const operation = useRef<PreviewOperation | null>(null);
+    useEffect(() => () => {operation.current?.scope.dispose(); operation.current = null;}, []);
     const [infraBusy, setInfraBusy] = useState<"starting" | "stopping" | null>(null);
     const router = useRouter();
     const pathname = usePathname();
@@ -95,57 +127,92 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
     // the staff UI hidden: clear it once the identity and access answers are in.
     const settled = identity.isSuccess && (!saved || saved.userID !== identity.data?.ID || access.isSuccess || access.isError);
     useEffect(() => {if (settled && !state && readPreviewCookie()) clearPreviewCookie();}, [settled, state]);
+    useEffect(() => {if (!state && !operation.current) setInfraBusy(null);}, [state]);
     const config = useQuery({queryKey: ["event-management-config", state?.eventID], queryFn: () => getManageConfig(state!.eventID), enabled: !!state, retry: false, refetchOnWindowFocus: false});
-    const exit = () => {persist(null); router.push("/manage");};
-    const reset = async () => {
-        if (!state || resetting) return false;
-        setResetting(true);
+    const cleanup = async (kind: "reset" | "exit") => {
+        if (!state || operation.current) return false;
+        const token: PreviewOperation = {kind, scope: previewSessionFence(queryClient, state)};
+        if (!token.scope.valid()) {token.scope.dispose(); return false;}
+        operation.current = token;
+        const launches = suspendPreviewRunStarts(state.eventID);
+        setExitError(null);
+        if (kind === "exit") setExiting(true); else setResetting(true);
         try {
+            // A POST already sent may create a lab after DELETE; wait for every launch before the final cleanup.
+            await launches.drain();
+            if (!token.scope.valid()) return false;
             await resetPreviewRuns(state.eventID);
-            const current = parseSnapshot(snapshot());
-            if (current?.eventID !== state.eventID || current.userID !== state.userID) return false;
+            if (!token.scope.valid()) return false;
             const belongsToPreview = (key: readonly unknown[]) =>
                 (["event-participant-preview-board", "event-preview-results", "event-preview-vpn-lab"].includes(String(key[0])) && key[1] === state.eventID)
                 || (key[1] === "preview" && key[2] === state.eventID);
             await queryClient.cancelQueries({predicate: query => belongsToPreview(query.queryKey)});
+            if (!token.scope.valid()) return false;
             queryClient.removeQueries({predicate: query => belongsToPreview(query.queryKey)});
-            persist({...current, status: 0, answers: {}, team: null, tasks: false});
-            router.push("/");
+            const current = token.scope.current();
+            if (!current) return false;
+            persist(kind === "exit" ? null : {...current, status: 0, answers: {}, team: null, tasks: false});
+            router.push(kind === "exit" ? "/manage" : "/");
             return true;
-        } catch (failure) {toastFailure(failure, t("participantPreview.resetFailed")); return false;}
-        finally {setResetting(false);}
+        } catch (failure) {
+            if (!token.scope.valid()) return false;
+            if (kind === "exit") setExitError(t("participantPreview.exitFailed"));
+            toastFailure(failure, t(kind === "exit" ? "participantPreview.exitFailed" : "participantPreview.resetFailed"));
+            return false;
+        } finally {
+            launches.release(); token.scope.dispose();
+            if (operation.current === token) {
+                operation.current = null;
+                if (kind === "exit") setExiting(false); else setResetting(false);
+                setInfraBusy(null);
+            }
+        }
     };
+    const exit = () => cleanup("exit");
+    const reset = () => cleanup("reset");
     // On: persisted, the runner below launches the labs. Off: the owned dynamic labs end first, then the switch flips.
     const setTasks = async (on: boolean) => {
-        if (!state) return false;
+        if (!state || operation.current) return false;
+        const scope = previewSessionFence(queryClient, state);
         const persistTasks = () => {
-            const current = parseSnapshot(snapshot());
-            if (current?.eventID !== state.eventID || current.userID !== state.userID) return false;
+            const current = scope.current();
+            if (!current) return false;
             persist({...current, tasks: on});
             return true;
         };
-        if (on) return persistTasks();
+        if (on) {try {return persistTasks();} finally {scope.dispose();}}
+        const token: PreviewOperation = {kind: "stop", scope};
+        if (!scope.valid()) {scope.dispose(); return false;}
+        operation.current = token;
+        const launches = suspendPreviewRunStarts(state.eventID);
         setInfraBusy("stopping");
         try {
-            const stopped = await stopPreviewLabs(queryClient, state.eventID);
+            await launches.drain();
+            if (!scope.valid()) return false;
+            const stopped = await stopPreviewLabs(queryClient, state.eventID, scope.valid);
             return stopped && persistTasks();
-        } catch (failure) {toastFailure(failure, t("participantPreview.infra.stopFailed")); return false;}
-        finally {setInfraBusy(null);}
+        } catch (failure) {if (scope.valid()) toastFailure(failure, t("participantPreview.infra.stopFailed")); return false;}
+        finally {
+            launches.release(); scope.dispose();
+            if (operation.current === token) {operation.current = null; setInfraBusy(null);}
+        }
     };
     // The hint comes only from the cookie the SERVER rendered with, and only until the identity and access answers
     // are in: it covers the first HTML and hydration. A client navigation (the server layout is not re-rendered)
     // starts with no hint and behaves as before the cookie existed.
     const hint = !settled && !state ? serverCookie : null;
-    return <CookieContext.Provider value={hint}><PreviewContext.Provider value={{state, hinted: !!hint, config: config.data ?? null, resetting, infraBusy, setTasks, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
-        if (!identity.data) return;
-        persist({eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null, tasks: false});
+    return <CookieContext.Provider value={hint}><PreviewContext.Provider value={{state, hinted: !!hint, config: config.data ?? null, resetting, exiting, exitError, infraBusy, setTasks, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
+        const live = queryClient.getQueryState<{ID: string}>(["event-current-user"]);
+        if (operation.current || !identity.isSuccess || !identity.data || live?.status !== "success" || live.data?.ID !== identity.data.ID) return;
+        setInfraBusy(null); setExitError(null);
+        persist({sessionID: crypto.randomUUID(), eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null, tasks: false});
         router.push("/");
     }, update: patch => {const current = parseSnapshot(snapshot()); if (state && current?.userID === state.userID && current.eventID === state.eventID) persist({...current, ...patch, ...(patch.team ? {team: {...patch.team, Admitted: patch.team.MemberCount >= (patch.team.MinTeamSize ?? 1)}} : {})});}, reset, exit}}>
         {state && !pathname.startsWith("/manage") && <div className="event-private-preview-banner event-participant-preview" role="region" aria-label={t("participantPreview.title")}>
             <b className="event-participant-preview__title">{t("participantPreview.title")}</b>
             <ParticipantPreviewMenu />
         </div>}
-        {state?.tasks && !/^\/manage(?:\/|$)/.test(pathname) && <PreviewInfrastructure eventID={state.eventID} stopping={infraBusy === "stopping"} onBusy={setInfraBusy} />}
+        {state?.tasks && !/^\/manage(?:\/|$)/.test(pathname) && <PreviewInfrastructure owner={state} stopping={resetting || exiting || infraBusy === "stopping"} onBusy={busy => {if (!operation.current) setInfraBusy(busy);}} />}
         {children}
     </PreviewContext.Provider></CookieContext.Provider>;
 }
@@ -153,13 +220,16 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
 const previewRuntimeCache = (key: readonly unknown[], eventID: string) => key[1] === "preview" && key[2] === eventID;
 
 // Ends the owned dynamic labs of the test tasks (static progress stays). Returns false when any of them failed to end.
-async function stopPreviewLabs(queryClient: QueryClient, eventID: string): Promise<boolean> {
+async function stopPreviewLabs(queryClient: QueryClient, eventID: string, current: () => boolean): Promise<boolean> {
     const key = previewBoardKey(eventID);
     const board: OwnBoard = queryClient.getQueryData<OwnBoard>(key) ?? await getPreviewBoard(eventID);
+    if (!current()) return false;
     const running = [...new Set(board.Challenges.filter(task => task.PreviewDynamic && task.PreviewRunID && task.PreviewSelectionID).map(task => task.PreviewSelectionID!))];
     const results = await Promise.allSettled(running.map(id => stopPreviewRun(eventID, id)));
+    if (!current()) return false;
     const ended = new Set(running.filter((_, index) => results[index].status === "fulfilled"));
     queryClient.setQueryData<OwnBoard>(key, current => current && ({...current, Challenges: current.Challenges.map(task => task.PreviewSelectionID && ended.has(task.PreviewSelectionID) ? {...task, PreviewRunID: null, PreviewExpiresAt: null} : task)}));
+    if (!current()) return false;
     queryClient.removeQueries({predicate: query => previewRuntimeCache(query.queryKey, eventID)});
     const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
     if (failed) throw failed.reason;
@@ -168,38 +238,46 @@ async function stopPreviewLabs(queryClient: QueryClient, eventID: string): Promi
 
 // While the switch is on, launches the labs of the dynamic test tasks that have no run, once per task: a lease that
 // ended is not relaunched by itself, and a failed launch is told once, not retried in a loop.
-function PreviewInfrastructure({eventID, stopping, onBusy}: {eventID: string; stopping: boolean; onBusy: (busy: "starting" | null) => void}) {
+function PreviewInfrastructure({owner, stopping, onBusy}: {owner: ParticipantPreviewState; stopping: boolean; onBusy: (busy: "starting" | null) => void}) {
     const queryClient = useQueryClient();
+    const eventID = owner.eventID;
+    const mounted = useRef(true);
+    useEffect(() => {mounted.current = true; return () => {mounted.current = false;};}, []);
     const key = useMemo(() => previewBoardKey(eventID), [eventID]);
     const board = useQuery({queryKey: key, queryFn: () => getPreviewBoard(eventID), retry: false, refetchInterval: 10000});
     const attempted = useRef(new Set<string>());
     const working = useRef(false);
     const data = board.data;
     useEffect(() => {
-        if (!data || working.current || stopping) return;
+        if (!data || working.current || stopping || previewRunStartsSuspended(eventID)) return;
         const wanted = [...new Set(data.Challenges.filter(task => task.PreviewDynamic && task.PreviewCanStart === true && !task.PreviewRunID && task.PreviewSelectionID).map(task => task.PreviewSelectionID!))]
             .filter(id => !attempted.current.has(id));
         if (wanted.length === 0) return;
+        const scope = previewSessionFence(queryClient, owner);
+        const current = () => mounted.current && scope.valid();
+        if (!current()) {scope.dispose(); return;}
         wanted.forEach(id => attempted.current.add(id));
         working.current = true;
         onBusy("starting");
         void (async () => {
             try {
                 for (const id of wanted) {
+                    if (previewRunStartsSuspended(eventID) || !current()) break;
                     const run = await startPreviewRun(eventID, id);
+                    if (!current()) break;
                     queryClient.setQueryData<OwnBoard>(key, current => current && ({...current, Challenges: current.Challenges.map(task => task.PreviewSelectionID === id ? {...task, PreviewRunID: run.ID, PreviewExpiresAt: run.ExpiresAt} : task)}));
                 }
-            } catch (failure) {toastFailure(failure, t("participantPreview.infra.startFailed"));}
-            finally {working.current = false; onBusy(null);}
+            } catch (failure) {if (current()) toastFailure(failure, t("participantPreview.infra.startFailed"));}
+            finally {working.current = false; if (current()) onBusy(null); scope.dispose();}
         })();
-    }, [data, stopping, eventID, queryClient, key, onBusy]);
+    }, [data, stopping, eventID, owner, queryClient, key, onBusy]);
     return null;
 }
 
 export function ParticipantPreviewEntry({eventID, registration}: {eventID: string; registration?: number}) {
     const preview = useParticipantPreview();
     // On a phone the top bar keeps only the icon; the label stays the accessible name.
-    return <button type="button" className="ib-btn ib-btn--sm event-preview-entry" onClick={() => preview.start(eventID, registration)}><Eye size={16} aria-hidden="true" /><span className="event-preview-entry__label">{t("participantPreview.enter")}</span></button>;
+    return <EventButton type="button" className="ib-btn ib-btn--sm event-preview-entry" busy={preview.exiting || preview.resetting || preview.infraBusy === "stopping"} busyLabel={t(preview.exiting ? "participantPreview.exiting" : preview.resetting ? "participantPreview.resetting" : "participantPreview.infra.stopping")} onClick={() => preview.start(eventID, registration)}><Eye size={16} aria-hidden="true" /><span className="event-preview-entry__label">{t("participantPreview.enter")}</span></EventButton>;
 }
 
 // File answers in test mode keep metadata only; no upload endpoint is called.
@@ -242,13 +320,14 @@ export function ParticipantPreviewMenu() {
                         </DropdownMenu.RadioGroup>
                         <DropdownMenu.Separator className="event-participant-preview__separator" />
                     </>}
-                    <DropdownMenu.CheckboxItem className="ib-listbox__opt event-participant-preview__option" checked={state.tasks} disabled={!!preview.infraBusy} aria-busy={!!preview.infraBusy || undefined}
+                    <DropdownMenu.CheckboxItem className="ib-listbox__opt event-participant-preview__option" checked={state.tasks} disabled={!!preview.infraBusy || preview.resetting || preview.exiting} aria-busy={!!preview.infraBusy || undefined}
                         onSelect={event => event.preventDefault()} onCheckedChange={on => void preview.setTasks(on)}>
                         <span className="event-participant-preview__indicator">{preview.infraBusy ? <BusyMark /> : <DropdownMenu.ItemIndicator><Check size={16} aria-hidden="true" /></DropdownMenu.ItemIndicator>}</span>
                         {t(preview.infraBusy === "starting" ? "participantPreview.infra.starting" : preview.infraBusy === "stopping" ? "participantPreview.infra.stopping" : "participantPreview.tasks")}
                     </DropdownMenu.CheckboxItem>
-                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" disabled={preview.resetting} aria-busy={preview.resetting || undefined} onSelect={event => {event.preventDefault(); void Promise.resolve(preview.reset()).then(success => {if (success) setMenuOpen(false);});}}>{preview.resetting ? <BusyMark /> : <RotateCcw size={16} aria-hidden="true" />}{t("participantPreview.reset")}</DropdownMenu.Item>
-                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" onSelect={preview.exit}><LogOut size={16} aria-hidden="true" />{t("participantPreview.exit")}</DropdownMenu.Item>
+                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" disabled={preview.resetting || preview.exiting || preview.infraBusy === "stopping"} aria-busy={preview.resetting || undefined} onSelect={event => {event.preventDefault(); void Promise.resolve(preview.reset()).then(success => {if (success) setMenuOpen(false);});}}>{preview.resetting ? <BusyMark /> : <RotateCcw size={16} aria-hidden="true" />}{t(preview.resetting ? "participantPreview.resetting" : "participantPreview.reset")}</DropdownMenu.Item>
+                    <DropdownMenu.Item className="ib-listbox__opt event-participant-preview__option" disabled={preview.resetting || preview.exiting || preview.infraBusy === "stopping"} aria-busy={preview.exiting || undefined} onSelect={event => {event.preventDefault(); void Promise.resolve(preview.exit()).then(success => {if (success) setMenuOpen(false);});}}>{preview.exiting ? <BusyMark /> : <LogOut size={16} aria-hidden="true" />}{t(preview.exiting ? "participantPreview.exiting" : "participantPreview.exit")}</DropdownMenu.Item>
+                    {preview.exitError && <div className="event-manage-validation" role="alert">{preview.exitError}</div>}
                 </DropdownMenu.Content></DropdownMenu.Portal>
             </DropdownMenu.Root>;
 }

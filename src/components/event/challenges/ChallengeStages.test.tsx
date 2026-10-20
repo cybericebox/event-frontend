@@ -96,16 +96,16 @@ describe("the tile of a stage task", () => {
     const open = vi.fn();
     it("marks a closed task and a practice solve", () => {
         render(<ChallengeTile challenge={{...base, Closed: true}} onOpen={open} />);
-        expect(screen.getByText("закрито")).toBeTruthy();
+        expect(screen.getByRole("button").getAttribute("aria-label")).toContain("закрито");
         cleanup();
         render(<ChallengeTile challenge={{...base, Practice: true}} onOpen={open} />);
-        expect(screen.getAllByText("Розвʼязано · не враховується в рейтингу").length).toBeGreaterThan(0);
+        expect(screen.getByRole("button").className).toContain("is-closed");
         expect(screen.getByRole("button").getAttribute("aria-label")).toContain("Розвʼязано · не враховується в рейтингу");
     });
 
     it("keeps the solved state of a closed task", () => {
         render(<ChallengeTile challenge={{...base, Closed: true, SolvedAt: "2026-10-01T09:00:00Z"}} onOpen={open} />);
-        expect(screen.getByText("закрито")).toBeTruthy();
+        expect(screen.getByRole("button").getAttribute("aria-label")).toContain("закрито");
         expect(screen.getByRole("button").className).toContain("is-solved");
     });
 });
@@ -118,14 +118,14 @@ it("retains a returnable stage task's description and practice meaning while wit
     render(<QueryClientProvider client={client}><ChallengeModal challenge={challenge} stage={{...stage, Returnable: true}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints onClose={() => {}} onAccepted={() => {}} /></QueryClientProvider>);
     expect(screen.getByText("Retained task description")).toBeTruthy();
     expect(screen.getByText("Етап завершено. Відповіді перевіряються, але в рейтинг не йдуть.")).toBeTruthy();
-    expect(screen.getByText("Етап завершено. Середовище закрито.")).toBeTruthy();
+    expect(screen.getByText("Середовище закрито.")).toBeTruthy();
     expect(screen.queryByText("https://runtime.test")).toBeNull();
     expect(screen.queryByRole("button", {name: "Відкрити сервіс"})).toBeNull();
     expect(api.runtime).not.toHaveBeenCalled(); expect(api.stop).not.toHaveBeenCalled(); expect(api.restart).not.toHaveBeenCalled();
 });
 it("next-stage preparation does not reopen a solved shared Lab even when a malformed capability permits restart", () => {
     renderModal({...base, Infrastructure: true, Lab: {...completedLab, CanRestart: true}, SolvedAt: "2026-10-01T09:00:00Z"}, {...stage, State: "open"});
-    expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy();
+    expect(screen.getByText("Середовище закрито.")).toBeTruthy();
     expect(screen.queryByRole("button", {name: "Запустити знову"})).toBeNull();
     expect(api.runtime).not.toHaveBeenCalled(); expect(api.restart).not.toHaveBeenCalled();
 });

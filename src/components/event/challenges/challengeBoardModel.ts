@@ -1,13 +1,12 @@
 import type {BoardStage, OwnChallenge} from "@/api/participantChallenges";
 import {t, tPlural} from "@/i18n/t";
 
-export type BoardView = "tiles" | "rail";
 // "" is «Усі» and the default, so a task that was just solved stays on the board; «Відкриті» narrows it. Tasks of closed stages are reached through «Закриті».
 export type BoardStatus = "" | "open" | "solved" | "closed";
-export type BoardFilters = {stage: string; status: BoardStatus; category: string};
+export type BoardFilters = {stage: string; status: BoardStatus; group: string[]};
 export const UNSTAGED = "none";
-export const DEFAULT_BOARD_FILTERS: BoardFilters = {stage: "", status: "", category: ""};
-export type BoardCategory = {key: string; name: string; order: number; challenges: OwnChallenge[]};
+export const DEFAULT_BOARD_FILTERS: BoardFilters = {stage: "", status: "", group: []};
+export type BoardGroup = {key: string; name: string; order: number; challenges: OwnChallenge[]};
 
 // «1 250» — a narrow no-break space groups thousands like the DS boards.
 export function formatPoints(value: number): string {
@@ -42,22 +41,17 @@ export function solvesLabel(n: number): string {
     return tPlural("challenges.solves", n);
 }
 
-// Categories keep the organizer's group order; tasks keep the organizer's order.
-export function buildCategories(challenges: OwnChallenge[]): BoardCategory[] {
-    const groups = new Map<string, BoardCategory>();
+// Groups keep the organizer's group order; tasks keep the organizer's order.
+export function buildGroups(challenges: OwnChallenge[]): BoardGroup[] {
+    const groups = new Map<string, BoardGroup>();
     for (const challenge of challenges) {
         const key = challenge.GroupID ?? "ungrouped";
-        if (!groups.has(key)) groups.set(key, {key, name: challenge.GroupName || t("challenges.otherCategory"), order: challenge.GroupOrder, challenges: []});
+        if (!groups.has(key)) groups.set(key, {key, name: challenge.GroupName || t("challenges.otherGroup"), order: challenge.GroupOrder, challenges: []});
         groups.get(key)!.challenges.push(challenge);
     }
     return Array.from(groups.values())
         .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "uk"))
         .map(group => ({...group, challenges: [...group.challenges].sort((a, b) => a.Order - b.Order || a.Snapshot.name.localeCompare(b.Snapshot.name, "uk"))}));
-}
-
-export function matchesBoard(challenge: OwnChallenge, query: string, categoryName = ""): boolean {
-    const q = query.trim().toLocaleLowerCase("uk");
-    return !q || challenge.Snapshot.name.toLocaleLowerCase("uk").includes(q) || categoryName.toLocaleLowerCase("uk").includes(q);
 }
 
 // What the team has done with a task, whatever its stage says: solved counts a practice solve too (it is shown as
@@ -76,9 +70,10 @@ export function isSolvableNow(challenge: OwnChallenge, stages: BoardStage[]): bo
     return !challenge.StageID || stageOf(challenge, stages)?.State === "open";
 }
 
-// Applies the stage and status filters (the category and the search narrow further inside a board).
+// Apply URL-owned group, stage and status filters.
 export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilters, stages: BoardStage[] = []): OwnChallenge[] {
     return challenges.filter(challenge => {
+        if (filters.group.length && !filters.group.includes(challenge.GroupID ?? "ungrouped")) return false;
         if (filters.stage && (filters.stage === UNSTAGED ? challenge.StageID !== null : challenge.StageID !== filters.stage)) return false;
         if (filters.status === "open") return isSolvableNow(challenge, stages);
         return !filters.status || boardStatus(challenge, stages) === filters.status;
@@ -87,24 +82,24 @@ export function applyBoardFilters(challenges: OwnChallenge[], filters: BoardFilt
 
 const STATUSES: BoardStatus[] = ["open", "solved", "closed"];
 
-// The filters live in the URL: ?stage=…&status=…&category=… (the default «Усі» is left out).
+// The filters live in the URL: ?stage=…&status=…&group=… (the default «Усі» is left out).
 export function parseBoardFilters(search: string): BoardFilters {
     const params = new URLSearchParams(search);
     const status = params.get("status");
     return {
         stage: params.get("stage") ?? "",
         status: STATUSES.includes(status as BoardStatus) ? status as BoardStatus : "",
-        category: params.get("category") ?? "",
+        group: [...new Set(params.getAll("group").filter(Boolean))],
     };
 }
 
 // Rewrites only the filter parameters of a query string, keeping any other.
 export function boardFilterSearch(search: string, filters: BoardFilters): string {
     const params = new URLSearchParams(search);
-    for (const key of ["scope", "stage", "status", "category"]) params.delete(key);
+    for (const key of ["scope", "stage", "status", "category", "group"]) params.delete(key);
     if (filters.stage) params.set("stage", filters.stage);
     if (filters.status !== DEFAULT_BOARD_FILTERS.status) params.set("status", filters.status);
-    if (filters.category) params.set("category", filters.category);
+    for (const group of new Set(filters.group.filter(Boolean))) params.append("group", group);
     const query = params.toString();
     return query ? `?${query}` : "";
 }
@@ -119,36 +114,13 @@ export function awardedPoints(challenge: Pick<OwnChallenge, "Points" | "AwardedP
 }
 
 export function solvedCount(challenges: OwnChallenge[]): string {
-    return `${challenges.filter(item => item.SolvedAt).length} / ${challenges.length}`;
-}
-
-export function restPoints(challenges: OwnChallenge[]): number {
-    return challenges.filter(item => !item.SolvedAt).reduce((sum, item) => sum + item.Points, 0);
+    return `${challenges.filter(item => item.SolvedAt || item.Practice).length} / ${challenges.length}`;
 }
 
 export function lockedLabel(challenge: OwnChallenge): string {
     if (challenge.LockedNote) return challenge.LockedNote;
     const names = challenge.Prerequisites.filter(item => !item.Solved).map(item => item.Name);
     return names.length ? t("challenges.locked.after", {names: names.join(", ")}) : t("challenges.locked.later");
-}
-
-export {boardViewKey} from "@/utils/storageKeys";
-
-// Storage can be unavailable (private mode, blocked site data): fall back to «Плитки».
-export function readBoardView(storage: Pick<Storage, "getItem"> | undefined, key: string): BoardView {
-    try {
-        return storage?.getItem(key) === "rail" ? "rail" : "tiles";
-    } catch {
-        return "tiles";
-    }
-}
-
-export function writeBoardView(storage: Pick<Storage, "setItem"> | undefined, key: string, view: BoardView): void {
-    try {
-        storage?.setItem(key, view);
-    } catch {
-        // The choice then lasts for this visit only.
-    }
 }
 
 // «Команду не допущено: потрібно ще N учасників».

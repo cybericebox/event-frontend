@@ -39,7 +39,7 @@ export function categoryChartOption(shares: readonly CategoryShare[], color: str
             trigger: "axis", axisPointer: {type: "none"},
             formatter: (params: {dataIndex: number}[]) => {
                 const share = rows[params[0].dataIndex];
-                return `${share.category}<br/>${t("participation.chart.category.tooltip", {solves: share.solves, points: share.points})}`;
+                return `${share.category}<br/>${t("participation.chart.group.tooltip", {solves: share.solves, points: share.points})}`;
             },
         },
         xAxis: {type: "value", minInterval: 1, axisLabel: {color: axisText}, splitLine: {lineStyle: {color: gridLine}}},

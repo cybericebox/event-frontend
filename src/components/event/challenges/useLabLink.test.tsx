@@ -15,10 +15,10 @@ vi.mock("@/api/participantChallenges", async importOriginal => ({...await import
 const {useLabLink, labLinkErrorMessage, PopupBlockedError} = await import("./useLabLink");
 const {ParticipantChallengeError} = await import("@/api/participantChallenges");
 
-function Probe({challengeID = "c1", moderators = false, lifecycle}: {challengeID?: string; moderators?: boolean; lifecycle?: LabLifecycle}) {
+function Probe({challengeID = "c1", moderators = false, lifecycle, destinationURL}: {challengeID?: string; moderators?: boolean; lifecycle?: LabLifecycle; destinationURL?: string}) {
     const {state, busyKey, open, retry} = useLabLink("e", challengeID, moderators, lifecycle);
     return <>
-        <button onClick={() => open("web", 80)}>open</button>
+        <button onClick={() => open("web", 80, destinationURL)}>open</button>
         <button onClick={retry}>retry</button>
         <output>{state.status}|{busyKey ?? ""}</output>
     </>;
@@ -280,4 +280,15 @@ it.each([false, true])("a known terminal pin fences links after an identityless 
     fireEvent.click(screen.getByText("open"));
     expect(windowOpen).not.toHaveBeenCalled(); expect(openLink).not.toHaveBeenCalled();
     ui.unmount();
+});
+
+it("preserves composed path, query and fragment through the actual fresh auth URL", async () => {
+    renderProbe(<Probe destinationURL="https://web-abc123.labs.test/panel?x=1&y=2#section" />);
+    fireEvent.click(screen.getByText("open"));await flush();
+    const url=new URL(tab.location.href);
+    expect(url.origin).toBe("https://web-abc123.labs.test");expect(url.pathname).toBe("/_auth");expect(url.searchParams.get("t")).toBe("x");expect(url.searchParams.get("next")).toBe("/panel?x=1&y=2#section");
+});
+it("refuses a changed proxy origin instead of silently opening the wrong target", async () => {
+    renderProbe(<Probe destinationURL="https://other.test/panel"/>);fireEvent.click(screen.getByText("open"));await flush();
+    expect(tab.close).toHaveBeenCalled();expect(tab.location.href).toBe("about:blank");expect(screen.getByRole("status").textContent).toBe("error|");
 });

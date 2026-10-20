@@ -131,3 +131,19 @@ describe("bulk actions on the event's tasks", () => {
         expect(screen.queryByRole("region", {name: "Дії з вибраними завданнями"})).toBeNull();
     });
 });
+
+it("rejects bulk dynamic bounds over 999 without sending scoring writes", async () => {
+    const bar = await selectAll(); fireEvent.click(within(bar).getByRole("button", {name: "Система оцінювання…"}));
+    const dialog = await screen.findByRole("dialog", {name: "Система оцінювання для 3 завдань"});
+    fireEvent.pointerDown(within(dialog).getByRole("button", {name: "Оцінювання підзавдання"}), {button: 0, ctrlKey: false});
+    fireEvent.click(screen.getByRole("menuitemradio", {name: "Динамічне"}));
+    const max = within(dialog).getByRole("spinbutton", {name: /^Від/}) as HTMLInputElement;
+    const min = within(dialog).getByRole("spinbutton", {name: /^До/}) as HTMLInputElement;
+    expect(max.max).toBe("999"); expect(min.max).toBe("999");
+    fireEvent.change(max, {target: {value: "1001"}}); fireEvent.change(min, {target: {value: "1000"}});
+    expect(max.value).toBe("1001"); expect(min.value).toBe("1000");
+    expect(within(dialog).getByText("Ціле число від 1 до 999.")).toBeTruthy();
+    expect(within(dialog).getByText("Ціле число від 0 до 999.")).toBeTruthy();
+    const apply = within(dialog).getByRole("button", {name: "Застосувати"});
+    expect(apply).toHaveProperty("disabled", true); fireEvent.click(apply); expect(api.scoring).not.toHaveBeenCalled();
+});

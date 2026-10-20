@@ -52,12 +52,12 @@ function renderModal(challenge: OwnChallenge) {
 }
 
 describe("solved task card", () => {
-    it("is a distinct success state with the check and the awarded points, unsolved stays as is", () => {
+    it("is a distinct success color with awarded points and no extra state icon", () => {
         const {container, rerender} = render(<ChallengeTile challenge={{...base, SolvedAt: "2026-10-01T11:52:00Z", AwardedPoints: 80}} onOpen={noop} />);
         const tile = container.querySelector(".ib-tile")!;
         expect(tile.classList.contains("is-solved")).toBe(true);
         expect(tile.querySelector(".ib-tile__pts")?.textContent).toBe("+80");
-        expect(tile.querySelector(".ib-tile__solved svg")).toBeTruthy();
+        expect(tile.querySelector(".ib-tile__solved")).toBeNull();
         rerender(<ChallengeTile challenge={base} onOpen={noop} />);
         expect(container.querySelector(".ib-tile")!.classList.contains("is-solved")).toBe(false);
         expect(container.querySelector(".ib-tile__pts")?.textContent).toBe("100");
@@ -68,11 +68,11 @@ describe("hints after the solve", () => {
     it("shows the still closed hints as free, as the server charges nothing once the task is solved", () => {
         const hints = [{ID: uuid(501), Cost: 50, Unlocked: false, Content: null, Level: "nudge"}];
         renderModal(challengeSchema.parse({...base, Hints: hints, HintCostTotal: 0}));
-        expect(screen.getByText(/· −50/)).toBeTruthy();
+        expect(screen.getByText(/· −50/, {selector: ".ib-num"})).toBeTruthy();
         cleanup();
         renderModal(challengeSchema.parse({...base, Hints: hints, HintCostTotal: 0, SolvedAt: "2026-10-01T11:52:00Z", AwardedPoints: 100}));
         expect(screen.queryByText(/−50/)).toBeNull();
-        expect(screen.getByText(/· безкоштовно/)).toBeTruthy();
+        expect(screen.getByText(/· безкоштовно/, {selector: ".ib-num"})).toBeTruthy();
     });
 
     it("keeps the flag error under the field, before the submit button", async () => {
@@ -87,7 +87,7 @@ describe("hints after the solve", () => {
 describe("authoritative shared Lab on the participant board", () => {
     const otherLab = {...runningLab, ID: uuid(101)};
     const questions = [1, 2, 3].map(n => ({...base, ID: uuid(900 + n), EventChallengeID: uuid(n),
-        Snapshot: {...base.Snapshot, name: `Завдання ${n}`, description: {}},
+        Snapshot: {...base.Snapshot, name: `Завдання ${n}`, description: {root: {type: "root", children: [{type: "copy-block", children: [{type: "variable", varName: "web"}]}]}}, placeholders: [{key: "web", kind: "external.link", device_name: "web"}]},
         Infrastructure: true, Hints: [], Order: n, Lab: n === 3 ? otherLab : runningLab}));
     const initial = ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: questions});
     const key = ["event-own-challenges", "e"];
@@ -100,7 +100,7 @@ describe("authoritative shared Lab on the participant board", () => {
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
         api.board.mockResolvedValue(initial);
         render(<QueryClientProvider client={client}><ChallengesBoard /></QueryClientProvider>);
-        await screen.findByText("Завдання 1");
+        await screen.findByText("Завдання 1", {selector: ".ib-tile__name"});
         return client;
     };
 
@@ -131,7 +131,7 @@ describe("authoritative shared Lab on the participant board", () => {
         await act(async () => {boardReply(initial); runtimeReply({Lab: runningLab, Phase: "Ready", Ready: true, VPNCIDR: "", InternetCIDR: "", Access: [], Queue: null});});
         await waitFor(() => expect(client.getQueryData<OwnBoard>(key)!.Challenges[0].Lab?.LogicalClosed).toBe(true));
         await waitFor(() => expect(client.getQueryData<LabRuntime>(["event-challenge-lab", "participant", "e", uuid(2)])?.Lab).toEqual(runningLab));
-        expect(screen.getByText("Усі завдання цього середовища виконано. Середовище закрито.")).toBeTruthy();
+        expect(screen.getByText("Середовище закрито.")).toBeTruthy();
         expect(document.querySelector("dialog")).toBe(dialog);
         expect(client.getQueryData(labKey("e", otherLab.ID))).toEqual(otherLab);
     });
@@ -140,12 +140,12 @@ describe("authoritative shared Lab on the participant board", () => {
         const client = await start();
         api.runtime.mockResolvedValue({Lab: runningLab, Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
         fireEvent.click(screen.getByRole("button", {name: /^Завдання 1/}));
-        await waitFor(() => expect(document.querySelector(".ib-copy")?.textContent).toContain("https://old.test"));
+        await waitFor(() => expect(document.querySelector("[data-copy-block] code")?.textContent).toContain("https://old.test"));
         const dialog = document.querySelector("dialog");
         const replacement = {...completedLab, ID: uuid(102), Revision: "1"};
         await act(async () => {client.setQueryData(key, {...initial, Challenges: initial.Challenges.map((item, index) => index === 0 ? {...item, Lab: replacement, SolvedAt: "2026-10-08T12:00:00Z", AwardedPoints: 100} : item)});});
-        await screen.findByText("Усі завдання цього середовища виконано. Середовище закрито.");
-        expect(document.querySelector(".ib-copy")).toBeNull(); expect(document.querySelector("dialog")).toBe(dialog);
+        await screen.findByText("Середовище закрито.");
+        expect(document.querySelector("[data-copy-block] code")?.textContent).toBe("—"); expect(document.querySelector("dialog")).toBe(dialog);
         expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
         expect(client.getQueryData<LabRuntime>(["event-challenge-lab", "participant", "e", uuid(1)])?.Lab?.ID).toBe(runningLab.ID);
     });
@@ -239,8 +239,7 @@ describe("a correct answer turns the card solved at once", () => {
         render(<Harness mode="participant" />);
         fireEvent.click(screen.getByRole("button", {name: /^Завдання 1/}));
         await send();
-        // the default «Відкриті» filter drops it from the grid; «Усі» shows it solved
-        fireEvent.click(within(screen.getByRole("group", {name: "Статус"})).getByRole("button", {name: "Усі"}));
+        // The cached board updates behind the modal; the native modal keeps it inert until closed.
         const card = document.querySelector(`[data-challenge-id="${uuid(1)}"]`)!;
         expect(card.classList.contains("is-solved")).toBe(true);
         expect(document.querySelector(`[data-challenge-id="${uuid(2)}"]`)!.classList.contains("is-solved")).toBe(false);
@@ -253,7 +252,6 @@ describe("a correct answer turns the card solved at once", () => {
         render(<Harness mode="moderators" />);
         fireEvent.click(screen.getByRole("button", {name: /^Завдання 2/}));
         await send();
-        fireEvent.click(within(screen.getByRole("group", {name: "Статус"})).getByRole("button", {name: "Усі"}));
         expect(document.querySelector(`[data-challenge-id="${uuid(2)}"]`)!.classList.contains("is-solved")).toBe(true);
         expect(screen.getAllByText("1 / 2").length).toBeGreaterThan(0);
     });

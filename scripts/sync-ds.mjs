@@ -51,7 +51,6 @@ const copy = {
 const extended = {
     "tokens.css": "tokens.css",
     "button.css": "components/button/button.css",
-    "category-rail.css": "components/category-rail/category-rail.css",
     "challenge-board.css": "components/challenge-board/challenge-board.css",
     "challenge-modal.css": "components/challenge-modal/challenge-modal.css",
     "challenge-tile.css": "components/challenge-tile/challenge-tile.css",

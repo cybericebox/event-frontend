@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {trackPreviewRunStart} from "./previewRunLifecycle";
 import {readApiError, readRetryAfter} from "@/api/apiErrors";
 import {LabRuntimeSchema} from "@/api/manageLabs";
 import {hintSchema, ownBoardSchema, ParticipantChallengeError, solvesPageSchema, submissionSchema, type OwnChallenge} from "@/api/participantChallenges";
@@ -43,7 +44,7 @@ export const getPreviewSolves = (eventID: string, task: PreviewTask) => request(
 export const previewFileUrl = (eventID: string, task: PreviewTask, fileID: string) => `${previewBase(eventID)}${taskPath(task)}/files/${encodeURIComponent(fileID)}`;
 const runSchema = z.object({ID: z.string(), SelectionID: z.string(), Dynamic: z.boolean(), ExpiresAt: z.string().nullable()});
 // leaseMinutes is the run length of the preview's laboratory (one of the offered ones); absent: the lease in force.
-export const startPreviewRun = (eventID: string, selectionID: string, leaseMinutes?: number) => request(eventID, `${selectionPath(selectionID)}/start`, runSchema, "POST", leaseMinutes ? {LeaseMinutes: leaseMinutes} : undefined);
+export const startPreviewRun = (eventID: string, selectionID: string, leaseMinutes?: number) => trackPreviewRunStart(eventID, () => request(eventID, `${selectionPath(selectionID)}/start`, runSchema, "POST", leaseMinutes ? {LeaseMinutes: leaseMinutes} : undefined));
 export const stopPreviewRun = (eventID: string, selectionID: string) => request(eventID, `${selectionPath(selectionID)}/run`, z.undefined(), "DELETE");
 export const resetPreviewRuns = (eventID: string) => request(eventID, "/runs", z.undefined(), "DELETE");
 // Ends one of the caller's own test labs (studio or preview) named by a test-lab cap refusal.

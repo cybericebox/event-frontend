@@ -22,7 +22,7 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t} from "@/i18n/t";
 import {attachmentActionError, hintCostChanges, hintCostDraftValid} from "./attachmentModel";
 import {descriptionFirstLine} from "./challengeOrder";
-import {decayOptions, decayProblem, dynamicErrors, dynamicValid, numberOf, scoringSummary, staticPointsValid, type DynamicProfile, type ScoringMode} from "./scoringModel";
+import {MAX_TASK_POINTS, decayOptions, decayProblem, dynamicErrors, dynamicValid, numberOf, scoringSummary, staticPointsValid, type DynamicProfile, type ScoringMode} from "./scoringModel";
 import {hintIndicator, taskBadges, type HintIndicator, type StandReadiness} from "./taskRowModel";
 
 type ScoringKind = "event" | "static" | "dynamic";
@@ -105,13 +105,13 @@ function TaskScoring({eventID, attachmentID, challenge, scoring, lifecycle, disa
                 <EventSelect ariaLabel={t("manage.challenges.task.scoringKindFor", {name: challenge.Snapshot.name})} value={draft.kind} options={kinds} onValueChange={kind => setDraft({...draft, kind: kind as ScoringKind})} disabled={locked} /></div>
             {draft.kind === "event" && <p className="event-task__summary">{scoringSummary(scoring, eventPoints)}</p>}
             {draft.kind === "static" && <RequiredNumber id={`${fieldID}-points`} title={t("manage.challenges.scoring.staticPoints")} help={t("manage.challenges.task.staticPointsHelp")}
-                value={draft.points} min={1} error={valid ? "" : t("manage.challenges.scoring.staticInvalid")} disabled={locked} onChange={points => setDraft({...draft, points})} />}
+                value={draft.points} min={1} max={MAX_TASK_POINTS} error={valid ? "" : t("manage.challenges.scoring.staticInvalid", {max: MAX_TASK_POINTS})} disabled={locked} onChange={points => setDraft({...draft, points})} />}
             {draft.kind === "dynamic" && <>
                 <div className="event-manage-field event-task__kind">{t("manage.challenges.scoring.decay")}
                     <EventSelect ariaLabel={t("manage.challenges.scoring.decay")} value={String(draft.profile.Mode)} options={decayOptions()} onValueChange={mode => updateProfile({Mode: Number(mode) as ScoringMode})} disabled={locked} /></div>
-                <RequiredNumber id={`${fieldID}-max`} title={t("manage.challenges.task.from")} help={t("manage.scoring.maxHelp")} value={String(draft.profile.MaxPoints)} min={1}
+                <RequiredNumber id={`${fieldID}-max`} title={t("manage.challenges.task.from")} help={t("manage.scoring.maxHelp")} value={String(draft.profile.MaxPoints)} min={1} max={MAX_TASK_POINTS}
                     error={errors.max} disabled={locked} onChange={value => updateProfile({MaxPoints: numberOf(value)})} />
-                <RequiredNumber id={`${fieldID}-min`} title={t("manage.challenges.task.to")} help={t("manage.scoring.minHelp")} value={String(draft.profile.MinPoints)} min={0}
+                <RequiredNumber id={`${fieldID}-min`} title={t("manage.challenges.task.to")} help={t("manage.scoring.minHelp")} value={String(draft.profile.MinPoints)} min={0} max={MAX_TASK_POINTS}
                     error={errors.min} disabled={locked} onChange={value => updateProfile({MinPoints: numberOf(value)})} />
                 {draft.profile.Mode !== 3 && <RequiredNumber id={`${fieldID}-floor`} title={t("manage.scoring.floor")} help={t("manage.scoring.floorHelp")} value={String(draft.profile.FloorAtPercent)} min={1} max={100}
                     error={errors.floor} disabled={locked} onChange={value => updateProfile({FloorAtPercent: numberOf(value)})} />}

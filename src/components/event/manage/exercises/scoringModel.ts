@@ -2,6 +2,8 @@ import type {ManageLifecycle} from "@/api/manage";
 import {t} from "@/i18n/t";
 
 // Mode 0 is static; 1–3 are the dynamic decays (by solves, by solve order, by time).
+export const MAX_TASK_POINTS = 999;
+
 export type ScoringMode = 0 | 1 | 2 | 3;
 export type DynamicProfile = {Mode: ScoringMode; MinPoints: number; MaxPoints: number; FloorAtPercent: number};
 
@@ -25,8 +27,8 @@ export type DynamicErrors = {max: string; min: string; floor: string};
 export function dynamicErrors(profile: DynamicProfile): DynamicErrors {
     const {Mode, MinPoints, MaxPoints, FloorAtPercent} = profile;
     const whole = (value: number) => Number.isInteger(value);
-    const min = !whole(MinPoints) || MinPoints < 0 ? t("manage.challenges.scoring.minInvalid") : "";
-    const max = !whole(MaxPoints) || MaxPoints < 1 ? t("manage.challenges.scoring.maxInvalid")
+    const min = !whole(MinPoints) || MinPoints < 0 || MinPoints > MAX_TASK_POINTS ? t("manage.challenges.scoring.minInvalid", {max: MAX_TASK_POINTS}) : "";
+    const max = !whole(MaxPoints) || MaxPoints < 1 || MaxPoints > MAX_TASK_POINTS ? t("manage.challenges.scoring.maxInvalid", {max: MAX_TASK_POINTS})
         : !min && MaxPoints <= MinPoints ? t("manage.challenges.scoring.maxAboveMin") : "";
     const floor = Mode === 3 || (whole(FloorAtPercent) && FloorAtPercent >= 1 && FloorAtPercent <= 100) ? "" : t("manage.challenges.scoring.floorInvalid");
     return {max, min, floor};
@@ -42,7 +44,7 @@ export function staticPointsValid(value: string, required: boolean): boolean {
     const raw = value.trim();
     if (raw === "") return !required;
     const points = Number(raw);
-    return Number.isInteger(points) && points > 0;
+    return Number.isInteger(points) && points > 0 && points <= MAX_TASK_POINTS;
 }
 
 // «Статичне · 100 балів» / «Динамічне · 500 → 100».

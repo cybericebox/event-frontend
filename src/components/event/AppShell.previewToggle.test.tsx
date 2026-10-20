@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 // @vitest-environment-options {"url": "https://event.test/"}
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
-const nav = vi.hoisted(() => ({path: "/manage/test-mode", push: vi.fn()}));
+const nav = vi.hoisted(() => ({path: "/manage/test-mode", push: vi.fn(), reset: vi.fn(async () => undefined)}));
 vi.mock("next/navigation", () => ({usePathname: () => nav.path, useRouter: () => ({push: nav.push, refresh: vi.fn()})}));
 vi.mock("@/api/clientAuth", async importOriginal => ({...(await importOriginal<object>()), getCatalogAccess: async () => false, getCurrentUser: async () => ({ID: "user-1"}), getJoinStatus: async () => 0, getOwnTeam: async () => null}));
 vi.mock("@/api/manage", async importOriginal => ({...(await importOriginal<object>()), getManageAccess: async () => ({CanManage: true}), getManageConfig: async () => ({ScoreboardVisibility: 1}), getManageContent: () => new Promise(() => {})}));
+vi.mock("@/api/participantPreview", async importOriginal => ({...(await importOriginal<object>()), resetPreviewRuns: nav.reset}));
 vi.mock("@/api/clientEventInfo", () => ({getClientEventInfo: async () => event}));
 vi.mock("./EventServiceStatusGate", () => ({APP_ROOT_ID: "root", EventServiceStatusGate: () => null}));
 import {AppShell} from "./AppShell";
@@ -34,6 +35,8 @@ it("enters and leaves the preview of a hidden event (layout not re-rendered, as 
     fireEvent.pointerDown(screen.getByRole("button", {name: "Дії тестового режиму"}), {button: 0, ctrlKey: false});
     nav.path = "/";
     fireEvent.click(await screen.findByRole("menuitem", {name: "Вийти з тестування"}));
+    await waitFor(() => expect(readPreviewCookie()).toBeNull());
+    expect(nav.reset).toHaveBeenCalledWith("event-1");
     nav.path = "/manage";
     await act(async () => {view.rerender(tree({event: null, previewCookie: null}));});
     expect(readPreviewCookie()).toBeNull();
