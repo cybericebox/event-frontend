@@ -113,7 +113,7 @@ describe("compact set card", () => {
 });
 
 describe("flag repeat warning", () => {
-    const limitText = "Завдання «Web» має 15 різних флагів, а команд може бути до 40: після 15-ї команди флаги почнуть повторюватися.";
+    const limitText = "Завдання «Web» має 15 різних прапорів, а в заході може бути до 40 команд: після 15-ї команди прапори почнуть повторюватися.";
     function withRepeat(repeat: unknown, run: () => Promise<void>) {
         Object.assign(attachment, {FlagsRepeat: repeat});
         return run().finally(() => Object.assign(attachment, {FlagsRepeat: null}));
@@ -140,12 +140,12 @@ describe("flag repeat warning", () => {
     it("names the teams that exist now when the event has no team limit, and a pool already used up", async () => {
         await withRepeat({Flags: 15, Teams: 16, Reason: "teams"}, async () => {
             setup();
-            expect(await screen.findByText("Завдання «Web» має 15 різних флагів, а команд уже 16: флаги повторюватимуться.")).toBeTruthy();
+            expect(await screen.findByText("Завдання «Web» має 15 різних прапорів, а команд уже 16: прапори повторюватимуться.")).toBeTruthy();
         });
         cleanup();
         await withRepeat({Flags: 15, Teams: 3, Reason: "repeated"}, async () => {
             setup();
-            expect(await screen.findByText("Флаги завдання «Web» уже повторюються: усі 15 видано.")).toBeTruthy();
+            expect(await screen.findByText("Прапори завдання «Web» уже повторюються: усі 15 видано.")).toBeTruthy();
         });
     });
 

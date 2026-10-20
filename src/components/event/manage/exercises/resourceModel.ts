@@ -14,7 +14,7 @@ export function hasResources(resources: TaskResources | null): resources is Task
     return resources !== null && resources.Max.Devices > 0;
 }
 
-// «CPU 350 мілі-ядер · памʼять 1 ГіБ · пристроїв 4»: a range over the variants when they differ. The server's
+// «CPU 350 мілі-ядер · памʼять 1 ГіБ · пристроїв: 4»: a range over the variants when they differ. The server's
 // scheduling blocks stay internal: organizers found the word confusing.
 // The three ranges of a set's resources over its variants: CPU, memory and the device count.
 export function resourceRanges(resources: TaskResources): {cpu: string; memory: string; devices: string} {
