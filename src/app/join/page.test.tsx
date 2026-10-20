@@ -86,10 +86,12 @@ describe("join page", () => {
         expect(screen.queryByRole("button", {name: "Підтвердити участь"})).toBeNull();
     });
 
-    it("explains a bare visit with no fields instead of showing an empty form", async () => {
+    it("shows a neutral intro and one «Підтвердити участь» button on a bare visit with no fields", async () => {
         state.participation = block({Allowed: true, Reason: ""});
         view();
-        expect(await screen.findByText("Для цього заходу додаткові поля не потрібні. Підтвердьте участь одним натисканням.")).toBeTruthy();
+        expect(await screen.findByText("Реєстрація на захід «Олімпіада».")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Підтвердити участь"})).toBeTruthy();
+        expect(screen.queryByText(/поля/)).toBeNull();
     });
 
     it("shows only the registering loader while a no-field application is sent after a click", async () => {
@@ -103,6 +105,14 @@ describe("join page", () => {
         expect(screen.queryByRole("button", {name: "Підтвердити участь"})).toBeNull();
         await act(async () => finish(1));
         expect(await screen.findByText("Заявку подано")).toBeTruthy();
+    });
+
+    it("shows the same intro above the fields when the event has a form", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        state.form = true;
+        view();
+        expect(await screen.findByText("Реєстрація на захід «Олімпіада».")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Надіслати заявку"})).toBeTruthy();
     });
 
     it("labels the busy submit of a form «Надсилаємо…»", async () => {

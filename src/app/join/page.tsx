@@ -113,7 +113,8 @@ export default function JoinPage() {
             : !register?.Allowed ? <EmptyState message={reasonText(register?.Reason ?? "") || t("join.closed")} />
             : !form.data?.Enabled && (working || auto) ? <EventLoading event={event} label={t("common.busy.registering")} />
             : <form ref={formRef} className="ib-form" noValidate onSubmit={event => {event.preventDefault(); void submit();}}>
-                {form.data?.Enabled ? <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} /> : <p>{t("join.confirm.hint")}</p>}
+                <p>{t("join.intro", {name: event?.Name ?? ""})}</p>
+                {form.data?.Enabled && <ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} />}
                 {error && <p className="ib-form__error" role="alert">{error}</p>}
                 <EventButton className="ib-btn ib-btn--primary" type="submit" busy={working} busyLabel={t("common.busy.submittingApplication")}>{t(form.data?.Enabled ? "join.submit.action" : "join.confirm.action")}</EventButton>
             </form>}
