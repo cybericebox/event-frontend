@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {readApiErrorCode, readRetryAfter} from "@/api/apiErrors";
+import {readApiError, readRetryAfter} from "@/api/apiErrors";
 import {LabRuntimeSchema} from "@/api/manageLabs";
 import {hintSchema, ownBoardSchema, ParticipantChallengeError, solvesPageSchema, submissionSchema, type OwnChallenge} from "@/api/participantChallenges";
 import {requireApiOrigin} from "@/utils/origins";
@@ -24,7 +24,8 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!response.ok) {
-        throw new ParticipantChallengeError(response.status, await readApiErrorCode(response), readRetryAfter(response));
+        const failure = await readApiError(response);
+        throw new ParticipantChallengeError(response.status, failure.code, readRetryAfter(response), failure.context);
     }
     if (response.status === 204) return schema.parse(undefined);
     return z.object({Data: schema}).parse(await response.json()).Data;
@@ -45,6 +46,15 @@ const runSchema = z.object({ID: z.string(), SelectionID: z.string(), Dynamic: z.
 export const startPreviewRun = (eventID: string, selectionID: string, leaseMinutes?: number) => request(eventID, `${selectionPath(selectionID)}/start`, runSchema, "POST", leaseMinutes ? {LeaseMinutes: leaseMinutes} : undefined);
 export const stopPreviewRun = (eventID: string, selectionID: string) => request(eventID, `${selectionPath(selectionID)}/run`, z.undefined(), "DELETE");
 export const resetPreviewRuns = (eventID: string) => request(eventID, "/runs", z.undefined(), "DELETE");
+// Ends one of the caller's own test labs (studio or preview) named by a test-lab cap refusal.
+export const stopOwnTestLab = (eventID: string, deployID: string) => request(eventID, `/labs/${encodeURIComponent(deployID)}`, z.undefined(), "DELETE");
+// The labs holding the caller's test-lab cap, from the refusal's context; EventID marks a participant-mode preview.
+const runningLabsSchema = z.array(z.object({ID: z.string(), Name: z.string().default(""), EventID: z.string().optional()}));
+export type RunningTestLab = z.infer<typeof runningLabsSchema>[number];
+export function runningTestLabs(context: Record<string, unknown> | undefined): RunningTestLab[] {
+    const parsed = runningLabsSchema.safeParse(context?.running);
+    return parsed.success ? parsed.data : [];
+}
 export const previewLabSchema = LabRuntimeSchema.extend({
     ExpiresAt: z.string().nullish(), Expired: z.boolean().default(false), Removing: z.boolean().default(false),
     VPNConnected: z.boolean().nullable().optional(), VPNProbeURL: z.string().default(""),

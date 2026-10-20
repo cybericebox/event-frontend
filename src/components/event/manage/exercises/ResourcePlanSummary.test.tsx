@@ -24,9 +24,12 @@ const plan = (over: Partial<ResourcePlan> = {}): ResourcePlan => ({
     PerTeam: res(525, 1728, 3), Teams: 10, TeamsBasis: "max_teams", Total: res(5250, 17280, 30), NoAgentFits: false, ...over,
 });
 
-function view(attachments: EventExerciseAttachment[]) {
+function view(attachments: EventExerciseAttachment[], expanded = true) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    return render(<QueryClientProvider client={client}><ResourcePlanSummary eventID="e" attachments={attachments} /></QueryClientProvider>);
+    const result = render(<QueryClientProvider client={client}><ResourcePlanSummary eventID="e" attachments={attachments} /></QueryClientProvider>);
+    // The block starts collapsed; most checks read the open table.
+    if (expanded && attachments.some(item => item.Resources?.Max.Devices)) fireEvent.click(screen.getByRole("button", {name: /Ресурси на команду/}));
+    return result;
 }
 
 describe("ResourcePlanSummary", () => {
@@ -66,6 +69,32 @@ describe("ResourcePlanSummary", () => {
         const {container} = view([attachment(2)]);
         await waitFor(() => expect(container.querySelector("[data-plan-no-agent]")).not.toBeNull());
         expect(container.querySelector("[data-plan-too-large]")).not.toBeNull();
+    });
+
+    it("starts collapsed with a one-line per-team summary in its header", async () => {
+        api.plan.mockResolvedValue(plan());
+        const {container} = view([attachment(2)], false);
+        const toggle = screen.getByRole("button", {name: /Ресурси на команду/});
+        expect(toggle.getAttribute("aria-expanded")).toBe("false");
+        await waitFor(() => expect(toggle.textContent).toContain("525 мілі-ядер · 1,7 ГіБ · пристроїв: 3"));
+        expect(container.querySelector("table")).toBeNull();
+        fireEvent.click(toggle);
+        expect(toggle.getAttribute("aria-expanded")).toBe("true");
+        expect(container.querySelector("[data-plan-total]")).not.toBeNull();
+    });
+
+    it("keeps the «no laboratory fits» alert visible while collapsed", async () => {
+        api.plan.mockResolvedValue(plan({NoAgentFits: true}));
+        const {container} = view([attachment(2)], false);
+        await waitFor(() => expect(container.querySelector("[data-plan-no-agent]")).not.toBeNull());
+        expect(container.querySelector("table")).toBeNull();
+    });
+
+    it.each([[1, "Разом на 1 команду"], [2, "Разом на 2 команди"], [5, "Разом на 5 команд"], [21, "Разом на 21 команду"]])("says the team count in the right plural form (%i)", async (teams, text) => {
+        api.plan.mockResolvedValue(plan({Teams: teams, TeamsBasis: "current"}));
+        const {container} = view([attachment(2)]);
+        await waitFor(() => expect(container.querySelector("[data-plan-total]")).not.toBeNull());
+        expect(container.querySelector("[data-plan-total] th")!.textContent).toContain(text);
     });
 
     it("renders nothing when no set has devices", () => {

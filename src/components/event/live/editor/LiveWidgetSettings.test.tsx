@@ -28,7 +28,7 @@ describe("live widget settings", () => {
         expect(screen.getByText("Відображення")).toBeTruthy();
         expect(screen.getByText("Розташування й розмір")).toBeTruthy();
         expect(screen.getByText("Кількість команд на графіку")).toBeTruthy();
-        expect(screen.getByRole("button", {name: "Прибрати віджет"}).closest("header")).not.toBeNull();
+        expect(screen.getByRole("button", {name: "Прибрати блок"}).closest("header")).not.toBeNull();
         expect(screen.getAllByRole("button", {name: /^Про поле|Довідка|про поле/i}).length).toBeGreaterThan(0);
     });
 

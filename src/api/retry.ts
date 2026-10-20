@@ -25,7 +25,7 @@ export const OVERLOAD_STATUSES = [429, 503]
  * acquire timeout) as detail codes (objectCode*100 + detailCode = code % 10000), so a full code and the detail
  * code some clients keep both match.
  */
-const OVERLOAD_DETAIL_CODES = [431, 432]
+export const OVERLOAD_DETAIL_CODES = [431, 432]
 
 /** A Retry-After longer than this is not worth waiting for in a pending request. */
 const MAX_RETRY_AFTER_MS = 10_000

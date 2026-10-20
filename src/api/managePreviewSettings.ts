@@ -2,7 +2,9 @@ import {z} from "zod";
 import {manageApiError} from "./manage";
 import {requireApiOrigin} from "@/utils/origins";
 
-const selection = z.object({ID: z.string().uuid().optional(), ExerciseVersionID: z.string().uuid(), VariantID: z.string().uuid(), Name: z.string().optional(), VariantIndex: z.number().optional(), VariantPosition: z.number().optional()});
+const selection = z.object({ID: z.string().uuid().optional(), ExerciseVersionID: z.string().uuid(), VariantID: z.string().uuid(), Name: z.string().optional(), VariantIndex: z.number().optional(), VariantPosition: z.number().optional(),
+    // Set when a dynamic task cannot run in this event: no_infrastructure (listed, not on the board).
+    Reason: z.string().optional()});
 const selections = z.array(selection).nullish().transform(value => value ?? []);
 const settings = z.object({DefaultSelections: selections, DefaultGroupName: z.string(), DynamicAllocated: z.boolean(), GroupName: z.string(), GroupNameOverride: z.string().nullable(), Inherit: z.boolean(), Selections: selections, EffectiveSelections: selections});
 const catalog = z.array(z.object({ID: z.string().uuid(), ExerciseVersionID: z.string().uuid(), Name: z.string(), Infrastructure: z.boolean(), Eligible: z.boolean().default(true), Reason: z.string().nullish().transform(value => value ?? ""), Variants: z.array(z.object({ID: z.string().uuid(), Index: z.number().int(), Position: z.number().int(), Infrastructure: z.boolean().default(false)}))}));

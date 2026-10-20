@@ -3,10 +3,11 @@
 import {useEffect, useMemo, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
 import {Snowflake, WifiOff} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventLoading} from "@/components/event/EventLoading";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
-import {liveLogoURL, liveWidgetLabels} from "./liveLayout";
+import {liveCorners, liveLogoURL, liveWidgetLabels, type LiveCorner} from "./liveLayout";
 import {liveCaptionShown, liveCaptionText, liveTextFloors, liveTextProfile, liveTextSize, liveTextSizes, liveTextVars, liveWidgetTextScale, type LiveTextProfile} from "./liveText";
 import {liveAnnouncementFit, liveHeaderRow, liveTableFit, liveTimerFit, liveTitleFit} from "./liveFit";
 import {liveStageSubtitle, liveTimerDigitMode, liveTimerDigits, liveTimerState, liveTimerUrgency, liveTimerZero, type LiveStage} from "./liveStages";
@@ -273,6 +274,8 @@ function LiveSolves({widget, results, metrics, suffix, participation}: {widget: 
     </LiveList>;
 }
 
+const liveResultsBlocks = new Set<LiveWidget["type"]>(["chart", "table", "solves", "podium", "facts"]);
+
 function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, note, suffix, named}: {
     widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean; metrics: LiveMetrics;
     // The note this widget carries (the timer, else the title): no connection or the freeze.
@@ -283,6 +286,8 @@ function WidgetContent({widget, event, stages, results, now, theme, edit, sample
     const logo = resolveEventLogoURL(event.LogoURL);
     if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} stages={stages} now={now} note={note} metrics={metrics} />;
     if (widget.type === "timer") return <LiveTimer widget={widget} event={event} stages={stages} now={now} results={results} note={note} metrics={metrics} named={named} edit={edit} />;
+    // Until the first results arrive, a data block shows the event logo, not «no results yet».
+    if (!edit && !sample && !results && liveResultsBlocks.has(widget.type)) return <EventLoading event={event} compact label={t("live.loading")} />;
     if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} metrics={metrics} suffix={suffix} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
     if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
@@ -318,14 +323,16 @@ function blockMetrics(height: number, width: number, textScale: number, profile:
     return {caption: size("caption"), body: size("body"), display: size("display"), timer: liveTextFloors[profile].timer};
 }
 
-export function LiveCanvas({layout, event, stages = noStages, results, offlineSince = null, sample = false, nowOffset = 0, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
+export function LiveCanvas({layout, event, stages = noStages, results, offlineSince = null, sample = false, nowOffset = 0, startClock = 0, selectedID, onSelect, edit = false, showGrid = false, onPointerDown, conflicts, warned, ghost, onDragOver, onDragLeave, onDrop}: {
     layout: LiveLayout; event: PublicEventInfo; stages?: LiveStage[]; results?: ManageResultsSnapshot; sample?: boolean; selectedID?: string | null;
     // Since when the data is not live (the screen lost the connection), else null.
     offlineSince?: number | null;
     // The editor previews a scene at a moment of its state: the clock runs this far from now.
     nowOffset?: number;
+    // The clock of a server-rendered first paint (0: the browser's clock fills it in).
+    startClock?: number;
     onSelect?: (id: string) => void; edit?: boolean; showGrid?: boolean;
-    onPointerDown?: (event: PointerEvent<HTMLButtonElement | HTMLSpanElement>, widget: LiveWidget, mode: "move" | "resize") => void;
+    onPointerDown?: (event: PointerEvent<HTMLButtonElement | HTMLSpanElement>, widget: LiveWidget, mode: "move" | LiveCorner) => void;
     conflicts?: Set<string>; warned?: Set<string>; ghost?: LiveGhost | null;
     onDragOver?: (event: DragEvent<HTMLDivElement>) => void; onDragLeave?: () => void; onDrop?: (event: DragEvent<HTMLDivElement>) => void;
 }) {
@@ -344,7 +351,7 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     const note = liveNote(results, offlineSince);
     // The timer names the stage unless the title already shows it.
     const named = !layout.widgets.some(widget => widget.type === "title" && widget.props.subtitleStage === true);
-    const [clock, setClock] = useState(0);
+    const [clock, setClock] = useState(startClock);
     useEffect(() => {const frame = requestAnimationFrame(() => setClock(Date.now())); const timer = setInterval(() => setClock(Date.now()), 1000); return () => {cancelAnimationFrame(frame); clearInterval(timer);};}, []);
     const now = clock && clock + nowOffset;
     const style = useMemo(() => ({
@@ -364,7 +371,8 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={blockStyle(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
             {content(widget, true)}
-            <span className="live-widget__resize" role="presentation" onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, "resize");}} />
+            {liveCorners.map(corner => <span key={corner} className={`live-widget__corner live-widget__corner--${corner}`} role="presentation" data-corner={corner}
+                onPointerDown={event => {event.stopPropagation(); onPointerDown?.(event, widget, corner);}} />)}
         </button> : <div key={widget.id} className={place(widget)} style={blockStyle(widget)}>{content(widget, false)}</div>)}
         {ghost && <div className={`live-drop-ghost${ghost.ok ? "" : " is-blocked"}`} style={{gridColumn: `${ghost.x} / span ${ghost.w}`, gridRow: `${ghost.y} / span ${ghost.h}`}} aria-hidden="true" />}
     </div>;

@@ -88,6 +88,33 @@ it("keeps a refused launch actionable without calling any competition lab", asyn
     expect(fetchMock.mock.calls[0][0]).toContain(`/selections/${selection}/start`);
 });
 
+it.each([[172509], [172517], [172508]])("says there are no free resources when the test capacity is full (%s)", async code => {
+    mount({...base, Infrastructure: true, PreviewDynamic: true});
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({Status: {Code: code, Message: "full"}, Data: null}), {status: 409}));
+    fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
+    expect(await screen.findByText("Немає вільних ресурсів для тестової лабораторії. Спробуйте пізніше або виберіть коротший запуск.")).toBeTruthy();
+    expect(screen.getByRole("button", {name: "Спробувати ще раз"})).toBeTruthy();
+});
+
+it("names the running labs at the test-lab cap and stops only the one chosen, then starts", async () => {
+    mount({...base, Infrastructure: true, PreviewDynamic: true});
+    const running = [{ID: "lab-studio", Name: "SQL injection", ExpiresAt: "2099-01-01T00:00:00Z"}, {ID: "lab-preview", Name: "Port scan", EventID: "other-event", ExpiresAt: "2099-01-01T00:00:00Z"}];
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({Status: {Code: 70963, Message: "limit", Context: {running}}, Data: null}), {status: 409}));
+    fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
+    expect(await screen.findByText("«SQL injection» — у студії завдань")).toBeTruthy();
+    expect(screen.getByText("«Port scan» — у тестовому режимі заходу")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockResolvedValueOnce(new Response(null, {status: 204}));
+    fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
+    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false}));
+    fireEvent.click(screen.getAllByRole("button", {name: "Зупинити"})[0]);
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3));
+    expect(fetchMock.mock.calls[1][0]).toContain("/labs/lab-studio");
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({method: "DELETE"});
+    expect(fetchMock.mock.calls[2][0]).toContain(`/selections/${selection}/start`);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("lab-preview"))).toBe(false);
+});
+
 it("starts the preview's laboratory for the chosen length", async () => {
     mount({...base, Infrastructure: true, PreviewDynamic: true});
     const length = await screen.findByRole("button", {name: "Тривалість"});
@@ -110,10 +137,10 @@ it("shows the start in progress on the busy button", async () => {
     expect(busy.getAttribute("data-busy")).toBe("true");
 });
 
-it.each([false, undefined])("does not offer a dynamic launch without confirmed event allocation: %s", canStart => {
+it.each([false, undefined])("does not offer a dynamic launch the event cannot run: %s", canStart => {
     mount({...base, Infrastructure: true, PreviewDynamic: true, PreviewCanStart: canStart});
     expect(screen.queryByRole("button", {name: "Запустити середовище"})).toBeNull();
-    expect(screen.getByText(/Для запуску потрібні виділені ресурси заходу/)).toBeTruthy();
+    expect(screen.getByText("Лабораторії для цього заходу вимкнено.")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
 });
 

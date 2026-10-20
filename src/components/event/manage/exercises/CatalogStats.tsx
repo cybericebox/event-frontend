@@ -51,3 +51,11 @@ export function SubtaskCount({count, names}: {count: number | null; names: strin
         </div>
     </span>;
 }
+
+/** «Середня складність» and «Підзавдання» side by side, as in «Додати з каталогу» and the event's task list. */
+export function CatalogStatsList({average, count, names, className = ""}: {average: number | null; count: number | null; names: string[]; className?: string}) {
+    return <dl className={`event-catalog-stats${className ? ` ${className}` : ""}`}>
+        <div><dt>{t("manage.exercises.attachDialog.avgDifficulty")}</dt><dd><AverageDifficulty average={average} /></dd></div>
+        <div><dt>{t("manage.exercises.attachDialog.subtasks")}</dt><dd><SubtaskCount count={count} names={names} /></dd></div>
+    </dl>;
+}

@@ -6,7 +6,7 @@ import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {
     createEventChallengeGroup, deleteEventChallengeGroup, reorderEventChallengeGroups, reorderGroupChallenges,
-    setEventChallengeGroup, updateEventChallengeGroup, type EventChallengeGroup,
+    setEventChallengeGroup, updateEventChallengeGroup, type EventBoardChallenge, type EventChallengeGroup,
 } from "@/api/manageChallenges";
 import {DialogModal} from "@/components/event/DialogModal";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
@@ -15,7 +15,7 @@ import {EventLoadError} from "@/components/event/EventLoadError";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {useSessionDraftState} from "@/components/event/manage/manualDraft";
 import {useQuery} from "@tanstack/react-query";
-import {getManageConfig, ManageApiError} from "@/api/manage";
+import {getManageConfig, getManageScoring, ManageApiError, type ManageScoring} from "@/api/manage";
 import {infrastructureMismatch} from "./attachmentModel";
 import {SetStatusIcon} from "./SetStatusIcon";
 import {setStatus} from "./taskRowModel";
@@ -23,6 +23,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {t, tPlural} from "@/i18n/t";
+import {groupTaskDifficulty, groupTaskPoints} from "./groupTaskMeta";
 import {groupBuckets, orderedGroups, type GroupTask} from "./challengeOrder";
 import {RowActions} from "./SetActions";
 import {GroupNameDialog} from "./GroupNameDialog";
@@ -34,12 +35,21 @@ const noGroup = "none";
 
 // «Групи й порядок»: groups on the left (ordered), the selected group's tasks
 // on the right (ordered inside the group). The participant board uses the same order.
+// Difficulty and points of a task, compact on the right of its row (under the name on a phone).
+function GroupTaskMeta({task, scoring}: {task: EventBoardChallenge; scoring: ManageScoring | undefined}) {
+    const parts = [groupTaskDifficulty(task), groupTaskPoints(task, scoring)].filter(Boolean);
+    if (parts.length === 0) return null;
+    return <span className="event-group-order__meta">{parts.map(part => <span key={part}>{part}</span>)}</span>;
+}
+
 export function ChallengeGroupsManager() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;
     const board = useBoardSets(eventID);
     // Infrastructure decides whether a task's set can work (status icon).
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
+    // Points of a task that follows the event scoring come from the event's profile.
+    const scoring = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const [selectedID, setSelectedID] = useState<string | null>(null);
     // «Додати групу» / «Перейменувати групу» dialog.
     const [naming, setNaming] = useSessionDraftState<{group: EventChallengeGroup | null; key: number} | null>("group-naming", null, {dirty: () => false});
@@ -180,7 +190,8 @@ export function ChallengeGroupsManager() {
                         itemID={task => task.challenge.ID} itemName={task => task.challenge.Snapshot.name} disabled={!canManage || busy} onReorder={ids => void reorderTasks(ids)}
                         renderItem={(task, index) => ({
                             content: <span className="event-group-order__task"><span className="event-group-order__position">{index + 1}</span><strong>{task.challenge.Snapshot.name}</strong><small>{task.attachment.ExerciseName}</small>
-                                <SetStatusIcon status={setStatus([task.challenge], !!config.data && infrastructureMismatch(task.attachment, config.data.InfrastructureAllowed))} setName={task.attachment.ExerciseName || t("manage.exercises.set")} /></span>,
+                                <SetStatusIcon status={setStatus([task.challenge], !!config.data && infrastructureMismatch(task.attachment, config.data.InfrastructureAllowed))} setName={task.attachment.ExerciseName || t("manage.exercises.set")} />
+                                <GroupTaskMeta task={task.challenge} scoring={scoring.data} /></span>,
                             actions: canManage && <RowActions label={t("manage.challenges.groups.taskMenu", {name: task.challenge.Snapshot.name})} busy={busy} actions={[
                                 {key: "move", label: t("manage.challenges.groups.moveTo"), icon: FolderInput, onSelect: () => setMoving({task, target: ""})},
                             ]} />,

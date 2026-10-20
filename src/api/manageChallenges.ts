@@ -56,8 +56,13 @@ const attachmentSchema = z.object({
     Resources: taskResourcesSchema.nullish().transform(value => value ?? null),
     // No laboratory that is used can run this set.
     NoAgentFits: z.boolean().default(false),
-    // A task has fewer possible flags than the team capacity, or its flags were reused: flags may repeat.
-    FlagsMayRepeat: z.boolean().default(false),
+    // Two teams may get the same flag: the smallest flag pool (Flags) against the teams that draw from it
+    // (Teams: the team limit, or the teams that exist now with the moderators team) and why (Reason). null: they cannot.
+    FlagsRepeat: z.object({Flags: z.number().int(), Teams: z.number().int(), Reason: z.enum(["limit", "teams", "repeated"])}).nullable().default(null),
+    // The PINNED version: mean difficulty (null: none), subtask count (null: no variant), subtask names.
+    AvgDifficulty: z.number().nullish().transform(value => value ?? null),
+    TaskCount: z.number().int().nullish().transform(value => value ?? null),
+    TaskNames: z.array(z.string()).nullish().transform(value => value ?? []),
 });
 // Cost is the event's price (0 until set); Overridden says a price is set.
 const challengeHintSchema = z.object({ID: id, Text: z.string(), Level: hintLevelSchema.default("nudge"), Cost: z.number().int(), Overridden: z.boolean()});
@@ -70,7 +75,7 @@ const challengeSchema = z.object({
     MaxFlagAttempts: attemptLimit,
     // Place inside the group across the event's sets; null sorts after the ordered ones.
     BoardOrder: z.number().int().nullish().transform(value => value ?? null),
-    Snapshot: z.object({name: z.string(), description: z.unknown().optional(), placeholders: z.array(placeholderSchema).nullish().transform(value => value ?? [])}),
+    Snapshot: z.object({name: z.string(), description: z.unknown().optional(), difficulty: z.string().optional(), placeholders: z.array(placeholderSchema).nullish().transform(value => value ?? [])}),
     Hints: z.array(challengeHintSchema).nullish().transform(value => value ?? []),
 });
 const groupSchema = z.object({ID: id, Name: z.string(), Order: z.number().int(), CreatedAt: z.string()});
@@ -163,6 +168,16 @@ export const forkEventExercise = (eventID: string, attachmentID: string, recreat
 // «Повернути оригінал»: back to the catalog version the copy was made from.
 export const revertEventExercise = (eventID: string, attachmentID: string, recreateStands = false) => request(eventID, `exercises/${attachmentID}/revert`, attachmentSchema, "POST", recreateStands ? {RecreateStands: true} : undefined);
 // With attempts the server wants confirm=true (409 1810) and keeps the attachment as detached.
+// Bulk actions on 1..200 of the event's sets: each set goes through the single action's rules; one failure never stops the
+// others. Every set answers Changed, or the code and message a single action would have answered.
+const bulkResultSchema = z.object({
+    Changed: z.number().int(), Skipped: z.number().int(),
+    Results: z.array(z.object({ID: id, Changed: z.boolean(), Code: z.number().int().optional(), Message: z.string().optional()})),
+});
+export type BulkExerciseResult = z.infer<typeof bulkResultSchema>;
+export const bulkSetEventExerciseVisibility = (eventID: string, ids: string[], published: boolean) => request(eventID, "exercises/bulk/visibility", bulkResultSchema, "PUT", {ExerciseIDs: ids, Published: published});
+export const bulkSetEventExerciseScoring = (eventID: string, ids: string[], override: ChallengeScoringOverride | null) => request(eventID, "exercises/bulk/scoring", bulkResultSchema, "PUT", {ExerciseIDs: ids, Override: override});
+export const bulkDetachEventExercises = (eventID: string, ids: string[], confirm: boolean) => request(eventID, "exercises/bulk/detach", bulkResultSchema, "POST", {ExerciseIDs: ids, Confirm: confirm});
 export const detachEventExercise = (eventID: string, attachmentID: string, confirm = false) => request(eventID, `exercises/${attachmentID}${confirm ? "?confirm=true" : ""}`, z.unknown(), "DELETE").then(() => undefined);
 // Visibility is per set: see setEventExerciseVisibility.
 export const updateEventBoardChallenge = (eventID: string, attachmentID: string, challengeID: string, input: {Points: number; HintsEnabled: boolean; MaxFlagAttempts?: number | null}) => request(eventID, `exercises/${attachmentID}/challenges/${challengeID}`, challengeSchema, "PUT", input);

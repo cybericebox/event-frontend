@@ -1,12 +1,13 @@
 "use client";
 
-import {useEffect, useSyncExternalStore} from "react";
+import {useEffect, useState, useSyncExternalStore} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {ClientEventInfoError, getClientEventInfo} from "@/api/clientEventInfo";
 import {getManageAccess, ManageApiError} from "@/api/manage";
 import {getLiveScreenByLink, liveScreenTokenFromHash, LiveScreenLinkError} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
-import {LiveFailure, LiveLinkClosed, LiveScreen, LiveState} from "./LiveScreen";
+import type {LiveScreenStart} from "@/api/liveScreenServer";
+import {LiveFailure, LiveLinkClosed, LiveLinkNotFound, LiveScreen, LiveState} from "./LiveScreen";
 import {useLiveRetry} from "./liveRecovery";
 import "./live.css";
 import {t} from "@/i18n/t";
@@ -28,19 +29,44 @@ function applyEventTheme(event: PublicEventInfo) {
 // The event, its layout and stages are re-read this often, so a moved start
 // or finish, a new name or colours reach an open screen.
 const liveEventRefreshMs = 30_000;
+const liveNotFoundRecheckMs = 60_000;
 
-// A projector PC opened with a screen link (/live#screen=…): no session, the
-// link alone opens this event's staff live screen. A failed open is retried
-// by itself (nobody presses a button on a projector).
-function LiveLinkBootstrap({token}: {token: string}) {
-    const screen = useQuery({queryKey: ["event-live-link", token], queryFn: () => getLiveScreenByLink(token), retry: false, refetchOnWindowFocus: false, refetchInterval: liveEventRefreshMs});
+function linkStatus(error: unknown): number | null {
+    return error instanceof LiveScreenLinkError ? error.status : null;
+}
+
+// A projector PC opened with a screen link (/live?token=…): no session, the
+// link alone opens this event's staff live screen. The server already read
+// the link (`start`): the screen comes in the first HTML, and a closed link or
+// a missing event is final. A temporary failure is retried here by itself
+// (nobody presses a button on a projector).
+function LiveLinkBootstrap({token, start}: {token: string; start?: LiveScreenStart}) {
+    const final = start?.kind === "closed" || start?.kind === "notFound";
+    // A missing or unpublished event re-checks quietly once a minute and opens by itself once it is published.
+    const [checking, setChecking] = useState(!final);
+    useEffect(() => {
+        if (start?.kind !== "notFound") return;
+        const timer = setTimeout(() => setChecking(true), liveNotFoundRecheckMs);
+        return () => clearTimeout(timer);
+    }, [start?.kind]);
+    const screen = useQuery({
+        queryKey: ["event-live-link", token], queryFn: () => getLiveScreenByLink(token), retry: false, refetchOnWindowFocus: false,
+        enabled: checking && start?.kind !== "closed",
+        // The server just read it: no second read before the regular re-read.
+        ...(start?.kind === "ok" ? {initialData: start.screen, initialDataUpdatedAt: start.serverNow, staleTime: liveEventRefreshMs} : {}),
+        refetchInterval: query => linkStatus(query.state.error) === 404 && !query.state.data ? liveNotFoundRecheckMs : liveEventRefreshMs,
+    });
     useEffect(() => {if (screen.data) applyEventTheme(screen.data.Event);}, [screen.data]);
-    const closed = screen.error instanceof LiveScreenLinkError && screen.error.status === 403;
-    const retryIn = useLiveRetry(screen.isError && !screen.data && !closed, screen.errorUpdatedAt, () => void screen.refetch());
+    const status = linkStatus(screen.error);
+    const closed = start?.kind === "closed" || status === 403;
+    // A missing or unpublished event (404) is final; only a temporary failure (network, 5xx) retries.
+    const notFound = !screen.data && (start?.kind === "notFound" || status === 404);
+    const retryIn = useLiveRetry(screen.isError && !screen.data && !closed && !notFound, screen.errorUpdatedAt, () => void screen.refetch());
     if (closed) return <LiveLinkClosed event={screen.data?.Event} />;
+    if (notFound) return <LiveLinkNotFound />;
     if (screen.isError && !screen.data) return <LiveFailure message={t("live.openFailed.title")} error={screen.error} retryIn={retryIn} onRetry={() => void screen.refetch()} />;
     if (!screen.data) return <LiveState><EventLoading label={t("live.link.checking")} /></LiveState>;
-    return <LiveScreen event={screen.data.Event} token={token} link={screen.data} />;
+    return <LiveScreen event={screen.data.Event} token={token} link={screen.data} serverNow={start?.kind === "ok" ? start.serverNow : undefined} />;
 }
 
 function subscribeHash(onChange: () => void) {
@@ -48,11 +74,26 @@ function subscribeHash(onChange: () => void) {
     return () => window.removeEventListener("hashchange", onChange);
 }
 
-export function LiveBootstrap() {
-    // The fragment exists only in the browser: the server renders the loader.
-    const token = useSyncExternalStore(subscribeHash, () => liveScreenTokenFromHash(window.location.hash), () => undefined);
-    if (token === undefined) return <LiveState><EventLoading label={t("live.loading")} /></LiveState>;
-    return token ? <LiveLinkBootstrap token={token} /> : <LiveStaffBootstrap />;
+// A link of the older form (/live#screen=…): the token moves into the query
+// once and the page loads again, now rendered by the server.
+function useFragmentMigration(): boolean {
+    const legacy = useSyncExternalStore(subscribeHash, () => liveScreenTokenFromHash(window.location.hash), () => null);
+    useEffect(() => {
+        if (!legacy) return;
+        const url = new URL(window.location.href);
+        url.hash = "";
+        url.searchParams.set("token", legacy);
+        window.history.replaceState(null, "", url);
+        window.location.reload();
+    }, [legacy]);
+    return !!legacy;
+}
+
+export function LiveBootstrap({link}: {link?: {token: string; start: LiveScreenStart}}) {
+    const migrating = useFragmentMigration();
+    if (link) return <LiveLinkBootstrap token={link.token} start={link.start} />;
+    if (migrating) return <LiveState><EventLoading label={t("live.link.checking")} /></LiveState>;
+    return <LiveStaffBootstrap />;
 }
 
 // L1: a moderator opens the screen under their own account and puts it on

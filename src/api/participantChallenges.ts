@@ -138,7 +138,8 @@ export type ChallengeFile = {FileID: string; Name: string; Size: number};
 export type ChallengeHint = z.infer<typeof hintSchema>;
 
 export class ParticipantChallengeError extends Error {
-    constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number) {
+    // context: the error's public context (e.g. the running labs of a test-lab cap refusal).
+    constructor(readonly status: number, readonly code?: number, readonly retryAfter?: number, readonly context?: Record<string, unknown>) {
         super(`Participant challenge request failed: ${status}`);
     }
 }

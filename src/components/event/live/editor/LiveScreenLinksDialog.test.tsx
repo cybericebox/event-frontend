@@ -36,7 +36,7 @@ describe("live view link dialog", () => {
         await act(async () => {fireEvent.click(await screen.findByRole("button", {name: /Створити посилання/}));});
         expect(api.issue).toHaveBeenCalledWith(event.EventID, "none");
         const url = (screen.getByLabelText("Посилання") as HTMLInputElement).value;
-        expect(url).toBe(`${window.location.origin}/live#screen=tok_en`);
+        expect(url).toBe(`${window.location.origin}/live?token=tok_en`);
         expect(screen.getByText(/діє до: без обмеження/)).toBeTruthy();
         await act(async () => {fireEvent.click(screen.getByRole("button", {name: /Копіювати/}));});
         expect(writeText).toHaveBeenCalledWith(url);
@@ -52,7 +52,7 @@ describe("live view link dialog", () => {
         expect(api.regenerate).not.toHaveBeenCalled();
         await act(async () => {fireEvent.click(screen.getAllByRole("button", {name: "Перегенерувати"}).at(-1)!);});
         expect(api.regenerate).toHaveBeenCalledWith(event.EventID);
-        expect((screen.getByLabelText("Посилання") as HTMLInputElement).value).toContain("#screen=re_new");
+        expect((screen.getByLabelText("Посилання") as HTMLInputElement).value).toContain("?token=re_new");
     });
 
     it("turns the link off after a confirmation", async () => {

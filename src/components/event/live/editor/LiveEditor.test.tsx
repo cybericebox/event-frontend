@@ -64,7 +64,7 @@ describe("live editor", () => {
     it("adds a widget from the palette, then undoes and redoes it", () => {
         mount(true, roomy);
         const before = widgets();
-        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «Оголошення»"}));
+        fireEvent.click(screen.getByRole("button", {name: "Додати блок «Оголошення»"}));
         expect(widgets()).toBe(before + 1);
         fireEvent.keyDown(window, {key: "z", metaKey: true});
         expect(widgets()).toBe(before);
@@ -75,7 +75,7 @@ describe("live editor", () => {
     it("never grows the grid by itself: a full grid says there is no room", () => {
         mount();
         const before = widgets();
-        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «Оголошення»"}));
+        fireEvent.click(screen.getByRole("button", {name: "Додати блок «Оголошення»"}));
         expect(widgets()).toBe(before);
         expect(screen.getByText("Немає вільного місця: звільніть клітинки або збільште сітку.")).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-canvas")!.getAttribute("style")).toContain("--live-rows: 8");
@@ -83,13 +83,13 @@ describe("live editor", () => {
 
     it("moves the selected widget with the arrows and asks before removing it", () => {
         mount(true, roomy);
-        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «QR-код»"}));
+        fireEvent.click(screen.getByRole("button", {name: "Додати блок «QR-код»"}));
         const qr = () => document.querySelector(".event-live-editor__native .live-widget--qr") as HTMLElement;
         const column = qr().style.gridColumn;
         fireEvent.keyDown(window, {key: "ArrowRight"});
         expect(qr().style.gridColumn).not.toBe(column);
         fireEvent.keyDown(window, {key: "Delete"});
-        expect(screen.getByText("Прибрати віджет?")).toBeTruthy();
+        expect(screen.getByText("Прибрати блок?")).toBeTruthy();
         // Arrows do nothing while the confirmation is open.
         const moved = qr().style.gridColumn;
         fireEvent.keyDown(window, {key: "ArrowRight"});
@@ -114,7 +114,7 @@ describe("live editor", () => {
         fireEvent.click(screen.getByRole("tab", {name: "4:3"}));
         expect(screen.getAllByText(/1440×1080/).length).toBeGreaterThan(0);
         expect(screen.getByText(/будується автоматично з основного/)).toBeTruthy();
-        expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
+        expect((screen.getByRole("button", {name: "Додати блок «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
         fireEvent.click(screen.getByRole("button", {name: "Власне розміщення"}));
         expect(screen.getByRole("tab", {name: "4:3 · власна"})).toBeTruthy();
         expect(screen.queryByText(/будується автоматично з основного/)).toBeNull();
@@ -129,11 +129,11 @@ describe("live editor", () => {
         const cards = within(screen.getByRole("radiogroup", {name: "Шаблони екрана"})).getAllByRole("radio");
         expect(cards).toHaveLength(9);
         cards.forEach(card => expect(card.querySelector(".live-canvas")).not.toBeNull());
-        const apply = screen.getByRole("button", {name: "Застосувати до «Триває»"}) as HTMLButtonElement;
+        const apply = screen.getByRole("button", {name: "Застосувати до екрана"}) as HTMLButtonElement;
         expect(apply.disabled).toBe(true);
         fireEvent.click(screen.getByRole("radio", {name: /Велике табло/}));
         expect(screen.getByRole("radio", {name: /Велике табло/}).getAttribute("aria-checked")).toBe("true");
-        expect(screen.getByText(/Віджети сцени «Триває» буде замінено/)).toBeTruthy();
+        expect(screen.getByText(/Блоки екрана буде замінено/)).toBeTruthy();
         fireEvent.click(apply);
         expect(screen.getByText("Шаблон: Велике табло")).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
@@ -146,8 +146,8 @@ describe("live editor", () => {
         mount();
         fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
         fireEvent.click(screen.getByRole("radio", {name: /Повний показ/}));
-        expect(screen.getByText(/Буде замінено всі сцени/)).toBeTruthy();
-        fireEvent.click(screen.getByRole("button", {name: "Застосувати до всіх сцен"}));
+        expect(screen.getByText(/екрани всіх станів буде замінено/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", {name: "Увімкнути окремі екрани й застосувати"}));
         expect(document.querySelector(".event-live-editor__native .live-widget--solves")).not.toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: /До старту/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--facts")).not.toBeNull();
@@ -160,18 +160,61 @@ describe("live editor", () => {
 
     it("edits every scene on its own; the tabs mark only the live scene", () => {
         mount(true, separate);
-        const tabs = screen.getAllByRole("tab").filter(tab => tab.closest(".event-live-scenes"));
-        expect(tabs.map(tab => tab.textContent)).not.toContain("основна");
-        expect(tabs.filter(tab => tab.textContent?.includes("зараз"))).toHaveLength(1);
+        const tabs = screen.getAllByRole("tab").filter(tab => tab.closest(".event-live-scenes__tabs"));
+        // One line per tab: the state name only; the live one has a dot and «зараз» as its tooltip.
+        expect(tabs.map(tab => tab.textContent)).toEqual(["До старту", "Триває", "Заморожено", "Завершено"]);
+        const now = document.querySelectorAll(".event-live-scene__now");
+        expect(now).toHaveLength(1);
+        const live = now[0].closest(".event-live-scene-cell")!.querySelector("[role=tab]")!;
+        expect(document.getElementById(live.getAttribute("aria-describedby")!)?.textContent).toBe("зараз");
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
         // Its own copy of the board, editable at once.
-        expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(false);
+        expect((screen.getByRole("button", {name: "Додати блок «Таймер»"}) as HTMLButtonElement).disabled).toBe(false);
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
-        fireEvent.click(screen.getByRole("button", {name: "Прибрати віджет"}));
-        fireEvent.click(within(screen.getByText("Прибрати віджет?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати віджет"}));
+        fireEvent.click(screen.getByRole("button", {name: "Прибрати блок"}));
+        fireEvent.click(within(screen.getByText("Прибрати блок?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати блок"}));
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: /Триває/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
+    });
+
+    it("resizes a block from each corner, the opposite corner fixed, and with Shift+arrows", () => {
+        HTMLElement.prototype.setPointerCapture ??= () => undefined;
+        mount();
+        const native = () => document.querySelector(".event-live-editor__native .live-canvas") as HTMLElement;
+        // 12×8 cells of 100×100 px.
+        native().getBoundingClientRect = () => ({x: 0, y: 0, left: 0, top: 0, width: 1200, height: 800, right: 1200, bottom: 800, toJSON: () => ({})});
+        const chart = () => document.querySelector(".event-live-editor__native .live-widget--chart") as HTMLElement;
+        const area = () => [chart().style.gridColumn, chart().style.gridRow];
+        // The default chart: columns 1–8, rows 2–7.
+        expect(area()).toEqual(["1 / span 8", "2 / span 6"]);
+        const drag = (corner: string, dx: number, dy: number) => {
+            const handle = chart().querySelector(`[data-corner="${corner}"]`) as HTMLElement;
+            fireEvent.pointerDown(handle, {button: 0, pointerId: 1, clientX: 500, clientY: 500});
+            fireEvent.pointerMove(handle, {pointerId: 1, clientX: 500 + dx, clientY: 500 + dy});
+            fireEvent.pointerUp(handle, {pointerId: 1});
+        };
+        drag("se", -100, -100);
+        expect(area()).toEqual(["1 / span 7", "2 / span 5"]);
+        drag("ne", -100, 0);
+        expect(area()).toEqual(["1 / span 6", "2 / span 5"]);
+        drag("nw", 100, 100);
+        expect(area()).toEqual(["2 / span 5", "3 / span 4"]);
+        drag("sw", -100, 100);
+        expect(area()).toEqual(["1 / span 6", "3 / span 5"]);
+        // The minimum size of a chart is 4×3: the dragged edge stops there.
+        drag("nw", 500, 500);
+        expect(area()).toEqual(["3 / span 4", "5 / span 3"]);
+        // Shift+arrows still resize the selected block.
+        fireEvent.keyDown(window, {key: "ArrowRight", shiftKey: true});
+        expect(area()).toEqual(["3 / span 5", "5 / span 3"]);
+    });
+
+    it("hides the corner handles until a block is hovered, focused or selected", () => {
+        mount();
+        const handles = document.querySelectorAll(".event-live-editor__native .live-widget--chart .live-widget__corner");
+        expect([...handles].map(handle => handle.getAttribute("data-corner"))).toEqual(["nw", "ne", "sw", "se"]);
+        expect(document.querySelector(".live-widget__resize")).toBeNull();
     });
 
     it("lists problems and notes under one legend, each in its own colour", () => {
@@ -186,13 +229,14 @@ describe("live editor", () => {
 
     it("shows one screen for all states by default, with no state tabs", () => {
         mount();
-        expect(screen.getByRole("button", {name: "Один екран для всіх станів"}).getAttribute("aria-pressed")).toBe("true");
+        expect((screen.getByRole("combobox", {name: "Екран за станом заходу"}) as HTMLSelectElement).value).toBe("single");
         expect(screen.queryByRole("tab", {name: /До старту/})).toBeNull();
     });
 
     it("turns to separate screens as copies of the one screen, and back keeping the chosen state's", () => {
         mount();
-        fireEvent.click(screen.getByRole("button", {name: "Окремий екран для кожного стану"}));
+        fireEvent.change(screen.getByRole("combobox", {name: "Екран за станом заходу"}), {target: {value: "separate"}});
+        expect((screen.getByRole("combobox", {name: "Екран за станом заходу"}) as HTMLSelectElement).value).toBe("separate");
         for (const name of [/До старту/, /Заморожено/, /Завершено/]) {
             fireEvent.click(screen.getByRole("tab", {name}));
             expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
@@ -200,8 +244,8 @@ describe("live editor", () => {
         // Change «Завершено», then keep its screen as the one for all states.
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
         fireEvent.keyDown(window, {key: "Delete"});
-        fireEvent.click(within(screen.getByText("Прибрати віджет?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати віджет"}));
-        fireEvent.click(screen.getByRole("button", {name: "Один екран для всіх станів"}));
+        fireEvent.click(within(screen.getByText("Прибрати блок?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати блок"}));
+        fireEvent.change(screen.getByRole("combobox", {name: "Екран за станом заходу"}), {target: {value: "single"}});
         const dialog = screen.getByText("Залишити один екран для всіх станів?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement;
         expect((within(dialog).getByRole("combobox", {name: "Який екран залишити"}) as HTMLSelectElement).value).toBe("finished");
         fireEvent.click(within(dialog).getByRole("button", {name: "Залишити один"}));
@@ -228,7 +272,7 @@ describe("live editor", () => {
         fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--podium")!);
         fireEvent.keyDown(window, {key: "Delete"});
-        fireEvent.click(within(screen.getByText("Прибрати віджет?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати віджет"}));
+        fireEvent.click(within(screen.getByText("Прибрати блок?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати блок"}));
         expect(document.querySelector(".event-live-editor__native .live-widget--podium")).toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: /^Триває/}));
         expect(document.querySelector(".event-live-editor__native .live-widget--chart")).not.toBeNull();
@@ -258,14 +302,14 @@ describe("live editor", () => {
     it("is read-only for viewers", () => {
         mount(false);
         expect(screen.queryByRole("button", {name: /Опублікувати/})).toBeNull();
-        expect((screen.getByRole("button", {name: "Додати віджет «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
+        expect((screen.getByRole("button", {name: "Додати блок «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it("stops at 48 widgets on a scene with a clear message instead of a failing save", () => {
         const full = Array.from({length: 48}, (_, index) => ({id: `q${index}`, type: "qr" as const, x: index % 12 + 1, y: Math.floor(index / 12) + 1, w: 1, h: 1, props: {value: "/"}}));
         mount(true, {Published: {...defaultLiveLayout, scenes: undefined, widgets: full}, Draft: null});
-        fireEvent.click(screen.getByRole("button", {name: "Додати віджет «QR-код»"}));
-        expect(screen.getByRole("alert").textContent).toBe("На одній сцені може бути не більше 48 віджетів. Приберіть зайвий віджет.");
+        fireEvent.click(screen.getByRole("button", {name: "Додати блок «QR-код»"}));
+        expect(screen.getByRole("alert").textContent).toBe("На одному екрані може бути не більше 48 блоків. Приберіть зайвий блок.");
         expect(document.querySelectorAll(".event-live-editor__native .live-widget")).toHaveLength(48);
     });
 
@@ -274,7 +318,7 @@ describe("live editor", () => {
             Freeze: {Enabled: true, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false}});
         mount(true, separate);
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
-        expect(await screen.findByText(/вимкнено: зал бачить живі результати, і ця сцена не покажеться/)).toBeTruthy();
+        expect(await screen.findByText(/вимкнено: зал бачить живі результати, і екран цього стану не покажеться/)).toBeTruthy();
         fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
         expect(screen.queryByText(/зал бачить живі результати/)).toBeNull();
     });

@@ -56,6 +56,17 @@ it("shows the not-found screen alone when the server had no event and the page m
     resetEventGone();
 });
 
+it("leaves a missing event to the live screen itself on /live", async () => {
+    const {markEventGone, resetEventGone} = await import("@/utils/eventGone");
+    path.value = "/live";
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    render(<QueryClientProvider client={client}><AppShell event={null} unavailable={false}><h1>Екран наживо</h1></AppShell></QueryClientProvider>);
+    act(() => markEventGone());
+    expect(screen.getByRole("heading", {name: "Екран наживо"})).toBeTruthy();
+    expect(screen.queryByRole("heading", {name: "Захід не знайдено або у вас немає доступу"})).toBeNull();
+    resetEventGone();
+});
+
 describe("session pages of a visible event", () => {
     const replace = vi.fn();
     const original = window.location;

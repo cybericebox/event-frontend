@@ -132,15 +132,21 @@ export const issueLiveScreenLink = (eventID: string, expiry: LiveScreenExpiry) =
 export const regenerateLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link/regenerate", screenLinkSchema, "POST");
 export const revokeLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link", z.undefined(), "DELETE");
 
-// The URL a screen opens: the token rides in the fragment, so it never
-// reaches the event site's server logs.
+// The URL a screen opens (owner, 2026-10-20): the token is in the query, so
+// the event site's server renders the screen in the event's style from the
+// first byte. Nothing on the way stores it (no-store, no-referrer) and no
+// log writes query values.
 export function liveScreenURL(origin: string, token: string): string {
-    return `${origin}/live#screen=${encodeURIComponent(token)}`;
+    return `${origin}/live?token=${encodeURIComponent(token)}`;
 }
 
+// Links sent before were /live#screen=…: the screen moves the token into the query once.
 export function liveScreenTokenFromHash(hash: string): string | null {
     return new URLSearchParams(hash.replace(/^#/, "")).get("screen") || null;
 }
+
+// The header that carries the token to the daemon, so it is in no URL.
+export const liveScreenTokenHeader = "X-Live-Screen-Token";
 
 export class LiveScreenLinkError extends Error {
     constructor(readonly status: number) {
@@ -148,26 +154,28 @@ export class LiveScreenLinkError extends Error {
     }
 }
 
-function screenURL(path: string, token: string, params: Record<string, string> = {}): string {
-    const query = new URLSearchParams({token, ...params});
-    return `${requireApiOrigin()}/api/events/self/live-screen${path}?${query}`;
+function screenURL(path: string, params: Record<string, string> = {}): string {
+    const query = new URLSearchParams(params).toString();
+    return `${requireApiOrigin()}/api/events/self/live-screen${path}${query ? `?${query}` : ""}`;
 }
 
 async function screenRequest<T>(path: string, token: string, schema: z.ZodType<T>): Promise<T> {
-    // The event comes from the Origin of this site; no session is used.
-    const response = await fetch(screenURL(path, token), {credentials: "omit", cache: "no-store", headers: {Accept: "application/json"}});
+    // The event comes from the Origin of this site; no session is used. The token goes in a header.
+    const response = await fetch(screenURL(path), {credentials: "omit", cache: "no-store", headers: {Accept: "application/json", [liveScreenTokenHeader]: token}});
     if (!response.ok) throw new LiveScreenLinkError(response.status);
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
 // Stages in the event order: the screen timer counts by them.
 const liveStageSchema = z.object({Name: z.string(), OpensAt: z.string(), ClosesAt: z.string()});
-export const getLiveScreenByLink = (token: string) => screenRequest("", token, z.object({
+export const liveScreenByLinkSchema = z.object({
     Event: PublicEventInfoSchema, Layout: liveLayoutSchema,
     Stages: z.array(liveStageSchema),
-}));
+});
+export const getLiveScreenByLink = (token: string) => screenRequest("", token, liveScreenByLinkSchema);
 export type LiveScreenByLink = Awaited<ReturnType<typeof getLiveScreenByLink>>;
 export const getLiveScreenResultsByLink = (token: string) => screenRequest("/results", token, resultsSnapshotSchema);
 export function liveScreenResultsStreamURL(token: string, revision: number, refreshSeconds: number): string {
-    return screenURL("/results/live", token, {lastEventId: String(revision), pollInterval: String(refreshSeconds)});
+    // EventSource cannot send headers: the stream alone takes the token in the query.
+    return screenURL("/results/live", {token, lastEventId: String(revision), pollInterval: String(refreshSeconds)});
 }

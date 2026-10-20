@@ -20,7 +20,8 @@ vi.mock("@/api/manageStages", () => ({getManageStages: async () => []}));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "e1"}, canManage: true})}));
 
-const attachment = {ID: "a1", ExerciseName: "Web", ExerciseID: "x1", VersionNumber: 1, LatestVersionNumber: 2, UpdateAvailable: true, Status: 0, Revision: 0, Resources: null, ChallengeCount: 0, VariantCount: 1} as unknown as EventExerciseAttachment;
+const attachment = {ID: "a1", ExerciseName: "Web", ExerciseID: "x1", VersionNumber: 1, LatestVersionNumber: 2, UpdateAvailable: true, Status: 0, Revision: 0, Resources: null, ChallengeCount: 0, VariantCount: 1,
+    AvgDifficulty: 4.5, TaskCount: 2, TaskNames: ["Pinned one", "Pinned two"]} as unknown as EventExerciseAttachment;
 const refreshAll = vi.fn(async () => undefined);
 vi.mock("./useBoardSets", () => ({
     useBoardSets: () => ({
@@ -82,22 +83,88 @@ describe("running stage confirmation", () => {
     });
 });
 
-describe("flag repeat warning", () => {
-    const warning = "Флаги завдання «Web» можуть повторюватися між командами: можливих флагів замало для кількості команд.";
-
-    it("is shown when the set's flags may repeat", async () => {
-        Object.assign(attachment, {FlagsMayRepeat: true});
+describe("compact set card", () => {
+    const MIB = 1024 ** 2;
+    const res = (cpu: number, mib: number, devices: number) => ({Blocks: devices * 4, CPUMillicores: cpu, MemoryBytes: mib * MIB, Devices: devices});
+    it("keeps one header row (name, marks, stats, short resources) and moves the details into the open set", async () => {
+        const saved = {...attachment};
+        Object.assign(attachment, {ChallengeCount: 3, Resources: {Min: res(500, 512, 2), Max: res(1000, 1024, 3)}});
         try {
             setup();
-            expect(await screen.findByText(warning)).toBeTruthy();
+            const heading = await screen.findByRole("heading", {name: "Web"});
+            const head = heading.closest(".event-exercise-set__head") as HTMLElement;
+            expect(within(head).getByText("1 vCPU · 1 ГіБ · пристроїв: 3")).toBeTruthy();
+            expect(within(head).getByText("Середня складність")).toBeTruthy();
+            // The long resource line and the meta line live in the open details, not in the header.
+            expect(head.querySelector("[data-resources-total]")).toBeNull();
+            expect(head.querySelector(".event-exercise-set__meta")).toBeNull();
+            const body = document.getElementById("set-tasks-a1")!;
+            expect(body.querySelector("[data-resources-total]")).not.toBeNull();
+            fireEvent.click(screen.getByRole("button", {name: /Згорнути/}));
+            expect(document.querySelector("[data-resources-total]")).toBeNull();
+            expect(within(head).getByText("1 vCPU · 1 ГіБ · пристроїв: 3")).toBeTruthy();
+            fireEvent.click(screen.getByRole("button", {name: /Розгорнути/}));
         } finally {
-            Object.assign(attachment, {FlagsMayRepeat: false});
+            Object.assign(attachment, saved);
         }
+    });
+});
+
+describe("flag repeat warning", () => {
+    const limitText = "Завдання «Web» має 15 різних флагів, а команд може бути до 40: після 15-ї команди флаги почнуть повторюватися.";
+    function withRepeat(repeat: unknown, run: () => Promise<void>) {
+        Object.assign(attachment, {FlagsRepeat: repeat});
+        return run().finally(() => Object.assign(attachment, {FlagsRepeat: null}));
+    }
+
+    it("says how many flags and teams, once, as a warning (not an error) while the set is open", () => withRepeat({Flags: 15, Teams: 40, Reason: "limit"}, async () => {
+        setup();
+        const text = await screen.findByText(limitText);
+        const block = text.closest(".event-exercise-set__warning")!;
+        expect(block.closest(".event-exercise-set__head")).toBeNull();
+        expect(block.className).toContain("event-exercise-set__warning--warn");
+        expect(screen.getAllByText(limitText)).toHaveLength(1);
+        expect(screen.queryByRole("img", {name: limitText})).toBeNull();
+    }));
+
+    it("shrinks to a warning mark with the text in its tooltip when the set is collapsed", () => withRepeat({Flags: 15, Teams: 40, Reason: "limit"}, async () => {
+        setup();
+        await screen.findByText(limitText);
+        fireEvent.click(screen.getByRole("button", {name: /Згорнути/}));
+        expect(document.querySelector(".event-exercise-set__warning")).toBeNull();
+        expect(screen.getByRole("img", {name: limitText})).toBeTruthy();
+    }));
+
+    it("names the teams that exist now when the event has no team limit, and a pool already used up", async () => {
+        await withRepeat({Flags: 15, Teams: 16, Reason: "teams"}, async () => {
+            setup();
+            expect(await screen.findByText("Завдання «Web» має 15 різних флагів, а команд уже 16: флаги повторюватимуться.")).toBeTruthy();
+        });
+        cleanup();
+        await withRepeat({Flags: 15, Teams: 3, Reason: "repeated"}, async () => {
+            setup();
+            expect(await screen.findByText("Флаги завдання «Web» уже повторюються: усі 15 видано.")).toBeTruthy();
+        });
     });
 
     it("is hidden otherwise", async () => {
         setup();
         await screen.findByRole("heading", {name: "Web"});
-        expect(screen.queryByText(warning)).toBeNull();
+        expect(document.querySelector(".event-exercise-set__warning")).toBeNull();
+    });
+});
+
+describe("the set's pinned stats", () => {
+    it("shows the average difficulty and the subtask count; the count opens the names and never toggles the set", async () => {
+        setup();
+        const set = (await screen.findByRole("heading", {name: "Web"})).closest("article")!;
+        expect(within(set).getByLabelText("Складна, 4,5")).toBeTruthy();
+        const count = within(set).getByRole("button", {name: "Підзавдання: 2. Показати назви"});
+        const panel = document.getElementById(count.getAttribute("popovertarget")!)!;
+        expect([...panel.querySelectorAll("li")].map(item => item.textContent)).toEqual(["Pinned one", "Pinned two"]);
+        const toggle = set.querySelector(".event-exercise-set__toggle")!;
+        const before = toggle.getAttribute("aria-expanded");
+        fireEvent.click(count);
+        expect(toggle.getAttribute("aria-expanded")).toBe(before);
     });
 });

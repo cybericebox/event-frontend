@@ -193,3 +193,22 @@ it("shows the empty state inside the dropdown only when nothing matches", async 
     await openList();
     expect(await within(screen.getByRole("listbox")).findByText("Завдань не знайдено.")).toBeTruthy();
 });
+
+it("lists a dynamic task the event cannot run greyed, with the reason and nothing to click", async () => {
+    const dynamic = {...selection, Name: "Лабораторія", Reason: "no_infrastructure"};
+    api.get.mockResolvedValue({DefaultSelections: [dynamic], DefaultGroupName: "Платформна група", DynamicAllocated: false, GroupName: "Тестова група", GroupNameOverride: null, Inherit: true, Selections: [], EffectiveSelections: [dynamic]});
+    view();
+    const row = (await screen.findByRole("button", {name: "Лабораторія"})).closest("li")!;
+    expect(row.classList.contains("is-unavailable")).toBe(true);
+    expect(within(row).getByText("Не запуститься: у заходу немає інфраструктури")).toBeTruthy();
+    expect(within(row).queryByRole("link")).toBeNull();
+});
+
+it("lists a dynamic task without a reason like any other, whatever the event's reservation", async () => {
+    const dynamic = {...selection, Name: "Лабораторія"};
+    api.get.mockResolvedValue({DefaultSelections: [dynamic], DefaultGroupName: "Платформна група", DynamicAllocated: true, GroupName: "Тестова група", GroupNameOverride: null, Inherit: true, Selections: [], EffectiveSelections: [dynamic]});
+    view();
+    const row = (await screen.findByRole("button", {name: "Лабораторія"})).closest("li")!;
+    expect(row.classList.contains("is-unavailable")).toBe(false);
+    expect(within(row).queryByText(/Не запуститься/)).toBeNull();
+});

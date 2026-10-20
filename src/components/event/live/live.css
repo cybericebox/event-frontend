@@ -8,6 +8,7 @@
 .live-widget--masked{background:var(--live-bg)}
 .live-canvas--grid{background-image:linear-gradient(to right,var(--live-line) 1px,transparent 1px),linear-gradient(to bottom,var(--live-line) 1px,transparent 1px);background-size:calc(100% / var(--live-cols)) calc(100% / var(--live-rows))}
 .live-widget{position:relative;display:block;min-width:0;min-height:0;overflow:hidden;padding:var(--live-pad);border:0;border-radius:0;background:transparent;color:var(--live-ink);text-align:left;font:inherit;cursor:default}
+.live-widget>.event-block-state{--event-block-state-h:0;height:100%;padding:0}
 .live-widget h2{flex:none;height:calc(var(--live-fs-caption) * 1.8);margin:0;overflow:hidden;color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
 /* A list caption holds the title and, for a paged table, «11–17 з 47» with
    a thin bar that fills over the page time. */
@@ -204,7 +205,23 @@
 .live-canvas--edit .live-widget.is-selected.is-conflict,.live-canvas--edit .live-widget.is-selected.is-warned{outline-style:solid}
 .live-canvas--edit .live-widget:active{cursor:grabbing}
 .live-canvas--edit .live-widget:focus-visible{z-index:1;outline:calc(3px / var(--live-preview-scale,1)) solid var(--live-ink);outline-offset:calc(-3px / var(--live-preview-scale,1))}
-.live-widget__resize{position:absolute;right:0;bottom:0;width:calc(22px / var(--live-preview-scale,1));height:calc(22px / var(--live-preview-scale,1));cursor:nwse-resize;background:linear-gradient(135deg,transparent 55%,#aeb3ff 56%)}
+/* Corner handles: hidden until the block is hovered, focused or selected;
+   each resizes toward its corner. The hit area is a square in the corner;
+   the mark is a short bracket along the two edges, never a dot. */
+.live-widget__corner{--live-corner-hit:calc(24px / var(--live-preview-scale,1));--live-corner-mark:calc(12px / var(--live-preview-scale,1));--live-corner-line:calc(3px / var(--live-preview-scale,1));position:absolute;z-index:2;width:var(--live-corner-hit);height:var(--live-corner-hit);opacity:0;transition:opacity .12s}
+.live-widget__corner::after{content:"";position:absolute;width:var(--live-corner-mark);height:var(--live-corner-mark);border:0 solid #aeb3ff}
+.live-widget__corner--nw{top:0;left:0;cursor:nwse-resize}.live-widget__corner--nw::after{top:0;left:0;border-top-width:var(--live-corner-line);border-left-width:var(--live-corner-line)}
+.live-widget__corner--ne{top:0;right:0;cursor:nesw-resize}.live-widget__corner--ne::after{top:0;right:0;border-top-width:var(--live-corner-line);border-right-width:var(--live-corner-line)}
+.live-widget__corner--sw{bottom:0;left:0;cursor:nesw-resize}.live-widget__corner--sw::after{bottom:0;left:0;border-bottom-width:var(--live-corner-line);border-left-width:var(--live-corner-line)}
+.live-widget__corner--se{right:0;bottom:0;cursor:nwse-resize}.live-widget__corner--se::after{right:0;bottom:0;border-bottom-width:var(--live-corner-line);border-right-width:var(--live-corner-line)}
+.live-canvas--edit .live-widget:hover .live-widget__corner,.live-canvas--edit .live-widget:focus-visible .live-widget__corner,.live-canvas--edit .live-widget.is-selected .live-widget__corner{opacity:1}
+.live-widget__corner:hover::after{border-color:#7e85ff}
+/* Touch: no hover, so the handles show on the selected block only, with 44 px hit areas. */
+@media(pointer:coarse){
+  .live-widget__corner{--live-corner-hit:calc(44px / var(--live-preview-scale,1))}
+  .live-canvas--edit .live-widget:hover:not(.is-selected) .live-widget__corner{opacity:0;pointer-events:none}
+  .live-canvas--edit .live-widget:not(.is-selected) .live-widget__corner{pointer-events:none}
+}
 
 @media(max-width:720px){
   .live-fullscreen:not(.live-fullscreen--anchor) .live-area{position:static;min-height:100%}
@@ -221,3 +238,6 @@
 .live-controls__wake{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .live-controls .live-controls__help{min-height:0;padding:2px;border:0;border-radius:999px;color:var(--ib-on-brand-3)}
 .live-controls .live-controls__help:hover{background:transparent;color:var(--ib-on-brand)}
+
+/* The neutral error page of /live (no event data): the platform page, above everything, on the page colour. */
+.live-neutral{position:fixed;inset:0;z-index:200;overflow:auto;background:var(--ib-paper)}

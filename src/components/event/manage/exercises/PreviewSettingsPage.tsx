@@ -70,8 +70,12 @@ export function PreviewSettingsPage() {
                 onRemove={versionID => update(customDraft({Selections: selected.filter(x => x.ExerciseVersionID !== versionID)}))}
                 onAdd={(item, position) => select(item, position)} onVariant={(item, position) => select(item, position)} />}
             <div className="event-part__actions event-preview-heading"><h2>{t(model.Inherit ? "manage.previewSettings.platformSet" : "manage.previewSettings.eventSet")}</h2></div>
-            {selected.length === 0 ? <EmptyState compact className="event-preview-selection-empty" message={t("manage.previewSettings.empty")} /> : <ul className="event-preview-selection">{selected.map(item => <li key={item.ExerciseVersionID}>
-                <PreviewExerciseDetails eventID={eventID} item={item} />
+            {selected.length === 0 ? <EmptyState compact className="event-preview-selection-empty" message={t("manage.previewSettings.empty")} /> : <ul className="event-preview-selection">{selected.map(item => <li key={item.ExerciseVersionID} className={item.Reason ? "is-unavailable" : undefined}>
+                <div className="event-preview-selection__item">
+                    <PreviewExerciseDetails eventID={eventID} item={item} />
+                    {/* A dynamic task the event cannot run (no infrastructure) stays listed, with why. */}
+                    {item.Reason && <p className="event-preview-selection__reason">{t(`manage.previewSettings.unavailableReason.${item.Reason}`)}</p>}
+                </div>
                 {canManage && <button type="button" className="ib-icon-btn" aria-label={t("manage.previewSettings.remove", {name: item.Name || item.ExerciseVersionID})} onClick={() => update(customDraft({Selections: selected.filter(x => x.ExerciseVersionID !== item.ExerciseVersionID)}))}><X aria-hidden="true" /></button>}
             </li>)}</ul>}
         </section>
