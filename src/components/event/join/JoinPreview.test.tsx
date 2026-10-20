@@ -13,9 +13,10 @@ vi.mock("@/api/manage", async importOriginal => ({...await importOriginal<typeof
 vi.mock("@/api/manageTeamFields", () => ({getManageTeamFields: async () => null}));
 vi.mock("next/link", () => ({default: ({href, children, ...rest}: {href: string; children: ReactNode}) => <a href={href} {...rest}>{children}</a>}));
 vi.mock("@/components/event/EventLoading", () => ({EventLoading: ({label}: {label?: string}) => <div>{label}</div>}));
+const formState = vi.hoisted(() => ({empty: false}));
 vi.mock("@/api/manageParticipantForm", async importOriginal => ({
     ...(await importOriginal<typeof import("@/api/manageParticipantForm")>()),
-    getManageParticipantForm: async () => ({
+    getManageParticipantForm: async () => formState.empty ? ({Version: 1, Enabled: false, Required: false, Document: {blocks: []}}) : ({
         Version: 1, Enabled: true, Required: true,
         Document: {blocks: [{type: "field", id: "b1", key: "school", label: "Школа", input: "text", required: true, editable: true}, {type: "field", id: "private", key: "internal", label: "Внутрішня примітка", input: "text", staffOnly: true}]},
     }),
@@ -45,19 +46,19 @@ async function chooseOutcome(name: string) {
 
 const writes = () => fetchMock.mock.calls.filter(([, init]) => ["POST", "PUT", "PATCH", "DELETE"].includes(String(init?.method ?? "GET").toUpperCase()));
 
-beforeEach(() => { sessionStorage.clear(); HTMLDialogElement.prototype.showModal = function () {this.open = true;}; HTMLDialogElement.prototype.close = function () {this.open = false;}; fetchMock.mockReset(); vi.stubGlobal("fetch", fetchMock); });
+beforeEach(() => { formState.empty = false; sessionStorage.clear(); HTMLDialogElement.prototype.showModal = function () {this.open = true;}; HTMLDialogElement.prototype.close = function () {this.open = false;}; fetchMock.mockReset(); vi.stubGlobal("fetch", fetchMock); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 it("shows a pending result in a dialog without offering team access or writing to the server", async () => {
     view(event());
     fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
     const input = await screen.findByLabelText(/Школа/);
-    fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
+    fireEvent.click(screen.getByRole("button", {name: "Надіслати заявку"}));
     // The message sits under its question, so it does not repeat the question.
     expect(screen.getByRole("alert").textContent).toBe("Обовʼязкове поле");
     expect(input.getAttribute("aria-describedby")).toContain(screen.getByRole("alert").id);
     fireEvent.change(input, {target: {value: "Ліцей"}});
-    fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
+    fireEvent.click(screen.getByRole("button", {name: "Надіслати заявку"}));
     expect(screen.getByRole("dialog", {name: "Заявку подано"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Гаразд"})).toBeTruthy();
     expect(screen.queryByRole("link", {name: "Перейти до команди"})).toBeNull();
@@ -70,7 +71,7 @@ it("offers team access only for an approved application, with no intermediate co
     fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
     fireEvent.change(await screen.findByLabelText(/Школа/), {target: {value: "Ліцей"}});
     await chooseOutcome("Відхилено");
-    fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
+    fireEvent.click(screen.getByRole("button", {name: "Надіслати заявку"}));
     expect(screen.getByRole("dialog", {name: "Заявку відхилено"})).toBeTruthy();
     expect(screen.queryByRole("link", {name: "Перейти до команди"})).toBeNull();
     await chooseOutcome("Схвалено");
@@ -87,4 +88,15 @@ it.each([false, true])("filters staff-only fields for preview without changing t
     expect(screen.queryByLabelText(/Внутрішня примітка/)).toBeNull();
     const cached = client.getQueryData<{Document: {blocks: {key: string}[]}}>(["event-management-participant-form", "event-1"]);
     expect(cached?.Document.blocks.some(field => field.key === "internal")).toBe(true);
+});
+
+it("opens the same modal as a direct /join for an event without fields", async () => {
+    formState.empty = true;
+    view(event({Registration: 2}));
+    fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
+    expect(await screen.findByText("Реєстрація на захід «Олімпіада».")).toBeTruthy();
+    expect(screen.getByText(/попередній перегляд/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", {name: "Підтвердити участь"}));
+    expect(screen.getByRole("dialog", {name: /Ви зареєстровані|Схвалено|Заявку/})).toBeTruthy();
+    expect(writes()).toHaveLength(0);
 });

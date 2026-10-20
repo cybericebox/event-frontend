@@ -13,7 +13,7 @@ beforeAll(() => {
 });
 
 function setup(mode: TemplateMode, onReset = vi.fn().mockResolvedValue(true)) {
-    const handlers = {onCustomize: vi.fn(), onEdit: vi.fn(), onRestore: vi.fn(), onReset};
+    const handlers = {onCustomize: vi.fn(), onEdit: vi.fn(), onRestore: vi.fn(), onReset, onDeleteDraft: vi.fn().mockResolvedValue(true)};
     render(<TemplateActions mode={mode} canManage busy={false} {...handlers} />);
     return handlers;
 }
@@ -23,9 +23,22 @@ describe("TemplateActions", () => {
         setup("edit", vi.fn().mockResolvedValue("Не вдалося відновити шаблон."));
         fireEvent.click(screen.getByRole("button", {name: /Відновити шаблон за замовчуванням/}));
         fireEvent.click(screen.getAllByRole("button", {name: "Відновити шаблон за замовчуванням", hidden: true}).at(-1)!);
-        const dialog = screen.getByRole("alertdialog", {hidden: true});
+        const dialog = screen.getByRole("alertdialog", {name: "Відновити шаблон за замовчуванням?", hidden: true});
         await waitFor(() => expect(dialog.textContent).toContain("Не вдалося відновити шаблон."));
         expect(dialog.hasAttribute("open")).toBe(true);
+    });
+
+    it("deletes the open draft only after the confirmation", async () => {
+        const handlers = setup("edit");
+        fireEvent.click(screen.getByRole("button", {name: /Видалити чернетку/}));
+        expect(handlers.onDeleteDraft).not.toHaveBeenCalled();
+        fireEvent.click(screen.getAllByRole("button", {name: "Видалити", hidden: true}).at(-1)!);
+        await waitFor(() => expect(handlers.onDeleteDraft).toHaveBeenCalled());
+    });
+
+    it("has no draft deletion on a published copy", () => {
+        setup("view");
+        expect(screen.queryByRole("button", {name: /Видалити чернетку/})).toBeNull();
     });
 
     it("offers only «Налаштувати для заходу» on the platform template", () => {
@@ -56,7 +69,7 @@ describe("TemplateActions", () => {
         const handlers = setup("edit");
         fireEvent.click(screen.getByRole("button", {name: /Відновити шаблон за замовчуванням/}));
         expect(handlers.onReset).not.toHaveBeenCalled();
-        const dialog = screen.getByRole("alertdialog", {hidden: true});
+        const dialog = screen.getByRole("alertdialog", {name: "Відновити шаблон за замовчуванням?", hidden: true});
         expect(dialog.textContent).toContain("Відновити шаблон за замовчуванням?");
         fireEvent.click(screen.getAllByRole("button", {name: "Відновити шаблон за замовчуванням", hidden: true}).at(-1)!);
         await waitFor(() => expect(handlers.onReset).toHaveBeenCalledTimes(1));

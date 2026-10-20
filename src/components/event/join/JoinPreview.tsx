@@ -47,10 +47,11 @@ export function JoinPreview({event}: {event: PublicEventInfo}) {
             {form.isPending ? <EventLoading event={event} label={t("join.loading")} />
                 : form.isError ? <EventLoadError message={t("join.loadFailed")} error={form.error} onRetry={() => void form.refetch()} />
                 : <>
-                    {invitation && <p>{t("invite.acceptHint")}</p>}
+                    <p>{invitation ? t("invite.acceptHint") : t("join.intro", {name: event.Name})}</p>
                     {form.data?.Enabled && <div ref={fieldsRef}><ParticipantFormFields form={form.data} answers={answers} onChange={setAnswers} errors={fieldErrors} /></div>}
+                    <p>{t("joinPreview.simulated")}</p>
                     {error && <p className="event-join-error" role="alert">{error}</p>}
-                    <EventButton className="ib-btn ib-btn--primary" type="button" onClick={submit}>{invitation ? t("invite.accept") : t("shell.join.action")}</EventButton>
+                    <EventButton className="ib-btn ib-btn--primary" type="button" onClick={submit}>{invitation ? t("invite.accept") : t(form.data?.Enabled ? "join.submit.action" : "join.confirm.action")}</EventButton>
                 </>}
     </JoinDialog>;
 }

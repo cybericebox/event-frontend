@@ -56,7 +56,7 @@ describe("join page", () => {
     it("offers the registration button when the server allows registering", async () => {
         state.participation = block({Allowed: true, Reason: ""});
         view();
-        expect(await screen.findByRole("button", {name: "Приєднатися"})).toBeTruthy();
+        expect(await screen.findByRole("button", {name: "Підтвердити участь"})).toBeTruthy();
     });
 
     it("requires staff to enter the global test mode from management", async () => {
@@ -70,7 +70,7 @@ describe("join page", () => {
     it("never shows a participant the preview", async () => {
         state.participation = block({Allowed: true, Reason: ""});
         view();
-        expect(await screen.findByRole("button", {name: "Приєднатися"})).toBeTruthy();
+        expect(await screen.findByRole("button", {name: "Підтвердити участь"})).toBeTruthy();
         expect(screen.queryByText("join-preview")).toBeNull();
     });
 
@@ -83,7 +83,47 @@ describe("join page", () => {
         state.participation = block({Allowed: false, Reason: reason});
         view();
         expect(await screen.findByText(text)).toBeTruthy();
-        expect(screen.queryByRole("button", {name: "Приєднатися"})).toBeNull();
+        expect(screen.queryByRole("button", {name: "Підтвердити участь"})).toBeNull();
+    });
+
+    it("shows a neutral intro and one «Підтвердити участь» button on a bare visit with no fields", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        view();
+        expect(await screen.findByText("Реєстрація на захід «Олімпіада».")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Підтвердити участь"})).toBeTruthy();
+        expect(screen.queryByText(/поля/)).toBeNull();
+    });
+
+    it("shows only the registering loader while a no-field application is sent after a click", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        let finish!: (v: number) => void;
+        api.join.mockImplementationOnce(() => new Promise<number>(r => {finish = r;}));
+        window.history.replaceState(null, "", `/join?continue=${createJoinIntent("event-1")}`);
+        view();
+        await vi.waitFor(() => expect(api.join).toHaveBeenCalledTimes(1));
+        expect(screen.getByText("Реєструємо…")).toBeTruthy();
+        expect(screen.queryByRole("button", {name: "Підтвердити участь"})).toBeNull();
+        await act(async () => finish(1));
+        expect(await screen.findByText("Заявку подано")).toBeTruthy();
+    });
+
+    it("shows the same intro above the fields when the event has a form", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        state.form = true;
+        view();
+        expect(await screen.findByText("Реєстрація на захід «Олімпіада».")).toBeTruthy();
+        expect(screen.getByRole("button", {name: "Надіслати заявку"})).toBeTruthy();
+    });
+
+    it("labels the busy submit of a form «Надсилаємо…»", async () => {
+        state.participation = block({Allowed: true, Reason: ""});
+        state.form = true;
+        let finish!: (v: number) => void;
+        api.join.mockImplementationOnce(() => new Promise<number>(r => {finish = r;}));
+        view();
+        (await screen.findByRole("button", {name: "Надіслати заявку"})).click();
+        expect(await screen.findByText("Надсилаємо…")).toBeTruthy();
+        await act(async () => finish(2));
     });
 
     it("sends the application by itself after the sign-in this browser started", async () => {
@@ -99,7 +139,7 @@ describe("join page", () => {
         state.participation = block({Allowed: true, Reason: ""});
         window.history.replaceState(null, "", "/join?continue=1");
         view();
-        await screen.findByRole("button", {name: "Приєднатися"});
+        await screen.findByRole("button", {name: "Підтвердити участь"});
         expect(api.join).not.toHaveBeenCalled();
         expect(window.location.search).toBe("");
     });
@@ -109,7 +149,7 @@ describe("join page", () => {
         createJoinIntent("event-1");
         window.history.replaceState(null, "", `/join?continue=${"0".repeat(32)}`);
         view();
-        await screen.findByRole("button", {name: "Приєднатися"});
+        await screen.findByRole("button", {name: "Підтвердити участь"});
         expect(api.join).not.toHaveBeenCalled();
         expect(consumeJoinIntent("event-1", "0".repeat(32))).toBe(false);
     });
@@ -119,7 +159,7 @@ describe("join page", () => {
         const nonce = createJoinIntent("event-1", Date.now() - 60 * 60 * 1000);
         window.history.replaceState(null, "", `/join?continue=${nonce}`);
         view();
-        await screen.findByRole("button", {name: "Приєднатися"});
+        await screen.findByRole("button", {name: "Підтвердити участь"});
         expect(api.join).not.toHaveBeenCalled();
     });
 
@@ -128,7 +168,7 @@ describe("join page", () => {
         const nonce = createJoinIntent("event-2");
         window.history.replaceState(null, "", `/join?continue=${nonce}`);
         view();
-        await screen.findByRole("button", {name: "Приєднатися"});
+        await screen.findByRole("button", {name: "Підтвердити участь"});
         expect(api.join).not.toHaveBeenCalled();
     });
 
@@ -141,7 +181,7 @@ describe("join page", () => {
         cleanup();
         window.history.replaceState(null, "", `/join?continue=${nonce}`);
         view();
-        await screen.findByRole("button", {name: "Приєднатися"});
+        await screen.findByRole("button", {name: "Підтвердити участь"});
         expect(api.join).toHaveBeenCalledTimes(1);
     });
 
@@ -151,9 +191,11 @@ describe("join page", () => {
         const nonce = createJoinIntent("event-1");
         window.history.replaceState(null, "", `/join?continue=${nonce}`);
         view();
-        await screen.findByRole("button", {name: "Приєднатися"});
+        await screen.findByRole("button", {name: "Надіслати заявку"});
         expect(api.join).not.toHaveBeenCalled();
-    });
+        expect(screen.queryByRole("button", {name: "Підтвердити участь"})).toBeNull();
+    expect(screen.queryByRole("button", {name: "Приєднатися"})).toBeNull();
+});
 });
 
 it("keeps invitation checks visible instead of claiming an application was submitted", async()=>{

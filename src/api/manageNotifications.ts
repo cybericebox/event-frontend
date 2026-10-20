@@ -146,6 +146,10 @@ export async function publishManageInAppTemplate(eventID: string, template: Mana
     return request(eventID, `notification-templates/in-app/${template.ID}/publish`, inAppTemplateSchema, "POST");
 }
 
+export async function deleteManageInAppTemplate(eventID: string, templateID: string): Promise<void> {
+    await request(eventID, `notification-templates/in-app/${encodeURIComponent(templateID)}`, z.unknown().optional(), "DELETE");
+}
+
 export async function resetManageInAppTemplate(eventID: string, notificationType: string): Promise<void> {
     await request(eventID, `notification-templates/in-app/type/${encodeURIComponent(notificationType)}`, z.unknown().optional(), "DELETE");
 }
