@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import {readFileSync} from "node:fs";
 import {afterEach, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
 import {EventRichTextView} from "./EventRichTextView";
@@ -50,4 +51,27 @@ it("preserves the actual composed proxy destination and does not hijack a docs U
     view.rerender(<EventRichTextView value={doc([{type:"text",text:"https://docs.test/?device="},variable])} variables={{device:"https://lab.test"}} openVariables={{device:proxy}}/>);
     fireEvent.click(screen.getByRole("button",{name:"Відкрити в новій вкладці"}));
     expect(proxy).toHaveBeenCalledOnce();expect(open).toHaveBeenCalledWith("https://docs.test/?device=https://lab.test","_blank","noopener,noreferrer");
+});
+
+it("uses custom event tooltips for both icon actions without native title hints", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {configurable: true, value: {writeText}});
+    const view = render(<EventRichTextView value={fixture} variables={{host: "lab.test"}} />);
+    for (const label of ["Копіювати", "Відкрити в новій вкладці"]) {
+        const button = screen.getByRole("button", {name: label});
+        expect(button.hasAttribute("title")).toBe(false);
+        expect(button.closest(".ib-tip--floating")?.querySelector(".ib-tip__bubble")?.textContent).toBe(label);
+        fireEvent.focus(button);
+    }
+    await act(async () => {fireEvent.click(screen.getByRole("button", {name: "Копіювати"}));});
+    const copied = screen.getByRole("button", {name: "Скопійовано"});
+    expect(copied.closest(".ib-tip--floating")?.querySelector(".ib-tip__bubble")?.textContent).toBe("Скопійовано");
+    expect(view.container.querySelector("[data-copy-block] [title]")).toBeNull();
+});
+
+it("keeps custom-tooltip copy actions at 28px inside the 36px block", () => {
+    const css=readFileSync(`${process.cwd()}/src/styles/event-participant.css`,"utf8");
+    expect(css).toMatch(/\[data-copy-block\]\{[^}]*height:36px/);
+    expect(css).toMatch(/\[data-copy-block\]>\.ib-tip\{[^}]*flex:none/);
+    expect(css).toMatch(/\[data-copy-block\]>\.ib-tip>button\{[^}]*width:28px;height:28px/);
 });

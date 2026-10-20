@@ -47,11 +47,11 @@ it("shows the load error only on a first load that failed", async () => {
 it("keeps the board and toasts when a background poll fails", async () => {
     state.board.mockResolvedValueOnce(board);
     const client = view();
-    await screen.findByText("Завдання 1");
+    await screen.findByText("Завдання 1", {selector: ".ib-tile__name"});
     state.board.mockRejectedValue(new Error("down"));
     await client.refetchQueries({queryKey: ["event-own-challenges", "e"]});
     await waitFor(() => expect(state.toast).toHaveBeenCalledWith("Не вдалося оновити завдання", {id: "event-challenges-refresh"}));
-    expect(screen.getByText("Завдання 1")).toBeTruthy();
+    expect(screen.getByText("Завдання 1", {selector: ".ib-tile__name"})).toBeTruthy();
     expect(document.querySelector("[data-load-error]")).toBeNull();
 });
 

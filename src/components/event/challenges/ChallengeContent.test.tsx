@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
-import {cleanup, render} from "@testing-library/react";
+import {cleanup, fireEvent, render} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {readFileSync} from "node:fs";
 import {resolve} from "node:path";
@@ -150,22 +150,48 @@ it("centers a card when an unavailable difficulty produces no visible metadata",
     const tile=container.querySelector(".ib-tile")!;
     expect(tile.className).toContain("ib-tile--title-only");
     expect(tile.querySelector(".ib-tile__foot")).toBeNull();
-    expect(css("challenge-tile.css")).toContain(".ib-tile--title-only .ib-tile__main{justify-content:center}");
+    expect(css("challenge-tile.css")).toMatch(/\.ib-tile__main\{[^}]*align-items:center/);
 });
 
-it("keeps solved status in the score column and reserves left metadata only for actual context", () => {
-    const {container}=render(<ChallengeTile challenge={{...fixtureChallenge,Infrastructure:false,ContentUpdatedAt:null}} showDifficulty={false} onOpen={()=>{}}/>);
-    const tile=container.querySelector(".ib-tile")!;
-    expect(tile.className).toContain("ib-tile--title-only");expect(tile.querySelector(".ib-tile__main .ib-tile__foot")).toBeNull();
-    expect(tile.querySelector(".ib-tile__main .ib-tile__solved")).toBeNull();expect(tile.querySelector(".ib-tile__score .ib-tile__solved svg")).toBeTruthy();
-    expect(tile.querySelector(".ib-tile__solved")?.textContent).toBe("");expect(tile.querySelector(".ib-tile__solved")?.getAttribute("aria-label")).toBe("Розвʼязано");
-    expect(tile.getAttribute("aria-label")).toContain("розвʼязано");
+it.each([false,true])("matches all approved card metadata/state combinations (difficulty=%s)", showDifficulty => {
+    for (const infrastructure of [false,true]) for (const state of ["available","solved","closed"] as const) {
+        const challenge={...fixtureChallenge,Infrastructure:infrastructure,SolvedAt:state==="solved"?"2026-10-01T10:00:00Z":null,Closed:state==="closed",Locked:false,Practice:false,ContentUpdatedAt:"2026-10-01T11:00:00Z",Snapshot:{...fixtureChallenge.Snapshot,name:LONG_WORD}};
+        const view=render(<ChallengeTile challenge={challenge} showDifficulty={showDifficulty} onOpen={()=>{}}/>);
+        const tile=view.container.querySelector(".ib-tile")!;
+        expect(tile.querySelector(".ib-tile__name")?.textContent).toBe(LONG_WORD);
+        expect(tile.querySelector(".ib-tile__score .lucide-network")!==null).toBe(infrastructure);
+        expect(tile.querySelector(".ib-tile__main .ib-tile__difficulty")!==null).toBe(showDifficulty);
+        expect(tile.querySelector(".ib-tile__states,.ib-tile__solved,.ib-tile__upd,.ib-tile__closed,.ib-tile__practice,.ib-tile__lock")).toBeNull();
+        expect(tile.hasAttribute("title")).toBe(false);
+        expect(tile.classList.contains("is-solved")).toBe(state==="solved");
+        expect(tile.classList.contains("is-closed")).toBe(state==="closed");
+        expect(view.container.querySelector(".ib-tile-tip>.ib-tip__bubble")?.textContent).toBe(LONG_WORD);
+        view.unmount();
+    }
 });
-it.each([{Closed:true,Practice:false,Locked:false},{Closed:false,Practice:true,Locked:false},{Closed:false,Practice:false,Locked:true}])("preserves compact state information with a long phone title %o",state=>{
-    const {container}=render(<ChallengeTile challenge={{...fixtureChallenge,...state,SolvedAt:null,Infrastructure:true,Snapshot:{...fixtureChallenge.Snapshot,name:LONG_TITLE}}} showDifficulty onOpen={()=>{}}/>);
+it("centers the event loader over the entire card while keeping locked semantics", () => {
+    const {container}=render(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,Locked:true,LockedBusy:true}} showDifficulty onOpen={()=>{}}/>);
     const tile=container.querySelector(".ib-tile")!;
-    expect(tile.querySelector(".ib-tile__name")?.textContent).toBe(LONG_TITLE);expect(tile.getAttribute("title")).toBe(LONG_TITLE);
-    expect(tile.querySelector(".ib-tile__foot .lucide-network")).toBeTruthy();expect(tile.querySelector(".ib-tile__foot .ib-tile__difficulty")).toBeTruthy();
-    expect(tile.querySelector(".ib-tile__states [role=img]")).toBeTruthy();
-    expect(css("challenge-tile.css")).toContain(".ib-tile{height:88px}");
+    expect(tile.getAttribute("aria-busy")).toBe("true"); expect(tile.getAttribute("aria-disabled")).toBe("true");
+    expect(tile.classList.contains("is-closed")).toBe(false);
+    expect(tile.querySelector(".ib-tile__loading img")).toBeTruthy();
+    expect(css("challenge-tile.css")).toMatch(/\.ib-tile__loading\{[^}]*position:absolute[^}]*inset:0[^}]*place-items:center/);
+});
+
+it("keeps the full long-word title tooltip within the phone viewport", () => {
+    const previous = window.innerWidth; window.innerWidth = 390;
+    const rect = vi.spyOn(HTMLElement.prototype,"getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains("ib-tip__bubble")
+            ? {left:0,right:280,top:0,bottom:60,width:280,height:60,x:0,y:0,toJSON:()=>({})}
+            : {left:17,right:192,top:100,bottom:188,width:175,height:88,x:17,y:100,toJSON:()=>({})};
+    });
+    try {
+        const {container}=render(<ChallengeTile challenge={{...fixtureChallenge,Infrastructure:false,Snapshot:{...fixtureChallenge.Snapshot,name:LONG_WORD}}} onOpen={()=>{}}/>);
+        fireEvent.focus(container.querySelector("button")!);
+        const bubble=container.querySelector<HTMLElement>(".ib-tile-tip>.ib-tip__bubble")!;
+        expect(bubble.getAttribute("popover")).toBe("manual");
+        expect(bubble.style.left).toBe("12px");
+        expect(bubble.textContent).toBe(LONG_WORD);
+        expect(css("challenge-tile.css")).toMatch(/\.ib-tile-tip>\.ib-tip__bubble\{[^}]*max-width:min\(280px,calc\(100vw - 24px\)\)[^}]*overflow-wrap:anywhere/);
+    } finally {rect.mockRestore(); window.innerWidth=previous;}
 });

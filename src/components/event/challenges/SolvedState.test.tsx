@@ -52,12 +52,12 @@ function renderModal(challenge: OwnChallenge) {
 }
 
 describe("solved task card", () => {
-    it("is a distinct success state with the check and the awarded points, unsolved stays as is", () => {
+    it("is a distinct success color with awarded points and no extra state icon", () => {
         const {container, rerender} = render(<ChallengeTile challenge={{...base, SolvedAt: "2026-10-01T11:52:00Z", AwardedPoints: 80}} onOpen={noop} />);
         const tile = container.querySelector(".ib-tile")!;
         expect(tile.classList.contains("is-solved")).toBe(true);
         expect(tile.querySelector(".ib-tile__pts")?.textContent).toBe("+80");
-        expect(tile.querySelector(".ib-tile__solved svg")).toBeTruthy();
+        expect(tile.querySelector(".ib-tile__solved")).toBeNull();
         rerender(<ChallengeTile challenge={base} onOpen={noop} />);
         expect(container.querySelector(".ib-tile")!.classList.contains("is-solved")).toBe(false);
         expect(container.querySelector(".ib-tile__pts")?.textContent).toBe("100");
@@ -100,7 +100,7 @@ describe("authoritative shared Lab on the participant board", () => {
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
         api.board.mockResolvedValue(initial);
         render(<QueryClientProvider client={client}><ChallengesBoard /></QueryClientProvider>);
-        await screen.findByText("Завдання 1");
+        await screen.findByText("Завдання 1", {selector: ".ib-tile__name"});
         return client;
     };
 

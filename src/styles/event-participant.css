@@ -23,15 +23,6 @@
 .event-board .ib-board__state{flex:1 1 auto}
 .event-board .ib-board__bar{position:relative;z-index:3}
 
-/* Locked tile — unsolved prerequisites. Quiet well, dashed hairline, never opens. */
-:root,[data-theme="light"]{--ib-tile-locked-bg:var(--ib-paper)}
-[data-theme="dark"]{--ib-tile-locked-bg:var(--ib-surface)}
-.ib-tile.is-locked,.ib-tile.is-locked:hover{background:var(--ib-tile-locked-bg);border:1px dashed var(--ib-control);color:var(--ib-dim);cursor:not-allowed}
-.ib-tile.is-locked .ib-tile__name{font-weight:var(--ib-w-medium)}
-.ib-tile.is-locked .ib-tile__pts{color:var(--ib-faint)}
-.ib-tile__lock{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:10px;color:var(--ib-dim)}
-.ib-tile__lock svg{display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-2px}
-
 /* ── challenge window extras ─────────────────────────────────────────────── */
 .event-cmodal__hints{margin:0;padding:0;list-style:none;border:1px solid var(--ib-line);border-radius:var(--ib-r);overflow:hidden}
 .event-cmodal__hints li{padding:var(--ib-2) 10px}
@@ -256,10 +247,11 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 /* Shared CopyBlock renderer, mapped to the event's design tokens. */
 [data-copy-block]{display:flex;height:36px;min-width:0;max-width:100%;align-items:center;gap:4px;margin:8px 0;padding:0 8px;border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-paper);color:var(--ib-ink)}
 [data-copy-block]>code{flex:1;min-width:0;overflow-x:auto;white-space:pre;font:13px var(--ib-mono);padding:0;background:none}
-[data-copy-block]>button{display:inline-flex;width:28px;height:28px;flex:none;align-items:center;justify-content:center;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
-[data-copy-block]>button:hover{background:var(--ib-hover);color:var(--ib-ink)}
-[data-copy-block]>button:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
-[data-copy-block]>button>svg{width:14px;height:14px}
+[data-copy-block]>.ib-tip{display:inline-flex;flex:none}
+[data-copy-block]>.ib-tip>button{display:inline-flex;width:28px;height:28px;flex:none;align-items:center;justify-content:center;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-dim);cursor:pointer}
+[data-copy-block]>.ib-tip>button:hover{background:var(--ib-hover);color:var(--ib-ink)}
+[data-copy-block]>.ib-tip>button:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+[data-copy-block]>.ib-tip>button>svg{width:14px;height:14px}
 [data-copy-block]>[role="status"]{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
 .event-cmodal__hints-toggle{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
@@ -287,5 +279,3 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 :where(.ib-cmodal__body,.event-cmodal__hint-body,.ib-solvers__scroll,.event-board__groups,.event-board__group-options,.event-select__menu)::-webkit-scrollbar-thumb{background:var(--ib-control);border:0;border-radius:999px}
 :where(.ib-cmodal__body,.event-cmodal__hint-body,.ib-solvers__scroll,.event-board__groups,.event-board__group-options,.event-select__menu)::-webkit-scrollbar-thumb:hover{background:var(--ib-dim)}
 @media(forced-colors:active){:where(.ib-cmodal__body,.event-cmodal__hint-body,.ib-solvers__scroll,.event-board__groups,.event-board__group-options,.event-select__menu){scrollbar-color:auto}}
-
-.ib-tile__states .ib-tile__lock svg{margin:0}

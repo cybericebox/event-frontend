@@ -59,7 +59,7 @@ describe("the board filters", () => {
         expect(window.location.search).toContain("status=closed");
         fireEvent.click(status("Усі"));
         expect(names()).toEqual(["Завдання 1", "Завдання 2", "Завдання 3", "Завдання 4"]);
-        expect(screen.getAllByRole("img", { name: "закрито" }).length).toBe(2);
+        expect(document.querySelectorAll(".ib-tile[aria-label*=\"закрито\"]").length).toBe(2);
         expect(window.location.search).not.toContain("status");
         fireEvent.click(status("Відкриті"));
         expect(window.location.search).toContain("status=open");

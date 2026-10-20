@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
-const server = vi.hoisted(() => ({status: "published", mode: "all_ready", attempts: null as number | null, put: vi.fn(), policy: null as {SnapshotMode: "skip" | "required"; MaxActiveLabsPerTeam: number | null; RetentionMinutes: number} | null, gate: null as null | (() => void)}));
+const server = vi.hoisted(() => ({status: "published", mode: "all_ready", attempts: null as number | null, staticPoints: 100, putScoring: vi.fn(), put: vi.fn(), policy: null as {SnapshotMode: "skip" | "required"; MaxActiveLabsPerTeam: number | null; RetentionMinutes: number} | null, gate: null as null | (() => void)}));
 vi.mock("@/components/event/manage/ManagerShell", () => ({useManager: () => ({event: {EventID: "3f1c2d4e-0000-4000-8000-000000000001", Name: "CTF", Participation: 0, LogoURL: null}, canManage: true})}));
 vi.mock("@/api/manage", async original => ({
     ...(await original() as object),
@@ -12,8 +12,9 @@ vi.mock("@/api/manage", async original => ({
         PreviewDescription: "", PreviewPicture: "", MaxTeamSize: 3, MinTeamSize: null, MaxTeams: null, InfrastructureAllowed: true,
         AllowPseudonyms: false, ShowDifficulty: true, HintsDisabled: false, HintChargeMode: "reward", MaxFlagAttempts: server.attempts, TaskRevealMode: server.mode,
     }),
-    getManageLifecycle: async () => ({Configured: true, Status: server.status}),
-    getManageScoring: async () => ({Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, StaticPoints: 100, ForceEventScoring: false}),
+    getManageLifecycle: async () => ({Configured: true, Status: server.status, JoinPolicy: 0}),
+    getManageScoring: async () => ({Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, StaticPoints: server.staticPoints, ForceEventScoring: false}),
+    putManageScoring: server.putScoring,
     putManageConfig: server.put,
 }));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
@@ -137,5 +138,33 @@ describe("lifecycle policy optimistic save queue", () => {
         await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
         expect(server.put.mock.calls[0][1].LabPolicy).toEqual({SnapshotMode: "required", MaxActiveLabsPerTeam: 3, RetentionMinutes: 90});
         await waitFor(() => expect(limit.value).toBe("7"));
+    });
+});
+
+describe("per-task points ceiling in event defaults", () => {
+    afterEach(() => {cleanup(); server.staticPoints = 100; server.putScoring.mockReset();});
+    it("preserves a saved value above 999, validates beside the field and refuses submission", async () => {
+        server.staticPoints = 1200; renderPage();
+        const input = await screen.findByRole("spinbutton", {name: /Бали за завдання/}) as HTMLInputElement;
+        expect(input.value).toBe("1200"); expect(input.max).toBe("999");
+        fireEvent.change(input, {target: {value: "1000"}});
+        expect(input.value).toBe("1000"); expect(input.getAttribute("aria-invalid")).toBe("true");
+        expect(input.parentElement?.querySelector("#static-points-error")?.textContent).toContain("від 1 до 999");
+        fireEvent.submit(input.closest("form")!); expect(server.putScoring).not.toHaveBeenCalled();
+        fireEvent.change(input, {target: {value: "999"}});
+        expect(input.getAttribute("aria-invalid")).toBe("false");
+        expect(input.closest("form")?.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
+    });
+    it("applies the same ceiling separately to both dynamic point bounds", async () => {
+        renderPage(); await screen.findByRole("spinbutton", {name: /Бали за завдання/});
+        fireEvent.click(screen.getByLabelText(/^Динамічне/));
+        const max = screen.getByRole("spinbutton", {name: /^Максимум балів/}) as HTMLInputElement;
+        const min = screen.getByRole("spinbutton", {name: /^Мінімум балів/}) as HTMLInputElement;
+        expect(max.max).toBe("999"); expect(min.max).toBe("999");
+        fireEvent.change(max, {target: {value: "1001"}}); fireEvent.change(min, {target: {value: "1000"}});
+        expect(max.value).toBe("1001"); expect(min.value).toBe("1000");
+        expect(document.getElementById(max.getAttribute("aria-describedby")!)?.textContent).toBe("Ціле число від 1 до 999.");
+        expect(document.getElementById(min.getAttribute("aria-describedby")!)?.textContent).toBe("Ціле число від 0 до 999.");
+        fireEvent.submit(max.closest("form")!); expect(server.putScoring).not.toHaveBeenCalled();
     });
 });

@@ -164,14 +164,15 @@ const mountBoard = (...challenges: OwnChallenge[]) => {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ChallengesBoard /></QueryClientProvider>);
 };
 
-it("shows a dynamic task without a run as a closed card with the loader while the labs launch, and static tasks stay open", async () => {
+it("shows a dynamic task without a run with the whole-card loader while the labs launch, and static tasks stay open", async () => {
     switches.busy = "starting";
     mountBoard(dynamicTask("Web lab"), {...base, Snapshot: {...base.Snapshot, name: "Static task"}, PreviewTaskID: rawId()});
     const card = await screen.findByRole("button", {name: /^Web lab/});
     expect(card.getAttribute("aria-disabled")).toBe("true");
-    expect(card.textContent).toContain("Запускаємо інфраструктуру…");
+    expect(card.getAttribute("aria-label")).toContain("Запускаємо інфраструктуру…");
+    expect(card.getAttribute("aria-busy")).toBe("true");
     expect(card.textContent).not.toContain("Запустіть інфраструктуру");
-    expect(card.querySelector(".ib-busy-mark")).toBeTruthy();
+    expect(card.querySelector(".ib-tile__loading-logo")).toBeTruthy();
     fireEvent.click(card);
     expect(document.querySelector("dialog[open]")).toBeNull();
     expect(screen.getByRole("button", {name: /^Static task/}).getAttribute("aria-disabled")).toBeNull();

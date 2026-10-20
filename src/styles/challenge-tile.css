@@ -1,75 +1,34 @@
-/* Challenge tile — a <button> that opens the challenge modal.
-   Unsolved = brand mass (#211A52 in both themes), white name, mono points.
-   Solved   = --ib-solved with hairline, dim name, «Розвʼязано» + check in ok colour.
-   Metadata respects the event difficulty setting; infrastructure is the Network icon. */
-
-:root,[data-theme="light"]{
-  --ib-tile-solved-name:#5A5A70;   /* = dim; 5.5:1 on #F0F0F5 */
-}
-[data-theme="dark"]{
-  --ib-tile-solved-name:#BBB9CB;   /* 6.1:1 on #383645 */
-}
-
-.ib-tile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:8px;min-width:0;width:100%;height:100px;
-  padding:9px 11px;border:1px solid var(--ib-brand);border-radius:var(--ib-r-lg);background:var(--ib-brand);color:var(--ib-on-brand);
-  font:inherit;text-align:left;cursor:pointer;
-  transition:background-color var(--ib-dur-fast) var(--ib-ease),border-color var(--ib-dur-fast) var(--ib-ease),outline-color var(--ib-dur-move) var(--ib-ease)}
-.ib-tile:hover,.ib-tile.is-hover{background:var(--ib-brand-hover);border-color:var(--ib-brand-hover)}
-.ib-tile:focus-visible,.ib-tile.is-focus{outline:2px solid var(--ib-action);outline-offset:2px}
-
-.ib-tile__name{font-size:15px;font-weight:var(--ib-w-semibold);line-height:1.2;overflow:hidden;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
-.ib-tile__main{display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-width:0;min-height:0}
-.ib-tile--title-only .ib-tile__main{justify-content:center}
-.ib-tile__foot{display:flex;flex-wrap:wrap;align-items:center;gap:3px 5px;min-width:0;position:relative;font-size:10px;line-height:1.1}
-.ib-tile__lab{display:inline-flex;width:13px;height:13px;flex:none}
-.ib-tile__lab svg{width:13px;height:13px}
-.ib-tile__difficulty{font-size:10px;color:inherit;opacity:.85}
-.ib-tile__foot .ib-tip{display:inline-flex;min-width:0}
-.ib-tile__score{position:relative;display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:44px;padding-left:8px;border-left:1px solid var(--ib-brand-line)}
-.ib-tile__pts{display:flex;align-items:center;justify-content:center;flex:none;font:var(--ib-w-medium) calc(26px * var(--ib-tile-score-scale,1))/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.5px;color:var(--ib-brand-points);white-space:nowrap}
-.ib-tile__upd{display:inline-flex;align-items:center;color:inherit}
-.ib-tile__upd>svg{width:12px;height:12px}
-.ib-tile__solved{display:none;align-items:center;gap:var(--ib-1);font-size:10px;font-weight:var(--ib-w-medium);color:var(--ib-ok);white-space:nowrap}
-.ib-tile__solved svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-
-/* solved */
-.ib-tile.is-solved{background:var(--ib-ok-bg);border-color:transparent;color:var(--ib-ink)}
-.ib-tile.is-solved:hover,.ib-tile.is-solved.is-hover{background:var(--ib-ok-bg);border-color:var(--ib-ok)}
+/* Approved participant cards: available, solved, closed; metadata never shifts the title. */
+:root,[data-theme="light"]{--ib-tile-solved-name:#5A5A70}
+[data-theme="dark"]{--ib-tile-solved-name:#BBB9CB}
+.ib-tile{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 68px;align-items:stretch;gap:8px;min-width:0;width:100%;height:100px;padding:9px 11px;border:1px solid var(--ib-brand);border-radius:var(--ib-r-lg);background:var(--ib-brand);color:var(--ib-on-brand);font:inherit;text-align:left;cursor:pointer;isolation:isolate;transition:border-color var(--ib-dur-fast) var(--ib-ease)}
+.ib-tile:hover{border-color:var(--ib-control)}
+.ib-tile:focus-visible{outline:2px solid var(--ib-action);outline-offset:3px}
+.ib-tile__main{position:relative;display:flex;align-items:center;align-self:stretch;min-width:0;min-height:0}
+.ib-tile__name{font-size:15px;font-weight:var(--ib-w-semibold);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;max-height:36px}
+.ib-tile__difficulty{position:absolute;left:0;bottom:0;max-width:100%;height:13px;font-size:10px;line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib-tile__score{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;padding-left:3px;border-left:1px solid var(--ib-brand-line)}
+.ib-tile__pts{font:var(--ib-w-medium) calc(26px * var(--ib-tile-score-scale,1))/1 var(--ib-mono);font-variant-numeric:tabular-nums;letter-spacing:-.5px;color:var(--ib-brand-points);white-space:nowrap}
+.ib-tile__lab-tip{position:absolute;top:0;right:0;display:flex}
+.ib-tile__lab{display:flex;align-items:center;justify-content:center;width:15px;height:15px;color:inherit}
+.ib-tile__lab svg{width:14px;height:14px}
+.ib-tile.is-solved{background:var(--ib-ok-bg);border-color:var(--ib-ok-bg);color:var(--ib-ink)}
 .ib-tile.is-solved .ib-tile__name{font-weight:var(--ib-w-medium)}
 .ib-tile.is-solved .ib-tile__pts{color:var(--ib-ok);font-weight:var(--ib-w-semibold)}
-.ib-tile.is-solved .ib-tile__solved{display:inline-flex}
-.ib-tile.is-solved .ib-tile__upd{border-color:var(--ib-line);color:var(--ib-dim)}
-/* solved + updated: keep the check, move the word to screen readers so the row fits */
-.ib-tile.is-solved .ib-tile__upd~.ib-tile__solved .ib-tile__solved-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-
-/* closed stage: the task stays on the board with the team's state, but nothing can be sent */
-.ib-tile.is-closed,.ib-tile.is-practice{background:var(--ib-solved);border-color:var(--ib-solved-line);color:var(--ib-tile-solved-name)}
-.ib-tile.is-closed:hover,.ib-tile.is-practice:hover{background:var(--ib-solved);border-color:var(--ib-control)}
-.ib-tile.is-closed .ib-tile__name,.ib-tile.is-practice .ib-tile__name{font-weight:var(--ib-w-medium)}
-.ib-tile.is-closed .ib-tile__pts,.ib-tile.is-practice .ib-tile__pts{color:var(--ib-faint)}
-.ib-tile__closed{display:inline-flex;align-items:center;height:14px;padding:0 3px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);
-  font-size:10px;font-weight:var(--ib-w-medium);line-height:1;color:var(--ib-dim);white-space:nowrap}
-.ib-tile__practice{display:inline-flex;align-items:center;gap:var(--ib-1);min-width:0;font-size:10px;font-weight:var(--ib-w-medium);color:var(--ib-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ib-tile__practice svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-
-/* just accepted: one ok ring that fades (outline, not a shadow) */
-.ib-tile.is-accepted{animation:ib-tile-ok 1.6s ease-out}
-@keyframes ib-tile-ok{0%{outline:3px solid var(--ib-ok);outline-offset:2px}100%{outline:3px solid transparent;outline-offset:2px}}
-
-/* grids */
+.ib-tile.is-solved .ib-tile__score{border-left-color:color-mix(in srgb,var(--ib-ok),transparent 68%)}
+.ib-tile.is-closed{background:var(--ib-solved);border-color:var(--ib-line);color:var(--ib-tile-solved-name)}
+.ib-tile.is-closed .ib-tile__name{font-weight:var(--ib-w-medium)}
+.ib-tile.is-closed .ib-tile__pts{color:var(--ib-dim)}
+.ib-tile.is-closed .ib-tile__score{border-left-color:var(--ib-line)}
+.ib-tile.is-solved:hover,.ib-tile.is-closed:hover{border-color:var(--ib-control)}
+.ib-tile.is-locked{cursor:not-allowed}
+.ib-tile.is-loading{cursor:wait}
+.ib-tile.is-loading .ib-tile__main,.ib-tile.is-loading .ib-tile__pts,.ib-tile.is-loading .ib-tile__lab-tip{opacity:.25}
+.ib-tile__loading{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.ib-tile__loading-logo{width:32px;height:32px;object-fit:contain;animation:event-loading-pulse 1.8s ease-in-out infinite}
 .ib-tiles{display:grid;grid-template-columns:repeat(auto-fill,208px);gap:6px}
-
-/* Local: a locked tile inside its tooltip wrapper still fills the grid cell. */
 .ib-tile-tip{display:flex;min-width:0}
-
-@media(max-width:560px){.ib-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ib-tile{height:88px}.ib-tile__name{font-size:14px}.ib-tile__pts{font-size:calc(24px * var(--ib-tile-score-scale,1))}}
-
-.ib-tile.is-solved .ib-tile__score,.ib-tile.is-practice .ib-tile__score,.ib-tile.is-closed .ib-tile__score,.ib-tile.is-locked .ib-tile__score{border-left-color:var(--ib-line)}
-
-/* Task context stays left; completion/lifecycle states are compact score-column icons. */
-.ib-tile__states{position:absolute;top:0;right:0;display:flex;align-items:center;gap:2px;max-width:44px}
-.ib-tile__states .ib-tip{display:inline-flex;min-width:0}
-.ib-tile__states .ib-tile__solved,.ib-tile__states .ib-tile__closed,.ib-tile__states .ib-tile__practice,.ib-tile__states .ib-tile__lock,.ib-tile__states .ib-tile__upd{display:inline-flex;align-items:center;justify-content:center;flex:none;width:13px;height:13px;min-width:0;padding:0;border:0;overflow:visible}
-.ib-tile__states svg{width:12px;height:12px;flex:none}
-.ib-tile__states .ib-busy-mark{width:13px;height:13px;margin:0}
+.ib-tile-tip>.ib-tip__bubble{max-width:min(280px,calc(100vw - 24px));overflow-wrap:anywhere;white-space:normal}
+.ib-tile-tip:has(.ib-tile__lab:hover)>.ib-tip__bubble{visibility:hidden}
+@media(max-width:560px){.ib-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ib-tile{height:88px;grid-template-columns:minmax(0,1fr) 64px;gap:6px;padding:8px 9px}.ib-tile__name{font-size:14px;max-height:33.6px}.ib-tile__pts{font-size:calc(24px * var(--ib-tile-score-scale,1))}}
+@media(prefers-reduced-motion:reduce){.ib-tile__loading-logo{animation:none}}

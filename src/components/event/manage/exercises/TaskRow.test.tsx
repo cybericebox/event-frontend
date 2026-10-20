@@ -81,7 +81,7 @@ describe("TaskRow", () => {
         const points = screen.getByRole("spinbutton", {name: /Бали за завдання/});
         expect(points.closest(".event-manage-field")?.querySelector(".event-field-required")).toBeTruthy();
         fireEvent.change(points, {target: {value: ""}});
-        expect(screen.getByText("Укажіть бали за завдання: ціле число більше за нуль.")).toBeTruthy();
+        expect(screen.getByText("Укажіть бали за завдання: ціле число від 1 до 999.")).toBeTruthy();
         expect((screen.getByRole("button", {name: "Зберегти"}) as HTMLButtonElement).disabled).toBe(true);
     });
 
@@ -135,4 +135,18 @@ it("does not offer scoring Save when static points have the same numeric value",
     fireEvent.click(screen.getByRole("button", {expanded: false}));
     fireEvent.change(screen.getByRole("spinbutton", {name: /Бали за завдання/}), {target: {value: "150.0"}});
     expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
+});
+
+it("keeps legacy task points visible and blocks values over 999 with a field error", () => {
+    render(<ul><TaskRow eventID="e" attachment={attachment} challenge={{...challenge, Points: 1200, ScoringOverride: {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0}}} scoring={scoring} lifecycle={lifecycle} hintsDisabled={false} stand="notReady" canManage eventAttempts={null} onSaved={vi.fn(async () => undefined)} onHintsEnabled={vi.fn()} onMaxAttempts={vi.fn()} /></ul>);
+    fireEvent.click(screen.getByRole("button", {expanded: false}));
+    const field = screen.getByRole("spinbutton", {name: /Бали за завдання/}) as HTMLInputElement;
+    expect(field.value).toBe("1200"); expect(field.max).toBe("999");
+    fireEvent.change(field, {target: {value: "1000"}});
+    expect(field.value).toBe("1000"); expect(field.getAttribute("aria-invalid")).toBe("true");
+    expect(document.getElementById(field.getAttribute("aria-describedby")!)?.textContent).toContain("від 1 до 999");
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", true);
+    fireEvent.change(field, {target: {value: "999"}});
+    expect(field.getAttribute("aria-invalid")).toBe("false");
+    expect(screen.getByRole("button", {name: "Зберегти"})).toHaveProperty("disabled", false);
 });

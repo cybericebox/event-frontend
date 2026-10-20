@@ -17,7 +17,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {t, tPlural} from "@/i18n/t";
 import {runBulk, type BulkOutcome} from "./bulkModel";
 import type {BoardSet} from "./challengeOrder";
-import {decayOptions, decayProblem, dynamicErrors, dynamicValid, numberOf, type DynamicProfile, type ScoringMode} from "./scoringModel";
+import {MAX_TASK_POINTS, decayOptions, decayProblem, dynamicErrors, dynamicValid, numberOf, type DynamicProfile, type ScoringMode} from "./scoringModel";
 import {RequiredNumber} from "./TaskRow";
 
 type Kind = "show" | "hide" | "scoring" | "detach";
@@ -128,9 +128,9 @@ export function BulkSelectionBar({eventID, sets, selected, scoringForced, lifecy
                 {kind === "dynamic" && <>
                     <div className="event-manage-field event-task__kind">{t("manage.challenges.scoring.decay")}
                         <EventSelect ariaLabel={t("manage.challenges.scoring.decay")} value={String(profile.Mode)} options={decayOptions()} disabled={!!busy} onValueChange={mode => setProfile({...profile, Mode: Number(mode) as ScoringMode})} /></div>
-                    <RequiredNumber id="bulk-scoring-max" title={t("manage.challenges.task.from")} help={t("manage.scoring.maxHelp")} value={String(profile.MaxPoints)} min={1}
+                    <RequiredNumber id="bulk-scoring-max" title={t("manage.challenges.task.from")} help={t("manage.scoring.maxHelp")} value={String(profile.MaxPoints)} min={1} max={MAX_TASK_POINTS}
                         error={errors.max} disabled={!!busy} onChange={value => setProfile({...profile, MaxPoints: numberOf(value)})} />
-                    <RequiredNumber id="bulk-scoring-min" title={t("manage.challenges.task.to")} help={t("manage.scoring.minHelp")} value={String(profile.MinPoints)} min={0}
+                    <RequiredNumber id="bulk-scoring-min" title={t("manage.challenges.task.to")} help={t("manage.scoring.minHelp")} value={String(profile.MinPoints)} min={0} max={MAX_TASK_POINTS}
                         error={errors.min} disabled={!!busy} onChange={value => setProfile({...profile, MinPoints: numberOf(value)})} />
                     {profile.Mode !== 3 && <RequiredNumber id="bulk-scoring-floor" title={t("manage.scoring.floor")} help={t("manage.scoring.floorHelp")} value={String(profile.FloorAtPercent)} min={1} max={100}
                         error={errors.floor} disabled={!!busy} onChange={value => setProfile({...profile, FloorAtPercent: numberOf(value)})} />}

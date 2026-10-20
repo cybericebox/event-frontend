@@ -75,7 +75,7 @@ it("never relabels revision 1 access as newer ready revision 3 and reveals actua
     runtimeAPI.mockResolvedValue({...runtimeFixture, Lab: old, Access: access});
     const client = new QueryClient(); const {container} = render(scopedModal(client, fresh));
     await waitFor(() => expect(client.getQueryData<{Lab: typeof old}>(["event-challenge-lab", "participant", "e", challenge.EventChallengeID])?.Lab?.Revision).toBe("1"));
-    expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull();
+    expect(container.querySelector('[data-copy-block] button[aria-label="Відкрити в новій вкладці"]')).toBeNull();
     expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
     const dialog = container.querySelector("dialog");
     await act(async () => {client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Lab: fresh, Access: [{...access[0], URL: "https://fresh.test"}]});});
@@ -97,7 +97,7 @@ it.each([true, false])("canonical task B never exposes cached raw A access (clos
     const client = new QueryClient(); client.setQueryData(["event-challenge-lab", "participant", "e", challenge.EventChallengeID], {...runtimeFixture, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
     runtimeAPI.mockReturnValue(new Promise(() => {}));
     const {container} = render(scopedModal(client, canonical));
-    expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull(); expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
+    expect(container.querySelector('[data-copy-block] button[aria-label="Відкрити в новій вкладці"]')).toBeNull(); expect(container.querySelector(".ib-cmodal__desc a[data-event-variable]")).toBeNull();
     expect(screen.getByText("Розвʼязано", {selector: "b"})).toBeTruthy();
     if (closed) {expect(screen.getByText("Середовище закрито.")).toBeTruthy(); expect(screen.getByRole("button", {name: "Відкрити VPN"})).toBeTruthy();}
     else {
@@ -117,7 +117,7 @@ it.each([false, true])("failed refresh with cached runtime forwards error only w
     if (matching) {expect(container.querySelector('.ib-cmodal__desc [data-event-variable="ph_external"]')?.textContent).toContain("https://cached.test"); expect(container.querySelector("[data-load-error]")).toBeNull();}
     else {
         const retry = await screen.findByRole("button", {name: "Спробувати ще раз"});
-        expect(container.querySelector("[data-load-error]")).toBeTruthy(); expect(container.querySelector(".event-loading-logo")).toBeNull(); expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull();
+        expect(container.querySelector("[data-load-error]")).toBeTruthy(); expect(container.querySelector(".event-loading-logo")).toBeNull(); expect(container.querySelector('[data-copy-block] button[aria-label="Відкрити в новій вкладці"]')).toBeNull();
         const dialog = container.querySelector("dialog");
         runtimeAPI.mockResolvedValue({...runtimeFixture, Lab: current, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://refreshed.test"}]});
         fireEvent.click(retry);
@@ -134,5 +134,5 @@ it("synchronous board ownership B renders closed before old A props update and d
     runtimeAPI.mockReturnValue(new Promise(() => {}));
     const {container} = render(scopedModal(client, runningLab));
     expect(screen.getByText("Середовище закрито.")).toBeTruthy();
-    expect(container.querySelector('[data-copy-block] button[title="Відкрити в новій вкладці"]')).toBeNull(); expect(runtimeAPI).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-copy-block] button[aria-label="Відкрити в новій вкладці"]')).toBeNull(); expect(runtimeAPI).not.toHaveBeenCalled();
 });
