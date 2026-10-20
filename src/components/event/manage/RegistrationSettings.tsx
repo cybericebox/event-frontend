@@ -16,6 +16,7 @@ import {EventSelect} from "@/components/ui/EventSelect";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
+import {exerciseListKey} from "@/components/event/manage/exercises/useBoardSets";
 
 
 export function RegistrationSettings() {
@@ -53,6 +54,9 @@ export function RegistrationSettings() {
                 const updated = await putManageConfig(eventID, {...manageConfigInput(config), Registration: registration, MaxTeams: maxTeams, AllowPseudonyms: allowPseudonyms});
                 queryClient.setQueryData(["event-management-config", eventID], updated);
                 queryClient.setQueryData<typeof event>(["event-manager-public-info"], current => current ? {...current, Registration: updated.Registration} : current);
+                // The task list's flag-repeat warnings compare each flag pool with the team limit: re-read only that list
+                // (its board stays; the shown list is kept while it loads).
+                if (updated.MaxTeams !== config.MaxTeams) void queryClient.invalidateQueries({queryKey: exerciseListKey(eventID), exact: true});
             }
             if (joinDirty) {
                 const updated = await putManageLifecycle(eventID, {

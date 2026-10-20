@@ -24,16 +24,17 @@ import {
     attachmentActionError, attachmentKind, attachmentScopeLabel, attachmentScopeTip, attachmentVersionLabel, detachWithConfirm, exercisesAppURL,
     infrastructureMismatch, isDetached, runningStandTeams, type StandTeam,
 } from "./attachmentModel";
-import {InfrastructureIcon, TipTag} from "./InfrastructureIcon";
+import {TipTag} from "./InfrastructureIcon";
 import {SetActions} from "./SetActions";
 import {SetStageField} from "./SetStageField";
 import {getManageStages} from "@/api/manageStages";
-import {HintMark, TaskRow} from "./TaskRow";
+import {TaskRow} from "./TaskRow";
 import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRowModel";
 import {SetStatusIcon} from "./SetStatusIcon";
-import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine, ResourcesShort} from "./ResourceMarks";
+import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 import {ResourcePlanSummary} from "./ResourcePlanSummary";
-import {CatalogStatsList} from "./CatalogStats";
+import {AverageDifficulty, SubtaskCount} from "./CatalogStats";
+import {InfrastructurePopover, ScoringPopover} from "./SetCardPopovers";
 import {BulkSelectionBar} from "./BulkSelectionBar";
 import {EventSwitch} from "@/components/ui/EventSwitch";
 import {useSetOpenState} from "./useSetOpenState";
@@ -68,9 +69,14 @@ function actionCopy(action: Action): {title: string; description: string; confir
 
 // «Завдання»: the event's sets, each collapsible, with its tasks as thin rows.
 // What the flag pool means for the teams: already repeating, or how many flags against how many teams.
-function flagRepeatText(repeat: EventExerciseAttachment["FlagsRepeat"], name: string): string | null {
+export function flagRepeatText(repeat: EventExerciseAttachment["FlagsRepeat"], name: string): string | null {
     if (!repeat) return null;
-    return t(`manage.exercises.flagRepeat.${repeat.Reason}`, {name, flags: repeat.Flags, teams: repeat.Teams});
+    // One flag for everyone is its own fact, whatever the team count.
+    if (repeat.Flags === 1) return t("manage.exercises.flagRepeat.single", {name});
+    return t(`manage.exercises.flagRepeat.${repeat.Reason}`, {
+        name, flags: repeat.Flags, teams: repeat.Teams,
+        flagsText: tPlural("manage.exercises.flagRepeat.flags", repeat.Flags), teamsText: tPlural("manage.exercises.flagRepeat.upToTeams", repeat.Teams),
+    });
 }
 
 // The count comes from the board (it follows the toggle at once); before the start nothing is on the participants' board yet.
@@ -181,20 +187,19 @@ export function ExerciseAttachments() {
                                 <TipTag label={attachmentVersionLabel(attachment)} tip={t("manage.challenges.set.versionTip", {number: attachment.VersionNumber})} />
                                 <TipTag label={attachmentScopeLabel(kind)} tip={attachmentScopeTip(kind)} />
                             </span>
-                            {attachment.Infrastructure && <InfrastructureIcon />}
+                            {attachment.Infrastructure && <InfrastructurePopover resources={attachment.Resources} stand={summary.stand} />}
                             <ResourceHeavyTag show={attachment.ResourceHeavy} />
                             <NoAgentFitsTag show={attachment.NoAgentFits} />
                             {flagRepeat && !open && <EventTooltip content={flagRepeat}>{id => <span className="event-exercise-set__warn-mark" role="img" tabIndex={0} aria-label={flagRepeat} aria-describedby={id}><TriangleAlert size={16} aria-hidden="true" /></span>}</EventTooltip>}
                             {(availabilityQuery.data?.get(attachment.ID)?.length ?? 0) > 0 && <span className="ib-tag ib-tag--sm ib-tag--danger" data-image-unavailable>{t("manage.registries.unavailable")}</span>}
                         </div>
                         <div className="event-exercise-set__side">
-                            {/* The pinned version's stats; the count opens the subtask names (a button: it never toggles the set). */}
-                            <CatalogStatsList average={attachment.AvgDifficulty} count={attachment.TaskCount} names={attachment.TaskNames} className="event-exercise-set__stats" />
-                            <ResourcesShort resources={attachment.Resources} className="event-exercise-set__res" />
-                            <span className="event-task__badges">
-                                {summary.hints && <HintMark hints={summary.hints} />}
-                                {summary.ownScoring && <span className="ib-tag ib-tag--sm">{t("manage.challenges.task.ownScoring")}</span>}
-                                {summary.stand && <span className={`ib-tag ib-tag--sm ib-tag--${summary.stand === "ready" ? "ok" : "warn"}`}>{t(summary.stand === "ready" ? "manage.challenges.task.standReady" : "manage.challenges.task.standNotReady")}</span>}
+                            {/* Only the difficulty, the subtask count (it opens the names) and the scoring (it opens the details);
+                                the lab's resources sit behind the infrastructure mark on the left. Popovers never toggle the set. */}
+                            <span className="event-exercise-set__stats">
+                                <AverageDifficulty average={attachment.AvgDifficulty} />
+                                <SubtaskCount count={attachment.TaskCount} names={attachment.TaskNames} labelled />
+                                <ScoringPopover tasks={challenges} scoring={scoringQuery.data} />
                             </span>
                             {canManage && <SetActions attachment={attachment} kind={kind} name={name} editURL={editURL} busy={busy} broken={mismatch}
                                 onAction={kind => setAction(kind === "detach" ? {kind, attachment, attempts: attachment.HasAttempts} : {kind, attachment})} />}

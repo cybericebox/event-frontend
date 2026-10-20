@@ -202,3 +202,32 @@ button.event-sortable__main{cursor:pointer}
 .event-bulk-bar__result p{margin:0}
 .event-bulk-bar__result ul,.event-bulk-bar__attempted ul{margin:var(--ib-1) 0 0;padding-left:var(--ib-5);color:var(--ib-dim)}
 .event-bulk-bar__attempted{display:block;margin-top:var(--ib-2)}
+/* «Ресурси на команду» and the task list are two blocks: a clear gap between them. */
+.event-challenge-manager .event-resource-plan{margin-bottom:var(--ib-4)}
+/* The lab mark next to the name: the catalog's three-node icon; it opens the lab's resources. */
+.event-exercise-infra-trigger{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:var(--ib-action);cursor:pointer}
+.event-exercise-infra-trigger.is-warn{color:var(--ib-warn)}
+.event-exercise-infra-trigger:hover{background:var(--ib-soft)}
+.event-exercise-infra-trigger:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+/* Right side: difficulty, the labelled subtask count and the scoring badge, each a compact item. */
+.event-exercise-set__side .event-exercise-set__stats{display:inline-flex;align-items:center;gap:var(--ib-3);white-space:nowrap;font-size:var(--ib-fs-13)}
+.event-exercise-set__side .event-subtask-count__trigger{height:24px;padding:0 var(--ib-2);font-size:var(--ib-fs-12)}
+.event-set-popover__badge{cursor:pointer;font:inherit;font-size:var(--ib-fs-12);border:1px solid var(--ib-line)}
+.event-set-popover__badge:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}
+.event-set-popover__facts{display:grid;gap:2px;margin:0}
+.event-set-popover__facts>div{display:flex;justify-content:space-between;gap:var(--ib-4)}
+.event-set-popover__facts dt{color:var(--ib-dim)}
+.event-set-popover__facts dd{margin:0;font-variant-numeric:tabular-nums}
+.event-set-popover__line{margin:0 0 2px}
+.event-set-popover__note{margin:0 0 2px;color:var(--ib-dim)}
+.event-set-popover__stand{margin:var(--ib-2) 0 0;color:var(--ib-ok)}
+.event-set-popover__stand.is-warn{color:var(--ib-warn)}
+/* Touch: the small triggers get a 44px hit area without growing. */
+@media (pointer:coarse){
+  .event-exercise-infra-trigger,.event-exercise-set__side .event-subtask-count__trigger,.event-set-popover__badge{position:relative}
+  .event-exercise-infra-trigger::after,.event-exercise-set__side .event-subtask-count__trigger::after,.event-set-popover__badge::after{content:"";position:absolute;inset:50% auto auto 50%;width:max(100%,44px);height:44px;transform:translate(-50%,-50%)}
+}
+@media(max-width:640px){.event-exercise-set__side .event-exercise-set__stats{gap:var(--ib-2)}}
+/* Phones: the scoring badge in one word («Власне», «Заходу»), so the card keeps two lines. */
+.event-set-popover__short{display:none}
+@media(max-width:640px){.event-set-popover__long{display:none}.event-set-popover__short{display:inline}}

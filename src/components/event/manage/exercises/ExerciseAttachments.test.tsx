@@ -86,24 +86,26 @@ describe("running stage confirmation", () => {
 describe("compact set card", () => {
     const MIB = 1024 ** 2;
     const res = (cpu: number, mib: number, devices: number) => ({Blocks: devices * 4, CPUMillicores: cpu, MemoryBytes: mib * MIB, Devices: devices});
-    it("keeps one header row (name, marks, stats, short resources) and moves the details into the open set", async () => {
+    it("keeps one header row: name and marks with the lab popover on the left; difficulty, subtasks and scoring on the right", async () => {
         const saved = {...attachment};
-        Object.assign(attachment, {ChallengeCount: 3, Resources: {Min: res(500, 512, 2), Max: res(1000, 1024, 3)}});
+        Object.assign(attachment, {ChallengeCount: 3, Infrastructure: true, Resources: {Min: res(500, 512, 2), Max: res(1000, 1024, 3)}, AvgDifficulty: 4, TaskCount: 3, TaskNames: ["A", "B", "C"]});
         try {
             setup();
             const heading = await screen.findByRole("heading", {name: "Web"});
             const head = heading.closest(".event-exercise-set__head") as HTMLElement;
-            expect(within(head).getByText("1 vCPU · 1 ГіБ · пристроїв: 3")).toBeTruthy();
-            expect(within(head).getByText("Середня складність")).toBeTruthy();
+            const title = head.querySelector(".event-exercise-set__title") as HTMLElement;
+            const side = head.querySelector(".event-exercise-set__side") as HTMLElement;
+            // The lab mark sits with the name and opens the resources; the right side no longer repeats them.
+            expect(within(title).getByRole("button", {name: "Завдання з лабораторією: ресурси"})).toBeTruthy();
+            expect(side.textContent).not.toContain("vCPU");
+            expect(side.querySelector("[data-resources-short]")).toBeNull();
+            expect(within(side).getByLabelText("Середня, 4,0")).toBeTruthy();
+            expect(within(side).getByRole("button", {name: "Підзавдання: 3. Показати назви"}).textContent).toBe("3 підзавдання");
+            expect(within(side).getByRole("button", {name: "Оцінювання: Як у заходу. Показати подробиці"})).toBeTruthy();
             // The long resource line and the meta line live in the open details, not in the header.
             expect(head.querySelector("[data-resources-total]")).toBeNull();
             expect(head.querySelector(".event-exercise-set__meta")).toBeNull();
-            const body = document.getElementById("set-tasks-a1")!;
-            expect(body.querySelector("[data-resources-total]")).not.toBeNull();
-            fireEvent.click(screen.getByRole("button", {name: /Згорнути/}));
-            expect(document.querySelector("[data-resources-total]")).toBeNull();
-            expect(within(head).getByText("1 vCPU · 1 ГіБ · пристроїв: 3")).toBeTruthy();
-            fireEvent.click(screen.getByRole("button", {name: /Розгорнути/}));
+            expect(document.getElementById("set-tasks-a1")!.querySelector("[data-resources-total]")).not.toBeNull();
         } finally {
             Object.assign(attachment, saved);
         }
@@ -111,7 +113,7 @@ describe("compact set card", () => {
 });
 
 describe("flag repeat warning", () => {
-    const limitText = "Завдання «Web» має 15 різних флагів, а команд може бути до 40: після 15-ї команди флаги почнуть повторюватися.";
+    const limitText = "Завдання «Web» має 15 різних прапорів, а в заході може бути до 40 команд: після 15-ї команди прапори почнуть повторюватися.";
     function withRepeat(repeat: unknown, run: () => Promise<void>) {
         Object.assign(attachment, {FlagsRepeat: repeat});
         return run().finally(() => Object.assign(attachment, {FlagsRepeat: null}));
@@ -138,12 +140,12 @@ describe("flag repeat warning", () => {
     it("names the teams that exist now when the event has no team limit, and a pool already used up", async () => {
         await withRepeat({Flags: 15, Teams: 16, Reason: "teams"}, async () => {
             setup();
-            expect(await screen.findByText("Завдання «Web» має 15 різних флагів, а команд уже 16: флаги повторюватимуться.")).toBeTruthy();
+            expect(await screen.findByText("Завдання «Web» має 15 різних прапорів, а команд уже 16: прапори повторюватимуться.")).toBeTruthy();
         });
         cleanup();
         await withRepeat({Flags: 15, Teams: 3, Reason: "repeated"}, async () => {
             setup();
-            expect(await screen.findByText("Флаги завдання «Web» уже повторюються: усі 15 видано.")).toBeTruthy();
+            expect(await screen.findByText("Прапори завдання «Web» уже повторюються: усі 15 видано.")).toBeTruthy();
         });
     });
 

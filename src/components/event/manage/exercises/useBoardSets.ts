@@ -4,11 +4,15 @@ import {keepPreviousData, useQuery, useQueryClient} from "@tanstack/react-query"
 import {getEventBoardChallenges, getEventChallengeGroups, getEventExerciseAttachments} from "@/api/manageChallenges";
 import type {BoardSet} from "./challengeOrder";
 
+// The event's attachments list (with each set's flag-repeat warning).
+export const exerciseListKey = (eventID: string) => ["event-exercise-attachments", eventID];
+
 // The event's sets (active attachments with their board challenges) and groups,
 // shared by «Групи й порядок» and «Завдання».
 export function useBoardSets(eventID: string, {enabled = true}: {enabled?: boolean} = {}) {
     const queryClient = useQueryClient();
-    const attachments = useQuery({queryKey: ["event-exercise-attachments", eventID], queryFn: () => getEventExerciseAttachments(eventID), refetchOnWindowFocus: false});
+    // One cheap list: a return to the tab re-reads it, so the flag warnings follow teams that joined meanwhile.
+    const attachments = useQuery({queryKey: exerciseListKey(eventID), queryFn: () => getEventExerciseAttachments(eventID), refetchOnWindowFocus: true});
     const groups = useQuery({queryKey: ["event-challenge-groups", eventID], queryFn: () => getEventChallengeGroups(eventID), enabled, refetchOnWindowFocus: false});
     const active = (attachments.data ?? []).filter(item => item.Status === 0);
     const sets = useQuery({

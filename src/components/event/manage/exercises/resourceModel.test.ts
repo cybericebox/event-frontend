@@ -13,8 +13,8 @@ describe("resource formatting", () => {
     });
 
     it("shows a range only when the variants differ", () => {
-        expect(resourcesText({Min: res(250, 1024, 2), Max: res(250, 1024, 2)})).toBe("CPU 250 мілі-ядер · памʼять 1 ГіБ · пристроїв 2");
-        expect(resourcesText({Min: res(50, 128, 1), Max: res(250, 1024, 3)})).toBe("CPU 50 мілі-ядер–250 мілі-ядер · памʼять 128 МіБ–1 ГіБ · пристроїв 1–3");
+        expect(resourcesText({Min: res(250, 1024, 2), Max: res(250, 1024, 2)})).toBe("CPU 250 мілі-ядер · памʼять 1 ГіБ · пристроїв: 2");
+        expect(resourcesText({Min: res(50, 128, 1), Max: res(250, 1024, 3)})).toBe("CPU 50 мілі-ядер–250 мілі-ядер · памʼять 128 МіБ–1 ГіБ · пристроїв: 1–3");
     });
 
     it("formats a group pod amount", () => {
