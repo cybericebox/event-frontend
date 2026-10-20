@@ -22,15 +22,17 @@ export function ChallengeTile({challenge, showDifficulty = true, accepted = fals
     const updated = challenge.ContentUpdatedAt ? formatClock(challenge.ContentUpdatedAt) : "";
     const points = solved ? `+${awardedPoints(challenge)}` : String(challenge.Points);
     const scoreStyle = {"--ib-tile-score-scale": Math.min(1, 4 / points.length)} as CSSProperties;
+    const difficulty = showDifficulty && ["elementary", "trivial", "easy", "medium", "hard", "insane"].includes(challenge.Snapshot.difficulty)
+        ? difficultyLabel(challenge.Snapshot.difficulty) : null;
     const context = <>
         {challenge.Infrastructure && <EventTooltip content={t("challenges.modal.lab")} silent>{() => <span className="ib-tile__lab" role="img" aria-label={t("challenges.modal.lab")}><Network aria-hidden="true" /></span>}</EventTooltip>}
-        {showDifficulty && <span className="ib-tile__difficulty">{difficultyLabel(challenge.Snapshot.difficulty)}</span>}
+        {difficulty && <span className="ib-tile__difficulty">{difficulty}</span>}
     </>;
     const label = challenge.Locked ? lockedLabel(challenge) : "";
-    const hasMetadata = !!(challenge.Infrastructure || showDifficulty || challenge.Locked || solved || practice || closed || updated);
+    const hasMetadata = !!(challenge.Infrastructure || difficulty || challenge.Locked || solved || practice || closed || updated);
     const classes = ["ib-tile", !hasMetadata && "ib-tile--title-only", challenge.Locked && "is-locked", solved && "is-solved", closed && "is-closed", practice && "is-practice", updated && "is-updated", accepted && "is-accepted"].filter(Boolean).join(" ");
     const card = <button type="button" className={classes} data-challenge-id={challenge.EventChallengeID} title={name} aria-disabled={challenge.Locked || undefined}
-        aria-label={[name, pointsLabel(solved ? awardedPoints(challenge) : challenge.Points), challenge.Infrastructure && t("challenges.modal.lab"), showDifficulty && difficultyLabel(challenge.Snapshot.difficulty), label, solved && t("challenges.tile.state.solved"), practice && t("challenges.tile.practice"), closed && t("challenges.tile.state.closed"), updated && t("challenges.tile.state.updated")].filter(Boolean).join(", ")}
+        aria-label={[name, pointsLabel(solved ? awardedPoints(challenge) : challenge.Points), challenge.Infrastructure && t("challenges.modal.lab"), difficulty, label, solved && t("challenges.tile.state.solved"), practice && t("challenges.tile.practice"), closed && t("challenges.tile.state.closed"), updated && t("challenges.tile.state.updated")].filter(Boolean).join(", ")}
         onClick={challenge.Locked ? undefined : event => onOpen(challenge, event.currentTarget)}>
         <span className="ib-tile__main">
             <span className="ib-tile__name">{name}</span>

@@ -143,3 +143,12 @@ it("uses the selected two-column card with numeric points and optional difficult
     rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null}} showDifficulty onOpen={()=>{}}/>);
     expect(container.querySelector(".ib-tile__difficulty")?.textContent).toBe("Складне");
 });
+
+it("centers a card when an unavailable difficulty produces no visible metadata", () => {
+    const task={...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null,Infrastructure:false,Snapshot:{...fixtureChallenge.Snapshot,difficulty:undefined}} as unknown as typeof fixtureChallenge;
+    const {container}=render(<ChallengeTile challenge={task} showDifficulty onOpen={()=>{}}/>);
+    const tile=container.querySelector(".ib-tile")!;
+    expect(tile.className).toContain("ib-tile--title-only");
+    expect(tile.querySelector(".ib-tile__foot")).toBeNull();
+    expect(css("challenge-tile.css")).toContain(".ib-tile--title-only .ib-tile__main{justify-content:center}");
+});
