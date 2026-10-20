@@ -168,3 +168,18 @@ describe("per-task points ceiling in event defaults", () => {
         fireEvent.submit(max.closest("form")!); expect(server.putScoring).not.toHaveBeenCalled();
     });
 });
+
+it.each([100,1200])("uses persisted dormant static points (%s) after switching away from an invalid static draft", async saved => {
+    server.staticPoints=saved;
+    server.putScoring.mockImplementation(async (_eventID,input) => ({...input,UpdatedAt:""}));
+    try {
+        renderPage(); const input=await screen.findByRole("spinbutton",{name:/Бали за завдання/});
+        if(saved===100) fireEvent.change(input,{target:{value:"1000"}});
+        fireEvent.click(screen.getByLabelText(/^Динамічне/));
+        fireEvent.click(screen.getByLabelText(/^Статичне/));
+        expect(screen.getByRole("spinbutton",{name:/Бали за завдання/})).toHaveProperty("value",saved===100?"1000":"1200");
+        fireEvent.click(screen.getByLabelText(/^Динамічне/));
+        fireEvent.submit(screen.getByRole("spinbutton",{name:/Максимум балів/}).closest("form")!);
+        await waitFor(()=>expect(server.putScoring).toHaveBeenCalledWith(expect.any(String),expect.objectContaining({Mode:1,StaticPoints:saved,MinPoints:100,MaxPoints:500})));
+    } finally {cleanup();server.staticPoints=100;server.putScoring.mockReset();}
+});

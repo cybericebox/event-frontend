@@ -33,9 +33,10 @@ function draftOf(value: ManageScoring): ScoringDraft {
     return {Mode: value.Mode, StaticPoints: value.StaticPoints === null ? "" : String(value.StaticPoints), MinPoints: value.MinPoints, MaxPoints: value.MaxPoints, FloorAtPercent: value.FloorAtPercent, ForceEventScoring: value.ForceEventScoring};
 }
 
-function inputOf(draft: ScoringDraft): ManageScoringInput {
+function inputOf(draft: ScoringDraft, persistedStaticPoints: number | null): ManageScoringInput {
+    // Dynamic saves retain the stored dormant value; switching modes keeps the unsaved static draft local.
     const raw = draft.StaticPoints.trim();
-    return withTimeDecayFloor({Mode: draft.Mode, MinPoints: draft.MinPoints, MaxPoints: draft.MaxPoints, FloorAtPercent: draft.FloorAtPercent, ForceEventScoring: draft.ForceEventScoring, StaticPoints: raw === "" ? null : Number(raw)});
+    return withTimeDecayFloor({Mode: draft.Mode, MinPoints: draft.MinPoints, MaxPoints: draft.MaxPoints, FloorAtPercent: draft.FloorAtPercent, ForceEventScoring: draft.ForceEventScoring, StaticPoints: draft.Mode !== 0 ? persistedStaticPoints : raw === "" ? null : Number(raw)});
 }
 
 const chargeModes = () => ([
@@ -57,7 +58,7 @@ export function ChallengeSettings() {
     const scoring = useQuery({queryKey: ["event-management-scoring", eventID], queryFn: () => getManageScoring(eventID), refetchOnWindowFocus: false});
     const lifecycle = useQuery({queryKey: ["event-management-lifecycle", eventID], queryFn: () => getManageLifecycle(eventID), refetchOnWindowFocus: false});
     const config = useQuery({queryKey: ["event-management-config", eventID], queryFn: () => getManageConfig(eventID), refetchOnWindowFocus: false});
-    const [edit, setEdit] = useSessionDraftState<{eventID: string; value: ScoringDraft} | null>("challenge-scoring", null, {reconcile: true, dirty: current => !scoring.data ? undefined : !!current && JSON.stringify(inputOf(current.value)) !== JSON.stringify(inputOf(draftOf(scoring.data)))});
+    const [edit, setEdit] = useSessionDraftState<{eventID: string; value: ScoringDraft} | null>("challenge-scoring", null, {reconcile: true, dirty: current => !scoring.data ? undefined : !!current && JSON.stringify(inputOf(current.value, scoring.data.StaticPoints)) !== JSON.stringify(inputOf(draftOf(scoring.data), scoring.data.StaticPoints))});
     const [saving, setSaving] = useState(false);
     // Config saves run one after another; the controls never wait for them.
     const configQueue = useRef<Promise<void>>(Promise.resolve());
@@ -67,9 +68,10 @@ export function ChallengeSettings() {
     if (scoring.isPending || lifecycle.isPending || config.isPending) return <EventLoading event={event} />;
     if (!scoring.data || !lifecycle.data || !config.data) return <EventLoadError message={t("manage.challenges.settings.loadFailed")} error={scoring.error ?? lifecycle.error ?? config.error} onRetry={() => {void scoring.refetch(); void lifecycle.refetch(); void config.refetch();}} />;
 
+    const persistedStaticPoints = scoring.data.StaticPoints;
     const original = draftOf(scoring.data);
     const value = edit?.eventID === eventID ? edit.value : original;
-    const dirty = JSON.stringify(inputOf(value)) !== JSON.stringify(inputOf(original));
+    const dirty = JSON.stringify(inputOf(value, persistedStaticPoints)) !== JSON.stringify(inputOf(original, persistedStaticPoints));
     const dynamic = value.Mode !== 0;
     const problem = dynamic ? decayProblem(value.Mode, lifecycle.data) : "";
     const valid = dynamic ? dynamicValid(value) : staticPointsValid(value.StaticPoints, true);
@@ -84,7 +86,7 @@ export function ChallengeSettings() {
         if (!dirty || !valid || problem || disabled || saving) return;
         setSaving(true);
         try {
-            queryClient.setQueryData(["event-management-scoring", eventID], await putManageScoring(eventID, inputOf(value)));
+            queryClient.setQueryData(["event-management-scoring", eventID], await putManageScoring(eventID, inputOf(value, persistedStaticPoints)));
             setEdit(current => current?.value === value ? null : current);
             toast.success(t("manage.challenges.scoring.saved"));
         } catch (failure) {toastFailure(failure, t("manage.challenges.scoring.saveFailed"));}
