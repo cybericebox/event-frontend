@@ -5,6 +5,7 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {readFileSync} from "node:fs";
 import {resolve} from "node:path";
 import {ChallengeTile} from "./ChallengeTile";
+import {runtimeFixture} from "@/test/labLifecycle";
 import {fixtureChallenge, fixtureTiles, LONG_CODE_LINE, LONG_TITLE, LONG_URL, LONG_WORD} from "./fixtures/challengeFixture";
 
 vi.mock("@/components/event/vpn/EventVpn", () => ({useEventVpn: () => ({available: true, openVpn: () => {}})}));
@@ -22,6 +23,7 @@ afterEach(cleanup);
 
 function renderModal(moderators = false) {
     const client = new QueryClient();
+    client.setQueryData(["event-challenge-lab", moderators ? "moderators" : "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
     return render(<QueryClientProvider client={client}>
         <ChallengeModal challenge={fixtureChallenge} eventID="e" mode={moderators ? "moderators" : "participant"} teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} />
     </QueryClientProvider>);

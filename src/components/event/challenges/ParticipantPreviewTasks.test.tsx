@@ -68,7 +68,8 @@ it("starts a dynamic run on click, polls preparation and opens the ready service
     fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false}));
     fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(screen.getByText("Лабораторія запускається…")).toBeTruthy();
+    expect(document.querySelector("dialog[open]")).toBeNull();
+    expect(document.querySelector(".ib-cmodal__desc")).toBeNull();
     fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
     await act(async () => {await client.refetchQueries({queryKey: ["event-challenge-lab", "preview", "event", base.EventChallengeID], exact: true});});
     const tab = {opener: null, close: vi.fn(), location: {href: "about:blank"}};

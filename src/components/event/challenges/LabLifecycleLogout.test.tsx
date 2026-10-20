@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterAll, afterEach, beforeAll, describe, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {useEffect, useState} from "react";
 import {ownBoardSchema, type ChallengeSubmission, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
@@ -9,7 +9,7 @@ import type {ModeratorSubmission} from "@/api/moderatorsBoard";
 import {ParticipantChallengeError} from "@/api/participantChallenges";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {PublicEventInfoSchema} from "@/types/publicEventInfo";
-import {runningLab, completedLab} from "@/test/labLifecycle";
+import {runningLab, completedLab, runtimeFixture} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {t} from "@/i18n/t";
 
@@ -70,6 +70,7 @@ describe("pending lifecycle work across actual account-menu logout", () => {
         api.board.mockResolvedValue(moderators ? initial.Challenges : initial);
         api.runtime.mockReturnValue(runtimeReply.promise);
         api.submit.mockReturnValue(submissionReply.promise);
+        client.setQueryData(["event-challenge-lab", moderators ? "moderators" : "participant", event.EventID, question.EventChallengeID], runtimeFixture);
         render(<QueryClientProvider client={client}><Session /></QueryClientProvider>);
         fireEvent.click(await screen.findByRole("button", {name: /^Pending task/}));
         fireEvent.change(screen.getByLabelText("Прапор"), {target: {value: "ICE{ok}"}});
@@ -93,4 +94,21 @@ describe("pending lifecycle work across actual account-menu logout", () => {
         expect(client.getQueryDefaults(["event-lab-lifecycle", moderators ? "moderators" : "participant", event.EventID, runningLab.ID])).toEqual({});
         client.clear();
     });
+});
+
+it("pending runtime retry cannot recreate board authority after actual account-menu logout", async () => {
+    const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    api.board.mockResolvedValue(initial);
+    const retried = deferred<LabRuntime>();
+    api.runtime.mockRejectedValueOnce(new Error("offline")).mockReturnValue(retried.promise);
+    render(<QueryClientProvider client={client}><Session /></QueryClientProvider>);
+    fireEvent.click(await screen.findByRole("button", {name: /^Pending task/}));
+    fireEvent.click(await screen.findByRole("button", {name: "Спробувати ще раз"}));
+    await waitFor(() => expect(api.runtime).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole("button", {name: t("account.menu")}));
+    fireEvent.click(screen.getByRole("button", {name: "Вийти"}));
+    await screen.findByText("Signed out");
+    await act(async () => retried.resolve(runtime));
+    expect(client.getQueryCache().getAll()).toHaveLength(0);
+    expect(api.board).toHaveBeenCalledTimes(1);
 });
