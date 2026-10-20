@@ -4,6 +4,9 @@
 
 /* ── page frame ───────────────────────────────────────────────────────────── */
 .event-challenges,.event-participation{display:flex;flex-direction:column;min-width:0}
+/* A state under the page header (preparing, join, no team, loading) fills the page and centers in it. */
+.event-page-content>.event-challenges{flex:1 0 auto;width:100%}
+.event-challenges>.event-block-state{align-self:stretch;width:100%}
 .event-challenges__banners,.event-participation__banners{gap:var(--ib-2);margin-bottom:var(--ib-5)}
 .event-challenges__banners .ib-banner,.event-participation__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
 .event-results{display:flex;flex-direction:column;gap:var(--ib-4);min-width:0;width:100%}

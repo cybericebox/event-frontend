@@ -5276,6 +5276,8 @@
   "participantPreview.you": "You",
   "participantPreview.member": "Test participant {number}",
   "participantPreview.addMember": "Add test participant",
+  "participantPreview.tasks": "Show tasks",
+  "challenges.preview.note": "Participants see these tasks only after the event starts.",
   "participantPreview.infra": "Run infrastructure",
   "participantPreview.infra.starting": "Starting infrastructure…",
   "participantPreview.infra.stopping": "Stopping infrastructure…",

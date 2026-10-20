@@ -28,6 +28,8 @@ const PreviewStateSchema = z.object({
     team: ownTeamSchema.nullable(),
     // «Запустити інфраструктуру»: the dynamic test tasks' labs run while it is on. Off by default.
     infra: z.boolean().default(false),
+    // «Показати завдання»: the test task board shows whatever the event phase says. On by default; off shows the real phase screens.
+    tasks: z.boolean().default(true),
 });
 export type ParticipantPreviewState = z.infer<typeof PreviewStateSchema>;
 const CHANGE_EVENT = "event-participant-preview-change";
@@ -64,7 +66,7 @@ type PreviewContextValue = {
     infraBusy: "starting" | "stopping" | null;
     setInfra: (on: boolean) => Promise<boolean>;
     start: (eventID: string, registration?: number) => void;
-    update: (patch: Partial<Pick<ParticipantPreviewState, "status" | "outcome" | "answers" | "team">>) => void;
+    update: (patch: Partial<Pick<ParticipantPreviewState, "status" | "outcome" | "answers" | "team" | "tasks">>) => void;
     reset: () => void | Promise<boolean>; exit: () => void;
 };
 const noop = () => {};
@@ -137,14 +139,14 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
     const hint = !settled && !state ? serverCookie : null;
     return <CookieContext.Provider value={hint}><PreviewContext.Provider value={{state, hinted: !!hint, config: config.data ?? null, resetting, infraBusy, setInfra, active: !!state && !/^\/manage(?:\/|$)/.test(pathname), start: (eventID, registration) => {
         if (!identity.data) return;
-        persist({eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null, infra: false});
+        persist({eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null, infra: false, tasks: true});
         router.push("/");
     }, update: patch => {const current = parseSnapshot(snapshot()); if (state && current?.userID === state.userID && current.eventID === state.eventID) persist({...current, ...patch, ...(patch.team ? {team: {...patch.team, Admitted: patch.team.MemberCount >= (patch.team.MinTeamSize ?? 1)}} : {})});}, reset, exit}}>
         {state && !pathname.startsWith("/manage") && <div className="event-private-preview-banner event-participant-preview" role="region" aria-label={t("participantPreview.title")}>
             <b className="event-participant-preview__title">{t("participantPreview.title")}</b>
             <ParticipantPreviewMenu />
         </div>}
-        {state?.infra && !/^\/manage(?:\/|$)/.test(pathname) && <PreviewInfrastructure eventID={state.eventID} stopping={infraBusy === "stopping"} onBusy={setInfraBusy} />}
+        {state?.infra && state.tasks && !/^\/manage(?:\/|$)/.test(pathname) && <PreviewInfrastructure eventID={state.eventID} stopping={infraBusy === "stopping"} onBusy={setInfraBusy} />}
         {children}
     </PreviewContext.Provider></CookieContext.Provider>;
 }
@@ -241,7 +243,10 @@ export function ParticipantPreviewMenu() {
                         </DropdownMenu.RadioGroup>
                         <DropdownMenu.Separator className="event-participant-preview__separator" />
                     </>}
-                    <DropdownMenu.CheckboxItem className="ib-listbox__opt event-participant-preview__option" checked={state.infra} disabled={!!preview.infraBusy} aria-busy={!!preview.infraBusy || undefined}
+                    <DropdownMenu.CheckboxItem className="ib-listbox__opt event-participant-preview__option" checked={state.tasks} onSelect={event => event.preventDefault()} onCheckedChange={on => preview.update({tasks: on})}>
+                        <span className="event-participant-preview__indicator"><DropdownMenu.ItemIndicator><Check size={16} aria-hidden="true" /></DropdownMenu.ItemIndicator></span>{t("participantPreview.tasks")}
+                    </DropdownMenu.CheckboxItem>
+                    <DropdownMenu.CheckboxItem className="ib-listbox__opt event-participant-preview__option" checked={state.infra} disabled={!!preview.infraBusy || !state.tasks} aria-busy={!!preview.infraBusy || undefined}
                         onSelect={event => event.preventDefault()} onCheckedChange={on => void preview.setInfra(on)}>
                         <span className="event-participant-preview__indicator">{preview.infraBusy ? <BusyMark /> : <DropdownMenu.ItemIndicator><Check size={16} aria-hidden="true" /></DropdownMenu.ItemIndicator>}</span>
                         {t(preview.infraBusy === "starting" ? "participantPreview.infra.starting" : preview.infraBusy === "stopping" ? "participantPreview.infra.stopping" : "participantPreview.infra")}
