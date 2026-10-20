@@ -492,7 +492,7 @@
   "join.loadFailed": "Couldn't load participation terms.",
   "join.loading": "Loading participation terms…",
   "join.pending": "Your application has been sent. Wait for the organizers' decision.",
-  "join.confirm.hint": "This event needs no extra fields. Confirm your participation with one click.",
+  "join.intro": "Registration for the event “{name}”.",
   "join.confirm.action": "Confirm participation",
   "join.submit.action": "Submit application",
   "common.busy.registering": "Registering…",
