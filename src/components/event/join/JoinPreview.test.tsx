@@ -52,12 +52,12 @@ it("shows a pending result in a dialog without offering team access or writing t
     view(event());
     fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
     const input = await screen.findByLabelText(/Школа/);
-    fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
+    fireEvent.click(screen.getByRole("button", {name: "Надіслати заявку"}));
     // The message sits under its question, so it does not repeat the question.
     expect(screen.getByRole("alert").textContent).toBe("Обовʼязкове поле");
     expect(input.getAttribute("aria-describedby")).toContain(screen.getByRole("alert").id);
     fireEvent.change(input, {target: {value: "Ліцей"}});
-    fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
+    fireEvent.click(screen.getByRole("button", {name: "Надіслати заявку"}));
     expect(screen.getByRole("dialog", {name: "Заявку подано"})).toBeTruthy();
     expect(screen.getByRole("button", {name: "Гаразд"})).toBeTruthy();
     expect(screen.queryByRole("link", {name: "Перейти до команди"})).toBeNull();
@@ -70,7 +70,7 @@ it("offers team access only for an approved application, with no intermediate co
     fireEvent.click(await screen.findByRole("button", {name: "Тестувати як учасник"}));
     fireEvent.change(await screen.findByLabelText(/Школа/), {target: {value: "Ліцей"}});
     await chooseOutcome("Відхилено");
-    fireEvent.click(screen.getByRole("button", {name: "Приєднатися"}));
+    fireEvent.click(screen.getByRole("button", {name: "Надіслати заявку"}));
     expect(screen.getByRole("dialog", {name: "Заявку відхилено"})).toBeTruthy();
     expect(screen.queryByRole("link", {name: "Перейти до команди"})).toBeNull();
     await chooseOutcome("Схвалено");
