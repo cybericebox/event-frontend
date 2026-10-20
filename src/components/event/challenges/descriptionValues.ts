@@ -24,6 +24,9 @@ export function linkUrl(scheme: string, ip: string, port?: number, path?: string
 }
 
 function resolveOne(placeholder: SnapshotPlaceholder, lab: LabRuntime | undefined): string {
+    if (placeholder.kind === "ip" && placeholder.ip_reference === "static") {
+        return placeholder.octets_1to3 ? `${placeholder.octets_1to3}.${placeholder.last_octet ?? 0}` : "";
+    }
     if (!lab) return "";
     const showMask = placeholder.show_mask ?? false;
     const lastOctet = placeholder.last_octet ?? 0;

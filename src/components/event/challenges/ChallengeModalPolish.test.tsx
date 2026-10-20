@@ -29,8 +29,13 @@ beforeAll(() => {
 });
 afterEach(() => {cleanup(); vpn.available=true; vpn.connected=false; vpn.openVpn.mockReset();});
 
+function readyClient(mode: "participant" | "moderators" = "participant") {
+    const client = new QueryClient();
+    client.setQueryData(["event-challenge-lab", mode, "e", fixtureChallenge.EventChallengeID], runtimeFixture);
+    return client;
+}
 function renderModal(mode: "participant" | "moderators") {
-    return render(<QueryClientProvider client={new QueryClient()}>
+    return render(<QueryClientProvider client={readyClient(mode)}>
         <ChallengeModal challenge={{...fixtureChallenge, SolveCount: 7}} eventID="e" mode={mode} teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} />
     </QueryClientProvider>);
 }
@@ -101,21 +106,23 @@ it("keeps attachment downloads in a filename button without an exposed route", (
 
 it.each([{lab:false,available:true,connected:false},{lab:true,available:false,connected:false},{lab:true,available:true,connected:true},{lab:true,available:true,connected:false}])("shows and opens VPN only for a lab with available disconnected VPN %o", ({lab,available,connected}) => {
     vpn.available=available;vpn.connected=connected;
-    render(<QueryClientProvider client={new QueryClient()}><ChallengeModal challenge={{...fixtureChallenge,Infrastructure:lab}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints={false} onClose={()=>{}} onAccepted={()=>{}}/></QueryClientProvider>);
+    render(<QueryClientProvider client={readyClient()}><ChallengeModal challenge={{...fixtureChallenge,Infrastructure:lab}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints={false} onClose={()=>{}} onAccepted={()=>{}}/></QueryClientProvider>);
     const prompt=screen.queryByRole("button",{name:"Відкрити VPN"});
     expect(!!prompt).toBe(lab&&available&&!connected);
     expect(!!screen.queryByLabelText("Лабораторія")).toBe(lab);
     if(prompt){fireEvent.click(prompt); expect(vpn.openVpn).toHaveBeenCalledOnce();}
 });
 it("solves tab keeps the task flag form out of the visible panel", () => {
-    render(<QueryClientProvider client={new QueryClient()}><ChallengeModal challenge={{...fixtureChallenge,SolvedAt:null}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints={false} onClose={()=>{}} onAccepted={()=>{}}/></QueryClientProvider>);
+    const client = new QueryClient(); client.setQueryData(["event-challenge-lab", "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
+    render(<QueryClientProvider client={client}><ChallengeModal challenge={{...fixtureChallenge,SolvedAt:null}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints={false} onClose={()=>{}} onAccepted={()=>{}}/></QueryClientProvider>);
     expect(screen.getByRole("textbox",{name:"Прапор"})).toBeTruthy();
     fireEvent.click(screen.getByRole("tab",{name:"Розвʼязання (7)"}));
     expect(screen.queryByRole("textbox",{name:"Прапор"})).toBeNull();
 });
 
 it("keeps the flag footer outside the bounded scrolling task body", () => {
-    render(<QueryClientProvider client={new QueryClient()}><ChallengeModal challenge={{...fixtureChallenge,SolvedAt:null}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints onClose={()=>{}} onAccepted={()=>{}}/></QueryClientProvider>);
+    const client = new QueryClient(); client.setQueryData(["event-challenge-lab", "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
+    render(<QueryClientProvider client={client}><ChallengeModal challenge={{...fixtureChallenge,SolvedAt:null}} eventID="e" mode="participant" teamMode finished={false} showDifficulty showHints onClose={()=>{}} onAccepted={()=>{}}/></QueryClientProvider>);
     const form=document.querySelector(".ib-cmodal__flag")!;
     expect(form.closest(".ib-cmodal__body")).toBeNull();
     expect(form.parentElement?.className).toBe("ib-cmodal__task-pane");

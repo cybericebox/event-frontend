@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState, type ReactNode} from "react";
+import {useCallback, useEffect, useMemo, useState, type ReactNode} from "react";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
 import Link from "next/link";
@@ -86,6 +86,8 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
     showDifficulty: boolean; showHints: boolean; hintChargeMode?: HintChargeMode; onRefresh: () => void; onSolved?: (challengeID: string, result: ChallengeSubmission | ModeratorSubmission) => void; banners?: ReactNode; countdown?: ReactNode;
 }) {
     const [selectedID, setSelectedID] = useState<string | null>(null);
+    const [preparingID, setPreparingID] = useState<string | null>(null);
+    const openingChanged = useCallback((id: string, preparing: boolean) => setPreparingID(current => preparing ? id : current === id ? null : current), []);
     const [acceptedID, setAcceptedID] = useState<string | null>(null);
     useEffect(() => {
         if (!acceptedID) return;
@@ -109,13 +111,21 @@ export function Board({eventID, mode, challenges, stages = [], nextOpensAt = nul
     const sub = mode === "moderators" && !preview.active
         ? tPlural("challenges.sub.moderators", challenges.length)
         : <dl className="event-board-stats"><div><dt>{t("challenges.stats.points")}</dt><dd>{formatPoints(points)}</dd></div><div><dt>{t("challenges.stats.solved")}</dt><dd>{solved.length}<small> / {challenges.length}</small></dd></div></dl>;
-    const open = (challenge: OwnChallenge) => setSelectedID(challenge.EventChallengeID);
-    const board = {groups: shownGroups, showDifficulty, acceptedID, onOpen: open, toolbar, emptyMessage, onResetFilters: () => setFilters(DEFAULT_BOARD_FILTERS)};
+    const open = (challenge: OwnChallenge) => {
+        // Reserve the existing tile loader in the activation render, before the
+        // modal observer reports readiness. Only this selected task polls.
+        setPreparingID(challenge.Infrastructure && !challenge.Lab?.LogicalClosed && !challenge.Closed && !finished ? challenge.EventChallengeID : null);
+        setSelectedID(challenge.EventChallengeID);
+    };
+    const tileGroups = shownGroups.map(group => ({...group, visible: group.visible.map(task => task.EventChallengeID === preparingID && task.EventChallengeID === selectedID
+        ? {...task, Locked: true, LockedBusy: true, LockedNote: t("challenges.lab.starting")} : task)}));
+    const board = {groups: tileGroups, showDifficulty, acceptedID, onOpen: open, toolbar, emptyMessage, onResetFilters: () => setFilters(DEFAULT_BOARD_FILTERS)};
     return <Page banners={banners} countdown={countdown} sub={challenges.length ? sub : undefined}>
         {!challenges.length ? <EmptyState message={t("challenges.emptyMessage")} /> : <TilesBoard {...board} />}
         <ChallengeModal challenge={selected} stage={stages.find(item => item.ID === selected?.StageID) ?? null} eventID={eventID} mode={mode} teamMode={teamMode} finished={finished}
             showDifficulty={showDifficulty} showHints={showHints} hintChargeMode={hintChargeMode}
-            onClose={() => setSelectedID(null)}
+            onOpeningChange={openingChanged}
+            onClose={() => {setSelectedID(null); setPreparingID(null);}}
             onAccepted={(challengeID, result) => { setAcceptedID(challengeID); onSolved?.(challengeID, result); onRefresh(); }}
             onRejected={onRefresh}
             onHintUnlocked={onRefresh} />

@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {useState} from "react";
 import {challengeSchema, ownBoardSchema, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
 import type {LabRuntime} from "@/api/manageLabs";
-import {runningLab, completedLab} from "@/test/labLifecycle";
+import {runningLab, completedLab, runtimeFixture} from "@/test/labLifecycle";
 import {fixtureChallenge} from "./fixtures/challengeFixture";
 import {markSolved} from "./challengeBoardModel";
 
@@ -99,6 +99,9 @@ describe("authoritative shared Lab on the participant board", () => {
     const start = async () => {
         const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
         api.board.mockResolvedValue(initial);
+        // Solves start only after runtime content was usable; keep the later
+        // in-flight refreshes to exercise the original stale-result fences.
+        for (const question of questions) client.setQueryData(["event-challenge-lab", "participant", "e", question.EventChallengeID], {...runtimeFixture, Lab: question.Lab, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://ready.test"}]});
         render(<QueryClientProvider client={client}><ChallengesBoard /></QueryClientProvider>);
         await screen.findByText("Завдання 1", {selector: ".ib-tile__name"});
         return client;
