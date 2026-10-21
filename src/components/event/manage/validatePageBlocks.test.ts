@@ -42,6 +42,12 @@ describe("registration actions and countdown windows", () => {
         expect(blockValidationField(error ?? undefined, block)).toBe("showFromDate");
         expect(validateLanding({blocks: [{...block, showFromDate: "2026-09-30T12:00:00Z"}]}, [])).toBeNull();
     });
+
+    it("accepts the three countdown layouts and rejects others", () => {
+        const block: ContentBlock = {id: "timer", type: "countdown", dateSource: "custom", targetDate: "2026-10-01T12:00:00Z"};
+        for (const variant of ["split", "center", "inline"]) expect(validateLanding({blocks: [{...block, variant}]}, [])).toBeNull();
+        expect(validateLanding({blocks: [{...block, variant: "wide"}]}, [])).not.toBeNull();
+    });
 });
 
 describe("anchors and partners", () => {

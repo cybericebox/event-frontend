@@ -158,9 +158,9 @@ export function resolutionKey(resolution: string | null | undefined, hasName: bo
   return `inbox.resolved.${known}${hasName && !SYSTEM_RESOLUTIONS.includes(known) ? "" : ".system"}`
 }
 
-/** API query for a tab (and the event scope on event sites). */
+/** API query for a tab: the site, the event scope and the category. */
 export function inboxQuery(tab: InboxTab, eventId?: string, extra: Record<string, string> = {}): string {
-  const query = new URLSearchParams(extra)
+  const query = new URLSearchParams({ site: "event", ...extra })
   if (tab !== "all") query.set("category", tab)
   if (eventId) query.set("event", eventId)
   const text = query.toString()

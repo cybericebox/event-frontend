@@ -136,10 +136,10 @@ describe("inbox model", () => {
   })
   
   it("queries carry the category and the event scope", () => {
-    expect(inbox.inboxQuery("all")).toBe("")
-    expect(inbox.inboxQuery("requests")).toBe("?category=requests")
-    expect(inbox.inboxQuery("personal", "ev1")).toBe("?category=personal&event=ev1")
-    expect(inbox.inboxQuery("all", undefined, { since_id: "a" })).toBe("?since_id=a")
+    expect(inbox.inboxQuery("all")).toBe("?site=event")
+    expect(inbox.inboxQuery("requests")).toBe("?site=event&category=requests")
+    expect(inbox.inboxQuery("personal", "ev1")).toBe("?site=event&category=personal&event=ev1")
+    expect(inbox.inboxQuery("all", undefined, { before: "a" })).toBe("?site=event&before=a")
   })
   
   it("resolved line keys exist in both catalogs", () => {

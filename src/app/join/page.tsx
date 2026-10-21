@@ -35,7 +35,9 @@ export default function JoinPage() {
     const preview = useParticipantPreview(event?.EventID);
     const staff = useStaffAccess(event?.EventID);
     const identity = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
-    const join = useQuery({queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus, enabled: !!identity.data && !!event && !preview.active, retry: false});
+    const join = useQuery({queryKey: ["event-join-status", event?.EventID], queryFn: getJoinStatus, enabled: !!identity.data && !!event && !preview.active, retry: false,
+        // A pending application is decided while the page is open.
+        refetchOnWindowFocus: true, refetchInterval: query => query.state.data === ParticipationStatusEnum.PendingParticipationStatus ? 60_000 : false});
     const invitation = useQuery({queryKey: ["event-invitation-status", event?.EventID], queryFn: getInvitationInfo, enabled: !!identity.data && !!event && join.data === 1, retry: false});
     // Invitations are accepted on /invite; this page only handles own applications.
     const invited = invitation.data?.Invited === true && invitation.data.Status === ParticipationStatusEnum.PendingParticipationStatus;

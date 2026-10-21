@@ -11,9 +11,12 @@ export default function QueryProvider({children}: {
             queries: {
                 refetchOnMount: true,
                 refetchOnReconnect: true,
-                refetchOnWindowFocus: true,
+                // No query polls or refetches on focus by default: /auth/me, navigation and access queries do not change
+                // during a session. A query whose data changes sets its own refetchInterval / refetchOnWindowFocus.
+                // The banner bar and the inbox follow the shared pulse (utils/pulse.ts).
+                refetchOnWindowFocus: false,
                 staleTime: 60 * 1000,
-                refetchInterval: 60 * 1000,
+                refetchInterval: false,
                 // The browser fetch wrapper (trackApiFetch) already repeats a read the server shed;
                 // a second retry layer here would multiply the requests on a busy server.
                 retry: false,
