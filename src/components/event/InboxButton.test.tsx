@@ -8,12 +8,12 @@ const api = vi.hoisted(() => ({
     getInbox: vi.fn(), getInboxSince: vi.fn(), markInboxRead: vi.fn(), markInboxAllRead: vi.fn(), resolveInboxRequest: vi.fn(),
 }));
 vi.mock("@/api/inbox", () => ({...api, InboxError: class extends Error { code?: number }}));
-const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: unknown) => void>(), subscribe: vi.fn()}));
+const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: unknown) => void>(), subscribe: vi.fn(), initial: {Cursor: "c0", Unread: 2}}));
 vi.mock("@/utils/pulse", () => ({
     subscribePulse: (scope: string, listener: (pulse: unknown) => void) => {
         pulses.subscribe(scope);
         pulses.listeners.add(listener);
-        queueMicrotask(() => listener({Banners: "v1", Inbox: {Cursor: "c0", Unread: 2}}));
+        queueMicrotask(() => listener({Banners: "v1", Inbox: pulses.initial}));
         return () => pulses.listeners.delete(listener);
     },
     pulseNow: vi.fn(),
@@ -29,6 +29,7 @@ const poll = {Cursor: "c0", Unread: 2, Counts: {All: 2, Requests: 2, Personal: 0
 
 beforeEach(() => {
     vi.useRealTimers();
+    pulses.initial = {Cursor: "c0", Unread: 2};
     sessionStorage.clear();
     HTMLElement.prototype.scrollTo = () => {};
     api.getInboxSince.mockResolvedValue(poll);
@@ -94,6 +95,23 @@ describe("inbox", () => {
         await emit("c2", 1);
         await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(4));
         expect(api.getInboxSince).toHaveBeenLastCalledWith("e1", "c2");
+    });
+
+    it("after an empty baseline holds the epoch cursor, so the first news arrive as items", async () => {
+        const epoch = "1970-01-01T00:00:00Z_00000000-0000-0000-0000-000000000000";
+        pulses.initial = {Cursor: "", Unread: 0};
+        api.getInboxSince.mockReset();
+        api.getInboxSince.mockResolvedValueOnce({...poll, Cursor: "", Unread: 0, Items: []}).mockResolvedValue({...poll, Cursor: "c1", Unread: 1, Items: [lab("n1", {AutoDismissMs: 5000})]});
+        render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(1));
+        expect(api.getInboxSince).toHaveBeenLastCalledWith("e1", "");
+        const emit = (Cursor: string, Unread: number) => act(async () => { for (const listener of [...pulses.listeners]) listener({Banners: "v1", Inbox: {Cursor, Unread}}); });
+        await emit("", 0);
+        expect(api.getInboxSince).toHaveBeenCalledTimes(1);
+        await emit("c1", 1);
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(2));
+        expect(api.getInboxSince).toHaveBeenLastCalledWith("e1", epoch);
+        expect(await screen.findByText("Заявка n1")).toBeTruthy();
     });
 
     it("keeps a polite live region mounted before any pop-in arrives", async () => {

@@ -31,6 +31,9 @@ import {useDraftNavigation} from "./manage/manualDraft";
 const OPEN_PARAM = "inbox";
 // Loop bound of one catch-up (50 items per answer).
 const MAX_CATCH_UP = 20;
+// Held when the baseline cursor is empty (an empty inbox): an empty `since` is only ever the very first baseline.
+const EMPTY_CURSOR = "1970-01-01T00:00:00Z_00000000-0000-0000-0000-000000000000";
+const held = (cursor: string) => cursor || EMPTY_CURSOR;
 
 export type InboxButtonProps = {
     /** Tab shown on every open: landing "all", id "personal", admin/exercises "requestsIfOpen", event "all" (/manage: "requests"). */
@@ -164,7 +167,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                     const since = initialized ? cursorRef.current : "";
                     const result = await getInboxSince(eventId, since);
                     if (!active) return;
-                    cursorRef.current = result.Cursor;
+                    cursorRef.current = held(result.Cursor);
                     if (!initialized) {
                         unreadCountRef.current = result.Unread;
                         setUnread(result.Unread);
@@ -196,7 +199,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                         if (result.OtherEventsCount !== undefined) setOtherEvents(parseOtherEvents(result.OtherEventsCount));
                         if (active && poppable.length) setPopIns(previous => [...previous, ...poppable.filter(item => !previous.some(entry => entry.ID === item.ID))]);
                     }
-                    if (!target || result.Cursor === target.Cursor || (initialized && result.Cursor === since) || (since !== "" && result.Items.length === 0)) break;
+                    if (!target || held(result.Cursor) === held(target.Cursor) || (initialized && held(result.Cursor) === since) || (since !== "" && result.Items.length === 0)) break;
                 }
             } catch {
                 if (active) { setError(t("inbox.loadError")); setLoading(false); }
@@ -208,7 +211,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         const onPulse = (pulse: {Inbox: {Cursor: string; Unread: number} | null}) => {
             const inbox = pulse.Inbox;
             if (!inbox) return;
-            if (!initialized || inbox.Cursor !== cursorRef.current || inbox.Unread !== unreadCountRef.current) void sync(inbox);
+            if (!initialized || held(inbox.Cursor) !== cursorRef.current || inbox.Unread !== unreadCountRef.current) void sync(inbox);
         };
         const unsubscribe = subscribePulse(scope, onPulse);
         const catchUp = () => { void sync(null); };

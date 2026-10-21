@@ -150,6 +150,12 @@ describe("Банери сайту", () => {
         expect(listCalls(calls)).toHaveLength(2);
     });
 
+    it("shows the title of a banner whose text is empty", async () => {
+        mockBanners([banner({Kind: "personal", Text: "", Title: "Ваш запит схвалено"})]);
+        renderBar();
+        expect(await screen.findByText("Ваш запит схвалено")).toBeTruthy();
+    });
+
     it("never polls by itself", async () => {
         vi.useFakeTimers({shouldAdvanceTime: true});
         const calls = mockBanners([banner()]);
