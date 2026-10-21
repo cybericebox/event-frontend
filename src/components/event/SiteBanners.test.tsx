@@ -1,37 +1,39 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
-import {focusManager, QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
+
+const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: {Banners: string; Inbox: null}) => void>()}));
+vi.mock("@/utils/pulse", () => ({
+    subscribePulse: (_event: string, listener: (pulse: {Banners: string; Inbox: null}) => void) => {
+        pulses.listeners.add(listener);
+        return () => pulses.listeners.delete(listener);
+    },
+}));
+const emitPulse = (Banners: string) => act(async () => {for (const listener of [...pulses.listeners]) listener({Banners, Inbox: null});});
 
 import {SiteBanner, SiteBannerBar} from "./SiteBanners";
 
 const EVENT_ID = "01a0d498-32b3-7a38-8355-30cc209f56ab";
-const banner = (patch: Record<string, unknown> = {}) => ({ID: "b1", Text: "Сервери недоступні до 18:00", LinkURL: "", LinkLabel: "", Level: "info", Dismissible: true, Version: 1, ...patch});
-const freezeState = (patch: Record<string, unknown> = {}) => ({Enabled: true, FrozenAt: null, FinishAt: null, OpenedAt: null,
-    Active: true, Applied: true, BannerText: "", BannerLevel: "warning", ...patch});
+const banner = (patch: Record<string, unknown> = {}) => ({ID: "b1", Kind: "site", Title: "", Text: "Сервери недоступні до 18:00", LinkURL: "", LinkLabel: "", Level: "info", Dismissible: true, Version: 1, ...patch});
 const freezeMessage = "Результати заморожено. Оновлені результати зʼявляться після підбиття підсумків.";
-
-function mockEventBanners(responses: unknown[][], freezes: Array<Record<string, unknown> | number>) {
-    const urls: string[] = [];
-    let index = 0, freezeIndex = 0;
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        urls.push(url);
-        if (url.endsWith("/results/freeze")) {
-            const reply = freezes[Math.min(freezeIndex++, freezes.length - 1)];
-            return typeof reply === "number" ? new Response("{}", {status: reply}) : new Response(JSON.stringify({Data: reply}));
-        }
-        if (!url.includes("/api/banners?")) throw new Error(`Unexpected request: ${url}`);
-        return new Response(JSON.stringify({Status: {Code: 0}, Data: responses[Math.min(index++, responses.length - 1)]}), {status: 200});
-    }) as typeof fetch;
-    return urls;
-}
+const freezeBanner = (patch: Record<string, unknown> = {}) => banner({ID: `system-results-freeze:${EVENT_ID}`, Kind: "system", Text: freezeMessage, Level: "warning", Dismissible: false, ...patch});
 
 function mockBanners(...responses: unknown[][]) {
-    return mockEventBanners(responses, [freezeState({Active: false, Applied: false})]);
+    const calls: Array<{url: string; method: string}> = [];
+    let index = 0;
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        calls.push({url, method: init?.method ?? "GET"});
+        if (url.includes("/dismiss")) return new Response(JSON.stringify({Status: {Code: 0}, Data: null}), {status: 200});
+        if (!url.includes("/api/notifications/banners?")) throw new Error(`Unexpected request: ${url}`);
+        return new Response(JSON.stringify({Status: {Code: 0}, Data: responses[Math.min(index++, responses.length - 1)]}), {status: 200});
+    }) as typeof fetch;
+    return calls;
 }
+const listCalls = (calls: Array<{url: string}>) => calls.filter(call => call.url.includes("/banners?"));
 
 function renderBar() {
     return render(<QueryClientProvider client={new QueryClient()}><SiteBannerBar eventID={EVENT_ID} /></QueryClientProvider>);
@@ -39,7 +41,7 @@ function renderBar() {
 
 describe("Банери сайту", () => {
     beforeEach(() => window.localStorage.clear());
-    afterEach(() => {cleanup(); focusManager.setFocused(undefined); vi.useRealTimers(); vi.restoreAllMocks();});
+    afterEach(() => {cleanup(); pulses.listeners.clear(); vi.useRealTimers(); vi.restoreAllMocks();});
 
     it("draws a level as a calm tinted row with a link and no close button when it cannot be dismissed", () => {
         const {container} = render(<SiteBanner banner={{Text: "Важливо", LinkURL: "https://example.com/a", LinkLabel: "Деталі", Level: "critical", Dismissible: false}} onDismiss={() => undefined} />);
@@ -57,7 +59,7 @@ describe("Банери сайту", () => {
     });
 
     it("asks the event's banners and shows them", async () => {
-        const urls = mockBanners([banner(), banner({ID: "b2", Text: "Попередження", Level: "warning"})]);
+        const calls = mockBanners([banner(), banner({ID: "b2", Text: "Попередження", Level: "warning"})]);
         const {container} = renderBar();
         expect(await screen.findByText("Попередження")).toBeTruthy();
         expect(screen.queryByText("Сервери недоступні до 18:00")).toBeNull();
@@ -65,7 +67,7 @@ describe("Банери сайту", () => {
         fireEvent.click(screen.getByRole("button", {name: "Ще 1 оголошення"}));
         const others = await screen.findByRole("dialog", {name: "Інші оголошення"});
         expect(within(others).getByText("Сервери недоступні до 18:00")).toBeTruthy();
-        expect(urls[0]).toBe(`https://api.test/api/banners?site=event&event=${EVENT_ID}`);
+        expect(calls[0].url).toBe(`https://api.test/api/notifications/banners?site=event&event=${EVENT_ID}`);
     });
 
     it("bounds ten announcements to one and promotes the next after dismissal", async () => {
@@ -134,96 +136,54 @@ describe("Банери сайту", () => {
         expect(screen.queryByText("Сервери недоступні до 18:00")).toBeNull();
     });
 
-    it("polls about every minute", async () => {
-        vi.useFakeTimers({shouldAdvanceTime: true});
-        try {
-            const urls = mockBanners([banner()]);
-            renderBar();
-            await screen.findByText("Сервери недоступні до 18:00");
-            const before = urls.length;
-            await vi.advanceTimersByTimeAsync(60_500);
-            expect(urls.length).toBeGreaterThan(before);
-        } finally {vi.useRealTimers();}
+    it("reads the list once on load and again only when the pulse reports a new Banners version", async () => {
+        const calls = mockBanners([banner()], [banner({Text: "Нове оголошення", Version: 2})]);
+        renderBar();
+        await screen.findByText("Сервери недоступні до 18:00");
+        await emitPulse("v1");
+        await emitPulse("v1");
+        expect(listCalls(calls)).toHaveLength(1);
+        await emitPulse("v2");
+        expect(await screen.findByText("Нове оголошення")).toBeTruthy();
+        await emitPulse("v2");
+        expect(listCalls(calls)).toHaveLength(2);
     });
 
-    it("adds the standard freeze banner on any event page without a results snapshot request or dismissal", async () => {
-        const urls = mockEventBanners([[]], [freezeState()]);
+    it("never polls by itself", async () => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        const calls = mockBanners([banner()]);
+        renderBar();
+        await screen.findByText("Сервери недоступні до 18:00");
+        await vi.advanceTimersByTimeAsync(180_000);
+        expect(listCalls(calls)).toHaveLength(1);
+    });
+
+    it("shows the server's freeze banner without a close button, a stored mark or a freeze request", async () => {
+        const calls = mockBanners([freezeBanner()]);
         const {container} = render(<QueryClientProvider client={new QueryClient()}><SiteBannerBar eventID={EVENT_ID} /><main><h1>Правила заходу</h1></main></QueryClientProvider>);
         expect(await screen.findByText(freezeMessage)).toBeTruthy();
-        expect(screen.getByRole("heading", {name: "Правила заходу"})).toBeTruthy();
         expect(container.querySelector(".ib-banner")?.getAttribute("data-level")).toBe("warning");
         expect(screen.queryByRole("button", {name: "Закрити банер"})).toBeNull();
         expect(window.localStorage.length).toBe(0);
-        expect(urls).toContain(`https://api.test/api/events/${EVENT_ID}/results/freeze`);
-        expect(urls.every(url => url.includes("/api/banners?") || url.endsWith("/results/freeze"))).toBe(true);
+        expect(calls.every(call => call.url.includes("/api/notifications/banners?"))).toBe(true);
     });
 
-    it("sorts critical announcements above the freeze and preserves ordinary order within each level", async () => {
-        mockEventBanners([[banner({ID: "i", Text: "Інформація"}), banner({ID: "w1", Text: "Перше попередження", Level: "warning"}),
-            banner({ID: "c", Text: "Критичне", Level: "critical"}), banner({ID: "w2", Text: "Друге попередження", Level: "warning"})]], [freezeState()]);
+    it("sorts critical announcements above the freeze and preserves the order within each level", async () => {
+        mockBanners([banner({ID: "i", Text: "Інформація"}), banner({ID: "w1", Text: "Перше попередження", Level: "warning"}),
+            banner({ID: "c", Text: "Критичне", Level: "critical"}), banner({ID: "w2", Text: "Друге попередження", Level: "warning"}), freezeBanner()]);
         renderBar();
         expect(await screen.findByText("Критичне")).toBeTruthy();
         fireEvent.click(await screen.findByRole("button", {name: "Ще 4 оголошення"}));
         const others = await screen.findByRole("dialog", {name: "Інші оголошення"});
         expect([...others.querySelectorAll(".ib-banner__msg")].map(item => item.textContent)).toEqual(["Перше попередження", "Друге попередження", freezeMessage, "Інформація"]);
-        const freeze = within(others).getByText(freezeMessage).closest(".ib-banner")!;
-        expect(within(freeze as HTMLElement).queryByRole("button", {name: "Закрити банер"})).toBeNull();
     });
 
-    it.each(["info", "warning", "critical"])("uses authored freeze text and the standard %s style", async level => {
-        mockEventBanners([[]], [freezeState({BannerText: "До <b>нагородження</b>", BannerLevel: level})]);
-        const {container} = renderBar();
-        expect(await screen.findByText("До <b>нагородження</b>")).toBeTruthy();
-        expect(container.querySelector(".ib-banner")?.getAttribute("data-level")).toBe(level);
-        expect(container.querySelector(".ib-banner b")).toBeNull();
-        expect(screen.queryByRole("button", {name: "Закрити банер"})).toBeNull();
-    });
-
-    it.each([{Active: false, Applied: false}, {Active: true, Applied: false}])("omits the virtual banner when the caller's freeze is not applied: %s", async state => {
-        const urls = mockEventBanners([[]], [freezeState(state)]);
-        const {container} = renderBar();
-        await waitFor(() => expect(urls.some(url => url.endsWith("/results/freeze"))).toBe(true));
-        expect(container.querySelector("[data-testid=site-banners]")).toBeNull();
-    });
-
-    it.each([401, 403, 404])("removes a cached virtual banner after a %i access denial while keeping ordinary announcements", async status => {
-        mockEventBanners([[banner({Text: "Оголошення"})]], [freezeState({BannerLevel: "critical"}), status]);
+    it("dismisses a personal banner on the server, not in the browser", async () => {
+        const calls = mockBanners([banner({ID: "p1", Kind: "personal"})]);
         renderBar();
-        expect(await screen.findByText(freezeMessage)).toBeTruthy();
-        await act(async () => {focusManager.setFocused(false); focusManager.setFocused(true);});
-        expect(await screen.findByText("Оголошення")).toBeTruthy();
-        expect(screen.queryByText(freezeMessage)).toBeNull();
-    });
-
-    it("keeps an active freeze through a transient failure but never revives denied cached state before a successful read", async () => {
-        const urls = mockEventBanners([[]], [freezeState(), 503, 404, 503, freezeState()]);
-        renderBar();
-        expect(await screen.findByText(freezeMessage)).toBeTruthy();
-        const refocus = async (calls: number) => {
-            await act(async () => {focusManager.setFocused(false); focusManager.setFocused(true);});
-            await waitFor(() => expect(urls.filter(url => url.endsWith("/results/freeze"))).toHaveLength(calls));
-        };
-        await refocus(2);
-        expect(screen.getByText(freezeMessage)).toBeTruthy();
-        await refocus(3);
-        await waitFor(() => expect(screen.queryByText(freezeMessage)).toBeNull());
-        await refocus(4);
-        expect(screen.queryByText(freezeMessage)).toBeNull();
-        await refocus(5);
-        expect(await screen.findByText(freezeMessage)).toBeTruthy();
-    });
-
-    it("revalidates the light state at the freeze start and finish before the minute poll", async () => {
-        vi.useFakeTimers({shouldAdvanceTime: true});
-        const now = Date.now();
-        const times = {FrozenAt: new Date(now + 2000).toISOString(), FinishAt: new Date(now + 6000).toISOString()};
-        const urls = mockEventBanners([[]], [freezeState({...times, Active: false, Applied: false}), freezeState(times), freezeState({...times, Active: false, Applied: false})]);
-        renderBar();
-        await waitFor(() => expect(urls.some(url => url.endsWith("/results/freeze"))).toBe(true));
-        await act(async () => {await vi.advanceTimersByTimeAsync(3100);});
-        expect(await screen.findByText(freezeMessage)).toBeTruthy();
-        await act(async () => {await vi.advanceTimersByTimeAsync(4100);});
-        await waitFor(() => expect(screen.queryByText(freezeMessage)).toBeNull());
-        expect(urls.filter(url => url.endsWith("/results/freeze"))).toHaveLength(3);
+        fireEvent.click(await screen.findByRole("button", {name: "Закрити банер"}));
+        expect(screen.queryByText("Сервери недоступні до 18:00")).toBeNull();
+        await waitFor(() => expect(calls.some(call => call.method === "PATCH" && call.url === "https://api.test/api/notifications/banners/p1/dismiss")).toBe(true));
+        expect(window.localStorage.length).toBe(0);
     });
 });

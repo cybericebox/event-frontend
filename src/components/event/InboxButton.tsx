@@ -10,7 +10,8 @@ import DOMPurify from "isomorphic-dompurify";
 import {Bell, Check, ChevronRight, X} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
-import {getInbox, markInboxAllRead, markInboxRead, pollInbox, resolveInboxRequest, type InboxCursor} from "@/api/inbox";
+import {getInbox, getInboxSince, markInboxAllRead, markInboxRead, resolveInboxRequest} from "@/api/inbox";
+import {subscribePulse} from "@/utils/pulse";
 import {apiErrorText} from "@/i18n/apiError";
 import {t} from "@/i18n/t";
 import {EventLoading} from "./EventLoading";
@@ -28,7 +29,8 @@ import {useDraftNavigation} from "./manage/manualDraft";
 
 // A link here with ?inbox opens the dropdown on arrival (the event site's «Ще N в інших заходах»).
 const OPEN_PARAM = "inbox";
-const zeroCursor: InboxCursor = {ID: "00000000-0000-0000-0000-000000000000", CreatedAt: "1970-01-01T00:00:00Z"};
+// Loop bound of one catch-up (50 items per answer).
+const MAX_CATCH_UP = 20;
 
 export type InboxButtonProps = {
     /** Tab shown on every open: landing "all", id "personal", admin/exercises "requestsIfOpen", event "all" (/manage: "requests"). */
@@ -56,7 +58,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     const [popIns, setPopIns] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingOlder, setLoadingOlder] = useState(false);
-    const [olderCursor, setOlderCursor] = useState<InboxCursor | null>(null);
+    const [olderCursor, setOlderCursor] = useState<string | null>(null);
     const [unread, setUnread] = useState(0);
     // null = the backend has no categories yet: the dropdown shows only «Усі».
     const [counts, setCounts] = useState<InboxCounts | null>(null);
@@ -66,14 +68,15 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     const resolveQueue = useRef<Promise<void>>(Promise.resolve());
     const resolvesPending = useRef(0);
     const clientReady = useSyncExternalStore(() => () => {}, () => true, () => false);
-    const cursorRef = useRef<InboxCursor | null>(null);
+    const cursorRef = useRef("");
     const unreadCountRef = useRef(0);
     const countsRef = useRef<InboxCounts | null>(null);
     const tabRef = useRef<InboxTab>("all");
-    const olderCursorRef = useRef<InboxCursor | null>(null);
+    const olderCursorRef = useRef<string | null>(null);
     const loadingOlderRef = useRef(false);
     const listRevisionRef = useRef(0);
     const openRef = useRef(false);
+    // A local change (resolve, read-all, another tab): catch up with the inbox now, no pulse needed.
     const pollNowRef = useRef<() => void>(() => {});
     const scrollAreaRef = useRef<HTMLDivElement | null>(null);
     const lastItemRef = useRef<HTMLLIElement | null>(null);
@@ -92,7 +95,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         loadingOlderRef.current = true;
         setLoadingOlder(true);
         try {
-            const page = await getInbox(inboxQuery(current, eventId, {before_id: before.ID, before_at: before.CreatedAt}));
+            const page = await getInbox(inboxQuery(current, eventId, {before}));
             if (revision !== listRevisionRef.current) return;
             olderCursorRef.current = page.NextCursor;
             setOlderCursor(page.NextCursor);
@@ -147,76 +150,78 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     useEffect(() => {
         let active = true;
         let initialized = false;
-        let polling = false;
-        let pending = false;
-        const scope = eventId ? {event: eventId} : undefined;
-        const poll = async () => {
+        let syncing = false;
+        let pending: {Cursor: string} | null | undefined;
+        const scope = eventId ?? "";
+        // Catches up with the inbox: `since=<last cursor>` (a baseline first), again while the answer's
+        // cursor still differs from the pulse cursor (`target`; null = one local catch-up).
+        const sync = async (target: {Cursor: string} | null) => {
             if (!active) return;
-            if (polling) { pending = true; return; }
-            polling = true;
+            if (syncing) { pending = target; return; }
+            syncing = true;
             try {
-                if (!initialized) {
-                    const baseline = await pollInbox(inboxQuery("all", undefined, scope));
+                for (let step = 0; active && step < MAX_CATCH_UP; step++) {
+                    const since = initialized ? cursorRef.current : "";
+                    const result = await getInboxSince(eventId, since);
                     if (!active) return;
-                    cursorRef.current = baseline.Cursor ?? zeroCursor;
-                    unreadCountRef.current = baseline.UnreadCount;
-                    setUnread(baseline.UnreadCount);
-                    applyCounts(parseCounts(baseline.Counts));
-                    setOtherEvents(parseOtherEvents(baseline.OtherEventsCount));
-                    initialized = true;
-                    await refresh();
-                    return;
+                    cursorRef.current = result.Cursor;
+                    if (!initialized) {
+                        unreadCountRef.current = result.Unread;
+                        setUnread(result.Unread);
+                        applyCounts(parseCounts(result.Counts));
+                        setOtherEvents(parseOtherEvents(result.OtherEventsCount));
+                        initialized = true;
+                        await refresh();
+                    } else {
+                        const fresh = result.Items.filter(isUnread);
+                        if (openRef.current && result.Items.length) {
+                            const current = tabRef.current;
+                            setItems(previous => {
+                                const known = new Set(previous.map(item => item.ID));
+                                const added = result.Items.filter(item => !known.has(item.ID) && inTab(item, current)).reverse();
+                                return added.length ? orderForTab([...added, ...previous], current) : previous;
+                            });
+                        }
+                        let poppable = fresh.filter(item => popInDuration(item.AutoDismissMs) > 0);
+                        if (result.Unread !== unreadCountRef.current + fresh.length) {
+                            const latest = await refresh();
+                            poppable = latest ? poppable.filter(item => latest.some(entry => entry.ID === item.ID && isUnread(entry))) : [];
+                        } else {
+                            setError("");
+                        }
+                        unreadCountRef.current = result.Unread;
+                        setUnread(result.Unread);
+                        const nextCounts = parseCounts(result.Counts);
+                        if (nextCounts) applyCounts(nextCounts);
+                        if (result.OtherEventsCount !== undefined) setOtherEvents(parseOtherEvents(result.OtherEventsCount));
+                        if (active && poppable.length) setPopIns(previous => [...previous, ...poppable.filter(item => !previous.some(entry => entry.ID === item.ID))]);
+                    }
+                    if (!target || result.Cursor === target.Cursor || (initialized && result.Cursor === since) || (since !== "" && result.Items.length === 0)) break;
                 }
-                const since = cursorRef.current ?? zeroCursor;
-                const result = await pollInbox(inboxQuery("all", undefined, {...scope, since_id: since.ID, since_at: since.CreatedAt}));
-                if (!active) return;
-                cursorRef.current = result.Cursor ?? since;
-                const fresh = result.NewInbox.filter(isUnread);
-                if (openRef.current && result.NewInbox.length) {
-                    const current = tabRef.current;
-                    setItems(previous => {
-                        const known = new Set(previous.map(item => item.ID));
-                        const added = result.NewInbox.filter(item => !known.has(item.ID) && inTab(item, current)).reverse();
-                        return added.length ? orderForTab([...added, ...previous], current) : previous;
-                    });
-                }
-                let poppable = fresh.filter(item => popInDuration(item.AutoDismissMs) > 0);
-                if (result.UnreadCount !== unreadCountRef.current + fresh.length) {
-                    const latest = await refresh();
-                    poppable = latest ? poppable.filter(item => latest.some(entry => entry.ID === item.ID && isUnread(entry))) : [];
-                } else {
-                    setError("");
-                }
-                unreadCountRef.current = result.UnreadCount;
-                setUnread(result.UnreadCount);
-                // Older backends send no Counts: keep the last known ones.
-                const nextCounts = parseCounts(result.Counts);
-                if (nextCounts) applyCounts(nextCounts);
-                if (result.OtherEventsCount !== undefined) setOtherEvents(parseOtherEvents(result.OtherEventsCount));
-                if (active && poppable.length) setPopIns(previous => [...previous, ...poppable.filter(item => !previous.some(entry => entry.ID === item.ID))]);
             } catch {
                 if (active) { setError(t("inbox.loadError")); setLoading(false); }
             } finally {
-                polling = false;
-                if (pending && active) { pending = false; queueMicrotask(() => { void poll(); }); }
+                syncing = false;
+                if (pending !== undefined && active) { const next = pending; pending = undefined; queueMicrotask(() => { void sync(next); }); }
             }
         };
-        const pollWhenVisible = () => { if (document.visibilityState !== "hidden") void poll(); };
-        pollNowRef.current = () => { void poll(); };
-        void poll();
-        const timer = window.setInterval(pollWhenVisible, 8_000);
-        document.addEventListener("visibilitychange", pollWhenVisible);
-        window.addEventListener("focus", pollWhenVisible);
-        window.addEventListener("cybericebox:inbox-updated", pollWhenVisible);
-        const onStorage = (storageEvent: StorageEvent) => { if (storageEvent.key === STORAGE_INBOX_READ) { pollWhenVisible(); if (openRef.current) void refresh(); } };
+        const onPulse = (pulse: {Inbox: {Cursor: string; Unread: number} | null}) => {
+            const inbox = pulse.Inbox;
+            if (!inbox) return;
+            if (!initialized || inbox.Cursor !== cursorRef.current || inbox.Unread !== unreadCountRef.current) void sync(inbox);
+        };
+        const unsubscribe = subscribePulse(scope, onPulse);
+        const catchUp = () => { void sync(null); };
+        pollNowRef.current = catchUp;
+        const onUpdated = () => { if (document.visibilityState !== "hidden" && initialized) catchUp(); };
+        window.addEventListener("cybericebox:inbox-updated", onUpdated);
+        const onStorage = (storageEvent: StorageEvent) => { if (storageEvent.key === STORAGE_INBOX_READ) { onUpdated(); if (openRef.current) void refresh(); } };
         window.addEventListener("storage", onStorage);
         return () => {
             active = false;
             pollNowRef.current = () => {};
-            window.clearInterval(timer);
-            document.removeEventListener("visibilitychange", pollWhenVisible);
-            window.removeEventListener("focus", pollWhenVisible);
-            window.removeEventListener("cybericebox:inbox-updated", pollWhenVisible);
+            unsubscribe();
+            window.removeEventListener("cybericebox:inbox-updated", onUpdated);
             window.removeEventListener("storage", onStorage);
         };
     }, [refresh, applyCounts, eventId]);
