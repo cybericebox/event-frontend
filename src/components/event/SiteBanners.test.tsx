@@ -9,6 +9,7 @@ const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: {Banners: string; I
 vi.mock("@/utils/pulse", () => ({
     subscribePulse: (_event: string, listener: (pulse: {Banners: string; Inbox: null}) => void) => {
         pulses.listeners.add(listener);
+        queueMicrotask(() => listener({Banners: "v1", Inbox: null}));
         return () => pulses.listeners.delete(listener);
     },
 }));
@@ -136,7 +137,7 @@ describe("Банери сайту", () => {
         expect(screen.queryByText("Сервери недоступні до 18:00")).toBeNull();
     });
 
-    it("reads the list once on load and again only when the pulse reports a new Banners version", async () => {
+    it("reads the list on the first pulse and again only when the pulse reports a new Banners version", async () => {
         const calls = mockBanners([banner()], [banner({Text: "Нове оголошення", Version: 2})]);
         renderBar();
         await screen.findByText("Сервери недоступні до 18:00");

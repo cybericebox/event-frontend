@@ -56,23 +56,24 @@ function rememberDismissal(banner: VisibleBanner) {
     try {window.localStorage.setItem(bannerDismissKey(banner), "1");} catch {/* storage is unavailable: the banner stays hidden until reload */}
 }
 
-// The data part: the banners of the event site for the current viewer. The list is read once on load and
-// again only when the shared pulse reports a new Banners version. A dismissed site/system banner stays hidden by
-// `${ID}:${Version}`, so an edited banner shows up again; a personal one is dismissed on the server.
+// The data part: the banners of the event site for the current viewer. The list is never read on its own:
+// the first pulse (it fires on mount) and every later pulse with a new Banners version fetch it, so the version
+// held is always the one reported by the pulse. The bar shows nothing until then. A dismissed site/system banner
+// stays hidden by `${ID}:${Version}`, so an edited banner shows up again; a personal one is dismissed on the server.
 export function SiteBannerBar({eventID}: {eventID: string}) {
     const queryClient = useQueryClient();
-    const queryKey = ["site-banners", eventID];
     const query = useQuery({
-        queryKey, queryFn: () => getSiteBanners(eventID),
-        staleTime: Infinity, refetchInterval: false, refetchOnWindowFocus: false, refetchOnReconnect: false, retry: false,
+        queryKey: ["site-banners", eventID], queryFn: () => getSiteBanners(eventID),
+        enabled: false, staleTime: Infinity, refetchInterval: false, refetchOnWindowFocus: false, refetchOnReconnect: false, retry: false,
     });
     useEffect(() => {
         let held: string | null = null;
         return subscribePulse(eventID, pulse => {
-            // The first pulse only records the version: the list was just read on load.
+            if (held === pulse.Banners) return;
             const previous = held;
             held = pulse.Banners;
-            if (previous !== null && previous !== pulse.Banners) void queryClient.refetchQueries({queryKey: ["site-banners", eventID]});
+            queryClient.fetchQuery({queryKey: ["site-banners", eventID], queryFn: () => getSiteBanners(eventID), staleTime: 0})
+                .catch(() => { if (held === pulse.Banners) held = previous; }); // a failed read is retried by the next pulse
         });
     }, [eventID, queryClient]);
     const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
