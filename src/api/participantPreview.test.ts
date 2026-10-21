@@ -8,6 +8,13 @@ const reply = (Data: unknown, status = 200) => new Response(JSON.stringify({Data
 const taskID = "11111111-1111-4111-8111-111111111111";
 const selection = "22222222-2222-4222-8222-222222222222";
 
+it("marks the sole own preview solve as first blood in the solutions list", async () => {
+    const {getPreviewSolves} = await import("./participantPreview");
+    fetchMock.mockResolvedValueOnce(reply({Items: [{TeamName: "", Own: true, SolvedAt: "2026-10-20T12:00:00Z"}], Total: 1, NextCursor: null}));
+    const page = await getPreviewSolves("event", {EventChallengeID: taskID, PreviewSelectionID: selection});
+    expect(page.Items[0]).toMatchObject({Own: true, FirstBlood: true});
+});
+
 it("keeps all static task operations inside the event preview namespace", async () => {
     const api = await import("./participantPreview");
     const task = {EventChallengeID: taskID, PreviewSelectionID: selection};

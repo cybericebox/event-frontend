@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {readRetryAfter} from "@/api/apiErrors";
 import {ManageApiError, manageApiError} from "@/api/manage";
+import {bannerLevels} from "@/api/manageBanners";
 import {csvFileName, downloadManageCSV} from "@/api/csvDownload";
 import type {ResultsAvailability} from "@/types/resultsAvailability";
 import {t} from "@/i18n/t";
@@ -8,17 +9,18 @@ import {apiOrigin, requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
 const scoreboardEntrySchema = z.object({
-    Rank: z.number().int(), TeamID: id, TeamName: z.string(), NameHidden: z.boolean().optional(), Points: z.number().int(), Solved: z.number().int().default(0), LastSolveAt: z.string().nullable(),
+    Rank: z.number().int(), TeamID: id, TeamName: z.string(), NameHidden: z.boolean().optional(), Points: z.number().int(), Solved: z.number().int().default(0),
 }).transform(entry => entry.NameHidden ? {...entry, TeamName: t("scoreboard.nameHidden")} : entry);
 const timelineEntrySchema = z.object({EventTeamID: id, EventChallengeID: id, ChallengeName: z.string(), Points: z.number().int(), SolvedAt: z.string()});
 export const freezeSchema = z.object({
     Enabled: z.boolean(), FrozenAt: z.string().nullable(), FinishAt: z.string().nullable(), OpenedAt: z.string().nullable(),
     Active: z.boolean(), Applied: z.boolean().default(false),
+    BannerText: z.string().default(""), BannerLevel: z.enum(bannerLevels).default("warning"),
 });
 const displaySchema = z.object({ChartEnabled: z.boolean(), ChartTeams: z.number().int(), RowsLimit: z.number().int().nullable()});
-const noFreeze = {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false};
+const noFreeze = {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false, BannerText: "", BannerLevel: "warning" as const};
 export const resultsSnapshotSchema = z.object({
-    Revision: z.number().int(), GeneratedAt: z.string(), Scoreboard: z.array(scoreboardEntrySchema), Timeline: z.array(timelineEntrySchema),
+    Revision: z.number().int(), Scoreboard: z.array(scoreboardEntrySchema), Timeline: z.array(timelineEntrySchema),
     TotalTeams: z.number().int().optional(),
     // The published tasks count: the live screen (view=live) only.
     Tasks: z.number().int().optional(),
@@ -60,6 +62,15 @@ export async function getManageResults(eventID: string, view: ResultsView = "pag
     }
     if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
     return z.object({Data: resultsSnapshotSchema}).parse(await response.json()).Data;
+}
+
+// The shared site banner needs only the caller's freeze policy, never the result projections.
+export async function getResultsFreeze(eventID: string): Promise<ResultsFreeze> {
+    const response = await fetch(`${apiBase()}/events/${encodeURIComponent(eventID)}/results/freeze`, {
+        credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
+    });
+    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
+    return z.object({Data: freezeSchema}).parse(await response.json()).Data;
 }
 
 const changesSchema = z.object({Revision: z.number().int(), Changes: z.array(z.object({Revision: z.number().int(), Kind: z.string()}).passthrough()), SnapshotRequired: z.boolean(), FreezeKey: z.string()});
@@ -108,7 +119,8 @@ export type ModeratorResultsSolve = ModeratorResultsTeam["Solves"][number];
 
 const settingsSchema = z.object({
     ScoreboardVisibility: z.union([z.literal(0), z.literal(1), z.literal(2)]),
-    FreezeEnabled: z.boolean(), FreezeMinutes: z.number().int(), LiveFreeze: z.boolean(),
+    FreezeEnabled: z.boolean(), FreezeMinutes: z.number().int(), FreezeEndMode: z.enum(["at_finish", "manual"]).default("at_finish"), LiveFreeze: z.boolean(),
+    FreezeBannerText: z.string().default(""), FreezeBannerLevel: z.enum(bannerLevels).default("warning"),
     ChartEnabled: z.boolean(), ChartTeams: z.number().int(), RowsLimit: z.number().int().nullable(),
     OpenedAt: z.string().nullable(), Freeze: freezeSchema,
 });
@@ -116,8 +128,8 @@ export type ResultsSettings = z.infer<typeof settingsSchema>;
 export type ResultsSettingsInput = Omit<ResultsSettings, "OpenedAt" | "Freeze">;
 
 export function resultsSettingsInput(settings: ResultsSettings): ResultsSettingsInput {
-    const {ScoreboardVisibility, FreezeEnabled, FreezeMinutes, LiveFreeze, ChartEnabled, ChartTeams, RowsLimit} = settings;
-    return {ScoreboardVisibility, FreezeEnabled, FreezeMinutes, LiveFreeze, ChartEnabled, ChartTeams, RowsLimit};
+    const {ScoreboardVisibility, FreezeEnabled, FreezeMinutes, FreezeEndMode = "at_finish", FreezeBannerText = "", FreezeBannerLevel = "warning", LiveFreeze, ChartEnabled, ChartTeams, RowsLimit} = settings;
+    return {ScoreboardVisibility, FreezeEnabled, FreezeMinutes, FreezeEndMode, FreezeBannerText, FreezeBannerLevel, LiveFreeze, ChartEnabled, ChartTeams, RowsLimit};
 }
 
 async function manageRequest<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", payload?: unknown): Promise<T> {

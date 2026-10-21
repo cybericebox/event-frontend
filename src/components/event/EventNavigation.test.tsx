@@ -20,7 +20,7 @@ const publicPage = ManagePageSchema.parse({ID: "00000000-0000-4000-8000-00000000
 const clients: QueryClient[] = [];
 const observations: {target: Element; resize: () => void}[] = [];
 beforeEach(() => {
-    sessionStorage.clear();
+    sessionStorage.clear(); localStorage.clear();
     observations.length = 0;
     vi.stubGlobal("ResizeObserver", class {
         constructor(private resize: () => void) {}
@@ -33,7 +33,7 @@ afterEach(() => {cleanup(); clients.splice(0).forEach(client => client.clear());
 function view({preview = true, authenticated = true, approved = false, pages = [] as ManagePage[], pending = false, loadingNavigation = false} = {}) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
     clients.push(client);
-    if (preview) sessionStorage.setItem("event-participant-preview-v1", JSON.stringify({eventID: event.EventID, userID: user.ID, status: approved ? 2 : 0, outcome: "approved", answers: {}, team: null}));
+    if (preview) localStorage.setItem("event-participant-preview-v1", JSON.stringify({eventID: event.EventID, userID: user.ID, status: approved ? 2 : 0, outcome: "approved", answers: {}, team: null}));
     client.setQueryData(["event-current-user"], user);
     client.setQueryData(["event-management-access", event.EventID], preview ? {CanManage: true, InfrastructureAllowed: false} : null);
     client.setQueryData(["event-management-config", event.EventID], config);

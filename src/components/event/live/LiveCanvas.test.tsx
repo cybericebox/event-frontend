@@ -38,10 +38,10 @@ async function mount(layout: LiveLayout, sample = false, {results, stages, on = 
 const teamID = (index: number) => `01900000-0000-7000-8000-${String(index).padStart(12, "0")}`;
 function board(count: number, freeze?: string): ManageResultsSnapshot {
     return {
-        Revision: 1, GeneratedAt: new Date(now).toISOString(), TotalTeams: count,
-        Freeze: {Enabled: !!freeze, FrozenAt: freeze ?? null, FinishAt: null, OpenedAt: null, Active: !!freeze, Applied: !!freeze},
+        Revision: 1, TotalTeams: count,
+        Freeze: {BannerText: "", BannerLevel: "warning" as const, Enabled: !!freeze, FrozenAt: freeze ?? null, FinishAt: null, OpenedAt: null, Active: !!freeze, Applied: !!freeze},
         Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
-        Scoreboard: Array.from({length: count}, (_, index) => ({Rank: index + 1, TeamID: teamID(index + 1), TeamName: `Команда ${index + 1}`, Points: (count - index) * 100, Solved: 1, LastSolveAt: null})),
+        Scoreboard: Array.from({length: count}, (_, index) => ({Rank: index + 1, TeamID: teamID(index + 1), TeamName: `Команда ${index + 1}`, Points: (count - index) * 100, Solved: 1})),
         Timeline: [],
     };
 }

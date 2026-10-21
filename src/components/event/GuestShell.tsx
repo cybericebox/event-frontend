@@ -28,7 +28,12 @@ export function GuestShell({event, authenticated, pending = false, notice, child
 }) {
     const preview = useParticipantPreview(event.EventID);
     const approved = !!participant || preview.active && preview.state!.status === ParticipationStatusEnum.ApprovedParticipationStatus;
-    return <GuestEventContext.Provider value={event}><ParticipantContext.Provider value={participant}><EventVpnProvider eventID={event.EventID} eventTag={event.Tag} moderators={preview.active} enabled={preview.active ? approved && !!preview.config?.InfrastructureAllowed && (event.Participation !== 1 || !!preview.state?.team?.Formed) : !!participant?.participantInfo.HasInfrastructureChallenges && !!participant.ownTeam && participant.ownTeam.Admitted !== false}><div className="event-guest-shell">
+    // Test tasks can run independently of the simulated registration/team and the event's infrastructure setting.
+    // The navbar and task dialog share this provider; the board supplies the actual VPN availability.
+    const vpnEnabled = preview.active
+        ? !!preview.state?.tasks || approved && (event.Participation !== 1 || !!preview.state?.team?.Formed)
+        : !!participant?.participantInfo.HasInfrastructureChallenges && !!participant.ownTeam && participant.ownTeam.Admitted !== false;
+    return <GuestEventContext.Provider value={event}><ParticipantContext.Provider value={participant}><EventVpnProvider eventID={event.EventID} eventTag={event.Tag} moderators={preview.active} enabled={vpnEnabled}><div className="event-guest-shell">
         <SkipLink />
         <SiteBannerBar eventID={event.EventID} />
         <EventNavbar event={event} authenticated={authenticated} approved={approved} canViewResults={preview.active ? resultsLinkVisible(previewResultsAvailability(resultsAvailability(event), preview.state!.status, preview.config)) : !!participant && resultsLinkVisible(resultsAvailability(participant.participantInfo))} pending={pending} />

@@ -21,11 +21,11 @@ beforeAll(() => {
 });
 afterEach(cleanup);
 
-function renderModal(moderators = false) {
+function renderModal(moderators = false, challenge = fixtureChallenge) {
     const client = new QueryClient();
     client.setQueryData(["event-challenge-lab", moderators ? "moderators" : "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
     return render(<QueryClientProvider client={client}>
-        <ChallengeModal challenge={fixtureChallenge} eventID="e" mode={moderators ? "moderators" : "participant"} teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} />
+        <ChallengeModal challenge={challenge} eventID="e" mode={moderators ? "moderators" : "participant"} teamMode finished={false} showDifficulty showHints hintChargeMode="reward" onClose={() => {}} onAccepted={() => {}} />
     </QueryClientProvider>);
 }
 const css = (name: string) => readFileSync(resolve(process.cwd(), "src/styles", name), "utf8");
@@ -86,7 +86,7 @@ describe("challenge modal content", () => {
     it("shows the badges without breaking the header", () => {
         const {container} = renderModal();
         const meta = container.querySelector(".ib-cmodal__meta")!;
-        expect(meta.querySelectorAll(".ib-tag").length).toBeGreaterThanOrEqual(4);
+        expect(meta.querySelectorAll(".ib-tag").length).toBeGreaterThanOrEqual(3);
         expect(meta.querySelector(".event-cmodal__lab-tag")).toBeTruthy();
         expect(container.querySelector(".ib-cmodal__title")!.textContent).toBe(LONG_TITLE);
         expect(meta.querySelector(".ib-cmodal__cat")).toBeNull();
@@ -95,9 +95,20 @@ describe("challenge modal content", () => {
         expect(modal).toMatch(/\.ib-cmodal__title\{[^}]*overflow-wrap:anywhere/);
         expect(css("tag.css")).toMatch(/\.ib-tag\{[^}]*max-width:100%/);
     });
+
+    it("omits task update metadata from the task header", () => {
+        const legacyTask = {...fixtureChallenge, ContentUpdatedAt: "2026-10-20T14:00:00Z"};
+        const {container} = renderModal(false, legacyTask);
+        expect(container.querySelector(".ib-cmodal__meta")?.textContent).not.toContain("Оновлено");
+    });
 });
 
 describe("challenge tiles", () => {
+    it("omits the task update marker from its accessible name", () => {
+        const legacyTask = {...fixtureChallenge, ContentUpdatedAt: "2026-10-20T14:00:00Z"};
+        const {container} = render(<ChallengeTile challenge={legacyTask} onOpen={() => {}} />);
+        expect(container.querySelector("button")?.getAttribute("aria-label")).not.toContain("оновлено");
+    });
     it("wraps long names and keeps the full name accessible", () => {
         const {container} = render(<div className="ib-tiles">{fixtureTiles.map(challenge => <ChallengeTile key={challenge.EventChallengeID} challenge={challenge} onOpen={() => {}} />)}</div>);
         expect(container.querySelectorAll(".ib-tile")).toHaveLength(24);
@@ -134,20 +145,20 @@ it("keeps task card sizing consistent and layers dropdown portals above sticky c
 });
 
 it("uses the selected two-column card with numeric points and optional difficulty metadata", () => {
-    const {container,rerender}=render(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null,Infrastructure:true}} showDifficulty={false} onOpen={()=>{}}/>);
+    const {container,rerender}=render(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,Infrastructure:true}} showDifficulty={false} onOpen={()=>{}}/>);
     let tile=container.querySelector(".ib-tile")!;
     expect(tile.querySelector(".ib-tile__pts")?.textContent).toBe("1250");
     expect(tile.querySelector(".lucide-network")).toBeTruthy();expect(tile.querySelector(".ib-tile__difficulty")).toBeNull();
     expect(tile.getAttribute("aria-label")).toContain("балів");
-    rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null,Infrastructure:false}} showDifficulty={false} onOpen={()=>{}}/>);
+    rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,Infrastructure:false}} showDifficulty={false} onOpen={()=>{}}/>);
     tile=container.querySelector(".ib-tile")!;expect(tile.className).toContain("ib-tile--title-only");
     expect(tile.querySelector(".ib-tile__foot")).toBeNull();
-    rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null}} showDifficulty onOpen={()=>{}}/>);
+    rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null}} showDifficulty onOpen={()=>{}}/>);
     expect(container.querySelector(".ib-tile__difficulty")?.textContent).toBe("Складне");
 });
 
 it("centers a card when an unavailable difficulty produces no visible metadata", () => {
-    const task={...fixtureChallenge,SolvedAt:null,ContentUpdatedAt:null,Infrastructure:false,Snapshot:{...fixtureChallenge.Snapshot,difficulty:undefined}} as unknown as typeof fixtureChallenge;
+    const task={...fixtureChallenge,SolvedAt:null,Infrastructure:false,Snapshot:{...fixtureChallenge.Snapshot,difficulty:undefined}} as unknown as typeof fixtureChallenge;
     const {container}=render(<ChallengeTile challenge={task} showDifficulty onOpen={()=>{}}/>);
     const tile=container.querySelector(".ib-tile")!;
     expect(tile.className).toContain("ib-tile--title-only");
@@ -157,7 +168,7 @@ it("centers a card when an unavailable difficulty produces no visible metadata",
 
 it.each([false,true])("matches all approved card metadata/state combinations (difficulty=%s)", showDifficulty => {
     for (const infrastructure of [false,true]) for (const state of ["available","solved","closed"] as const) {
-        const challenge={...fixtureChallenge,Infrastructure:infrastructure,SolvedAt:state==="solved"?"2026-10-01T10:00:00Z":null,Closed:state==="closed",Locked:false,Practice:false,ContentUpdatedAt:"2026-10-01T11:00:00Z",Snapshot:{...fixtureChallenge.Snapshot,name:LONG_WORD}};
+        const challenge={...fixtureChallenge,Infrastructure:infrastructure,SolvedAt:state==="solved"?"2026-10-01T10:00:00Z":null,Closed:state==="closed",Locked:false,Practice:false,Snapshot:{...fixtureChallenge.Snapshot,name:LONG_WORD}};
         const view=render(<ChallengeTile challenge={challenge} showDifficulty={showDifficulty} onOpen={()=>{}}/>);
         const tile=view.container.querySelector(".ib-tile")!;
         expect(tile.querySelector(".ib-tile__name")?.textContent).toBe(LONG_WORD);

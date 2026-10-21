@@ -19,11 +19,10 @@ export function previewProgress(tasks: OwnChallenge[], identity: {userID: string
 }
 
 export function previewResults(stats: ParticipationStats): ManageResultsSnapshot {
-    const last = stats.Team.Solves.at(-1)?.SolvedAt ?? null;
-    return {Revision: stats.Team.Attempts + stats.Team.Hints, GeneratedAt: new Date().toISOString(), TotalTeams: 1,
-        Scoreboard: [{Rank: 1, TeamID: stats.Team.TeamID, TeamName: stats.Team.TeamName, Points: stats.Points, Solved: stats.Solved, LastSolveAt: last}],
+    return {Revision: stats.Team.Attempts + stats.Team.Hints, TotalTeams: 1,
+        Scoreboard: [{Rank: 1, TeamID: stats.Team.TeamID, TeamName: stats.Team.TeamName, Points: stats.Points, Solved: stats.Solved}],
         Timeline: stats.Team.Solves.map(solve => ({EventTeamID: stats.Team.TeamID, EventChallengeID: solve.EventChallengeID, ChallengeName: solve.ChallengeName, Points: solve.Points, SolvedAt: solve.SolvedAt})),
-        Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
+        Freeze: {BannerText: "", BannerLevel: "warning", Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
         Display: {ChartEnabled: true, ChartTeams: 1, RowsLimit: null},
     };
 }

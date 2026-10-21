@@ -5,6 +5,11 @@ describe("live sample results", () => {
     const now = Date.UTC(2026, 8, 29, 12);
     const sample = liveSampleResults(now);
 
+    it("uses the public results shape without activity timestamps", () => {
+        expect(sample).not.toHaveProperty("GeneratedAt");
+        expect(sample.Scoreboard[0]).not.toHaveProperty("LastSolveAt");
+    });
+
     it("ranks forty teams by points, highest first, with at least 30 solves", () => {
         expect(sample.Scoreboard).toHaveLength(40);
         expect(sample.Scoreboard.map(team => team.Rank)).toEqual(Array.from({length: 40}, (_, index) => index + 1));

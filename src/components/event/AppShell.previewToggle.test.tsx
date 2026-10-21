@@ -15,7 +15,7 @@ import {AppShell} from "./AppShell";
 import {readPreviewCookie} from "@/utils/previewCookie";
 
 const event = {EventID: "event-1", Name: "Hidden", LogoURL: "", FaviconURL: "", Theme: {Brand: "#1", AccentLight: "#2", AccentDark: "#3", AccentLive: "#4"}} as never;
-beforeEach(() => {vi.stubGlobal("ResizeObserver", class {observe() {} unobserve() {} disconnect() {}}); document.cookie = "cib_participant_preview=; Path=/; Max-Age=0"; sessionStorage.clear(); nav.path = "/manage/test-mode";});
+beforeEach(() => {vi.stubGlobal("ResizeObserver", class {observe() {} unobserve() {} disconnect() {}}); document.cookie = "cib_participant_preview=; Path=/; Max-Age=0"; sessionStorage.clear(); localStorage.clear(); nav.path = "/manage/test-mode";});
 afterEach(cleanup);
 
 // The route flips to the landing the way router.push does, with the layout re-rendering from the new cookie.

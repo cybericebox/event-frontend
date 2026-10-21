@@ -36,13 +36,20 @@ dialog.ib-cmodal:not([open]){display:none}
 .ib-cmodal__blk{margin:0}
 .ib-cmodal__blk h3{margin:0 0 var(--ib-2);font-size:var(--ib-fs-13);font-weight:var(--ib-w-semibold);color:var(--ib-ink);letter-spacing:0}
 .ib-cmodal__files{margin:0;padding:0;list-style:none;border:1px solid var(--ib-line);border-radius:var(--ib-r);overflow:hidden}
-.ib-cmodal__files li+li{border-top:1px solid var(--ib-line)}
-.ib-cmodal__file{display:flex;align-items:center;gap:10px;min-width:0;overflow-wrap:anywhere;min-height:36px;padding:var(--ib-2) 10px;border:0;width:100%;background:transparent;text-align:left;cursor:pointer;
-  color:var(--ib-action);font-weight:var(--ib-w-medium);text-decoration:none}
+.ib-cmodal__files>li{min-width:0;max-width:100%}
+.ib-cmodal__files>li+li{border-top:1px solid var(--ib-line)}
+.ib-cmodal__file{display:flex;align-items:center;gap:var(--ib-2);min-width:0;width:100%;max-width:100%;overflow-wrap:anywhere;min-height:52px;padding:var(--ib-2) var(--ib-3);border:0;background:transparent;text-align:left;cursor:pointer;
+  color:var(--ib-action);font:var(--ib-w-medium) var(--ib-fs-13)/var(--ib-lh-ui) var(--ib-font);text-decoration:none}
 .ib-cmodal__file:hover{background:var(--ib-soft);text-decoration:none}
-.ib-cmodal__file[role="button"]{cursor:pointer}
+.ib-cmodal__file:disabled{cursor:progress}
+.ib-cmodal__file-icon{display:flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none}
+.ib-cmodal__file-text{display:flex;flex-direction:column;gap:var(--ib-1);min-width:0}
 .ib-cmodal__file svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ib-cmodal__size{flex:none;margin-left:auto;font:var(--ib-fs-12) var(--ib-mono);color:var(--ib-dim);font-weight:var(--ib-w-regular)}
+.ib-cmodal__size{display:grid;font-size:var(--ib-fs-12);color:var(--ib-dim);font-weight:var(--ib-w-regular)}
+.ib-cmodal__size>span{grid-area:1/1}
+.ib-cmodal__size>span:first-child{font-family:var(--ib-mono)}
+.ib-cmodal__download-status,.ib-cmodal__file.is-busy .ib-cmodal__size>span:first-child{visibility:hidden}
+.ib-cmodal__file.is-busy .ib-cmodal__download-status{visibility:visible}
 .ib-cmodal__hint{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:var(--ib-fs-12);color:var(--ib-dim)}
 
 /* flag */
@@ -64,6 +71,7 @@ dialog.ib-cmodal:not([open]){display:none}
 
 /* Solves tab: fixed height, windowed rows of a fixed height. */
 .ib-solvers{display:flex;height:320px;flex-direction:column}
+.ib-solvers>.ib-banner{flex:none;margin-bottom:var(--ib-3)}
 .ib-solvers__scroll{flex:1 1 auto;min-height:0;overflow-y:auto}
 .ib-solvers__list{position:relative;margin:0;padding:0;list-style:none}
 .ib-solvers__row{position:absolute;right:0;left:0;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:var(--ib-2);padding:0 var(--ib-2);border-bottom:1px solid var(--ib-line);font-size:var(--ib-fs-13);color:var(--ib-ink)}
@@ -94,7 +102,4 @@ dialog.ib-cmodal:not([open]){display:none}
 
 .ib-cmodal__meta>*{flex:none}
 .ib-cmodal__flag .ib-input,.ib-cmodal__flag .ib-btn{height:36px}
-.ib-cmodal__file>span:not(.ib-cmodal__size){min-width:0;overflow-wrap:anywhere}
-.ib-cmodal__file .event-btn__faces{width:100%}
-.ib-cmodal__file .event-btn__face{display:flex;align-items:center;gap:10px;width:100%;min-width:0}
 .ib-cmodal__file:focus-visible{outline:2px solid var(--ib-action);outline-offset:-2px}

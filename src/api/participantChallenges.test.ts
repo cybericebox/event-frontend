@@ -17,6 +17,10 @@ const question = {
 const linkResponse = {URL: "https://web.labs.test/_auth?t=one-use", ExpiresAt: "2026-10-08T13:00:00Z", LabID: runningLab.ID, Revision: runningLab.Revision};
 
 describe("getChallengeSolves", () => {
+    it.each([undefined, false, true])("reads the task solutions freeze state (%s)", async Frozen => {
+        fetchMock.mockResolvedValue(reply({Data: {Total: 0, Items: [], Frozen}}));
+        expect(await getChallengeSolves("e1", "c1")).toMatchObject({Frozen: Frozen ?? false});
+    });
     it("asks the first page without a cursor and reads the wrapped page", async () => {
         fetchMock.mockResolvedValue(reply({Data: {Total: 2, Items: [{TeamName: "Альфа", SolvedAt: "2026-01-01T10:00:00Z", Own: false, FirstBlood: true}], NextCursor: "11111111-1111-4111-8111-111111111111"}}));
         const page = await getChallengeSolves("e1", "c1");
@@ -35,7 +39,7 @@ describe("getChallengeSolves", () => {
         fetchMock.mockResolvedValue(reply({Data: {Total: 0, Items: null}}));
         const page = await getChallengeSolves("e1", "c1", "22222222-2222-4222-8222-222222222222");
         expect(String(fetchMock.mock.calls[0][0])).toContain("cursor=22222222-2222-4222-8222-222222222222");
-        expect(page).toEqual({Total: 0, Items: [], NextCursor: null});
+        expect(page).toEqual({Total: 0, Items: [], NextCursor: null, Frozen: false});
     });
 
     it("uses the moderators board URL for the organizer preview", async () => {
@@ -88,6 +92,12 @@ describe("openLabLink", () => {
 });
 
 describe("getOwnBoard", () => {
+    it.each([null, "2026-10-20T14:00:00Z"])("discards obsolete task update metadata (%s)", async ContentUpdatedAt => {
+        const {getOwnBoard} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {ServerNow: "2026-10-08T12:00:00Z", Challenges: [{...question, ContentUpdatedAt}]}}));
+        expect((await getOwnBoard("e1")).Challenges[0]).not.toHaveProperty("ContentUpdatedAt");
+    });
+
     it("keeps attachment identity on static questions and shares Lab identity across dependent questions", async () => {
         const {getOwnBoard} = await import("./participantChallenges");
         fetchMock.mockResolvedValue(reply({Data: {ServerNow: "2026-10-08T12:00:00Z", Challenges: [
@@ -133,6 +143,14 @@ describe("getOwnBoard", () => {
         const {getOwnBoard} = await import("./participantChallenges");
         fetchMock.mockResolvedValue(reply({Data: {Challenges: null, Stages: null, ServerNow: "2026-10-01T12:30:00Z"}}));
         expect(await getOwnBoard("e1")).toMatchObject({Challenges: [], Stages: [], CurrentStage: null, NextOpensAt: null, NextChangeAt: null});
+    });
+});
+
+describe("getOwnChallengeLab", () => {
+    it("retains generic waiting status without scheduler diagnostics", async () => {
+        const {getOwnChallengeLab} = await import("./participantChallenges");
+        fetchMock.mockResolvedValue(reply({Data: {Phase: "Queued", Ready: false, Access: []}}));
+        expect(await getOwnChallengeLab("e1", "c1")).toMatchObject({Phase: "Queued", Ready: false, Access: []});
     });
 });
 

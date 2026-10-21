@@ -70,7 +70,6 @@ export const fixtureChallenge: OwnChallenge = {
     GroupID: "44444444-4444-4444-8444-444444444444",
     GroupName: LONG_CATEGORY,
     GroupOrder: 1,
-    ContentUpdatedAt: "2026-09-29T09:00:00Z",
     AwardedPoints: null,
     HintPenalty: null,
     SolvedBy: null,
@@ -101,7 +100,6 @@ export const fixtureTiles: OwnChallenge[] = Array.from({length: 24}, (_, index) 
     EventChallengeID: `bbbbbbbb-bbbb-4bbb-8bbb-${String(index).padStart(12, "0")}`,
     Snapshot: {...fixtureChallenge.Snapshot, name: index % 3 === 0 ? LONG_TITLE : index % 3 === 1 ? LONG_WORD : `Завдання ${index + 1}`},
     SolvedAt: index % 2 ? "2026-09-29T09:30:00Z" : null,
-    ContentUpdatedAt: index % 4 === 0 ? "2026-09-29T09:00:00Z" : null,
     Locked: index % 5 === 4,
     Prerequisites: index % 5 === 4 ? [{EventChallengeID: fixtureChallenge.EventChallengeID, Name: "Попереднє завдання", Solved: false}] : [],
 }));

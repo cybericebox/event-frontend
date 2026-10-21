@@ -8,12 +8,15 @@ import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {Info} from "lucide-react";
 import {getResultsSettings, putResultsSettings, resultsSettingsInput, type ResultsSettingsInput} from "@/api/manageResults";
+import {bannerLevels, BANNER_TEXT_MAX} from "@/api/manageBanners";
+import {SiteBanner} from "@/components/event/SiteBanners";
 import {useManager} from "@/components/event/manage/ManagerShell";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {clockLabel, freezeStartAt} from "@/utils/resultsFreeze";
+import {freezeBannerData} from "@/utils/freezeBanner";
 import {t} from "@/i18n/t";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSwitch} from "@/components/ui/EventSwitch";
@@ -37,13 +40,17 @@ export default function ResultsSettingsPage() {
     const settings = settingsQuery.data;
     const saved = settings ? resultsSettingsInput(settings) : null;
     const value = edit?.eventID === eventID ? edit.value : saved;
+    const freezeEndMode = value?.FreezeEndMode ?? saved?.FreezeEndMode ?? "at_finish";
+    const freezeBannerText = value?.FreezeBannerText ?? saved?.FreezeBannerText ?? "";
+    const freezeBannerLevel = value?.FreezeBannerLevel ?? saved?.FreezeBannerLevel ?? "warning";
+    const bannerTextError = [...freezeBannerText.trim()].length > BANNER_TEXT_MAX ? t("manage.results.settings.freezeBannerTextTooLong", {max: BANNER_TEXT_MAX}) : "";
     const dirty = !!saved && !!value && JSON.stringify(saved) !== JSON.stringify(value);
     useDraftDirty("results", saved ? dirty : undefined);
-    const valid = !!value && inRange(value.FreezeMinutes, 1, 1440) && inRange(value.ChartTeams, 1, 10) && (value.RowsLimit === null || inRange(value.RowsLimit, 1, 1000));
+    const valid = !!value && !bannerTextError && inRange(value.FreezeMinutes, 1, 1440) && inRange(value.ChartTeams, 1, 10) && (value.RowsLimit === null || inRange(value.RowsLimit, 1, 1000));
     const disabled = !canManage;
 
     function change(patch: Partial<ResultsSettingsInput>) {
-        if (value) setEdit({eventID, value: {...value, ...patch}});
+        if (value) setEdit({eventID, value: {...value, FreezeEndMode: freezeEndMode, FreezeBannerText: freezeBannerText, FreezeBannerLevel: freezeBannerLevel, ...patch}});
     }
 
     async function save(submitEvent: FormEvent<HTMLFormElement>) {
@@ -51,7 +58,7 @@ export default function ResultsSettingsPage() {
         if (!value || !canManage || saving || !dirty || !valid) return;
         setSaving(true);
         try {
-            const updated = await putResultsSettings(eventID, value);
+            const updated = await putResultsSettings(eventID, {...value, FreezeEndMode: freezeEndMode, FreezeBannerText: freezeBannerText.trim(), FreezeBannerLevel: freezeBannerLevel});
             queryClient.setQueryData(["event-management-results-settings", eventID], updated);
             void queryClient.invalidateQueries({queryKey: ["event-management-config", eventID]});
             setEdit(current => current?.value === value ? null : current);
@@ -86,11 +93,34 @@ export default function ResultsSettingsPage() {
                 <ManageFieldLabel title={t("manage.results.settings.freezeTitle")} help={t("manage.results.settings.freezeHelp")} />
                 <EventSwitch className="event-manage-form__switch" checked={value.FreezeEnabled} disabled={disabled} onCheckedChange={checked => change({FreezeEnabled: checked})} label={t("manage.results.settings.freezeEnabled")} />
             </div>
-            {value.FreezeEnabled && <div className="event-manage-field">
+            {value.FreezeEnabled && <><div className="event-manage-field">
                 <ManageFieldLabel htmlFor="results-freeze-minutes" title={t("manage.results.settings.freezeMinutes")} help={t("manage.results.settings.freezeMinutesHelp")} required />
                 <input id="results-freeze-minutes" className="event-manage-input event-results-settings__number" type="number" inputMode="numeric" min={1} max={1440} required value={value.FreezeMinutes} disabled={disabled} aria-invalid={!inRange(value.FreezeMinutes, 1, 1440)} onChange={event => change({FreezeMinutes: Number(event.target.value)})} />
                 <small className={inRange(value.FreezeMinutes, 1, 1440) ? "event-results-settings__hint" : "event-manage-validation"}>{freezeHint}</small>
-            </div>}
+            </div><div className="event-manage-field">
+                <ManageFieldLabel title={t("manage.results.settings.freezeEndMode")} help={t("manage.results.settings.freezeEndModeHelp")} required />
+                <EventSelect ariaLabel={t("manage.results.settings.freezeEndMode")} value={freezeEndMode}
+                    options={[{value: "at_finish", label: t("manage.results.settings.freezeEndAtFinish")}, {value: "manual", label: t("manage.results.settings.freezeEndManual")}]}
+                    onValueChange={next => change({FreezeEndMode: next as ResultsSettingsInput["FreezeEndMode"]})} disabled={disabled} />
+                <small className="event-results-settings__hint">{t(freezeEndMode === "manual" ? "manage.results.settings.freezeEndManualHint" : "manage.results.settings.freezeEndAtFinishHint")}</small>
+            </div></>}
+            <div className="event-manage-field">
+                <ManageFieldLabel htmlFor="results-freeze-banner-text" title={t("manage.results.settings.freezeBannerText")} help={t("manage.results.settings.freezeBannerTextHelp", {max: BANNER_TEXT_MAX})} />
+                <textarea id="results-freeze-banner-text" className="event-manage-input" rows={3} value={freezeBannerText} disabled={disabled}
+                    placeholder={t("scoreboard.frozenDefaultMessage")} aria-invalid={!!bannerTextError || undefined}
+                    aria-describedby={`results-freeze-banner-hint${bannerTextError ? " results-freeze-banner-error" : ""}`} onChange={event => change({FreezeBannerText: event.target.value})} />
+                <small id="results-freeze-banner-hint" className="event-results-settings__hint">{t("manage.results.settings.freezeBannerTextHelp", {max: BANNER_TEXT_MAX})}</small>
+                {bannerTextError && <p id="results-freeze-banner-error" className="event-manage-validation" role="alert">{bannerTextError}</p>}
+            </div>
+            <div className="event-manage-field">
+                <ManageFieldLabel title={t("manage.results.settings.freezeBannerLevel")} help={t("manage.results.settings.freezeBannerLevelHelp")} required />
+                <EventSelect ariaLabel={t("manage.results.settings.freezeBannerLevel")} value={freezeBannerLevel} options={bannerLevels.map(level => ({value: level, label: t(`manage.banners.level.${level}`)}))}
+                    onValueChange={next => change({FreezeBannerLevel: next as ResultsSettingsInput["FreezeBannerLevel"]})} disabled={disabled} />
+            </div>
+            <div className="event-banner-preview">
+                <ManageFieldLabel title={t("manage.banners.preview")} help={t("manage.banners.previewHelp")} />
+                <SiteBanner banner={freezeBannerData({BannerText: freezeBannerText, BannerLevel: freezeBannerLevel})} />
+            </div>
         </section>
 
         <section className="event-manage-section" aria-labelledby="results-chart-title">

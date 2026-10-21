@@ -7,7 +7,7 @@ import {landingProblems} from "./validatePageBlocks";
 import type {ContentBlock} from "@/types/eventContent";
 import type {ContentVariableDefinition} from "../content/variableCatalog";
 
-vi.mock("@/api/manage", () => ({getManagePages: vi.fn(async () => []), getManageContent: vi.fn(async () => ({})), uploadManageBannerImage: vi.fn()}));
+vi.mock("@/api/manage", async original => ({...await original<typeof import("@/api/manage")>(),getManagePages: vi.fn(async () => []), getManageContent: vi.fn(async () => ({})), uploadManageBannerImage: vi.fn()}));
 afterEach(cleanup);
 const catalog: ContentVariableDefinition[] = [{name: "event.count", label: "Кількість", format: "number", audience: 0}];
 function show(block: ContentBlock) {

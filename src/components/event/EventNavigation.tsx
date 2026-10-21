@@ -146,7 +146,8 @@ function PinnedLink({href, label}: {href: string; label: string}) {
 export function EventHeaderActions({event, authenticated, approved = false, pinned = false, theme = true}: Pick<Props, "event" | "authenticated" | "approved"> & {pinned?: boolean; theme?: boolean}) {
     // Managers land on «Запити» in /manage; participants see «Усі».
     const manage = /^\/manage(\/|$)/.test(usePathname() ?? "");
-    const items = navigationRight({authenticated, approved, pinned});
+    const preview = useParticipantPreview(event.EventID);
+    const items = navigationRight({authenticated, approved: approved || preview.active && !!preview.state?.tasks, pinned});
     return <>
         {authenticated && <>
             {items.map(item => {

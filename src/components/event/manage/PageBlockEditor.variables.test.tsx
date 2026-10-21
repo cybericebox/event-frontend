@@ -6,7 +6,7 @@ import {PageBlockEditor} from "./PageBlockEditor";
 import type {ContentBlock} from "@/types/eventContent";
 import type {ContentVariableDefinition} from "@/components/event/content/variableCatalog";
 
-vi.mock("@/api/manage", () => ({getManagePages: vi.fn(async () => []), getManageContent: vi.fn(async () => ({})), uploadManageBannerImage: vi.fn()}));
+vi.mock("@/api/manage", async original => ({...await original<typeof import("@/api/manage")>(),getManagePages: vi.fn(async () => []), getManageContent: vi.fn(async () => ({})), uploadManageBannerImage: vi.fn()}));
 afterEach(cleanup);
 
 const catalog: ContentVariableDefinition[] = [{name: "event.name", label: "Назва заходу", format: "text", audience: 0}];

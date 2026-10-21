@@ -8,7 +8,7 @@ import {uploadManageBannerImage} from "@/api/manage";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import type {ContentBlock} from "@/types/eventContent";
 
-vi.mock("@/api/manage", () => ({getManagePages: vi.fn(async () => []), getManageContent: vi.fn(async () => ({})), uploadManageBannerImage: vi.fn()}));
+vi.mock("@/api/manage", async original => ({...await original<typeof import("@/api/manage")>(),getManagePages: vi.fn(async () => []), getManageContent: vi.fn(async () => ({})), uploadManageBannerImage: vi.fn()}));
 afterEach(cleanup);
 
 const block: ContentBlock = {id: "banner", type: "banner", imageSource: "custom", imageURL: ""};
