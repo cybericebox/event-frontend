@@ -6,7 +6,7 @@ import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
 import {PageBlockEditor} from "./PageBlockEditor";
 import {ContentBlocks} from "../content/ContentBlocks";
 import type {ContentBlock} from "@/types/eventContent";
-vi.mock("@/api/manage",()=>({getManagePages:vi.fn(async()=>[]),getManageContent:vi.fn(async()=>({})),uploadManageBannerImage:vi.fn()}));
+vi.mock("@/api/manage",async original=>({...await original<typeof import("@/api/manage")>(),getManagePages:vi.fn(async()=>[]),getManageContent:vi.fn(async()=>({})),uploadManageBannerImage:vi.fn()}));
 afterEach(cleanup);
 function Editor({canEdit=true}:{canEdit?:boolean}){
  const [block,setBlock]=useState<ContentBlock>({id:"banner",type:"banner",title:"CTF"});

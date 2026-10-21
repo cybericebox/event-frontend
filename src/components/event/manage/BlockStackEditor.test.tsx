@@ -13,7 +13,7 @@ vi.mock("@/api/clientAuth", () => ({
     getJoinStatus: vi.fn(async () => 0),
     getInvitationInfo: vi.fn(async () => ({Status: 0, Invited: false})),
 }));
-vi.mock("@/api/manage", () => ({
+vi.mock("@/api/manage", async original => ({...await original<typeof import("@/api/manage")>(),
     getManagePages: vi.fn(async () => []),
     getManageContent: vi.fn(async () => ({})),
     uploadManageBannerImage: vi.fn(),

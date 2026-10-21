@@ -3,6 +3,7 @@
 import {afterEach, beforeEach, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {useEffect} from "react";
 import {readPreviewCookie} from "@/utils/previewCookie";
 import {ParticipantPreviewProvider, ParticipantPreviewEntry, previewAnswerFile, useParticipantPreview} from "./ParticipantPreview";
 
@@ -36,24 +37,24 @@ async function openMenu() {
     return screen.findByRole("menu");
 }
 
-beforeEach(() => {document.cookie = "cib_participant_preview=; Path=/; Max-Age=0"; sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.board.mockReset(); api.start.mockReset(); api.stop.mockReset(); api.reset.mockResolvedValue(undefined); api.access.mockResolvedValue({CanManage: true});});
+beforeEach(() => {document.cookie = "cib_participant_preview=; Path=/; Max-Age=0"; localStorage.clear(); sessionStorage.clear(); api.pathname = "/join"; vi.clearAllMocks(); api.board.mockReset(); api.start.mockReset(); api.stop.mockReset(); api.reset.mockResolvedValue(undefined); api.access.mockResolvedValue({CanManage: true});});
 afterEach(cleanup);
 
 it("persists local state, clears owned server runs before resetting registration, and exits to management", async () => {
     const first = view();
     fireEvent.click(screen.getByRole("button", {name: "Тестувати як учасник"}));
     fireEvent.click(screen.getByRole("button", {name: "Update local answers"}));
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!).answers).toEqual({school: "Edited"});
+    expect(JSON.parse(localStorage.getItem(storageKey)!).answers).toEqual({school: "Edited"});
     first.unmount();
     view();
     expect(screen.getByTestId("state").textContent).toContain("Edited");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
-    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toMatchObject({status: 0, team: null, answers: {}}));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!)).toMatchObject({status: 0, team: null, answers: {}}));
     expect(api.reset).toHaveBeenCalledWith("event-1");
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Вийти з тестування"}));
-    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey) ?? "null")).toBeNull());
     expect(screen.getByTestId("state").textContent).toBe("inactive");
     expect(api.push).toHaveBeenLastCalledWith("/manage");
 });
@@ -72,7 +73,7 @@ it("does not replace auth, join status or own-team caches with simulated state",
 it("serializes owned cleanup actions, keeps local fields enabled, and clears only preview caches", async () => {
     let finish!: () => void;
     api.reset.mockReturnValue(new Promise<void>(resolve => {finish = resolve;}));
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     const {client} = view();
     client.setQueryData(["event-participant-preview-board", "event-1"], {Challenges: ["old"]});
     client.setQueryData(["event-own-challenges", "event-1"], {Challenges: ["competition"]});
@@ -81,27 +82,27 @@ it("serializes owned cleanup actions, keeps local fields enabled, and clears onl
     expect(screen.getByRole("menuitem", {name: "Скидаємо тестування…"}).getAttribute("aria-busy")).toBe("true");
     expect(screen.getByRole("menuitem", {name: "Вийти з тестування"}).getAttribute("aria-disabled")).toBe("true");
     expect(screen.getByText("Update local answers").closest("button")).toHaveProperty("disabled", false);
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(2);
+    expect(JSON.parse(localStorage.getItem(storageKey)!).status).toBe(2);
     await act(async () => {finish();});
-    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).status).toBe(0));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!).status).toBe(0));
     expect(client.getQueryData(["event-participant-preview-board", "event-1"])).toBeUndefined();
     expect(client.getQueryData(["event-own-challenges", "event-1"])).toEqual({Challenges: ["competition"]});
 });
 
 it("preserves browser state and progress if owned cleanup fails", async () => {
     api.reset.mockRejectedValue(new Error("cleanup failed"));
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     const {client} = view();
     client.setQueryData(["event-participant-preview-board", "event-1"], {Challenges: ["old"]});
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
     await waitFor(() => expect(api.toastError).toHaveBeenCalled());
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(state);
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(state);
     expect(client.getQueryData(["event-participant-preview-board", "event-1"])).toEqual({Challenges: ["old"]});
 });
 
 it("hides saved test state when the account changes or management rights are revoked", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     const {client} = view();
     expect(screen.getByTestId("state").textContent).toContain("School");
     act(() => client.setQueryData(["event-management-access", "event-1"], {CanManage: false}));
@@ -111,7 +112,7 @@ it("hides saved test state when the account changes or management rights are rev
 });
 
 it.each(["not-json", JSON.stringify({...state, outcome: "wrong"}), JSON.stringify({...state, answers: {bad: {anything: 1}}}), JSON.stringify({...state, team: {Name: "Incomplete team"}})])("ignores corrupt saved state safely: %s", raw => {
-    sessionStorage.setItem(storageKey, raw);
+    localStorage.setItem(storageKey, raw);
     view();
     expect(screen.getByTestId("state").textContent).toBe("inactive");
 });
@@ -126,20 +127,20 @@ it("simulates file answers using metadata without uploading a file", async () =>
 });
 
 it("keeps test state saved but disables all simulation hooks inside management routes", () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     const {refreshRoute} = view();
     expect(screen.getByTestId("state").textContent).toContain("School");
     api.pathname = "/manage/participants";
     refreshRoute();
     expect(screen.getByTestId("state").textContent).toBe("inactive");
-    expect(sessionStorage.getItem(storageKey)).toContain("School");
+    expect(localStorage.getItem(storageKey)).toContain("School");
     api.pathname = "/participation";
     refreshRoute();
     expect(screen.getByTestId("state").textContent).toContain("School");
 });
 
 it("turns off preview after a permission refresh fails even while the old successful access data remains cached", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     const {client} = view();
     expect(screen.getByTestId("state").textContent).toContain("School");
     api.access.mockRejectedValueOnce(new Error("403"));
@@ -149,7 +150,7 @@ it("turns off preview after a permission refresh fails even while the old succes
 });
 
 it("collapses preview controls into one title row and a single accessible menu button", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     view();
     const bar = screen.getByRole("region", {name: "Режим тестового учасника"});
     expect(bar.textContent).toBe("Режим тестового учасника");
@@ -172,7 +173,7 @@ it.each([
     ["/", 0, false],
 ])("shows registration outcomes only in the relevant context (%s, status %s)", async (pathname, status, relevant) => {
     api.pathname = pathname;
-    sessionStorage.setItem(storageKey, JSON.stringify({...state, status, outcome: status === 1 ? "pending" : "approved"}));
+    localStorage.setItem(storageKey, JSON.stringify({...state, status, outcome: status === 1 ? "pending" : "approved"}));
     view();
     await openMenu();
     expect(screen.queryAllByRole("menuitemradio")).toHaveLength(relevant ? 3 : 0);
@@ -198,10 +199,11 @@ it("initial client state equals the server render: the cookie hint is on before 
     expect(container.querySelector("[data-testid=hint]")?.textContent).toBe("true");
 });
 
-it("drops a stale cookie when no valid mode stands behind it", async () => {
+it("preserves the mode cookie when no tab state is available without activating preview", async () => {
     document.cookie = "cib_participant_preview=event-1; Path=/; Secure";
     view();
-    await waitFor(() => expect(readPreviewCookie()).toBeNull());
+    expect(screen.getByTestId("state").textContent).toBe("inactive");
+    expect(readPreviewCookie()).toBe("event-1");
 });
 
 // One switch, «Показати завдання», default off: on shows the test task board and launches the dynamic tasks' labs; off ends them.
@@ -211,7 +213,7 @@ const boardOf = (...Challenges: object[]) => ({Challenges, Stages: [], ServerNow
 const on = {...state, tasks: true};
 
 it("offers one switch, «Показати завдання», off by default, and no separate infrastructure item", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     api.board.mockResolvedValue(boardOf());
     view();
     await openMenu();
@@ -219,11 +221,11 @@ it("offers one switch, «Показати завдання», off by default, an
     expect(item.getAttribute("aria-checked")).toBe("false");
     expect(screen.queryByRole("menuitemcheckbox", {name: /інфраструктуру/})).toBeNull();
     fireEvent.click(item);
-    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!).tasks).toBe(true));
 });
 
 it("launches only the dynamic tasks without a run once the switch is on, once per task", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    localStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a"), dynamic("sel-a"), dynamic("sel-b", "run-b"), staticTask));
     api.start.mockResolvedValue({ID: "run-a", SelectionID: "sel-a", Dynamic: true, ExpiresAt: "2026-10-20T11:00:00Z"});
     const {client} = view();
@@ -236,7 +238,7 @@ it("launches only the dynamic tasks without a run once the switch is on, once pe
 });
 
 it("launches nothing while the switch is off, however many dynamic tasks wait", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a")));
     view();
     await new Promise(resolve => setTimeout(resolve, 30));
@@ -244,7 +246,7 @@ it("launches nothing while the switch is off, however many dynamic tasks wait", 
 });
 
 it("tells the user once when a launch fails and does not retry in a loop", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    localStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a"), dynamic("sel-b")));
     api.start.mockRejectedValue(new Error("no room"));
     const {client} = view();
@@ -256,7 +258,7 @@ it("tells the user once when a launch fails and does not retry in a loop", async
 
 it("ends the running dynamic labs when the switch goes off, shows the work, and keeps static progress", async () => {
     let finish!: () => void;
-    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    localStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a", "run-a"), dynamic("sel-b"), staticTask));
     api.stop.mockReturnValue(new Promise<void>(resolve => {finish = resolve;}));
     api.start.mockResolvedValue({ID: "run-b", SelectionID: "sel-b", Dynamic: true, ExpiresAt: "2026-10-20T11:00:00Z"});
@@ -266,36 +268,36 @@ it("ends the running dynamic labs when the switch goes off, shows the work, and 
     fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Показати завдання"}));
     await waitFor(() => expect(api.stop).toHaveBeenCalled());
     expect(screen.getByRole("menuitemcheckbox", {name: "Зупиняємо інфраструктуру…"}).getAttribute("aria-busy")).toBe("true");
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true);
+    expect(JSON.parse(localStorage.getItem(storageKey)!).tasks).toBe(true);
     await act(async () => {finish();});
-    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!).tasks).toBe(false));
     expect(api.stop.mock.calls.map(call => call[1]).sort()).toEqual(["sel-a", "sel-b"]);
     expect(api.reset).not.toHaveBeenCalled();
 });
 
 it("keeps the switch on and says so when ending a lab fails", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    localStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a", "run-a")));
     api.stop.mockRejectedValue(new Error("cleanup failed"));
     view();
     await openMenu();
     fireEvent.click(screen.getByRole("menuitemcheckbox", {name: "Показати завдання"}));
     await waitFor(() => expect(api.toastError).toHaveBeenCalled());
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(true);
+    expect(JSON.parse(localStorage.getItem(storageKey)!).tasks).toBe(true);
 });
 
 it("entering the test mode and starting over both leave the switch off", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    localStorage.setItem(storageKey, JSON.stringify(on));
     view();
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", {name: "Почати спочатку"}));
-    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!).tasks).toBe(false));
 });
 
 it.each([true,false])("ends every owned preview run before exiting even when tasks=%s", async tasks => {
     let finish!: () => void;
     api.reset.mockImplementation(() => new Promise<void>(resolve => {finish = resolve;}));
-    sessionStorage.setItem(storageKey, JSON.stringify({...state,tasks}));
+    localStorage.setItem(storageKey, JSON.stringify({...state,tasks}));
     api.board.mockResolvedValue(boardOf(dynamic("sel-active","run-unsolved")));
     const {client} = view();
     client.setQueryData(["event-challenge-lab","preview","event-1","task"], {Ready:true});
@@ -303,25 +305,25 @@ it.each([true,false])("ends every owned preview run before exiting even when tas
     client.setQueryData(["event-current-user"], {ID:"user-1"});
     await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
     await waitFor(() => expect(api.reset).toHaveBeenCalledWith("event-1"));
-    expect(sessionStorage.getItem(storageKey)).not.toBeNull(); expect(api.push).not.toHaveBeenCalledWith("/manage");
+    expect(localStorage.getItem(storageKey)).not.toBeNull(); expect(api.push).not.toHaveBeenCalledWith("/manage");
     const busy = screen.getByRole("menuitem", {name:"Виходимо з тестування…"});
     expect(busy.getAttribute("aria-busy")).toBe("true"); expect(busy.querySelector(".ib-busy-mark")).toBeTruthy();
     fireEvent.click(busy); expect(api.reset).toHaveBeenCalledTimes(1);
     await act(async () => {finish();});
-    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey) ?? "null")).toBeNull());
     expect(readPreviewCookie()).toBeNull(); expect(api.push).toHaveBeenLastCalledWith("/manage");
     expect(client.getQueryData(["event-challenge-lab","preview","event-1","task"])).toBeUndefined();
     expect(client.getQueryData(["event-own-challenges","event-1"])).toEqual({Challenges:["competition"]});
     expect(client.getQueryData(["event-current-user"])).toEqual({ID:"user-1"});
 });
 it("retains test mode and progress on failed exit cleanup and lets the same action retry", async () => {
-    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
     api.reset.mockRejectedValueOnce(new Error("cleanup refused"));
     view(); await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
     expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Не вдалося завершити тестування. Спробуйте ще раз.");
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(state); expect(api.push).not.toHaveBeenCalledWith("/manage");
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(state); expect(api.push).not.toHaveBeenCalledWith("/manage");
     fireEvent.click(screen.getByRole("menuitem", {name:"Вийти з тестування"}));
-    await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull()); expect(api.reset).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey) ?? "null")).toBeNull()); expect(api.reset).toHaveBeenCalledTimes(2);
 });
 
 it.each(["exit","reset"])("fences delayed starts before final %s cleanup and never starts the next queued lab", async kind => {
@@ -329,7 +331,7 @@ it.each(["exit","reset"])("fences delayed starts before final %s cleanup and nev
     const order: string[] = [];
     api.start.mockImplementation(() => new Promise(resolve => {launch = value => {order.push("started"); resolve(value);};}));
     api.reset.mockImplementation(async () => {order.push("cleanup");});
-    sessionStorage.setItem(storageKey, JSON.stringify(on));
+    localStorage.setItem(storageKey, JSON.stringify(on));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a"),dynamic("sel-b")));
     view(); await waitFor(() => expect(api.start).toHaveBeenCalledTimes(1));
     await openMenu(); fireEvent.click(screen.getByRole("menuitem", {name:kind==="exit"?"Вийти з тестування":"Почати спочатку"}));
@@ -337,36 +339,36 @@ it.each(["exit","reset"])("fences delayed starts before final %s cleanup and nev
     await act(async () => {launch({ID:"late-run", ExpiresAt:null});});
     await waitFor(() => expect(api.reset).toHaveBeenCalledTimes(1));
     expect(order).toEqual(["started","cleanup"]); expect(api.start).toHaveBeenCalledTimes(1);
-    if (kind==="exit") await waitFor(() => expect(sessionStorage.getItem(storageKey)).toBeNull());
-    else await waitFor(() => expect(JSON.parse(sessionStorage.getItem(storageKey)!).tasks).toBe(false));
+    if (kind==="exit") await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey) ?? "null")).toBeNull());
+    else await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!).tasks).toBe(false));
 });
 
 it("blocks same-account re-entry while the old exit is pending", async () => {
     let finish!:()=>void; api.reset.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
-    sessionStorage.setItem(storageKey,JSON.stringify(state)); const mounted=view();
+    localStorage.setItem(storageKey,JSON.stringify(state)); const mounted=view();
     fireEvent.click(screen.getByText("Exit directly")); await waitFor(()=>expect(api.reset).toHaveBeenCalledOnce());
     api.pathname="/manage"; mounted.refreshRoute();
     expect(screen.getByRole("button",{name:"Виходимо з тестування…"})).toHaveProperty("disabled",true);
     fireEvent.click(screen.getByText("Re-enter directly"));
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(state); expect(api.push).not.toHaveBeenCalledWith("/");
-    await act(async()=>{finish();}); await waitFor(()=>expect(sessionStorage.getItem(storageKey)).toBeNull());
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(state); expect(api.push).not.toHaveBeenCalledWith("/");
+    await act(async()=>{finish();}); await waitFor(()=>expect(JSON.parse(localStorage.getItem(storageKey) ?? "null")).toBeNull());
 });
 it.each(["Exit","Reset","Stop"])("fences %s completion against a new instance for the same account/event", async kind=>{
     let finish!:()=>void;
     api.reset.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;})); api.stop.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
-    sessionStorage.setItem(storageKey,JSON.stringify({...state,tasks:kind==="Stop"}));
+    localStorage.setItem(storageKey,JSON.stringify({...state,tasks:kind==="Stop"}));
     api.board.mockResolvedValue(boardOf(dynamic("sel-a","run-a"))); const {client}=view();
     fireEvent.click(screen.getByText(`${kind} directly`)); await waitFor(()=>expect(kind==="Stop"?api.stop:api.reset).toHaveBeenCalledOnce());
     const fresh={...state,tasks:true,sessionID:"fresh-instance",answers:{fresh:"progress"}};
-    act(()=>{sessionStorage.setItem(storageKey,JSON.stringify(fresh));window.dispatchEvent(new Event("event-participant-preview-change"));client.setQueryData(["event-participant-preview-board","event-1"],boardOf(dynamic("sel-a","new-run")));});
+    act(()=>{localStorage.setItem(storageKey,JSON.stringify(fresh));window.dispatchEvent(new Event("event-participant-preview-change"));client.setQueryData(["event-participant-preview-board","event-1"],boardOf(dynamic("sel-a","new-run")));});
     await act(async()=>{finish();});
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(fresh);
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(fresh);
     expect(client.getQueryData(["event-participant-preview-board","event-1"])).toEqual(boardOf(dynamic("sel-a","new-run"))); expect(api.push).not.toHaveBeenCalled();
 });
 it.each(["Exit","Reset","Stop"])("does not dispatch delayed %s cleanup after logout/account replacement during a start drain", async kind=>{
     for(const actor of [null,"other-user","bounce"]){
         let launch!:(value:unknown)=>void; api.start.mockImplementation(()=>new Promise(resolve=>{launch=resolve;}));
-        sessionStorage.setItem(storageKey,JSON.stringify(on)); api.board.mockResolvedValue(boardOf(dynamic("sel-a"),dynamic("sel-b")));
+        localStorage.setItem(storageKey,JSON.stringify(on)); api.board.mockResolvedValue(boardOf(dynamic("sel-a"),dynamic("sel-b")));
         const mounted=view(); await waitFor(()=>expect(api.start).toHaveBeenCalledOnce());
         fireEvent.click(screen.getByText(`${kind} directly`));
         act(()=>{if(actor===null) mounted.client.clear(); else {mounted.client.setQueryData(["event-current-user"],{ID:"other-user"});if(actor==="bounce")mounted.client.setQueryData(["event-current-user"],{ID:"user-1"});}});
@@ -377,7 +379,7 @@ it.each(["Exit","Reset","Stop"])("does not dispatch delayed %s cleanup after log
 });
 it.each(["Exit","Reset","Stop"])("fences a manual task start drain against account change before %s cleanup", async kind=>{
     let launch!:(value:unknown)=>void;api.start.mockImplementation(()=>new Promise(resolve=>{launch=resolve;}));
-    sessionStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();
+    localStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();
     const {startPreviewRun}=await import("@/api/participantPreview");const pending=startPreviewRun("event-1","manual");await waitFor(()=>expect(api.start).toHaveBeenCalledOnce());
     fireEvent.click(screen.getByText(`${kind} directly`));act(()=>client.setQueryData(["event-current-user"],{ID:"other-user"}));
     await act(async()=>{launch({ID:"manual-late",ExpiresAt:null});await pending;});expect(api.reset).not.toHaveBeenCalled();expect(api.push).not.toHaveBeenCalled();
@@ -385,29 +387,113 @@ it.each(["Exit","Reset","Stop"])("fences a manual task start drain against accou
 
 it.each(["Exit","Reset","Stop"])("does not mutate replacement-account caches after a dispatched %s cleanup settles", async kind=>{
     let finish!:()=>void;api.reset.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));api.stop.mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
-    sessionStorage.setItem(storageKey,JSON.stringify({...state,tasks:kind==="Stop"}));api.board.mockResolvedValue(boardOf(dynamic("sel-a","old-run")));const {client}=view();
+    localStorage.setItem(storageKey,JSON.stringify({...state,tasks:kind==="Stop"}));api.board.mockResolvedValue(boardOf(dynamic("sel-a","old-run")));const {client}=view();
     fireEvent.click(screen.getByText(`${kind} directly`));await waitFor(()=>expect(kind==="Stop"?api.stop:api.reset).toHaveBeenCalledOnce());
     const replacement=boardOf(dynamic("sel-a","other-account-run"));
     act(()=>{client.setQueryData(["event-current-user"],{ID:"other-user"});client.setQueryData(["event-participant-preview-board","event-1"],replacement);client.setQueryData(["event-challenge-lab","preview","event-1","task"],{actor:"other-user"});});
     await act(async()=>{finish();});
     expect(client.getQueryData(["event-participant-preview-board","event-1"])).toEqual(replacement);
     expect(client.getQueryData(["event-challenge-lab","preview","event-1","task"])).toEqual({actor:"other-user"});
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!).answers).toEqual(state.answers);expect(api.push).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(storageKey)!).answers).toEqual(state.answers);expect(api.push).not.toHaveBeenCalled();
 });
 it.each(["Exit","Reset"])("rechecks the preview instance after asynchronous query cancellation during %s", async kind=>{
-    let finish!:()=>void;sessionStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();
+    let finish!:()=>void;localStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();
     const cancel=vi.spyOn(client,"cancelQueries").mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
     const remove=vi.spyOn(client,"removeQueries");
     fireEvent.click(screen.getByText(`${kind} directly`));await waitFor(()=>expect(cancel).toHaveBeenCalledOnce());
     const fresh={...state,sessionID:"after-cancel",answers:{fresh:"kept"}};
-    act(()=>{sessionStorage.setItem(storageKey,JSON.stringify(fresh));window.dispatchEvent(new Event("event-participant-preview-change"));client.setQueryData(["event-participant-preview-board","event-1"],{fresh:true});});
+    act(()=>{localStorage.setItem(storageKey,JSON.stringify(fresh));window.dispatchEvent(new Event("event-participant-preview-change"));client.setQueryData(["event-participant-preview-board","event-1"],{fresh:true});});
     await act(async()=>{finish();});
     expect(remove).not.toHaveBeenCalled();expect(client.getQueryData(["event-participant-preview-board","event-1"])).toEqual({fresh:true});
-    expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(fresh);expect(api.push).not.toHaveBeenCalled();cancel.mockRestore();remove.mockRestore();
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(fresh);expect(api.push).not.toHaveBeenCalled();cancel.mockRestore();remove.mockRestore();
 });
 it("checks current authority after an awaited board read before stopping preview labs", async()=>{
     let finish!:(value:unknown)=>void;api.board.mockImplementation(()=>new Promise(resolve=>{finish=resolve;}));
-    sessionStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();fireEvent.click(screen.getByText("Stop directly"));await waitFor(()=>expect(api.board).toHaveBeenCalledOnce());
+    localStorage.setItem(storageKey,JSON.stringify(state));const {client}=view();fireEvent.click(screen.getByText("Stop directly"));await waitFor(()=>expect(api.board).toHaveBeenCalledOnce());
     act(()=>client.setQueryData(["event-current-user"],{ID:"other-user"}));
     await act(async()=>{finish(boardOf(dynamic("sel-a","old-run")));});expect(api.stop).not.toHaveBeenCalled();expect(api.reset).not.toHaveBeenCalled();expect(api.push).not.toHaveBeenCalled();
+});
+
+
+it("restores the same account's full test state after the tab session disappears", () => {
+    const startedAt = "2026-10-20T10:00:00.000Z";
+    vi.useFakeTimers({toFake: ["Date"]});
+    vi.setSystemTime(new Date(startedAt));
+    try {
+        const first = view();
+        fireEvent.click(screen.getByRole("button", {name: "Тестувати як учасник"}));
+        fireEvent.click(screen.getByText("Update local answers"));
+        first.unmount();
+        sessionStorage.clear();
+        const returned = view();
+        expect(JSON.parse(screen.getByTestId("state").textContent!)).toMatchObject({userID: "user-1", startedAt, answers: {school: "Edited"}});
+        expect(readPreviewCookie()).toBe("event-1");
+        returned.unmount();
+    } finally {vi.useRealTimers();}
+});
+
+it("migrates a legacy tab snapshot durably without inventing its historical start time", () => {
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+    const first = view();
+    expect(screen.getByTestId("state").textContent).toContain("School");
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(state);
+    expect(JSON.parse(screen.getByTestId("state").textContent!)).not.toHaveProperty("startedAt");
+    first.unmount();
+    sessionStorage.clear();
+    view();
+    expect(screen.getByTestId("state").textContent).toContain("School");
+});
+
+it("keeps the saved mode and cookie while another account or revoked permission makes preview inactive", async () => {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    document.cookie = "cib_participant_preview=event-1; Path=/; Secure";
+    const {client} = view();
+    act(() => client.setQueryData(["event-management-access", "event-1"], {CanManage: false}));
+    await waitFor(() => expect(screen.getByTestId("state").textContent).toBe("inactive"));
+    expect(readPreviewCookie()).toBe("event-1");
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(state);
+    act(() => client.setQueryData(["event-current-user"], {ID: "another-user"}));
+    expect(screen.getByTestId("state").textContent).toBe("inactive");
+    expect(readPreviewCookie()).toBe("event-1");
+    act(() => {client.setQueryData(["event-management-access", "event-1"], {CanManage: true}); client.setQueryData(["event-current-user"], {ID: "user-1"});});
+    await waitFor(() => expect(screen.getByTestId("state").textContent).toContain("School"));
+});
+
+it("restarts the testing clock only when the test progress is explicitly reset", async () => {
+    localStorage.setItem(storageKey, JSON.stringify({...state, startedAt: "2026-10-19T10:00:00.000Z"}));
+    vi.useFakeTimers({toFake: ["Date"]});
+    vi.setSystemTime(new Date("2026-10-20T11:00:00.000Z"));
+    try {
+        view();
+        expect(JSON.parse(screen.getByTestId("state").textContent!).startedAt).toBe("2026-10-19T10:00:00.000Z");
+        fireEvent.click(screen.getByText("Reset directly"));
+        await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!).startedAt).toBe("2026-10-20T11:00:00.000Z"));
+    } finally {vi.useRealTimers();}
+});
+
+it("reflects preview exit from another tab without resurrecting an old tab snapshot", async () => {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    view();
+    sessionStorage.setItem(storageKey, JSON.stringify({...state, answers: {stale: "old tab"}}));
+    act(() => {localStorage.setItem(storageKey, "null"); window.dispatchEvent(new StorageEvent("storage", {key: storageKey, newValue: "null", storageArea: localStorage}));});
+    await waitFor(() => expect(screen.getByTestId("state").textContent).toBe("inactive"));
+});
+
+
+it("does not renew the cookie from a snapshot another tab retired before its effect runs", () => {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    document.cookie = "cib_participant_preview=event-1; Path=/; Secure";
+    const setter = vi.spyOn(document, "cookie", "set");
+    function RetireBeforeParentEffect() {
+        useEffect(() => {localStorage.setItem(storageKey, "null");}, []);
+        return null;
+    }
+    try {
+        const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
+        client.setQueryData(["event-current-user"], {ID: "user-1"});
+        client.setQueryData(["event-management-access", "event-1"], {CanManage: true});
+        render(<QueryClientProvider client={client}><ParticipantPreviewProvider><RetireBeforeParentEffect /></ParticipantPreviewProvider></QueryClientProvider>);
+        expect(setter).not.toHaveBeenCalled();
+        expect(localStorage.getItem(storageKey)).toBe("null");
+    } finally {setter.mockRestore();}
 });

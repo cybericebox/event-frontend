@@ -65,8 +65,8 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
     const [ref, size] = useElementSize<HTMLDivElement>();
     const [labelRef, labelSize] = useElementSize<HTMLSpanElement>();
     const lines = Math.min(10, Math.max(1, Number(widget.props.lines) || 5));
-    // Sample results cover their own three hours before GeneratedAt.
-    const sampleEnd = sample && results ? Date.parse(results.GeneratedAt) : 0;
+    // Sample results cover their own three hours, anchored by local editor data.
+    const sampleEnd = sample && results && "SampleEnd" in results && typeof results.SampleEnd === "number" ? results.SampleEnd : 0;
     const start = sample ? sampleEnd - liveSampleSpan : Date.parse(event.StartTime);
     const end = sample ? sampleEnd : Math.max(start + 60000, Math.min(event.FinishTime ? Date.parse(event.FinishTime) : Number.POSITIVE_INFINITY, now || start + 60000));
     const frozen = frozenAt(results);

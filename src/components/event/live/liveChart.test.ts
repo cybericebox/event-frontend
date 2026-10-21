@@ -54,9 +54,9 @@ describe("chartSeries", () => {
     it("interpolates smoothly between solve times without narrow steps", () => {
         const team = "01900000-0000-7000-8000-000000000041";
         const results = {
-            Revision: 1, GeneratedAt: "", TotalTeams: 1, Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
+            Revision: 1, TotalTeams: 1, Freeze: {BannerText: "", BannerLevel: "warning" as const, Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
             Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
-            Scoreboard: [{Rank: 1, TeamID: team, TeamName: "A", Points: 300, Solved: 2, LastSolveAt: null}],
+            Scoreboard: [{Rank: 1, TeamID: team, TeamName: "A", Points: 300, Solved: 2}],
             Timeline: [
                 {EventTeamID: team, EventChallengeID: team, ChallengeName: "x", Points: 100, SolvedAt: new Date(50000).toISOString()},
                 {EventTeamID: team, EventChallengeID: team, ChallengeName: "y", Points: 200, SolvedAt: new Date(75000).toISOString()},
@@ -83,9 +83,9 @@ describe("chartSeries", () => {
     it("stops the lines at the freeze moment instead of running on to now", () => {
         const team = "01900000-0000-7000-8000-000000000042";
         const results = {
-            Revision: 1, GeneratedAt: "", TotalTeams: 1, Freeze: {Enabled: true, FrozenAt: new Date(60000).toISOString(), FinishAt: null, OpenedAt: null, Active: true, Applied: true},
+            Revision: 1, TotalTeams: 1, Freeze: {BannerText: "", BannerLevel: "warning" as const, Enabled: true, FrozenAt: new Date(60000).toISOString(), FinishAt: null, OpenedAt: null, Active: true, Applied: true},
             Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
-            Scoreboard: [{Rank: 1, TeamID: team, TeamName: "A", Points: 100, Solved: 1, LastSolveAt: null}],
+            Scoreboard: [{Rank: 1, TeamID: team, TeamName: "A", Points: 100, Solved: 1}],
             Timeline: [{EventTeamID: team, EventChallengeID: team, ChallengeName: "x", Points: 100, SolvedAt: new Date(40000).toISOString()}],
         };
         const box = {left: 0, top: 0, width: 100, height: 300};

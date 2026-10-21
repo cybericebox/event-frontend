@@ -18,3 +18,16 @@ it("keeps failure with the file row and permits retry", async () => {
  await act(async () => {fireEvent.click(screen.getByRole("button",{name:/task.zip/}));});
  expect(screen.getByRole("alert").textContent).toContain("Не вдалося завантажити файл"); expect(screen.getByRole("button",{name:/task.zip/}).hasAttribute("disabled")).toBe(false);
 });
+it("keeps each filename identifiable during concurrent downloads and leaves other files available", async () => {
+ let reject!: (reason: Error) => void;
+ vi.stubGlobal("fetch",vi.fn(() => new Promise((_resolve, fail) => {reject=fail;})));
+ render(<><AttachmentDownload url="https://api.test/a" name="capture.pcap" size={128}/><AttachmentDownload url="https://api.test/b" name="notes.txt" size={256}/></>);
+ fireEvent.click(screen.getByRole("button",{name:/capture.pcap/}));
+ const downloading=screen.getByRole("button",{name:/capture.pcap/});
+ expect(downloading.getAttribute("aria-busy")).toBe("true");
+ expect(downloading.textContent).toContain("Завантажуємо…");
+ expect(downloading.hasAttribute("disabled")).toBe(true);
+ expect(screen.getByRole("button",{name:/notes.txt/}).hasAttribute("disabled")).toBe(false);
+ await act(async () => {reject(new Error("network"));});
+ expect(screen.getByRole("button",{name:/capture.pcap/}).hasAttribute("disabled")).toBe(false);
+});

@@ -6,7 +6,7 @@ import {scoreChartOption as progressOption} from "@/components/event/manage/anal
 
 const team = "00000000-0000-4000-8000-000000000001";
 const snapshot = {
-    Scoreboard: [{Rank: 1, TeamID: team, TeamName: "Альфа", Points: 300, Solved: 2, LastSolveAt: null}],
+    Scoreboard: [{Rank: 1, TeamID: team, TeamName: "Альфа", Points: 300, Solved: 2}],
     Timeline: [{EventTeamID: team, SolvedAt: "2026-10-01T10:30:00Z", Points: 100}, {EventTeamID: team, SolvedAt: "2026-10-01T11:00:00Z", Points: 200}],
 } as unknown as ManageResultsSnapshot;
 const start = new Date("2026-10-01T10:00:00Z");
@@ -22,7 +22,22 @@ describe("score charts are smooth monotone curves", () => {
         }
         expect(option.dataZoom.map(zoom => zoom.type)).toEqual(["inside", "slider"]);
         expect(option.dataZoom.every(zoom => zoom.xAxisIndex === 0)).toBe(true);
-        expect(option.series[0].data.map(point => point[1])).toEqual([0, 0, 100, 100, 300, 300]);
+        expect(option.series[0].data).toEqual([
+            [start.getTime(), 0],
+            [Date.parse("2026-10-01T10:30:00Z"), 100],
+            [Date.parse("2026-10-01T11:00:00Z"), 300],
+            [finish.getTime(), 300],
+        ]);
+    });
+
+    it("has one cumulative value per team and instant when the first solve coincides with the chart start", () => {
+        const at = "2026-10-01T10:00:00Z";
+        const sameInstant = {...snapshot, Timeline: [
+            {...snapshot.Timeline[0], SolvedAt: at, Points: 100},
+            {...snapshot.Timeline[1], SolvedAt: at, Points: 200},
+        ]};
+        const option = scoreChartOption({snapshot: sameInstant, teamIDs: [team], startTime: start, finishTime: finish});
+        expect(option.series[0].data).toEqual([[start.getTime(), 300], [finish.getTime(), 300]]);
     });
 
     it("participation and analytics score charts are smooth monotone too", () => {

@@ -144,16 +144,14 @@ function PreviewBoard({event}: {event: PublicEventInfo}) {
     const challenges = board.data.Challenges.map(task => launching && task.PreviewDynamic && !task.PreviewRunID && task.PreviewCanStart === true
         ? {...task, Locked: true, LockedNote: t("challenges.preview.startingInfra"), LockedBusy: true}
         : task);
-    return <EventVpnProvider eventID={event.EventID} eventTag={event.Tag} enabled={board.data.Challenges.some(item => item.Infrastructure)}>
-        <Board eventID={event.EventID} mode="preview" challenges={challenges} teamMode={event.Participation === 1} finished={false}
+    return <Board eventID={event.EventID} mode="preview" challenges={challenges} teamMode={event.Participation === 1} finished={false}
             showDifficulty={preview.config?.ShowDifficulty ?? true} showHints={preview.config?.HintsDisabled === false} hintChargeMode={preview.config?.HintChargeMode}
             banners={<EventBanner title={t("challenges.preview.note")} />} onRefresh={() => void board.refetch()}
             onSolved={(id, result) => {
                 if (!result.Correct) return;
                 const at = new Date().toISOString();
                 queryClient.setQueryData<OwnBoard>(previewBoardKey(event.EventID), current => current && ({...current, Challenges: current.Challenges.map(task => task.EventChallengeID === id ? {...task, SolvedAt: at, AwardedPoints: task.Points, SolveCount: 1} : task)}));
-            }} />
-    </EventVpnProvider>;
+            }} />;
 }
 
 function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: boolean}) {

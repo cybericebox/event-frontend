@@ -46,7 +46,7 @@ async function chooseOutcome(name: string) {
 
 const writes = () => fetchMock.mock.calls.filter(([, init]) => ["POST", "PUT", "PATCH", "DELETE"].includes(String(init?.method ?? "GET").toUpperCase()));
 
-beforeEach(() => { formState.empty = false; sessionStorage.clear(); HTMLDialogElement.prototype.showModal = function () {this.open = true;}; HTMLDialogElement.prototype.close = function () {this.open = false;}; fetchMock.mockReset(); vi.stubGlobal("fetch", fetchMock); });
+beforeEach(() => { formState.empty = false; sessionStorage.clear(); localStorage.clear(); HTMLDialogElement.prototype.showModal = function () {this.open = true;}; HTMLDialogElement.prototype.close = function () {this.open = false;}; fetchMock.mockReset(); vi.stubGlobal("fetch", fetchMock); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 it("shows a pending result in a dialog without offering team access or writing to the server", async () => {

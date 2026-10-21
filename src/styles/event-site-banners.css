@@ -6,3 +6,6 @@
 .event-announcements-panel .ib-banner{--ib-banner-px:var(--ib-4)}
 .event-announcements-panel .ib-banner:last-child{border-bottom:0}
 .event-manage-frame>.ib-banner-stack{flex:none}
+
+/* Without an action, the shared mobile grid needs only its text row. */
+@media(max-width:640px){.ib-banner:not(:has(.ib-banner__action)){grid-template-areas:"icon text close";align-content:center}}

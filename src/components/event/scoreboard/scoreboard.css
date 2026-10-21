@@ -1,14 +1,16 @@
 /* Participant «Результати»: the header row with the Live action, and the
    ranking block. Loading and empty states sit centered in the block body,
    which keeps its height from loading to data. No shadows. */
-.event-results__head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--ib-3)}
-.event-results__head .ib-page-header{flex:1 1 320px;min-width:0}
+.event-results__head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--ib-3)}
+.event-results__head .ib-page-header{container-type:normal;flex:1 1 min-content;min-width:0;margin-bottom:0}
 .event-results__actions{display:flex;flex:none;flex-wrap:wrap;align-items:center;gap:var(--ib-4)}
 .event-results__chart{padding:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface)}
 .event-results__chart-title{margin:0 0 var(--ib-2);color:var(--ib-ink);font-size:var(--ib-fs-14);font-weight:var(--ib-w-semibold)}
 .event-scoreboard{display:flex;flex-direction:column;min-height:0;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-surface);overflow:hidden}
 .event-scoreboard__toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-3);padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line)}
 .event-scoreboard__search{flex:1 1 240px;max-width:360px}
+.event-scoreboard__search .ib-input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.event-scoreboard__search .event-scoreboard__clear{position:absolute;right:2px;top:50%;transform:translateY(-50%)}
 .event-scoreboard__scroll{position:relative;overflow:auto}
 .event-scoreboard table{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--ib-fs-13)}
 .event-scoreboard th{position:sticky;top:0;z-index:1;padding:var(--ib-3) var(--ib-4);border-bottom:1px solid var(--ib-line);background:var(--ib-surface);color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold);letter-spacing:.04em;text-align:left;text-transform:uppercase;white-space:nowrap}
@@ -25,7 +27,6 @@
 .event-scoreboard--closed>*{min-height:var(--event-block-state-h,240px)}
 @media (max-width:640px){
   .event-scoreboard__search{max-width:none}
-  .event-scoreboard .event-scoreboard__last{display:none}
   /* The name takes the room; numbers stay on one line and narrow. */
   .event-scoreboard th,.event-scoreboard td{padding-inline:var(--ib-2)}
   .event-scoreboard th:first-child,.event-scoreboard td:first-child{padding-left:var(--ib-3)}
@@ -33,6 +34,5 @@
   .event-scoreboard__place{width:40px}
   .event-scoreboard td.ib-num{white-space:nowrap}
   .event-scoreboard th{letter-spacing:0}
-  .event-results__actions{width:100%}
 }
 @media (max-width:400px){.event-scoreboard .event-scoreboard__solved{display:none}}

@@ -3,9 +3,9 @@ import {applyResultsPoll, chartTeamIDs, resultsPollDelay, searchScoreboard, unit
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 
 const snapshot = (chartTeams: number) => ({
-    Revision: 1, GeneratedAt: "", Timeline: [], TotalTeams: 4,
-    Scoreboard: ["a", "b", "c", "d"].map((id, index) => ({Rank: index + 1, TeamID: id, TeamName: id, Points: 0, Solved: 0, LastSolveAt: null})),
-    Freeze: {Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
+    Revision: 1, Timeline: [], TotalTeams: 4,
+    Scoreboard: ["a", "b", "c", "d"].map((id, index) => ({Rank: index + 1, TeamID: id, TeamName: id, Points: 0, Solved: 0})),
+    Freeze: {BannerText: "", BannerLevel: "warning" as const, Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
     Display: {ChartEnabled: true, ChartTeams: chartTeams, RowsLimit: null},
 }) as ManageResultsSnapshot;
 

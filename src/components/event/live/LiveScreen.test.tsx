@@ -30,10 +30,10 @@ const event = {
 
 function board(frozen: boolean): ManageResultsSnapshot {
     return {
-        Revision: 3, GeneratedAt: new Date(now).toISOString(), TotalTeams: 1,
-        Freeze: {Enabled: frozen, FrozenAt: frozen ? new Date(now - 600_000).toISOString() : null, FinishAt: null, OpenedAt: null, Active: frozen, Applied: frozen},
+        Revision: 3, TotalTeams: 1,
+        Freeze: {BannerText: "", BannerLevel: "warning" as const, Enabled: frozen, FrozenAt: frozen ? new Date(now - 600_000).toISOString() : null, FinishAt: null, OpenedAt: null, Active: frozen, Applied: frozen},
         Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
-        Scoreboard: [{Rank: 1, TeamID: "01900000-0000-7000-8000-000000000011", TeamName: "IceBreakers", Points: 300, Solved: 1, LastSolveAt: null}],
+        Scoreboard: [{Rank: 1, TeamID: "01900000-0000-7000-8000-000000000011", TeamName: "IceBreakers", Points: 300, Solved: 1}],
         Timeline: [],
     };
 }
@@ -154,7 +154,7 @@ describe("live screen scenes", () => {
     });
 
     it("stays on the board when the hall sees live results during the freeze", async () => {
-        const live = {...board(false), Freeze: {Enabled: true, FrozenAt: new Date(now - 600_000).toISOString(), FinishAt: null, OpenedAt: null, Active: true, Applied: false}};
+        const live = {...board(false), Freeze: {BannerText: "", BannerLevel: "warning" as const, Enabled: true, FrozenAt: new Date(now - 600_000).toISOString(), FinishAt: null, OpenedAt: null, Active: true, Applied: false}};
         api.results.mockResolvedValue(live);
         api.layout.mockResolvedValue({...defaultLiveLayout, scenes: {...defaultLiveLayout.scenes, frozen: {grid: {cols: 12, rows: 8}, widgets: [{id: "ann", type: "announcement", x: 1, y: 1, w: 12, h: 8, props: {text: "Результати заморожено"}}]}}});
         mountAt(event);
