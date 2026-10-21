@@ -23,6 +23,19 @@ describe("inbox API", () => {
         expect(page.Items[1].Category).toBeUndefined();
     });
 
+    it("keeps Resolvable and the other server fields of a real-shaped item", async () => {
+        const item = {
+            ID: "a", Title: "Лабораторія впала", Body: "b", Link: "/manage/labs", Icon: "server", Tone: "danger", AccentColor: "", Surface: "dropdown",
+            AutoDismissMs: null, Actions: null, Dismissible: true, ReadAt: null, CreatedAt: "2026-10-21T10:00:00Z", EventID: "e1", EventName: "Захід", EventTag: "ev",
+            Type: "event.lab.failed", Category: "requests", ActionRequired: true, ResolvedAt: null, Resolution: null, ResolvedBy: null, Resolvable: true,
+        };
+        vi.stubGlobal("fetch", reply(200, {Status: {Code: 0}, Data: {Items: [item], NextCursor: ""}}));
+        const page = await getInbox("?site=event");
+        expect(page.Items[0]).toMatchObject({Resolvable: true, Surface: "dropdown", Dismissible: true});
+        const { canResolve } = await import("@/components/event/inboxModel");
+        expect(canResolve(page.Items[0] as never)).toBe(true);
+    });
+
     it("reads the news after a cursor, oldest first, with Counts and OtherEventsCount", async () => {
         const fetch = reply(200, {Data: {Cursor: "c2", Items: [], Unread: 2, Counts: {All: 3, Requests: 1, Personal: 1, Activity: 1}, OtherEventsCount: 4}});
         vi.stubGlobal("fetch", fetch);

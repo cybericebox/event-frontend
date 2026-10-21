@@ -10,7 +10,8 @@ const visibleBannerSchema = z.object({
     Text: z.string(), LinkURL: z.string().nullish().transform(value => value ?? ""),
     LinkLabel: z.string().nullish().transform(value => value ?? ""), Level: z.enum(["info", "warning", "critical"]).catch("info"),
     Dismissible: z.boolean(), Version: z.number(),
-});
+    // A banner without text (a personal one) shows its title instead.
+}).transform(banner => ({...banner, Text: banner.Text.trim() ? banner.Text : banner.Title}));
 export type VisibleBanner = z.infer<typeof visibleBannerSchema>;
 
 export async function getSiteBanners(eventID: string): Promise<VisibleBanner[]> {

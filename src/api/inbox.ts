@@ -6,6 +6,7 @@ import type {InboxResolution} from "@/components/event/inboxModel";
 // Contract: docs/INBOX-DESIGN.md §8.
 const itemSchema = z.object({
     ID: z.string(), Title: z.string(), Body: z.string(), Link: z.string(),
+    Surface: z.string().optional(), Dismissible: z.boolean().optional(),
     Icon: z.string().optional(), Tone: z.string().optional(), AccentColor: z.string().optional(),
     AutoDismissMs: z.number().nullable().optional(),
     Actions: z.array(z.object({label: z.string(), href: z.string()})).nullable().optional().catch(null),
@@ -21,6 +22,8 @@ const itemSchema = z.object({
     ResolvedAt: z.string().nullable().optional(),
     // An unknown future resolution still renders (the generic «Вирішено» line).
     Resolution: z.string().nullable().optional().transform(value => value as InboxResolution | null | undefined),
+    // True when the recipient may close this open request by hand (the server decides).
+    Resolvable: z.boolean().optional(),
     ResolvedBy: z.object({ID: z.string(), Name: z.string()}).nullable().optional(),
 });
 // Cursors are opaque strings; an empty NextCursor means the last page.
