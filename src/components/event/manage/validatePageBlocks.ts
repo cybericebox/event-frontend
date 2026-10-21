@@ -184,7 +184,7 @@ export function landingProblems(document: ContentDocument, catalog: ContentVaria
         if (block.type === "countdown" && block.dateSource === "event" && !block.targetVariable) add(index, "countdownEventDate");
         if ((block.type === "hero" || block.type === "countdown") && block.targetDate && (Number.isNaN(Date.parse(block.targetDate)) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(block.targetDate))) add(index, "dateTimeInvalid");
         if (block.type === "countdown" && !block.targetDate && (!block.targetVariable || !catalog.some(item => item.name === block.targetVariable && item.format === "date-time"))) add(index, "countdownDateRequired");
-        if (block.type === "countdown" && block.variant && !["split", "center"].includes(block.variant)) add(index, "countdownLayout");
+        if (block.type === "countdown" && block.variant && !["split", "center", "inline"].includes(block.variant)) add(index, "countdownLayout");
         if (block.type === "countdown" && block.verticalAlignment && !["start", "center", "end"].includes(block.verticalAlignment)) add(index, "countdownAlignment");
         if (block.type === "countdown" && block.timerSize && !["large", "xl"].includes(block.timerSize)) add(index, "countdownSize");
         if (block.type === "countdown" && block.surface && !["plain", "frame"].includes(block.surface)) add(index, "countdownSurface");

@@ -1,6 +1,7 @@
 /* Standalone countdown block; its segments share one responsive row. */
 
 .ib-block-countdown .ib-block__in{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--ib-6) var(--ib-10)}
+.ib-block-countdown--inline .ib-block__in{grid-template-columns:auto auto;justify-content:center}
 .ib-block-countdown--text-start:not(.ib-block-countdown--center):not(.ib-block-countdown--timer-only) .ib-block__in>div:first-child{align-self:start}
 .ib-block-countdown--text-end:not(.ib-block-countdown--center):not(.ib-block-countdown--timer-only) .ib-block__in>div:first-child{align-self:end}
 .ib-block-countdown__title{margin:0;font-size:var(--ib-fs-24);font-weight:var(--ib-w-semibold);letter-spacing:-.02em;color:var(--ib-ink)}
@@ -17,5 +18,5 @@
 .ib-block-countdown--timer-only .ib-block-countdown__side,.ib-block-countdown--timer-only .ib-timer{align-items:center;text-align:center}
 .ib-mass .ib-block-countdown__title{color:var(--ib-on-brand)}
 .ib-mass .ib-block-countdown__text{color:var(--ib-on-brand-2)}
-@container ib-blocks (max-width:600px){.ib-block-countdown .ib-block__in{display:flex;flex-direction:column;align-items:flex-start}.ib-block-countdown--text-start .ib-block__in>div:first-child,.ib-block-countdown--text-end .ib-block__in>div:first-child{align-self:stretch}.ib-block-countdown--center .ib-block__in,.ib-block-countdown--timer-only .ib-block__in{align-items:center}.ib-block-countdown__side,.ib-block-countdown__side .ib-timer{align-items:flex-start;text-align:left}}
+@container ib-blocks (max-width:600px){.ib-block-countdown .ib-block__in{display:flex;flex-direction:column;align-items:flex-start}.ib-block-countdown--text-start .ib-block__in>div:first-child,.ib-block-countdown--text-end .ib-block__in>div:first-child{align-self:stretch}.ib-block-countdown--center .ib-block__in,.ib-block-countdown--inline .ib-block__in,.ib-block-countdown--timer-only .ib-block__in{align-items:center}.ib-block-countdown--inline .ib-block__in{text-align:center}.ib-block-countdown--inline .ib-block-countdown__text{margin-inline:auto}.ib-block-countdown--inline .ib-block-countdown__side,.ib-block-countdown--inline .ib-block-countdown__side .ib-timer{align-items:center;text-align:center}.ib-block-countdown__side,.ib-block-countdown__side .ib-timer{align-items:flex-start;text-align:left}}
 @container ib-blocks (max-width:480px){.ib-block-countdown .ib-timer--compact .ib-timer__value{font-size:clamp(20px,6cqi,30px)}.ib-block-countdown--timer-xl .ib-timer--compact .ib-timer__value{font-size:clamp(24px,7cqi,34px)}}

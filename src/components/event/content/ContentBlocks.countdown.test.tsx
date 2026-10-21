@@ -58,3 +58,17 @@ it("drops the hero timer and its note on the site once the target time has come,
     render(<ContentBlocks document={{blocks: [withNote]}} variables={past} preview />);
     expect(screen.getByText("До старту залишилось")).toBeTruthy();
 });
+
+it("marks the layout variants on the countdown block", () => {
+    const vars = {"event.finish": "2099-01-01T00:00:00Z"};
+    const classes = (variant?: string) => {
+        const {container} = render(<ContentBlocks document={{blocks: [{...countdown, variant}]}} variables={vars} />);
+        const className = container.querySelector(".ib-block-countdown")?.className ?? "";
+        cleanup();
+        return className;
+    };
+    expect(classes("inline")).toContain("ib-block-countdown--inline");
+    expect(classes("inline")).not.toContain("ib-block-countdown--center");
+    expect(classes("center")).toContain("ib-block-countdown--center");
+    expect(classes("split")).not.toMatch(/--(inline|center)\b/);
+});
