@@ -23,18 +23,22 @@ const itemSchema = z.object({
     Resolution: z.string().nullable().optional().transform(value => value as InboxResolution | null | undefined),
     ResolvedBy: z.object({ID: z.string(), Name: z.string()}).nullable().optional(),
 });
-const cursorSchema = z.object({ID: z.string(), CreatedAt: z.string()});
-const listSchema = z.object({Data: z.object({Items: z.array(itemSchema), NextCursor: cursorSchema.nullable()})});
-// Counts and OtherEventsCount are read by inboxModel.parseCounts / parseOtherEvents (missing = older backend).
-const pollSchema = z.object({Data: z.object({
-    Cursor: cursorSchema.nullable(), NewInbox: z.array(itemSchema), UnreadCount: z.number(),
+// Cursors are opaque strings; an empty NextCursor means the last page.
+const listSchema = z.object({Data: z.object({
+    Items: z.array(itemSchema).nullish().transform(value => value ?? []),
+    NextCursor: z.string().nullish().transform(value => value || null),
+})});
+// Counts and OtherEventsCount are read by inboxModel.parseCounts / parseOtherEvents.
+const sinceSchema = z.object({Data: z.object({
+    Cursor: z.string().nullish().transform(value => value ?? ""),
+    Items: z.array(itemSchema).nullish().transform(value => value ?? []),
+    Unread: z.number(),
     Counts: z.unknown().optional(), OtherEventsCount: z.unknown().optional(),
 })});
 
 export type InboxItem = z.infer<typeof itemSchema>;
-export type InboxCursor = z.infer<typeof cursorSchema>;
 export type InboxPage = z.infer<typeof listSchema>["Data"];
-export type InboxPoll = z.infer<typeof pollSchema>["Data"];
+export type InboxSince = z.infer<typeof sinceSchema>["Data"];
 
 /** A failed inbox call; `code` is the detail code (errors.{uk,en}.json) when the backend sent one. */
 export class InboxError extends Error {
@@ -43,9 +47,9 @@ export class InboxError extends Error {
     }
 }
 
-// `query` comes from inboxModel.inboxQuery (category, ?event= scope, cursors).
+// `query` comes from inboxModel.inboxQuery (site, event scope, category, before).
 async function inboxRequest(path: string, method = "GET"): Promise<unknown> {
-    const response = await fetch(`${requireApiOrigin()}/api/notifications/inbox${path}`, {method, credentials: "include", cache: "no-store", headers: {Accept: "application/json"}});
+    const response = await fetch(`${requireApiOrigin()}/api/notifications/inbox${path}`, {method, credentials: "include", headers: {Accept: "application/json"}});
     if (!response.ok) throw new InboxError(response.status, await readApiErrorCode(response), readRetryAfter(response));
     return response.json().catch(() => null);
 }
@@ -54,8 +58,12 @@ export async function getInbox(query: string): Promise<InboxPage> {
     return listSchema.parse(await inboxRequest(query)).Data;
 }
 
-export async function pollInbox(query: string): Promise<InboxPoll> {
-    return pollSchema.parse(await inboxRequest(`/poll${query}`)).Data;
+/** The news after `since` (the cursor of the pulse or of the previous answer; "" = baseline), oldest first. */
+export async function getInboxSince(eventID: string | undefined, since: string): Promise<InboxSince> {
+    const query = new URLSearchParams({site: "event"});
+    if (eventID) query.set("event", eventID);
+    query.set("since", since);
+    return sinceSchema.parse(await inboxRequest(`?${query}`)).Data;
 }
 
 export async function markInboxRead(id: string): Promise<void> {

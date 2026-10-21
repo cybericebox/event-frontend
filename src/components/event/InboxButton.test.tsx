@@ -5,9 +5,19 @@ import {ManualDraftProvider, useSessionDraftState} from "./manage/manualDraft";
 import {t} from "@/i18n/t";
 
 const api = vi.hoisted(() => ({
-    getInbox: vi.fn(), pollInbox: vi.fn(), markInboxRead: vi.fn(), markInboxAllRead: vi.fn(), resolveInboxRequest: vi.fn(),
+    getInbox: vi.fn(), getInboxSince: vi.fn(), markInboxRead: vi.fn(), markInboxAllRead: vi.fn(), resolveInboxRequest: vi.fn(),
 }));
 vi.mock("@/api/inbox", () => ({...api, InboxError: class extends Error { code?: number }}));
+const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: unknown) => void>(), subscribe: vi.fn()}));
+vi.mock("@/utils/pulse", () => ({
+    subscribePulse: (scope: string, listener: (pulse: unknown) => void) => {
+        pulses.subscribe(scope);
+        pulses.listeners.add(listener);
+        queueMicrotask(() => listener({Banners: "v1", Inbox: {Cursor: "c0", Unread: 2}}));
+        return () => pulses.listeners.delete(listener);
+    },
+    pulseNow: vi.fn(),
+}));
 vi.mock("next/navigation", () => ({usePathname: () => "/manage/settings", useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
 const {InboxButton} = await import("./InboxButton");
 
@@ -15,13 +25,13 @@ const lab = (id: string, extra = {}) => ({
     ID: id, Title: `Заявка ${id}`, Body: "", Link: "", ReadAt: null, CreatedAt: "2026-10-01T10:00:00Z",
     Type: "event.lab.failed", Resolvable: true, Category: "requests", ActionRequired: true, ResolvedAt: null, ...extra,
 });
-const poll = {Cursor: null, UnreadCount: 2, Counts: {All: 2, Requests: 2, Personal: 0, Activity: 0}, NewInbox: [], OtherEventsCount: 0};
+const poll = {Cursor: "c0", Unread: 2, Counts: {All: 2, Requests: 2, Personal: 0, Activity: 0}, Items: [], OtherEventsCount: 0};
 
 beforeEach(() => {
     vi.useRealTimers();
     sessionStorage.clear();
     HTMLElement.prototype.scrollTo = () => {};
-    api.pollInbox.mockResolvedValue(poll);
+    api.getInboxSince.mockResolvedValue(poll);
     api.getInbox.mockResolvedValue({Items: [lab("a"), lab("b")], NextCursor: null});
     api.resolveInboxRequest.mockResolvedValue(undefined);
 });
@@ -46,7 +56,7 @@ describe("inbox", () => {
         const message = lab("a", {Link: "/manage/schedule", Actions: [{label: "notification action", href: "/manage/schedule"}]});
         api.getInbox.mockResolvedValue({Items: [message], NextCursor: null});
         api.markInboxRead.mockImplementationOnce(() => new Promise(() => {}));
-        api.pollInbox.mockResolvedValueOnce(poll).mockResolvedValue({...poll, UnreadCount: 3, NewInbox: [message]});
+        api.getInboxSince.mockResolvedValueOnce(poll).mockResolvedValue({...poll, Unread: 3, Cursor: "c1", Items: [message]});
         render(<ManualDraftProvider userID="user-a" eventID="e1"><EditedPage /><InboxButton event={{id: "e1", otherEventsHref: "/"}} /></ManualDraftProvider>);
         await waitFor(() => expect(api.getInbox).toHaveBeenCalled());
         if (mode === "list") fireEvent.click(screen.getByRole("button", {name: /Вхідні/}));
@@ -66,6 +76,24 @@ describe("inbox", () => {
         fireEvent.click(screen.getByText(t("manage.unsaved.discard")));
         expect(api.markInboxRead).toHaveBeenCalledExactlyOnceWith("a");
         expect(screen.queryByText(t("manage.unsaved.title"))).toBeNull();
+    });
+
+    it("starts with a baseline, asks for news only when the pulse cursor or unread changes, and loops until the cursors match", async () => {
+        render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(1));
+        expect(pulses.subscribe).toHaveBeenCalledWith("e1");
+        expect(api.getInboxSince).toHaveBeenLastCalledWith("e1", "");
+        const emit = (Cursor: string, Unread: number) => act(async () => { for (const listener of [...pulses.listeners]) listener({Banners: "v1", Inbox: {Cursor, Unread}}); });
+        await emit("c0", 2);
+        expect(api.getInboxSince).toHaveBeenCalledTimes(1);
+        api.getInboxSince.mockResolvedValueOnce({...poll, Cursor: "c1", Unread: 3, Items: [lab("n1")]}).mockResolvedValueOnce({...poll, Cursor: "c2", Unread: 4, Items: [lab("n2")]});
+        await emit("c2", 4);
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(3));
+        expect(api.getInboxSince.mock.calls.slice(1).map(call => call[1])).toEqual(["c0", "c1"]);
+        api.getInboxSince.mockResolvedValueOnce({...poll, Cursor: "c2", Unread: 1, Items: []});
+        await emit("c2", 1);
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(4));
+        expect(api.getInboxSince).toHaveBeenLastCalledWith("e1", "c2");
     });
 
     it("keeps a polite live region mounted before any pop-in arrives", async () => {
@@ -119,7 +147,7 @@ describe("inbox", () => {
 
     it("a read open request still says «Потребує дії», is not «Нове», and the bell says what it counts", async () => {
         const alarm = {...lab("alarm", {Type: "resources.alarm.raised", Resolvable: true, ReadAt: "2026-10-01T10:05:00Z"})};
-        api.pollInbox.mockResolvedValue({...poll, UnreadCount: 0, Counts: {All: 1, Requests: 1, Personal: 0, Activity: 0}});
+        api.getInboxSince.mockResolvedValue({...poll, Unread: 0, Counts: {All: 1, Requests: 1, Personal: 0, Activity: 0}});
         api.getInbox.mockResolvedValue({Items: [alarm], NextCursor: null});
         render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
         const bell = await screen.findByRole("button", {name: t("inbox.titleRequests", {count: 1})});
@@ -133,7 +161,7 @@ describe("inbox", () => {
 
     it("a resolved request carries neither tag", async () => {
         const closed = lab("done", {ReadAt: "2026-10-01T10:05:00Z", ResolvedAt: "2026-10-01T10:06:00Z", Resolution: "resolved"});
-        api.pollInbox.mockResolvedValue({...poll, UnreadCount: 0, Counts: {All: 0, Requests: 0, Personal: 0, Activity: 0}});
+        api.getInboxSince.mockResolvedValue({...poll, Unread: 0, Counts: {All: 0, Requests: 0, Personal: 0, Activity: 0}});
         api.getInbox.mockResolvedValue({Items: [closed], NextCursor: null});
         render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
         fireEvent.click(await screen.findByRole("button", {name: /Вхідні/}));

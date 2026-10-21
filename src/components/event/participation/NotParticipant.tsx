@@ -13,7 +13,9 @@ import {t} from "@/i18n/t";
 // «Приєднатися»; an application under review or a rejected one is named as it is, without a button
 // that would lead back to the same answer.
 export function NotParticipant({eventID, message, action}: {eventID: string; message: string; action: string}) {
-    const status = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, retry: false});
+    const status = useQuery({queryKey: ["event-join-status", eventID], queryFn: getJoinStatus, retry: false,
+        // A pending application is decided while the page is open.
+        refetchOnWindowFocus: true, refetchInterval: query => query.state.data === ParticipationStatusEnum.PendingParticipationStatus ? 60_000 : false});
     if (status.isPending) return <EventLoading label={t("participation.loading")} />;
     if (status.isError) return <EventLoadError message={t("join.loadFailed")} error={status.error} onRetry={() => void status.refetch()} />;
     if (status.data === ParticipationStatusEnum.PendingParticipationStatus) return <EmptyState message={t("shell.join.pending")} />;

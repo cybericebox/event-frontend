@@ -3,18 +3,15 @@
 import {useEffect, useId, useRef, useState, type ReactNode} from "react";
 import Link from "next/link";
 import * as Popover from "@radix-ui/react-popover";
-import {useQuery} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {CircleAlert, Info, TriangleAlert, X} from "lucide-react";
-import {getSiteBanners, type VisibleBanner} from "@/api/siteBanners";
-import {getResultsFreeze} from "@/api/manageResults";
-import {ManageApiError} from "@/api/manage";
+import {dismissPersonalBanner, getSiteBanners, type VisibleBanner} from "@/api/siteBanners";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t, tPlural} from "@/i18n/t";
 import { keepBrand } from "@/i18n/brand";
 import "@/styles/event-site-banners.css";
 import {siteBannerDismissedKey} from "@/utils/storageKeys";
-import {freezeBannerData} from "@/utils/freezeBanner";
-import {nextFreezeBoundary} from "@/utils/resultsFreeze";
+import {subscribePulse} from "@/utils/pulse";
 
 export type SiteBannerData = Pick<VisibleBanner, "Text" | "LinkURL" | "LinkLabel" | "Level" | "Dismissible">;
 
@@ -59,46 +56,38 @@ function rememberDismissal(banner: VisibleBanner) {
     try {window.localStorage.setItem(bannerDismissKey(banner), "1");} catch {/* storage is unavailable: the banner stays hidden until reload */}
 }
 
-export const SITE_BANNER_POLL_MS = 60_000;
-
-// The data part: the banners of the event site for the current viewer, polled
-// about every minute and again when the tab becomes visible. A dismissed banner
-// stays hidden by `${ID}:${Version}`, so an edited banner shows up again.
+// The data part: the banners of the event site for the current viewer. The list is read once on load and
+// again only when the shared pulse reports a new Banners version. A dismissed site/system banner stays hidden by
+// `${ID}:${Version}`, so an edited banner shows up again; a personal one is dismissed on the server.
 export function SiteBannerBar({eventID}: {eventID: string}) {
+    const queryClient = useQueryClient();
+    const queryKey = ["site-banners", eventID];
     const query = useQuery({
-        queryKey: ["site-banners", eventID], queryFn: () => getSiteBanners(eventID),
-        refetchInterval: SITE_BANNER_POLL_MS, refetchOnWindowFocus: true, refetchIntervalInBackground: false, retry: false,
+        queryKey, queryFn: () => getSiteBanners(eventID),
+        staleTime: Infinity, refetchInterval: false, refetchOnWindowFocus: false, refetchOnReconnect: false, retry: false,
     });
-    const freeze = useQuery({
-        queryKey: ["event-results-freeze", eventID],
-        queryFn: async () => {
-            try {return await getResultsFreeze(eventID);}
-            catch (error) {
-                // Cache the denial as no state: a later transient failure must not revive the old banner.
-                if (error instanceof ManageApiError && [401, 403, 404].includes(error.status)) return null;
-                throw error;
-            }
-        },
-        refetchInterval: SITE_BANNER_POLL_MS, refetchOnWindowFocus: true, refetchIntervalInBackground: false, retry: false,
-    });
-    const freezeState = freeze.data;
-    const refetchFreeze = freeze.refetch;
     useEffect(() => {
-        if (!freezeState?.Enabled) return;
-        const delay = nextFreezeBoundary(freezeState, Date.now());
-        if (delay === null || delay > 2_147_000_000) return;
-        const timer = setTimeout(() => {void refetchFreeze();}, delay + 1000);
-        return () => clearTimeout(timer);
-    }, [freezeState, refetchFreeze]);
+        let held: string | null = null;
+        return subscribePulse(eventID, pulse => {
+            // The first pulse only records the version: the list was just read on load.
+            const previous = held;
+            held = pulse.Banners;
+            if (previous !== null && previous !== pulse.Banners) void queryClient.refetchQueries({queryKey: ["site-banners", eventID]});
+        });
+    }, [eventID, queryClient]);
     const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
-    const banners = [...(query.data ?? [])];
-    if (freezeState?.Applied) banners.push({ID: `system-results-freeze:${eventID}`, Version: 1, ...freezeBannerData(freezeState)});
-    const visible = banners.filter(banner => !(banner.Dismissible && (hidden.has(bannerDismissKey(banner)) || isDismissed(banner))))
+    const banners = query.data ?? [];
+    const visible = banners.filter(banner => !(banner.Dismissible && (hidden.has(bannerDismissKey(banner)) || (banner.Kind !== "personal" && isDismissed(banner)))))
         .sort((left, right) => priorities[left.Level] - priorities[right.Level]);
     if (visible.length === 0) return null;
     const dismiss = (banner: VisibleBanner) => {
-        rememberDismissal(banner);
-        setHidden(current => new Set(current).add(bannerDismissKey(banner)));
+        const key = bannerDismissKey(banner);
+        setHidden(current => new Set(current).add(key));
+        if (banner.Kind !== "personal") { rememberDismissal(banner); return; }
+        dismissPersonalBanner(banner.ID).catch(() => {
+            // The server kept it: show it again.
+            setHidden(current => { const next = new Set(current); next.delete(key); return next; });
+        });
     };
     return <div className="ib-banner-stack" data-testid="site-banners">
         <SiteBanner banner={visible[0]} onDismiss={() => dismiss(visible[0])}

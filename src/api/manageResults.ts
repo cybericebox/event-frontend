@@ -64,15 +64,6 @@ export async function getManageResults(eventID: string, view: ResultsView = "pag
     return z.object({Data: resultsSnapshotSchema}).parse(await response.json()).Data;
 }
 
-// The shared site banner needs only the caller's freeze policy, never the result projections.
-export async function getResultsFreeze(eventID: string): Promise<ResultsFreeze> {
-    const response = await fetch(`${apiBase()}/events/${encodeURIComponent(eventID)}/results/freeze`, {
-        credentials: "include", cache: "no-store", headers: {Accept: "application/json"},
-    });
-    if (!response.ok) throw new ManageApiError(response.status, undefined, readRetryAfter(response));
-    return z.object({Data: freezeSchema}).parse(await response.json()).Data;
-}
-
 const changesSchema = z.object({Revision: z.number().int(), Changes: z.array(z.object({Revision: z.number().int(), Kind: z.string()}).passthrough()), SnapshotRequired: z.boolean(), FreezeKey: z.string()});
 export type ResultsChanges = z.infer<typeof changesSchema>;
 
