@@ -32,6 +32,14 @@ function view(moderators = false) {
 }
 
 describe("ChallengeSolvesTab", () => {
+    it.each([{Items: []}, {Items: [solve("Альфа")]}])("shows a warning notice for frozen solutions, including an empty list (%j)", async ({Items}) => {
+        load.mockResolvedValue({Total: Items.length, Items, NextCursor: null, Frozen: true});
+        const {container} = view();
+        expect(await screen.findByText("Розвʼязання заморожено")).toBeTruthy();
+        expect(screen.getByText("Список і кількість розвʼязань показано на момент заморожування. Підсумки — після фіналу.")).toBeTruthy();
+        expect(container.querySelector(".ib-banner--warning")).toBeTruthy();
+        if (!Items.length) expect(container.querySelector("[data-empty-state]")).toBeTruthy();
+    });
     it("lists the first page in delivered order with first blood, own row and the exact time", async () => {
         load.mockResolvedValue({Total: 3, Items: [solve("Альфа", {FirstBlood: true}), solve("Бета", {Own: true}), solve("Гамма")], NextCursor: null});
         view();

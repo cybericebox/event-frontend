@@ -1,8 +1,8 @@
 "use client";
 
-import {useState} from "react";
+import {useId, useState} from "react";
 import {Download} from "lucide-react";
-import {EventButton} from "@/components/ui/EventButton";
+import {BusyMark} from "@/components/ui/EventButton";
 import {t} from "@/i18n/t";
 import {formatFileSize} from "./challengeBoardModel";
 
@@ -21,12 +21,13 @@ export async function downloadAttachment(url: string, filename: string): Promise
 export function AttachmentDownload({url, name, size}: {url: string; name: string; size: number}) {
     const [busy, setBusy] = useState(false);
     const [failed, setFailed] = useState(false);
+    const errorID = useId();
     return <>
-        <EventButton className="ib-cmodal__file" busy={busy} busyLabel={t("common.busy.downloading")} onClick={() => {
+        <button type="button" className={`ib-cmodal__file${busy ? " is-busy" : ""}`} disabled={busy} aria-busy={busy || undefined} aria-describedby={failed ? errorID : undefined} onClick={() => {
             if (busy) return;
             setBusy(true); setFailed(false);
             void downloadAttachment(url, name).catch(() => setFailed(true)).finally(() => setBusy(false));
-        }}><Download aria-hidden="true" /><span>{name}</span><span className="ib-cmodal__size">{formatFileSize(size)}</span></EventButton>
-        {failed && <p role="alert" className="ib-cmodal__msg is-error">{t("challenges.file.failed")}</p>}
+        }}><span className="ib-cmodal__file-icon" aria-hidden="true">{busy ? <BusyMark /> : <Download />}</span><span className="ib-cmodal__file-text"><span>{name}</span><span className="ib-cmodal__size"><span aria-hidden={busy || undefined}>{formatFileSize(size)}</span><span className="ib-cmodal__download-status" aria-hidden={!busy || undefined} role={busy ? "status" : undefined}>{t("common.busy.downloading")}</span></span></span></button>
+        {failed && <p id={errorID} role="alert" className="ib-cmodal__msg is-error">{t("challenges.file.failed")}</p>}
     </>;
 }

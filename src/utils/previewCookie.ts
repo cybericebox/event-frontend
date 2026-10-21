@@ -1,6 +1,6 @@
-// The «view as participant» mode flag, mirrored into a session cookie so the server render knows it and
+// The «view as participant» mode flag, mirrored into a persistent cookie so the server render knows it and
 // paints the participant view from the first byte. The cookie only HIDES staff UI; it grants nothing
-// (the backend and the preview grant decide access). The preview state itself stays in sessionStorage.
+// (the backend and the preview grant decide access). The preview state itself stays in browser storage.
 // No "use client": server layouts read the name, the browser helpers below are guarded.
 
 export const PREVIEW_COOKIE = "cib_participant_preview";
@@ -18,10 +18,10 @@ export function readPreviewCookie(): string | null {
     return parsePreviewCookie(match?.slice(PREVIEW_COOKIE.length + 1));
 }
 
-// Session cookie (no Max-Age), host-only (no Domain), readable by the client.
+// One year, host-only (no Domain), readable by the client; exit and logout clear it explicitly.
 export function setPreviewCookie(eventID: string): void {
     if (typeof document === "undefined" || !parsePreviewCookie(eventID)) return;
-    document.cookie = `${PREVIEW_COOKIE}=${eventID}; Path=/; SameSite=Lax; Secure`;
+    document.cookie = `${PREVIEW_COOKIE}=${eventID}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
 }
 
 export function clearPreviewCookie(): void {

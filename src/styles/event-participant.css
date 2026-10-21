@@ -10,8 +10,6 @@
 .event-challenges__banners,.event-participation__banners{gap:var(--ib-2);margin-bottom:var(--ib-5)}
 .event-challenges__banners .ib-banner,.event-participation__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
 .event-results{display:flex;flex-direction:column;gap:var(--ib-4);min-width:0;width:100%}
-.event-results__banners{gap:var(--ib-2)}
-.event-results__banners .ib-banner{--ib-banner-px:var(--ib-4);border:1px solid var(--ib-line);border-radius:var(--ib-r-lg)}
 /* ds-v2 ranking-table: the frozen board note under the table */
 .ib-ranking-note{margin:calc(var(--ib-2) - var(--ib-4)) 0 0;font-size:var(--ib-fs-12);color:var(--ib-faint)}
 
@@ -151,8 +149,12 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-board-filters__select{min-width:150px}
 .event-challenges__timers:empty{display:none}
 
-.event-score-chart{position:relative}
-.event-score-chart__reset{position:absolute;top:4px;right:16px}
+.event-score-chart__head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--ib-2);margin-bottom:var(--ib-2)}
+.event-score-chart__head .event-results__chart-title{flex:1 1 220px;margin:0;padding-block:var(--ib-1);min-width:0}
+.event-score-chart__actions{display:flex;align-items:center;flex:none;gap:var(--ib-1);margin-left:auto;opacity:0;pointer-events:none}
+.event-score-chart__zoom{min-width:5ch;color:var(--ib-dim);font-size:var(--ib-fs-12);text-align:center;font-variant-numeric:tabular-nums}
+.event-score-chart:hover .event-score-chart__actions,.event-score-chart:focus-within .event-score-chart__actions{opacity:1;pointer-events:auto}
+@media (hover:none){.event-score-chart__actions{opacity:1;pointer-events:auto}}
 .event-cmodal__solved{align-items:flex-start}
 .event-cmodal__solved-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-width:0}
 .event-cmodal__solved-main small{flex-basis:100%;color:var(--ib-dim);font-size:var(--ib-fs-12)}
@@ -221,8 +223,9 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-board .ib-board__sec.is-done .ib-board__cat{color:var(--ib-faint);padding:14px 0}
 .event-board .ib-board__sec.is-done h3{font-weight:var(--ib-w-medium)}
 .event-cmodal__lab-tag svg{height:13px;width:13px}
-.event-cmodal__vpn,.event-cmodal__lab-status{display:flex;align-items:center;gap:6px;font-size:var(--ib-fs-13);color:var(--ib-dim);margin:0}
-.event-cmodal__vpn{flex-wrap:wrap}
+.event-cmodal__lab-status{display:flex;align-items:center;gap:6px;font-size:var(--ib-fs-13);color:var(--ib-dim);margin:0}
+.event-cmodal__vpn .ib-banner{--ib-banner-px:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);font-size:var(--ib-fs-13)}
+.event-cmodal__vpn .ib-banner__title{color:var(--ib-warn);font-weight:var(--ib-w-medium)}
 .event-cmodal__lab-status .ib-busy-mark{flex:none}
 .event-cmodal__lab-error.event-block-state{flex:0 0 auto;min-height:44px;padding:8px;gap:6px;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;text-align:left;font-size:13px}
 .event-cmodal__lab-error .ib-empty__icon{height:18px;width:18px;margin:0}
@@ -268,7 +271,7 @@ dialog.ib-modal .ib-icon-btn svg{width:18px;height:18px}
 .event-cmodal__hint-toggle:focus-visible,.event-cmodal__hint-body:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px;border-radius:var(--ib-r-sm)}
 .event-cmodal__hint-body{max-height:min(144px,35dvh);overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:2px}
 .event-cmodal__hint-body[hidden]{display:none}
-[data-theme="dark"] .ib-cmodal__files,[data-theme="dark"] .event-cmodal__hints,[data-theme="dark"] .ib-cmodal__files li+li,[data-theme="dark"] .event-cmodal__hints li+li{border-color:var(--ib-control)}
+[data-theme="dark"] .ib-cmodal__files,[data-theme="dark"] .ib-cmodal__files>li+li,[data-theme="dark"] .event-cmodal__hints,[data-theme="dark"] .event-cmodal__hints li+li{border-color:var(--ib-control)}
 @media(hover:hover){.event-cmodal__hint-toggle:hover .event-cmodal__hint-title{color:var(--ib-action)}}
 
 /* Stable narrow native scrollbars: hover changes contrast only, never width or track fill. */

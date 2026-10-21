@@ -40,7 +40,11 @@ export async function getPreviewBoard(eventID: string) {
 }
 export const submitPreviewFlag = (eventID: string, task: PreviewTask, Flag: string) => request(eventID, `${taskPath(task)}/submit`, submissionSchema, "POST", {Flag});
 export const unlockPreviewHint = (eventID: string, task: PreviewTask, hintID: string) => request(eventID, `${taskPath(task)}/hints/${encodeURIComponent(hintID)}/unlock`, hintSchema, "POST");
-export const getPreviewSolves = (eventID: string, task: PreviewTask) => request(eventID, `${taskPath(task)}/solves`, solvesPageSchema);
+export async function getPreviewSolves(eventID: string, task: PreviewTask) {
+    const page = await request(eventID, `${taskPath(task)}/solves`, solvesPageSchema);
+    // A preview run is isolated to its caller: its sole solve is the first one in that run.
+    return {...page, Items: page.Items.map(row => ({...row, FirstBlood: row.Own}))};
+}
 export const previewFileUrl = (eventID: string, task: PreviewTask, fileID: string) => `${previewBase(eventID)}${taskPath(task)}/files/${encodeURIComponent(fileID)}`;
 const runSchema = z.object({ID: z.string(), SelectionID: z.string(), Dynamic: z.boolean(), ExpiresAt: z.string().nullable()});
 // leaseMinutes is the run length of the preview's laboratory (one of the offered ones); absent: the lease in force.

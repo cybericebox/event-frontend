@@ -73,7 +73,6 @@ export const challengeSchema = z.object({
     GroupID: id.nullable(),
     GroupName: z.string(),
     GroupOrder: z.number().int(),
-    ContentUpdatedAt: z.string().nullish().transform(value => value ?? null),
     Infrastructure: z.boolean().default(false),
     HintsEnabled: z.boolean().default(false),
     Locked: z.boolean().default(false),
@@ -126,6 +125,7 @@ const solveSchema = z.object({TeamName: z.string(), NameHidden: z.boolean().opti
     .transform(row => row.NameHidden ? {...row, TeamName: t("scoreboard.nameHidden")} : row);
 export const solvesPageSchema = z.object({
     Total: z.number().int().default(0),
+    Frozen: z.boolean().default(false),
     Items: z.array(solveSchema).nullish().transform(value => value ?? []),
     NextCursor: id.nullish().transform(value => value ?? null),
 });

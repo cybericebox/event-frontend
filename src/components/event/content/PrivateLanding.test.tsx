@@ -6,7 +6,7 @@ import {plainTextRichText} from "./richTextState";
 import {PrivateLanding} from "./PrivateLanding";
 
 vi.mock("@/components/event/PrivateEventBootstrap", () => ({usePrivateEvent: () => ({EventID: "event-1", Name: "Подія", PreviewPicture: ""})}));
-vi.mock("@/api/manage", () => ({getManageContent: vi.fn(() => new Promise(() => {}))}));
+vi.mock("@/api/manage", async original => ({...await original<typeof import("@/api/manage")>(),getManageContent: vi.fn(() => new Promise(() => {}))}));
 
 afterEach(cleanup);
 describe("PrivateLanding", () => {

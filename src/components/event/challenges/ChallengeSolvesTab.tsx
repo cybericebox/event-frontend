@@ -5,6 +5,7 @@ import {useInfiniteQuery} from "@tanstack/react-query";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {getChallengeSolves, ParticipantChallengeError, type ChallengeSolve} from "@/api/participantChallenges";
 import {EventLoadError} from "@/components/event/EventLoadError";
+import {EventBanner} from "@/components/event/EventBanner";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -103,5 +104,8 @@ export function ChallengeSolvesTab({eventID, challengeID, moderators, enabled, p
             </div>}
         </div>;
     }
-    return <div className="ib-solvers">{body}</div>;
+    return <div className="ib-solvers">
+        {query.data?.pages[0]?.Frozen && <EventBanner tone="warning" title={t("challenges.solves.frozenTitle")} message={t("challenges.solves.frozenMessage")} />}
+        {body}
+    </div>;
 }

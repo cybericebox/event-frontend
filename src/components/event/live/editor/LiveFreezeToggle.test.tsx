@@ -4,7 +4,7 @@ import {act, cleanup, fireEvent, render, screen, waitFor} from "@testing-library
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const api = vi.hoisted(() => ({get: vi.fn(), put: vi.fn()}));
-vi.mock("@/api/manageResults", () => ({getResultsSettings: api.get, putResultsSettings: api.put, resultsSettingsInput: (value: object) => value}));
+vi.mock("@/api/manageResults", async original => ({...await original<typeof import("@/api/manageResults")>(), getResultsSettings: api.get, putResultsSettings: api.put}));
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 
 import {toast} from "react-hot-toast";
@@ -12,7 +12,9 @@ import {LiveFreezeToggle} from "./LiveScreenSettings";
 
 afterEach(() => {cleanup(); vi.clearAllMocks();});
 
-const settings = (LiveFreeze: boolean) => ({FreezeEnabled: true, LiveFreeze});
+const settings = (LiveFreeze: boolean) => ({ScoreboardVisibility: 1, FreezeEnabled: true, FreezeMinutes: 30, FreezeEndMode: "manual", FreezeBannerText: "До нагородження", FreezeBannerLevel: "critical", LiveFreeze,
+    ChartEnabled: true, ChartTeams: 5, RowsLimit: null, OpenedAt: null,
+    Freeze: {Enabled: true, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false}});
 const setup = () => render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><LiveFreezeToggle eventID="e1" canManage /></QueryClientProvider>);
 const box = () => screen.getByRole("switch") as HTMLInputElement;
 
@@ -38,5 +40,27 @@ describe("LiveFreezeToggle", () => {
         fireEvent.click(box());
         await waitFor(() => expect(toast.error).toHaveBeenCalled());
         await waitFor(() => expect(box().checked).toBe(true));
+    });
+
+    it("keeps manual unfreezing while queued live-freeze saves preserve the latest choice", async () => {
+        api.get.mockResolvedValue(settings(true));
+        const release: Array<() => void> = [];
+        api.put.mockImplementation((_eventID, input) => new Promise(resolve => {release.push(() => resolve(settings(input.LiveFreeze)));}));
+        setup();
+        await waitFor(() => expect(box().disabled).toBe(false));
+        fireEvent.click(box());
+        await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(box().checked).toBe(false));
+        fireEvent.click(box());
+        await waitFor(() => expect(box().checked).toBe(true));
+        expect(box().disabled).toBe(false);
+        expect(api.put).toHaveBeenCalledTimes(1);
+        await act(async () => {release[0]();});
+        await waitFor(() => expect(api.put).toHaveBeenCalledTimes(2));
+        expect(api.put.mock.calls[0][1]).toMatchObject({LiveFreeze: false, FreezeEndMode: "manual", FreezeBannerText: "До нагородження", FreezeBannerLevel: "critical"});
+        expect(api.put.mock.calls[1][1]).toMatchObject({LiveFreeze: true, FreezeEndMode: "manual", FreezeBannerText: "До нагородження", FreezeBannerLevel: "critical"});
+        expect(box().checked).toBe(true);
+        await act(async () => {release[1]();});
+        expect(box().checked).toBe(true);
     });
 });

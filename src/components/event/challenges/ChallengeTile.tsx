@@ -25,7 +25,7 @@ export function ChallengeTile({challenge, showDifficulty = true, accepted = fals
     const label = challenge.Locked ? lockedLabel(challenge) : "";
     const classes = ["ib-tile", !difficulty && "ib-tile--title-only", challenge.Locked && "is-locked", solved && "is-solved", unavailable && "is-closed", loading && "is-loading"].filter(Boolean).join(" ");
     return <EventTooltip content={name} className="ib-tile-tip" floating silent>{() => <button type="button" className={classes} data-challenge-id={challenge.EventChallengeID} data-accepted={accepted || undefined} aria-disabled={challenge.Locked || undefined} aria-busy={loading || undefined}
-        aria-label={[name, pointsLabel(solved ? awardedPoints(challenge) : challenge.Points), challenge.Infrastructure && t("challenges.modal.lab"), difficulty, label, solved && t("challenges.tile.state.solved"), practice && t("challenges.tile.practice"), challenge.Closed && t("challenges.tile.state.closed"), challenge.ContentUpdatedAt && t("challenges.tile.state.updated")].filter(Boolean).join(", ")}
+        aria-label={[name, pointsLabel(solved ? awardedPoints(challenge) : challenge.Points), challenge.Infrastructure && t("challenges.modal.lab"), difficulty, label, solved && t("challenges.tile.state.solved"), practice && t("challenges.tile.practice"), challenge.Closed && t("challenges.tile.state.closed")].filter(Boolean).join(", ")}
         onClick={challenge.Locked ? undefined : event => onOpen(challenge, event.currentTarget)}>
         <span className="ib-tile__main">
             <span className="ib-tile__name">{name}</span>

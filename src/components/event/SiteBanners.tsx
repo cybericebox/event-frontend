@@ -1,21 +1,26 @@
 "use client";
 
-import {useId, useRef, useState, type ReactNode} from "react";
+import {useEffect, useId, useRef, useState, type ReactNode} from "react";
 import Link from "next/link";
 import * as Popover from "@radix-ui/react-popover";
 import {useQuery} from "@tanstack/react-query";
 import {CircleAlert, Info, TriangleAlert, X} from "lucide-react";
 import {getSiteBanners, type VisibleBanner} from "@/api/siteBanners";
+import {getResultsFreeze} from "@/api/manageResults";
+import {ManageApiError} from "@/api/manage";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {t, tPlural} from "@/i18n/t";
 import { keepBrand } from "@/i18n/brand";
 import "@/styles/event-site-banners.css";
 import {siteBannerDismissedKey} from "@/utils/storageKeys";
+import {freezeBannerData} from "@/utils/freezeBanner";
+import {nextFreezeBoundary} from "@/utils/resultsFreeze";
 
 export type SiteBannerData = Pick<VisibleBanner, "Text" | "LinkURL" | "LinkLabel" | "Level" | "Dismissible">;
 
 const tones = {info: "info", warning: "warning", critical: "danger"} as const;
 const icons = {info: Info, warning: TriangleAlert, critical: CircleAlert} as const;
+const priorities = {critical: 0, warning: 1, info: 2} as const;
 
 // Only a site path or an http(s) address may be a banner link.
 export function safeBannerLink(url: string): boolean {
@@ -64,8 +69,32 @@ export function SiteBannerBar({eventID}: {eventID: string}) {
         queryKey: ["site-banners", eventID], queryFn: () => getSiteBanners(eventID),
         refetchInterval: SITE_BANNER_POLL_MS, refetchOnWindowFocus: true, refetchIntervalInBackground: false, retry: false,
     });
+    const freeze = useQuery({
+        queryKey: ["event-results-freeze", eventID],
+        queryFn: async () => {
+            try {return await getResultsFreeze(eventID);}
+            catch (error) {
+                // Cache the denial as no state: a later transient failure must not revive the old banner.
+                if (error instanceof ManageApiError && [401, 403, 404].includes(error.status)) return null;
+                throw error;
+            }
+        },
+        refetchInterval: SITE_BANNER_POLL_MS, refetchOnWindowFocus: true, refetchIntervalInBackground: false, retry: false,
+    });
+    const freezeState = freeze.data;
+    const refetchFreeze = freeze.refetch;
+    useEffect(() => {
+        if (!freezeState?.Enabled) return;
+        const delay = nextFreezeBoundary(freezeState, Date.now());
+        if (delay === null || delay > 2_147_000_000) return;
+        const timer = setTimeout(() => {void refetchFreeze();}, delay + 1000);
+        return () => clearTimeout(timer);
+    }, [freezeState, refetchFreeze]);
     const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
-    const visible = (query.data ?? []).filter(banner => !(banner.Dismissible && (hidden.has(bannerDismissKey(banner)) || isDismissed(banner))));
+    const banners = [...(query.data ?? [])];
+    if (freezeState?.Applied) banners.push({ID: `system-results-freeze:${eventID}`, Version: 1, ...freezeBannerData(freezeState)});
+    const visible = banners.filter(banner => !(banner.Dismissible && (hidden.has(bannerDismissKey(banner)) || isDismissed(banner))))
+        .sort((left, right) => priorities[left.Level] - priorities[right.Level]);
     if (visible.length === 0) return null;
     const dismiss = (banner: VisibleBanner) => {
         rememberDismissal(banner);

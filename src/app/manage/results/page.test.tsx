@@ -15,7 +15,7 @@ vi.mock("@/api/manageResults", async importOriginal => ({...await importOriginal
     setResultsOpened: (...args: unknown[]) => api.setOpened(...args),
 }));
 
-const frozenNow: ModeratorResults["Freeze"] = {Enabled: true, FrozenAt: now, FinishAt: new Date(Date.now() + hour).toISOString(), OpenedAt: null, Active: true, Applied: false};
+const frozenNow: ModeratorResults["Freeze"] = {BannerText: "", BannerLevel: "warning", Enabled: true, FrozenAt: now, FinishAt: new Date(Date.now() + hour).toISOString(), OpenedAt: null, Active: true, Applied: false};
 function results(extra: Partial<ModeratorResults> = {}): ModeratorResults {
     return {
         Revision: 3, GeneratedAt: now, ParticipantsSee: true, Freeze: frozenNow,

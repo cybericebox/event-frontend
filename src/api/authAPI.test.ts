@@ -7,7 +7,7 @@ import {signOut} from "./authAPI";
 import {readPreviewCookie, setPreviewCookie} from "@/utils/previewCookie";
 import {readCachedLogo, writeCachedBrand} from "@/utils/eventBrandCache";
 
-beforeEach(() => {window.localStorage.clear();});
+beforeEach(() => {window.localStorage.clear(); window.sessionStorage.clear(); document.cookie = "cib_participant_preview=; Path=/; Max-Age=0";});
 afterEach(() => {vi.unstubAllGlobals();});
 
 it("deletes the read session and the remembered branding when signing out", async () => {
@@ -17,7 +17,7 @@ it("deletes the read session and the remembered branding when signing out", asyn
     await signOut();
     expect(calls).toEqual(["POST https://api.example.test/api/auth/sign-out", "DELETE /api/event-session"]);
     expect(readCachedLogo()).toBeNull();
-    expect(window.localStorage.length).toBe(0);
+    expect(Object.keys(window.localStorage).filter(key => key !== "event-participant-preview-v1")).toEqual([]);
 });
 
 it("still signs out when the session cleanup request fails", async () => {
@@ -41,4 +41,27 @@ it("clears the participant preview cookie when signing out", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, {status: 204})));
     await signOut();
     expect(readPreviewCookie()).toBeNull();
+});
+
+
+it("forgets durable and legacy test state only after a successful explicit sign-out", async () => {
+    const key = "event-participant-preview-v1";
+    localStorage.setItem(key, JSON.stringify({userID: "user-1"}));
+    sessionStorage.setItem(key, JSON.stringify({userID: "user-1"}));
+    setPreviewCookie("event-1");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, {status: 204})));
+    await signOut();
+    expect(JSON.parse(localStorage.getItem(key) ?? "null")).toBeNull();
+    expect(sessionStorage.getItem(key)).toBeNull();
+    expect(readPreviewCookie()).toBeNull();
+});
+
+it("keeps test state and its cookie when explicit sign-out fails", async () => {
+    const key = "event-participant-preview-v1";
+    localStorage.setItem(key, "saved-preview");
+    setPreviewCookie("event-1");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, {status: 500})));
+    await expect(signOut()).rejects.toThrow("Sign-out failed");
+    expect(localStorage.getItem(key)).toBe("saved-preview");
+    expect(readPreviewCookie()).toBe("event-1");
 });

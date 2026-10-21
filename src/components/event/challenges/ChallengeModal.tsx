@@ -13,7 +13,7 @@ import {descriptionValues, hasCurrentRuntime} from "./descriptionValues";
 import {skipToken, useQuery, useQueryClient} from "@tanstack/react-query";
 import type {LabLifecycle} from "@/api/labLifecycle";
 import {labLifecycleKey, newestLab, questionLabPinKey, rememberLab, rememberRuntimeQuestionLab} from "./labLifecycleCache";
-import {ChevronDown, Lightbulb, Network} from "lucide-react";
+import {ChevronDown, Lightbulb, Network, Shield} from "lucide-react";
 import {ApiErrorCode, apiErrorMessage} from "@/api/apiErrors";
 import {
     challengeAttachmentUrl, challengeFiles, getOwnChallengeLab, ParticipantChallengeError, submitChallenge, unlockChallengeHint,
@@ -42,6 +42,7 @@ import {getPreviewLab, previewBoardKey, previewFileUrl, runningTestLabs, startPr
 import type {OwnBoard} from "@/api/participantChallenges";
 import {EventLoadError} from "@/components/event/EventLoadError";
 import {EmptyState} from "@/components/ui/EmptyState";
+import {EventBanner} from "@/components/event/EventBanner";
 
 export type BoardMode = "participant" | "moderators" | "preview";
 type ObservedRuntime = LabRuntime & {previewRunID?: string | null; Expired?: boolean; Removing?: boolean};
@@ -572,7 +573,6 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
                     {solved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.modal.solved")}</span>}
                     {practiceSolved && <span className="ib-tag ib-tag--ok">{ICON.check}{t("challenges.tile.practice")}</span>}
                     {stageClosed && <span className="ib-tag">{t("challenges.modal.closedTag")}</span>}
-                    {challenge.ContentUpdatedAt && <span className="ib-tag">{t("challenges.modal.updatedAt", {time: formatClock(challenge.ContentUpdatedAt)})}</span>}
                     {moderatorPresentation && challenge.BoardPublished === false && <span className="ib-tag ib-tag--warn">{t("challenges.modal.unpublished")}</span>}
                 </p>
                 <button type="button" className="ib-icon-btn ib-cmodal__close" aria-label={t("common.close")} onClick={() => ref.current?.close()}>{ICON.x}</button>
@@ -604,7 +604,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
             <div className="ib-cmodal__task-pane" id={`${id}-p1`} role="tabpanel" aria-labelledby={`${id}-tab1`} hidden={tab !== "task"}>
             <div className="ib-cmodal__body">
                 <div className="ib-cmodal__desc">{richTextHasContent(challenge.Snapshot.description) ? <EventRichTextView value={challenge.Snapshot.description} variables={values.variables} links={values.links} openVariables={openVariables} /> : <p>{t("challenges.modal.noDescription")}</p>}</div>
-                {challenge.Infrastructure && vpn.available && vpn.connected !== true && <p className="event-cmodal__vpn">{t("challenges.modal.vpnFirst")} <EventButton className="ib-btn ib-btn--sm" onClick={vpn.openVpn}>{t("challenges.modal.vpnOpen")}</EventButton></p>}
+                {challenge.Infrastructure && vpn.available && vpn.connected !== true && <div className="event-cmodal__vpn"><EventBanner tone="warning" title={t("challenges.modal.vpnFirst")} action={<EventButton className="ib-btn ib-btn--sm" onClick={vpn.openVpn}><Shield aria-hidden="true" />{t("challenges.modal.vpnOpen")}</EventButton>} /></div>}
                 {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && <ChallengeLabStatus lab={runtime} lifecycle={effectiveLifecycle} withdrawn={runtimeWithdrawn} error={runtimeFailure} onRetry={() => void lab.refetch()} />}
                 {labLink.state.status === "error" && <EventLoadError compact className="event-cmodal__lab-error" error={labLink.state.error} message={labLinkErrorMessage(labLink.state.error)} onRetry={labLink.retry} />}
                 {challenge.Infrastructure && (!isPreview || previewRunStarted) && (!moderators || isPreview) && effectiveLifecycle && !runtimeWithdrawn && !preview.active && <LabControls key={effectiveLifecycle.ID} eventID={eventID} lab={effectiveLifecycle} onRefresh={() => void lab.refetch()} />}

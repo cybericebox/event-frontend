@@ -14,8 +14,8 @@ const widget = (type: LiveWidget["type"], props: LiveWidget["props"] = {}): Live
 const id = (index: number) => `01900000-0000-7000-8000-${String(index).padStart(12, "0")}`;
 const event = {Name: "Кібер-захід", StartTime: "2026-10-20T07:00:00Z", FinishTime: "2026-10-20T15:00:00Z", Participation: 1} as unknown as PublicEventInfo;
 const results = {
-    Revision: 1, GeneratedAt: "2026-10-20T10:00:00Z", TotalTeams: 47, Tasks: 32,
-    Scoreboard: [{Rank: 1, TeamID: id(1), TeamName: "Frost", Points: 4000, Solved: 3, LastSolveAt: null}, {Rank: 2, TeamID: id(2), TeamName: "NURE Sec", Points: 3700, Solved: 2, LastSolveAt: null}],
+    Revision: 1, TotalTeams: 47, Tasks: 32,
+    Scoreboard: [{Rank: 1, TeamID: id(1), TeamName: "Frost", Points: 4000, Solved: 3}, {Rank: 2, TeamID: id(2), TeamName: "NURE Sec", Points: 3700, Solved: 2}],
     Timeline: [
         {EventTeamID: id(2), EventChallengeID: id(100), ChallengeName: "Web: Login Bypass", Points: 100, SolvedAt: "2026-10-20T07:31:00Z"},
         {EventTeamID: id(1), EventChallengeID: id(100), ChallengeName: "Web: Login Bypass", Points: 100, SolvedAt: "2026-10-20T07:40:00Z"},

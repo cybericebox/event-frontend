@@ -18,9 +18,9 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {Check, Eye, LogOut, MoreHorizontal, RotateCcw} from "lucide-react";
 import {t} from "@/i18n/t";
 import type {JoinOutcome} from "./join/joinPreviewModel";
-import {clearPreviewCookie, readPreviewCookie, setPreviewCookie} from "@/utils/previewCookie";
+import {readPreviewCookie, setPreviewCookie} from "@/utils/previewCookie";
+import {clearParticipantPreview, migratePreviewSnapshot, readPreviewSnapshot as snapshot, subscribePreviewSnapshot as subscribe, writePreviewSnapshot} from "@/utils/previewStorage";
 
-const STORAGE_KEY = "event-participant-preview-v1";
 const PreviewStateSchema = z.object({
     eventID: z.string().min(1), userID: z.string().min(1),
     status: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
@@ -32,30 +32,17 @@ const PreviewStateSchema = z.object({
     tasks: z.boolean().default(false),
     // New entries get an instance identity; legacy saved previews remain readable.
     sessionID: z.string().optional(),
+    // Old snapshots predate start-time recording; their historical start cannot be recovered.
+    startedAt: z.iso.datetime().optional(),
 });
 export type ParticipantPreviewState = z.infer<typeof PreviewStateSchema>;
-const CHANGE_EVENT = "event-participant-preview-change";
-let volatileSnapshot: string | null = null;
-function snapshot() {
-    try {return window.sessionStorage.getItem(STORAGE_KEY);} catch {return volatileSnapshot;}
-}
-function subscribe(onChange: () => void) {
-    window.addEventListener(CHANGE_EVENT, onChange);
-    window.addEventListener("storage", onChange);
-    return () => {window.removeEventListener(CHANGE_EVENT, onChange); window.removeEventListener("storage", onChange);};
-}
 function parseSnapshot(raw: string | null): ParticipantPreviewState | null {
     try {return PreviewStateSchema.safeParse(JSON.parse(raw ?? "null")).data ?? null;} catch {return null;}
 }
 function persist(next: ParticipantPreviewState | null) {
-    volatileSnapshot = next ? JSON.stringify(next) : null;
-    // The mode flag for the server render; the rest of the state stays in sessionStorage.
-    if (next) setPreviewCookie(next.eventID); else clearPreviewCookie();
-    try {
-        if (volatileSnapshot) window.sessionStorage.setItem(STORAGE_KEY, volatileSnapshot);
-        else window.sessionStorage.removeItem(STORAGE_KEY);
-    } catch { /* Restricted browser storage: keep this session in memory. */ }
-    window.dispatchEvent(new Event(CHANGE_EVENT));
+    if (!next) {clearParticipantPreview(); return;}
+    setPreviewCookie(next.eventID);
+    writePreviewSnapshot(JSON.stringify(next));
 }
 // Bind async work to both the browser preview instance and the current query-session authority.
 // Query identity/removal is observed synchronously, so A -> B -> A cannot revive retired work.
@@ -123,10 +110,14 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
     const saved = useMemo(() => parseSnapshot(raw), [raw]);
     const access = useQuery({queryKey: ["event-management-access", saved?.eventID], queryFn: () => getManageAccess(saved!.eventID), enabled: !!saved && saved.userID === identity.data?.ID, retry: false, refetchOnWindowFocus: false});
     const state = saved && identity.isSuccess && saved.userID === identity.data?.ID && access.isSuccess && access.data.CanManage ? saved : null;
-    // A cookie without a valid mode behind it (other tab, another user, lost access, signed out) must not keep
-    // the staff UI hidden: clear it once the identity and access answers are in.
+    // Identity and access still decide whether the saved mode may run. Passive failures never erase the mode.
     const settled = identity.isSuccess && (!saved || saved.userID !== identity.data?.ID || access.isSuccess || access.isError);
-    useEffect(() => {if (settled && !state && readPreviewCookie()) clearPreviewCookie();}, [settled, state]);
+    useEffect(() => {
+        if (!saved || !raw || snapshot() !== raw) return;
+        const migrated = migratePreviewSnapshot(raw);
+        // Upgrade only a still-current legacy session cookie, never a snapshot retired in another tab.
+        if (migrated && snapshot() === raw && readPreviewCookie() === saved.eventID) setPreviewCookie(saved.eventID);
+    }, [saved, raw]);
     useEffect(() => {if (!state && !operation.current) setInfraBusy(null);}, [state]);
     const config = useQuery({queryKey: ["event-management-config", state?.eventID], queryFn: () => getManageConfig(state!.eventID), enabled: !!state, retry: false, refetchOnWindowFocus: false});
     const cleanup = async (kind: "reset" | "exit") => {
@@ -151,7 +142,7 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
             queryClient.removeQueries({predicate: query => belongsToPreview(query.queryKey)});
             const current = token.scope.current();
             if (!current) return false;
-            persist(kind === "exit" ? null : {...current, status: 0, answers: {}, team: null, tasks: false});
+            persist(kind === "exit" ? null : {...current, startedAt: new Date().toISOString(), status: 0, answers: {}, team: null, tasks: false});
             router.push(kind === "exit" ? "/manage" : "/");
             return true;
         } catch (failure) {
@@ -205,7 +196,7 @@ export function ParticipantPreviewProvider({children, serverCookie = null}: {chi
         const live = queryClient.getQueryState<{ID: string}>(["event-current-user"]);
         if (operation.current || !identity.isSuccess || !identity.data || live?.status !== "success" || live.data?.ID !== identity.data.ID) return;
         setInfraBusy(null); setExitError(null);
-        persist({sessionID: crypto.randomUUID(), eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null, tasks: false});
+        persist({sessionID: crypto.randomUUID(), startedAt: new Date().toISOString(), eventID, userID: identity.data.ID, status: 0, outcome: registration === 1 ? "pending" : "approved", answers: {}, team: null, tasks: false});
         router.push("/");
     }, update: patch => {const current = parseSnapshot(snapshot()); if (state && current?.userID === state.userID && current.eventID === state.eventID) persist({...current, ...patch, ...(patch.team ? {team: {...patch.team, Admitted: patch.team.MemberCount >= (patch.team.MinTeamSize ?? 1)}} : {})});}, reset, exit}}>
         {state && !pathname.startsWith("/manage") && <div className="event-private-preview-banner event-participant-preview" role="region" aria-label={t("participantPreview.title")}>
