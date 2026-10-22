@@ -27,7 +27,7 @@ const attachment = (n: number, extra: Partial<EventExerciseAttachment> = {}) => 
     UpdateAvailable: false, Status: 0, Revision: 0, Resources: null, ChallengeCount: 1, VariantCount: 1, HasAttempts: false, FlagsRepeat: null, AvgDifficulty: null, TaskCount: null, TaskNames: [], ...extra}) as unknown as EventExerciseAttachment;
 const sets = [attachment(1), attachment(2, {HasAttempts: true}), attachment(3)].map(item => ({attachment: item, challenges: []}));
 vi.mock("./useBoardSets", () => ({
-    useBoardSets: () => ({attachments: {data: sets.map(set => set.attachment)}, sets: {data: sets}, pending: false, failed: false, error: null,
+    useBoardSets: () => ({attachments: {data: sets.map(set => set.attachment)}, groups: {data: []}, sets: {data: sets}, pending: false, failed: false, error: null,
         retry: vi.fn(), refreshSets: vi.fn(), refreshGroups: vi.fn(), refreshAll: vi.fn()}),
 }));
 vi.mock("./useBoardMutations", () => ({useBoardMutations: () => ({setPublished: vi.fn(), setHintsEnabled: vi.fn(), setMaxFlagAttempts: vi.fn()})}));

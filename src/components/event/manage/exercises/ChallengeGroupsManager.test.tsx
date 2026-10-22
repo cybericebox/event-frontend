@@ -19,7 +19,7 @@ afterEach(cleanup);
 const attachment: EventExerciseAttachment = {
     ID: "a1", ExerciseID: "x1", ExerciseName: "Веб", ExerciseVersionID: "v1", VariantMode: 0, FixedVariantIndex: null,
     Revision: 0, Status: 0, ReplacesID: null, SupersededAt: null, DetachedAt: null, CreatedAt: "2026-10-01T00:00:00Z",
-    StageID: null, Scope: "catalog", VersionNumber: 1, LatestVersionID: null, LatestVersionNumber: 1, UpdateAvailable: false,
+    StageID: null, Scope: "catalog", Tags: [], VersionNumber: 1, LatestVersionID: null, LatestVersionNumber: 1, UpdateAvailable: false,
     Fork: null, Infrastructure: false, VariantCount: 1, ChallengeCount: 0, PublishedCount: 0, HasAttempts: false,
     ResourceHeavy: false, Resources: null, NoAgentFits: false, FlagsRepeat: null, AvgDifficulty: null, TaskCount: null, TaskNames: [],
 };

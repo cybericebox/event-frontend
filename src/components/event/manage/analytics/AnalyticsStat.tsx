@@ -8,10 +8,11 @@ import "./analytics.css";
 
 // One number of a counter grid: label, value, an optional note under it, and
 // the hint (?) that explains what is counted. With `href` the whole tile links
-// to the section that has the detail.
-export function AnalyticsStat({label, value, note, hint, href}: {label: string; value: string; note?: string; hint: string; href?: string}) {
+// to the section that has the detail. `icon` (decorative) goes before the label.
+export function AnalyticsStat({label, value, note, hint, href, icon}: {label: string; value: string; note?: string; hint: string; href?: string; icon?: React.ReactNode}) {
     return <div className={`event-analytics-stat${href ? " event-analytics-stat--link" : ""}`}>
         <div className="event-analytics-stat__label">
+            {icon}
             <span>{label}</span>
             <EventTooltip help content={hint}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: label})} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
         </div>

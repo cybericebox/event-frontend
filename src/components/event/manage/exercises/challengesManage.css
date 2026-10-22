@@ -231,3 +231,16 @@ button.event-sortable__main{cursor:pointer}
 /* Phones: the scoring badge in one word («Власне», «Заходу»), so the card keeps two lines. */
 .event-set-popover__short{display:none}
 @media(max-width:640px){.event-set-popover__long{display:none}.event-set-popover__short{display:inline}}
+
+/* «Основні завдання»: the event-wide task figures above the resource plan. */
+.event-task-stats{display:grid;gap:var(--ib-3);margin-bottom:var(--ib-4)}
+.event-task-stats__row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2)}
+.event-task-stats__row-label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-task-stats__chips{display:flex;flex-wrap:wrap;gap:var(--ib-1);margin:0;padding:0;list-style:none}
+/* «Додати з каталогу»: multi-select filter chips (difficulty) and the count line. */
+.event-exercise-picker__filter--chips{flex-wrap:wrap}
+.event-filter-chips{display:flex;flex-wrap:wrap;gap:6px}
+.event-filter-chips>button{min-height:30px;padding:0 10px;border:1px solid var(--ib-line);border-radius:999px;background:var(--ib-paper);color:var(--ib-dim);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}
+.event-filter-chips>button[aria-pressed="true"]{border-color:var(--ib-action);background:color-mix(in srgb,var(--ib-action) 12%,var(--ib-paper));color:var(--ib-ink)}
+.event-filter-chips>button:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
+.event-exercise-picker__count{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}

@@ -33,6 +33,7 @@ import {setOpenByDefault, setStatus, setSummary, standReadiness} from "./taskRow
 import {SetStatusIcon} from "./SetStatusIcon";
 import {NoAgentFitsTag, ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 import {ResourcePlanSummary} from "./ResourcePlanSummary";
+import {TaskStatsSummary} from "./TaskStatsSummary";
 import {AverageDifficulty, SubtaskCount} from "./CatalogStats";
 import {InfrastructurePopover, ScoringPopover} from "./SetCardPopovers";
 import {BulkSelectionBar} from "./BulkSelectionBar";
@@ -146,6 +147,7 @@ export function ExerciseAttachments() {
     // Infrastructure can be enabled only before publication.
     const published = lifecycleQuery.data.Status !== "not_published";
     return <>
+        <TaskStatsSummary sets={sets} scoring={scoringQuery.data} stages={stages} groups={board.groups.data ?? []} />
         {scoringQuery.data.ForceEventScoring && <p className="event-manage-notice">{t("manage.challenges.task.scoringForcedNotice")}</p>}
         <ResourcePlanSummary eventID={eventID} attachments={sets.map(set => set.attachment)} />
         <section className="event-manage-section event-sets" aria-label={t("manage.exercises.sets")}>
