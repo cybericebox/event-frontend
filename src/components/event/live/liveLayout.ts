@@ -10,11 +10,11 @@ export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
 };
 
 // Widgets offered in the palette: a type with starting props and the cells
-// its preview thumbnail shows. Logos come as two items, the fixed organizers
-// block and the partners carousel. The A/D table waits for an Attack-Defense
+// its preview thumbnail shows. Logos are one block: a fixed row or a
+// carousel, with any caption (organizers, partners…). The A/D table waits for an Attack-Defense
 // mode; layouts that already hold one still load and render nothing.
 // Each item says in one line what the block shows; the palette lists the items by group.
-export const livePaletteGroups = ["results", "time", "info", "brand"] as const;
+export const livePaletteGroups = ["results", "time", "info"] as const;
 export type LivePaletteGroup = typeof livePaletteGroups[number];
 export type LivePaletteItem = {key: string; type: LiveWidget["type"]; group: LivePaletteGroup; label: string; description: string; props: LiveWidget["props"]; preview: {w: number; h: number}};
 export const livePaletteItems: LivePaletteItem[] = [
@@ -22,8 +22,7 @@ export const livePaletteItems: LivePaletteItem[] = [
     {key: "timer", type: "timer", group: "time", label: liveWidgetLabels.timer, description: t("manage.live.paletteDescription.timer"), props: {}, preview: {w: 3, h: 1}},
     {key: "chart", type: "chart", group: "results", label: liveWidgetLabels.chart, description: t("manage.live.paletteDescription.chart"), props: {}, preview: {w: 6, h: 4}},
     {key: "table", type: "table", group: "results", label: liveWidgetLabels.table, description: t("manage.live.paletteDescription.table"), props: {}, preview: {w: 4, h: 4}},
-    {key: "organizers", type: "logos", group: "brand", label: t("live.preset.organizers"), description: t("manage.live.paletteDescription.organizers"), props: {mode: "fixed", title: t("live.preset.organizers")}, preview: {w: 4, h: 1}},
-    {key: "partners", type: "logos", group: "brand", label: t("live.preset.partners"), description: t("manage.live.paletteDescription.partners"), props: {mode: "carousel", title: t("live.preset.partners")}, preview: {w: 4, h: 1}},
+    {key: "logos", type: "logos", group: "info", label: liveWidgetLabels.logos, description: t("manage.live.paletteDescription.logos"), props: {mode: "fixed"}, preview: {w: 4, h: 1}},
     {key: "podium", type: "podium", group: "results", label: liveWidgetLabels.podium, description: t("manage.live.paletteDescription.podium"), props: {}, preview: {w: 6, h: 3}},
     {key: "leaders", type: "podium", group: "results", label: t("live.preset.leaders"), description: t("manage.live.paletteDescription.leaders"), props: {variant: "cards", showRing: true, highlightTop: "medals"}, preview: {w: 9, h: 3}},
     {key: "facts", type: "facts", group: "info", label: liveWidgetLabels.facts, description: t("manage.live.paletteDescription.facts"), props: {}, preview: {w: 5, h: 2}},

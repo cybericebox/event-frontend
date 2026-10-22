@@ -49,7 +49,7 @@ export function LiveFreezeToggle({eventID, canManage}: {eventID: string; canMana
     const hint = settings.data && !settings.data.FreezeEnabled ? t("manage.live.freeze.disabled") : null;
     if (settings.isError) return <div className="event-live-settings__freeze"><EventLoadError compact message={t("manage.live.freeze.readError")} error={settings.error} onRetry={() => void settings.refetch()} /></div>;
     return <div className="event-live-settings__freeze">
-        <LiveSwitch label={t("manage.live.freeze.label")} help={t("manage.live.freeze.help")} checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || !settings.data} onChange={change} />
+        <LiveSwitch label={t("manage.live.freeze.label")} help={t("manage.live.freeze.help")} checked={settings.data?.LiveFreeze ?? true} disabled={!canManage || !settings.data || !settings.data.FreezeEnabled} onChange={change} />
         {hint && <small>{hint}</small>}
     </div>;
 }

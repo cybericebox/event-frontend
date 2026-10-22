@@ -68,7 +68,7 @@ describe("live editor", () => {
     it("renders every palette widget as a preview with sample data", () => {
         mount();
         const items = document.querySelectorAll(".event-live-palette-item");
-        expect(items.length).toBe(15);
+        expect(items.length).toBe(14);
         items.forEach(item => expect(item.querySelector(".live-canvas")).not.toBeNull());
         expect(screen.getByText(/зразок даних/)).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-table tbody tr")).not.toBeNull();

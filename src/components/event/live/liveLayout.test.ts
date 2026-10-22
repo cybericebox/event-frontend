@@ -75,8 +75,8 @@ describe("palette and drop", () => {
         expect(types).toContain("timer");
     });
 
-    it("offers organizers and partners as two logo blocks", () => {
-        expect(livePaletteItems.filter(entry => entry.type === "logos").map(entry => entry.props.mode)).toEqual(["fixed", "carousel"]);
+    it("offers logos as one block (a fixed row or a carousel with any caption)", () => {
+        expect(livePaletteItems.filter(entry => entry.type === "logos").map(entry => entry.props.mode)).toEqual(["fixed"]);
     });
 
     it("names a logos widget by its title", () => {
