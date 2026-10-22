@@ -5,11 +5,11 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 
-const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: {Banners: string; Inbox: null}) => void>()}));
+const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: {Banners: string; Inbox: null}) => void>(), initial: "v1"}));
 vi.mock("@/utils/pulse", () => ({
     subscribePulse: (_event: string, listener: (pulse: {Banners: string; Inbox: null}) => void) => {
         pulses.listeners.add(listener);
-        queueMicrotask(() => listener({Banners: "v1", Inbox: null}));
+        queueMicrotask(() => listener({Banners: pulses.initial, Inbox: null}));
         return () => pulses.listeners.delete(listener);
     },
 }));
@@ -42,7 +42,7 @@ function renderBar() {
 
 describe("Банери сайту", () => {
     beforeEach(() => window.localStorage.clear());
-    afterEach(() => {cleanup(); pulses.listeners.clear(); vi.useRealTimers(); vi.restoreAllMocks();});
+    afterEach(() => {cleanup(); pulses.listeners.clear(); pulses.initial = "v1"; vi.useRealTimers(); vi.restoreAllMocks();});
 
     it("draws a level as a calm tinted row with a link and no close button when it cannot be dismissed", () => {
         const {container} = render(<SiteBanner banner={{Text: "Важливо", LinkURL: "https://example.com/a", LinkLabel: "Деталі", Level: "critical", Dismissible: false}} onDismiss={() => undefined} />);
@@ -148,6 +148,40 @@ describe("Банери сайту", () => {
         expect(await screen.findByText("Нове оголошення")).toBeTruthy();
         await emitPulse("v2");
         expect(listCalls(calls)).toHaveLength(2);
+    });
+
+    it("never asks for the list while the pulse reports no banners (the empty-list version or an empty one)", async () => {
+        const calls = mockBanners([banner()], [banner({Text: "Нове оголошення", Version: 2})]);
+        const {container} = renderBar();
+        await screen.findByText("Сервери недоступні до 18:00"); // the mount pulse ("v1")
+        await emitPulse("e3b0c44298fc1c14");
+        await waitFor(() => expect(container.querySelector("[data-testid=site-banners]")).toBeNull());
+        await emitPulse("");
+        expect(listCalls(calls)).toHaveLength(1);
+        await emitPulse("v2");
+        expect(await screen.findByText("Нове оголошення")).toBeTruthy();
+        expect(listCalls(calls)).toHaveLength(2);
+    });
+
+    it("a page load without banners asks nothing", async () => {
+        pulses.initial = "e3b0c44298fc1c14";
+        const calls = mockBanners([banner()]);
+        const {container} = renderBar();
+        await emitPulse("e3b0c44298fc1c14");
+        expect(listCalls(calls)).toHaveLength(0);
+        expect(container.querySelector("[data-testid=site-banners]")).toBeNull();
+    });
+
+    it("a remount with the version already held asks nothing", async () => {
+        const calls = mockBanners([banner()]);
+        const client = new QueryClient();
+        const view = render(<QueryClientProvider client={client}><SiteBannerBar eventID={EVENT_ID} /></QueryClientProvider>);
+        await screen.findByText("Сервери недоступні до 18:00");
+        view.unmount();
+        render(<QueryClientProvider client={client}><SiteBannerBar eventID={EVENT_ID} /></QueryClientProvider>);
+        expect(await screen.findByText("Сервери недоступні до 18:00")).toBeTruthy();
+        await emitPulse("v1");
+        expect(listCalls(calls)).toHaveLength(1);
     });
 
     it("shows the title of a banner whose text is empty", async () => {
