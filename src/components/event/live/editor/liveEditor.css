@@ -14,7 +14,7 @@
 /* The state tabs: a one-line segmented control in the toolbar row, at the height of its fields. */
 .event-live-scenes__tabs{display:flex;flex-wrap:wrap;align-self:flex-end;gap:2px;max-width:100%;padding:3px;border:1px solid var(--ib-line);border-radius:var(--ib-r-lg);background:var(--ib-seg-bg,var(--ib-paper));scrollbar-width:none}
 /* The mode select is as wide as its longer option. */
-.event-live-editor__tool--mode .event-select{width:auto;min-width:20rem}
+.event-live-editor__tool--mode .event-select{width:auto;min-width:14rem}
 /* Row 1: the screen mode and the state tabs; row 2: templates, copy, grid, undo. */
 .event-live-editor__break{flex-basis:100%;height:0}
 .event-live-scene-cell{position:relative;display:inline-flex}
@@ -27,8 +27,9 @@
 .event-live-scene__now{position:absolute;top:50%;right:4px;width:20px;height:20px;transform:translateY(-50%);cursor:help}
 .event-live-scene__now::after{content:"";position:absolute;top:50%;left:50%;width:7px;height:7px;border-radius:50%;background:var(--ib-ok);transform:translate(-50%,-50%)}
 .event-live-editor__toolbar{display:flex;align-items:flex-start;gap:var(--ib-3);flex-wrap:wrap}
-.event-live-editor__tool{display:grid;gap:5px;min-width:0}
-.event-live-editor__tool .event-select{width:190px}
+.event-live-editor__tool{display:flex;align-items:center;gap:6px;min-width:0}
+.event-live-editor__tool>.event-brand-field__head{flex:none;white-space:nowrap}
+.event-live-editor__tool .event-select{width:170px}
 .event-live-editor__template{align-self:start;white-space:nowrap}
 .event-live-editor__applied{color:var(--ib-dim);font-size:var(--ib-fs-12)}
 /* «Шаблон розкладки» dialog: a grid of live template cards. */
@@ -259,3 +260,25 @@
 .event-live-screens__label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-live-screens .event-select{width:auto;min-width:12rem;max-width:20rem}
 .event-live-screens>.event-manage-validation{flex-basis:100%}
+
+/* A compact editor (owner, 2026-10-22): one header row (title, screen, status,
+   undo and the icon actions, «Опублікувати»), one toolbar row with the labels
+   beside their fields, the screen at the top of its column. */
+.event-live-editor__heading{flex-wrap:nowrap}
+.event-live-editor__heading>.event-live-screens{margin-right:auto}
+.event-live-editor__actions{flex-wrap:nowrap}
+.event-live-editor__toolbar{align-items:center;row-gap:var(--ib-2)}
+.event-live-editor__toolbar .event-live-scenes__tabs{align-self:center}
+.event-live-editor__toolbar>.event-live-editor__history{margin-left:auto}
+.event-live-editor__stage-meta{gap:var(--ib-2);justify-content:flex-start}
+.event-live-editor__stage-meta>.event-live-editor__warnings-toggle{margin-left:auto}
+@media(min-width:1101px){.event-live-editor__screen-box{align-content:start}}
+.event-live-palette-item b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-live-palette-item small{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+/* The «⋯» menu of the screen: its actions, the delete one in the danger colour. */
+.event-live-screens__menu{min-width:220px}
+.event-live-screens__menu .ib-listbox__opt{display:flex;align-items:center;gap:8px}
+.event-live-screens__danger{color:var(--ib-danger)}
+.event-live-screens__separator{height:1px;margin:4px 0;background:var(--ib-line)}
+.event-live-screens__note{margin:2px 10px 4px;color:var(--ib-dim);font-size:var(--ib-fs-12)}
+.event-live-screens__busy{display:inline-flex;align-items:center;gap:6px;color:var(--ib-dim);font-size:var(--ib-fs-13)}

@@ -5656,7 +5656,7 @@
   "manage.live.screens.duplicating": "Duplicating…",
   "manage.live.screens.create": "New screen",
   "manage.live.screens.creating": "Creating…",
-  "manage.live.screens.full": "The event already has {max} screens, the maximum.",
+  "manage.live.screens.full": "No more screens can be added: the maximum is {max}.",
   "manage.live.screens.delete": "Delete the screen",
   "manage.live.screens.deleteTitle": "Delete this screen?",
   "manage.live.screens.deleteBody": "Its layout and draft go away, and its link stops working at once. Other screens stay as they are.",
@@ -5700,5 +5700,7 @@
   "manage.exercises.stats.chip": "{name}: {count}",
   "manage.live.settingsTab.awards": "Awards",
   "manage.live.section.awards": "Prize places",
-  "manage.live.section.placeColors": "Prize place colours"
+  "manage.live.section.placeColors": "Prize place colours",
+  "manage.live.screens.actions": "Screen actions",
+  "manage.live.noteLabel": "How to work with the grid"
 }

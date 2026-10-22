@@ -5656,7 +5656,7 @@
   "manage.live.screens.duplicating": "Дублюємо…",
   "manage.live.screens.create": "Новий екран",
   "manage.live.screens.creating": "Створюємо…",
-  "manage.live.screens.full": "У заходу вже {max} екранів — це максимум.",
+  "manage.live.screens.full": "Більше екранів додати не можна: максимум — {max}.",
   "manage.live.screens.delete": "Видалити екран",
   "manage.live.screens.deleteTitle": "Видалити цей екран?",
   "manage.live.screens.deleteBody": "Його розкладка й чернетка зникнуть, а посилання на нього одразу перестане працювати. Інші екрани не зміняться.",
@@ -5700,5 +5700,7 @@
   "manage.exercises.stats.chip": "{name}: {count}",
   "manage.live.settingsTab.awards": "Нагороди",
   "manage.live.section.awards": "Призові місця",
-  "manage.live.section.placeColors": "Кольори призових місць"
+  "manage.live.section.placeColors": "Кольори призових місць",
+  "manage.live.screens.actions": "Дії з екраном",
+  "manage.live.noteLabel": "Як працювати з сіткою"
 }
