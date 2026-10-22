@@ -167,7 +167,12 @@
 .event-live-theme:disabled{opacity:.5;cursor:not-allowed}
 
 
-.event-live-editor__error{padding:var(--ib-3);border:1px solid var(--ib-danger);border-radius:var(--ib-r);color:var(--ib-danger)}
+/* A problem of the screen: a bar over the top edge of the canvas, out of the flow, so the canvas never moves. */
+.event-live-editor__error{position:absolute;top:8px;left:8px;right:8px;z-index:5;display:flex;align-items:flex-start;gap:var(--ib-2);padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-danger);border-radius:var(--ib-r);background:var(--ib-surface);color:var(--ib-danger);font-size:var(--ib-fs-13)}
+.event-live-editor__error>span{flex:1;min-width:0}
+.event-live-editor__error button{display:grid;place-items:center;flex:none;width:24px;height:24px;padding:0;border:0;border-radius:var(--ib-r-sm);background:transparent;color:inherit;cursor:pointer}
+.event-live-editor__error button:hover{background:var(--ib-soft)}
+.event-live-editor__error button:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
 /* The open list lies over the stage, so the canvas never moves. */
 .event-live-editor__warnings{position:absolute;top:calc(100% + 4px);right:0;z-index:5;display:block;width:min(560px,100%);max-height:50vh;margin:0;overflow-y:auto;padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-warn);border-radius:var(--ib-r);background:var(--ib-paper);color:var(--ib-ink);list-style:none}
 .event-live-editor__warnings.is-quiet{border-color:var(--ib-line)}
@@ -218,3 +223,12 @@
 .event-live-links__actions{display:flex;gap:var(--ib-2);flex-wrap:wrap}
 
 .event-live-logo-row>.event-manage-validation{grid-column:1/-1;min-width:0}
+
+/* «Свої зображення» of places 1–3: three square pickers in a row. */
+.event-live-place-images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ib-2)}
+.event-live-place-image{position:relative;display:grid;gap:4px;color:var(--ib-dim);font-size:var(--ib-fs-12);cursor:pointer}
+.event-live-place-image__box{display:grid;place-items:center;aspect-ratio:1;overflow:hidden;border:1px dashed var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-dim)}
+.event-live-place-image__box img{width:100%;height:100%;object-fit:contain}
+.event-live-place-image input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.event-live-place-image input:disabled{cursor:not-allowed}
+.event-live-place-image:has(input:focus-visible) .event-live-place-image__box{outline:2px solid var(--ib-action);outline-offset:1px}

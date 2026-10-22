@@ -1,6 +1,6 @@
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import {liveWidgetName} from "./liveLayout";
-import {liveFactsFit, liveListGeometry, livePodiumFit, liveTimerFit, liveTitleFit, liveTwoLineRow, type LiveListGeometry} from "./liveFit";
+import {liveCardsBox, liveCardsFit, liveFactsFit, liveListGeometry, livePodiumFit, liveTimerFit, liveTitleFit, liveTwoLineRow, type LiveListGeometry} from "./liveFit";
 import {liveSampleStages} from "./liveSample";
 import {liveStageNameChars, type LiveStage} from "./liveStages";
 import {liveFactItems} from "./liveFacts";
@@ -230,6 +230,12 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
         const label = typeof item.props.label === "string" && item.props.label.trim() ? item.props.label.trim() : null;
         const fit = liveTimerFit({width: boxW, height: boxH, digits: item.props.showSeconds === true ? 8 : 5, label, labelSize: "m", labelMin: floors.caption});
         return fit.digits < floors.timer ? t("live.text.timerFit") : null;
+    }
+    if (item.type === "podium" && item.props.variant === "cards") {
+        const box = liveCardsBox(boxW, boxH - heading);
+        const fit = liveCardsFit({width: box.width, height: box.height, names: [t("live.text.sampleTeam"), t("live.text.sampleTeam"), t("live.text.sampleTeam")],
+            pointsChars: 5, ring: item.props.showRing === true, body, caption});
+        return fit.readable ? null : t("live.text.podiumFit");
     }
     if (item.type === "podium") {
         const fit = livePodiumFit({width: boxW, height: boxH - heading, names: [t("live.text.sampleTeam"), t("live.text.sampleTeam"), t("live.text.sampleTeam")], body, caption});
