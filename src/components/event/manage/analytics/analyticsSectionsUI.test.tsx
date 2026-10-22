@@ -170,10 +170,10 @@ describe("Доброчесність", () => {
         const blueRow = within(table).getByText("Blue").closest("tr")!;
         expect(within(blueRow).getByText("Web 1")).toBeTruthy();
         expect(within(blueRow).getByText("Спільні помилки (інформаційно)")).toBeTruthy();
-        expect(within(blueRow).getByText("Легке")).toBeTruthy();
+        expect(within(blueRow).getByText("Легка")).toBeTruthy();
         expect(within(blueRow).getByText("Надто швидко")).toBeTruthy();
         const redRow = within(table).getByText("Red").closest("tr")!;
-        expect(within(redRow).getByText("Елементарне")).toBeTruthy();
+        expect(within(redRow).getByText("Елементарна")).toBeTruthy();
         expect(within(redRow).getByText("Перевірено")).toBeTruthy();
         expect(lastList(calls).get("reviewed")).toBe("no");
         expect(screen.getByText(/а не вердикти/)).toBeTruthy();
@@ -188,7 +188,7 @@ describe("Доброчесність", () => {
         const table = await screen.findByRole("table");
         expect(within(table).queryByText(/Здано через 3 с/)).toBeNull();
         fireEvent.click(screen.getByRole("button", {name: "Докази: Blue, Web 1"}));
-        expect(within(table).getByText("Здано через 3 с після першого відкриття завдання (поріг для рівня «Легке» — 20 с).")).toBeTruthy();
+        expect(within(table).getByText("Здано через 3 с після першого відкриття завдання (поріг для рівня «Легка» — 20 с).")).toBeTruthy();
         expect(within(table).getByText("Неправильні відповіді цієї команди збігаються з відповідями інших команд: 2.")).toBeTruthy();
         expect(within(table).getByText("flag{shared}")).toBeTruthy();
         expect(within(table).getByText(/^1\. Red — /)).toBeTruthy();
@@ -240,7 +240,7 @@ describe("Доброчесність", () => {
         renderWith(<AnalyticsIntegrity />);
         await screen.findByRole("table");
         fireEvent.click(screen.getByRole("button", {name: /Пороги/}));
-        fireEvent.change(screen.getByLabelText("Середнє"), {target: {value: "90"}});
+        fireEvent.change(screen.getByLabelText("Середня"), {target: {value: "90"}});
         fireEvent.click(screen.getByRole("button", {name: "Застосувати"}));
         await waitFor(() => expect(lastList(calls).get("floorMedium")).toBe("90"));
         expect(lastList(calls).get("floorElementary")).toBe("0");
