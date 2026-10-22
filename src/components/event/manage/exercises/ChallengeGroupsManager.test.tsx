@@ -99,6 +99,6 @@ describe("ChallengeGroupsManager task rows", () => {
         client.setQueryData(["event-management-scoring", "e1"], {Mode: 0, MinPoints: 0, MaxPoints: 0, FloorAtPercent: 0, ForceEventScoring: false, StaticPoints: null, UpdatedAt: ""});
         render(<QueryClientProvider client={client}><ChallengeGroupsManager /></QueryClientProvider>);
         const row = screen.getByText("Рахунок директора").closest(".event-group-order__task")!;
-        expect(row.querySelector(".event-group-order__meta")?.textContent).toBe("середнє22 бали");
+        expect(row.querySelector(".event-group-order__meta")?.textContent).toBe("Середня22 бали");
     });
 });

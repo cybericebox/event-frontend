@@ -154,7 +154,7 @@ it("uses the selected two-column card with numeric points and optional difficult
     tile=container.querySelector(".ib-tile")!;expect(tile.className).toContain("ib-tile--title-only");
     expect(tile.querySelector(".ib-tile__foot")).toBeNull();
     rerender(<ChallengeTile challenge={{...fixtureChallenge,SolvedAt:null}} showDifficulty onOpen={()=>{}}/>);
-    expect(container.querySelector(".ib-tile__difficulty")?.textContent).toBe("Складне");
+    expect(container.querySelector(".ib-tile__difficulty")?.textContent).toBe("Складна");
 });
 
 it("centers a card when an unavailable difficulty produces no visible metadata", () => {

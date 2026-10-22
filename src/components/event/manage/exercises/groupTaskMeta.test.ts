@@ -7,7 +7,7 @@ const task = (patch: Record<string, unknown> = {}) => ({Points: 150, EffectivePo
 
 describe("group order: difficulty and points of a task", () => {
     it("names the difficulty like the rest of the panel, nothing for an unknown one", () => {
-        expect(groupTaskDifficulty(task())).toBe("середнє");
+        expect(groupTaskDifficulty(task())).toBe("Середня");
         expect(groupTaskDifficulty(task({Snapshot: {name: "x", placeholders: []}}))).toBe("");
         expect(groupTaskDifficulty(task({Snapshot: {name: "x", difficulty: "legendary", placeholders: []}}))).toBe("");
     });
