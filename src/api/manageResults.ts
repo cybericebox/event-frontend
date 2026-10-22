@@ -24,6 +24,8 @@ export const resultsSnapshotSchema = z.object({
     TotalTeams: z.number().int().optional(),
     // The published tasks count: the live screen (view=live) only.
     Tasks: z.number().int().optional(),
+    // The full value of the published tasks, for the rings and bars of the live screen (view=live only).
+    MaxPoints: z.number().int().optional(),
     Freeze: freezeSchema.default(noFreeze),
     Display: displaySchema.default({ChartEnabled: true, ChartTeams: 10, RowsLimit: null}),
 }).transform(value => ({...value, TotalTeams: value.TotalTeams ?? value.Scoreboard.length}));

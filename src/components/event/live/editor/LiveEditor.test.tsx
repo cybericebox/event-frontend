@@ -55,7 +55,7 @@ describe("live editor", () => {
     it("renders every palette widget as a preview with sample data", () => {
         mount();
         const items = document.querySelectorAll(".event-live-palette-item");
-        expect(items.length).toBe(14);
+        expect(items.length).toBe(15);
         items.forEach(item => expect(item.querySelector(".live-canvas")).not.toBeNull());
         expect(screen.getByText(/зразок даних/)).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-table tbody tr")).not.toBeNull();
@@ -127,7 +127,7 @@ describe("live editor", () => {
         mount();
         fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
         const cards = within(screen.getByRole("radiogroup", {name: "Шаблони екрана"})).getAllByRole("radio");
-        expect(cards).toHaveLength(9);
+        expect(cards).toHaveLength(11);
         cards.forEach(card => expect(card.querySelector(".live-canvas")).not.toBeNull());
         const apply = screen.getByRole("button", {name: "Застосувати до екрана"}) as HTMLButtonElement;
         expect(apply.disabled).toBe(true);
