@@ -23,13 +23,23 @@ function mount(widget: LiveWidget, onProp = vi.fn()) {
 afterEach(cleanup);
 
 describe("live widget settings", () => {
-    it("groups settings under «Відображення» and «Розташування й розмір» with the remove icon in the header", () => {
+    it("puts settings on tabs («Вигляд», «Кольори», «Місце») with the remove icon in the header", () => {
         mount({id: "c", type: "chart", x: 1, y: 2, w: 8, h: 6, props: {}});
+        expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Вигляд", "Кольори", "Місце"]);
         expect(screen.getByText("Відображення")).toBeTruthy();
-        expect(screen.getByText("Розташування й розмір")).toBeTruthy();
         expect(screen.getByText("Кількість команд на графіку")).toBeTruthy();
+        expect(screen.queryByText("Розташування й розмір")).toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: "Місце"}));
+        expect(screen.getByText("Розташування й розмір")).toBeTruthy();
         expect(screen.getByRole("button", {name: "Прибрати блок"}).closest("header")).not.toBeNull();
         expect(screen.getAllByRole("button", {name: /^Про поле|Довідка|про поле/i}).length).toBeGreaterThan(0);
+    });
+
+    it("gives tables and podiums a «Топ-3» tab with the place marks", () => {
+        mount({id: "t", type: "table", x: 1, y: 2, w: 6, h: 6, props: {}});
+        fireEvent.click(screen.getByRole("tab", {name: "Топ-3"}));
+        expect(screen.getByText("Позначка місць")).toBeTruthy();
+        expect(screen.getByText("Смуги балів")).toBeTruthy();
     });
 
     it("warns when the rows would be unreadable and recommends a page time", () => {

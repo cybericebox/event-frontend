@@ -25,7 +25,7 @@ const attachment = {ID: "a1", ExerciseName: "Web", ExerciseID: "x1", VersionNumb
 const refreshAll = vi.fn(async () => undefined);
 vi.mock("./useBoardSets", () => ({
     useBoardSets: () => ({
-        attachments: {data: [attachment]}, sets: {data: [{attachment, challenges: []}]}, pending: false, failed: false, error: null,
+        attachments: {data: [attachment]}, groups: {data: []}, sets: {data: [{attachment, challenges: []}]}, pending: false, failed: false, error: null,
         retry: vi.fn(), refreshSets: vi.fn(), refreshGroups: vi.fn(), refreshAll,
     }),
 }));

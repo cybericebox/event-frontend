@@ -54,17 +54,26 @@ describe("catalog preview", () => {
 
     it("sends the search and infrastructure filters", async () => {
         const fetchMock = stubFetch({Data: [{ID: uid(30), Name: "Мережевий аналіз", Description: "", PublishedVersionID: uid(31), Tags: null, Scope: "event", Infrastructure: true, Attached: true}]});
-        const [choice] = await api.getPublishedExerciseChoices(eventID, "мережа", "yes");
+        const [choice] = await api.getPublishedExerciseChoices(eventID, {search: "мережа", infrastructure: "yes"});
         expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercise-catalog?search=${encodeURIComponent("мережа")}&infrastructure=yes`);
-        expect(choice).toMatchObject({Scope: "event", Infrastructure: true, Attached: true, Tags: []});
-        await api.getPublishedExerciseChoices(eventID, "");
+        expect(choice).toMatchObject({Scope: "event", Infrastructure: true, Attached: true, Tags: [], MatchedCount: null, AvailableCount: null});
+        await api.getPublishedExerciseChoices(eventID, {search: ""});
         expect(fetchMock.mock.calls[1][0]).toBe(`${base}/exercise-catalog?search=`);
     });
 
     it("repeats the tags parameter next to the other filters", async () => {
         const fetchMock = stubFetch({Data: []});
-        await api.getPublishedExerciseChoices(eventID, "web", "no", ["web", "криптографія"]);
+        await api.getPublishedExerciseChoices(eventID, {search: "web", infrastructure: "no", tags: ["web", "криптографія"]});
         expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercise-catalog?search=web&infrastructure=no&tags=web&tags=${encodeURIComponent("криптографія")}`);
+    });
+
+    it("repeats the difficulty parameter, sends attached and parses the counts", async () => {
+        const fetchMock = stubFetch({Data: [{ID: uid(30), Name: "Web", Description: "", PublishedVersionID: uid(31), MatchedCount: 120, AvailableCount: 300}]});
+        const [choice] = await api.getPublishedExerciseChoices(eventID, {difficulties: ["easy", "none"], attached: "no"});
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/exercise-catalog?search=&difficulty=easy&difficulty=none&attached=no`);
+        expect(choice).toMatchObject({MatchedCount: 120, AvailableCount: 300});
+        await api.getPublishedExerciseChoices(eventID, {attached: "all", difficulties: []});
+        expect(fetchMock.mock.calls[1][0]).toBe(`${base}/exercise-catalog?search=`);
     });
 
     it("loads tag suggestions with the prefix and the limit, null as empty", async () => {

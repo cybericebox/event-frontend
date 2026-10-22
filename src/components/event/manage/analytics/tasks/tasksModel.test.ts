@@ -68,7 +68,7 @@ describe("calibration chart", () => {
         const rows = [row(), row({ChallengeID: "c2", Difficulty: "hard", TeamsTried: 0, Calibration: {Verdict: "insufficient", ExpectedMin: 0.1, ExpectedMax: 0.45}})];
         expect(calibrationHasData(rows)).toBe(true);
         const option = calibrationChartOption(rows) as {xAxis: {data: string[]}; series: {type: string; data: unknown[]}[]};
-        expect(option.xAxis.data).toEqual(["легке", "складне"]);
+        expect(option.xAxis.data).toEqual(["Легка", "Складна"]);
         expect(option.series.map(s => s.type)).toEqual(["bar", "bar", "scatter"]);
         expect(option.series[2].data).toHaveLength(1);
         expect(option.series[0].data).toEqual([55, 10]);

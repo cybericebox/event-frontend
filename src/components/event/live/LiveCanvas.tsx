@@ -18,7 +18,8 @@ import {LiveQR} from "./LiveQR";
 import {LiveList, measureName, useElementSize, type LiveMetrics} from "./LiveParts";
 import {liveAlign, LiveClock, LiveFactsBlock, LivePodium, LiveStagesBlock} from "./LiveBlocks";
 import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
-import {liveBlockColors, liveHighlightOf, type LiveHighlight} from "./liveColors";
+import {liveBlockColors, liveHighlightOf, liveMarkerOf, livePlaceImages, type LiveHighlight, type LiveMarker} from "./liveColors";
+import {LivePlaceMark} from "./LiveMarks";
 import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import {clockLabel} from "@/utils/resultsFreeze";
 import crest from "@/styles/assets/crest-128.png";
@@ -27,7 +28,8 @@ import {t, tRich} from "@/i18n/t";
 
 const noStages: LiveStage[] = [];
 
-// Series colours of the «Класика» boards: DS series tokens, which `data-live` on the chart sets for the board theme.
+// Series colours of the «Класика» boards: DS series tokens, which `data-live` on the canvas sets for the board theme
+// (the chart lines and the table legend share them).
 const seriesColors = Array.from({length: 10}, (_, index) => `var(--ib-s${index + 1})`);
 
 function frozenSuffix(results?: ManageResultsSnapshot): string {
@@ -74,7 +76,9 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
     // One caption line is the unit of the chart margins; the line names are body text.
     const line = labelSize.height || 18;
     const nameLine = line * metrics.body / Math.max(1, metrics.caption);
-    const axis = line * 2.6, labels = Math.min(size.width * 0.32, nameLine * 8);
+    // «Підписи ліній → Без підписів»: the plot takes the whole width; the table can carry the colours.
+    const named = widget.props.labels !== "none";
+    const axis = line * 2.6, labels = named ? Math.min(size.width * 0.32, nameLine * 8) : line * 0.4;
     const box = {left: axis, top: line * 0.6, width: Math.max(10, size.width - axis - labels - line * 0.6), height: Math.max(10, size.height - line * 2.2)};
     const {series, max, cutX} = chartSeries(results, lines, box, start, end, frozen ? Date.parse(frozen) : null);
     const labelYs = spreadLabels(series.map(item => item.endY), nameLine * 1.15, box.top, box.top + box.height);
@@ -94,7 +98,7 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
                 {cutX !== null && <span className="live-chart__freeze-label" style={{left: cutX, top: box.top}}><Snowflake aria-hidden="true" />{t("live.chart.frozen")}</span>}
                 {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{livePoints(max * step)}</span>)}
                 {[0, 0.25, 0.5, 0.75, 1].map(step => <span key={step} className="live-chart__time" style={{left: box.left + box.width * step, top: box.top + box.height + line * 0.3, transform: `translateX(-${step * 100}%)`}}>{clockLabel(start + (end - start) * step)}</span>)}
-                {series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - nameLine / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors[index % colors.length]}} aria-hidden="true" /><span>{item.name}</span></span>)}
+                {named && series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - nameLine / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors[index % colors.length]}} aria-hidden="true" /><span>{item.name}</span></span>)}
             </>}
         </div>
     </div>;
@@ -190,23 +194,25 @@ function LiveTitle({widget, event, logo, stages, now, note, metrics}: {widget: L
 type LiveTeamRow = NonNullable<ManageResultsSnapshot["Scoreboard"]>[number];
 
 // «Колонки»: a wide table splits its page into two columns side by side.
-function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, barMax}: {
+function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, marker, images, legend, barMax}: {
     rows: LiveTeamRow[]; pinned: number; width: number; rowHeight: number; metrics: LiveMetrics; rankChars: number; pointsChars: number; event: PublicEventInfo;
-    highlight: LiveHighlight;
+    highlight: LiveHighlight; marker: LiveMarker; images: string[] | null;
+    // «Легенда графіка»: the line colour of each team the chart draws.
+    legend: Map<string, string> | null;
     // The points a full bar stands for; null without «Смуги балів».
     barMax: number | null;
 }) {
     const medals = highlight === "medals";
-    // A medal badge is wider than one or two digits.
-    const fit = liveTableFit({width, rowHeight, body: metrics.body, rankChars: medals ? Math.max(rankChars, 2.6) : rankChars, pointsChars, names: rows.map(team => team.TeamName), measure: measureName});
+    // A medal, cup or picture is wider than one or two digits.
+    const fit = liveTableFit({width, rowHeight, body: metrics.body, rankChars: marker !== "numbers" ? Math.max(rankChars, 2.6) : rankChars, pointsChars, names: rows.map(team => team.TeamName), measure: measureName});
     return <table className={`live-table${medals ? " live-table--medals" : highlight === "none" ? " live-table--plain" : ""}`} style={{"--live-row-font": `${fit.font}px`} as CSSProperties}>
         <colgroup><col style={{width: fit.rankWidth}} /><col /><col style={{width: fit.pointsWidth}} /></colgroup>
         <thead><tr style={{height: metrics.caption * liveHeaderRow}}><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead>
         <tbody style={{fontSize: fit.font}}>{rows.map((team, index) => <tr key={team.TeamID} style={{height: rowHeight}}
             className={[team.Rank === 1 ? "is-lead" : "", team.Rank <= 3 ? `is-top is-place-${team.Rank}` : "", index === pinned - 1 ? "is-pinned-last" : ""].filter(Boolean).join(" ") || undefined}>
-            <td>{medals && team.Rank <= 3 ? <span className="live-table__rank">{team.Rank}</span> : team.Rank}</td>
+            <td><LivePlaceMark place={team.Rank} marker={marker} images={images} /></td>
             <td className={fit.names[index].lines === 2 ? "live-table__name is-wrap" : "live-table__name"} style={{fontSize: fit.names[index].font}} title={team.TeamName}>
-                {team.TeamName}
+                {legend?.has(team.TeamID) && <i className="live-table__legend" style={{background: legend.get(team.TeamID)}} aria-hidden="true" />}{team.TeamName}
                 {barMax !== null && <span className="live-table__bar" aria-hidden="true"><i style={{"--live-bar": Math.max(0, Math.min(1, team.Points / barMax))} as CSSProperties} /></span>}
             </td>
             <td>{livePoints(team.Points)}</td>
@@ -221,7 +227,7 @@ export function liveTableSource<T>(teams: T[], props: LiveWidget["props"]): {row
     return {rows: teams.slice(offset, limit ? offset + limit : undefined), offset};
 }
 
-function LiveTable({widget, event, results, now, metrics, edit, suffix}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean; suffix: string}) {
+function LiveTable({widget, event, results, now, metrics, edit, suffix, legend}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean; suffix: string; legend: Map<string, string> | null}) {
     const teams = results?.Scoreboard ?? [];
     const {rows: source, offset} = liveTableSource(teams, widget.props);
     const columns = Number(widget.props.columns) === 2 ? 2 : 1;
@@ -240,6 +246,9 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix}: {widget
     const pointsChars = Math.max(...teams.map(team => livePoints(team.Points).length), 1);
     const split = Array.from({length: columns}, (_, index) => view.rows.slice(index * pageSize, (index + 1) * pageSize));
     const highlight = liveHighlightOf(widget);
+    const marker = liveMarkerOf(widget);
+    const images = livePlaceImages(widget);
+    const shownLegend = widget.props.showLegend === true ? legend : null;
     const barMax = widget.props.showBars === true ? liveMaxPoints(results) : null;
     return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={source.length ? null : t("live.table.empty")} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
         {(geometry, width) => {
@@ -247,7 +256,7 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix}: {widget
             const columnWidth = (width - gap * (columns - 1)) / columns;
             return <div className="live-table-columns" style={{gap}}>
                 {split.map((rows, index) => <TableColumn key={index} rows={rows} pinned={index === 0 ? view.pinned : 0} width={columnWidth} rowHeight={geometry.rowHeight}
-                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} highlight={highlight} barMax={barMax} />)}
+                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} highlight={highlight} marker={marker} images={images} legend={shownLegend} barMax={barMax} />)}
             </div>;
         }}
     </LiveList>;
@@ -284,14 +293,22 @@ function LiveSolves({widget, results, metrics, suffix, participation}: {widget: 
     </LiveList>;
 }
 
+// The chart draws the first `lines` places in the series colours, in rank order.
+export function liveChartLegend(results: ManageResultsSnapshot | undefined, lines: number): Map<string, string> {
+    const count = Math.min(10, Math.max(1, lines));
+    return new Map((results?.Scoreboard ?? []).slice(0, count).map((team, index) => [team.TeamID, seriesColors[index % seriesColors.length]]));
+}
+
 const liveResultsBlocks = new Set<LiveWidget["type"]>(["chart", "table", "solves", "podium", "facts"]);
 
-function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, note, suffix, named}: {
+function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, note, suffix, named, legend}: {
     widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean; metrics: LiveMetrics;
     // The note this widget carries (the timer, else the title): no connection or the freeze.
     note: LiveNote | null;
     // The freeze note of the captions (none while a badge shows it) and whether the timer names the stage.
     suffix: string; named: boolean;
+    // The chart's line colour per team, for a table legend; null without a chart.
+    legend: Map<string, string> | null;
 }) {
     const logo = resolveEventLogoURL(event.LogoURL);
     if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} stages={stages} now={now} note={note} metrics={metrics} />;
@@ -301,7 +318,7 @@ function WidgetContent({widget, event, stages, results, now, theme, edit, sample
     if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} metrics={metrics} suffix={suffix} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
     if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
-    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} suffix={suffix} />;
+    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} suffix={suffix} legend={legend} />;
     if (widget.type === "solves") return <LiveSolves widget={widget} results={results} metrics={metrics} suffix={suffix} participation={event.Participation} />;
     if (widget.type === "announcement") return <LiveAnnouncement widget={widget} metrics={metrics} />;
     if (widget.type === "logos") return <LiveLogos widget={widget} edit={edit} sample={sample} theme={theme} />;
@@ -361,6 +378,10 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     const note = liveNote(results, offlineSince);
     // The timer names the stage unless the title already shows it.
     const named = !layout.widgets.some(widget => widget.type === "title" && widget.props.subtitleStage === true);
+    // The teams the screen's chart draws and their line colours: a table legend reads them.
+    const chartLines = layout.widgets.find(widget => widget.type === "chart")?.props.lines;
+    const hasChart = layout.widgets.some(widget => widget.type === "chart");
+    const legend = useMemo(() => hasChart ? liveChartLegend(results, Number(chartLines) || 5) : null, [hasChart, chartLines, results]);
     const [clock, setClock] = useState(startClock);
     useEffect(() => {const frame = requestAnimationFrame(() => setClock(Date.now())); const timer = setInterval(() => setClock(Date.now()), 1000); return () => {cancelAnimationFrame(frame); clearInterval(timer);};}, []);
     const now = clock && clock + nowOffset;
@@ -382,8 +403,8 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
         return {gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`, ...(scale !== layout.screen.textScale ? liveTextVars(scale, profile) : {}), ...colors.get(widget.id)?.style};
     };
     const content = (widget: LiveWidget, editing: boolean) => <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={editing} sample={sample}
-        metrics={metricsFor(widget)} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} />;
-    return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+        metrics={metricsFor(widget)} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} legend={legend} />;
+    return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} data-live={layout.theme} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={blockStyle(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
             {content(widget, true)}
             {liveCorners.map(corner => <span key={corner} className={`live-widget__corner live-widget__corner--${corner}`} role="presentation" data-corner={corner}

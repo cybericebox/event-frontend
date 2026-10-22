@@ -191,6 +191,15 @@ export function livePodiumFit({width, height, names, body, caption, measure = li
 // points and the ring share the rest of the card.
 export type LiveCardsFit = {name: number; meta: number; points: number; ring: number; gap: number; pad: number; readable: boolean};
 
+// A cards block taller than wide stacks the cards: each gets the full width
+// and a third of the height. The size the fit sees is that of one row of
+// three such cards.
+export function liveCardsBox(width: number, height: number): {column: boolean; gap: number; width: number; height: number} {
+    const column = height > width * 0.9;
+    const gap = Math.max(4, Math.min(width, height) * 0.02);
+    return column ? {column, gap, width: width * 3 + 2 * gap, height: (height - 2 * gap) / 3} : {column, gap, width, height};
+}
+
 export function liveCardsFit({width, height, names, pointsChars, ring, body, caption, measure = liveEstimateWidth}: {
     width: number; height: number; names: string[]; pointsChars: number; ring: boolean; body: number; caption: number; measure?: LiveMeasure;
 }): LiveCardsFit {
