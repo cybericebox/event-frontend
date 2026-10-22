@@ -35,11 +35,16 @@ describe("live widget settings", () => {
         expect(screen.getAllByRole("button", {name: /^Про поле|Довідка|про поле/i}).length).toBeGreaterThan(0);
     });
 
-    it("gives tables and podiums a «Топ-3» tab with the place marks", () => {
-        mount({id: "t", type: "table", x: 1, y: 2, w: 6, h: 6, props: {}});
-        fireEvent.click(screen.getByRole("tab", {name: "Топ-3"}));
-        expect(screen.getByText("Позначка місць")).toBeTruthy();
+    it("gives tables and podiums a «Нагороди» tab; bars and the legend stay on «Вигляд», the medal colours on «Кольори»", () => {
+        mount({id: "t", type: "table", x: 1, y: 2, w: 6, h: 6, props: {highlightTop: "medals"}});
+        expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Вигляд", "Нагороди", "Кольори", "Місце"]);
         expect(screen.getByText("Смуги балів")).toBeTruthy();
+        expect(screen.getByText("Легенда графіка")).toBeTruthy();
+        fireEvent.click(screen.getByRole("tab", {name: "Нагороди"}));
+        expect(screen.getByText("Позначка місць")).toBeTruthy();
+        expect(screen.queryByText("Колір 1-го місця")).toBeNull();
+        fireEvent.click(screen.getByRole("tab", {name: "Кольори"}));
+        expect(screen.getByText("Колір 1-го місця")).toBeTruthy();
     });
 
     it("warns when the rows would be unreadable and recommends a page time", () => {

@@ -35,7 +35,7 @@ import {t, tPlural} from "@/i18n/t";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
-import {EventTooltip} from "@/components/ui/EventTooltip";
+import {EventTooltip, FloatingTooltips} from "@/components/ui/EventTooltip";
 
 const dragMime = "application/x-live-widget";
 const paletteBox = {width: 72, height: 40};
@@ -449,7 +449,8 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     const status = autosave.status;
     const problem = error || canvasProblem(layout);
     const profile = t(liveTextProfile(shown.screen) === "led" ? "manage.live.preview.led" : "manage.live.preview.projector");
-    return <div className="event-live-editor">
+    // The palette and the settings scroll on their own: their tooltips float above them.
+    return <FloatingTooltips.Provider value><div className="event-live-editor">
         <header className="event-live-editor__heading">
             {/* The introduction lives behind (?), so the screen keeps the height. */}
             <div className="event-live-editor__title"><h1>{t("manage.live.title")}</h1>
@@ -650,5 +651,5 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
         <ConfirmDialog open={confirmRemove && !!selected && editable} onCancel={() => setConfirmRemove(false)} tone="danger" title={t("manage.live.removeConfirm.title")} subject={selected ? liveWidgetName(selected) : undefined}
             description={t(selected?.type === "logos" ? "manage.live.removeConfirm.bodyLogos" : "manage.live.removeConfirm.body")} confirmLabel={t("manage.live.removeWidget")} busyLabel={t("common.busy.removing")}
             onConfirm={() => {if (selected) mutate({...layout, widgets: layout.widgets.filter(item => item.id !== selected.id)}); setSelectedID(null); setConfirmRemove(false);}} />
-    </div>;
+    </div></FloatingTooltips.Provider>;
 }
