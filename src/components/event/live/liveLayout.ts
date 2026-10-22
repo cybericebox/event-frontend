@@ -13,24 +13,26 @@ export const liveWidgetLabels: Record<LiveWidget["type"], string> = {
 // its preview thumbnail shows. Logos come as two items, the fixed organizers
 // block and the partners carousel. The A/D table waits for an Attack-Defense
 // mode; layouts that already hold one still load and render nothing.
-// Each item says in one line what the block shows.
-export type LivePaletteItem = {key: string; type: LiveWidget["type"]; label: string; description: string; props: LiveWidget["props"]; preview: {w: number; h: number}};
+// Each item says in one line what the block shows; the palette lists the items by group.
+export const livePaletteGroups = ["results", "time", "info", "brand"] as const;
+export type LivePaletteGroup = typeof livePaletteGroups[number];
+export type LivePaletteItem = {key: string; type: LiveWidget["type"]; group: LivePaletteGroup; label: string; description: string; props: LiveWidget["props"]; preview: {w: number; h: number}};
 export const livePaletteItems: LivePaletteItem[] = [
-    {key: "title", type: "title", label: liveWidgetLabels.title, description: t("manage.live.paletteDescription.title"), props: {}, preview: {w: 4, h: 1}},
-    {key: "timer", type: "timer", label: liveWidgetLabels.timer, description: t("manage.live.paletteDescription.timer"), props: {}, preview: {w: 3, h: 1}},
-    {key: "chart", type: "chart", label: liveWidgetLabels.chart, description: t("manage.live.paletteDescription.chart"), props: {}, preview: {w: 6, h: 4}},
-    {key: "table", type: "table", label: liveWidgetLabels.table, description: t("manage.live.paletteDescription.table"), props: {}, preview: {w: 4, h: 4}},
-    {key: "organizers", type: "logos", label: t("live.preset.organizers"), description: t("manage.live.paletteDescription.organizers"), props: {mode: "fixed", title: t("live.preset.organizers")}, preview: {w: 4, h: 1}},
-    {key: "partners", type: "logos", label: t("live.preset.partners"), description: t("manage.live.paletteDescription.partners"), props: {mode: "carousel", title: t("live.preset.partners")}, preview: {w: 4, h: 1}},
-    {key: "podium", type: "podium", label: liveWidgetLabels.podium, description: t("manage.live.paletteDescription.podium"), props: {}, preview: {w: 6, h: 3}},
-    {key: "leaders", type: "podium", label: t("live.preset.leaders"), description: t("manage.live.paletteDescription.leaders"), props: {variant: "cards", showRing: true, highlightTop: "medals"}, preview: {w: 9, h: 3}},
-    {key: "facts", type: "facts", label: liveWidgetLabels.facts, description: t("manage.live.paletteDescription.facts"), props: {}, preview: {w: 5, h: 2}},
-    {key: "solves", type: "solves", label: liveWidgetLabels.solves, description: t("manage.live.paletteDescription.solves"), props: {}, preview: {w: 4, h: 3}},
-    {key: "first", type: "solves", label: t("live.preset.firstSolves"), description: t("manage.live.paletteDescription.first"), props: {mode: "first"}, preview: {w: 4, h: 3}},
-    {key: "stages", type: "stages", label: liveWidgetLabels.stages, description: t("manage.live.paletteDescription.stages"), props: {}, preview: {w: 4, h: 3}},
-    {key: "clock", type: "clock", label: liveWidgetLabels.clock, description: t("manage.live.paletteDescription.clock"), props: {}, preview: {w: 3, h: 1}},
-    {key: "announcement", type: "announcement", label: liveWidgetLabels.announcement, description: t("manage.live.paletteDescription.announcement"), props: {}, preview: {w: 4, h: 1}},
-    {key: "qr", type: "qr", label: liveWidgetLabels.qr, description: t("manage.live.paletteDescription.qr"), props: {}, preview: {w: 2, h: 2}},
+    {key: "title", type: "title", group: "info", label: liveWidgetLabels.title, description: t("manage.live.paletteDescription.title"), props: {}, preview: {w: 4, h: 1}},
+    {key: "timer", type: "timer", group: "time", label: liveWidgetLabels.timer, description: t("manage.live.paletteDescription.timer"), props: {}, preview: {w: 3, h: 1}},
+    {key: "chart", type: "chart", group: "results", label: liveWidgetLabels.chart, description: t("manage.live.paletteDescription.chart"), props: {}, preview: {w: 6, h: 4}},
+    {key: "table", type: "table", group: "results", label: liveWidgetLabels.table, description: t("manage.live.paletteDescription.table"), props: {}, preview: {w: 4, h: 4}},
+    {key: "organizers", type: "logos", group: "brand", label: t("live.preset.organizers"), description: t("manage.live.paletteDescription.organizers"), props: {mode: "fixed", title: t("live.preset.organizers")}, preview: {w: 4, h: 1}},
+    {key: "partners", type: "logos", group: "brand", label: t("live.preset.partners"), description: t("manage.live.paletteDescription.partners"), props: {mode: "carousel", title: t("live.preset.partners")}, preview: {w: 4, h: 1}},
+    {key: "podium", type: "podium", group: "results", label: liveWidgetLabels.podium, description: t("manage.live.paletteDescription.podium"), props: {}, preview: {w: 6, h: 3}},
+    {key: "leaders", type: "podium", group: "results", label: t("live.preset.leaders"), description: t("manage.live.paletteDescription.leaders"), props: {variant: "cards", showRing: true, highlightTop: "medals"}, preview: {w: 9, h: 3}},
+    {key: "facts", type: "facts", group: "info", label: liveWidgetLabels.facts, description: t("manage.live.paletteDescription.facts"), props: {}, preview: {w: 5, h: 2}},
+    {key: "solves", type: "solves", group: "results", label: liveWidgetLabels.solves, description: t("manage.live.paletteDescription.solves"), props: {}, preview: {w: 4, h: 3}},
+    {key: "first", type: "solves", group: "results", label: t("live.preset.firstSolves"), description: t("manage.live.paletteDescription.first"), props: {mode: "first"}, preview: {w: 4, h: 3}},
+    {key: "stages", type: "stages", group: "time", label: liveWidgetLabels.stages, description: t("manage.live.paletteDescription.stages"), props: {}, preview: {w: 4, h: 3}},
+    {key: "clock", type: "clock", group: "time", label: liveWidgetLabels.clock, description: t("manage.live.paletteDescription.clock"), props: {}, preview: {w: 3, h: 1}},
+    {key: "announcement", type: "announcement", group: "info", label: liveWidgetLabels.announcement, description: t("manage.live.paletteDescription.announcement"), props: {}, preview: {w: 4, h: 1}},
+    {key: "qr", type: "qr", group: "info", label: liveWidgetLabels.qr, description: t("manage.live.paletteDescription.qr"), props: {}, preview: {w: 2, h: 2}},
 ];
 
 // The name of a placed widget: its own caption (a logos block: its title),

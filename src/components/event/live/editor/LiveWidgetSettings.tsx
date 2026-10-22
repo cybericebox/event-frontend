@@ -30,6 +30,8 @@ import {liveAccentContrastMin, liveBlockColors, liveFillColor, liveFillOf, liveF
 import {LiveLogosEditor} from "./LiveLogosEditor";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 
+type SettingsTab = "display" | "top" | "colors" | "place";
+
 // null drops a setting back to its default.
 type PropValue = string | number | boolean | string[] | LiveLogoItem[] | null;
 export type LivePropValue = PropValue;
@@ -328,12 +330,23 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
 }) {
     const eventID = event.EventID;
     const minimum = liveWidgetMinimums[widget.type];
+    // The settings sit on tabs, so each one fits without scrolling: «Вигляд»
+    // (content and text), «Топ-3» (tables and podiums), «Кольори», «Місце».
+    const ranked = widget.type === "table" || widget.type === "podium";
+    const tabs: SettingsTab[] = ranked ? ["display", "top", "colors", "place"] : ["display", "colors", "place"];
+    const [chosenTab, setTab] = useState<SettingsTab>("display");
+    const tab: SettingsTab = tabs.includes(chosenTab) ? chosenTab : "display";
+    const tabsID = useId();
     return <div className="event-live-settings">
         <header className="event-live-settings__head">
             <h3>{liveWidgetName(widget)}</h3>
             {!disabled && <EventTooltip content={t("manage.live.removeWidget")}>{id => <button className="ib-icon-btn ib-icon-btn--sm event-live-settings__remove" type="button" aria-label={t("manage.live.removeWidget")} aria-describedby={id} onClick={onRemove}><Trash2 size={16} /></button>}</EventTooltip>}
         </header>
-        <Section title={t("manage.live.section.display")}>
+        <div className="ib-seg ib-seg--block event-live-settings__tabs" role="tablist" aria-label={t("manage.live.settingsTabs")}>
+            {tabs.map(key => <button key={key} type="button" role="tab" id={`${tabsID}-${key}`} aria-selected={tab === key} aria-controls={`${tabsID}-panel`} onClick={() => setTab(key)}>{t(`manage.live.settingsTab.${key}`)}</button>)}
+        </div>
+        <div className="event-live-settings__panel" role="tabpanel" id={`${tabsID}-panel`} aria-labelledby={`${tabsID}-${tab}`}>
+        {tab === "display" && <><Section title={t("manage.live.section.display")}>
             {widget.type === "title" && <>
                 <LiveSwitch label={t("manage.live.prop.subtitleStage")} help={t("manage.live.prop.subtitleStageHelp")} checked={widget.props.subtitleStage === true} disabled={disabled} onChange={value => onProp("subtitleStage", value)} />
                 <LiveField label={t("manage.live.prop.subtitle")} help={t(widget.props.subtitleStage === true ? "manage.live.prop.subtitleStageFallback" : "manage.live.prop.subtitleHelp")}>
@@ -355,7 +368,6 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                     onChange={value => onProp("variant", value === "cards" ? value : null)} />
                 <LiveSwitch label={t("manage.live.prop.showPoints")} help={t("manage.live.prop.showPointsHelp")} checked={widget.props.showPoints !== false} disabled={disabled} onChange={value => onProp("showPoints", value ? null : false)} />
                 {widget.props.variant === "cards" && <LiveSwitch label={t("manage.live.prop.showRing")} help={t("manage.live.prop.showRingHelp")} checked={widget.props.showRing === true} disabled={disabled} onChange={value => onProp("showRing", value ? true : null)} />}
-                <HighlightFields eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />
             </>}
             {widget.type === "facts" && <FactsFields widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "stages" && <LiveSwitch label={t("manage.live.prop.showDone")} help={t("manage.live.prop.showDoneHelp")} checked={widget.props.showDone !== false} disabled={disabled} onChange={value => onProp("showDone", value ? null : false)} />}
@@ -367,11 +379,6 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                     options={[5, 6, 7, 8, 9, 10].map(value => ({value: String(value), label: String(value)}))} />}
             </LiveField>}
             {(widget.type === "table" || widget.type === "solves") && <RowsFields layout={layout} widget={widget} disabled={disabled} onProp={onProp} />}
-            {widget.type === "table" && <>
-                <HighlightFields eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />
-                <LiveSwitch label={t("manage.live.prop.showLegend")} help={t("manage.live.prop.showLegendHelp")} checked={widget.props.showLegend === true} disabled={disabled} onChange={value => onProp("showLegend", value ? true : null)} />
-                <LiveSwitch label={t("manage.live.prop.showBars")} help={t("manage.live.prop.showBarsHelp")} checked={widget.props.showBars === true} disabled={disabled} onChange={value => onProp("showBars", value ? true : null)} />
-            </>}
             {widget.type === "announcement" && <>
                 <LiveField label={t("manage.live.prop.announcement")} help={t("manage.live.prop.announcementHelp")}>
                     {id => <textarea id={id} className="event-manage-input" maxLength={500} value={textProp(widget, "text")} disabled={disabled} onChange={change => onProp("text", change.target.value)} />}
@@ -389,9 +396,16 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             </>}
             {widget.type === "logos" && <LogosFields eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />}
         </Section>
-        <CommonFields widget={widget} disabled={disabled} onProp={onProp} />
-        <ColorFields event={event} layout={layout} widget={widget} disabled={disabled} onProp={onProp} onProps={onProps} />
-        <Section title={t("manage.live.section.place")}>
+        <CommonFields widget={widget} disabled={disabled} onProp={onProp} /></>}
+        {tab === "top" && ranked && <Section title={t("manage.live.section.top")}>
+            <HighlightFields eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />
+            {widget.type === "table" && <>
+                <LiveSwitch label={t("manage.live.prop.showBars")} help={t("manage.live.prop.showBarsHelp")} checked={widget.props.showBars === true} disabled={disabled} onChange={value => onProp("showBars", value ? true : null)} />
+                <LiveSwitch label={t("manage.live.prop.showLegend")} help={t("manage.live.prop.showLegendHelp")} checked={widget.props.showLegend === true} disabled={disabled} onChange={value => onProp("showLegend", value ? true : null)} />
+            </>}
+        </Section>}
+        {tab === "colors" && <ColorFields event={event} layout={layout} widget={widget} disabled={disabled} onProp={onProp} onProps={onProps} />}
+        {tab === "place" && <Section title={t("manage.live.section.place")}>
             <div className="event-live-settings__cells">{(["x", "y", "w", "h"] as const).map(key => <LiveField key={key} label={t(`manage.live.pos.${key}`)}
                 help={t(`manage.live.pos.${key}Help`, {min: key === "w" ? minimum.w : minimum.h, cols: layout.grid.cols, rows: layout.grid.rows})} required>
                 {id => <LiveNumberInput id={id} value={widget[key]} min={key === "w" ? minimum.w : key === "h" ? minimum.h : 1} max={48} disabled={placeDisabled} onChange={value => onPlace({...widget, [key]: value})} />}
@@ -400,7 +414,8 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                 <EventTooltip content={t("manage.live.distributeRowTitle")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled={placeDisabled} aria-describedby={id} onClick={() => onDistribute("row")}><Columns3 size={16} /> {t("manage.live.distributeRow")}</button>}</EventTooltip>
                 <EventTooltip content={t("manage.live.distributeColumnTitle")}>{id => <button className="ib-btn ib-btn--sm" type="button" disabled={placeDisabled} aria-describedby={id} onClick={() => onDistribute("column")}><Rows3 size={16} /> {t("manage.live.distributeColumn")}</button>}</EventTooltip>
             </div>
-        </Section>
+        </Section>}
+        </div>
     </div>;
 }
 

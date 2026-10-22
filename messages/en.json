@@ -5630,5 +5630,21 @@
   "live.template.ceremony": "Award ceremony",
   "live.template.ceremonyDescription": "A podium with cups or your own pictures and places 4–9.",
   "live.template.sidePanel": "Side panel",
-  "live.template.sidePanelDescription": "Name, timer, QR and logos in a narrow column next to a full-height table."
+  "live.template.sidePanelDescription": "Name, timer, QR and logos in a narrow column next to a full-height table.",
+  "manage.live.settingsTabs": "Block settings",
+  "manage.live.settingsTab.display": "Look",
+  "manage.live.settingsTab.top": "Top 3",
+  "manage.live.settingsTab.colors": "Colours",
+  "manage.live.settingsTab.place": "Place",
+  "manage.live.section.top": "First places",
+  "manage.live.paletteSearch": "Find a block",
+  "manage.live.paletteNothing": "No such block",
+  "manage.live.paletteOpen": "Block «{name}»: preview and add",
+  "manage.live.paletteGroup.results": "Results",
+  "manage.live.paletteGroup.time": "Time and stages",
+  "manage.live.paletteGroup.info": "Information",
+  "manage.live.paletteGroup.brand": "Organizers and partners",
+  "manage.live.palettePreview.add": "Add to the screen",
+  "manage.live.palettePreview.size": "Takes at least {w}×{h} cells; resize it on the grid.",
+  "manage.live.palettePreview.locked": "Only the event owners and managers can edit the screen."
 }
