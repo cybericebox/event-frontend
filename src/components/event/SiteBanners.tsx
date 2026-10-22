@@ -3,7 +3,8 @@
 import {useEffect, useId, useRef, useState, type ReactNode} from "react";
 import Link from "next/link";
 import * as Popover from "@radix-ui/react-popover";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {useQuery, useQueryClient, type QueryClient} from "@tanstack/react-query";
+import {hasBanners} from "@/api/pulse";
 import {CircleAlert, Info, TriangleAlert, X} from "lucide-react";
 import {dismissPersonalBanner, getSiteBanners, type VisibleBanner} from "@/api/siteBanners";
 import {EventTooltip} from "@/components/ui/EventTooltip";
@@ -56,9 +57,18 @@ function rememberDismissal(banner: VisibleBanner) {
     try {window.localStorage.setItem(bannerDismissKey(banner), "1");} catch {/* storage is unavailable: the banner stays hidden until reload */}
 }
 
+// The Banners version each cached list stands for, per query client and event (module level, so a remount reuses it).
+const bannerVersions = new WeakMap<QueryClient, Map<string, string>>();
+function heldVersions(client: QueryClient): Map<string, string> {
+    let versions = bannerVersions.get(client);
+    if (!versions) { versions = new Map(); bannerVersions.set(client, versions); }
+    return versions;
+}
+
 // The data part: the banners of the event site for the current viewer. The list is never read on its own:
 // the first pulse (it fires on mount) and every later pulse with a new Banners version fetch it, so the version
-// held is always the one reported by the pulse. The bar shows nothing until then. A dismissed site/system banner
+// held is always the one reported by the pulse; a version of an empty list is never fetched, and a remount with
+// the version already held asks nothing. The bar shows nothing until then. A dismissed site/system banner
 // stays hidden by `${ID}:${Version}`, so an edited banner shows up again; a personal one is dismissed on the server.
 export function SiteBannerBar({eventID}: {eventID: string}) {
     const queryClient = useQueryClient();
@@ -67,13 +77,17 @@ export function SiteBannerBar({eventID}: {eventID: string}) {
         enabled: false, staleTime: Infinity, refetchInterval: false, refetchOnWindowFocus: false, refetchOnReconnect: false, retry: false,
     });
     useEffect(() => {
-        let held: string | null = null;
+        const key = ["site-banners", eventID];
+        const versions = heldVersions(queryClient);
         return subscribePulse(eventID, pulse => {
+            // The version held survives a remount (/manage ↔ the public pages) as long as its list is still cached.
+            const held = queryClient.getQueryData(key) === undefined ? null : versions.get(eventID) ?? null;
             if (held === pulse.Banners) return;
-            const previous = held;
-            held = pulse.Banners;
-            queryClient.fetchQuery({queryKey: ["site-banners", eventID], queryFn: () => getSiteBanners(eventID), staleTime: 0})
-                .catch(() => { if (held === pulse.Banners) held = previous; }); // a failed read is retried by the next pulse
+            versions.set(eventID, pulse.Banners);
+            // No banners at all: nothing to ask, the list is simply empty.
+            if (!hasBanners(pulse.Banners)) { queryClient.setQueryData(key, []); return; }
+            queryClient.fetchQuery({queryKey: key, queryFn: () => getSiteBanners(eventID), staleTime: 0})
+                .catch(() => { if (versions.get(eventID) === pulse.Banners) { if (held === null) versions.delete(eventID); else versions.set(eventID, held); } }); // a failed read is retried by the next pulse
         });
     }, [eventID, queryClient]);
     const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
