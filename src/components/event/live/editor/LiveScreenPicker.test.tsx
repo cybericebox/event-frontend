@@ -17,6 +17,12 @@ const two = [summary("a", "Екран 1"), summary("b", "Бокові")];
 afterEach(cleanup);
 beforeEach(() => Object.values(api).forEach(fn => fn.mockReset()));
 
+// The actions live behind «⋯»: open it, then pick the item.
+async function action(name: RegExp | string) {
+    fireEvent.pointerDown(screen.getByRole("button", {name: "Дії з екраном"}), {button: 0, ctrlKey: false});
+    return await screen.findByRole("menuitem", {name});
+}
+
 function mount(screens = two, onChanged = vi.fn()) {
     render(<LiveScreenPicker eventID="e" screens={screens} max={10} currentID="a" disabled={false} onSwitch={vi.fn()} onChanged={onChanged} />);
     return onChanged;
@@ -26,23 +32,25 @@ describe("live screen picker", () => {
     it("creates a screen and opens it", async () => {
         api.create.mockResolvedValue(summary("c", "Екран 2"));
         const onChanged = mount();
-        fireEvent.click(screen.getByRole("button", {name: /Новий екран/}));
+        fireEvent.click(await action(/Новий екран/));
         await waitFor(() => expect(onChanged).toHaveBeenCalledWith("c"));
         expect(api.create).toHaveBeenCalledWith("e");
     });
 
-    it("stops at the maximum and never deletes the only screen", () => {
+    it("stops at the maximum and never deletes the only screen", async () => {
         mount([summary("a", "Екран 1")]);
-        expect(screen.queryByRole("button", {name: "Видалити екран"})).toBeNull();
+        await action(/Новий екран/);
+        expect(screen.queryByRole("menuitem", {name: /Видалити екран/})).toBeNull();
         cleanup();
         render(<LiveScreenPicker eventID="e" screens={two} max={2} currentID="a" disabled={false} onSwitch={vi.fn()} onChanged={vi.fn()} />);
-        expect((screen.getByRole("button", {name: /Новий екран/}) as HTMLButtonElement).disabled).toBe(true);
+        expect((await action(/Новий екран/)).getAttribute("aria-disabled")).toBe("true");
+        expect(screen.getByText("Більше екранів додати не можна: максимум — 2.")).toBeTruthy();
     });
 
     it("renames with the error beside the empty name", async () => {
         api.rename.mockResolvedValue(summary("a", "Головний"));
         const onChanged = mount();
-        fireEvent.click(screen.getByRole("button", {name: "Перейменувати екран"}));
+        fireEvent.click(await action(/Перейменувати екран/));
         const input = screen.getByLabelText("Назва екрана");
         fireEvent.change(input, {target: {value: "  "}});
         expect(input.getAttribute("aria-invalid")).toBe("true");
@@ -56,7 +64,7 @@ describe("live screen picker", () => {
     it("deletes after the confirmation and opens the remaining screen", async () => {
         api.remove.mockResolvedValue(undefined);
         const onChanged = mount();
-        fireEvent.click(screen.getByRole("button", {name: "Видалити екран"}));
+        fireEvent.click(await action(/Видалити екран/));
         fireEvent.click(screen.getByRole("button", {name: /^Видалити$/}));
         await waitFor(() => expect(onChanged).toHaveBeenCalledWith("b"));
         expect(api.remove).toHaveBeenCalledWith("e", "a");

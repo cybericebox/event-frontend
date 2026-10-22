@@ -52,8 +52,17 @@ export function LiveList({caption, rows, header, metrics, empty, progress, child
     const geometry = liveListGeometry({height: size.height, caption: metrics.caption, body: metrics.body, rows, header, captionShown: caption !== null});
     return <div className="live-list" ref={ref}>
         {caption !== null && <LiveCaption caption={caption} metrics={metrics}>
-            {progress && <i key={progress.page} className="live-list__progress" aria-hidden="true" style={{animationDuration: `${progress.seconds}s`, animationDelay: `-${progress.elapsed}s`}} />}
+            {progress && <PageProgress key={progress.page} seconds={progress.seconds} elapsed={progress.elapsed} />}
         </LiveCaption>}
         {empty !== null ? <EmptyState compact message={empty} /> : children(geometry, size.width)}
     </div>;
+}
+
+// The thin bar that fills over the page time. Its start offset is taken once,
+// when the page appears: the screen clock ticks every second, and changing the
+// animation delay on every tick would push the bar ahead each time, so it ran
+// out early and then jumped back at the page turn.
+export function PageProgress({seconds, elapsed}: {seconds: number; elapsed: number}) {
+    const [offset] = useState(elapsed);
+    return <i className="live-list__progress" aria-hidden="true" style={{animationDuration: `${seconds}s`, animationDelay: `-${offset}s`}} />;
 }

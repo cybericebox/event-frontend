@@ -13,10 +13,10 @@ vi.mock("@/api/manageResults", async importOriginal => ({...await importOriginal
 
 const event = {EventID: "01900000-0000-7000-8000-000000000001", Name: "Захід", StartTime: "2026-09-29T08:00:00Z", FinishTime: "2026-09-29T20:00:00Z", Participation: 1, LogoURL: "", Theme: {Brand: "#211A52"}} as unknown as PublicEventInfo;
 
-function mount(widget: LiveWidget, onProp = vi.fn()) {
+function mount(widget: LiveWidget, onProp = vi.fn(), others: LiveWidget[] = []) {
     api.settings.mockResolvedValue({FreezeEnabled: false, Freeze: {FrozenAt: null}});
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    const layout = {...defaultLiveLayout, widgets: [widget]};
+    const layout = {...defaultLiveLayout, widgets: [widget, ...others]};
     render(<QueryClientProvider client={client}><LiveWidgetSettings event={event} layout={layout} widget={widget} disabled={false} onPlace={vi.fn()} onProp={onProp} onProps={vi.fn()} onDistribute={vi.fn()} onRemove={vi.fn()} /></QueryClientProvider>);
     return onProp;
 }
@@ -36,7 +36,7 @@ describe("live widget settings", () => {
     });
 
     it("gives tables and podiums a «Нагороди» tab; bars and the legend stay on «Вигляд», the medal colours on «Кольори»", () => {
-        mount({id: "t", type: "table", x: 1, y: 2, w: 6, h: 6, props: {highlightTop: "medals"}});
+        mount({id: "t", type: "table", x: 1, y: 2, w: 6, h: 6, props: {highlightTop: "medals"}}, vi.fn(), [{id: "c", type: "chart", x: 7, y: 2, w: 6, h: 6, props: {}}]);
         expect(screen.getAllByRole("tab").map(tab => tab.textContent)).toEqual(["Вигляд", "Нагороди", "Кольори", "Місце"]);
         expect(screen.getByText("Смуги балів")).toBeTruthy();
         expect(screen.getByText("Легенда графіка")).toBeTruthy();
@@ -45,6 +45,26 @@ describe("live widget settings", () => {
         expect(screen.queryByText("Колір 1-го місця")).toBeNull();
         fireEvent.click(screen.getByRole("tab", {name: "Кольори"}));
         expect(screen.getByText("Колір 1-го місця")).toBeTruthy();
+    });
+
+    it("shows only the settings that do something here", () => {
+        // No chart on the screen: no chart legend; the first 5 places fit one page: no page time, no pinned rows.
+        mount({id: "t", type: "table", x: 1, y: 2, w: 6, h: 6, props: {limit: 5, rowsPerPage: 10}});
+        expect(screen.queryByText("Легенда графіка")).toBeNull();
+        expect(screen.queryByText("Час гортання сторінки")).toBeNull();
+        expect(screen.queryByText("Закріпити вгорі")).toBeNull();
+        expect(screen.getByText("Усі вибрані місця (5) вміщуються на одну сторінку — гортати нічого.")).toBeTruthy();
+        fireEvent.click(screen.getByRole("tab", {name: "Кольори"}));
+        expect(screen.getByText("Акцент")).toBeTruthy();
+        cleanup();
+        // A QR code draws nothing in the accent; the timer has one «Формат» and no seconds switch.
+        mount({id: "q", type: "qr", x: 1, y: 2, w: 2, h: 2, props: {value: "/"}});
+        fireEvent.click(screen.getByRole("tab", {name: "Кольори"}));
+        expect(screen.queryByText("Акцент")).toBeNull();
+        cleanup();
+        mount({id: "m", type: "timer", x: 1, y: 1, w: 3, h: 1, props: {}});
+        expect(screen.getByRole("button", {name: "01:05:09"})).toBeTruthy();
+        expect(screen.queryByText("Показувати секунди")).toBeNull();
     });
 
     it("warns when the rows would be unreadable and recommends a page time", () => {

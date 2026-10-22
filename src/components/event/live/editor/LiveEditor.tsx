@@ -449,6 +449,11 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     const status = autosave.status;
     const problem = error || canvasProblem(layout);
     const profile = t(liveTextProfile(shown.screen) === "led" ? "manage.live.preview.led" : "manage.live.preview.projector");
+    // Undo and redo sit in the header, next to the save status.
+    const historyButtons = <div className="event-live-editor__history">
+        <EventTooltip content={t("manage.live.undo")}>{id => <button className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.undo")} aria-describedby={id} disabled={!history.past.length} onClick={undo}><Undo2 size={16} /></button>}</EventTooltip>
+        <EventTooltip content={t("manage.live.redo")}>{id => <button className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.redo")} aria-describedby={id} disabled={!history.future.length} onClick={redo}><Redo2 size={16} /></button>}</EventTooltip>
+    </div>;
     // The palette and the settings scroll on their own: their tooltips float above them.
     return <FloatingTooltips.Provider value><div className="event-live-editor">
         <header className="event-live-editor__heading">
@@ -463,9 +468,10 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
                     {saveLabel(status, unpublished, published.version)}
                     {status === "error" && <button type="button" onClick={autosave.retry}>{t("manage.live.status.retry")}</button>}
                 </span>}
-                {canManage && <EventTooltip content={t("manage.live.links.hint")}>{id => <button className="ib-btn" type="button" aria-describedby={id} onClick={() => setLinksOpen(true)}><MonitorUp size={16} /> {t("manage.live.links.open")}</button>}</EventTooltip>}
-                <EventTooltip content={t("manage.live.show.hint")}>{id => <button className="ib-btn" type="button" aria-describedby={id} onClick={() => setShowing(true)}><Eye size={16} /> {t("manage.live.show.open")}</button>}</EventTooltip>
-                <EventTooltip content={t("manage.live.openHint")}>{id => <a className="ib-btn" href={`/live?screen=${encodeURIComponent(screenID)}`} target="_blank" rel="noreferrer" aria-describedby={id}><ExternalLink size={16} /> {t("manage.live.open")}</a>}</EventTooltip>
+                {canManage && historyButtons}
+                {canManage && <EventTooltip content={t("manage.live.links.hint")}>{id => <button className="ib-btn event-live-editor__icon" type="button" aria-label={t("manage.live.links.open")} aria-describedby={id} onClick={() => setLinksOpen(true)}><MonitorUp size={16} /></button>}</EventTooltip>}
+                <EventTooltip content={t("manage.live.show.hint")}>{id => <button className="ib-btn event-live-editor__icon" type="button" aria-label={t("manage.live.show.open")} aria-describedby={id} onClick={() => setShowing(true)}><Eye size={16} /></button>}</EventTooltip>
+                <EventTooltip content={t("manage.live.openHint")}>{id => <a className="ib-btn event-live-editor__icon" href={`/live?screen=${encodeURIComponent(screenID)}`} target="_blank" rel="noreferrer" aria-label={t("manage.live.open")} aria-describedby={id}><ExternalLink size={16} /></a>}</EventTooltip>
                 {canManage && <EventTooltip content={t("manage.live.publishHint")}>{id => <EventButton className="ib-btn ib-btn--primary" type="button" aria-describedby={id} busy={publishing} busyLabel={t("manage.live.publishing")}
                     disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}><Send size={16} /> {t("manage.live.publish")}</EventButton>}</EventTooltip>}
             </div>
@@ -493,7 +499,6 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
                         : <span key={key} className="event-live-scene-cell">{tab()}</span>;
                 })}
             </div>}
-            <span className="event-live-editor__break" aria-hidden="true" />
             <div className="event-live-editor__tool">
                 <ManageFieldLabel title={t("manage.live.templates.label")} help={t("manage.live.templates.help")} />
                 <button className="ib-btn event-live-editor__template" type="button" disabled={locked} onClick={() => setTemplatesOpen(true)}><LayoutTemplate size={16} /> {t("manage.live.templates.open")}</button>
@@ -522,10 +527,6 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
                         changeGrid(cols, rows);
                     }} />
             </div>
-            {canManage && <div className="event-live-editor__history">
-                <EventTooltip content={t("manage.live.undo")}>{id => <button className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.undo")} aria-describedby={id} disabled={!history.past.length} onClick={undo}><Undo2 size={16} /></button>}</EventTooltip>
-                <EventTooltip content={t("manage.live.redo")}>{id => <button className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.redo")} aria-describedby={id} disabled={!history.future.length} onClick={redo}><Redo2 size={16} /></button>}</EventTooltip>
-            </div>}
             {customGrid && <div className="event-live-editor__tool event-live-editor__custom-grid">
                 <ManageFieldLabel title={t("manage.live.gridCells")} help={t("manage.live.gridCellsHelp", liveGridLimits)} required />
                 <div>
@@ -578,6 +579,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
                     </div>
                 </div>
                 <div className="event-live-editor__stage-meta">
+                    <EventTooltip help content={<span className="event-brand-tooltip-copy">{t(canManage ? "manage.live.note" : "manage.live.noteViewer")}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.live.noteLabel")} aria-describedby={id}><CircleHelp size={14} /></button>}</EventTooltip>
                     <span className="event-live-editor__stage-note">{t("manage.live.preview.size", {width: shown.screen.width, height: shown.screen.height, profile})}{sample ? ` ${t("manage.live.sampleShort")}` : ""}</span>
                     {warnings.length > 0 && <button type="button" className={`event-live-editor__warnings-toggle${fits.length ? "" : " is-quiet"}`} aria-expanded={warningsOpen} aria-controls="live-warnings" onClick={() => setWarningsOpen(value => !value)}>
                         {fits.length > 0 && <TriangleAlert size={14} aria-hidden="true" />}{fits.length ? tPlural("manage.live.warningsCount", fits.length) : tPlural("manage.live.floorsCount", warnings.length)}
@@ -619,7 +621,6 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
                         </div>
                     </div>
                 </div>
-                <p className="event-live-editor__note">{t(canManage ? "manage.live.note" : "manage.live.noteViewer")}</p>
             </div>
             <aside className="event-live-editor__properties">
                 {selected ? <>

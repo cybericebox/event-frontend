@@ -1,11 +1,12 @@
 "use client";
 
 import {useId, useState} from "react";
-import {Copy, Pencil, Plus, Trash2} from "lucide-react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import {Copy, MoreHorizontal, Pencil, Plus, Trash2} from "lucide-react";
 import {createLiveScreen, deleteLiveScreen, duplicateLiveScreen, renameLiveScreen, type LiveScreenSummary} from "@/api/manageLive";
 import {DialogModal} from "@/components/event/DialogModal";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
-import {EventButton} from "@/components/ui/EventButton";
+import {BusyMark, EventButton} from "@/components/ui/EventButton";
 import {EventSelect} from "@/components/ui/EventSelect";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {failureText} from "@/components/ui/toastApiError";
@@ -14,8 +15,8 @@ import {t} from "@/i18n/t";
 export const liveScreenNameMax = 40;
 
 // «Екран»: the screens of the event in one select (up to 10), and the actions
-// on the open one. Every screen is edited with the same editor; switching
-// saves the open screen first (onSwitch waits for that).
+// on the open one behind «⋯» (rename, duplicate, new, delete). Every screen is
+// edited with the same editor; switching saves the open screen first.
 export function LiveScreenPicker({eventID, screens, max, currentID, disabled, onSwitch, onChanged}: {
     eventID: string; screens: LiveScreenSummary[]; max: number; currentID: string; disabled: boolean;
     onSwitch: (screenID: string) => void;
@@ -43,21 +44,23 @@ export function LiveScreenPicker({eventID, screens, max, currentID, disabled, on
     }
 
     return <div className="event-live-screens">
-        <span className="event-live-screens__label" id={`${nameID}-label`}>{t("manage.live.screens.label")}</span>
         <EventSelect ariaLabel={t("manage.live.screens.label")} value={current?.ID ?? ""} disabled={busy !== null}
             options={screens.map(screen => ({value: screen.ID, label: screen.Name}))} onValueChange={value => {if (value !== currentID) onSwitch(value);}} />
-        {!disabled && <>
-            <EventTooltip content={t("manage.live.screens.rename")}>{id => <button className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.screens.rename")} aria-describedby={id}
-                disabled={busy !== null} onClick={() => {setError(""); setRenaming(current?.Name ?? "");}}><Pencil size={16} /></button>}</EventTooltip>
-            <EventButton className="ib-btn ib-btn--sm" busy={busy === "duplicate"} busyLabel={t("manage.live.screens.duplicating")} disabled={full || busy !== null}
-                title={full ? t("manage.live.screens.full", {max}) : undefined}
-                onClick={() => void run("duplicate", async () => (await duplicateLiveScreen(eventID, currentID)).ID)}><Copy size={16} /> {t("manage.live.screens.duplicate")}</EventButton>
-            <EventButton className="ib-btn ib-btn--sm" busy={busy === "create"} busyLabel={t("manage.live.screens.creating")} disabled={full || busy !== null}
-                title={full ? t("manage.live.screens.full", {max}) : undefined}
-                onClick={() => void run("create", async () => (await createLiveScreen(eventID)).ID)}><Plus size={16} /> {t("manage.live.screens.create")}</EventButton>
-            {screens.length > 1 && <EventTooltip content={t("manage.live.screens.delete")}>{id => <button className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.screens.delete")} aria-describedby={id}
-                disabled={busy !== null} onClick={() => {setError(""); setDeleting(true);}}><Trash2 size={16} /></button>}</EventTooltip>}
-        </>}
+        {!disabled && <DropdownMenu.Root>
+            <EventTooltip content={t("manage.live.screens.actions")}>{id => <DropdownMenu.Trigger className="ib-btn ib-btn--ghost event-live-editor__icon" type="button" aria-label={t("manage.live.screens.actions")} aria-describedby={id} disabled={busy !== null}>
+                <MoreHorizontal size={16} aria-hidden="true" />
+            </DropdownMenu.Trigger>}</EventTooltip>
+            <DropdownMenu.Portal><DropdownMenu.Content className="ib-listbox event-live-screens__menu" sideOffset={4} align="start" collisionPadding={8}>
+                <DropdownMenu.Item className="ib-listbox__opt" onSelect={() => {setError(""); setRenaming(current?.Name ?? "");}}><Pencil size={15} aria-hidden="true" />{t("manage.live.screens.rename")}</DropdownMenu.Item>
+                <DropdownMenu.Item className="ib-listbox__opt" disabled={full} onSelect={() => void run("duplicate", async () => (await duplicateLiveScreen(eventID, currentID)).ID)}><Copy size={15} aria-hidden="true" />{t("manage.live.screens.duplicate")}</DropdownMenu.Item>
+                <DropdownMenu.Item className="ib-listbox__opt" disabled={full} onSelect={() => void run("create", async () => (await createLiveScreen(eventID)).ID)}><Plus size={15} aria-hidden="true" />{t("manage.live.screens.create")}</DropdownMenu.Item>
+                {full && <p className="event-live-screens__note">{t("manage.live.screens.full", {max})}</p>}
+                {screens.length > 1 && <><DropdownMenu.Separator className="event-live-screens__separator" />
+                    <DropdownMenu.Item className="ib-listbox__opt event-live-screens__danger" onSelect={() => {setError(""); setDeleting(true);}}><Trash2 size={15} aria-hidden="true" />{t("manage.live.screens.delete")}</DropdownMenu.Item></>}
+            </DropdownMenu.Content></DropdownMenu.Portal>
+        </DropdownMenu.Root>}
+        {/* A running create or duplicate says what it does next to the select. */}
+        {(busy === "create" || busy === "duplicate") && <span className="event-live-screens__busy" role="status"><BusyMark />{t(busy === "create" ? "manage.live.screens.creating" : "manage.live.screens.duplicating")}</span>}
         {error && !deleting && renaming === null && <small className="event-manage-validation" role="alert">{error}</small>}
         <DialogModal open={renaming !== null} onClose={() => setRenaming(null)} size="sm" title={t("manage.live.screens.renameTitle")}
             footer={<>

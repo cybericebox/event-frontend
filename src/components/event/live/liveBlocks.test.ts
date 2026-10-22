@@ -76,8 +76,8 @@ describe("timer format, zero and last minutes", () => {
     const at = Date.parse("2026-10-20T10:00:00Z");
     const countdown = (seconds: number): LiveTimerState => ({mode: "countdown", target: at + seconds * 1000, label: "До кінця"});
 
-    it("prints HH:MM:SS, MM:SS in the last hour, or words", () => {
-        expect(liveTimerDigits(countdown(45 * 60 + 7), at, true, "full")).toBe("00:45:07");
+    it("prints HH:MM:SS, MM:SS under an hour (empty hours dropped), or words", () => {
+        expect(liveTimerDigits(countdown(45 * 60 + 7), at, true, "full")).toBe("45:07");
         expect(liveTimerDigits(countdown(45 * 60 + 7), at, true, "compact")).toBe("45:07");
         expect(liveTimerDigits(countdown(2 * 3600 + 14 * 60), at, true, "compact")).toBe("02:14:00");
         expect(liveTimerDigits(countdown(2 * 3600 + 14 * 60 + 5), at, true, "words")).toBe("2 год 14 хв");
@@ -213,5 +213,19 @@ describe("timer and table minors", () => {
         const layout = livePreviewLayout({...defaultLiveLayout, widgets: [{id: "t", type: "timer", x: 1, y: 1, w: 3, h: 1, props: {digits: "words"}}]}, "720");
         expect(liveTextWarnings(layout).some(item => item.kind === "fit")).toBe(true);
         expect(liveTextWarnings({...layout, widgets: [{...layout.widgets[0], props: {}}]}).some(item => item.kind === "fit")).toBe(false);
+    });
+});
+
+describe("timer «Формат» choices", () => {
+    it("maps each choice to the stored props and back", async () => {
+        const {liveTimerFormat, liveTimerFormatProps} = await import("./liveStages");
+        expect(liveTimerFormat({})).toBe("hms");
+        expect(liveTimerFormat({showSeconds: false})).toBe("hm");
+        expect(liveTimerFormat({digits: "compact", showSeconds: false})).toBe("hm");
+        expect(liveTimerFormat({digits: "words", showSeconds: true})).toBe("words");
+        for (const format of ["hms", "hm", "words"] as const) {
+            const props = Object.fromEntries(Object.entries(liveTimerFormatProps(format)).filter(([, value]) => value !== null));
+            expect(liveTimerFormat(props)).toBe(format);
+        }
     });
 });
