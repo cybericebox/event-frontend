@@ -1,14 +1,19 @@
 "use client";
 
-import {useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode} from "react";
+import {createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode} from "react";
 
 // truncated shows the hint only while the trigger's text is actually cut off by an ellipsis;
 // silent keeps a purely visual bubble out of the accessibility tree (its text is read elsewhere);
 // help marks a «?» button whose only job is the bubble: a click, tap, Enter or Space toggles it.
 type EventTooltipProps = {content: ReactNode; children: (id: string) => ReactNode; placement?: "top" | "bottom"; className?: string; truncated?: boolean; silent?: boolean; floating?: boolean; help?: boolean};
 
+// Inside panels that scroll on their own (the live editor), an inline bubble
+// would be cut off at the panel edge: this makes every tooltip under it float.
+export const FloatingTooltips = createContext(false);
+
 export function EventTooltip(props: EventTooltipProps) {
-    return props.floating ? <FloatingEventTooltip {...props} /> : <InlineEventTooltip {...props} />;
+    const floating = useContext(FloatingTooltips);
+    return props.floating || floating ? <FloatingEventTooltip {...props} /> : <InlineEventTooltip {...props} />;
 }
 
 // A native popover shares the dialog's top layer, escaping its scroll/overflow clipping.

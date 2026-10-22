@@ -30,7 +30,7 @@ import {liveAccentContrastMin, liveBlockColors, liveFillColor, liveFillOf, liveF
 import {LiveLogosEditor} from "./LiveLogosEditor";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 
-type SettingsTab = "display" | "top" | "colors" | "place";
+type SettingsTab = "display" | "awards" | "colors" | "place";
 
 // null drops a setting back to its default.
 type PropValue = string | number | boolean | string[] | LiveLogoItem[] | null;
@@ -195,13 +195,12 @@ function CommonFields({widget, disabled, onProp}: {widget: LiveWidget; disabled:
     </Section>;
 }
 
-// «Виділення топ-3» of a table or podium: the mark of places 1–3, the row
-// tint and the medal colours (marks other than numbers use them too).
+// «Нагороди» of a table or podium: how the prize places 1–3 are marked (a
+// number, a medal, a cup or the organizer's picture) and highlighted; their
+// colours are on «Кольори».
 function HighlightFields({eventID, widget, disabled, onProp}: {eventID: string; widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const highlight = liveHighlightOf(widget);
     const marker = liveMarkerOf(widget);
-    const places = livePlaceColors(widget);
-    const custom = Array.isArray(widget.props.placeColors);
     return <>
         <LiveField label={t("manage.live.prop.marker")} help={t("manage.live.prop.markerHelp")}>
             {() => <EventSelect ariaLabel={t("manage.live.prop.marker")} value={marker} disabled={disabled} onValueChange={value => onProp("marker", value)}
@@ -210,11 +209,6 @@ function HighlightFields({eventID, widget, disabled, onProp}: {eventID: string; 
         {marker === "images" && <PlaceImagesField eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />}
         <LiveSegmented label={t("manage.live.prop.highlightTop")} help={t("manage.live.prop.highlightTopHelp")} value={highlight} disabled={disabled}
             options={liveHighlights.map(value => ({value, label: t(`manage.live.prop.highlightTop.${value}`)}))} onChange={value => onProp("highlightTop", value === "accent" ? null : value)} />
-        {(highlight === "medals" || marker !== "numbers") && <>
-            {places.map((color, index) => <LiveColorField key={index} label={t("manage.live.prop.placeColor", {place: index + 1})} help={t("manage.live.prop.placeColorHelp")} value={color} disabled={disabled}
-                onChange={value => onProp("placeColors", places.map((item, at) => at === index ? value : item))} />)}
-            {custom && !disabled && <button className="ib-btn ib-btn--sm ib-btn--ghost event-live-settings__reset" type="button" onClick={() => onProp("placeColors", null)}><RotateCcw size={14} /> {t("manage.live.prop.placeColorsReset")}</button>}
-        </>}
     </>;
 }
 
@@ -261,6 +255,18 @@ function PlaceImagesField({eventID, widget, disabled, onProp}: {eventID: string;
         {error && <small id={`${groupID}-error`} className="event-manage-validation" role="alert">{error.text}</small>}
         {!error && missing && <small>{t("manage.live.prop.placeImagesMissing")}</small>}
     </div>;
+}
+
+// The colours of places 1–3 (medals, cups, badges, row tints), on the «Кольори» tab of a table or podium.
+function PlaceColorFields({widget, disabled, onProp}: {widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
+    const places = livePlaceColors(widget);
+    const custom = Array.isArray(widget.props.placeColors);
+    if (liveHighlightOf(widget) !== "medals" && liveMarkerOf(widget) === "numbers") return null;
+    return <Section title={t("manage.live.section.placeColors")}>
+        {places.map((color, index) => <LiveColorField key={index} label={t("manage.live.prop.placeColor", {place: index + 1})} help={t("manage.live.prop.placeColorHelp")} value={color} disabled={disabled}
+            onChange={value => onProp("placeColors", places.map((item, at) => at === index ? value : item))} />)}
+        {custom && !disabled && <button className="ib-btn ib-btn--sm ib-btn--ghost event-live-settings__reset" type="button" onClick={() => onProp("placeColors", null)}><RotateCcw size={14} /> {t("manage.live.prop.placeColorsReset")}</button>}
+    </Section>;
 }
 
 // «Кольори»: the block's own fill, text and accent over the screen theme.
@@ -331,9 +337,10 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
     const eventID = event.EventID;
     const minimum = liveWidgetMinimums[widget.type];
     // The settings sit on tabs, so each one fits without scrolling: «Вигляд»
-    // (content and text), «Топ-3» (tables and podiums), «Кольори», «Місце».
+    // (what the block shows and its text), «Нагороди» (how a table or podium
+    // marks the prize places), «Кольори» (all colours), «Місце».
     const ranked = widget.type === "table" || widget.type === "podium";
-    const tabs: SettingsTab[] = ranked ? ["display", "top", "colors", "place"] : ["display", "colors", "place"];
+    const tabs: SettingsTab[] = ranked ? ["display", "awards", "colors", "place"] : ["display", "colors", "place"];
     const [chosenTab, setTab] = useState<SettingsTab>("display");
     const tab: SettingsTab = tabs.includes(chosenTab) ? chosenTab : "display";
     const tabsID = useId();
@@ -379,6 +386,10 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                     options={[5, 6, 7, 8, 9, 10].map(value => ({value: String(value), label: String(value)}))} />}
             </LiveField>}
             {(widget.type === "table" || widget.type === "solves") && <RowsFields layout={layout} widget={widget} disabled={disabled} onProp={onProp} />}
+            {widget.type === "table" && <>
+                <LiveSwitch label={t("manage.live.prop.showBars")} help={t("manage.live.prop.showBarsHelp")} checked={widget.props.showBars === true} disabled={disabled} onChange={value => onProp("showBars", value ? true : null)} />
+                <LiveSwitch label={t("manage.live.prop.showLegend")} help={t("manage.live.prop.showLegendHelp")} checked={widget.props.showLegend === true} disabled={disabled} onChange={value => onProp("showLegend", value ? true : null)} />
+            </>}
             {widget.type === "announcement" && <>
                 <LiveField label={t("manage.live.prop.announcement")} help={t("manage.live.prop.announcementHelp")}>
                     {id => <textarea id={id} className="event-manage-input" maxLength={500} value={textProp(widget, "text")} disabled={disabled} onChange={change => onProp("text", change.target.value)} />}
@@ -397,14 +408,13 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             {widget.type === "logos" && <LogosFields eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />}
         </Section>
         <CommonFields widget={widget} disabled={disabled} onProp={onProp} /></>}
-        {tab === "top" && ranked && <Section title={t("manage.live.section.top")}>
+        {tab === "awards" && ranked && <Section title={t("manage.live.section.awards")}>
             <HighlightFields eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />
-            {widget.type === "table" && <>
-                <LiveSwitch label={t("manage.live.prop.showBars")} help={t("manage.live.prop.showBarsHelp")} checked={widget.props.showBars === true} disabled={disabled} onChange={value => onProp("showBars", value ? true : null)} />
-                <LiveSwitch label={t("manage.live.prop.showLegend")} help={t("manage.live.prop.showLegendHelp")} checked={widget.props.showLegend === true} disabled={disabled} onChange={value => onProp("showLegend", value ? true : null)} />
-            </>}
         </Section>}
-        {tab === "colors" && <ColorFields event={event} layout={layout} widget={widget} disabled={disabled} onProp={onProp} onProps={onProps} />}
+        {tab === "colors" && <>
+            <ColorFields event={event} layout={layout} widget={widget} disabled={disabled} onProp={onProp} onProps={onProps} />
+            {ranked && <PlaceColorFields widget={widget} disabled={disabled} onProp={onProp} />}
+        </>}
         {tab === "place" && <Section title={t("manage.live.section.place")}>
             <div className="event-live-settings__cells">{(["x", "y", "w", "h"] as const).map(key => <LiveField key={key} label={t(`manage.live.pos.${key}`)}
                 help={t(`manage.live.pos.${key}Help`, {min: key === "w" ? minimum.w : minimum.h, cols: layout.grid.cols, rows: layout.grid.rows})} required>
