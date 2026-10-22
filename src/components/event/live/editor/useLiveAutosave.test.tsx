@@ -5,14 +5,14 @@ import {defaultLiveLayout, type LiveLayout} from "@/api/manageLive";
 import {liveAutosaveDelay, liveAutosaveRetryDelay, useLiveAutosave} from "./useLiveAutosave";
 
 const save = vi.hoisted(() => vi.fn());
-vi.mock("@/api/manageLive", async importOriginal => ({...await importOriginal<typeof import("@/api/manageLive")>(), saveManageLiveDraft: save}));
+vi.mock("@/api/manageLive", async importOriginal => ({...await importOriginal<typeof import("@/api/manageLive")>(), saveLiveScreenDraft: save}));
 
 const saved = JSON.stringify(defaultLiveLayout);
 const changed: LiveLayout = {...defaultLiveLayout, theme: "light"};
 
 function setup(layout: LiveLayout, valid = true) {
     const onSaved = vi.fn();
-    const hook = renderHook(props => useLiveAutosave({eventID: "e", layout: props.layout, savedJSON: saved, valid: props.valid, enabled: true, onSaved}), {initialProps: {layout, valid}});
+    const hook = renderHook(props => useLiveAutosave({eventID: "e", screenID: "s", layout: props.layout, savedJSON: saved, valid: props.valid, enabled: true, onSaved}), {initialProps: {layout, valid}});
     return {...hook, onSaved};
 }
 
@@ -32,7 +32,7 @@ describe("live autosave", () => {
         const {result, onSaved} = setup(changed);
         expect(result.current.status).toBe("pending");
         await act(async () => {vi.advanceTimersByTime(liveAutosaveDelay);});
-        expect(save).toHaveBeenCalledWith("e", changed);
+        expect(save).toHaveBeenCalledWith("e", "s", changed);
         expect(onSaved).toHaveBeenCalledWith(changed);
         expect(result.current.status).toBe("saved");
     });

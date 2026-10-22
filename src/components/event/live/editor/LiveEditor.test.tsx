@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {act, cleanup, fireEvent, render, screen, within} from "@testing-library/react";
+import {act, cleanup, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
-import {defaultLiveLayout, type LiveEditor as LiveEditorData} from "@/api/manageLive";
+import {defaultLiveLayout, type LiveEditor as LiveEditorData, type LiveScreens} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveEditor} from "./LiveEditor";
 import {applyLiveTemplate} from "../liveTemplates";
@@ -12,8 +12,8 @@ import {withLiveSceneMode} from "../liveScenes";
 HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
 HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 
-const api = vi.hoisted(() => ({save: vi.fn(), publish: vi.fn(), settings: vi.fn()}));
-vi.mock("@/api/manageLive", async importOriginal => ({...await importOriginal<typeof import("@/api/manageLive")>(), saveManageLiveDraft: api.save, publishManageLive: api.publish}));
+const api = vi.hoisted(() => ({save: vi.fn(), publish: vi.fn(), settings: vi.fn(), switchScreen: vi.fn(), screensChanged: vi.fn()}));
+vi.mock("@/api/manageLive", async importOriginal => ({...await importOriginal<typeof import("@/api/manageLive")>(), saveLiveScreenDraft: api.save, publishLiveScreen: api.publish}));
 vi.mock("@/api/manageResults", async importOriginal => ({...await importOriginal<typeof import("@/api/manageResults")>(),
     getResultsSettings: api.settings}));
 vi.mock("../useLiveResults", () => ({useLiveResults: () => ({results: {data: undefined}, stream: "live"})}));
@@ -35,9 +35,14 @@ const separate: LiveEditorData = {Published: applyLiveTemplate(applyLiveTemplate
 // The default layout fills its grid; without the partners row there is room.
 const roomy: LiveEditorData = {Published: {...defaultLiveLayout, widgets: defaultLiveLayout.widgets.filter(item => item.id !== "partners")}, Draft: null};
 
+const screens: LiveScreens = {Max: 10, LinksVisible: true, Screens: [
+    {ID: "screen-1", Name: "Екран 1", Position: 0, Version: 1, HasDraft: false, UpdatedAt: "2026-10-22T10:00:00Z", Link: null},
+    {ID: "screen-2", Name: "Бокові", Position: 1, Version: 1, HasDraft: false, UpdatedAt: "2026-10-22T10:00:00Z", Link: null},
+]};
 function mount(canManage = true, editor = data) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    return render(<QueryClientProvider client={client}><LiveEditor event={event} canManage={canManage} data={editor} /></QueryClientProvider>);
+    return render(<QueryClientProvider client={client}><LiveEditor event={event} canManage={canManage} data={editor} screenID="screen-1" screens={screens}
+        onScreenSwitch={api.switchScreen} onScreensChanged={api.screensChanged} /></QueryClientProvider>);
 }
 const widgets = () => document.querySelectorAll(".event-live-editor__native .live-widget").length;
 // A palette block opens large first; «Додати на екран» adds it (or is off when the screen can't take it).
@@ -111,7 +116,8 @@ describe("live editor", () => {
             fireEvent.click(screen.getByRole("radio", {name: /Класика світла/}));
             await act(async () => {vi.advanceTimersByTime(1000);});
             expect(api.save).toHaveBeenCalledTimes(1);
-            expect(api.save.mock.calls[0][1].theme).toBe("light");
+            expect(api.save.mock.calls[0][1]).toBe("screen-1");
+            expect(api.save.mock.calls[0][2].theme).toBe("light");
             expect(document.querySelector(".event-live-editor__status")!.textContent).toContain("не опубліковано");
             expect((screen.getByRole("button", {name: /Опублікувати/}) as HTMLButtonElement).disabled).toBe(false);
         } finally {vi.useRealTimers();}
@@ -329,5 +335,12 @@ describe("live editor", () => {
         expect(await screen.findByText(/вимкнено: зал бачить живі результати, і екран цього стану не покажеться/)).toBeTruthy();
         fireEvent.click(screen.getByRole("tab", {name: /Завершено/}));
         expect(screen.queryByText(/зал бачить живі результати/)).toBeNull();
+    });
+
+    it("switches screens from the header select and opens the open screen in a new tab", async () => {
+        mount();
+        expect(screen.getByRole("link", {name: /Відкрити екран/}).getAttribute("href")).toBe("/live?screen=screen-1");
+        fireEvent.change(screen.getByRole("combobox", {name: "Екран"}), {target: {value: "screen-2"}});
+        await waitFor(() => expect(api.switchScreen).toHaveBeenCalledWith("screen-2"));
     });
 });

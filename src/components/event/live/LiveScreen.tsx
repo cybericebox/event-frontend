@@ -144,15 +144,17 @@ export function LiveScreen({event, token, link, serverNow}: {event: PublicEventI
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const staff = !token;
+    // A moderator opens one of the event's screens with ?screen=<id>; without it, the first one.
+    const [screenID] = useState(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("screen"));
     const layoutQuery = useQuery({
-        queryKey: ["event-live-screen-layout", eventID], queryFn: () => getPublishedLiveLayout(eventID),
+        queryKey: ["event-live-screen-layout", eventID, screenID], queryFn: () => getPublishedLiveLayout(eventID, screenID),
         enabled: staff, retry: false, refetchOnWindowFocus: false,
     });
     // A light version check replaces reloading the whole layout every 15 s.
-    const version = useQuery({queryKey: ["event-live-screen-version", eventID], queryFn: () => getLiveLayoutVersion(eventID), retry: false, refetchInterval: 15000, enabled: staff && layoutQuery.isSuccess});
+    const version = useQuery({queryKey: ["event-live-screen-version", eventID, screenID], queryFn: () => getLiveLayoutVersion(eventID, screenID), retry: false, refetchInterval: 15000, enabled: staff && layoutQuery.isSuccess});
     useEffect(() => {
-        if (version.data !== undefined && layoutQuery.data && version.data !== layoutQuery.data.version) void queryClient.invalidateQueries({queryKey: ["event-live-screen-layout", eventID]});
-    }, [version.data, layoutQuery.data, queryClient, eventID]);
+        if (version.data !== undefined && layoutQuery.data && version.data !== layoutQuery.data.version) void queryClient.invalidateQueries({queryKey: ["event-live-screen-layout", eventID, screenID]});
+    }, [version.data, layoutQuery.data, queryClient, eventID, screenID]);
     const stagesQuery = useQuery({
         queryKey: ["event-management-stages", eventID], queryFn: () => getManageStages(eventID),
         enabled: staff, retry: false, refetchOnWindowFocus: false, refetchInterval: 30000,

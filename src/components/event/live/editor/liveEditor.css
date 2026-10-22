@@ -253,3 +253,9 @@
 /* The settings tabs of a block: one row over the panel. */
 .event-live-settings__tabs{margin-bottom:var(--ib-2)}
 .event-live-settings__panel{display:grid;gap:var(--ib-3)}
+
+/* «Екран»: the select of the event's screens and the actions on the open one, in the header. */
+.event-live-screens{display:flex;align-items:center;flex-wrap:wrap;gap:var(--ib-2);min-width:0}
+.event-live-screens__label{color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-live-screens .event-select{width:auto;min-width:12rem;max-width:20rem}
+.event-live-screens>.event-manage-validation{flex-basis:100%}

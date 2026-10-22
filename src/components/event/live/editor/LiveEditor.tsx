@@ -5,7 +5,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
 import {CircleHelp, ExternalLink, Eye, Info, LayoutTemplate, MonitorUp, Redo2, Send, TriangleAlert, Undo2, X} from "lucide-react";
-import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
+import {LiveDraftInvalidError, publishLiveScreen, type LiveEditor as LiveEditorData, type LiveScreens, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
 import {canPlace, distributeWidgets, liveResizeFromCorner, type LiveCorner, firstFreeWidget, layoutConflicts, liveGridLimits, liveGridPresets, liveGridValid, liveLogoURL, livePaletteGroups, livePaletteItems, liveWidgetMinimums, liveWidgetName, recomputeGrid, widgetAt, type DistributeAxis, type LivePaletteItem} from "@/components/event/live/liveLayout";
@@ -25,6 +25,7 @@ import {EmptyState} from "@/components/ui/EmptyState";
 import {LiveField, LiveNumberInput} from "./LiveFields";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 import {LiveScreenLinksDialog} from "./LiveScreenLinksDialog";
+import {LiveScreenPicker} from "./LiveScreenPicker";
 import {LiveScreenSettings} from "./LiveScreenSettings";
 import {LiveShowPreview, type LivePreviewData} from "./LiveShowPreview";
 import {LiveWidgetSettings, qrProblem, type LivePropValue} from "./LiveWidgetSettings";
@@ -93,7 +94,12 @@ function saveLabel(status: LiveSaveState, unpublished: boolean, version: number)
     return unpublished ? t("manage.live.status.unpublished") : t("manage.live.status.published", {version});
 }
 
-export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; canManage: boolean; data: LiveEditorData}) {
+// The editor of one screen; `screens` switches between the event's screens
+// (the same editor for each), the open one first saved.
+export function LiveEditor({event, canManage, data, screenID, screens, onScreenSwitch, onScreensChanged}: {
+    event: PublicEventInfo; canManage: boolean; data: LiveEditorData; screenID: string; screens: LiveScreens;
+    onScreenSwitch: (screenID: string) => void; onScreensChanged: (select?: string) => void;
+}) {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const {results} = useLiveResults(eventID);
@@ -165,8 +171,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
     const warnings = useMemo(() => liveTextWarnings(shown, event.Name, stagesList), [shown, event.Name, stagesList]);
     const validation = validationMessage(doc);
     const autosave = useLiveAutosave({
-        eventID, layout: doc, savedJSON: JSON.stringify(data.Draft ?? data.Published), valid: !validation, enabled: canManage,
-        onSaved: saved => queryClient.setQueryData<LiveEditorData>(["event-live-editor", eventID], current => current && {...current, Draft: saved}),
+        eventID, screenID, layout: doc, savedJSON: JSON.stringify(data.Draft ?? data.Published), valid: !validation, enabled: canManage,
+        onSaved: saved => queryClient.setQueryData<LiveEditorData>(["event-live-editor", eventID, screenID], current => current && {...current, Draft: saved}),
     });
     const unpublished = layoutKey(doc) !== layoutKey(published);
     // Until the event has results, the editor fills widgets with sample data.
@@ -375,14 +381,23 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         setGhost(null);
     }
 
+    // Another screen opens only after this one's draft is saved.
+    async function switchScreen(next: string) {
+        if (canManage && autosave.status !== "saved") {
+            // Unsaved edits that can't be saved yet stay here until fixed.
+            if (validation) {toast.error(t("manage.live.screens.fixFirst")); return;}
+            if (!await autosave.flush()) {toast.error(t("manage.live.draftSaveError")); return;}
+        }
+        onScreenSwitch(next);
+    }
     async function publish() {
         if (!canManage || publishing) return;
         setPublishing(true);
         try {
             if (!await autosave.flush()) {toast.error(t("manage.live.draftSaveError")); return;}
-            const next = await publishManageLive(eventID);
+            const next = await publishLiveScreen(eventID, screenID);
             setPublished(next);
-            queryClient.setQueryData<LiveEditorData>(["event-live-editor", eventID], {Published: next, Draft: null});
+            queryClient.setQueryData<LiveEditorData>(["event-live-editor", eventID, screenID], current => current ? {...current, Published: next, Draft: null} : current);
             toast.success(t("manage.live.published"));
         } catch (failure) {toastFailure(failure, t(failure instanceof LiveDraftInvalidError ? "manage.live.draftInvalid" : "manage.live.publishError"));}
         finally {setPublishing(false);}
@@ -440,6 +455,8 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
             <div className="event-live-editor__title"><h1>{t("manage.live.title")}</h1>
                 <EventTooltip help content={<span className="event-brand-tooltip-copy">{t(canManage ? "manage.live.intro" : "manage.live.introViewer")}</span>}>{id => <button className="event-brand-help" type="button" aria-label={t("manage.fields.aboutField", {title: t("manage.live.title")})} aria-describedby={id}><CircleHelp size={16} /></button>}</EventTooltip>
             </div>
+            <LiveScreenPicker eventID={eventID} screens={screens.Screens} max={screens.Max} currentID={screenID} disabled={locked}
+                onSwitch={next => void switchScreen(next)} onChanged={onScreensChanged} />
             <div className="event-live-editor__actions">
                 {canManage && <span className={`event-live-editor__status${status === "error" || status === "invalid" ? " is-problem" : ""}`} role="status">
                     {saveLabel(status, unpublished, published.version)}
@@ -447,7 +464,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 </span>}
                 {canManage && <EventTooltip content={t("manage.live.links.hint")}>{id => <button className="ib-btn" type="button" aria-describedby={id} onClick={() => setLinksOpen(true)}><MonitorUp size={16} /> {t("manage.live.links.open")}</button>}</EventTooltip>}
                 <EventTooltip content={t("manage.live.show.hint")}>{id => <button className="ib-btn" type="button" aria-describedby={id} onClick={() => setShowing(true)}><Eye size={16} /> {t("manage.live.show.open")}</button>}</EventTooltip>
-                <EventTooltip content={t("manage.live.openHint")}>{id => <a className="ib-btn" href="/live" target="_blank" rel="noreferrer" aria-describedby={id}><ExternalLink size={16} /> {t("manage.live.open")}</a>}</EventTooltip>
+                <EventTooltip content={t("manage.live.openHint")}>{id => <a className="ib-btn" href={`/live?screen=${encodeURIComponent(screenID)}`} target="_blank" rel="noreferrer" aria-describedby={id}><ExternalLink size={16} /> {t("manage.live.open")}</a>}</EventTooltip>
                 {canManage && <EventTooltip content={t("manage.live.publishHint")}>{id => <EventButton className="ib-btn ib-btn--primary" type="button" aria-describedby={id} busy={publishing} busyLabel={t("manage.live.publishing")}
                     disabled={!!validation || (!unpublished && status === "saved")} onClick={() => void publish()}><Send size={16} /> {t("manage.live.publish")}</EventButton>}</EventTooltip>}
             </div>
@@ -613,7 +630,7 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         </div>
         {showing && <LiveShowPreview layout={shown} event={event} stages={stages.data} results={showResults} sample={showSample} nowOffset={previewNow - openedAt}
             data={showSample ? "sample" : "real"} realAvailable={!sample} onData={setShowData} onClose={() => setShowing(false)} />}
-        {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} onClose={() => setLinksOpen(false)} />}
+        {canManage && <LiveScreenLinksDialog open={linksOpen} event={event} screenID={screenID} onClose={() => setLinksOpen(false)} />}
         <LivePaletteDialog item={previewItem} layout={previewItem ? paletteLayouts.get(previewItem.key) ?? null : null} event={event} results={shownResults} sample={sample}
             canAdd={editable && mode === "base"} blocked={editable && mode === "base" ? null : t(locked ? "manage.live.palettePreview.locked" : "manage.live.paletteBaseOnly", {name: tabLabel(layout.aspect)})}
             onClose={() => setPreviewItem(null)} onAdd={item => {setPreviewItem(null); addWidget(item);}} />

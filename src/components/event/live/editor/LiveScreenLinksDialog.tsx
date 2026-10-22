@@ -19,14 +19,14 @@ import {EventTooltip} from "@/components/ui/EventTooltip";
 
 const dateFormat = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 
-// «Посилання для перегляду Live»: one link per event for a projector or LED
-// PC that is not signed in. The full URL is shown once, right after it is
-// created or regenerated (only its hash is stored).
-export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; event: PublicEventInfo; onClose: () => void}) {
+// «Посилання для перегляду Live»: one link per screen for a projector or LED
+// PC that is not signed in; it opens that screen only. The full URL is shown
+// once, right after it is created or regenerated (only its hash is stored).
+export function LiveScreenLinksDialog({open, event, screenID, onClose}: {open: boolean; event: PublicEventInfo; screenID: string; onClose: () => void}) {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
-    const queryKey = ["event-live-screen-link", eventID];
-    const link = useQuery({queryKey, queryFn: () => getLiveScreenLink(eventID), enabled: open, refetchOnWindowFocus: false});
+    const queryKey = ["event-live-screen-link", eventID, screenID];
+    const link = useQuery({queryKey, queryFn: () => getLiveScreenLink(eventID, screenID), enabled: open, refetchOnWindowFocus: false});
     const [expiry, setExpiry] = useState<LiveScreenExpiry>("none");
     const [fresh, setFresh] = useState<LiveScreenLink | null>(null);
     const [busy, setBusy] = useState<"issue" | "regenerate" | "revoke" | null>(null);
@@ -76,7 +76,7 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
                         </div>
                         {inlineError}
                         <EventButton className="ib-btn ib-btn--primary" type="button" busy={busy === "issue"} busyLabel={t("common.busy.creating")} disabled={!!busy || expiry === "event_end" && !endAvailable}
-                            onClick={() => void run("issue", () => issueLiveScreenLink(eventID, expiry), t("manage.live.links.created"))}><Link2 size={16} /> {t("manage.live.links.create")}</EventButton>
+                            onClick={() => void run("issue", () => issueLiveScreenLink(eventID, screenID, expiry), t("manage.live.links.created"))}><Link2 size={16} /> {t("manage.live.links.create")}</EventButton>
                     </div>
                         : <section className="event-live-links__state" aria-label={t("manage.live.links.active")}>
                             <p className="event-live-links__status">{t("manage.live.links.row", {created: dateFormat.format(new Date(current.CreatedAt)), expires: expires(current.ExpiresAt)})}</p>
@@ -99,9 +99,9 @@ export function LiveScreenLinksDialog({open, event, onClose}: {open: boolean; ev
         </div>
         <ConfirmDialog open={confirm === "revoke"} tone="danger" busy={busy === "revoke"} busyLabel={t("common.busy.revoking")} error={confirm === "revoke" && error || undefined} onCancel={() => setConfirm(null)}
             title={t("manage.live.links.revokeTitle")} description={t("manage.live.links.revokeBody")} confirmLabel={t("manage.live.links.revoke")}
-            onConfirm={() => void run("revoke", async () => {await revokeLiveScreenLink(eventID); return undefined;}, t("manage.live.links.revoked"))} />
+            onConfirm={() => void run("revoke", async () => {await revokeLiveScreenLink(eventID, screenID); return undefined;}, t("manage.live.links.revoked"))} />
         <ConfirmDialog open={confirm === "regenerate"} busy={busy === "regenerate"} busyLabel={t("common.busy.regenerating")} error={confirm === "regenerate" && error || undefined} onCancel={() => setConfirm(null)}
             title={t("manage.live.links.regenerateTitle")} description={t("manage.live.links.regenerateBody")} confirmLabel={t("manage.live.links.regenerate")}
-            onConfirm={() => void run("regenerate", () => regenerateLiveScreenLink(eventID), t("manage.live.links.regenerated"))} />
+            onConfirm={() => void run("regenerate", () => regenerateLiveScreenLink(eventID, screenID), t("manage.live.links.regenerated"))} />
     </DialogModal>;
 }
