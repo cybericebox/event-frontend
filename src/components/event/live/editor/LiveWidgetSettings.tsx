@@ -8,6 +8,7 @@ import {liveLogoAccept, uploadLiveLogo} from "@/api/manageLive";
 import {fitImage} from "@/utils/fitImage";
 import {EventLoading} from "@/components/event/EventLoading";
 import {liveLogoURL} from "../liveLayout";
+import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import {getResultsSettings} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -20,7 +21,7 @@ import {liveWidgetMinimums, liveWidgetName, type DistributeAxis} from "../liveLa
 import {liveCaptionShown, liveHasCaption, liveListFit, liveTextSized, liveTextSizes, liveWidgetTextSize, type LiveTextSizeKey} from "../liveText";
 import {livePageSecondsHint} from "../liveFit";
 import {liveLogoItems, type LiveLogoItem} from "../LiveCanvas";
-import {liveLastMinutesOptions, liveTimerDigitMode, liveTimerDigitModes, liveTimerSources, liveTimerState, liveTimerZeroModes, type LiveTimerSource} from "../liveStages";
+import {liveLastMinutesOptions, liveTimerFormat, liveTimerFormatProps, liveTimerFormats, liveTimerSources, liveTimerState, liveTimerZeroModes, type LiveTimerSource} from "../liveStages";
 import {livePinOptions, livePinTop} from "../liveTable";
 import {liveFactItems, liveFactKeys, liveFactLimit, type LiveFactKey} from "../liveFacts";
 import {liveAlign, type LiveAlign} from "../LiveBlocks";
@@ -63,8 +64,7 @@ function RowsFields({layout, widget, disabled, onProp}: {layout: LiveLayout; wid
             note={t("manage.live.prop.rowsReadable", {max: fit.maxRows})}>
             {id => <LiveNumberInput id={id} value={fit.rows} min={1} max={60} disabled={disabled} onChange={value => onProp(key, value)} />}
         </LiveField>
-        {table && <PageSecondsField widget={widget} rows={fit.rows} disabled={disabled} onProp={onProp} />}
-        {table && <TableFields widget={widget} disabled={disabled} onProp={onProp} />}
+        {table && <TableFields widget={widget} rows={fit.rows} disabled={disabled} onProp={onProp} />}
         {!table && <LiveSegmented label={t("manage.live.prop.solvesMode")} help={t("manage.live.prop.solvesModeHelp")} value={widget.props.mode === "first" ? "first" : "recent"} disabled={disabled}
             options={[{value: "recent", label: t("manage.live.prop.solvesMode.recent")}, {value: "first", label: t("manage.live.prop.solvesMode.first")}]}
             onChange={value => onProp("mode", value === "first" ? value : null)} />}
@@ -73,10 +73,13 @@ function RowsFields({layout, widget, disabled, onProp}: {layout: LiveLayout; wid
 
 const limitOptions = [0, 3, 5, 8, 10, 15, 20];
 
-// Table: two columns, «Лише перші N», «Почати з місця 4» and pinned rows.
-function TableFields({widget, disabled, onProp}: {widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
+// Table: two columns, «Лише перші N», «Почати з місця 4», and — only while
+// the places do not fit one page — the page time and the pinned rows.
+function TableFields({widget, rows, disabled, onProp}: {widget: LiveWidget; rows: number; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const offset = Number(widget.props.offset) === 3;
     const limit = Math.max(0, Number(widget.props.limit) || 0);
+    const columns = Number(widget.props.columns) === 2 ? 2 : 1;
+    const onePage = limit > 0 && limit <= rows * columns;
     return <>
         <LiveSegmented label={t("manage.live.prop.columns")} help={t("manage.live.prop.columnsHelp")} value={Number(widget.props.columns) === 2 ? "2" : "1"} disabled={disabled}
             options={[{value: "1", label: t("manage.live.prop.columnsOne")}, {value: "2", label: t("manage.live.prop.columnsTwo")}]} onChange={value => onProp("columns", value === "2" ? 2 : null)} />
@@ -86,7 +89,8 @@ function TableFields({widget, disabled, onProp}: {widget: LiveWidget; disabled: 
         </LiveField>
         <LiveSegmented label={t("manage.live.prop.offset")} help={t("manage.live.prop.offsetHelp")} value={offset ? "3" : "0"} disabled={disabled}
             options={[{value: "0", label: t("manage.live.prop.offsetFirst")}, {value: "3", label: t("manage.live.prop.offsetPodium")}]} onChange={value => onProp("offset", value === "3" ? 3 : null)} />
-        {!offset && <LiveSegmented label={t("manage.live.prop.pinTop")} help={t("manage.live.prop.pinTopHelp")} value={String(livePinTop(widget.props.pinTop))} disabled={disabled}
+        {onePage ? <p className="event-live-settings__note">{t("manage.live.prop.onePage", {count: limit})}</p> : <PageSecondsField widget={widget} rows={rows} disabled={disabled} onProp={onProp} />}
+        {!offset && !onePage && <LiveSegmented label={t("manage.live.prop.pinTop")} help={t("manage.live.prop.pinTopHelp")} value={String(livePinTop(widget.props.pinTop))} disabled={disabled}
             options={livePinOptions.map(value => ({value: String(value), label: value ? t("manage.live.prop.pinTopRows", {count: value}) : t("manage.live.prop.pinTopNone")}))}
             onChange={value => onProp("pinTop", Number(value))} />}
     </>;
@@ -103,7 +107,7 @@ function PageSecondsField({widget, rows, disabled, onProp}: {widget: LiveWidget;
     </LiveField>;
 }
 
-function TimerFields({widget, event, disabled, onProp}: {widget: LiveWidget; event: PublicEventInfo; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
+function TimerFields({widget, event, disabled, onProp, onProps}: {widget: LiveWidget; event: PublicEventInfo; disabled: boolean; onProp: (key: string, value: PropValue) => void; onProps: (changes: Record<string, PropValue>) => void}) {
     const settings = useQuery({queryKey: ["event-management-results-settings", event.EventID], queryFn: () => getResultsSettings(event.EventID), refetchOnWindowFocus: false});
     const stages = useQuery({queryKey: ["event-management-stages", event.EventID], queryFn: () => getManageStages(event.EventID), refetchOnWindowFocus: false});
     const source = (textProp(widget, "source") || "auto") as LiveTimerSource;
@@ -136,9 +140,10 @@ function TimerFields({widget, event, disabled, onProp}: {widget: LiveWidget; eve
             <LiveSegmented label={t("manage.live.prop.timerLabelSize")} help={t("manage.live.prop.timerLabelSizeHelp")} value={(textProp(widget, "labelSize") || "m") as "s" | "m" | "l"} disabled={disabled}
                 options={[{value: "s", label: t("manage.live.prop.size.s")}, {value: "m", label: t("manage.live.prop.size.m")}, {value: "l", label: t("manage.live.prop.size.l")}]} onChange={value => onProp("labelSize", value)} />
         </>}
-        <LiveSegmented label={t("manage.live.prop.timerDigits")} help={t("manage.live.prop.timerDigitsHelp")} value={liveTimerDigitMode(widget.props.digits)} disabled={disabled}
-            options={liveTimerDigitModes.map(value => ({value, label: t(`manage.live.prop.timerDigits.${value}`)}))} onChange={value => onProp("digits", value === "full" ? null : value)} />
-        <LiveSwitch label={t("manage.live.prop.timerSeconds")} help={t("manage.live.prop.timerSecondsHelp")} checked={widget.props.showSeconds !== false} disabled={disabled} onChange={value => onProp("showSeconds", value)} />
+        {/* One «Формат» with examples instead of a format and a seconds switch
+            that overlapped (owner, 2026-10-22). The stored props stay. */}
+        <LiveSegmented label={t("manage.live.prop.timerDigits")} help={t("manage.live.prop.timerDigitsHelp")} value={liveTimerFormat(widget.props)} disabled={disabled}
+            options={liveTimerFormats.map(value => ({value, label: t(`manage.live.prop.timerFormat.${value}`)}))} onChange={value => onProps(liveTimerFormatProps(value))} />
         <LiveField label={t("manage.live.prop.lastMinutes")} help={t("manage.live.prop.lastMinutesHelp")}>
             {() => <EventSelect ariaLabel={t("manage.live.prop.lastMinutes")} value={String(liveLastMinutesOptions.find(value => value === Number(widget.props.lastMinutes)) ?? 0)} disabled={disabled}
                 onValueChange={value => onProp("lastMinutes", Number(value) || null)}
@@ -269,6 +274,10 @@ function PlaceColorFields({widget, disabled, onProp}: {widget: LiveWidget; disab
     </Section>;
 }
 
+// The blocks that draw in the accent: timer digits, table ranks and leader,
+// podium places, the chart's freeze mark, the running stage.
+const liveAccentBlocks = new Set<LiveWidget["type"]>(["timer", "table", "podium", "chart", "stages"]);
+
 // «Кольори»: the block's own fill, text and accent over the screen theme.
 function ColorFields({event, layout, widget, disabled, onProp, onProps}: {
     event: PublicEventInfo; layout: LiveLayout; widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void; onProps: (changes: Record<string, PropValue>) => void;
@@ -295,10 +304,13 @@ function ColorFields({event, layout, widget, disabled, onProp, onProps}: {
             onChange={value => onProp("textColor", value === "auto" ? null : colors.ink ?? (layout.theme === "light" ? "#16152B" : "#FFFFFF"))} />
         {ownText && <LiveColorField label={t("manage.live.prop.textColorValue")} help={t("manage.live.prop.textColorHelp")} value={ownText} disabled={disabled} warning={textWarning} onChange={value => onProp("textColor", value)} />}
         {!ownText && textWarning && <small className="event-live-field__warning" role="status">{textWarning}</small>}
+        {/* Only blocks that draw anything in the accent get the field. */}
+        {liveAccentBlocks.has(widget.type) && <>
         <LiveSegmented label={t("manage.live.prop.accentColor")} help={t("manage.live.prop.accentColorHelp")} value={ownAccent ? "custom" : "theme"} disabled={disabled}
             options={[{value: "theme", label: t("manage.live.prop.accentColor.theme")}, {value: "custom", label: t("manage.live.prop.accentColor.custom")}]}
             onChange={value => onProp("accentColor", value === "theme" ? null : colors.accent ?? liveHex(layout.theme === "light" ? event.Theme.AccentLight : event.Theme.AccentLive) ?? "#FFFFFF")} />
         {ownAccent && <LiveColorField label={t("manage.live.prop.accentColorValue")} help={t("manage.live.prop.accentColorHelp")} value={ownAccent} disabled={disabled} warning={accentWarning} onChange={value => onProp("accentColor", value)} />}
+        </>}
         {any && !disabled && <button className="ib-btn ib-btn--sm ib-btn--ghost event-live-settings__reset" type="button"
             onClick={() => onProps({background: null, textColor: null, accentColor: null})}><RotateCcw size={14} /> {t("manage.live.color.reset")}</button>}
     </Section>;
@@ -359,7 +371,7 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                 <LiveField label={t("manage.live.prop.subtitle")} help={t(widget.props.subtitleStage === true ? "manage.live.prop.subtitleStageFallback" : "manage.live.prop.subtitleHelp")}>
                     {id => <input id={id} className="event-manage-input" maxLength={120} value={textProp(widget, "subtitle")} disabled={disabled} onChange={change => onProp("subtitle", change.target.value)} />}
                 </LiveField>
-                <LiveSwitch label={t("manage.live.prop.showLogo")} help={t("manage.live.prop.showLogoHelp")} checked={widget.props.showLogo !== false} disabled={disabled} onChange={value => onProp("showLogo", value ? null : false)} />
+                {resolveEventLogoURL(event.LogoURL) && <LiveSwitch label={t("manage.live.prop.showLogo")} help={t("manage.live.prop.showLogoHelp")} checked={widget.props.showLogo !== false} disabled={disabled} onChange={value => onProp("showLogo", value ? null : false)} />}
                 <AlignField widget={widget} fallback="left" disabled={disabled} onProp={onProp} />
             </>}
             {widget.type === "clock" && <>
@@ -378,7 +390,7 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             </>}
             {widget.type === "facts" && <FactsFields widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "stages" && <LiveSwitch label={t("manage.live.prop.showDone")} help={t("manage.live.prop.showDoneHelp")} checked={widget.props.showDone !== false} disabled={disabled} onChange={value => onProp("showDone", value ? null : false)} />}
-            {widget.type === "timer" && <TimerFields widget={widget} event={event} disabled={disabled} onProp={onProp} />}
+            {widget.type === "timer" && <TimerFields widget={widget} event={event} disabled={disabled} onProp={onProp} onProps={onProps} />}
             {widget.type === "chart" && <LiveSegmented label={t("manage.live.prop.chartLabels")} help={t("manage.live.prop.chartLabelsHelp")} value={widget.props.labels === "none" ? "none" : "chart"} disabled={disabled}
                 options={[{value: "chart", label: t("manage.live.prop.chartLabels.chart")}, {value: "none", label: t("manage.live.prop.chartLabels.none")}]} onChange={value => onProp("labels", value === "none" ? value : null)} />}
             {widget.type === "chart" && <LiveField label={t("manage.live.prop.lines")} help={t("manage.live.prop.linesHelp")} required>
@@ -388,7 +400,8 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             {(widget.type === "table" || widget.type === "solves") && <RowsFields layout={layout} widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "table" && <>
                 <LiveSwitch label={t("manage.live.prop.showBars")} help={t("manage.live.prop.showBarsHelp")} checked={widget.props.showBars === true} disabled={disabled} onChange={value => onProp("showBars", value ? true : null)} />
-                <LiveSwitch label={t("manage.live.prop.showLegend")} help={t("manage.live.prop.showLegendHelp")} checked={widget.props.showLegend === true} disabled={disabled} onChange={value => onProp("showLegend", value ? true : null)} />
+                {/* The legend repeats the chart's line colours: only with a chart on this screen. */}
+                {layout.widgets.some(item => item.type === "chart") && <LiveSwitch label={t("manage.live.prop.showLegend")} help={t("manage.live.prop.showLegendHelp")} checked={widget.props.showLegend === true} disabled={disabled} onChange={value => onProp("showLegend", value ? true : null)} />}
             </>}
             {widget.type === "announcement" && <>
                 <LiveField label={t("manage.live.prop.announcement")} help={t("manage.live.prop.announcementHelp")}>

@@ -108,6 +108,24 @@ export function liveTimerState(props: LiveWidget["props"], event: PublicEventInf
 // «Формат»: HH:MM:SS always («full»), MM:SS in the last hour («compact»),
 // or words, «2 год 14 хв» («words»).
 export const liveTimerDigitModes = ["full", "compact", "words"] as const;
+
+// «Формат» in the editor: three choices, each named by an example, over the
+// two stored props (digits and showSeconds). «01:05:09» drops the empty hours
+// under an hour; «01:05» has no seconds; «1 год 5 хв» shows seconds only in
+// the last minute, when nothing else is left.
+export const liveTimerFormats = ["hms", "hm", "words"] as const;
+export type LiveTimerFormat = typeof liveTimerFormats[number];
+
+export function liveTimerFormat(props: Record<string, unknown>): LiveTimerFormat {
+    if (liveTimerDigitMode(props.digits) === "words") return "words";
+    return props.showSeconds === false ? "hm" : "hms";
+}
+
+export function liveTimerFormatProps(format: LiveTimerFormat): {digits: string | null; showSeconds: boolean | null} {
+    if (format === "words") return {digits: "words", showSeconds: false};
+    if (format === "hm") return {digits: null, showSeconds: false};
+    return {digits: "compact", showSeconds: null};
+}
 export type LiveTimerDigitMode = typeof liveTimerDigitModes[number];
 
 export function liveTimerDigitMode(value: unknown): LiveTimerDigitMode {
@@ -127,8 +145,8 @@ export function liveTimerDigits(state: LiveTimerState, now: number, showSeconds:
         return t("live.timer.wordsS", {seconds: rest});
     }
     const pad = (part: number) => String(part).padStart(2, "0");
-    // «Коротко» drops the hours only when the seconds show; without them it stays HH:MM.
-    if (format === "compact" && !hours && showSeconds) return [minutes, rest].map(pad).join(":");
+    // With seconds, empty hours are dropped (05:09, not 00:05:09); without them it stays HH:MM.
+    if (!hours && showSeconds) return [minutes, rest].map(pad).join(":");
     return [hours, minutes, ...(showSeconds ? [rest] : [])].map(pad).join(":");
 }
 

@@ -86,7 +86,7 @@ describe("live canvas widgets", () => {
         const stages = [{Name: "Етап 1", OpensAt: new Date(now - 600_000).toISOString(), ClosesAt: new Date(now + 1800_000).toISOString()}];
         const {container} = await mount(only({type: "timer"}), false, {stages});
         expect(container.querySelector(".live-timer small")?.textContent).toBe("До кінця: Етап 1");
-        expect(container.querySelector(".live-timer strong")?.textContent).toMatch(/^00:29:5\d$/);
+        expect(container.querySelector(".live-timer strong")?.textContent).toMatch(/^29:5\d$/);
     });
 
     it("shows «Завершено» instead of zeros after the finish", async () => {

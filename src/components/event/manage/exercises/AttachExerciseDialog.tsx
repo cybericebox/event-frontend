@@ -20,7 +20,8 @@ import {InfrastructureIcon} from "./InfrastructureIcon";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoading} from "@/components/event/EventLoading";
 import {EventButton} from "@/components/ui/EventButton";
-import {CatalogTagFilter} from "./CatalogTagFilter";
+import {CatalogTagSelect} from "./CatalogTagSelect";
+import {EventMultiSelect} from "@/components/ui/EventMultiSelect";
 import {ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 import {CatalogStatsList} from "./CatalogStats";
 
@@ -85,9 +86,6 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
         setDraft(current => current?.selected.ID === choice.ID ? null : {selected: choice, variant: 0, variantMode: 0});
     }
 
-    function toggleLevel(level: CatalogDifficulty) {
-        setLevels(current => current.includes(level) ? current.filter(item => item !== level) : difficultyFilters.filter(item => item === level || current.includes(item)));
-    }
 
     function resetFilters() {
         setSearchInput(""); setSearch(""); setTags([]); setLevels([]); setAttached("all"); setInfrastructure(defaultInfrastructure);
@@ -125,20 +123,18 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                 <label className="event-manage-field" htmlFor="exercise-search">{t("manage.exercises.attachDialog.search")}<input id="exercise-search" className="event-manage-input" value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder={t("manage.exercises.attachDialog.searchPlaceholder")} maxLength={100} /></label>
                 <button className="ib-btn" type="submit"><Search aria-hidden="true" />{t("manage.exercises.attachDialog.find")}</button>
             </form>
-            <CatalogTagFilter eventID={eventID} value={tags} onChange={setTags} enabled={open} />
-            <div className="event-exercise-picker__filter" role="group" aria-label={t("manage.exercises.attachDialog.infrastructure")}>
-                <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
-                <div className="ib-seg ib-seg--sm">{infrastructureFilters.map(option => <button key={option} type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
-            </div>
-            <div className="event-exercise-picker__filter" role="group" aria-label={t("manage.exercises.attachDialog.attachedFilter.label")}>
-                <span>{t("manage.exercises.attachDialog.attachedFilter.label")}</span>
-                <div className="ib-seg ib-seg--sm">{attachedFilters.map(option => <button key={option} type="button" aria-pressed={attached === option} onClick={() => setAttached(option)}>{t(`manage.exercises.attachDialog.attachedFilter.${option}`)}</button>)}</div>
-            </div>
-            <div className="event-exercise-picker__filter event-exercise-picker__filter--chips" role="group" aria-label={t("manage.exercises.attachDialog.difficultyFilter.label")}>
-                <span>{t("manage.exercises.attachDialog.difficultyFilter.label")}</span>
-                <div className="event-filter-chips">{difficultyFilters.map(level => <button key={level} type="button" aria-pressed={levels.includes(level)} onClick={() => toggleLevel(level)}>
-                    {level === "none" ? t("manage.exercises.attachDialog.difficultyFilter.none") : t(`manage.exercises.difficulty.${level}`)}
-                </button>)}</div>
+            {/* The filters in one row of selects: several choices for tags and
+                difficulty, one for infrastructure and «already added». */}
+            <div className="event-exercise-picker__filters">
+                <CatalogTagSelect eventID={eventID} value={tags} onChange={setTags} enabled={open} />
+                <EventMultiSelect ariaLabel={t("manage.exercises.attachDialog.difficultyFilter.label")} label={t("manage.exercises.attachDialog.difficultyFilter.label")}
+                    emptyLabel={t("manage.exercises.attachDialog.difficultyFilter.any")} value={levels} onChange={next => setLevels(difficultyFilters.filter(level => next.includes(level)))}
+                    options={difficultyFilters.map(level => ({value: level, label: level === "none" ? t("manage.exercises.attachDialog.difficultyFilter.none") : t(`manage.exercises.difficulty.${level}`)}))} />
+                <EventSelect ariaLabel={t("manage.exercises.attachDialog.infrastructure")} value={infrastructure} onValueChange={value => setInfrastructure(value as InfrastructureFilter)}
+                    options={infrastructureFilters.map(option => ({value: option, label: t(`manage.exercises.attachDialog.infrastructureChoice.${option}`)}))} />
+                <EventSelect ariaLabel={t("manage.exercises.attachDialog.attachedFilter.label")} value={attached} onValueChange={value => setAttached(value as AttachedFilter)}
+                    options={attachedFilters.map(option => ({value: option, label: t(`manage.exercises.attachDialog.attachedChoice.${option}`)}))} />
+                {filtered && <button className="ib-btn ib-btn--ghost ib-btn--sm" type="button" onClick={resetFilters}>{t("manage.exercises.attachDialog.resetFilters")}</button>}
             </div>
             {!infrastructureAllowed && (infrastructure === "yes" || (infrastructure === "all" && !!catalog.data?.some(choice => choice.Infrastructure))) && <p className="event-exercise-picker__notice" role="status">
                 {t(published ? "manage.exercises.attachDialog.noInfrastructure" : "manage.exercises.attachDialog.noInfrastructureWithHint")}

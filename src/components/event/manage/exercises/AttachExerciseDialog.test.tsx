@@ -24,7 +24,17 @@ beforeEach(() => sessionStorage.clear());
 
 const choice = (id: string, name: string, infrastructure: boolean) => ({ID: id, Name: name, Description: "", PublishedVersionID: id, Tags: [], Scope: "catalog", Infrastructure: infrastructure, Attached: false, ResourceHeavy: false, Resources: null, AvgDifficulty: null, TaskCount: null, TaskNames: [], MatchedCount: null, AvailableCount: null}) as PublishedExerciseChoice;
 
-const infraGroup = () => within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.infrastructure")}));
+// The filters are selects: open one, then pick an option (a radio item for one choice, a check for several).
+async function pick(label: string, option: string) {
+    fireEvent.pointerDown(screen.getByRole("button", {name: label}), {button: 0, ctrlKey: false});
+    fireEvent.click(await screen.findByRole("menuitemradio", {name: option}));
+}
+async function check(label: string, option: string) {
+    fireEvent.pointerDown(screen.getByRole("button", {name: new RegExp(`^${label}:`)}), {button: 0, ctrlKey: false});
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", {name: new RegExp(`^${option}`)}));
+}
+const infra = (option: "all" | "yes" | "no") => pick(t("manage.exercises.attachDialog.infrastructure"), t(`manage.exercises.attachDialog.infrastructureChoice.${option}`));
+const added = (option: "all" | "yes" | "no") => pick(t("manage.exercises.attachDialog.attachedFilter.label"), t(`manage.exercises.attachDialog.attachedChoice.${option}`));
 const filterCall = (patch: Record<string, unknown> = {}) => ({search: "", infrastructure: "all", tags: [], difficulties: [], attached: "all", ...patch});
 
 function renderDialog(infrastructureAllowed: boolean, withDrafts = false) {
@@ -106,25 +116,24 @@ describe("AttachExerciseDialog", () => {
         api.choices.mockResolvedValue([]);
         renderDialog(false);
         expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();
-        fireEvent.click(screen.getByRole("button", {name: "Є"}));
-        const notice = screen.getByRole("status", {name: ""});
+        await infra("yes");
+        const notice = await screen.findByText(/У заходу немає інфраструктури/);
         expect(notice.textContent).toBe("У заходу немає інфраструктури — завдання зі стендами додати не можна. Її може увімкнути адміністратор платформи до публікації.");
-        expect(screen.getByRole("button", {name: "Є"}).closest(".ib-seg")).toBeTruthy();
-        fireEvent.click(screen.getByRole("button", {name: "Немає"}));
-        expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();
+        await infra("no");
+        await waitFor(() => expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull());
     });
 
     it("on «Усі» warns only when a listed set needs infrastructure", async () => {
         api.choices.mockResolvedValue([choice("a", "Plain", false)]);
         renderDialog(false);
-        fireEvent.click(infraGroup().getByRole("button", {name: "Усі"}));
+        await infra("all");
         await screen.findByText("Plain");
         expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();
         api.choices.mockResolvedValue([choice("a", "Plain", false), choice("b", "Stands", true)]);
-        fireEvent.click(screen.getByRole("button", {name: "Є"}));
-        fireEvent.click(infraGroup().getByRole("button", {name: "Усі"}));
+        await infra("yes");
+        await infra("all");
         await screen.findByText("Stands");
-        expect(screen.getByRole("status", {name: ""}).textContent).toMatch(/У заходу немає інфраструктури/);
+        expect(screen.getByText(/У заходу немає інфраструктури/)).toBeTruthy();
     });
 
     it("refetches at once with the picked tags and lists each set's tags", async () => {
@@ -132,8 +141,10 @@ describe("AttachExerciseDialog", () => {
         api.choices.mockResolvedValue([{...choice("c", "Tagged", false), Tags: ["web", "crypto"]}]);
         renderDialog(true);
         expect((await screen.findByRole("button", {name: /Tagged/})).textContent).toContain("crypto");
-        fireEvent.focus(screen.getByRole("combobox"));
-        fireEvent.pointerDown(await screen.findByRole("option", {name: /web/}));
+        fireEvent.pointerDown(screen.getByRole("button", {name: new RegExp(`^${t("manage.exercises.attachDialog.tags")}:`)}), {button: 0, ctrlKey: false});
+        fireEvent.click(await screen.findByRole("menuitemcheckbox", {name: /web/}));
+        // A list with several choices stays open while picking; Esc closes it.
+        fireEvent.keyDown(document.activeElement ?? document.body, {key: "Escape"});
         await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", {search: "", infrastructure: "all", tags: ["web"], difficulties: [], attached: "all"}));
         // The previous list stays on screen while the filtered one loads.
         expect(screen.getByRole("button", {name: /Tagged/})).toBeTruthy();
@@ -167,17 +178,16 @@ describe("AttachExerciseDialog", () => {
         api.choices.mockResolvedValue([{...choice("a", "Web", false), MatchedCount: 1, AvailableCount: 40}]);
         renderDialog(true);
         expect(await screen.findByText(t("manage.exercises.attachDialog.count", {shown: 1, total: 40}))).toBeTruthy();
-        const levels = within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.difficultyFilter.label")}));
-        const hard = levels.getByRole("button", {name: t("manage.exercises.difficulty.hard")});
-        expect(hard.getAttribute("aria-pressed")).toBe("false");
-        fireEvent.click(hard);
-        fireEvent.click(levels.getByRole("button", {name: t("manage.exercises.difficulty.easy")}));
-        expect(hard.getAttribute("aria-pressed")).toBe("true");
+        const level = t("manage.exercises.attachDialog.difficultyFilter.label");
+        await check(level, t("manage.exercises.difficulty.hard"));
+        expect(screen.getByRole("menuitemcheckbox", {name: t("manage.exercises.difficulty.hard")}).getAttribute("aria-checked")).toBe("true");
+        // The menu stays open while picking several.
+        fireEvent.click(screen.getByRole("menuitemcheckbox", {name: t("manage.exercises.difficulty.easy")}));
         await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall({difficulties: ["easy", "hard"]})));
-        fireEvent.click(levels.getByRole("button", {name: t("manage.exercises.attachDialog.difficultyFilter.none")}));
+        fireEvent.click(screen.getByRole("menuitemcheckbox", {name: t("manage.exercises.attachDialog.difficultyFilter.none")}));
         await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall({difficulties: ["easy", "hard", "none"]})));
-        const attached = within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.attachedFilter.label")}));
-        fireEvent.click(attached.getByRole("button", {name: t("manage.exercises.attachDialog.attachedFilter.no")}));
+        fireEvent.keyDown(document.activeElement ?? document.body, {key: "Escape"});
+        await added("no");
         await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall({difficulties: ["easy", "hard", "none"], attached: "no"})));
     });
 
@@ -192,12 +202,11 @@ describe("AttachExerciseDialog", () => {
         api.choices.mockResolvedValue([]);
         renderDialog(true);
         expect(await screen.findByText(t("manage.exercises.attachDialog.noResults"))).toBeTruthy();
-        const attached = within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.attachedFilter.label")}));
-        fireEvent.click(attached.getByRole("button", {name: t("manage.exercises.attachDialog.attachedFilter.yes")}));
-        const reset = await screen.findByRole("button", {name: t("manage.exercises.attachDialog.resetFilters")});
-        expect(screen.getByText(t("manage.exercises.attachDialog.noFilterResults")).closest("[data-empty-state]")).toBeTruthy();
-        fireEvent.click(reset);
+        await added("yes");
+        const empty = (await screen.findByText(t("manage.exercises.attachDialog.noFilterResults"))).closest("[data-empty-state]") as HTMLElement;
+        expect(empty).toBeTruthy();
+        fireEvent.click(within(empty).getByRole("button", {name: t("manage.exercises.attachDialog.resetFilters")}));
         await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall()));
-        expect(attached.getByRole("button", {name: t("manage.exercises.attachDialog.attachedFilter.all")}).getAttribute("aria-pressed")).toBe("true");
+        expect(screen.getByRole("button", {name: t("manage.exercises.attachDialog.attachedFilter.label")}).textContent).toBe(t("manage.exercises.attachDialog.attachedChoice.all"));
     });
 });
