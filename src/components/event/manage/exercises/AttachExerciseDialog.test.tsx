@@ -22,7 +22,10 @@ beforeAll(() => {
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 beforeEach(() => sessionStorage.clear());
 
-const choice = (id: string, name: string, infrastructure: boolean) => ({ID: id, Name: name, Description: "", PublishedVersionID: id, Tags: [], Scope: "catalog", Infrastructure: infrastructure, Attached: false, ResourceHeavy: false, Resources: null, AvgDifficulty: null, TaskCount: null, TaskNames: []}) as PublishedExerciseChoice;
+const choice = (id: string, name: string, infrastructure: boolean) => ({ID: id, Name: name, Description: "", PublishedVersionID: id, Tags: [], Scope: "catalog", Infrastructure: infrastructure, Attached: false, ResourceHeavy: false, Resources: null, AvgDifficulty: null, TaskCount: null, TaskNames: [], MatchedCount: null, AvailableCount: null}) as PublishedExerciseChoice;
+
+const infraGroup = () => within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.infrastructure")}));
+const filterCall = (patch: Record<string, unknown> = {}) => ({search: "", infrastructure: "all", tags: [], difficulties: [], attached: "all", ...patch});
 
 function renderDialog(infrastructureAllowed: boolean, withDrafts = false) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -54,7 +57,7 @@ describe("AttachExerciseDialog", () => {
     it("starts at «Немає» and disables sets that need infrastructure when the event has none", async () => {
         api.choices.mockResolvedValue([choice("11111111-1111-4111-8111-111111111111", "Test", true)]);
         renderDialog(false);
-        expect(api.choices).toHaveBeenCalledWith("e", "", "no", []);
+        expect(api.choices).toHaveBeenCalledWith("e", {search: "", infrastructure: "no", tags: [], difficulties: [], attached: "all"});
         const item = await screen.findByRole("button", {name: /Test/});
         expect((item as HTMLButtonElement).disabled).toBe(true);
         expect(item.textContent).toContain("Потрібна інфраструктура — у заходу її вимкнено");
@@ -82,7 +85,7 @@ describe("AttachExerciseDialog", () => {
         api.preview.mockResolvedValue({ID: "22222222-2222-4222-8222-222222222222", Name: "Web", Description: "", VersionID: "v", VariantCount: 1, Variant: 0, Tasks: []});
         api.attach.mockRejectedValue(new ManageApiError(409, 1808));
         renderDialog(true);
-        expect(api.choices).toHaveBeenCalledWith("e", "", "all", []);
+        expect(api.choices).toHaveBeenCalledWith("e", {search: "", infrastructure: "all", tags: [], difficulties: [], attached: "all"});
         fireEvent.click(await screen.findByRole("button", {name: /Web/}));
         fireEvent.click(await screen.findByRole("button", {name: "Додати"}));
         await waitFor(() => expect(screen.getByText("Завдання потребує інфраструктури, а в заходу її вимкнено.")).toBeTruthy());
@@ -114,12 +117,12 @@ describe("AttachExerciseDialog", () => {
     it("on «Усі» warns only when a listed set needs infrastructure", async () => {
         api.choices.mockResolvedValue([choice("a", "Plain", false)]);
         renderDialog(false);
-        fireEvent.click(screen.getByRole("button", {name: "Усі"}));
+        fireEvent.click(infraGroup().getByRole("button", {name: "Усі"}));
         await screen.findByText("Plain");
         expect(screen.queryByText(/У заходу немає інфраструктури/)).toBeNull();
         api.choices.mockResolvedValue([choice("a", "Plain", false), choice("b", "Stands", true)]);
         fireEvent.click(screen.getByRole("button", {name: "Є"}));
-        fireEvent.click(screen.getByRole("button", {name: "Усі"}));
+        fireEvent.click(infraGroup().getByRole("button", {name: "Усі"}));
         await screen.findByText("Stands");
         expect(screen.getByRole("status", {name: ""}).textContent).toMatch(/У заходу немає інфраструктури/);
     });
@@ -131,7 +134,7 @@ describe("AttachExerciseDialog", () => {
         expect((await screen.findByRole("button", {name: /Tagged/})).textContent).toContain("crypto");
         fireEvent.focus(screen.getByRole("combobox"));
         fireEvent.pointerDown(await screen.findByRole("option", {name: /web/}));
-        await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", "", "all", ["web"]));
+        await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", {search: "", infrastructure: "all", tags: ["web"], difficulties: [], attached: "all"}));
         // The previous list stays on screen while the filtered one loads.
         expect(screen.getByRole("button", {name: /Tagged/})).toBeTruthy();
     });
@@ -158,5 +161,43 @@ describe("AttachExerciseDialog", () => {
         const bareRow = screen.getByRole("button", {name: /^Bare/}).closest("li")!;
         expect(within(bareRow).getByLabelText(t("manage.exercises.avgDifficulty.none")).textContent).toBe("—");
         expect(within(bareRow).getByLabelText(t("manage.exercises.subtasks.none")).textContent).toBe("—");
+    });
+
+    it("filters by difficulty (in level order) and by attached on the server, and counts what is shown", async () => {
+        api.choices.mockResolvedValue([{...choice("a", "Web", false), MatchedCount: 1, AvailableCount: 40}]);
+        renderDialog(true);
+        expect(await screen.findByText(t("manage.exercises.attachDialog.count", {shown: 1, total: 40}))).toBeTruthy();
+        const levels = within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.difficultyFilter.label")}));
+        const hard = levels.getByRole("button", {name: t("manage.exercises.difficulty.hard")});
+        expect(hard.getAttribute("aria-pressed")).toBe("false");
+        fireEvent.click(hard);
+        fireEvent.click(levels.getByRole("button", {name: t("manage.exercises.difficulty.easy")}));
+        expect(hard.getAttribute("aria-pressed")).toBe("true");
+        await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall({difficulties: ["easy", "hard"]})));
+        fireEvent.click(levels.getByRole("button", {name: t("manage.exercises.attachDialog.difficultyFilter.none")}));
+        await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall({difficulties: ["easy", "hard", "none"]})));
+        const attached = within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.attachedFilter.label")}));
+        fireEvent.click(attached.getByRole("button", {name: t("manage.exercises.attachDialog.attachedFilter.no")}));
+        await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall({difficulties: ["easy", "hard", "none"], attached: "no"})));
+    });
+
+    it("says when the list stops before every match", async () => {
+        api.choices.mockResolvedValue([{...choice("a", "Web", false), MatchedCount: 130, AvailableCount: 200}]);
+        renderDialog(true);
+        const line = await screen.findByText(new RegExp(t("manage.exercises.attachDialog.countLimited", {matched: 130})));
+        expect(line.textContent).toContain(t("manage.exercises.attachDialog.count", {shown: 1, total: 200}));
+    });
+
+    it("shows a centred empty state with a reset when the filters match nothing", async () => {
+        api.choices.mockResolvedValue([]);
+        renderDialog(true);
+        expect(await screen.findByText(t("manage.exercises.attachDialog.noResults"))).toBeTruthy();
+        const attached = within(screen.getByRole("group", {name: t("manage.exercises.attachDialog.attachedFilter.label")}));
+        fireEvent.click(attached.getByRole("button", {name: t("manage.exercises.attachDialog.attachedFilter.yes")}));
+        const reset = await screen.findByRole("button", {name: t("manage.exercises.attachDialog.resetFilters")});
+        expect(screen.getByText(t("manage.exercises.attachDialog.noFilterResults")).closest("[data-empty-state]")).toBeTruthy();
+        fireEvent.click(reset);
+        await waitFor(() => expect(api.choices).toHaveBeenLastCalledWith("e", filterCall()));
+        expect(attached.getByRole("button", {name: t("manage.exercises.attachDialog.attachedFilter.all")}).getAttribute("aria-pressed")).toBe("true");
     });
 });

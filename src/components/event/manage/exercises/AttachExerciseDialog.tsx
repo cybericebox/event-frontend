@@ -9,7 +9,7 @@ import {Search} from "lucide-react";
 import {toast} from "react-hot-toast";
 import {
     attachEventExercise, getPublishedExerciseChoices, getPublishedExercisePreview,
-    type InfrastructureFilter, type PublishedExerciseChoice,
+    type AttachedFilter, type CatalogDifficulty, type InfrastructureFilter, type PublishedExerciseChoice,
 } from "@/api/manageChallenges";
 import {DialogModal} from "@/components/event/DialogModal";
 import {EventSelect} from "@/components/ui/EventSelect";
@@ -25,6 +25,9 @@ import {ResourceHeavyTag, ResourcesLine} from "./ResourceMarks";
 import {CatalogStatsList} from "./CatalogStats";
 
 const infrastructureFilters: InfrastructureFilter[] = ["all", "yes", "no"];
+const attachedFilters: AttachedFilter[] = ["all", "no", "yes"];
+// The catalog's levels in order, then sets without a difficulty.
+const difficultyFilters: CatalogDifficulty[] = ["elementary", "trivial", "easy", "medium", "hard", "insane", "none"];
 
 const difficulties = new Set(["elementary", "trivial", "easy", "medium", "hard", "insane"]);
 
@@ -42,6 +45,10 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const [search, setSearch] = useState("");
     const [infrastructure, setInfrastructure] = useState<InfrastructureFilter>(infrastructureAllowed ? "all" : "no");
     const [tags, setTags] = useState<string[]>([]);
+    const [levels, setLevels] = useState<CatalogDifficulty[]>([]);
+    const [attached, setAttached] = useState<AttachedFilter>("all");
+    const defaultInfrastructure: InfrastructureFilter = infrastructureAllowed ? "all" : "no";
+    const filtered = search !== "" || tags.length > 0 || levels.length > 0 || attached !== "all" || infrastructure !== defaultInfrastructure;
     const [attachError, setAttachError] = useState("");
     // 72508: the reservation cannot hold the set for all teams; the organizer can ask for an extension.
     const [needsExtension, setNeedsExtension] = useState(false);
@@ -54,7 +61,15 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
     const setVariant = (value: number) => setDraft(current => current && {...current, variant: value});
     const setVariantMode = (value: 0 | 1) => setDraft(current => current && {...current, variantMode: value});
     const [busy, setBusy] = useState(false);
-    const catalog = useQuery({queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags], queryFn: () => getPublishedExerciseChoices(eventID, search, infrastructure, tags), enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous});
+    // Filtered on the server: the list stops at 100, so a client-side filter would miss sets past it.
+    const catalog = useQuery({
+        queryKey: ["event-exercise-catalog", eventID, search, infrastructure, tags, levels, attached],
+        queryFn: () => getPublishedExerciseChoices(eventID, {search, infrastructure, tags, difficulties: levels, attached}),
+        enabled: open, refetchOnWindowFocus: false, placeholderData: previous => previous,
+    });
+    const shown = catalog.data?.length ?? 0;
+    const matched = catalog.data?.[0]?.MatchedCount ?? shown;
+    const available = catalog.data?.[0]?.AvailableCount ?? null;
     const preview = useQuery({
         queryKey: ["event-exercise-preview", eventID, selected?.PublishedVersionID, variant],
         queryFn: () => getPublishedExercisePreview(eventID, selected!.PublishedVersionID, variant),
@@ -68,6 +83,14 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
         setAttachError("");
         setNeedsExtension(false);
         setDraft(current => current?.selected.ID === choice.ID ? null : {selected: choice, variant: 0, variantMode: 0});
+    }
+
+    function toggleLevel(level: CatalogDifficulty) {
+        setLevels(current => current.includes(level) ? current.filter(item => item !== level) : difficultyFilters.filter(item => item === level || current.includes(item)));
+    }
+
+    function resetFilters() {
+        setSearchInput(""); setSearch(""); setTags([]); setLevels([]); setAttached("all"); setInfrastructure(defaultInfrastructure);
     }
 
     function close() {
@@ -107,12 +130,28 @@ export function AttachExerciseDialog({eventID, infrastructureAllowed, published 
                 <span>{t("manage.exercises.attachDialog.infrastructure")}</span>
                 <div className="ib-seg ib-seg--sm">{infrastructureFilters.map(option => <button key={option} type="button" aria-pressed={infrastructure === option} onClick={() => setInfrastructure(option)}>{t(`manage.exercises.attachDialog.infrastructureFilter.${option}`)}</button>)}</div>
             </div>
+            <div className="event-exercise-picker__filter" role="group" aria-label={t("manage.exercises.attachDialog.attachedFilter.label")}>
+                <span>{t("manage.exercises.attachDialog.attachedFilter.label")}</span>
+                <div className="ib-seg ib-seg--sm">{attachedFilters.map(option => <button key={option} type="button" aria-pressed={attached === option} onClick={() => setAttached(option)}>{t(`manage.exercises.attachDialog.attachedFilter.${option}`)}</button>)}</div>
+            </div>
+            <div className="event-exercise-picker__filter event-exercise-picker__filter--chips" role="group" aria-label={t("manage.exercises.attachDialog.difficultyFilter.label")}>
+                <span>{t("manage.exercises.attachDialog.difficultyFilter.label")}</span>
+                <div className="event-filter-chips">{difficultyFilters.map(level => <button key={level} type="button" aria-pressed={levels.includes(level)} onClick={() => toggleLevel(level)}>
+                    {level === "none" ? t("manage.exercises.attachDialog.difficultyFilter.none") : t(`manage.exercises.difficulty.${level}`)}
+                </button>)}</div>
+            </div>
             {!infrastructureAllowed && (infrastructure === "yes" || (infrastructure === "all" && !!catalog.data?.some(choice => choice.Infrastructure))) && <p className="event-exercise-picker__notice" role="status">
                 {t(published ? "manage.exercises.attachDialog.noInfrastructure" : "manage.exercises.attachDialog.noInfrastructureWithHint")}
             </p>}
+            {catalog.isSuccess && shown > 0 && <p className="event-exercise-picker__count" aria-live="polite">
+                {available !== null ? t("manage.exercises.attachDialog.count", {shown, total: available}) : t("manage.exercises.attachDialog.countShown", {shown})}
+                {matched > shown && <> · {t("manage.exercises.attachDialog.countLimited", {matched})}</>}
+            </p>}
             {catalog.isPending ? <EventLoading compact label={t("manage.exercises.attachDialog.catalogLoading")} />
                 : catalog.isError ? <EventLoadError compact message={t("manage.exercises.attachDialog.catalogFailed")} error={catalog.error} onRetry={() => void catalog.refetch()} />
-                : catalog.data.length === 0 ? <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />
+                : catalog.data.length === 0 ? (filtered
+                    ? <EmptyState compact message={t("manage.exercises.attachDialog.noFilterResults")} action={<button className="ib-btn ib-btn--sm" type="button" onClick={resetFilters}>{t("manage.exercises.attachDialog.resetFilters")}</button>} />
+                    : <EmptyState compact message={t("manage.exercises.attachDialog.noResults")} />)
                 : <ul className="event-exercise-picker__list">{catalog.data.map(choice => <li key={choice.ID}
                     className={`event-exercise-picker__row${selected?.ID === choice.ID ? " is-selected" : ""}${choice.Attached || unavailable(choice) ? " is-disabled" : ""}`}>
                     <button type="button" className="event-exercise-picker__item" aria-pressed={selected?.ID === choice.ID} disabled={choice.Attached || unavailable(choice)} onClick={() => select(choice)}>
