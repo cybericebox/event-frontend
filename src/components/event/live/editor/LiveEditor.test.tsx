@@ -40,6 +40,14 @@ function mount(canManage = true, editor = data) {
     return render(<QueryClientProvider client={client}><LiveEditor event={event} canManage={canManage} data={editor} /></QueryClientProvider>);
 }
 const widgets = () => document.querySelectorAll(".event-live-editor__native .live-widget").length;
+// A palette block opens large first; «Додати на екран» adds it (or is off when the screen can't take it).
+function openPalette(name: string) {
+    fireEvent.click(screen.getByRole("button", {name: `Блок «${name}»: переглянути й додати`}));
+    return screen.getByRole("button", {name: "Додати на екран"}) as HTMLButtonElement;
+}
+function closePalette() {
+    fireEvent.click(screen.getByRole("button", {name: "Скасувати"}));
+}
 
 beforeEach(() => {api.save.mockReset().mockResolvedValue(undefined); api.publish.mockReset(); api.settings.mockReset().mockReturnValue(new Promise(() => undefined));});
 afterEach(cleanup);
@@ -64,7 +72,7 @@ describe("live editor", () => {
     it("adds a widget from the palette, then undoes and redoes it", () => {
         mount(true, roomy);
         const before = widgets();
-        fireEvent.click(screen.getByRole("button", {name: "Додати блок «Оголошення»"}));
+        fireEvent.click(openPalette("Оголошення"));
         expect(widgets()).toBe(before + 1);
         fireEvent.keyDown(window, {key: "z", metaKey: true});
         expect(widgets()).toBe(before);
@@ -75,7 +83,7 @@ describe("live editor", () => {
     it("never grows the grid by itself: a full grid says there is no room", () => {
         mount();
         const before = widgets();
-        fireEvent.click(screen.getByRole("button", {name: "Додати блок «Оголошення»"}));
+        fireEvent.click(openPalette("Оголошення"));
         expect(widgets()).toBe(before);
         expect(screen.getByText("Немає вільного місця: звільніть клітинки або збільште сітку.")).toBeTruthy();
         expect(document.querySelector(".event-live-editor__native .live-canvas")!.getAttribute("style")).toContain("--live-rows: 8");
@@ -83,7 +91,7 @@ describe("live editor", () => {
 
     it("moves the selected widget with the arrows and asks before removing it", () => {
         mount(true, roomy);
-        fireEvent.click(screen.getByRole("button", {name: "Додати блок «QR-код»"}));
+        fireEvent.click(openPalette("QR-код"));
         const qr = () => document.querySelector(".event-live-editor__native .live-widget--qr") as HTMLElement;
         const column = qr().style.gridColumn;
         fireEvent.keyDown(window, {key: "ArrowRight"});
@@ -114,7 +122,7 @@ describe("live editor", () => {
         fireEvent.click(screen.getByRole("tab", {name: "4:3"}));
         expect(screen.getAllByText(/1440×1080/).length).toBeGreaterThan(0);
         expect(screen.getByText(/будується автоматично з основного/)).toBeTruthy();
-        expect((screen.getByRole("button", {name: "Додати блок «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
+        expect(openPalette("Таймер").disabled).toBe(true); closePalette();
         fireEvent.click(screen.getByRole("button", {name: "Власне розміщення"}));
         expect(screen.getByRole("tab", {name: "4:3 · власна"})).toBeTruthy();
         expect(screen.queryByText(/будується автоматично з основного/)).toBeNull();
@@ -169,7 +177,7 @@ describe("live editor", () => {
         expect(document.getElementById(live.getAttribute("aria-describedby")!)?.textContent).toBe("зараз");
         fireEvent.click(screen.getByRole("tab", {name: /Заморожено/}));
         // Its own copy of the board, editable at once.
-        expect((screen.getByRole("button", {name: "Додати блок «Таймер»"}) as HTMLButtonElement).disabled).toBe(false);
+        expect(openPalette("Таймер").disabled).toBe(false); closePalette();
         fireEvent.click(document.querySelector(".event-live-editor__native .live-widget--chart")!);
         fireEvent.click(screen.getByRole("button", {name: "Прибрати блок"}));
         fireEvent.click(within(screen.getByText("Прибрати блок?").closest("dialog, [role=alertdialog], [role=dialog]") as HTMLElement).getByRole("button", {name: "Прибрати блок"}));
@@ -302,13 +310,13 @@ describe("live editor", () => {
     it("is read-only for viewers", () => {
         mount(false);
         expect(screen.queryByRole("button", {name: /Опублікувати/})).toBeNull();
-        expect((screen.getByRole("button", {name: "Додати блок «Таймер»"}) as HTMLButtonElement).disabled).toBe(true);
+        expect(openPalette("Таймер").disabled).toBe(true); closePalette();
     });
 
     it("stops at 48 widgets on a scene with a clear message instead of a failing save", () => {
         const full = Array.from({length: 48}, (_, index) => ({id: `q${index}`, type: "qr" as const, x: index % 12 + 1, y: Math.floor(index / 12) + 1, w: 1, h: 1, props: {value: "/"}}));
         mount(true, {Published: {...defaultLiveLayout, scenes: undefined, widgets: full}, Draft: null});
-        fireEvent.click(screen.getByRole("button", {name: "Додати блок «QR-код»"}));
+        fireEvent.click(openPalette("QR-код"));
         expect(screen.getByRole("alert").textContent).toBe("На одному екрані може бути не більше 48 блоків. Приберіть зайвий блок.");
         expect(document.querySelectorAll(".event-live-editor__native .live-widget")).toHaveLength(48);
     });

@@ -5630,5 +5630,21 @@
   "live.template.ceremony": "Нагородження",
   "live.template.ceremonyDescription": "Подіум із кубками чи своїми зображеннями й місця 4–9.",
   "live.template.sidePanel": "Бокова панель",
-  "live.template.sidePanelDescription": "Назва, таймер, QR і логотипи вузькою колонкою, поруч таблиця на всю висоту."
+  "live.template.sidePanelDescription": "Назва, таймер, QR і логотипи вузькою колонкою, поруч таблиця на всю висоту.",
+  "manage.live.settingsTabs": "Налаштування блоку",
+  "manage.live.settingsTab.display": "Вигляд",
+  "manage.live.settingsTab.top": "Топ-3",
+  "manage.live.settingsTab.colors": "Кольори",
+  "manage.live.settingsTab.place": "Місце",
+  "manage.live.section.top": "Перші місця",
+  "manage.live.paletteSearch": "Пошук блоку",
+  "manage.live.paletteNothing": "Такого блоку немає",
+  "manage.live.paletteOpen": "Блок «{name}»: переглянути й додати",
+  "manage.live.paletteGroup.results": "Результати",
+  "manage.live.paletteGroup.time": "Час і етапи",
+  "manage.live.paletteGroup.info": "Інформація",
+  "manage.live.paletteGroup.brand": "Організатори й партнери",
+  "manage.live.palettePreview.add": "Додати на екран",
+  "manage.live.palettePreview.size": "Займе щонайменше {w}×{h} клітинок; розмір змінюється на сітці.",
+  "manage.live.palettePreview.locked": "Редагувати екран можуть лише власники й менеджери заходу."
 }

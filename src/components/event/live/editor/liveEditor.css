@@ -1,9 +1,9 @@
 /* Live editor (/manage/live): toolbar, palette of widget previews, the scaled
    screen, and the settings panel (screen or selected widget). */
 .event-live-editor{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--ib-4)}
-.event-live-editor__heading{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ib-3);flex-wrap:wrap}
+.event-live-editor__heading{display:flex;justify-content:space-between;align-items:center;gap:var(--ib-3);flex-wrap:wrap}
 .event-live-editor__heading h1{margin:0;color:var(--ib-ink);font-size:var(--ib-fs-24)}
-.event-live-editor__heading p{max-width:70ch;margin:.35em 0 0;color:var(--ib-dim)}
+.event-live-editor__title{display:flex;align-items:center;gap:var(--ib-2)}
 .event-live-editor__actions{display:flex;align-items:center;justify-content:flex-end;gap:var(--ib-2);flex-wrap:wrap;margin-left:auto}
 .event-live-editor__status{display:inline-flex;align-items:center;gap:var(--ib-2);padding-right:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-live-editor__status.is-problem{color:var(--ib-danger)}
@@ -55,19 +55,23 @@
 
 .event-live-editor__workspace{display:grid;grid-template-columns:220px minmax(0,1fr) 360px;gap:var(--ib-3);align-items:start;min-width:0}
 .event-live-editor__palette,.event-live-editor__properties{display:grid;align-content:start;gap:var(--ib-2);min-width:0;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
-/* The palette stays in view while the page scrolls and scrolls itself within
-   the visible part of the shell (under its top bar), so its last item is
-   always reachable in full. */
-.event-live-editor__palette{position:sticky;top:0;max-height:calc(var(--ib-shell-h,100dvh) - var(--ib-topbar-h,56px) - var(--ib-6) * 2);overflow-y:auto;overscroll-behavior:contain;scroll-padding-block:var(--ib-3)}
-.event-live-palette-item small{padding:0 2px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:1.35}
+
 .event-live-editor__palette h2{margin:0;color:var(--ib-ink);font-size:var(--ib-fs-16)}
 .event-live-editor__palette>p{margin:0 0 var(--ib-1,4px);color:var(--ib-dim);font-size:var(--ib-fs-12)}
-.event-live-palette-item{display:grid;gap:6px;padding:6px 6px 8px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-ink);font:inherit;font-size:var(--ib-fs-13);text-align:left;cursor:grab}
+.event-live-palette-item{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;padding:6px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-ink);font:inherit;font-size:var(--ib-fs-13);text-align:left;cursor:grab}
 .event-live-palette-item:hover{border-color:var(--ib-dim)}
 .event-live-palette-item:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
 .event-live-palette-item:active{cursor:grabbing}
 .event-live-palette-item:disabled{opacity:.5;cursor:not-allowed}
-.event-live-palette-item>span{padding:0 2px;font-weight:var(--ib-w-medium,500)}
+.event-live-palette-item>span:last-child{display:grid;gap:1px;min-width:0}
+.event-live-palette-item b{font-weight:var(--ib-w-medium,500)}
+.event-live-palette-item small{color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:1.3}
+.event-live-palette-group{display:grid;gap:6px}
+.event-live-palette-group h3{margin:var(--ib-2) 0 0;color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold,600);letter-spacing:.04em;text-transform:uppercase}
+.event-live-palette-search{width:100%}
+.event-live-palette-preview{display:grid;justify-items:center;gap:var(--ib-2)}
+.event-live-palette-preview p{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-live-palette-preview .event-live-palette-preview__blocked{color:var(--ib-warn)}
 
 /* «Перегляд»: the screen over the whole window, scaled to fit, on black like a
    switched-off projector around it; the controls in the corner. */
@@ -107,6 +111,7 @@
 .event-live-editor__custom-size{display:flex;align-items:flex-end;gap:var(--ib-2);flex-wrap:wrap}
 .event-live-editor__custom-size label{display:grid;gap:5px}
 .event-live-editor__custom-size input{width:120px}
+.event-live-editor__screen-box{display:grid;justify-items:center;min-width:0}
 .event-live-editor__screen{position:relative;justify-self:center;width:min(100%,calc(70vh * var(--live-aspect)));aspect-ratio:var(--live-aspect);overflow:hidden;border:1px solid var(--ib-line)}
 .event-live-editor__native{position:absolute;top:0;left:0;box-sizing:border-box;background:var(--ev-brand,#211a52);transform:scale(var(--live-preview-scale,1));transform-origin:0 0}
 .event-live-editor__native.is-light{background:#F7F7F9}
@@ -232,3 +237,19 @@
 .event-live-place-image input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .event-live-place-image input:disabled{cursor:not-allowed}
 .event-live-place-image:has(input:focus-visible) .event-live-place-image__box{outline:2px solid var(--ib-action);outline-offset:1px}
+
+/* A wide window: the editor fills the visible shell exactly, so the page never
+   scrolls. The palette and the settings scroll by themselves; the screen takes
+   the room left in the middle column and is always seen whole. */
+@media(min-width:1101px){
+  .event-live-editor{height:calc(var(--ib-shell-h,100dvh) - var(--ib-topbar-h,56px) - var(--ib-6) * 2);grid-template-rows:auto auto minmax(0,1fr);gap:var(--ib-3)}
+  .event-live-editor__workspace{grid-template-columns:240px minmax(0,1fr) 340px;align-items:stretch;min-height:0}
+  .event-live-editor__palette,.event-live-editor__properties{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .event-live-editor__stage{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .event-live-editor__screen-box{flex:1 1 0;min-height:0;container-type:size;align-content:center}
+  .event-live-editor__screen{width:min(100cqw,calc(100cqh * var(--live-aspect)))}
+}
+
+/* The settings tabs of a block: one row over the panel. */
+.event-live-settings__tabs{margin-bottom:var(--ib-2)}
+.event-live-settings__panel{display:grid;gap:var(--ib-3)}
