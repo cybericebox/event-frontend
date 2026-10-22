@@ -8,7 +8,7 @@ const api = vi.hoisted(() => ({
     getInbox: vi.fn(), getInboxSince: vi.fn(), markInboxRead: vi.fn(), markInboxAllRead: vi.fn(), resolveInboxRequest: vi.fn(),
 }));
 vi.mock("@/api/inbox", () => ({...api, InboxError: class extends Error { code?: number }}));
-const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: unknown) => void>(), subscribe: vi.fn(), initial: {Cursor: "c0", Unread: 2}}));
+const pulses = vi.hoisted(() => ({listeners: new Set<(pulse: unknown) => void>(), subscribe: vi.fn(), now: vi.fn(), initial: {Cursor: "c0", Unread: 2}}));
 vi.mock("@/utils/pulse", () => ({
     subscribePulse: (scope: string, listener: (pulse: unknown) => void) => {
         pulses.subscribe(scope);
@@ -16,7 +16,7 @@ vi.mock("@/utils/pulse", () => ({
         queueMicrotask(() => listener({Banners: "v1", Inbox: pulses.initial}));
         return () => pulses.listeners.delete(listener);
     },
-    pulseNow: vi.fn(),
+    pulseNow: pulses.now,
 }));
 vi.mock("next/navigation", () => ({usePathname: () => "/manage/settings", useRouter: () => ({push: vi.fn(), replace: vi.fn()})}));
 const {InboxButton} = await import("./InboxButton");
@@ -59,9 +59,9 @@ describe("inbox", () => {
         api.markInboxRead.mockImplementationOnce(() => new Promise(() => {}));
         api.getInboxSince.mockResolvedValueOnce(poll).mockResolvedValue({...poll, Unread: 3, Cursor: "c1", Items: [message]});
         render(<ManualDraftProvider userID="user-a" eventID="e1"><EditedPage /><InboxButton event={{id: "e1", otherEventsHref: "/"}} /></ManualDraftProvider>);
-        await waitFor(() => expect(api.getInbox).toHaveBeenCalled());
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalled());
         if (mode === "list") fireEvent.click(screen.getByRole("button", {name: /Вхідні/}));
-        else act(() => window.dispatchEvent(new Event("cybericebox:inbox-updated")));
+        else await act(async () => { for (const listener of [...pulses.listeners]) listener({Banners: "v1", Inbox: {Cursor: "c1", Unread: 3}}); });
         const action = mode === "list" ? await screen.findByRole("link", {name: t("inbox.open")}) : await screen.findByRole("button", {name: "notification action"});
         fireEvent.change(screen.getByLabelText("draft"), {target: {value: "keep this"}});
         fireEvent.click(action);
@@ -95,6 +95,32 @@ describe("inbox", () => {
         await emit("c2", 1);
         await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(4));
         expect(api.getInboxSince).toHaveBeenLastCalledWith("e1", "c2");
+    });
+
+    it("never reads the list while the dropdown is closed, and reads it (behind the crest) when it opens", async () => {
+        render(<InboxButton event={{id: "e1", otherEventsHref: "/"}} />);
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(1));
+        const emit = (Cursor: string, Unread: number) => act(async () => { for (const listener of [...pulses.listeners]) listener({Banners: "v1", Inbox: {Cursor, Unread}}); });
+        // Unread moved without news (read elsewhere): only the since call, no list.
+        api.getInboxSince.mockResolvedValueOnce({...poll, Cursor: "c0", Unread: 1, Items: []});
+        await emit("c0", 1);
+        await waitFor(() => expect(api.getInboxSince).toHaveBeenCalledTimes(2));
+        expect(api.getInbox).not.toHaveBeenCalled();
+        let answer: (page: unknown) => void = () => {};
+        api.getInbox.mockImplementationOnce(() => new Promise(resolve => { answer = resolve; }));
+        fireEvent.click(screen.getByRole("button", {name: /Вхідні/}));
+        expect(api.getInbox).toHaveBeenCalledTimes(1);
+        expect(await screen.findByRole("status", {name: t("common.loading")})).toBeTruthy();
+        await act(async () => { answer({Items: [lab("a")], NextCursor: null}); });
+        expect(await screen.findByText("Заявка a")).toBeTruthy();
+    });
+
+    it("a local change asks the pulse, not the inbox", async () => {
+        await openInbox();
+        const since = api.getInboxSince.mock.calls.length;
+        act(() => window.dispatchEvent(new Event("cybericebox:inbox-updated")));
+        expect(pulses.now).toHaveBeenCalledWith("e1");
+        expect(api.getInboxSince).toHaveBeenCalledTimes(since);
     });
 
     it("after an empty baseline holds the epoch cursor, so the first news arrive as items", async () => {

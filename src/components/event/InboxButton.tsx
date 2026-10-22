@@ -11,7 +11,7 @@ import {Bell, Check, ChevronRight, X} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {getInbox, getInboxSince, markInboxAllRead, markInboxRead, resolveInboxRequest} from "@/api/inbox";
-import {subscribePulse} from "@/utils/pulse";
+import {pulseNow, subscribePulse} from "@/utils/pulse";
 import {apiErrorText} from "@/i18n/apiError";
 import {t} from "@/i18n/t";
 import {EventLoading} from "./EventLoading";
@@ -79,7 +79,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     const loadingOlderRef = useRef(false);
     const listRevisionRef = useRef(0);
     const openRef = useRef(false);
-    // A local change (resolve, read-all, another tab): catch up with the inbox now, no pulse needed.
+    // A local change (resolve, read-all, another tab): pulse now; the pulse decides whether news are fetched.
     const pollNowRef = useRef<() => void>(() => {});
     const scrollAreaRef = useRef<HTMLDivElement | null>(null);
     const lastItemRef = useRef<HTMLLIElement | null>(null);
@@ -174,7 +174,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                         applyCounts(parseCounts(result.Counts));
                         setOtherEvents(parseOtherEvents(result.OtherEventsCount));
                         initialized = true;
-                        await refresh();
+                        // The list itself is read only when the dropdown opens (openInbox → refresh).
                     } else {
                         const fresh = result.Items.filter(isUnread);
                         if (openRef.current && result.Items.length) {
@@ -186,7 +186,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                             });
                         }
                         let poppable = fresh.filter(item => popInDuration(item.AutoDismissMs) > 0);
-                        if (result.Unread !== unreadCountRef.current + fresh.length) {
+                        if (result.Unread !== unreadCountRef.current + fresh.length && openRef.current) {
                             const latest = await refresh();
                             poppable = latest ? poppable.filter(item => latest.some(entry => entry.ID === item.ID && isUnread(entry))) : [];
                         } else {
@@ -214,7 +214,8 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
             if (!initialized || held(inbox.Cursor) !== cursorRef.current || inbox.Unread !== unreadCountRef.current) void sync(inbox);
         };
         const unsubscribe = subscribePulse(scope, onPulse);
-        const catchUp = () => { void sync(null); };
+        // A local change asks the shared pulse; only a moved cursor or unread count then fetches news.
+        const catchUp = () => { pulseNow(scope); };
         pollNowRef.current = catchUp;
         const onUpdated = () => { if (document.visibilityState !== "hidden" && initialized) catchUp(); };
         window.addEventListener("cybericebox:inbox-updated", onUpdated);
