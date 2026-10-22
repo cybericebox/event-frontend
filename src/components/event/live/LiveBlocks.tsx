@@ -1,6 +1,6 @@
 "use client";
 
-import type {CSSProperties} from "react";
+import type {CSSProperties, ReactNode} from "react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import type {LiveWidget} from "@/api/manageLive";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
@@ -8,36 +8,87 @@ import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {clockLabel} from "@/utils/resultsFreeze";
 import {t} from "@/i18n/t";
 import {LiveCaption, LiveList, measureName, useElementSize, type LiveMetrics} from "./LiveParts";
-import {liveFactsFit, livePodiumFit, livePodiumHeights, liveTimerFit, liveTwoLineRow} from "./liveFit";
+import {liveCardsFit, liveFactsFit, livePodiumFit, livePodiumHeights, liveTimerFit, liveTwoLineRow} from "./liveFit";
+import {liveHighlightOf, type LiveHighlight} from "./liveColors";
 import {liveFactItems, liveFacts} from "./liveFacts";
 import {liveCurrentStage, liveNextStage, liveStageNameChars, type LiveStage} from "./liveStages";
-import {livePoints} from "./liveTable";
+import {liveMaxPoints, livePoints} from "./liveTable";
 import {liveSampleStages} from "./liveSample";
 
 // «Подіум»: places 2, 1, 3 side by side, the winner's tile the tallest and
-// in the accent. `caption` is null when the block hides it.
+// in the accent; or «Картки»: places 1, 2, 3 as equal cards. `caption` is
+// null when the block hides it.
 export function LivePodium({widget, event, results, metrics, caption}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; metrics: LiveMetrics; caption: string | null}) {
-    const [ref, size] = useElementSize<HTMLDivElement>();
+    const highlight = liveHighlightOf(widget);
+    const tone = highlight === "medals" ? " live-podium--medals" : highlight === "none" ? " live-podium--plain" : "";
     const top = (results?.Scoreboard ?? []).slice(0, 3);
+    const empty = <EmptyState compact message={t(event.Participation === 1 ? "live.podium.emptyTeams" : "live.podium.emptyParticipants")} />;
+    return <div className={`live-podium${tone}`}>
+        {caption !== null && <LiveCaption caption={caption} metrics={metrics} />}
+        {widget.props.variant === "cards" ? <LivePodiumCards widget={widget} top={top} results={results} metrics={metrics} empty={empty} highlight={highlight} />
+            : <LivePodiumSteps widget={widget} top={top} metrics={metrics} empty={empty} />}
+    </div>;
+}
+
+type PodiumTeam = ManageResultsSnapshot["Scoreboard"][number];
+
+function LivePodiumSteps({widget, top, metrics, empty}: {widget: LiveWidget; top: PodiumTeam[]; metrics: LiveMetrics; empty: ReactNode}) {
+    const [ref, size] = useElementSize<HTMLDivElement>();
     const order = [top[1], top[0], top[2]].filter(Boolean);
     const fit = livePodiumFit({width: size.width, height: size.height, names: top.map(team => team.TeamName), body: metrics.body, caption: metrics.caption, measure: measureName});
     const points = widget.props.showPoints !== false;
-    return <div className="live-podium">
-        {caption !== null && <LiveCaption caption={caption} metrics={metrics} />}
-        <div className="live-podium__stage" ref={ref} style={{gap: fit.gap}}>
-            {!top.length ? <EmptyState compact message={t(event.Participation === 1 ? "live.podium.emptyTeams" : "live.podium.emptyParticipants")} />
-                : size.width > 0 && order.map(team => {
-                    const place = team.Rank;
-                    const lead = place === 1;
-                    return <div key={team.TeamID} className={`live-podium__tile${lead ? " is-lead" : ""}`}
-                        style={{height: `${livePodiumHeights[Math.min(2, place - 1)] * 100}%`, padding: fit.pad} as CSSProperties}>
-                        <span className="live-podium__place" style={{fontSize: fit.meta}}>{place}</span>
-                        <strong style={{fontSize: lead ? fit.lead : fit.name}} title={team.TeamName}>{team.TeamName}</strong>
-                        {points && <span className="live-podium__points" style={{fontSize: fit.meta}}>{livePoints(team.Points)}</span>}
-                    </div>;
-                })}
-        </div>
+    return <div className="live-podium__stage" ref={ref} style={{gap: fit.gap}}>
+        {!top.length ? empty : size.width > 0 && order.map(team => {
+            const place = team.Rank;
+            const lead = place === 1;
+            return <div key={team.TeamID} className={`live-podium__tile is-place-${Math.min(3, place)}${lead ? " is-lead" : ""}`}
+                style={{height: `${livePodiumHeights[Math.min(2, place - 1)] * 100}%`, padding: fit.pad} as CSSProperties}>
+                <span className="live-podium__place" style={{fontSize: fit.meta}}>{place}</span>
+                <strong style={{fontSize: lead ? fit.lead : fit.name}} title={team.TeamName}>{team.TeamName}</strong>
+                {points && <span className="live-podium__points" style={{fontSize: fit.meta}}>{livePoints(team.Points)}</span>}
+            </div>;
+        })}
     </div>;
+}
+
+function LivePodiumCards({widget, top, results, metrics, empty, highlight}: {widget: LiveWidget; top: PodiumTeam[]; results?: ManageResultsSnapshot; metrics: LiveMetrics; empty: ReactNode; highlight: LiveHighlight}) {
+    const [ref, size] = useElementSize<HTMLDivElement>();
+    const points = widget.props.showPoints !== false;
+    const ring = widget.props.showRing === true;
+    const max = liveMaxPoints(results);
+    const fit = liveCardsFit({width: size.width, height: size.height, names: top.map(team => team.TeamName), pointsChars: Math.max(1, ...top.map(team => livePoints(team.Points).length)),
+        ring, body: metrics.body, caption: metrics.caption, measure: measureName});
+    const tone = highlight === "medals" ? " live-cards--medals" : highlight === "none" ? " live-cards--plain" : "";
+    return <div className={`live-cards${tone}`} ref={ref} style={{gap: fit.gap}}>
+        {!top.length ? empty : size.width > 0 && top.map(team => {
+            const share = Math.max(0, Math.min(1, team.Points / max));
+            return <div key={team.TeamID} className={`live-card is-place-${Math.min(3, team.Rank)}${team.Rank === 1 ? " is-lead" : ""}`} style={{padding: `0 ${fit.pad}px ${fit.pad}px`}}>
+                <div className="live-card__head">
+                    <strong style={{fontSize: fit.name, paddingTop: fit.pad}} title={team.TeamName}>{team.TeamName}</strong>
+                    <span className="live-card__badge" style={{fontSize: fit.meta}}>{t("live.podium.place", {place: team.Rank})}</span>
+                </div>
+                <div className="live-card__body">
+                    {ring && fit.ring > 0 && <LiveRing share={share} size={fit.ring} label={t("live.podium.ringAria", {percent: Math.round(share * 100)})} />}
+                    {points && <span className="live-card__points">
+                        <b style={{fontSize: fit.points}}>{livePoints(team.Points)}</b>
+                        <small style={{fontSize: fit.meta}}>{t("live.podium.points")}</small>
+                    </span>}
+                </div>
+            </div>;
+        })}
+    </div>;
+}
+
+// The share of the maximum points as a ring with the percent inside.
+function LiveRing({share, size, label}: {share: number; size: number; label: string}) {
+    const stroke = Math.max(3, size * 0.09);
+    const radius = (size - stroke) / 2;
+    const length = 2 * Math.PI * radius;
+    return <svg className="live-card__ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label}>
+        <circle className="is-track" cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} />
+        <circle className="is-value" cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} strokeDasharray={`${length * share} ${length}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+        <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fontSize={size * 0.24}>{t("live.podium.percent", {percent: Math.round(share * 100)})}</text>
+    </svg>;
 }
 
 // «Факти»: large numbers over their labels, side by side.

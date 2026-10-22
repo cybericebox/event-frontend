@@ -151,6 +151,73 @@
 .live-stages li.is-now small{color:var(--live-dim)}
 .live-stages li.is-done span{color:var(--live-faint)}
 .live-retired{display:grid;align-content:center;gap:.3em;height:100%;color:var(--live-faint);font-size:var(--live-fs-caption)}
+/* «Кольори» of a block (liveColors.ts): a rounded fill with a small gap to
+   its neighbours; the quieter text shades and lines follow the block's own
+   ink over the fill instead of the theme. */
+.live-widget--fill{margin:calc(var(--live-u) * .12);border-radius:calc(var(--live-u) * .3);background:var(--live-widget-bg,var(--live-tile))}
+.live-widget--fill-tile{background:var(--live-tile)}
+.live-widget--fill>*,.live-widget--inked>*{--live-dim:color-mix(in srgb,var(--live-ink) 84%,transparent);--live-faint:color-mix(in srgb,var(--live-ink) 64%,transparent);--live-line:color-mix(in srgb,var(--live-ink) 18%,transparent);--live-lead:color-mix(in srgb,var(--live-ink) 7%,transparent);--live-tile:color-mix(in srgb,var(--live-ink) 11%,transparent)}
+.live-canvas--edit .live-widget.live-widget--fill{background:var(--live-widget-bg,var(--live-tile))}
+.live-canvas--edit .live-widget.live-widget--fill-tile{background:var(--live-tile)}
+/* «Виділення топ-3 → Медалі»: the place in a badge of its colour, the row lightly tinted with it. */
+.live-table__rank{display:inline-grid;place-items:center;min-width:1.5em;height:1.5em;padding:0 .2em;border-radius:999px;line-height:1}
+.live-table--medals tr.is-place-1 .live-table__rank{background:var(--live-place-1);color:var(--live-place-ink-1)}
+.live-table--medals tr.is-place-2 .live-table__rank{background:var(--live-place-2);color:var(--live-place-ink-2)}
+.live-table--medals tr.is-place-3 .live-table__rank{background:var(--live-place-3);color:var(--live-place-ink-3)}
+.live-table--medals tr.is-place-1{background:color-mix(in srgb,var(--live-place-1) 16%,transparent)}
+.live-table--medals tr.is-place-2{background:color-mix(in srgb,var(--live-place-2) 13%,transparent)}
+.live-table--medals tr.is-place-3{background:color-mix(in srgb,var(--live-place-3) 13%,transparent)}
+.live-table--medals tr.is-top td:first-child{color:var(--live-ink)}
+.live-table--medals tr.is-lead td:nth-child(2),.live-table--medals tr.is-lead td:last-child{color:var(--live-ink)}
+/* «Без виділення»: the top three read like any other row. */
+.live-table--plain tr.is-lead{background:none}
+.live-table--plain tr.is-lead td:nth-child(2),.live-table--plain tr.is-lead td:last-child{color:var(--live-ink)}
+.live-table--plain tr.is-top td:first-child{color:var(--live-faint);font-weight:500}
+/* «Смуги балів»: a thin bar under the name, as long as the share of the maximum. */
+.live-table td.live-table__name{position:relative}
+.live-table__bar{position:absolute;left:calc(var(--live-row-font) * .45);right:calc(var(--live-row-font) * .45);bottom:.12em;height:.14em;border-radius:999px;background:var(--live-line);pointer-events:none}
+.live-table__bar>i{display:block;width:calc(var(--live-bar) * 100%);height:100%;border-radius:inherit;background:var(--live-accent)}
+.live-table--medals tr.is-place-1 .live-table__bar>i{background:var(--live-place-1)}
+.live-table--medals tr.is-place-2 .live-table__bar>i{background:var(--live-place-2)}
+.live-table--medals tr.is-place-3 .live-table__bar>i{background:var(--live-place-3)}
+/* Podium places in medal colours. */
+.live-podium--medals .live-podium__tile.is-place-1{background:color-mix(in srgb,var(--live-tile),var(--live-place-1) 26%)}
+.live-podium--medals .live-podium__tile.is-place-2{background:color-mix(in srgb,var(--live-tile),var(--live-place-2) 20%)}
+.live-podium--medals .live-podium__tile.is-place-3{background:color-mix(in srgb,var(--live-tile),var(--live-place-3) 20%)}
+.live-podium--medals .is-place-1 .live-podium__place{color:var(--live-place-1)}
+.live-podium--medals .is-place-2 .live-podium__place{color:var(--live-place-2)}
+.live-podium--medals .is-place-3 .live-podium__place{color:var(--live-place-3)}
+.live-podium--plain .live-podium__tile.is-lead{background:var(--live-tile)}
+.live-podium--plain .live-podium__place{color:var(--live-faint)}
+/* «Подіум → Картки»: places 1, 2, 3 as equal cards — a place badge, the name,
+   the points and, when on, a ring with the share of the maximum points. */
+.live-cards{display:flex;flex:1;align-items:stretch;min-height:0}
+.live-cards>.event-block-state{flex:1}
+.live-card{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);flex:1 1 0;box-sizing:border-box;min-width:0;overflow:hidden;border-radius:calc(var(--live-u) * .3);background:var(--live-tile)}
+.live-card__head{display:flex;align-items:flex-start;gap:.5em;min-width:0}
+.live-card__head strong{flex:1;min-width:0;overflow:hidden;font-weight:600;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}
+.live-card.is-lead .live-card__head strong{color:var(--live-accent)}
+.live-card__badge{display:inline-grid;flex:none;place-items:center;min-width:1.9em;height:1.9em;padding:0 .3em;border-radius:0 0 .5em .5em;background:var(--live-accent);color:var(--live-bg);font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:700;line-height:1}
+.live-card__body{display:flex;align-items:center;justify-content:center;gap:.6em;min-height:0}
+.live-card__points{display:grid;gap:.1em;min-width:0;text-align:center}
+.live-card__points b{font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.1;white-space:nowrap}
+.live-card__points small{overflow:hidden;color:var(--live-faint);line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.live-card__ring{display:block;flex:none;height:100%;max-height:100%;aspect-ratio:1}
+.live-card__ring circle{fill:none}
+.live-card__ring .is-track{stroke:var(--live-line)}
+.live-card__ring .is-value{stroke:var(--live-accent);stroke-linecap:round;transition:stroke-dasharray .6s}
+.live-card__ring text{fill:var(--live-ink);font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
+.live-cards--medals .live-card.is-place-1 .live-card__badge{background:var(--live-place-1);color:var(--live-place-ink-1)}
+.live-cards--medals .live-card.is-place-2 .live-card__badge{background:var(--live-place-2);color:var(--live-place-ink-2)}
+.live-cards--medals .live-card.is-place-3 .live-card__badge{background:var(--live-place-3);color:var(--live-place-ink-3)}
+.live-cards--medals .live-card.is-place-1 .live-card__ring .is-value{stroke:var(--live-place-1)}
+.live-cards--medals .live-card.is-place-2 .live-card__ring .is-value{stroke:var(--live-place-2)}
+.live-cards--medals .live-card.is-place-3 .live-card__ring .is-value{stroke:var(--live-place-3)}
+.live-cards--medals .live-card.is-lead .live-card__head strong{color:var(--live-ink)}
+.live-cards--medals .live-card.is-place-1{border-top:calc(var(--live-u) * .12) solid var(--live-place-1)}
+.live-cards--plain .live-card__badge{background:var(--live-line);color:var(--live-ink)}
+.live-cards--plain .live-card.is-lead .live-card__head strong{color:var(--live-ink)}
+@media(prefers-reduced-motion:reduce){.live-card__ring .is-value{transition:none}}
 .live-drop-ghost{z-index:3;border:2px dashed #7e85ff;background:color-mix(in srgb,#7e85ff 18%,transparent);pointer-events:none}
 .live-drop-ghost.is-blocked{border-color:#fd929d;background:color-mix(in srgb,#fd929d 18%,transparent)}
 

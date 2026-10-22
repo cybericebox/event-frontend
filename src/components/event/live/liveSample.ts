@@ -43,7 +43,8 @@ export function liveSampleResults(now: number): ManageResultsSnapshot & {SampleE
         .sort((a, b) => b.points - a.points || a.team - b.team)
         .map((item, index) => ({Rank: index + 1, TeamID: teamID(item.team), TeamName: item.team < namedTeams ? t(`live.sample.team.${item.team + 1}`) : t("live.sample.teamNumbered", {number: item.team + 1}), Points: item.points, Solved: timeline.filter(solve => solve.EventTeamID === teamID(item.team)).length}));
     return {
-        Revision: 0, SampleEnd: now, Scoreboard: scoreboard, Timeline: timeline, TotalTeams: teamCount, Tasks: 24,
+        // The sample maximum puts the leader at about four fifths of it.
+        Revision: 0, SampleEnd: now, Scoreboard: scoreboard, Timeline: timeline, TotalTeams: teamCount, Tasks: 24, MaxPoints: Math.round((scoreboard[0]?.Points ?? 0) / 0.8 / 50) * 50,
         Freeze: {BannerText: "", BannerLevel: "warning", Enabled: false, FrozenAt: null, FinishAt: null, OpenedAt: null, Active: false, Applied: false},
         Display: {ChartEnabled: true, ChartTeams: 10, RowsLimit: null},
     };

@@ -11,13 +11,14 @@ import {liveCorners, liveLogoURL, liveWidgetLabels, type LiveCorner} from "./liv
 import {liveCaptionShown, liveCaptionText, liveTextFloors, liveTextProfile, liveTextSize, liveTextSizes, liveTextVars, liveWidgetTextScale, type LiveTextProfile} from "./liveText";
 import {liveAnnouncementFit, liveHeaderRow, liveTableFit, liveTimerFit, liveTitleFit} from "./liveFit";
 import {liveStageSubtitle, liveTimerDigitMode, liveTimerDigits, liveTimerState, liveTimerUrgency, liveTimerZero, type LiveStage} from "./liveStages";
-import {livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
+import {liveMaxPoints, livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
 import {chartSeries, spreadLabels} from "./liveChart";
 import {liveSampleSpan} from "./liveSample";
 import {LiveQR} from "./LiveQR";
 import {LiveList, measureName, useElementSize, type LiveMetrics} from "./LiveParts";
 import {liveAlign, LiveClock, LiveFactsBlock, LivePodium, LiveStagesBlock} from "./LiveBlocks";
 import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
+import {liveBlockColors, liveHighlightOf, type LiveHighlight} from "./liveColors";
 import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import {clockLabel} from "@/utils/resultsFreeze";
 import crest from "@/styles/assets/crest-128.png";
@@ -189,22 +190,29 @@ function LiveTitle({widget, event, logo, stages, now, note, metrics}: {widget: L
 type LiveTeamRow = NonNullable<ManageResultsSnapshot["Scoreboard"]>[number];
 
 // «Колонки»: a wide table splits its page into two columns side by side.
-function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event}: {
+function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, barMax}: {
     rows: LiveTeamRow[]; pinned: number; width: number; rowHeight: number; metrics: LiveMetrics; rankChars: number; pointsChars: number; event: PublicEventInfo;
+    highlight: LiveHighlight;
+    // The points a full bar stands for; null without «Смуги балів».
+    barMax: number | null;
 }) {
-    const fit = liveTableFit({width, rowHeight, body: metrics.body, rankChars, pointsChars, names: rows.map(team => team.TeamName), measure: measureName});
-    return <table className="live-table" style={{"--live-row-font": `${fit.font}px`} as CSSProperties}>
+    const medals = highlight === "medals";
+    // A medal badge is wider than one or two digits.
+    const fit = liveTableFit({width, rowHeight, body: metrics.body, rankChars: medals ? Math.max(rankChars, 2.6) : rankChars, pointsChars, names: rows.map(team => team.TeamName), measure: measureName});
+    return <table className={`live-table${medals ? " live-table--medals" : highlight === "none" ? " live-table--plain" : ""}`} style={{"--live-row-font": `${fit.font}px`} as CSSProperties}>
         <colgroup><col style={{width: fit.rankWidth}} /><col /><col style={{width: fit.pointsWidth}} /></colgroup>
         <thead><tr style={{height: metrics.caption * liveHeaderRow}}><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead>
         <tbody style={{fontSize: fit.font}}>{rows.map((team, index) => <tr key={team.TeamID} style={{height: rowHeight}}
-            className={[team.Rank === 1 ? "is-lead" : "", team.Rank <= 3 ? "is-top" : "", index === pinned - 1 ? "is-pinned-last" : ""].filter(Boolean).join(" ") || undefined}>
-            <td>{team.Rank}</td>
-            <td className={fit.names[index].lines === 2 ? "live-table__name is-wrap" : "live-table__name"} style={{fontSize: fit.names[index].font}} title={team.TeamName}>{team.TeamName}</td>
+            className={[team.Rank === 1 ? "is-lead" : "", team.Rank <= 3 ? `is-top is-place-${team.Rank}` : "", index === pinned - 1 ? "is-pinned-last" : ""].filter(Boolean).join(" ") || undefined}>
+            <td>{medals && team.Rank <= 3 ? <span className="live-table__rank">{team.Rank}</span> : team.Rank}</td>
+            <td className={fit.names[index].lines === 2 ? "live-table__name is-wrap" : "live-table__name"} style={{fontSize: fit.names[index].font}} title={team.TeamName}>
+                {team.TeamName}
+                {barMax !== null && <span className="live-table__bar" aria-hidden="true"><i style={{"--live-bar": Math.max(0, Math.min(1, team.Points / barMax))} as CSSProperties} /></span>}
+            </td>
             <td>{livePoints(team.Points)}</td>
         </tr>)}</tbody>
     </table>;
 }
-
 // The places a table shows: «Почати з місця 4» skips the podium, «Лише
 // перші N» stops after N places (no paging past them).
 export function liveTableSource<T>(teams: T[], props: LiveWidget["props"]): {rows: T[]; offset: number} {
@@ -231,13 +239,15 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix}: {widget
     const rankChars = String(teams.at(-1)?.Rank ?? 1).length;
     const pointsChars = Math.max(...teams.map(team => livePoints(team.Points).length), 1);
     const split = Array.from({length: columns}, (_, index) => view.rows.slice(index * pageSize, (index + 1) * pageSize));
+    const highlight = liveHighlightOf(widget);
+    const barMax = widget.props.showBars === true ? liveMaxPoints(results) : null;
     return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={source.length ? null : t("live.table.empty")} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
         {(geometry, width) => {
             const gap = columns > 1 ? metrics.body * 1.2 : 0;
             const columnWidth = (width - gap * (columns - 1)) / columns;
             return <div className="live-table-columns" style={{gap}}>
                 {split.map((rows, index) => <TableColumn key={index} rows={rows} pinned={index === 0 ? view.pinned : 0} width={columnWidth} rowHeight={geometry.rowHeight}
-                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} />)}
+                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} highlight={highlight} barMax={barMax} />)}
             </div>;
         }}
     </LiveList>;
@@ -360,11 +370,16 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     } as CSSProperties), [layout.grid.cols, layout.grid.rows, layout.screen.textScale, layout.theme, event.Theme.Brand, profile]);
     // Light theme: row 1 is the brand band; one-row widgets there sit on it,
     // taller ones cover it with the page colour.
-    const place = (widget: LiveWidget) => `live-widget live-widget--${widget.type}${layout.theme === "light" && widget.y === 1 ? widget.h === 1 ? " live-widget--band" : " live-widget--masked" : ""}${selectedID === widget.id ? " is-selected" : ""}${conflicts?.has(widget.id) ? " is-conflict" : warned?.has(widget.id) ? " is-warned" : ""}`;
+    // A block's own colours («Кольори»): a fill class and the colour variables.
+    const colors = useMemo(() => new Map(layout.widgets.map(widget => [widget.id, liveBlockColors(widget, event.Theme, layout.theme)])), [layout.widgets, layout.theme, event.Theme]);
+    const place = (widget: LiveWidget) => {
+        const own = colors.get(widget.id)?.className;
+        return `live-widget live-widget--${widget.type}${layout.theme === "light" && widget.y === 1 ? widget.h === 1 ? " live-widget--band" : " live-widget--masked" : ""}${own ? ` ${own}` : ""}${selectedID === widget.id ? " is-selected" : ""}${conflicts?.has(widget.id) ? " is-conflict" : warned?.has(widget.id) ? " is-warned" : ""}`;
+    };
     // A block with its own text size scales the screen unit inside it.
     const blockStyle = (widget: LiveWidget): CSSProperties => {
         const scale = liveWidgetTextScale(layout.screen.textScale, widget);
-        return {gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`, ...(scale !== layout.screen.textScale ? liveTextVars(scale, profile) : {})};
+        return {gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`, ...(scale !== layout.screen.textScale ? liveTextVars(scale, profile) : {}), ...colors.get(widget.id)?.style};
     };
     const content = (widget: LiveWidget, editing: boolean) => <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={editing} sample={sample}
         metrics={metricsFor(widget)} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} />;

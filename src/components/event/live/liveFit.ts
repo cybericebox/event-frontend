@@ -186,6 +186,30 @@ export function livePodiumFit({width, height, names, body, caption, measure = li
     return {name, lead: Math.max(name, lead), meta: Math.max(caption, name * 0.6), gap, pad, readable: name >= body};
 }
 
+// «Подіум → Картки»: three equal cards, each a name line over the points and
+// an optional ring. The names fit the card next to the place badge; the
+// points and the ring share the rest of the card.
+export type LiveCardsFit = {name: number; meta: number; points: number; ring: number; gap: number; pad: number; readable: boolean};
+
+export function liveCardsFit({width, height, names, pointsChars, ring, body, caption, measure = liveEstimateWidth}: {
+    width: number; height: number; names: string[]; pointsChars: number; ring: boolean; body: number; caption: number; measure?: LiveMeasure;
+}): LiveCardsFit {
+    const gap = Math.max(4, width * 0.02);
+    const card = Math.max(0, (width - 2 * gap) / 3);
+    const pad = Math.max(4, Math.min(card, height) * 0.06);
+    const inner = Math.max(0, card - 2 * pad);
+    const widest = Math.max(1, ...names.map(name => measure(name, 1)));
+    // The badge takes about two of its own letters plus a gap beside the name.
+    const byWidth = inner / (widest + 1.6);
+    const name = Math.max(0, Math.min(byWidth, height * 0.2, body * 2.4));
+    const meta = Math.max(caption, name * 0.62);
+    const bodyHeight = Math.max(0, height - 2 * pad - Math.max(name * 1.3, meta * 1.9));
+    const ringSize = ring ? Math.max(0, Math.min(bodyHeight * 0.92, inner * 0.48)) : 0;
+    const pointsRoom = inner - (ringSize ? ringSize + meta * 0.6 : 0);
+    const points = Math.max(0, Math.min(pointsRoom / Math.max(1, pointsChars * digitWidth), (bodyHeight - meta * 1.3) / 1.15, name * 1.5));
+    return {name, meta, points, ring: ringSize, gap, pad, readable: name >= body};
+}
+
 // Facts: N numbers side by side, each a large value over a caption-sized
 // label. `value` and `label` are character counts.
 export type LiveFactsFit = {value: number; label: number; gap: number; readable: boolean};

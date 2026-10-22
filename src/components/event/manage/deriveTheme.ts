@@ -27,6 +27,12 @@ function contrast(a: RGB, b: RGB): number {
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 
+// The contrast of two #RRGGBB colours, null when either is not one.
+export function colorContrast(aInput: string, bInput: string): number | null {
+    const a = parseColor(aInput), b = parseColor(bInput);
+    return a && b ? contrast(a, b) : null;
+}
+
 export function whiteTextContrast(brandInput: string): number | null {
     const brand = parseColor(brandInput);
     return brand ? contrast(brand, [255, 255, 255]) : null;

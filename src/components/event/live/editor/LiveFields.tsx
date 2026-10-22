@@ -38,6 +38,35 @@ export function LiveNumberInput({id, value, min, max, disabled, onChange}: {id: 
         onBlur={() => setDraft(null)} />;
 }
 
+const hexPattern = /^#[0-9a-fA-F]{6}$/;
+
+// A #RRGGBB colour: the swatch opens the system picker, the text field takes
+// a typed value. Typing keeps a draft; only a whole colour is applied, and an
+// unfinished one shows its error under the field until it is fixed.
+export function LiveColorField({label, help, value, disabled, warning, onChange}: {
+    label: string; help: string; value: string; disabled: boolean; warning?: ReactNode; onChange: (value: string) => void;
+}) {
+    const [draft, setDraft] = useState<string | null>(null);
+    const shown = draft ?? value;
+    const error = draft !== null && !hexPattern.test(draft) ? t("manage.live.color.invalid") : null;
+    return <LiveField label={label} help={help} error={error} warning={warning}>
+        {id => <div className="event-manage-color">
+            <label className="event-color-picker"><span className="event-color-swatch" style={{backgroundColor: value}} />
+                <input type="color" aria-label={t("manage.live.color.pick", {title: label.toLowerCase()})} value={value.toLowerCase()} disabled={disabled}
+                    onChange={event => {setDraft(null); onChange(event.target.value.toUpperCase());}} />
+            </label>
+            <input id={id} className="event-manage-input" value={shown} maxLength={7} disabled={disabled} spellCheck={false}
+                aria-invalid={!!error || undefined} aria-describedby={error ? `${id}-error` : undefined}
+                onChange={event => {
+                    const next = event.target.value.trim();
+                    setDraft(next);
+                    if (hexPattern.test(next)) onChange(next.toUpperCase());
+                }}
+                onBlur={() => {if (draft !== null && hexPattern.test(draft)) setDraft(null);}} />
+        </div>}
+    </LiveField>;
+}
+
 // A labelled segmented choice (S / M / L, mode) in the same field frame.
 export function LiveSegmented<T extends string>({label, help, value, options, disabled, onChange}: {
     label: string; help: string; value: T; options: {value: T; label: string}[]; disabled: boolean; onChange: (value: T) => void;
