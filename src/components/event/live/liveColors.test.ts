@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {LiveWidget} from "@/api/manageLive";
-import {liveBlockColors, liveFillOf, liveHighlightOf, liveMedalColors, livePlaceColors, liveReadableInk} from "./liveColors";
+import {liveBlockColors, liveFillOf, liveHighlightOf, liveMarkerOf, liveMedalColors, livePlaceColors, livePlaceImages, liveReadableInk} from "./liveColors";
 
 const theme = {Brand: "#211A52", Accent: "#FFD166", AccentLight: "#7A5A00", AccentDark: "#FFD166", AccentLive: "#FFD166", Version: 1};
 const block = (props: LiveWidget["props"], type: LiveWidget["type"] = "table"): LiveWidget => ({id: "a", type, x: 1, y: 1, w: 4, h: 4, props});
@@ -43,5 +43,23 @@ describe("live block colours", () => {
         const medals = liveBlockColors(block({highlightTop: "medals", placeColors: ["#FF0000", "#00FF00", "#0000FF"]}), theme, "dark");
         expect(medals.style).toMatchObject({"--live-place-1": "#FF0000", "--live-place-3": "#0000FF", "--live-place-ink-1": expect.any(String)});
         expect(liveBlockColors(block({highlightTop: "medals"}, "chart"), theme, "dark").style).toEqual({});
+    });
+});
+
+describe("live place marks", () => {
+    it("follows the medal highlight until a mark is chosen", () => {
+        expect(liveMarkerOf(block({}))).toBe("numbers");
+        expect(liveMarkerOf(block({highlightTop: "medals"}))).toBe("medals");
+        expect(liveMarkerOf(block({marker: "cups"}))).toBe("cups");
+        expect(liveMarkerOf(block({marker: "trophy"}))).toBe("numbers");
+    });
+
+    it("takes the place pictures only when all three are set", () => {
+        expect(livePlaceImages(block({placeImages: ["a", "b", "c"]}))).toEqual(["a", "b", "c"]);
+        expect(livePlaceImages(block({placeImages: ["a", "", "c"]}))).toBeNull();
+    });
+
+    it("gives cups and pictures the medal colours without the medal highlight", () => {
+        expect(liveBlockColors(block({marker: "cups"}), theme, "dark").style).toMatchObject({"--live-place-1": liveMedalColors[0]});
     });
 });

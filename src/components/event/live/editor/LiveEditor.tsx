@@ -4,7 +4,7 @@ import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {toast} from "react-hot-toast";
 import {toastFailure} from "@/components/ui/toastApiError";
-import {CircleHelp, ExternalLink, Eye, Info, LayoutTemplate, MonitorUp, Redo2, Send, TriangleAlert, Undo2} from "lucide-react";
+import {CircleHelp, ExternalLink, Eye, Info, LayoutTemplate, MonitorUp, Redo2, Send, TriangleAlert, Undo2, X} from "lucide-react";
 import {LiveDraftInvalidError, publishManageLive, type LiveEditor as LiveEditorData, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 import {LiveCanvas, type LiveGhost} from "@/components/event/live/LiveCanvas";
@@ -297,18 +297,22 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
         const canvas = pointerEvent.currentTarget.closest(".live-canvas") as HTMLElement | null;
         if (!canvas) return;
         const rect = canvas.getBoundingClientRect();
-        const originX = pointerEvent.clientX, originY = pointerEvent.clientY;
+        // The pointer is measured against the canvas as it is now: if the page
+        // moves under the drag (a message appears), the block stays under it.
+        const originX = pointerEvent.clientX - rect.left, originY = pointerEvent.clientY - rect.top;
         const start = {...item};
         const grid = view.grid;
         const editing = scene, editingShape = shape, editingMode = mode;
         let moved = false;
         setSelectedID(item.id);
+        setError("");
         pointerEvent.currentTarget.setPointerCapture(pointerEvent.pointerId);
         const target = pointerEvent.currentTarget;
         const move = (rawEvent: Event) => {
             const nextEvent = rawEvent as globalThis.PointerEvent;
-            const dx = Math.round((nextEvent.clientX - originX) / (rect.width / grid.cols));
-            const dy = Math.round((nextEvent.clientY - originY) / (rect.height / grid.rows));
+            const now = canvas.getBoundingClientRect();
+            const dx = Math.round((nextEvent.clientX - now.left - originX) / (now.width / grid.cols));
+            const dy = Math.round((nextEvent.clientY - now.top - originY) / (now.height / grid.rows));
             const candidate = action === "move" ? {...start, x: start.x + dx, y: start.y + dy} : liveResizeFromCorner(start, action, dx, dy);
             if (!moved && (dx || dy)) {
                 moved = true;
@@ -503,15 +507,13 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                 {!liveGridValid(customGrid.cols, customGrid.rows) && <small id="live-custom-grid-error" className="event-manage-validation" role="alert">{t("manage.live.validation.grid", liveGridLimits)}</small>}
             </div>}
         </div>
-        {problem && <div className="event-live-editor__error" role="alert">{problem}</div>}
-        {!problem && validation && <div className="event-live-editor__error" role="alert">{validation}</div>}
         <div className="event-live-editor__workspace">
             <aside className="event-live-editor__palette">
                 <h2>{t("manage.live.widgets")}</h2>
                 <p>{t(mode === "base" ? "manage.live.paletteHint" : "manage.live.paletteBaseOnly", {name: tabLabel(layout.aspect)})}</p>
                 {livePaletteItems.map(item => <button key={item.key} type="button" className="event-live-palette-item" draggable={editable && mode === "base"} disabled={!editable || mode !== "base"} aria-label={t("manage.live.paletteAdd", {name: item.label})}
                     aria-describedby={`live-palette-${item.key}`}
-                    onDragStart={dragEvent => {dragEvent.dataTransfer.setData(dragMime, item.key); dragEvent.dataTransfer.effectAllowed = "copy"; setDragItem(item);}}
+                    onDragStart={dragEvent => {setError(""); dragEvent.dataTransfer.setData(dragMime, item.key); dragEvent.dataTransfer.effectAllowed = "copy"; setDragItem(item);}}
                     onDragEnd={() => {setDragItem(null); setGhost(null);}}
                     onClick={() => addWidget(item)}>
                     <LiveMiniature layout={paletteLayouts.get(item.key)!} event={event} results={shownResults} sample={sample} box={paletteBox} crop={item.preview} />
@@ -569,6 +571,11 @@ export function LiveEditor({event, canManage, data}: {event: PublicEventInfo; ca
                     </LiveField>
                 </div>}
                 <div className="event-live-editor__screen" style={screenStyle} ref={setScreen}>
+                    {/* The problem lies over the top edge of the screen: it never moves the canvas under a drag. */}
+                    {(problem || validation) && <div className="event-live-editor__error" role="alert">
+                        <span>{problem || validation}</span>
+                        {error && <button type="button" aria-label={t("manage.live.error.dismiss")} onClick={() => setError("")}><X size={14} aria-hidden="true" /></button>}
+                    </div>}
                     <div className={`event-live-editor__native${shown.theme === "light" ? " is-light" : ""}`} style={nativeStyle}>
                         <LiveCanvas layout={shown} event={event} stages={stages.data} results={previewResults} sample={sample} nowOffset={previewNow - openedAt} selectedID={selectedID} onSelect={setSelectedID} edit={editable} showGrid onPointerDown={pointerDown}
                             conflicts={conflicts} warned={warned} ghost={ghost} onDragOver={dragOver} onDragLeave={() => setGhost(null)} onDrop={drop} />

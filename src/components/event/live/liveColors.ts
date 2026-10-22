@@ -14,6 +14,10 @@ export type LiveFill = typeof liveFills[number];
 export const liveHighlights = ["none", "accent", "medals"] as const;
 export type LiveHighlight = typeof liveHighlights[number];
 
+// «Позначка місць» of places 1–3 in a table, podium or leader cards.
+export const liveMarkers = ["numbers", "medals", "medal-icons", "cups", "images"] as const;
+export type LiveMarker = typeof liveMarkers[number];
+
 // Gold, silver and bronze: bright enough for the dark theme, with dark text on them.
 export const liveMedalColors = ["#F2C14E", "#C9D1DB", "#D98E5B"] as const;
 
@@ -38,6 +42,18 @@ export function liveFillOf(widget: LiveWidget): LiveFill {
 export function liveHighlightOf(widget: LiveWidget): LiveHighlight {
     const value = widget.props.highlightTop;
     return value === "none" || value === "medals" ? value : "accent";
+}
+
+// The mark of places 1–3: its own choice, else medal circles with the medal highlight and plain numbers otherwise.
+export function liveMarkerOf(widget: LiveWidget): LiveMarker {
+    const value = widget.props.marker;
+    return (liveMarkers as readonly unknown[]).includes(value) ? value as LiveMarker : liveHighlightOf(widget) === "medals" ? "medals" : "numbers";
+}
+
+// The organizer's three pictures of «Свої зображення», or null when not all three are set.
+export function livePlaceImages(widget: LiveWidget): string[] | null {
+    const value = widget.props.placeImages;
+    return Array.isArray(value) && value.length === 3 && value.every(item => typeof item === "string" && item) ? value as string[] : null;
 }
 
 export function livePlaceColors(widget: LiveWidget): string[] {
@@ -88,7 +104,8 @@ export function liveBlockColors(widget: LiveWidget, theme: Theme, mode: LiveLayo
     const shownAccent = ownAccent ?? (background ? themeAccent(theme, mode) : null);
     const accent = ownAccent ?? (fill === "accent" || (background && shownAccent && (colorContrast(shownAccent, background) ?? 21) < liveAccentContrastMin) ? ink : shownAccent);
     if (ownAccent || (accent && accent !== themeAccent(theme, mode))) style["--live-accent"] = accent!;
-    if (liveHighlightOf(widget) === "medals" && (widget.type === "table" || widget.type === "podium")) {
+    // Medal colours serve the medal highlight and the medal, cup and picture marks.
+    if ((liveHighlightOf(widget) === "medals" || liveMarkerOf(widget) !== "numbers") && (widget.type === "table" || widget.type === "podium")) {
         livePlaceColors(widget).forEach((color, index) => {
             style[`--live-place-${index + 1}`] = color;
             style[`--live-place-ink-${index + 1}`] = liveReadableInk(color);

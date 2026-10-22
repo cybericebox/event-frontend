@@ -57,6 +57,35 @@ const scenes = {
         widget("table", 1, 5, 12, 3, {columns: 2, pinTop: 0, rowsPerPage: 4, showBars: true, highlightTop: "medals", showCaption: false}),
         organizers(), partners(),
     ]),
+    // The leaders as a column of cards on the left, the rest of the table on the right.
+    leadersSide: () => canvas([
+        widget("title", 1, 1, 9, 1, {subtitleStage: true}), widget("timer", 10, 1, 3, 1),
+        widget("podium", 1, 2, 5, 6, {variant: "cards", marker: "cups", highlightTop: "medals", showCaption: false}),
+        widget("table", 6, 2, 7, 6, {offset: 3, rowsPerPage: 10, showBars: true}),
+        organizers(), partners(),
+    ]),
+    // A board for a long event: the table, the first solves and the numbers.
+    boardEvents: () => canvas([
+        widget("title", 1, 1, 9, 1, {subtitleStage: true}), widget("timer", 10, 1, 3, 1),
+        widget("table", 1, 2, 7, 6, {marker: "medal-icons", highlightTop: "medals", showBars: true, rowsPerPage: 10}),
+        widget("solves", 8, 2, 5, 3, {mode: "first", rows: 4}),
+        widget("facts", 8, 5, 5, 3, {items: ["teams", "tasks", "solves", "firstBlood"]}),
+        organizers(), partners(),
+    ]),
+    // The award ceremony: the podium with cups (or the organizer's pictures) and places 4+.
+    ceremony: () => canvas([
+        widget("title", 1, 1, 12, 1, {subtitle: t("live.template.finaleSubtitle"), align: "center"}),
+        widget("podium", 2, 2, 10, 3, {marker: "cups", highlightTop: "medals", showCaption: false}),
+        widget("table", 1, 5, 12, 3, {columns: 2, offset: 3, limit: 6, rowsPerPage: 3, showCaption: false}),
+        organizers(), partners(),
+    ]),
+    // A narrow side panel (timer, QR, logos) next to a tall table, under the title.
+    sidePanel: () => canvas([
+        widget("title", 1, 1, 12, 1), widget("timer", 1, 2, 4, 2, {align: "left"}),
+        widget("qr", 1, 4, 4, 3, {value: "/", caption: t("live.template.qrCaption")}),
+        widget("logos", 1, 7, 4, 2, {mode: "fixed", rows: 2, title: t("live.preset.partners")}),
+        widget("table", 5, 2, 8, 7, {marker: "cups", highlightTop: "medals", showBars: true, rowsPerPage: 11}),
+    ]),
     break: () => canvas([
         widget("title", 1, 1, 6, 1), widget("clock", 7, 1, 3, 1, {label: t("live.template.clockLabel")}), widget("timer", 10, 1, 3, 1),
         widget("announcement", 1, 2, 12, 2, {text: t("live.template.breakText")}),
@@ -86,7 +115,11 @@ export const liveTemplates = {
     bigboard: single("bigboard", "running"),
     leaders: single("leaders", "running"),
     leadersAll: single("leadersAll", "running"),
+    leadersSide: single("leadersSide", "running"),
+    boardEvents: single("boardEvents", "running"),
     stage: single("stage", "running"),
+    ceremony: single("ceremony", "finished"),
+    sidePanel: single("sidePanel", "running"),
     prestart: single("prestart", "before"),
     finale: single("finale", "finished"),
     break: single("break", "running"),
