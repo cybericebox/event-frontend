@@ -45,6 +45,12 @@ export function liveTablePageAt(now: number, pageSeconds: number, edit: boolean)
     return {page: Math.floor(now / 1000 / seconds), elapsed: (now / 1000) % seconds};
 }
 
+// The points a full bar or ring stands for: the event's maximum, else the leader's points.
+export function liveMaxPoints(results?: {MaxPoints?: number; Scoreboard: {Points: number}[]}): number {
+    const max = results?.MaxPoints ?? 0;
+    return max > 0 ? max : Math.max(1, results?.Scoreboard[0]?.Points ?? 0);
+}
+
 // Points with narrow no-break spaces between the thousands (U+202F): the
 // monospace digits do not get a wide gap.
 export function livePoints(points: number): string {

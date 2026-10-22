@@ -44,6 +44,19 @@ const scenes = {
         widget("podium", 1, 2, 12, 3), widget("table", 1, 5, 12, 3, {columns: 2, offset: 3, limit: 8, rowsPerPage: 4, showCaption: false}),
         organizers(), partners(),
     ]),
+    // Three leader cards over the list: the list starts after them, or shows everyone.
+    leaders: () => canvas([
+        widget("title", 1, 1, 9, 1, {subtitleStage: true}), widget("timer", 10, 1, 3, 1),
+        widget("podium", 1, 2, 12, 3, {variant: "cards", showRing: true, highlightTop: "medals"}),
+        widget("table", 1, 5, 12, 3, {columns: 2, offset: 3, rowsPerPage: 4, showBars: true, showCaption: false}),
+        organizers(), partners(),
+    ]),
+    leadersAll: () => canvas([
+        widget("title", 1, 1, 9, 1, {subtitleStage: true}), widget("timer", 10, 1, 3, 1),
+        widget("podium", 1, 2, 12, 3, {variant: "cards", showRing: true, highlightTop: "medals"}),
+        widget("table", 1, 5, 12, 3, {columns: 2, pinTop: 0, rowsPerPage: 4, showBars: true, highlightTop: "medals", showCaption: false}),
+        organizers(), partners(),
+    ]),
     break: () => canvas([
         widget("title", 1, 1, 6, 1), widget("clock", 7, 1, 3, 1, {label: t("live.template.clockLabel")}), widget("timer", 10, 1, 3, 1),
         widget("announcement", 1, 2, 12, 2, {text: t("live.template.breakText")}),
@@ -71,6 +84,8 @@ export const liveTemplates = {
     show: {label: t("live.template.show"), description: t("live.template.showDescription"), scene: "all", build: () => ({before: scenes.prestart(), running: scenes.scoreboard(), finished: scenes.finale()})},
     scoreboard: single("scoreboard", "running"),
     bigboard: single("bigboard", "running"),
+    leaders: single("leaders", "running"),
+    leadersAll: single("leadersAll", "running"),
     stage: single("stage", "running"),
     prestart: single("prestart", "before"),
     finale: single("finale", "finished"),

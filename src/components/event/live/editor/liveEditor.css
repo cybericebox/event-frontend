@@ -55,7 +55,11 @@
 
 .event-live-editor__workspace{display:grid;grid-template-columns:220px minmax(0,1fr) 360px;gap:var(--ib-3);align-items:start;min-width:0}
 .event-live-editor__palette,.event-live-editor__properties{display:grid;align-content:start;gap:var(--ib-2);min-width:0;padding:var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r);background:var(--ib-surface)}
-.event-live-editor__palette{max-height:calc(100vh - 160px);overflow-y:auto;overscroll-behavior:contain}
+/* The palette stays in view while the page scrolls and scrolls itself within
+   the visible part of the shell (under its top bar), so its last item is
+   always reachable in full. */
+.event-live-editor__palette{position:sticky;top:0;max-height:calc(var(--ib-shell-h,100dvh) - var(--ib-topbar-h,56px) - var(--ib-6) * 2);overflow-y:auto;overscroll-behavior:contain;scroll-padding-block:var(--ib-3)}
+.event-live-palette-item small{padding:0 2px;color:var(--ib-dim);font-size:var(--ib-fs-12);line-height:1.35}
 .event-live-editor__palette h2{margin:0;color:var(--ib-ink);font-size:var(--ib-fs-16)}
 .event-live-editor__palette>p{margin:0 0 var(--ib-1,4px);color:var(--ib-dim);font-size:var(--ib-fs-12)}
 .event-live-palette-item{display:grid;gap:6px;padding:6px 6px 8px;border:1px solid var(--ib-line);border-radius:var(--ib-r-sm);background:var(--ib-paper);color:var(--ib-ink);font:inherit;font-size:var(--ib-fs-13);text-align:left;cursor:grab}
@@ -63,7 +67,17 @@
 .event-live-palette-item:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
 .event-live-palette-item:active{cursor:grabbing}
 .event-live-palette-item:disabled{opacity:.5;cursor:not-allowed}
-.event-live-palette-item>span:last-child{padding:0 2px;font-weight:var(--ib-w-medium,500)}
+.event-live-palette-item>span{padding:0 2px;font-weight:var(--ib-w-medium,500)}
+
+/* «Перегляд»: the screen over the whole window, scaled to fit, on black like a
+   switched-off projector around it; the controls in the corner. */
+.event-live-show{position:fixed;inset:0;z-index:300;display:grid;background:#000}
+.event-live-show__stage{display:grid;place-items:center;min-width:0;min-height:0;overflow:hidden}
+.event-live-show__frame{position:relative;overflow:hidden}
+.event-live-show__controls{flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 32px);opacity:.92}
+.event-live-show__data{display:flex;gap:4px}
+.event-live-show__data button[aria-pressed="true"]{background:var(--ib-brand-hover)}
+.event-live-show__data button:disabled{opacity:.55;cursor:not-allowed}
 
 /* Scaled miniature of a live canvas (palette and theme previews). */
 .live-mini{display:grid;place-items:center;overflow:hidden;border-radius:4px;background:var(--ev-brand,#211a52);pointer-events:none}

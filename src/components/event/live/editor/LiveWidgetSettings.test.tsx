@@ -17,7 +17,7 @@ function mount(widget: LiveWidget, onProp = vi.fn()) {
     api.settings.mockResolvedValue({FreezeEnabled: false, Freeze: {FrozenAt: null}});
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     const layout = {...defaultLiveLayout, widgets: [widget]};
-    render(<QueryClientProvider client={client}><LiveWidgetSettings event={event} layout={layout} widget={widget} disabled={false} onPlace={vi.fn()} onProp={onProp} onDistribute={vi.fn()} onRemove={vi.fn()} /></QueryClientProvider>);
+    render(<QueryClientProvider client={client}><LiveWidgetSettings event={event} layout={layout} widget={widget} disabled={false} onPlace={vi.fn()} onProp={onProp} onProps={vi.fn()} onDistribute={vi.fn()} onRemove={vi.fn()} /></QueryClientProvider>);
     return onProp;
 }
 afterEach(cleanup);

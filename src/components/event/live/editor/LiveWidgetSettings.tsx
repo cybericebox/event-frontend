@@ -2,7 +2,7 @@
 
 import {useState, type ReactNode} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {Columns3, Rows3, Trash2} from "lucide-react";
+import {Columns3, RotateCcw, Rows3, Trash2} from "lucide-react";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
 import {getResultsSettings} from "@/api/manageResults";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
@@ -20,12 +20,14 @@ import {livePinOptions, livePinTop} from "../liveTable";
 import {liveFactItems, liveFactKeys, liveFactLimit, type LiveFactKey} from "../liveFacts";
 import {liveAlign, type LiveAlign} from "../LiveBlocks";
 import {getManageStages} from "@/api/manageStages";
-import {LiveField, LiveNumberInput, LiveSegmented, LiveSwitch} from "./LiveFields";
+import {LiveColorField, LiveField, LiveNumberInput, LiveSegmented, LiveSwitch} from "./LiveFields";
+import {liveAccentContrastMin, liveBlockColors, liveFillColor, liveFillOf, liveFills, liveHex, liveHighlightOf, liveHighlights, livePlaceColors, liveTextContrastMin} from "../liveColors";
 import {LiveLogosEditor} from "./LiveLogosEditor";
 import {ManageFieldLabel} from "@/components/event/manage/ManageFieldLabel";
 
 // null drops a setting back to its default.
 type PropValue = string | number | boolean | string[] | LiveLogoItem[] | null;
+export type LivePropValue = PropValue;
 
 const pageSecondsOptions = [5, 8, 10, 12, 15, 20, 30, 45, 60];
 
@@ -186,6 +188,57 @@ function CommonFields({widget, disabled, onProp}: {widget: LiveWidget; disabled:
     </Section>;
 }
 
+// «Виділення топ-3» of a table or podium, with the medal colours.
+function HighlightFields({widget, disabled, onProp}: {widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
+    const highlight = liveHighlightOf(widget);
+    const places = livePlaceColors(widget);
+    const custom = Array.isArray(widget.props.placeColors);
+    return <>
+        <LiveSegmented label={t("manage.live.prop.highlightTop")} help={t("manage.live.prop.highlightTopHelp")} value={highlight} disabled={disabled}
+            options={liveHighlights.map(value => ({value, label: t(`manage.live.prop.highlightTop.${value}`)}))} onChange={value => onProp("highlightTop", value === "accent" ? null : value)} />
+        {highlight === "medals" && <>
+            {places.map((color, index) => <LiveColorField key={index} label={t("manage.live.prop.placeColor", {place: index + 1})} help={t("manage.live.prop.placeColorHelp")} value={color} disabled={disabled}
+                onChange={value => onProp("placeColors", places.map((item, at) => at === index ? value : item))} />)}
+            {custom && !disabled && <button className="ib-btn ib-btn--sm ib-btn--ghost event-live-settings__reset" type="button" onClick={() => onProp("placeColors", null)}><RotateCcw size={14} /> {t("manage.live.prop.placeColorsReset")}</button>}
+        </>}
+    </>;
+}
+
+// «Кольори»: the block's own fill, text and accent over the screen theme.
+function ColorFields({event, layout, widget, disabled, onProp, onProps}: {
+    event: PublicEventInfo; layout: LiveLayout; widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void; onProps: (changes: Record<string, PropValue>) => void;
+}) {
+    const fill = liveFillOf(widget);
+    const colors = liveBlockColors(widget, event.Theme, layout.theme);
+    const fillColor = liveFillColor(widget, event.Theme, layout.theme);
+    const ownText = liveHex(widget.props.textColor);
+    const ownAccent = liveHex(widget.props.accentColor);
+    // A custom colour starts from what the block shows now.
+    const startColor = fillColor ?? liveHex(event.Theme.Brand) ?? "#211A52";
+    const textWarning = colors.textContrast !== null && colors.textContrast < liveTextContrastMin ? t("manage.live.color.lowContrast", {ratio: colors.textContrast.toFixed(1), min: liveTextContrastMin}) : null;
+    const accentWarning = colors.accentContrast !== null && colors.accentContrast < liveAccentContrastMin ? t("manage.live.color.lowContrast", {ratio: colors.accentContrast.toFixed(1), min: liveAccentContrastMin}) : null;
+    const any = fill !== "none" || ownText || ownAccent;
+    return <Section title={t("manage.live.section.colors")}>
+        <LiveField label={t("manage.live.prop.fill")} help={t("manage.live.prop.fillHelp")}>
+            {() => <EventSelect ariaLabel={t("manage.live.prop.fill")} value={fill} disabled={disabled}
+                onValueChange={value => onProp("background", value === "none" ? null : value === "custom" ? startColor : value)}
+                options={liveFills.map(value => ({value, label: t(`manage.live.prop.fill.${value}`)}))} />}
+        </LiveField>
+        {fill === "custom" && fillColor && <LiveColorField label={t("manage.live.prop.fillColor")} help={t("manage.live.prop.fillColorHelp")} value={fillColor} disabled={disabled} onChange={value => onProp("background", value)} />}
+        <LiveSegmented label={t("manage.live.prop.textColor")} help={t("manage.live.prop.textColorHelp")} value={ownText ? "custom" : "auto"} disabled={disabled}
+            options={[{value: "auto", label: t("manage.live.prop.textColor.auto")}, {value: "custom", label: t("manage.live.prop.textColor.custom")}]}
+            onChange={value => onProp("textColor", value === "auto" ? null : colors.ink ?? (layout.theme === "light" ? "#16152B" : "#FFFFFF"))} />
+        {ownText && <LiveColorField label={t("manage.live.prop.textColorValue")} help={t("manage.live.prop.textColorHelp")} value={ownText} disabled={disabled} warning={textWarning} onChange={value => onProp("textColor", value)} />}
+        {!ownText && textWarning && <small className="event-live-field__warning" role="status">{textWarning}</small>}
+        <LiveSegmented label={t("manage.live.prop.accentColor")} help={t("manage.live.prop.accentColorHelp")} value={ownAccent ? "custom" : "theme"} disabled={disabled}
+            options={[{value: "theme", label: t("manage.live.prop.accentColor.theme")}, {value: "custom", label: t("manage.live.prop.accentColor.custom")}]}
+            onChange={value => onProp("accentColor", value === "theme" ? null : colors.accent ?? liveHex(layout.theme === "light" ? event.Theme.AccentLight : event.Theme.AccentLive) ?? "#FFFFFF")} />
+        {ownAccent && <LiveColorField label={t("manage.live.prop.accentColorValue")} help={t("manage.live.prop.accentColorHelp")} value={ownAccent} disabled={disabled} warning={accentWarning} onChange={value => onProp("accentColor", value)} />}
+        {any && !disabled && <button className="ib-btn ib-btn--sm ib-btn--ghost event-live-settings__reset" type="button"
+            onClick={() => onProps({background: null, textColor: null, accentColor: null})}><RotateCcw size={14} /> {t("manage.live.color.reset")}</button>}
+    </Section>;
+}
+
 function LogosFields({eventID, widget, disabled, onProp}: {eventID: string; widget: LiveWidget; disabled: boolean; onProp: (key: string, value: PropValue) => void}) {
     const carousel = widget.props.mode === "carousel";
     const rows = [2, 3].includes(Number(widget.props.rows)) ? Number(widget.props.rows) : 1;
@@ -209,11 +262,11 @@ function LogosFields({eventID, widget, disabled, onProp}: {eventID: string; widg
 
 // Settings of the selected widget: the header with its name and removal,
 // «Відображення» (its own content) and «Розташування й розмір».
-export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabled = disabled, onPlace, onProp, onDistribute, onRemove}: {
+export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabled = disabled, onPlace, onProp, onProps, onDistribute, onRemove}: {
     event: PublicEventInfo; layout: LiveLayout; widget: LiveWidget; disabled: boolean;
     // An «auto» screen shape takes its placement from the base.
     placeDisabled?: boolean;
-    onPlace: (next: LiveWidget) => void; onProp: (key: string, value: PropValue) => void;
+    onPlace: (next: LiveWidget) => void; onProp: (key: string, value: PropValue) => void; onProps: (changes: Record<string, PropValue>) => void;
     onDistribute: (axis: DistributeAxis) => void; onRemove: () => void;
 }) {
     const eventID = event.EventID;
@@ -239,7 +292,14 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                 <LiveSwitch label={t("manage.live.prop.timerSeconds")} help={t("manage.live.prop.clockSecondsHelp")} checked={widget.props.showSeconds === true} disabled={disabled} onChange={value => onProp("showSeconds", value)} />
                 <AlignField widget={widget} fallback="right" disabled={disabled} onProp={onProp} />
             </>}
-            {widget.type === "podium" && <LiveSwitch label={t("manage.live.prop.showPoints")} help={t("manage.live.prop.showPointsHelp")} checked={widget.props.showPoints !== false} disabled={disabled} onChange={value => onProp("showPoints", value ? null : false)} />}
+            {widget.type === "podium" && <>
+                <LiveSegmented label={t("manage.live.prop.podiumVariant")} help={t("manage.live.prop.podiumVariantHelp")} value={widget.props.variant === "cards" ? "cards" : "steps"} disabled={disabled}
+                    options={[{value: "steps", label: t("manage.live.prop.podiumVariant.steps")}, {value: "cards", label: t("manage.live.prop.podiumVariant.cards")}]}
+                    onChange={value => onProp("variant", value === "cards" ? value : null)} />
+                <LiveSwitch label={t("manage.live.prop.showPoints")} help={t("manage.live.prop.showPointsHelp")} checked={widget.props.showPoints !== false} disabled={disabled} onChange={value => onProp("showPoints", value ? null : false)} />
+                {widget.props.variant === "cards" && <LiveSwitch label={t("manage.live.prop.showRing")} help={t("manage.live.prop.showRingHelp")} checked={widget.props.showRing === true} disabled={disabled} onChange={value => onProp("showRing", value ? true : null)} />}
+                <HighlightFields widget={widget} disabled={disabled} onProp={onProp} />
+            </>}
             {widget.type === "facts" && <FactsFields widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "stages" && <LiveSwitch label={t("manage.live.prop.showDone")} help={t("manage.live.prop.showDoneHelp")} checked={widget.props.showDone !== false} disabled={disabled} onChange={value => onProp("showDone", value ? null : false)} />}
             {widget.type === "timer" && <TimerFields widget={widget} event={event} disabled={disabled} onProp={onProp} />}
@@ -248,6 +308,10 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                     options={[5, 6, 7, 8, 9, 10].map(value => ({value: String(value), label: String(value)}))} />}
             </LiveField>}
             {(widget.type === "table" || widget.type === "solves") && <RowsFields layout={layout} widget={widget} disabled={disabled} onProp={onProp} />}
+            {widget.type === "table" && <>
+                <HighlightFields widget={widget} disabled={disabled} onProp={onProp} />
+                <LiveSwitch label={t("manage.live.prop.showBars")} help={t("manage.live.prop.showBarsHelp")} checked={widget.props.showBars === true} disabled={disabled} onChange={value => onProp("showBars", value ? true : null)} />
+            </>}
             {widget.type === "announcement" && <>
                 <LiveField label={t("manage.live.prop.announcement")} help={t("manage.live.prop.announcementHelp")}>
                     {id => <textarea id={id} className="event-manage-input" maxLength={500} value={textProp(widget, "text")} disabled={disabled} onChange={change => onProp("text", change.target.value)} />}
@@ -266,6 +330,7 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             {widget.type === "logos" && <LogosFields eventID={eventID} widget={widget} disabled={disabled} onProp={onProp} />}
         </Section>
         <CommonFields widget={widget} disabled={disabled} onProp={onProp} />
+        <ColorFields event={event} layout={layout} widget={widget} disabled={disabled} onProp={onProp} onProps={onProps} />
         <Section title={t("manage.live.section.place")}>
             <div className="event-live-settings__cells">{(["x", "y", "w", "h"] as const).map(key => <LiveField key={key} label={t(`manage.live.pos.${key}`)}
                 help={t(`manage.live.pos.${key}Help`, {min: key === "w" ? minimum.w : minimum.h, cols: layout.grid.cols, rows: layout.grid.rows})} required>
