@@ -98,9 +98,34 @@ export const getManageLive = (eventID: string) => liveRequest(eventID, "", edito
 export const saveManageLiveDraft = (eventID: string, layout: LiveLayout) => liveRequest(eventID, "", z.undefined(), "PUT", {Layout: layout});
 export const publishManageLive = (eventID: string) => liveRequest(eventID, "/publish", liveLayoutSchema, "POST");
 
+// Live screens (up to 10): each has a name, its own layout with its draft,
+// and its own link. The routes without a screen act on the first one.
+const screenLinkInfoSchema = z.object({ID: z.string(), CreatedAt: z.string(), ExpiresAt: z.string().nullable()});
+const screenSummarySchema = z.object({
+    ID: z.string(), Name: z.string(), Position: z.number().int(), Version: z.number().int(), HasDraft: z.boolean(), UpdatedAt: z.string(),
+    Link: screenLinkInfoSchema.nullable().optional(),
+});
+export type LiveScreenSummary = z.infer<typeof screenSummarySchema>;
+const screensSchema = z.object({Screens: z.array(screenSummarySchema), Max: z.number().int(), LinksVisible: z.boolean()});
+export type LiveScreens = z.infer<typeof screensSchema>;
+const screenEditorSchema = screenSummarySchema.extend({Published: liveLayoutSchema, Draft: liveLayoutSchema.nullable()});
+export type LiveScreenEditor = z.infer<typeof screenEditorSchema>;
+const screenPath = (screenID: string, path = "") => `/screens/${encodeURIComponent(screenID)}${path}`;
+
+export const getLiveScreens = (eventID: string) => liveRequest(eventID, "/screens", screensSchema);
+export const getLiveScreenEditor = (eventID: string, screenID: string) => liveRequest(eventID, screenPath(screenID), screenEditorSchema);
+export const createLiveScreen = (eventID: string, input: {Name?: string; CopyFrom?: string} = {}) => liveRequest(eventID, "/screens", screenSummarySchema, "POST", input);
+export const renameLiveScreen = (eventID: string, screenID: string, name: string) => liveRequest(eventID, screenPath(screenID), screenSummarySchema, "PATCH", {Name: name});
+export const duplicateLiveScreen = (eventID: string, screenID: string) => liveRequest(eventID, screenPath(screenID, "/duplicate"), screenSummarySchema, "POST", {});
+export const deleteLiveScreen = (eventID: string, screenID: string) => liveRequest(eventID, screenPath(screenID), z.undefined(), "DELETE");
+export const saveLiveScreenDraft = (eventID: string, screenID: string, layout: LiveLayout) => liveRequest(eventID, screenPath(screenID, "/draft"), z.undefined(), "PUT", {Layout: layout});
+export const publishLiveScreen = (eventID: string, screenID: string) => liveRequest(eventID, screenPath(screenID, "/publish"), liveLayoutSchema, "POST");
+
 // The live screen is a manager view (L1): it reads the published layout
 // through the management API, so unpublished events work too.
-export const getPublishedLiveLayout = async (eventID: string) => (await getManageLive(eventID)).Published;
+// A screen opened by a moderator picks its screen with ?screen=<id>; without it, the first one.
+export const getPublishedLiveLayout = async (eventID: string, screenID?: string | null) =>
+    (await liveRequest(eventID, screenID ? `?screen=${encodeURIComponent(screenID)}` : "", editorSchema)).Published;
 
 // A logo for the Live logos widgets: SVG (sanitized by the server), PNG or
 // WebP up to 1 MB; the server sniffs the content.
@@ -115,22 +140,23 @@ export async function uploadLiveLogo(eventID: string, file: File): Promise<strin
 }
 
 // Open live screens poll this light version and reload the layout on a change.
-export async function getLiveLayoutVersion(eventID: string): Promise<number> {
-    return liveRequest(eventID, "/version", z.object({Version: z.number().int()})).then(value => value.Version);
+export async function getLiveLayoutVersion(eventID: string, screenID?: string | null): Promise<number> {
+    return liveRequest(eventID, `/version${screenID ? `?screen=${encodeURIComponent(screenID)}` : ""}`, z.object({Version: z.number().int()})).then(value => value.Version);
 }
 
-// The screen link («Посилання для перегляду Live»): one per event; a token
-// opens this event's live screen on a projector PC that is not signed in.
+// The screen link («Посилання для перегляду Live»): one per screen; a token
+// opens that screen on a projector PC that is not signed in.
 // The token comes back only when the link is created or regenerated.
 export const liveScreenExpiries = ["none", "day", "week", "event_end"] as const;
 export type LiveScreenExpiry = typeof liveScreenExpiries[number];
 const screenLinkSchema = z.object({ID: z.string(), CreatedAt: z.string(), ExpiresAt: z.string().nullable(), Token: z.string().optional()});
 export type LiveScreenLink = z.infer<typeof screenLinkSchema>;
 
-export const getLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link", z.object({Link: screenLinkSchema.nullable()})).then(value => value.Link);
-export const issueLiveScreenLink = (eventID: string, expiry: LiveScreenExpiry) => liveRequest(eventID, "/screen-link", screenLinkSchema, "POST", {Expiry: expiry});
-export const regenerateLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link/regenerate", screenLinkSchema, "POST");
-export const revokeLiveScreenLink = (eventID: string) => liveRequest(eventID, "/screen-link", z.undefined(), "DELETE");
+// Every screen has its own link.
+export const getLiveScreenLink = (eventID: string, screenID: string) => liveRequest(eventID, screenPath(screenID, "/link"), z.object({Link: screenLinkSchema.nullable()})).then(value => value.Link);
+export const issueLiveScreenLink = (eventID: string, screenID: string, expiry: LiveScreenExpiry) => liveRequest(eventID, screenPath(screenID, "/link"), screenLinkSchema, "POST", {Expiry: expiry});
+export const regenerateLiveScreenLink = (eventID: string, screenID: string) => liveRequest(eventID, screenPath(screenID, "/link/regenerate"), screenLinkSchema, "POST");
+export const revokeLiveScreenLink = (eventID: string, screenID: string) => liveRequest(eventID, screenPath(screenID, "/link"), z.undefined(), "DELETE");
 
 // The URL a screen opens (owner, 2026-10-20): the token is in the query, so
 // the event site's server renders the screen in the event's style from the
@@ -169,7 +195,7 @@ async function screenRequest<T>(path: string, token: string, schema: z.ZodType<T
 // Stages in the event order: the screen timer counts by them.
 const liveStageSchema = z.object({Name: z.string(), OpensAt: z.string(), ClosesAt: z.string()});
 export const liveScreenByLinkSchema = z.object({
-    Event: PublicEventInfoSchema, Layout: liveLayoutSchema,
+    Event: PublicEventInfoSchema, Layout: liveLayoutSchema, Screen: z.object({ID: z.string(), Name: z.string()}).optional(),
     Stages: z.array(liveStageSchema),
 });
 export const getLiveScreenByLink = (token: string) => screenRequest("", token, liveScreenByLinkSchema);

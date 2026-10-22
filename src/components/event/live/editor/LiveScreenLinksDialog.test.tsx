@@ -17,7 +17,7 @@ const link = {ID: "01900000-0000-7000-8000-0000000000aa", CreatedAt: "2026-09-29
 
 function mount() {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    return render(<QueryClientProvider client={client}><LiveScreenLinksDialog open event={event} onClose={() => undefined} /></QueryClientProvider>);
+    return render(<QueryClientProvider client={client}><LiveScreenLinksDialog open event={event} screenID="screen-1" onClose={() => undefined} /></QueryClientProvider>);
 }
 
 beforeEach(() => {
@@ -34,7 +34,7 @@ describe("live view link dialog", () => {
         Object.assign(navigator, {clipboard: {writeText}});
         mount();
         await act(async () => {fireEvent.click(await screen.findByRole("button", {name: /Створити посилання/}));});
-        expect(api.issue).toHaveBeenCalledWith(event.EventID, "none");
+        expect(api.issue).toHaveBeenCalledWith(event.EventID, "screen-1", "none");
         const url = (screen.getByLabelText("Посилання") as HTMLInputElement).value;
         expect(url).toBe(`${window.location.origin}/live?token=tok_en`);
         expect(screen.getByText(/діє до: без обмеження/)).toBeTruthy();
@@ -51,7 +51,7 @@ describe("live view link dialog", () => {
         fireEvent.click(screen.getByRole("button", {name: /Перегенерувати/}));
         expect(api.regenerate).not.toHaveBeenCalled();
         await act(async () => {fireEvent.click(screen.getAllByRole("button", {name: "Перегенерувати"}).at(-1)!);});
-        expect(api.regenerate).toHaveBeenCalledWith(event.EventID);
+        expect(api.regenerate).toHaveBeenCalledWith(event.EventID, "screen-1");
         expect((screen.getByLabelText("Посилання") as HTMLInputElement).value).toContain("?token=re_new");
     });
 
@@ -60,7 +60,7 @@ describe("live view link dialog", () => {
         mount();
         fireEvent.click(await screen.findByRole("button", {name: /Вимкнути/}));
         await act(async () => {fireEvent.click(screen.getAllByRole("button", {name: "Вимкнути"}).at(-1)!);});
-        expect(api.revoke).toHaveBeenCalledWith(event.EventID);
+        expect(api.revoke).toHaveBeenCalledWith(event.EventID, "screen-1");
         expect(await screen.findByRole("button", {name: /Створити посилання/})).toBeTruthy();
     });
 });
