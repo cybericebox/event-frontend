@@ -22,7 +22,11 @@ export function subscription(type: string, channel: "email" | "in_app", patch: R
     return {SignalType: type, Channel: channel, Enabled: true, Audience: {kind: "all_participants"}, Source: "platform", Required: false, Config: {}, ...patch};
 }
 
-export function fakeServer(channel: "email" | "in_app", subscriptions: unknown[], templates: Array<Record<string, unknown>>) {
+export function customTemplate(n: number, patch: Record<string, unknown> = {}) {
+    return {Kind: "custom", ID: uuid(n), ScopeEventID: EVENT_ID, Name: `Власний ${n}`, Channels: ["email", "in_app"], Subject: "Тема", Preheader: "", EmailBody: body, EmailStyling: {}, InAppTitle: "Заголовок", InAppBody: "", InAppLink: "", UpdatedBy: null, UpdatedByName: "Олена Коваленко", CreatedAt: "2026-09-01T00:00:00Z", UpdatedAt: "2026-09-03T00:00:00Z", ...patch};
+}
+
+export function fakeServer(channel: "email" | "in_app", subscriptions: unknown[], templates: Array<Record<string, unknown>>, custom: Array<Record<string, unknown>> = []) {
     const calls: Call[] = [];
     let list = templates;
     const kind = channel === "email" ? "email" : "in-app";
@@ -37,6 +41,7 @@ export function fakeServer(channel: "email" | "in_app", subscriptions: unknown[]
         else if (path === "notification-subscriptions") data = {...subscription(payload.SignalType, payload.Channel), ...payload, Source: "event"};
         else if (path === "notification-types") data = [{Type: REMINDER, Channels: ["email"], Variables: [{Name: "event_name", Description: "Назва заходу", Default: "Приклад"}]}, {Type: FINISHED, Channels: ["email", "in_app"], Variables: [{Name: "event_name", Description: "Назва заходу", Default: "Приклад"}]}];
         else if (path === `notification-templates/${kind}` && method === "GET") data = list;
+        else if (path === "notification-templates/custom" && method === "GET") data = custom;
         else if (path.startsWith(`notification-templates/${kind}/`) && method === "PUT") {
             const id = path.split("/").at(-1);
             data = {...list.find(item => item.ID === id), ...payload};

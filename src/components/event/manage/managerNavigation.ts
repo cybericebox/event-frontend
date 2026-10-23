@@ -52,8 +52,10 @@ export function managerCrumbs(pathname: string, pages: ManagePage[]): ManageCrum
     const pageName = pageNames[path];
     const group = sections.find(item => item.pages.includes(path));
     if (pageName && group) return [{label: group.group()}, {label: pageName()}];
-    // A template page is named after its signal and sits under its list.
+    // A template page is named after its signal and sits under its list; a custom template page is named after its kind.
     for (const [base, list] of [["/manage/notifications/", "/manage/notifications"], ["/manage/email/", "/manage/email"]]) {
+        if (path === `${base}custom/new`) return [{label: t("manage.nav.group.notifications")}, {label: pageNames[list](), href: list}, {label: t("manage.customTemplates.newTitle")}];
+        if (path.startsWith(`${base}custom/`)) return [{label: t("manage.nav.group.notifications")}, {label: pageNames[list](), href: list}, {label: t("manage.customTemplates.editTitle")}];
         if (path.startsWith(base) && path.length > base.length) {
             return [{label: t("manage.nav.group.notifications")}, {label: pageNames[list](), href: list}, {label: signalLabel(decodeURIComponent(path.slice(base.length))).title}];
         }
