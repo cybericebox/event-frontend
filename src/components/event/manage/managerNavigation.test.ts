@@ -16,6 +16,10 @@ describe("manager location titles", () => {
         expect(managerCrumbs("/manage/exercise-groups", [])?.map(crumb => crumb.label)).toEqual(["Завдання", "Групи й порядок"]);
         expect(managerCrumbs("/manage/analytics/tasks", [])?.[0].label).toBe("Аналітика");
         expect(managerCrumbs("/manage/broadcasts/new", [])?.map(crumb => crumb.href)).toEqual([undefined, "/manage/broadcasts", undefined]);
+        expect(managerCrumbs("/manage/email/custom/new", [])?.map(crumb => crumb.href)).toEqual([undefined, "/manage/email", undefined]);
+        expect(managerCrumbs("/manage/email/custom/new", [])?.at(-1)?.label).toBe("Новий власний шаблон");
+        expect(managerCrumbs("/manage/notifications/custom/0190c6a4-0000-7000-8000-000000000001", [])?.map(crumb => crumb.href)).toEqual([undefined, "/manage/notifications", undefined]);
+        expect(managerCrumbs("/manage/notifications/custom/0190c6a4-0000-7000-8000-000000000001", [])?.at(-1)?.label).toBe("Власний шаблон");
     });
 
     it("shows a top-level page as a single name", () => {

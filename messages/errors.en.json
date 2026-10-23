@@ -35,6 +35,8 @@
   "224": "The banner is not filled in correctly.",
   "225": "The link must be an app path or an https address.",
   "226": "A block preset cannot contain another preset.",
+  "227": "Broadcast template not found",
+  "228": "A broadcast template with this name already exists",
   "301": "User not found",
   "302": "User already exists",
   "303": "User was modified concurrently",

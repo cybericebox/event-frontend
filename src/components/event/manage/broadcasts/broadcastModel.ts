@@ -1,4 +1,5 @@
 import type {BroadcastAudience, BroadcastChannel, BroadcastInput, EventAudienceKind, Broadcast} from "@/api/manageBroadcasts";
+import type {BroadcastTemplateInput, BroadcastTemplateRecord} from "@/api/manageBroadcastTemplates";
 import type {ManageEmailTemplateInput} from "@/api/manageEmailTemplates";
 import type {ManageInAppTemplateInput} from "@/api/manageNotifications";
 import {t} from "@/i18n/t";
@@ -31,11 +32,42 @@ export type BroadcastDraft = {
     Audience: BroadcastAudience;
 };
 
+// The message of a broadcast without its audience: what a saved broadcast template holds.
+export type BroadcastMessage = Omit<BroadcastDraft, "Audience">;
+
+export function emptyMessage(): BroadcastMessage {
+    return {email: true, inApp: false, Subject: "", Preheader: "", Body: [defaultBlockForType("rich_text")], Styling: {}, InAppTitle: "", InAppBody: "", InAppLink: ""};
+}
+
 export function emptyDraft(): BroadcastDraft {
+    return {...emptyMessage(), Audience: {Kind: "all_participants", Roles: [], UserIDs: [], TeamIDs: []}};
+}
+
+// A saved template as composer fields: exactly its channels and texts.
+export function templateMessage(record: BroadcastTemplateRecord): BroadcastMessage {
+    const email = record.Channels.includes("email");
+    const body = Array.isArray(record.EmailBody) && record.EmailBody.length > 0 ? record.EmailBody as EmailBodyBlock[] : [defaultBlockForType("rich_text")];
+    const styling = record.EmailStyling && typeof record.EmailStyling === "object" && !Array.isArray(record.EmailStyling) ? record.EmailStyling as Record<string, unknown> : {};
     return {
-        email: true, inApp: false, Subject: "", Preheader: "", Body: [defaultBlockForType("rich_text")], Styling: {},
-        InAppTitle: "", InAppBody: "", InAppLink: "", Audience: {Kind: "all_participants", Roles: [], UserIDs: [], TeamIDs: []},
+        email, inApp: record.Channels.includes("in_app"),
+        Subject: record.Subject, Preheader: record.Preheader, Body: email ? body : [defaultBlockForType("rich_text")], Styling: email ? styling : {},
+        InAppTitle: record.InAppTitle, InAppBody: record.InAppBody, InAppLink: record.InAppLink,
     };
+}
+
+// The fields saved with a template: only the parts of the chosen channels.
+export function templateInput(name: string, message: BroadcastMessage): BroadcastTemplateInput {
+    const payload = broadcastPayload({...message, Audience: {Kind: "", Roles: [], UserIDs: [], TeamIDs: []}});
+    return {
+        Name: name.trim(), Channels: payload.Channels, Subject: payload.Subject, Preheader: payload.Preheader, EmailBody: payload.EmailBody, EmailStyling: payload.EmailStyling,
+        InAppTitle: payload.InAppTitle, InAppBody: payload.InAppBody, InAppLink: payload.InAppLink,
+    };
+}
+
+export function templateNameError(name: string): string {
+    if (!name.trim()) return t("manage.customTemplates.validation.name");
+    if ([...name.trim()].length > 200) return t("manage.customTemplates.validation.nameLength", {max: 200});
+    return "";
 }
 
 export const audienceKindOptions: EventAudienceKind[] = ["all_participants", "approved", "pending", "captains", "teams", "participants", "staff"];
@@ -55,22 +87,29 @@ export function emailBodyFilled(body: EmailBodyBlock[]): boolean {
     return body.some(block => (block.type === "rich_text" && emailRichText(block as never).trim() !== "") || block.type === "button" || block.type === "preset");
 }
 
-export function emailValidation(draft: BroadcastDraft): string {
+export function emailValidation(draft: BroadcastMessage): string {
     if (!draft.Subject.trim()) return t("manage.broadcasts.validation.subject");
     if (!emailBodyFilled(draft.Body)) return t("manage.broadcasts.validation.body");
     if (draft.Body.some(block => block.type === "button" && (!String(block.label ?? "").trim() || !String(block.url ?? "").trim()))) return t("manage.broadcasts.validation.buttons");
     return "";
 }
 
-export function inAppValidationText(draft: BroadcastDraft): string {
+export function inAppValidationText(draft: BroadcastMessage): string {
     return draft.InAppTitle.trim() ? "" : t("manage.broadcasts.validation.inAppTitle");
+}
+
+// The first reason the message itself is incomplete; empty when it is ready.
+export function messageValidation(draft: BroadcastMessage): string {
+    if (!draft.email && !draft.inApp) return t("manage.broadcasts.validation.channels");
+    if (draft.email) {const reason = emailValidation(draft); if (reason) return reason;}
+    if (draft.inApp) {const reason = inAppValidationText(draft); if (reason) return reason;}
+    return "";
 }
 
 // The first reason the message cannot be sent; empty when it can.
 export function composeValidation(draft: BroadcastDraft): string {
-    if (!draft.email && !draft.inApp) return t("manage.broadcasts.validation.channels");
-    if (draft.email) {const reason = emailValidation(draft); if (reason) return reason;}
-    if (draft.inApp) {const reason = inAppValidationText(draft); if (reason) return reason;}
+    const reason = messageValidation(draft);
+    if (reason) return reason;
     if (!audienceReady(draft.Audience)) return t(draft.Audience.Kind === "teams" ? "manage.broadcasts.validation.teams" : "manage.broadcasts.validation.participants");
     return "";
 }
@@ -89,7 +128,7 @@ export function broadcastPayload(draft: BroadcastDraft): BroadcastInput {
     };
 }
 
-export function emailPreviewInput(draft: BroadcastDraft): ManageEmailTemplateInput {
+export function emailPreviewInput(draft: BroadcastMessage): ManageEmailTemplateInput {
     return {NotificationType: "broadcast", Subject: draft.Subject, Preheader: draft.Preheader, Body: draft.Body, Styling: draft.Styling};
 }
 
