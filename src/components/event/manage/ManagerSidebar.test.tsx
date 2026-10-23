@@ -124,12 +124,12 @@ describe("participation navigation", () => {
         });
     });
 
-    it("orders the notifications group in three blocks split by dividers", () => {
+    it("orders the notifications group in three blocks split by dividers, broadcast templates beside the broadcasts", () => {
         renderSidebar(0);
         fireEvent.click(screen.getByRole("button", {name: "Сповіщення"}));
         const group = document.getElementById("event-manage-group-notifications")!;
         const order = Array.from(group.children).map(node => node.tagName === "HR" ? "|" : node.textContent?.trim());
-        expect(order).toEqual(["Розсилка", "Банери", "|", "Шаблони на сайті", "Шаблони листів", "Налаштування", "|", "Журнал надсилання"]);
+        expect(order).toEqual(["Розсилка", "Шаблони розсилок", "Банери", "|", "Шаблони на сайті", "Шаблони листів", "Налаштування", "|", "Журнал надсилання"]);
         expect(group.querySelector('a[href="/manage/mail"]')).toBeTruthy();
     });
 

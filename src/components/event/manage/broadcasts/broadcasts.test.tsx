@@ -129,12 +129,21 @@ describe("Розсилка: деталі", () => {
 });
 
 const emailTemplates: unknown[] = [];
+const savedTemplates: unknown[] = [];
+function savedTemplate(n: number, patch: Record<string, unknown> = {}) {
+    return {
+        ID: uuid(n), ScopeEventID: EVENT_ID, Name: `Нагадування ${n}`, Channels: ["in_app"], Subject: "", Preheader: "", EmailBody: [], EmailStyling: {},
+        InAppTitle: "Старт за годину, {{.user_first_name}}", InAppBody: "<p>Готуйтеся</p>", InAppLink: "/schedule",
+        UpdatedBy: uuid(500), UpdatedByName: "Олена Коваленко", CreatedAt: "2026-09-01T00:00:00Z", UpdatedAt: "2026-09-02T00:00:00Z", ...patch,
+    };
+}
 const inAppTemplates: unknown[] = [];
 const templateBase = {ScopeEventID: null, NotificationType: "participant.event.finished", Status: "published", PublishedAt: "2026-09-01T00:00:00Z", UpdatedByUserID: null, CreatedAt: "2026-09-01T00:00:00Z", UpdatedAt: "2026-09-01T00:00:00Z", Source: "platform"};
 
 describe("Нова розсилка", () => {
     beforeEach(() => {
         emailTemplates.splice(0, emailTemplates.length, {...templateBase, ID: uuid(61), Subject: "Привіт, {{.user_name}} {{.team_name}}", Preheader: "", Body: [{type: "button", label: "Відкрити {{.team_name}}", url: "https://x.test"}], Styling: {}});
+        savedTemplates.splice(0, savedTemplates.length);
         inAppTemplates.splice(0, inAppTemplates.length, {...templateBase, ID: uuid(62), Title: "Дякуємо, {{.user_name}}", Body: "", Link: "", Icon: "bell", Tone: "neutral", AccentColor: "", Surface: "", AutoDismissMs: null, Actions: [], Dismissible: true});
     });
     async function pickTemplate() {
@@ -149,6 +158,7 @@ describe("Нова розсилка", () => {
             if (call.path.endsWith("/audience-count")) return {Count: 12};
             if (call.method === "POST" && call.path.endsWith("/manage/broadcasts")) return broadcast(9);
             if (call.path.endsWith("/presets")) return [];
+            if (call.method === "GET" && call.path.endsWith("/manage/broadcast-templates")) return savedTemplates;
             if (call.path.endsWith("/notification-templates/email")) return emailTemplates;
             if (call.path.endsWith("/notification-templates/in-app")) return inAppTemplates;
             if (call.path.includes("/preview")) return {Subject: "s", Preheader: "", HTML: "<p>x</p>"};
@@ -315,5 +325,58 @@ describe("Нова розсилка", () => {
         await pickTemplate();
         fireEvent.click(within((await screen.findByText("Замінити вміст розсилки шаблоном?")).closest("dialog")!).getByRole("button", {name: "Замінити"}));
         await waitFor(() => expect(screen.getByRole("textbox", {name: "Тема листа"}).textContent).toContain("Привіт"));
+    });
+
+    it("lists the saved broadcast templates first and applies one with exactly its channels", async () => {
+        savedTemplates.push(savedTemplate(70));
+        server();
+        wrap(<BroadcastCompose />);
+        fireEvent.pointerDown(await screen.findByRole("button", {name: "Почати з шаблону"}), {button: 0, ctrlKey: false});
+        const menu = await screen.findByRole("menu");
+        const headings = [...menu.querySelectorAll(".event-select__group")].map(item => item.textContent);
+        expect(headings).toEqual(["Збережені шаблони розсилок", "Шаблони сповіщень"]);
+        fireEvent.click(within(menu).getByRole("menuitemradio", {name: "Нагадування 70"}));
+        expect((await screen.findByRole("textbox", {name: "Заголовок"})).textContent).toContain("Старт за годину");
+        expect((screen.getByRole("checkbox", {name: "Електронна пошта"}) as HTMLInputElement).checked).toBe(false);
+        expect((screen.getByRole("checkbox", {name: "У застосунку"}) as HTMLInputElement).checked).toBe(true);
+        expect(screen.queryByRole("textbox", {name: "Тема листа"})).toBeNull();
+    });
+
+    it("saves the message as a template without the audience; a taken name stays beside the name field", async () => {
+        let attempt = 0;
+        const calls = server(call => {
+            if (call.method !== "POST" || !call.path.endsWith("/manage/broadcast-templates")) return undefined;
+            attempt += 1;
+            return attempt === 1 ? new Response(JSON.stringify({Status: {Code: 70228, Message: "taken"}}), {status: 409}) : savedTemplate(71, {Name: "Старт"});
+        });
+        wrap(<BroadcastCompose />);
+        await fillInApp();
+        // The rich-text title reaches the draft a moment after the input.
+        await waitFor(() => {
+            fireEvent.click(screen.getByRole("button", {name: /Зберегти як шаблон/}));
+            expect(screen.getByText("Зберегти повідомлення як шаблон")).toBeTruthy();
+        });
+        const dialog = screen.getByText("Зберегти повідомлення як шаблон").closest("dialog")!;
+        const name = within(dialog).getByRole("textbox", {name: /Назва шаблону/});
+        fireEvent.change(name, {target: {value: "Старт"}});
+        fireEvent.click(within(dialog).getByRole("button", {name: "Зберегти"}));
+        await waitFor(() => expect(name.getAttribute("aria-invalid")).toBe("true"));
+        expect(document.getElementById(name.getAttribute("aria-describedby")!)?.textContent).toBe("Шаблон з такою назвою вже є. Оберіть іншу назву.");
+        fireEvent.change(name, {target: {value: "Старт "}});
+        expect(name.getAttribute("aria-invalid")).toBeNull();
+        fireEvent.click(within(dialog).getByRole("button", {name: "Зберегти"}));
+        await waitFor(() => expect(attempt).toBe(2));
+        const posted = calls.filter(call => call.method === "POST" && call.path.endsWith("/manage/broadcast-templates")).at(-1)!.body as Record<string, unknown>;
+        expect(posted).toEqual({Name: "Старт", Channels: ["in_app"], Subject: "", Preheader: "", EmailBody: [], EmailStyling: {}, InAppTitle: "Старт о 10:00", InAppBody: "", InAppLink: ""});
+        expect(calls.some(call => call.method === "POST" && call.path.endsWith("/manage/broadcasts"))).toBe(false);
+    });
+
+    it("asks to finish the message before saving it as a template", async () => {
+        server();
+        wrap(<BroadcastCompose />);
+        const subject = await screen.findByRole("textbox", {name: "Тема листа"});
+        fireEvent.click(screen.getByRole("button", {name: /Зберегти як шаблон/}));
+        expect(subject.getAttribute("aria-invalid")).toBe("true");
+        expect(screen.queryByText("Зберегти повідомлення як шаблон")).toBeNull();
     });
 });

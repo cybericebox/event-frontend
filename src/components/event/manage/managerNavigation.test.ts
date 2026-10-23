@@ -16,6 +16,9 @@ describe("manager location titles", () => {
         expect(managerCrumbs("/manage/exercise-groups", [])?.map(crumb => crumb.label)).toEqual(["Завдання", "Групи й порядок"]);
         expect(managerCrumbs("/manage/analytics/tasks", [])?.[0].label).toBe("Аналітика");
         expect(managerCrumbs("/manage/broadcasts/new", [])?.map(crumb => crumb.href)).toEqual([undefined, "/manage/broadcasts", undefined]);
+        expect(managerCrumbs("/manage/broadcast-templates", [])?.map(crumb => crumb.label)).toEqual(["Сповіщення", "Шаблони розсилок"]);
+        expect(managerCrumbs("/manage/broadcast-templates/new", [])?.map(crumb => crumb.href)).toEqual([undefined, "/manage/broadcast-templates", undefined]);
+        expect(managerCrumbs("/manage/broadcast-templates/0190c6a4-0000-7000-8000-000000000001", [])?.map(crumb => crumb.label)).toEqual(["Сповіщення", "Шаблони розсилок", "Шаблон розсилки"]);
     });
 
     it("shows a top-level page as a single name", () => {

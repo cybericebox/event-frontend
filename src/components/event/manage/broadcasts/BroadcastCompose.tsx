@@ -7,33 +7,24 @@ import {useMemo, useRef, useState, type FocusEvent} from "react";
 import {useDraftRouter as useRouter} from "@/components/event/manage/manualDraft";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import Link from "next/link";
-import {ArrowLeft, Send, TriangleAlert} from "lucide-react";
+import {ArrowLeft, BookmarkPlus, Send} from "lucide-react";
 import {apiErrorMessage, ApiErrorCode} from "@/api/apiErrors";
 import {ManageApiError} from "@/api/manage";
 import {countEventBroadcastAudience, sendEventBroadcast, type BroadcastAudience} from "@/api/manageBroadcasts";
-import {getManageEmailPresets, type ManageEmailTemplateInput} from "@/api/manageEmailTemplates";
 import {EventBrandLogo} from "@/components/event/EventBrandLogo";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {ConfirmDialog} from "@/components/ui/ConfirmDialog";
 import {EventButton} from "@/components/ui/EventButton";
-import {EventCheckbox} from "@/components/ui/EventCheckbox";
 import {t} from "@/i18n/t";
-import {EmailStylingEditor} from "../EmailStylingEditor";
-import {ManageFieldLabel} from "../ManageFieldLabel";
 import {useManager} from "../ManagerShell";
-import {BlockEditor} from "../notifications/editor/BlockEditor";
-import {InAppBodyEditor} from "../notifications/editor/InAppBodyEditor";
-import {VariableRichText} from "../notifications/editor/VariableRichText";
-import {eventBrandColors} from "../notifications/editor/brandColors";
-import type {BlockPreset} from "../notifications/editor/emailBlocks";
-import {NotificationPreview} from "../notifications/NotificationPreview";
 import {useDebounced} from "../notifications/useDebounced";
 import {AudiencePicker} from "./AudiencePicker";
+import {BroadcastMessageFields, BroadcastMessagePreview} from "./BroadcastMessageFields";
+import {SaveTemplateDialog} from "./SaveTemplateDialog";
 import {TemplateStart} from "./TemplateStart";
-import {draftUnsupported, previewDraft, type BroadcastTemplate} from "./broadcastTemplates";
+import {withTemplate, type BroadcastTemplate} from "./broadcastTemplates";
 import {
-    audienceReady, broadcastPayload, emailBodyFilled, broadcastSampleValues, broadcastVariables, composeValidation, emailPreviewInput, emailValidation,
-    emptyDraft, inAppPreviewInput, normalizedAudience, type BroadcastDraft,
+    audienceReady, broadcastPayload, emailBodyFilled, composeValidation, emptyDraft, messageValidation, normalizedAudience, type BroadcastDraft,
 } from "./broadcastModel";
 import "./broadcasts.css";
 
@@ -69,10 +60,9 @@ export function BroadcastCompose() {
     const leave = (field: string) => (event: FocusEvent<HTMLElement>) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setTouched(current => current.has(field) ? current : new Set(current).add(field));
     };
-    const variables = broadcastVariables();
     const set = (patch: Partial<BroadcastDraft>) => setDraft(current => ({...current, ...patch}));
+    const [savingTemplate, setSavingTemplate] = useState(false);
 
-    const presets = useQuery({queryKey: ["event-manage-email-presets", eventID], queryFn: () => getManageEmailPresets(eventID), enabled: draft.email && canManage, refetchOnWindowFocus: false});
     const currentKey = JSON.stringify(normalizedAudience(draft.Audience));
     const audienceKey = useDebounced(currentKey);
     const audience = useMemo(() => JSON.parse(audienceKey) as BroadcastAudience, [audienceKey]);
@@ -85,26 +75,14 @@ export function BroadcastCompose() {
     const recipients = ready && settled && !count.isError ? count.data : undefined;
     const validation = composeValidation(draft);
     const canSend = canManage && !validation && recipients !== undefined && recipients > 0 && !count.isFetching;
-    const subjectError = visible("subject") && !draft.Subject.trim() ? t("manage.broadcasts.validation.subject") : "";
-    const bodyError = visible("body") && !emailBodyFilled(draft.Body) ? t("manage.broadcasts.validation.body") : "";
-    const titleError = visible("title") && !draft.InAppTitle.trim() ? t("manage.broadcasts.validation.inAppTitle") : "";
     const audienceError = !ready ? t(draft.Audience.Kind === "teams" ? "manage.broadcasts.validation.teams" : "manage.broadcasts.validation.participants") : "";
-    const emailInvalid = !!emailValidation(draft);
-    const shown = useMemo(() => previewDraft(draft), [draft]);
-    const unsupported = useMemo(() => draftUnsupported(draft), [draft]);
-    const previewKey = useDebounced(draft.email && !emailInvalid ? JSON.stringify(emailPreviewInput(shown)) : "");
-    const livePreview = useMemo(() => previewKey ? JSON.parse(previewKey) as ManageEmailTemplateInput : null, [previewKey]);
-    const inAppPreview = inAppPreviewInput(shown);
 
     function applyTemplate(template: BroadcastTemplate) {
-        setDraft(current => ({
-            ...current,
-            ...(template.email ? {email: true, ...template.email} : {}),
-            ...(template.inApp ? {inApp: true, ...template.inApp} : {}),
-        }));
+        setDraft(current => withTemplate(current, template));
     }
     function pickTemplate(template: BroadcastTemplate) {
-        const replaces = (template.email && (draft.Subject.trim() !== "" || draft.Preheader.trim() !== "" || emailBodyFilled(draft.Body)))
+        const filled = draft.Subject.trim() !== "" || draft.Preheader.trim() !== "" || emailBodyFilled(draft.Body) || draft.InAppTitle.trim() !== "" || draft.InAppBody.trim() !== "" || draft.InAppLink.trim() !== "";
+        const replaces = (template.kind === "saved" && filled) || (template.email && (draft.Subject.trim() !== "" || draft.Preheader.trim() !== "" || emailBodyFilled(draft.Body)))
             || (template.inApp && (draft.InAppTitle.trim() !== "" || draft.InAppBody.trim() !== "" || draft.InAppLink.trim() !== ""));
         if (replaces) setPendingTemplate(template);
         else applyTemplate(template);
@@ -117,6 +95,13 @@ export function BroadcastCompose() {
             if (canSend) setConfirming(true);
             return;
         }
+        setAttempted(true);
+        revealFirstError();
+    }
+
+    // «Зберегти як шаблон» stores the message without the audience; an incomplete message shows its errors first.
+    function requestSaveTemplate() {
+        if (!messageValidation(draft)) {setSavingTemplate(true); return;}
         setAttempted(true);
         revealFirstError();
     }
@@ -145,6 +130,7 @@ export function BroadcastCompose() {
             {back}
             <div className="event-template-header__title"><h1>{t("manage.broadcasts.new")}</h1></div>
             <div className="event-template-header__actions">
+                <button className="ib-btn" type="button" onClick={requestSaveTemplate}><BookmarkPlus size={15} aria-hidden="true" /> {t("manage.broadcastTemplates.saveAs.action")}</button>
                 <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!validation && !canSend} onClick={requestSend}><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</EventButton>
             </div>
         </div>
@@ -152,49 +138,7 @@ export function BroadcastCompose() {
         <div className="event-template-grid">
             <div className="event-template-grid__fields" ref={fieldsRef}>
                 <TemplateStart event={event} onPick={pickTemplate} />
-                <section className="event-broadcast-section">
-                    <ManageFieldLabel title={t("manage.broadcasts.channels")} help={t("manage.broadcasts.channelsHelp")} required />
-                    <div className="event-broadcast-channels">
-                        <EventCheckbox checked={draft.email} onCheckedChange={email => set({email})} label={t("manage.broadcasts.channel.email")} />
-                        <EventCheckbox checked={draft.inApp} onCheckedChange={inApp => set({inApp})} label={t("manage.broadcasts.channel.inApp")} />
-                    </div>
-                    {!draft.email && !draft.inApp && <p className="event-manage-validation" role="alert">{t("manage.broadcasts.validation.channels")}</p>}
-                </section>
-
-                {draft.email && <section className="event-broadcast-section" aria-label={t("manage.broadcasts.channel.email")}>
-                    <h2>{t("manage.broadcasts.channel.email")}</h2>
-                    <div className="event-manage-field" onBlur={leave("subject")}>
-                        <ManageFieldLabel title={t("manage.email.subject")} help={t("manage.broadcasts.subjectHelp")} required />
-                        <VariableRichText value={draft.Subject} onChange={Subject => set({Subject})} variables={variables} placeholder={t("manage.email.subject")} dotted error={subjectError} />
-                    </div>
-                    <div className="event-manage-field">
-                        <ManageFieldLabel title={t("manage.email.preheader")} help={t("manage.email.preheaderHelp")} />
-                        <VariableRichText value={draft.Preheader} onChange={Preheader => set({Preheader})} variables={variables} placeholder={t("manage.email.optional")} dotted />
-                    </div>
-                    <div className="event-manage-field" role="group" onBlur={leave("body")} aria-label={t("manage.tpl.tpl.body")} aria-invalid={!!bodyError || undefined} aria-describedby={bodyError ? "broadcast-body-error" : undefined}>
-                        <ManageFieldLabel title={t("manage.tpl.tpl.body")} help={t("manage.email.blocks.textHelp")} required />
-                        <BlockEditor value={draft.Body} onChange={Body => set({Body})} variables={variables} presets={(presets.data ?? []) as BlockPreset[]}
-                            hiddenBlocks={["image"]} onUploadImage={() => Promise.reject(new Error("images are not supported"))} imageURL={() => ""} />
-                        {bodyError && <p id="broadcast-body-error" className="event-manage-validation" role="alert">{bodyError}</p>}
-                    </div>
-                    <EmailStylingEditor styling={draft.Styling} disabled={false} brand={eventBrandColors(event)} onChange={Styling => set({Styling})} />
-                </section>}
-
-                {draft.inApp && <section className="event-broadcast-section" aria-label={t("manage.broadcasts.channel.inApp")}>
-                    <h2>{t("manage.broadcasts.channel.inApp")}</h2>
-                    <div className="event-manage-field" onBlur={leave("title")}>
-                        <ManageFieldLabel title={t("manage.notifications.field.title")} help={t("manage.notifications.field.titleHelp")} required />
-                        <VariableRichText value={draft.InAppTitle} onChange={InAppTitle => set({InAppTitle})} variables={variables} placeholder={t("manage.notifications.field.title")} dotted error={titleError} />
-                    </div>
-                    <div className="event-manage-field">
-                        <ManageFieldLabel title={t("manage.notifications.field.body")} help={t("manage.notifications.field.bodyHelp")} />
-                        <InAppBodyEditor value={draft.InAppBody} onChange={InAppBody => set({InAppBody})} variables={variables} />
-                    </div>
-                    <div className="event-manage-field">
-                        <ManageFieldLabel title={t("manage.notifications.field.link")} help={t("manage.notifications.field.linkHelp")} />
-                        <VariableRichText value={draft.InAppLink} onChange={InAppLink => set({InAppLink})} variables={variables} placeholder={t("manage.notifications.field.linkPlaceholder")} dotted />
-                    </div>
-                </section>}
+                <BroadcastMessageFields event={event} value={draft} onChange={set} fields={{visible, leave}} idPrefix="broadcast" canLoadPresets={canManage} />
 
                 <section className="event-broadcast-section" role="group" aria-label={t("manage.broadcasts.audience.label")} aria-invalid={!!audienceError || undefined} aria-describedby={audienceError ? "broadcast-audience-error" : undefined}>
                     <AudiencePicker event={event} value={draft.Audience} onChange={Audience => set({Audience})} />
@@ -208,13 +152,7 @@ export function BroadcastCompose() {
                 {recipients === 0 && !validation && ready && <p className="event-manage-validation" role="alert">{t("manage.broadcasts.error.emptyAudience")}</p>}
             </div>
             <div className="event-template-grid__preview event-broadcast-preview">
-                {unsupported.length > 0 && <div className="event-manage-warning" role="note">
-                    <TriangleAlert size={18} aria-hidden="true" />
-                    <span>{t("manage.broadcasts.template.unsupportedNames", {names: unsupported.join(", ")})}</span>
-                </div>}
-                <NotificationPreview email={draft.email ? {event, input: livePreview, valid: !emailInvalid} : undefined}
-                    inApp={draft.inApp ? {template: inAppPreview, values: broadcastSampleValues(event.Name)} : undefined} />
-                {!draft.email && !draft.inApp && <EmptyState message={t("manage.broadcasts.validation.channels")} />}
+                <BroadcastMessagePreview event={event} value={draft} />
             </div>
         </div>
         <ConfirmDialog open={pendingTemplate !== null} onCancel={() => setPendingTemplate(null)} title={t("manage.broadcasts.template.replace.title")}
@@ -222,5 +160,6 @@ export function BroadcastCompose() {
             onConfirm={() => {if (pendingTemplate) applyTemplate(pendingTemplate); setPendingTemplate(null);}} />
         <ConfirmDialog open={confirming} onCancel={() => setConfirming(false)} title={t("manage.broadcasts.confirm.title", {count: recipients ?? 0})}
             description={t("manage.broadcasts.confirm.body")} confirmLabel={t("manage.broadcasts.confirm.action")} busy={sending} busyLabel={t("common.busy.sending")} error={error || undefined} onConfirm={() => void send()} />
+        <SaveTemplateDialog open={savingTemplate} eventID={eventID} message={draft} onClose={() => setSavingTemplate(false)} />
     </div>;
 }

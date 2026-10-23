@@ -63,6 +63,8 @@ export const ApiErrorCode = {
     BroadcastNotFound: 220,
     BroadcastInvalid: 221,
     BroadcastEmptyAudience: 222,
+    BroadcastTemplateNotFound: 227,
+    BroadcastTemplateNameTaken: 228,
     BannerNotFound: 223,
     BannerInvalid: 224,
     TemplateLinkInvalid: 225,
