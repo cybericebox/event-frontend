@@ -130,7 +130,7 @@ export function BroadcastCompose() {
             {back}
             <div className="event-template-header__title"><h1>{t("manage.broadcasts.new")}</h1></div>
             <div className="event-template-header__actions">
-                <button className="ib-btn" type="button" onClick={requestSaveTemplate}><BookmarkPlus size={15} aria-hidden="true" /> {t("manage.broadcastTemplates.saveAs.action")}</button>
+                <button className="ib-btn" type="button" onClick={requestSaveTemplate}><BookmarkPlus size={15} aria-hidden="true" /> {t("manage.customTemplates.saveAs.action")}</button>
                 <EventButton className="ib-btn ib-btn--primary" type="button" disabled={!validation && !canSend} onClick={requestSend}><Send size={15} aria-hidden="true" /> {t("manage.broadcasts.send")}</EventButton>
             </div>
         </div>

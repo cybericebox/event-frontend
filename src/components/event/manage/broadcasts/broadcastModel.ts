@@ -65,8 +65,8 @@ export function templateInput(name: string, message: BroadcastMessage): Broadcas
 }
 
 export function templateNameError(name: string): string {
-    if (!name.trim()) return t("manage.broadcastTemplates.validation.name");
-    if ([...name.trim()].length > 200) return t("manage.broadcastTemplates.validation.nameLength", {max: 200});
+    if (!name.trim()) return t("manage.customTemplates.validation.name");
+    if ([...name.trim()].length > 200) return t("manage.customTemplates.validation.nameLength", {max: 200});
     return "";
 }
 

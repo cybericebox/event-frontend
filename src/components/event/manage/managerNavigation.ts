@@ -10,7 +10,7 @@ const sections: {group: () => string; pages: string[]}[] = [
     {group: () => t("manage.nav.group.participation"), pages: ["/manage/registration", "/manage/participants", "/manage/teams"]},
     {group: () => t("manage.nav.group.challenges"), pages: ["/manage/challenge-settings", "/manage/exercise-groups", "/manage/exercises", "/manage/private-registries", "/manage/labs", "/manage/resources", "/manage/submissions"]},
     {group: () => t("manage.nav.group.results"), pages: ["/manage/results", "/manage/live", "/manage/results-settings"]},
-    {group: () => t("manage.nav.group.notifications"), pages: ["/manage/broadcast-templates", "/manage/banners", "/manage/notifications", "/manage/email", "/manage/mail", "/manage/mail-journal"]},
+    {group: () => t("manage.nav.group.notifications"), pages: ["/manage/banners", "/manage/notifications", "/manage/email", "/manage/mail", "/manage/mail-journal"]},
 ];
 
 const pageNames: Record<string, () => string> = {
@@ -34,7 +34,6 @@ const pageNames: Record<string, () => string> = {
     "/manage/notifications": () => t("manage.nav.notifications"),
     "/manage/email": () => t("manage.nav.email"),
     "/manage/banners": () => t("manage.nav.banners"),
-    "/manage/broadcast-templates": () => t("manage.nav.broadcastTemplates"),
     "/manage/mail": () => t("manage.nav.mail"),
     "/manage/mail-journal": () => t("manage.nav.mailJournal"),
 };
@@ -53,17 +52,16 @@ export function managerCrumbs(pathname: string, pages: ManagePage[]): ManageCrum
     const pageName = pageNames[path];
     const group = sections.find(item => item.pages.includes(path));
     if (pageName && group) return [{label: group.group()}, {label: pageName()}];
-    // A template page is named after its signal and sits under its list.
+    // A template page is named after its signal and sits under its list; a custom template page is named after its kind.
     for (const [base, list] of [["/manage/notifications/", "/manage/notifications"], ["/manage/email/", "/manage/email"]]) {
+        if (path === `${base}custom/new`) return [{label: t("manage.nav.group.notifications")}, {label: pageNames[list](), href: list}, {label: t("manage.customTemplates.newTitle")}];
+        if (path.startsWith(`${base}custom/`)) return [{label: t("manage.nav.group.notifications")}, {label: pageNames[list](), href: list}, {label: t("manage.customTemplates.editTitle")}];
         if (path.startsWith(base) && path.length > base.length) {
             return [{label: t("manage.nav.group.notifications")}, {label: pageNames[list](), href: list}, {label: signalLabel(decodeURIComponent(path.slice(base.length))).title}];
         }
     }
     const notifications = t("manage.nav.group.notifications");
     if (path === "/manage/broadcasts/new") return [{label: notifications}, {label: t("manage.nav.broadcasts"), href: "/manage/broadcasts"}, {label: t("manage.broadcasts.new")}];
-    // A template editor sits under «Шаблони розсилок»; its own name is in the page heading.
-    if (path === "/manage/broadcast-templates/new") return [{label: notifications}, {label: t("manage.nav.broadcastTemplates"), href: "/manage/broadcast-templates"}, {label: t("manage.broadcastTemplates.newTitle")}];
-    if (path.startsWith("/manage/broadcast-templates/")) return [{label: notifications}, {label: t("manage.nav.broadcastTemplates"), href: "/manage/broadcast-templates"}, {label: t("manage.broadcastTemplates.editTitle")}];
     if (path === "/manage/broadcasts" || path.startsWith("/manage/broadcasts/")) return [{label: notifications}, {label: t("manage.nav.broadcasts")}];
     const pagesGroup = t("manage.nav.pages");
     if (path === "/manage/content/landing") return [{label: pagesGroup}, {label: t("manage.nav.landing")}];

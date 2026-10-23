@@ -15,9 +15,9 @@ import {templateInput, templateNameError, type BroadcastMessage} from "./broadca
 // The error of a template write: a taken name belongs to the name field, everything else to the form.
 export function templateSaveError(error: unknown): {name?: string; form?: string} {
     const code = error instanceof ManageApiError ? error.code : undefined;
-    if (code === ApiErrorCode.BroadcastTemplateNameTaken) return {name: t("manage.broadcastTemplates.validation.nameTaken")};
-    if (code === ApiErrorCode.BroadcastInvalid) return {form: t("manage.broadcastTemplates.error.invalid")};
-    return {form: apiErrorMessage(code, t("manage.broadcastTemplates.error.save"))};
+    if (code === ApiErrorCode.BroadcastTemplateNameTaken) return {name: t("manage.customTemplates.validation.nameTaken")};
+    if (code === ApiErrorCode.BroadcastInvalid) return {form: t("manage.customTemplates.error.invalid")};
+    return {form: apiErrorMessage(code, t("manage.customTemplates.error.save"))};
 }
 
 // «Зберегти як шаблон» in the composer: asks for a name and stores the message (not the audience) as a template.
@@ -45,7 +45,7 @@ export function SaveTemplateDialog({open, eventID, message, onClose}: {open: boo
         try {
             const saved = await createBroadcastTemplate(eventID, templateInput(name, message));
             queryClient.setQueryData<BroadcastTemplateRecord[]>(broadcastTemplatesKey(eventID), rows => rows ? [saved, ...rows] : rows);
-            toast.success(t("manage.broadcastTemplates.saved"));
+            toast.success(t("manage.customTemplates.saved"));
             setSaving(false);
             setName(""); setLeft(false); setServerName(null);
             onClose();
@@ -57,13 +57,13 @@ export function SaveTemplateDialog({open, eventID, message, onClose}: {open: boo
         }
     }
 
-    return <DialogModal open={open} onClose={close} size="sm" title={t("manage.broadcastTemplates.saveAs.title")} description={t("manage.broadcastTemplates.saveAs.body")}
+    return <DialogModal open={open} onClose={close} size="sm" title={t("manage.customTemplates.saveAs.title")} description={t("manage.customTemplates.saveAs.body")}
         footer={<>
             <button className="ib-btn" type="button" disabled={saving} onClick={close}>{t("common.cancel")}</button>
             <EventButton className="ib-btn ib-btn--primary" type="button" busy={saving} busyLabel={t("common.busy.saving")} onClick={() => void save()}>{t("common.save")}</EventButton>
         </>}>
         <form className="event-manage-field" onSubmit={event => {event.preventDefault(); void save();}}>
-            <ManageFieldLabel title={t("manage.broadcastTemplates.field.name")} help={t("manage.broadcastTemplates.field.nameHelp")} htmlFor="broadcast-save-template-name" required />
+            <ManageFieldLabel title={t("manage.customTemplates.field.name")} help={t("manage.customTemplates.field.nameHelp")} htmlFor="broadcast-save-template-name" required />
             <input id="broadcast-save-template-name" className="event-manage-input" value={name} maxLength={BROADCAST_TEMPLATE_NAME_MAX} autoComplete="off"
                 aria-invalid={!!nameError || undefined} aria-describedby={nameError ? "broadcast-save-template-name-error" : undefined}
                 onChange={event => setName(event.target.value)} onBlur={() => setLeft(true)} />

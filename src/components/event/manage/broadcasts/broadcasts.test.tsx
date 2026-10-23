@@ -158,7 +158,7 @@ describe("Нова розсилка", () => {
             if (call.path.endsWith("/audience-count")) return {Count: 12};
             if (call.method === "POST" && call.path.endsWith("/manage/broadcasts")) return broadcast(9);
             if (call.path.endsWith("/presets")) return [];
-            if (call.method === "GET" && call.path.endsWith("/manage/broadcast-templates")) return savedTemplates;
+            if (call.method === "GET" && call.path.endsWith("/manage/notification-templates/custom")) return savedTemplates;
             if (call.path.endsWith("/notification-templates/email")) return emailTemplates;
             if (call.path.endsWith("/notification-templates/in-app")) return inAppTemplates;
             if (call.path.includes("/preview")) return {Subject: "s", Preheader: "", HTML: "<p>x</p>"};
@@ -334,7 +334,7 @@ describe("Нова розсилка", () => {
         fireEvent.pointerDown(await screen.findByRole("button", {name: "Почати з шаблону"}), {button: 0, ctrlKey: false});
         const menu = await screen.findByRole("menu");
         const headings = [...menu.querySelectorAll(".event-select__group")].map(item => item.textContent);
-        expect(headings).toEqual(["Збережені шаблони розсилок", "Шаблони сповіщень"]);
+        expect(headings).toEqual(["Власні шаблони", "Шаблони за подіями"]);
         fireEvent.click(within(menu).getByRole("menuitemradio", {name: "Нагадування 70"}));
         expect((await screen.findByRole("textbox", {name: "Заголовок"})).textContent).toContain("Старт за годину");
         expect((screen.getByRole("checkbox", {name: "Електронна пошта"}) as HTMLInputElement).checked).toBe(false);
@@ -345,7 +345,7 @@ describe("Нова розсилка", () => {
     it("saves the message as a template without the audience; a taken name stays beside the name field", async () => {
         let attempt = 0;
         const calls = server(call => {
-            if (call.method !== "POST" || !call.path.endsWith("/manage/broadcast-templates")) return undefined;
+            if (call.method !== "POST" || !call.path.endsWith("/manage/notification-templates/custom")) return undefined;
             attempt += 1;
             return attempt === 1 ? new Response(JSON.stringify({Status: {Code: 70228, Message: "taken"}}), {status: 409}) : savedTemplate(71, {Name: "Старт"});
         });
@@ -366,7 +366,7 @@ describe("Нова розсилка", () => {
         expect(name.getAttribute("aria-invalid")).toBeNull();
         fireEvent.click(within(dialog).getByRole("button", {name: "Зберегти"}));
         await waitFor(() => expect(attempt).toBe(2));
-        const posted = calls.filter(call => call.method === "POST" && call.path.endsWith("/manage/broadcast-templates")).at(-1)!.body as Record<string, unknown>;
+        const posted = calls.filter(call => call.method === "POST" && call.path.endsWith("/manage/notification-templates/custom")).at(-1)!.body as Record<string, unknown>;
         expect(posted).toEqual({Name: "Старт", Channels: ["in_app"], Subject: "", Preheader: "", EmailBody: [], EmailStyling: {}, InAppTitle: "Старт о 10:00", InAppBody: "", InAppLink: ""});
         expect(calls.some(call => call.method === "POST" && call.path.endsWith("/manage/broadcasts"))).toBe(false);
     });

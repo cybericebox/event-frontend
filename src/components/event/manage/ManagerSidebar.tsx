@@ -49,7 +49,6 @@ import {
   MessagesSquare,
   MailCheck,
   KeyRound,
-  FileStack,
 } from "lucide-react";
 import type {ManagePage} from "@/api/manage";
 import type {AnalyticsAccess} from "@/api/manageAnalytics";
@@ -109,7 +108,6 @@ const groups: Group[] = [
     // Three blocks split by thin dividers: actions, settings (templates + notification settings), log.
     {id: "notifications", label: t("manage.nav.group.notifications"), icon: Bell, items: [
         {href: "/manage/broadcasts", label: t("manage.nav.broadcasts"), icon: Send},
-        {href: "/manage/broadcast-templates", label: t("manage.nav.broadcastTemplates"), icon: FileStack},
         {href: "/manage/banners", label: t("manage.nav.banners"), icon: Megaphone},
         {href: "/manage/notifications", label: t("manage.nav.notificationsOnSite"), icon: BellRing, dividerBefore: true},
         {href: "/manage/email", label: t("manage.nav.emailTemplates"), icon: Mail},

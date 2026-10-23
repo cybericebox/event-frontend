@@ -3,15 +3,16 @@ import {manageApiError} from "@/api/manage";
 import {requireApiOrigin} from "@/utils/origins";
 import type {BroadcastChannel} from "@/api/manageBroadcasts";
 
-// «Шаблони розсилок» of an event: saved broadcast messages a manager loads
-// into the composer before sending by hand. Not bound to any platform action.
-// Reading needs event read access, writing manage access. Fields are PascalCase.
+// Custom templates of an event: saved broadcast messages a manager loads into
+// the composer before sending by hand. Not bound to any platform action; listed
+// beside the triggered (action-bound) templates on the templates pages. Reading
+// needs event read access, writing manage access. Fields are PascalCase.
 
 const id = z.string().uuid();
 const text = z.string().nullish().transform(value => value ?? "");
 
 const templateSchema = z.object({
-    ID: id, ScopeEventID: id.nullable(), Name: text,
+    Kind: z.literal("custom").catch("custom"), ID: id, ScopeEventID: id.nullable(), Name: text,
     Channels: z.array(z.string()).nullish().transform(value => value ?? []),
     Subject: text, Preheader: text, EmailBody: z.unknown(), EmailStyling: z.unknown(),
     InAppTitle: text, InAppBody: text, InAppLink: text,
@@ -31,7 +32,7 @@ export const BROADCAST_TEMPLATE_NAME_MAX = 200;
 
 async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, method = "GET", body?: unknown): Promise<T> {
     const api = requireApiOrigin();
-    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/broadcast-templates${path}`, {
+    const response = await fetch(`${api}/api/events/${encodeURIComponent(eventID)}/manage/notification-templates/custom${path}`, {
         method, credentials: "include", cache: "no-store",
         headers: {Accept: "application/json", ...(body === undefined ? {} : {"Content-Type": "application/json"})},
         ...(body === undefined ? {} : {body: JSON.stringify(body)}),
