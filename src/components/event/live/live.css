@@ -325,3 +325,29 @@
 
 /* The neutral error page of /live (no event data): the platform page, above everything, on the page colour. */
 .live-neutral{position:fixed;inset:0;z-index:200;overflow:auto;background:var(--ib-paper)}
+
+/* «Прогрес» of a table row: avatars, the «1600/2100» cell and the flags strip. */
+.live-table th.live-table__points,.live-table td.live-table__points{text-align:right}
+.live-table td.live-table__points{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
+.live-table tr.is-lead td.live-table__points{color:var(--live-accent)}
+.live-table__avatar{display:inline-grid;place-items:center;width:1.45em;height:1.45em;margin-right:.3em;border:2px solid var(--live-avatar);border-radius:50%;background:color-mix(in srgb,var(--live-avatar) 28%,var(--live-tile));color:var(--live-ink);font-size:.62em;font-style:normal;font-weight:700;line-height:1;vertical-align:middle;letter-spacing:0}
+.live-table td.live-table__progress{text-align:left;font-family:inherit;font-weight:500;color:var(--live-ink)}
+.live-table__line{display:flex;align-items:center;gap:.4em;margin-bottom:.35em;line-height:1.1}
+.live-table__line svg{flex:none;width:1em;height:1em;color:var(--live-faint)}
+.live-table__line b{margin-left:auto;font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.live-table__track{display:block;height:calc(var(--live-row-font) * .32);border-radius:calc(var(--live-row-font) * .16);background:var(--live-line);overflow:hidden}
+.live-table__track>i{display:block;width:calc(var(--live-bar) * 100%);height:100%;border-radius:inherit;background:var(--live-accent);transition:width .6s}
+.live-table__flags{display:flex;justify-content:space-between;align-items:center}
+.live-table__flags>i{flex:none;background:var(--live-line)}
+.live-table__flags>i.is-done{background:var(--live-accent)}
+.live-table__flags.is-squares>i{width:var(--live-flag);height:var(--live-flag);border-radius:calc(var(--live-flag) * .18)}
+.live-table__flags.is-segments{gap:2px;height:calc(var(--live-row-font) * .45)}
+.live-table__flags.is-segments>i{flex:1 1 0;height:100%;border-radius:1px}
+.live-table--medals tr.is-place-1 .live-table__track>i,.live-table--medals tr.is-place-1 .live-table__flags>i.is-done{background:var(--live-place-1)}
+.live-table--medals tr.is-place-2 .live-table__track>i,.live-table--medals tr.is-place-2 .live-table__flags>i.is-done{background:var(--live-place-2)}
+.live-table--medals tr.is-place-3 .live-table__track>i,.live-table--medals tr.is-place-3 .live-table__flags>i.is-done{background:var(--live-place-3)}
+.live-card__gauge{display:grid;flex:none;justify-items:center;gap:.25em;margin:0}
+.live-card__gauge .live-card__ring{height:auto}
+.live-card__gauge figcaption{max-width:100%;overflow:hidden;color:var(--live-faint);line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.live-table__track>i{transition:none}}
+.live-table tr.is-lead td.live-table__progress{color:var(--live-ink)}
