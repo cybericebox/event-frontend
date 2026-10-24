@@ -56,3 +56,43 @@ export function liveMaxPoints(results?: {MaxPoints?: number; Scoreboard: {Points
 export function livePoints(points: number): string {
     return Math.round(points).toLocaleString("uk-UA").replace(/\s/g, " ");
 }
+
+// «Прапори»: the solved tasks of a row. One square per task while a square
+// stays readable, thin segments while a segment keeps a few pixels, else a
+// single bar. Every mode spans the whole cell, so the «9/10» above it ends
+// where the strip ends.
+export type LiveFlagsMode = "squares" | "segments" | "bar";
+const flagsSquareGap = 0.35;
+const flagsSegmentMin = 3;
+const flagsSegmentGap = 2;
+
+export function liveFlagsMode(width: number, tasks: number, font: number): LiveFlagsMode {
+    const count = Math.max(0, Math.floor(tasks));
+    if (!count || width <= 0) return "bar";
+    const square = Math.max(8, font * 0.45);
+    if (count * square * (1 + flagsSquareGap) - square * flagsSquareGap <= width) return "squares";
+    if (count * (flagsSegmentMin + flagsSegmentGap) - flagsSegmentGap <= width) return "segments";
+    return "bar";
+}
+
+// The square size of «squares»: as large as the width allows, no taller than the row text.
+export function liveFlagsSquare(width: number, tasks: number, font: number): number {
+    const count = Math.max(1, Math.floor(tasks));
+    return Math.max(0, Math.min(font * 0.8, width / (count * (1 + flagsSquareGap) - flagsSquareGap)));
+}
+
+// «Ініціали»: the first letters of the first two words, or the first two
+// letters of a one-word name; digits and letters of any script count.
+export function liveInitials(name: string): string {
+    const words = name.trim().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    if (!words.length) return "";
+    const letters = words.length > 1 ? [...words[0]].slice(0, 1).concat([...words[1]].slice(0, 1)) : [...words[0]].slice(0, 2);
+    return letters.join("").toLocaleUpperCase("uk-UA");
+}
+
+// A stable series colour per team, so an avatar keeps its colour when the team changes places.
+export function liveTeamColorIndex(teamID: string, colors: number): number {
+    let hash = 0;
+    for (const char of teamID) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    return hash % Math.max(1, colors);
+}

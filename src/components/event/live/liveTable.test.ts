@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
+import {liveFlagsMode, liveFlagsSquare, liveInitials, livePinTop, livePoints, liveTablePage, liveTablePageAt, liveTeamColorIndex} from "./liveTable";
 
 const teams = (count: number) => Array.from({length: count}, (_, index) => index + 1);
 
@@ -54,5 +54,33 @@ describe("live table paging", () => {
         expect(livePoints(1300)).toBe("1 300");
         expect(livePoints(1234567)).toBe("1 234 567");
         expect(livePoints(950)).toBe("950");
+    });
+});
+
+describe("live table progress", () => {
+    it("draws squares while they stay readable, then segments, then a bar", () => {
+        expect(liveFlagsMode(380, 10, 24)).toBe("squares");
+        expect(liveFlagsMode(380, 40, 24)).toBe("segments");
+        expect(liveFlagsMode(380, 80, 24)).toBe("bar");
+        expect(liveFlagsMode(380, 0, 24)).toBe("bar");
+    });
+
+    it("spans the squares over the cell without growing past the row text", () => {
+        expect(liveFlagsSquare(380, 10, 24)).toBeCloseTo(19.2);
+        expect(liveFlagsSquare(100, 10, 24)).toBeCloseTo(100 / 13.15);
+    });
+
+    it("takes two initials from the first two words or the first word", () => {
+        expect(liveInitials("Odnohack+Pinguins")).toBe("OP");
+        expect(liveInitials("milworms")).toBe("MI");
+        expect(liveInitials("518&imposter")).toBe("5I");
+        expect(liveInitials("кібер ліга")).toBe("КЛ");
+        expect(liveInitials("  ")).toBe("");
+    });
+
+    it("keeps one colour per team", () => {
+        const id = "00000000-0000-4000-8000-000000000001";
+        expect(liveTeamColorIndex(id, 10)).toBe(liveTeamColorIndex(id, 10));
+        expect(liveTeamColorIndex(id, 10)).toBeLessThan(10);
     });
 });

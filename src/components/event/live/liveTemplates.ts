@@ -57,6 +57,14 @@ const scenes = {
         widget("table", 1, 5, 12, 3, {columns: 2, pinTop: 0, rowsPerPage: 4, showBars: true, highlightTop: "medals", showCaption: false}),
         organizers(), partners(),
     ]),
+    // The leaders with a points and a flags ring, everyone below with a
+    // «1600/2100» bar and a flag per task.
+    progress: () => canvas([
+        widget("title", 1, 1, 9, 1, {subtitleStage: true}), widget("timer", 10, 1, 3, 1),
+        widget("podium", 1, 2, 12, 3, {variant: "cards", showRing: true, showFlagsRing: true, showPoints: false, highlightTop: "medals"}),
+        widget("table", 1, 5, 12, 3, {pinTop: 0, rowsPerPage: 4, showBars: true, barsAt: "points", showFlags: true, showInitials: true, highlightTop: "medals", showCaption: false}),
+        organizers(), partners(),
+    ]),
     // The leaders as a column of cards on the left, the rest of the table on the right.
     leadersSide: () => canvas([
         widget("title", 1, 1, 9, 1, {subtitleStage: true}), widget("timer", 10, 1, 3, 1),
@@ -115,6 +123,7 @@ export const liveTemplates = {
     bigboard: single("bigboard", "running"),
     leaders: single("leaders", "running"),
     leadersAll: single("leadersAll", "running"),
+    progress: single("progress", "running"),
     leadersSide: single("leadersSide", "running"),
     boardEvents: single("boardEvents", "running"),
     stage: single("stage", "running"),

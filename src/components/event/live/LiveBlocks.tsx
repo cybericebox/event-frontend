@@ -58,16 +58,21 @@ function LivePodiumCards({widget, top, results, metrics, empty, highlight}: {wid
     const [ref, size] = useElementSize<HTMLDivElement>();
     const points = widget.props.showPoints !== false;
     const ring = widget.props.showRing === true;
+    // «Кільце прапорців»: the solved share of the published tasks; needs the task count.
+    const tasks = results?.Tasks ?? 0;
+    const flagsRing = widget.props.showFlagsRing === true && tasks > 0;
+    const rings = Number(ring) + Number(flagsRing);
     const marker = liveMarkerOf(widget);
     const images = livePlaceImages(widget);
     const max = liveMaxPoints(results);
     const {column, gap, ...box} = liveCardsBox(size.width, size.height);
     const fit = liveCardsFit({width: box.width, height: box.height, names: top.map(team => team.TeamName),
-        pointsChars: Math.max(1, ...top.map(team => livePoints(team.Points).length)), ring, body: metrics.body, caption: metrics.caption, measure: measureName});
+        pointsChars: Math.max(1, ...top.map(team => livePoints(team.Points).length)), ring: rings > 0, rings, ringLabels: flagsRing, body: metrics.body, caption: metrics.caption, measure: measureName});
     const tone = highlight === "medals" ? " live-cards--medals" : highlight === "none" ? " live-cards--plain" : "";
     return <div className={`live-cards${tone}${column ? " live-cards--column" : ""}`} ref={ref} style={{gap: column ? gap : fit.gap}}>
         {!top.length ? empty : size.width > 0 && top.map(team => {
             const share = Math.max(0, Math.min(1, team.Points / max));
+            const solved = tasks ? Math.max(0, Math.min(1, team.Solved / tasks)) : 0;
             return <div key={team.TeamID} className={`live-card is-place-${Math.min(3, team.Rank)}${team.Rank === 1 ? " is-lead" : ""}`} style={{padding: `0 ${fit.pad}px ${fit.pad}px`}}>
                 <div className="live-card__head">
                     <strong style={{fontSize: fit.name, paddingTop: fit.pad}} title={team.TeamName}>{team.TeamName}</strong>
@@ -75,7 +80,10 @@ function LivePodiumCards({widget, top, results, metrics, empty, highlight}: {wid
                         : <span className="live-card__mark" style={{fontSize: fit.name * 1.6}}><LivePlaceMark place={team.Rank} marker={marker} images={images} /></span>}
                 </div>
                 <div className="live-card__body">
-                    {ring && fit.ring > 0 && <LiveRing share={share} size={fit.ring} label={t("live.podium.ringAria", {percent: Math.round(share * 100)})} />}
+                    {ring && fit.ring > 0 && <LiveRing share={share} size={fit.ring} label={t("live.podium.ringAria", {percent: Math.round(share * 100)})}
+                        caption={flagsRing ? t("live.podium.ringPoints") : null} captionSize={Math.min(fit.meta, fit.ring * 0.19)} />}
+                    {flagsRing && fit.ring > 0 && <LiveRing share={solved} size={fit.ring} flags label={t("live.podium.flagsRingAria", {solved: Math.min(team.Solved, tasks), tasks})}
+                        caption={t("live.podium.ringFlags")} captionSize={Math.min(fit.meta, fit.ring * 0.19)} />}
                     {points && <span className="live-card__points">
                         <b style={{fontSize: fit.points}}>{livePoints(team.Points)}</b>
                         <small style={{fontSize: fit.meta}}>{t("live.podium.points")}</small>
@@ -86,16 +94,22 @@ function LivePodiumCards({widget, top, results, metrics, empty, highlight}: {wid
     </div>;
 }
 
-// The share of the maximum points as a ring with the percent inside.
-function LiveRing({share, size, label}: {share: number; size: number; label: string}) {
+// The share of the maximum points (or of the solved tasks) as a ring with the
+// percent inside; with a caption, the label sits below the ring.
+function LiveRing({share, size, label, flags = false, caption = null, captionSize = 0}: {share: number; size: number; label: string; flags?: boolean; caption?: string | null; captionSize?: number}) {
     const stroke = Math.max(3, size * 0.09);
     const radius = (size - stroke) / 2;
     const length = 2 * Math.PI * radius;
-    return <svg className="live-card__ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label}>
+    const ring = <svg className={`live-card__ring${flags ? " is-flags" : ""}`} width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label}>
         <circle className="is-track" cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} />
         <circle className="is-value" cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} strokeDasharray={`${length * share} ${length}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
         <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fontSize={size * 0.24}>{t("live.podium.percent", {percent: Math.round(share * 100)})}</text>
     </svg>;
+    if (caption === null) return ring;
+    return <figure className="live-card__gauge" style={{width: size}}>
+        {ring}
+        <figcaption style={{fontSize: captionSize}}>{caption}</figcaption>
+    </figure>;
 }
 
 // «Факти»: large numbers over their labels, side by side.

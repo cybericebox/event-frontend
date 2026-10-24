@@ -10,10 +10,10 @@ const keys = Object.keys(liveTemplates) as LiveTemplateKey[];
 const withFormat: LiveLayout = {...defaultLiveLayout, formats: {"4:3": {mode: "custom", grid: {cols: 8, rows: 10}, placements: [{id: "chart", x: 1, y: 2, w: 8, h: 4}]}}};
 
 describe("live templates", () => {
-    it("offers 4–12 ready screens besides the full show, the classic board and the empty grid", () => {
+    it("offers 4–13 ready screens besides the full show, the classic board and the empty grid", () => {
         const screens = keys.filter(key => !["show", "classic", "empty"].includes(key));
         expect(screens.length).toBeGreaterThanOrEqual(4);
-        expect(screens.length).toBeLessThanOrEqual(12);
+        expect(screens.length).toBeLessThanOrEqual(13);
     });
 
     it("builds every scene on a valid 12×8 grid without overlaps", () => {

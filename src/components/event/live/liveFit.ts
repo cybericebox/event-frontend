@@ -121,8 +121,10 @@ export const liveEstimateWidth: LiveMeasure = (text, font) => text.length * lett
 // 55% of the row. A name that does not fit shrinks its own row text down to
 // the body size, then wraps to two lines in a row tall enough, and only then
 // ends with «…».
-export function liveTableFit({width, rowHeight, body, rankChars, pointsChars, names, measure = liveEstimateWidth}: {
-    width: number; rowHeight: number; body: number; rankChars: number; pointsChars: number; names: string[]; measure?: LiveMeasure;
+export function liveTableFit({width, rowHeight, body, rankChars, pointsChars, names, nameLead = 0, measure = liveEstimateWidth}: {
+    width: number; rowHeight: number; body: number; rankChars: number; pointsChars: number; names: string[];
+    // Room before the name in row-text sizes: the «Ініціали» avatar.
+    nameLead?: number; measure?: LiveMeasure;
 }): LiveTableFit {
     const byHeight = Math.min(rowHeight / liveRowLeading, body * liveRowTextMax);
     const columnsEm = (rankChars + pointsChars) * digitWidth + 2 * cellPadding;
@@ -134,7 +136,7 @@ export function liveTableFit({width, rowHeight, body, rankChars, pointsChars, na
     const floor = Math.min(font, body);
     // The name cell keeps the padding of the row text whatever its own size,
     // so names of different sizes line up.
-    const room = Math.max(0, nameWidth - cellPadding * font);
+    const room = Math.max(0, nameWidth - (cellPadding + nameLead) * font);
     const fitName = (name: string): LiveNameFit => {
         const natural = measure(name, font);
         if (natural <= room) return {font, lines: 1};
@@ -200,8 +202,11 @@ export function liveCardsBox(width: number, height: number): {column: boolean; g
     return column ? {column, gap, width: width * 3 + 2 * gap, height: (height - 2 * gap) / 3} : {column, gap, width, height};
 }
 
-export function liveCardsFit({width, height, names, pointsChars, ring, body, caption, measure = liveEstimateWidth}: {
-    width: number; height: number; names: string[]; pointsChars: number; ring: boolean; body: number; caption: number; measure?: LiveMeasure;
+export function liveCardsFit({width, height, names, pointsChars, ring, rings = ring ? 1 : 0, ringLabels = false, body, caption, measure = liveEstimateWidth}: {
+    width: number; height: number; names: string[]; pointsChars: number; ring: boolean;
+    // Rings side by side («Бали» and «Прапори»), and whether each carries its label below.
+    rings?: number; ringLabels?: boolean;
+    body: number; caption: number; measure?: LiveMeasure;
 }): LiveCardsFit {
     const gap = Math.max(4, width * 0.02);
     const card = Math.max(0, (width - 2 * gap) / 3);
@@ -213,8 +218,10 @@ export function liveCardsFit({width, height, names, pointsChars, ring, body, cap
     const name = Math.max(0, Math.min(byWidth, height * 0.2, body * 2.4));
     const meta = Math.max(caption, name * 0.62);
     const bodyHeight = Math.max(0, height - 2 * pad - Math.max(name * 1.3, meta * 1.9));
-    const ringSize = ring ? Math.max(0, Math.min(bodyHeight * 0.92, inner * 0.48)) : 0;
-    const pointsRoom = inner - (ringSize ? ringSize + meta * 0.6 : 0);
+    const count = Math.max(0, Math.floor(rings));
+    const labelRoom = ringLabels ? meta * 1.4 : 0;
+    const ringSize = count ? Math.max(0, Math.min(bodyHeight * 0.92 - labelRoom, (inner - meta * 0.6 * (count - 1)) * (count > 1 ? 0.46 : 0.48))) : 0;
+    const pointsRoom = inner - (ringSize ? count * (ringSize + meta * 0.6) : 0);
     const points = Math.max(0, Math.min(pointsRoom / Math.max(1, pointsChars * digitWidth), (bodyHeight - meta * 1.3) / 1.15, name * 1.5));
     return {name, meta, points, ring: ringSize, gap, pad, readable: name >= body};
 }
