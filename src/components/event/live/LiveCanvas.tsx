@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
-import {Snowflake, WifiOff} from "lucide-react";
+import {Coins, Flag, Snowflake, WifiOff} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoading} from "@/components/event/EventLoading";
 import type {LiveLayout, LiveWidget} from "@/api/manageLive";
@@ -11,7 +11,7 @@ import {liveCorners, liveLogoURL, liveWidgetLabels, type LiveCorner} from "./liv
 import {liveCaptionShown, liveCaptionText, liveTextFloors, liveTextProfile, liveTextSize, liveTextSizes, liveTextVars, liveWidgetTextScale, type LiveTextProfile} from "./liveText";
 import {liveAnnouncementFit, liveHeaderRow, liveTableFit, liveTimerFit, liveTitleFit} from "./liveFit";
 import {liveStageSubtitle, liveTimerDigitMode, liveTimerDigits, liveTimerState, liveTimerUrgency, liveTimerZero, type LiveStage} from "./liveStages";
-import {liveMaxPoints, livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
+import {liveFlagsMode, liveFlagsSquare, liveInitials, liveMaxPoints, livePinTop, livePoints, liveTablePage, liveTablePageAt, liveTeamColorIndex} from "./liveTable";
 import {chartSeries, spreadLabels} from "./liveChart";
 import {liveSampleSpan} from "./liveSample";
 import {LiveQR} from "./LiveQR";
@@ -194,31 +194,90 @@ function LiveTitle({widget, event, logo, stages, now, note, metrics}: {widget: L
 type LiveTeamRow = NonNullable<ManageResultsSnapshot["Scoreboard"]>[number];
 
 // «Колонки»: a wide table splits its page into two columns side by side.
-function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, marker, images, legend, barMax}: {
+// «Прогрес»: what a table row adds to its name and points.
+export type LiveTableProgress = {
+    // The bar under the name («Під назвою») or a «1600/2100» cell with the bar
+    // in place of the points («У колонці балів»); null without «Смуги балів».
+    bars: "name" | "points" | null;
+    // The «Прапори» cell: solved of the published tasks; 0 hides it.
+    flagsTasks: number;
+    initials: boolean;
+};
+
+// Shares of a table column the progress cells take, so the name keeps the rest.
+function progressShare(cells: number): number {
+    return cells === 2 ? 0.27 : cells === 1 ? 0.32 : 0;
+}
+
+function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, marker, images, legend, barMax, progress}: {
     rows: LiveTeamRow[]; pinned: number; width: number; rowHeight: number; metrics: LiveMetrics; rankChars: number; pointsChars: number; event: PublicEventInfo;
     highlight: LiveHighlight; marker: LiveMarker; images: string[] | null;
     // «Легенда графіка»: the line colour of each team the chart draws.
     legend: Map<string, string> | null;
     // The points a full bar stands for; null without «Смуги балів».
     barMax: number | null;
+    progress: LiveTableProgress;
 }) {
     const medals = highlight === "medals";
-    // A medal, cup or picture is wider than one or two digits.
-    const fit = liveTableFit({width, rowHeight, body: metrics.body, rankChars: marker !== "numbers" ? Math.max(rankChars, 2.6) : rankChars, pointsChars, names: rows.map(team => team.TeamName), measure: measureName});
+    const pointsCell = progress.bars === "points" && barMax !== null;
+    const flags = progress.flagsTasks > 0;
+    const cellWidth = width * progressShare(Number(pointsCell) + Number(flags));
+    const rest = width - cellWidth * (Number(pointsCell) + Number(flags));
+    // A medal, cup or picture is wider than one or two digits; the «1600/2100»
+    // cell replaces the points column.
+    const fit = liveTableFit({width: rest, rowHeight, body: metrics.body, rankChars: marker !== "numbers" ? Math.max(rankChars, 2.6) : rankChars, pointsChars: pointsCell ? 0 : pointsChars,
+        names: rows.map(team => team.TeamName), nameLead: progress.initials ? avatarLead : 0, measure: measureName});
+    // Progress cells read a line of text over the strip: both fit the row.
+    const cellFont = Math.max(0, Math.min(fit.font * 0.8, rowHeight / 2.6));
+    const pad = cellFont * 0.6;
+    const strip = Math.max(0, cellWidth - 2 * pad);
+    const valueChars = 2 * pointsChars + 1;
+    const pointsFont = Math.min(cellFont, Math.max(0, strip - cellFont * 1.6) / (valueChars * 0.62));
+    const flagsMode = liveFlagsMode(strip, progress.flagsTasks, fit.font);
+    const square = liveFlagsSquare(strip, progress.flagsTasks, fit.font);
+    const head = event.Participation === 1 ? t("live.table.team") : t("live.table.participant");
     return <table className={`live-table${medals ? " live-table--medals" : highlight === "none" ? " live-table--plain" : ""}`} style={{"--live-row-font": `${fit.font}px`} as CSSProperties}>
-        <colgroup><col style={{width: fit.rankWidth}} /><col /><col style={{width: fit.pointsWidth}} /></colgroup>
-        <thead><tr style={{height: metrics.caption * liveHeaderRow}}><th>{t("live.table.rank")}</th><th>{event.Participation === 1 ? t("live.table.team") : t("live.table.participant")}</th><th>{t("live.table.points")}</th></tr></thead>
+        <colgroup><col style={{width: fit.rankWidth}} /><col />{pointsCell ? <col style={{width: cellWidth}} /> : <col style={{width: fit.pointsWidth}} />}{flags && <col style={{width: cellWidth}} />}</colgroup>
+        <thead><tr style={{height: metrics.caption * liveHeaderRow}}><th>{t("live.table.rank")}</th><th>{head}</th><th className="live-table__points">{t("live.table.points")}</th>{flags && <th>{t("live.table.flags")}</th>}</tr></thead>
         <tbody style={{fontSize: fit.font}}>{rows.map((team, index) => <tr key={team.TeamID} style={{height: rowHeight}}
             className={[team.Rank === 1 ? "is-lead" : "", team.Rank <= 3 ? `is-top is-place-${team.Rank}` : "", index === pinned - 1 ? "is-pinned-last" : ""].filter(Boolean).join(" ") || undefined}>
             <td><LivePlaceMark place={team.Rank} marker={marker} images={images} /></td>
             <td className={fit.names[index].lines === 2 ? "live-table__name is-wrap" : "live-table__name"} style={{fontSize: fit.names[index].font}} title={team.TeamName}>
-                {legend?.has(team.TeamID) && <i className="live-table__legend" style={{background: legend.get(team.TeamID)}} aria-hidden="true" />}{team.TeamName}
-                {barMax !== null && <span className="live-table__bar" aria-hidden="true"><i style={{"--live-bar": Math.max(0, Math.min(1, team.Points / barMax))} as CSSProperties} /></span>}
+                {legend?.has(team.TeamID) && <i className="live-table__legend" style={{background: legend.get(team.TeamID)}} aria-hidden="true" />}
+                {progress.initials && <i className="live-table__avatar" style={{"--live-avatar": seriesColors[liveTeamColorIndex(team.TeamID, seriesColors.length)]} as CSSProperties} aria-hidden="true">{liveInitials(team.TeamName)}</i>}
+                {team.TeamName}
+                {barMax !== null && !pointsCell && <span className="live-table__bar" aria-hidden="true"><i style={{"--live-bar": Math.max(0, Math.min(1, team.Points / barMax))} as CSSProperties} /></span>}
             </td>
-            <td>{livePoints(team.Points)}</td>
+            {pointsCell ? <td className="live-table__progress" style={{paddingInline: pad}}>
+                <span className="live-table__line" style={{fontSize: cellFont}}>
+                    <Coins aria-hidden="true" />
+                    <b style={{fontSize: pointsFont}}>{t("live.table.pointsOf", {points: livePoints(team.Points), max: livePoints(barMax)})}</b>
+                </span>
+                <span className="live-table__track"><i style={{"--live-bar": Math.max(0, Math.min(1, team.Points / barMax))} as CSSProperties} /></span>
+            </td> : <td className="live-table__points">{livePoints(team.Points)}</td>}
+            {flags && <LiveFlagsCell solved={team.Solved} tasks={progress.flagsTasks} mode={flagsMode} square={square} font={cellFont} pad={pad} />}
         </tr>)}</tbody>
     </table>;
 }
+// The avatar before a name, in row-text sizes (its width and the gap after it).
+const avatarLead = 1.75;
+
+// «Прапори»: the count over a strip of the solved tasks, filled in order. The
+// strip spans the cell in every mode, so the count ends where it ends.
+function LiveFlagsCell({solved, tasks, mode, square, font, pad}: {solved: number; tasks: number; mode: ReturnType<typeof liveFlagsMode>; square: number; font: number; pad: number}) {
+    const done = Math.max(0, Math.min(tasks, solved));
+    return <td className="live-table__progress" style={{paddingInline: pad}}>
+        <span className="live-table__line" style={{fontSize: font}}>
+            <Flag aria-hidden="true" />
+            <b>{t("live.table.flagsOf", {solved: done, tasks})}</b>
+        </span>
+        {mode === "bar" ? <span className="live-table__track"><i style={{"--live-bar": done / tasks} as CSSProperties} /></span>
+            : <span className={`live-table__flags is-${mode}`} style={mode === "squares" ? {"--live-flag": `${square}px`} as CSSProperties : undefined}>
+                {Array.from({length: tasks}, (_, index) => <i key={index} className={index < done ? "is-done" : undefined} />)}
+            </span>}
+    </td>;
+}
+
 // The places a table shows: «Почати з місця 4» skips the podium, «Лише
 // перші N» stops after N places (no paging past them).
 export function liveTableSource<T>(teams: T[], props: LiveWidget["props"]): {rows: T[]; offset: number} {
@@ -250,13 +309,18 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix, legend}:
     const images = livePlaceImages(widget);
     const shownLegend = widget.props.showLegend === true ? legend : null;
     const barMax = widget.props.showBars === true ? liveMaxPoints(results) : null;
+    const progress: LiveTableProgress = {
+        bars: barMax === null ? null : widget.props.barsAt === "points" ? "points" : "name",
+        flagsTasks: widget.props.showFlags === true ? Math.max(0, results?.Tasks ?? 0) : 0,
+        initials: widget.props.showInitials === true,
+    };
     return <LiveList caption={caption} rows={pageSize} header metrics={metrics} empty={source.length ? null : t("live.table.empty")} progress={paged && !edit ? {page, seconds: pageSeconds, elapsed} : null}>
         {(geometry, width) => {
             const gap = columns > 1 ? metrics.body * 1.2 : 0;
             const columnWidth = (width - gap * (columns - 1)) / columns;
             return <div className="live-table-columns" style={{gap}}>
                 {split.map((rows, index) => <TableColumn key={index} rows={rows} pinned={index === 0 ? view.pinned : 0} width={columnWidth} rowHeight={geometry.rowHeight}
-                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} highlight={highlight} marker={marker} images={images} legend={shownLegend} barMax={barMax} />)}
+                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} highlight={highlight} marker={marker} images={images} legend={shownLegend} barMax={barMax} progress={progress} />)}
             </div>;
         }}
     </LiveList>;

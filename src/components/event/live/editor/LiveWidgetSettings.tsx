@@ -387,6 +387,7 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
                     onChange={value => onProp("variant", value === "cards" ? value : null)} />
                 <LiveSwitch label={t("manage.live.prop.showPoints")} help={t("manage.live.prop.showPointsHelp")} checked={widget.props.showPoints !== false} disabled={disabled} onChange={value => onProp("showPoints", value ? null : false)} />
                 {widget.props.variant === "cards" && <LiveSwitch label={t("manage.live.prop.showRing")} help={t("manage.live.prop.showRingHelp")} checked={widget.props.showRing === true} disabled={disabled} onChange={value => onProp("showRing", value ? true : null)} />}
+                {widget.props.variant === "cards" && <LiveSwitch label={t("manage.live.prop.showFlagsRing")} help={t("manage.live.prop.showFlagsRingHelp")} checked={widget.props.showFlagsRing === true} disabled={disabled} onChange={value => onProp("showFlagsRing", value ? true : null)} />}
             </>}
             {widget.type === "facts" && <FactsFields widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "stages" && <LiveSwitch label={t("manage.live.prop.showDone")} help={t("manage.live.prop.showDoneHelp")} checked={widget.props.showDone !== false} disabled={disabled} onChange={value => onProp("showDone", value ? null : false)} />}
@@ -400,6 +401,11 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             {(widget.type === "table" || widget.type === "solves") && <RowsFields layout={layout} widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "table" && <>
                 <LiveSwitch label={t("manage.live.prop.showBars")} help={t("manage.live.prop.showBarsHelp")} checked={widget.props.showBars === true} disabled={disabled} onChange={value => onProp("showBars", value ? true : null)} />
+                {widget.props.showBars === true && <LiveSegmented label={t("manage.live.prop.barsAt")} help={t("manage.live.prop.barsAtHelp")} value={widget.props.barsAt === "points" ? "points" : "name"} disabled={disabled}
+                    options={[{value: "name", label: t("manage.live.prop.barsAt.name")}, {value: "points", label: t("manage.live.prop.barsAt.points")}]}
+                    onChange={value => onProp("barsAt", value === "points" ? value : null)} />}
+                <LiveSwitch label={t("manage.live.prop.showFlags")} help={t("manage.live.prop.showFlagsHelp")} checked={widget.props.showFlags === true} disabled={disabled} onChange={value => onProp("showFlags", value ? true : null)} />
+                <LiveSwitch label={t("manage.live.prop.showInitials")} help={t("manage.live.prop.showInitialsHelp")} checked={widget.props.showInitials === true} disabled={disabled} onChange={value => onProp("showInitials", value ? true : null)} />
                 {/* The legend repeats the chart's line colours: only with a chart on this screen. */}
                 {layout.widgets.some(item => item.type === "chart") && <LiveSwitch label={t("manage.live.prop.showLegend")} help={t("manage.live.prop.showLegendHelp")} checked={widget.props.showLegend === true} disabled={disabled} onChange={value => onProp("showLegend", value ? true : null)} />}
             </>}

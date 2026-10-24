@@ -141,7 +141,7 @@ describe("live editor", () => {
         mount();
         fireEvent.click(screen.getByRole("button", {name: /Застосувати шаблон/}));
         const cards = within(screen.getByRole("radiogroup", {name: "Шаблони екрана"})).getAllByRole("radio");
-        expect(cards).toHaveLength(15);
+        expect(cards).toHaveLength(16);
         cards.forEach(card => expect(card.querySelector(".live-canvas")).not.toBeNull());
         const apply = screen.getByRole("button", {name: "Застосувати до екрана"}) as HTMLButtonElement;
         expect(apply.disabled).toBe(true);
