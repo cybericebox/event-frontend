@@ -23,6 +23,7 @@ import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
 import {ManageApiError} from "@/api/manage";
 import {SignInRedirect} from "@/components/event/SignInRedirect";
 import {NoAccessScreen} from "@/components/event/NoAccessScreen";
+import {liveSampleResults} from "./liveSample";
 
 // A full-screen state of the live screen (loading, error, closed link): the
 // event colour behind it, as on the screen itself, and large enough to read
@@ -140,12 +141,21 @@ function useLiveSceneState(event: PublicEventInfo, freeze: Parameters<typeof liv
 // screen re-reads the stages every 30 s and the bootstrap the event, so a
 // moved start or finish reaches the timer without a reload.
 // `serverNow`: the server's clock of the first HTML, so the timers in it read right before the browser's clock runs.
+// ?preview (any value but «0» or «false») turns on the sample results.
+export function liveScreenPreview(params: URLSearchParams): boolean {
+    const value = params.get("preview");
+    return value !== null && value !== "0" && value !== "false";
+}
+
 export function LiveScreen({event, token, link, serverNow}: {event: PublicEventInfo; token?: string; link?: LiveScreenByLink; serverNow?: number}) {
     const eventID = event.EventID;
     const queryClient = useQueryClient();
     const staff = !token;
     // A moderator opens one of the event's screens with ?screen=<id>; without it, the first one.
     const [screenID] = useState(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("screen"));
+    // ?preview: the same screen and link, filled with the editor's sample results instead of the event's own.
+    const [preview] = useState(() => typeof window !== "undefined" && liveScreenPreview(new URLSearchParams(window.location.search)));
+    const [sampleResults] = useState(() => preview ? liveSampleResults(Date.now()) : undefined);
     const layoutQuery = useQuery({
         queryKey: ["event-live-screen-layout", eventID, screenID], queryFn: () => getPublishedLiveLayout(eventID, screenID),
         enabled: staff, retry: false, refetchOnWindowFocus: false,
@@ -162,18 +172,19 @@ export function LiveScreen({event, token, link, serverNow}: {event: PublicEventI
     const base = staff ? layoutQuery.data : link?.Layout;
     const stages: LiveStage[] = (staff ? stagesQuery.data : link?.Stages) ?? [];
     const refreshSeconds = base?.refreshSeconds ?? 10;
-    const {results, stream} = useLiveResults(eventID, !!base, {token, refreshSeconds});
-    const closed = !!token && results.error instanceof LiveScreenLinkError && results.error.status === 403;
+    const {results, stream} = useLiveResults(eventID, !!base && !preview, {token, refreshSeconds});
+    const shownResults = preview ? sampleResults : results.data;
+    const closed = !preview && !!token && results.error instanceof LiveScreenLinkError && results.error.status === 403;
     // The moderator's session ended or their rights were taken: sign in or «no access», no retries.
-    const denied = staff ? staffDenied(layoutQuery.data ? null : layoutQuery.error) ?? staffDenied(results.error) : null;
+    const denied = staff ? staffDenied(layoutQuery.data ? null : layoutQuery.error) ?? (preview ? null : staffDenied(results.error)) : null;
     const layoutRetryIn = useLiveRetry(staff && layoutQuery.isError && !layoutQuery.data && !denied, layoutQuery.errorUpdatedAt, () => void layoutQuery.refetch());
     // A failed snapshot is retried with or without older data: while the
     // stream stays open no new change may come to reload it (a freeze holds
     // back the others' solves), so waiting for one would keep it stale.
-    const resultsRetryIn = useLiveRetry(results.isError && !closed && !denied, results.errorUpdatedAt, () => void results.refetch());
+    const resultsRetryIn = useLiveRetry(!preview && results.isError && !closed && !denied, results.errorUpdatedAt, () => void results.refetch());
     // Live while the stream is open or its fallback polls succeed, and the
     // last snapshot load did too.
-    const lostAt = useLiveConnection(!results.isError && stream !== "connecting", refreshSeconds);
+    const lostAt = useLiveConnection(preview || (!results.isError && stream !== "connecting"), refreshSeconds);
     // The shape of the window picks the layout: the nearest saved format.
     const windowSize = useWindowSize();
     const fullscreen = useFullscreen();
@@ -181,7 +192,7 @@ export function LiveScreen({event, token, link, serverNow}: {event: PublicEventI
     const idle = useIdle(3000);
     const [testing, setTesting] = useState(false);
     const shift = useBurnInShift(!!base && base.screen.anchor !== "top-left");
-    const sceneState = useLiveSceneState(event, results.data?.Freeze, serverNow);
+    const sceneState = useLiveSceneState(event, shownResults?.Freeze, serverNow);
     useEffect(() => {
         // ?test=1 opens the screen test straight away (set up on the venue).
         const initial = new URLSearchParams(window.location.search).get("test") === "1";
@@ -205,7 +216,7 @@ export function LiveScreen({event, token, link, serverNow}: {event: PublicEventI
     if (denied === 401) return <SignInRedirect event={event} />;
     if (denied === 403) return <NoAccessScreen title={t("live.forbidden.title")} homeHref="/" />;
     if (staff && layoutQuery.isError && !layoutQuery.data) return <LiveFailure event={event} message={t("live.loadFailed")} error={layoutQuery.error} retryIn={layoutRetryIn} onRetry={() => void layoutQuery.refetch()} />;
-    if (results.isError && !results.data) return <LiveFailure event={event} message={t("live.resultsUnavailable")} error={results.error} retryIn={resultsRetryIn} onRetry={() => void results.refetch()} />;
+    if (!preview && results.isError && !results.data) return <LiveFailure event={event} message={t("live.resultsUnavailable")} error={results.error} retryIn={resultsRetryIn} onRetry={() => void results.refetch()} />;
     if (!base || !sceneState) return <LiveState event={event}><EventLoading event={event} label={t("live.loading")} /></LiveState>;
     const [windowWidth, windowHeight] = windowSize.split("@")[0].split("×").map(Number);
     // Scenes: before the start, running, frozen, finished — each its own
@@ -219,10 +230,11 @@ export function LiveScreen({event, token, link, serverNow}: {event: PublicEventI
     const areaStyle = {padding: `${safe.y}px ${safe.x}px`, transform: shift[0] || shift[1] ? `translate(${shift[0]}px, ${shift[1]}px)` : undefined} as CSSProperties;
     return <main className={`live-fullscreen live-fullscreen--${layout.theme}${anchored ? " live-fullscreen--anchor" : ""}${idle ? " is-idle" : ""}`} style={style}>
         <div className="live-area" style={areaStyle}>
-            <LiveCanvas layout={layout} event={event} stages={stages} results={results.data} offlineSince={lostAt} startClock={serverNow} />
+            <LiveCanvas layout={layout} event={event} stages={stages} results={shownResults} sample={preview} offlineSince={lostAt} startClock={serverNow} />
             {testing && <LiveScreenTest layout={layout} />}
         </div>
         <div className="live-controls" aria-label={t("live.controls")}>
+            {preview && <span className="live-controls__preview">{t("live.preview.badge")}</span>}
             {fullscreen.supported && <EventTooltip content={t("live.keyF")}>{id => <button type="button" onClick={fullscreen.toggle} aria-keyshortcuts="F" aria-describedby={id}>{fullscreen.active ? <Minimize size={16} /> : <Maximize size={16} />}{fullscreen.active ? t("live.exitFullscreen") : t("live.enterFullscreen")}</button>}</EventTooltip>}
             <EventTooltip content={t("live.keyT")}>{id => <button type="button" aria-pressed={testing} onClick={() => setTesting(value => !value)} aria-keyshortcuts="T" aria-describedby={id}><MonitorCheck size={16} />{t("live.test.title")}</button>}</EventTooltip>
             <span className="live-controls__wake">{wakeLabel(wake)}{(wake === "denied" || wake === "unsupported") && <EventTooltip help content={t(`live.wake.${wake}Help`)}>{id => <button type="button" className="live-controls__help" aria-label={t(`live.wake.${wake}Help`)} aria-describedby={id}><CircleHelp size={16} aria-hidden="true" /></button>}</EventTooltip>}</span>

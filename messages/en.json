@@ -470,6 +470,7 @@
   "live.chart.frozen": "Frozen",
   "live.checkingAccess": "Checking access…",
   "live.controls": "Screen controls",
+  "live.preview.badge": "Sample data",
   "live.distribute.noColumnPeers": "There are no other blocks of the same width in this column.",
   "live.distribute.noRowPeers": "There are no other blocks of the same height in this row.",
   "live.distribute.noWidget": "Select a block.",

@@ -353,3 +353,6 @@
 .live-card__gauge figcaption{max-width:100%;overflow:hidden;color:var(--live-faint);line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.live-table__track>i{transition:none}}
 .live-table tr.is-lead td.live-table__progress{color:var(--live-ink)}
+
+/* ?preview: the controls say the screen shows sample results. */
+.live-controls__preview{padding:2px 8px;border-radius:4px;background:var(--live-accent,#ffd166);color:var(--live-bg,#211a52);font-weight:600}

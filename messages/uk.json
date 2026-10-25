@@ -470,6 +470,7 @@
   "live.chart.frozen": "Заморожено",
   "live.checkingAccess": "Перевіряємо доступ…",
   "live.controls": "Керування екраном",
+  "live.preview.badge": "Демо-дані",
   "live.distribute.noColumnPeers": "У цій колонці немає інших блоків такої ж ширини.",
   "live.distribute.noRowPeers": "У цьому ряду немає інших блоків такої ж висоти.",
   "live.distribute.noWidget": "Оберіть блок.",
