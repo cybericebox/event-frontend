@@ -149,6 +149,12 @@ function TimerFields({widget, event, disabled, onProp, onProps}: {widget: LiveWi
                 onValueChange={value => onProp("lastMinutes", Number(value) || null)}
                 options={liveLastMinutesOptions.map(value => ({value: String(value), label: value ? t("manage.live.prop.lastMinutesValue", {count: value}) : t("manage.live.prop.lastMinutesOff")}))} />}
         </LiveField>
+        {Number(widget.props.lastMinutes) > 0 && <>
+            <LiveSegmented label={t("manage.live.prop.urgentColor")} help={t("manage.live.prop.urgentColorHelp")} value={liveHex(widget.props.urgentColor) ? "custom" : "accent"} disabled={disabled}
+                options={[{value: "accent", label: t("manage.live.prop.urgentColor.accent")}, {value: "custom", label: t("manage.live.prop.urgentColor.custom")}]}
+                onChange={value => onProp("urgentColor", value === "accent" ? null : liveHex(widget.props.accentColor) ?? liveHex(event.Theme.AccentLive) ?? "#E11D48")} />
+            {liveHex(widget.props.urgentColor) && <LiveColorField label={t("manage.live.prop.urgentColorValue")} help={t("manage.live.prop.urgentColorHelp")} value={liveHex(widget.props.urgentColor)!} disabled={disabled} onChange={value => onProp("urgentColor", value)} />}
+        </>}
         <LiveSegmented label={t("manage.live.prop.atZero")} help={t("manage.live.prop.atZeroHelp")} value={zeroMode} disabled={disabled}
             options={liveTimerZeroModes.map(value => ({value, label: t(`manage.live.prop.atZero.${value}`)}))} onChange={value => onProp("atZero", value === "word" ? null : value)} />
         {zeroMode === "text" && <LiveField label={t("manage.live.prop.zeroText")} help={t("manage.live.prop.zeroTextHelp")} required error={textProp(widget, "zeroText").trim() ? null : t("manage.live.prop.zeroTextMissing")}>
@@ -395,8 +401,8 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             {widget.type === "chart" && <LiveSegmented label={t("manage.live.prop.chartLabels")} help={t("manage.live.prop.chartLabelsHelp")} value={widget.props.labels === "none" ? "none" : "chart"} disabled={disabled}
                 options={[{value: "chart", label: t("manage.live.prop.chartLabels.chart")}, {value: "none", label: t("manage.live.prop.chartLabels.none")}]} onChange={value => onProp("labels", value === "none" ? value : null)} />}
             {widget.type === "chart" && <LiveField label={t("manage.live.prop.lines")} help={t("manage.live.prop.linesHelp")} required>
-                {() => <EventSelect ariaLabel={t("manage.live.prop.lines")} value={String(Math.min(10, Math.max(5, numberProp(widget, "lines", 5))))} disabled={disabled} onValueChange={value => onProp("lines", Number(value))}
-                    options={[5, 6, 7, 8, 9, 10].map(value => ({value: String(value), label: String(value)}))} />}
+                {() => <EventSelect ariaLabel={t("manage.live.prop.lines")} value={String(Math.min(20, Math.max(5, numberProp(widget, "lines", 5))))} disabled={disabled} onValueChange={value => onProp("lines", Number(value))}
+                    options={Array.from({length: 16}, (_, index) => index + 5).map(value => ({value: String(value), label: String(value)}))} />}
             </LiveField>}
             {(widget.type === "table" || widget.type === "solves") && <RowsFields layout={layout} widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "table" && <>

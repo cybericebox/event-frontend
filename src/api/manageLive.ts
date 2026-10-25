@@ -27,7 +27,8 @@ const liveLayoutObject = z.object({
     version: z.number().int(), theme: z.enum(["dark", "light"]),
     aspect: z.enum(["16:9", "16:10", "4:3", "5:3", "custom"]),
     // safeArea: the margin around the canvas for TVs that crop the edges (overscan), % of each side: 0, 2.5 or 5.
-    screen: z.object({width: z.number().int(), height: z.number().int(), anchor: z.enum(["full", "top-left"]), textScale: z.number(), safeArea: z.number().optional()}),
+    // uppercase: every text of the screen in capitals.
+    screen: z.object({width: z.number().int(), height: z.number().int(), anchor: z.enum(["full", "top-left"]), textScale: z.number(), safeArea: z.number().optional(), uppercase: z.boolean().optional()}),
     grid: gridSchema,
     widgets: z.array(widgetSchema),
     // Results refresh on the open screen, 2–30 s; layouts stored before the

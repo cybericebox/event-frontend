@@ -444,7 +444,7 @@ export function LiveEditor({event, canManage, data, screenID, screens, onScreenS
     const safe = liveSafeInsets(shown.screen.width, shown.screen.height, liveSafeArea(shown.screen));
     const nativeStyle = {width: shown.screen.width, height: shown.screen.height, padding: `${safe.y}px ${safe.x}px`, "--live-preview-scale": scale || 1, visibility: scale ? "visible" : "hidden"} as CSSProperties;
     const tabLabel = (key: string) => key === layout.aspect
-        ? t("manage.live.format.base", {name: key === "custom" ? t("manage.live.format.customSize", layout.screen) : key})
+        ? t("manage.live.format.base", {name: key === "custom" ? t("manage.live.format.customSize", {width: layout.screen.width, height: layout.screen.height}) : key})
         : liveFormatMode(layout, key) === "custom" ? t("manage.live.format.custom", {name: key}) : key;
     const status = autosave.status;
     const problem = error || canvasProblem(layout);

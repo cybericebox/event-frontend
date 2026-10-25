@@ -222,7 +222,7 @@ function fitProblem(item: LiveWidget, boxW: number, boxH: number, heading: numbe
         return fit.digits < floors.timer || label !== null && fit.label < floors.caption ? t("live.text.timerFit") : null;
     }
     if (item.type === "chart") {
-        const lines = Math.min(10, numberProp(item, "lines", 5));
+        const lines = Math.min(20, numberProp(item, "lines", 5));
         return boxH - heading - caption * 1.6 < lines * caption * 1.25 ? t("live.text.chartFit", {lines}) : null;
     }
     if (item.type === "logos") return boxH - heading < 24 * logoRows(item) ? t("live.text.logosFit") : null;

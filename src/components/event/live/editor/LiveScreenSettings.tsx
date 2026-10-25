@@ -91,6 +91,8 @@ export function LiveScreenSettings({eventID, event, layout, results, sample, now
         <LiveSegmented label={t("manage.live.safeArea")} help={t("manage.live.safeAreaHelp")} value={String(liveSafeArea(layout.screen))} disabled={disabled}
             options={liveSafeAreaOptions.map(value => ({value: String(value), label: t("manage.live.percent", {value: value.toLocaleString("uk-UA")})}))}
             onChange={value => onChange({...layout, screen: {...layout.screen, safeArea: Number(value) || undefined}})} />
+        <LiveSwitch label={t("manage.live.uppercase")} help={t("manage.live.uppercaseHelp")} checked={!!layout.screen.uppercase} disabled={disabled}
+            onChange={checked => onChange({...layout, screen: {...layout.screen, uppercase: checked || undefined}})} />
         <LiveField label={t("manage.live.baseFormat")} help={t("manage.live.baseFormatHelp")} required>
             {() => <EventSelect ariaLabel={t("manage.live.baseFormat")} value={layout.aspect} disabled={disabled}
                 onValueChange={value => {
