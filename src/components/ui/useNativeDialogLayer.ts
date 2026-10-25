@@ -48,6 +48,10 @@ function acquire(dialog: HTMLDialogElement): () => void {
         if (layers.length || !scrollState) return;
         const previous = scrollState; scrollState = null;
         if (previous.style === null) document.body.removeAttribute("style"); else document.body.setAttribute("style", previous.style);
+        // A Radix menu (modal) holds pointer-events: none on the body while it is open. A dialog opened from a menu
+        // choice saw it in the style it saved, but the menu has closed since: restoring it would leave the whole page
+        // dead until a reload (owner, 2026-10-25, «Скопіювати з…»). The menu restores its own value when it closes.
+        if (document.body.style.pointerEvents === "none" && !document.querySelector("[data-radix-popper-content-wrapper]")) document.body.style.removeProperty("pointer-events");
         document.documentElement.style.overflow = previous.rootOverflow;
         if (previous.locked === null) document.body.removeAttribute("data-scroll-locked"); else document.body.setAttribute("data-scroll-locked", previous.locked);
         if (window.scrollX !== previous.x || window.scrollY !== previous.y) window.scrollTo(previous.x, previous.y);

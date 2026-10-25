@@ -247,7 +247,7 @@ describe("live canvas blocks of step 2", () => {
         expect(hidden.container.querySelector(".live-timer strong")).toBeNull();
     });
 
-    it("draws up to 20 chart lines, the second ten lighter and dashed", async () => {
+    it("draws up to 20 chart lines, each in its own colour", async () => {
         const legend = liveChartLegend(liveSampleResults(now), 25);
         expect(legend.size).toBe(20);
         expect(new Set(legend.values()).size).toBe(20);
@@ -255,7 +255,8 @@ describe("live canvas blocks of step 2", () => {
         const {container} = await mount(only({type: "chart", w: 8, h: 6, props: {lines: 20}}), true);
         const paths = [...container.querySelectorAll(".live-chart__plot svg path")];
         expect(paths.length).toBe(20);
-        expect(paths.filter(path => path.getAttribute("stroke-dasharray")).length).toBe(10);
+        expect(new Set(paths.map(path => path.getAttribute("stroke"))).size).toBe(20);
+        expect(paths.filter(path => path.getAttribute("stroke-dasharray")).length).toBe(0);
     });
 
     it("shows the whole screen in capitals when the screen asks for it", async () => {
