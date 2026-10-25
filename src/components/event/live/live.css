@@ -191,7 +191,7 @@
 /* «Смуги балів»: a thin bar under the name, as long as the share of the maximum. */
 .live-table td.live-table__name{position:relative}
 .live-table__bar{position:absolute;left:calc(var(--live-row-font) * .45);right:calc(var(--live-row-font) * .45);bottom:.12em;height:.14em;border-radius:999px;background:var(--live-line);pointer-events:none}
-.live-table__bar>i{display:block;width:calc(var(--live-bar) * 100%);height:100%;border-radius:inherit;background:var(--live-accent)}
+.live-table__bar>i{display:block;width:calc(var(--live-bar) * 100%);height:100%;border-radius:inherit;background:var(--live-accent);transition:width .6s}
 .live-table--medals tr.is-place-1 .live-table__bar>i{background:var(--live-place-1)}
 .live-table--medals tr.is-place-2 .live-table__bar>i{background:var(--live-place-2)}
 .live-table--medals tr.is-place-3 .live-table__bar>i{background:var(--live-place-3)}
@@ -340,7 +340,7 @@
 .live-table__track{display:block;height:calc(var(--live-row-font) * .32);border-radius:calc(var(--live-row-font) * .16);background:var(--live-line);overflow:hidden}
 .live-table__track>i{display:block;width:calc(var(--live-bar) * 100%);height:100%;border-radius:inherit;background:var(--live-accent);transition:width .6s}
 .live-table__flags{display:flex;justify-content:space-between;align-items:center}
-.live-table__flags>i{flex:none;background:var(--live-line)}
+.live-table__flags>i{flex:none;background:var(--live-line);transition:background-color .6s}
 .live-table__flags>i.is-done{background:var(--live-accent)}
 .live-table__flags.is-squares>i{width:var(--live-flag);height:var(--live-flag);border-radius:calc(var(--live-flag) * .18)}
 .live-table__flags.is-segments{gap:2px;height:calc(var(--live-row-font) * .45)}
@@ -351,7 +351,7 @@
 .live-card__gauge{display:grid;flex:none;justify-items:center;gap:.25em;margin:0}
 .live-card__gauge .live-card__ring{height:auto}
 .live-card__gauge figcaption{max-width:100%;overflow:hidden;color:var(--live-faint);line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-@media(prefers-reduced-motion:reduce){.live-table__track>i{transition:none}}
+@media(prefers-reduced-motion:reduce){.live-table__track>i,.live-table__bar>i,.live-table__flags>i{transition:none}}
 .live-table tr.is-lead td.live-table__progress{color:var(--live-ink)}
 
 /* ?preview: the controls say the screen shows sample results. */
