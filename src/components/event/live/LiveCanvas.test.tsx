@@ -247,6 +247,20 @@ describe("live canvas blocks of step 2", () => {
         expect(hidden.container.querySelector(".live-timer strong")).toBeNull();
     });
 
+    it("paints the initials circles in the team colours of the chart; teams below the top 15 are «others»", async () => {
+        stubBoxes(1200, 2400);
+        const layout: LiveLayout = {...defaultLiveLayout, widgets: [
+            {id: "c", x: 1, y: 1, w: 4, h: 2, type: "chart", props: {lines: 15}},
+            {id: "t", x: 5, y: 1, w: 4, h: 6, type: "table", props: {showInitials: true, rowsPerPage: 20}},
+        ]};
+        const {container} = await mount(layout, false, {results: board(17)});
+        const lines = [...container.querySelectorAll(".live-chart__plot svg g")].map(group => group.querySelectorAll("path")[1].getAttribute("stroke"));
+        const circles = [...container.querySelectorAll<HTMLElement>(".live-table__avatar")].map(item => item.style.getPropertyValue("--live-avatar"));
+        expect(circles.length).toBe(17);
+        expect(new Set(circles.slice(0, 15))).toEqual(new Set(lines));
+        expect(circles.slice(15)).toEqual(["var(--ib-live-other)", "var(--ib-live-other)"]);
+    });
+
     it("draws up to 15 chart lines, each in its team colour over a halo", async () => {
         const legend = liveChartLegend(liveSampleResults(now), 25, "#211A52");
         expect(legend.size).toBe(15);
