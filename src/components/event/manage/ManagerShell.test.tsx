@@ -4,7 +4,7 @@ import {cleanup, render, screen} from "@testing-library/react";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
 
-vi.mock("@/utils/origins", () => ({idOrigin: "https://id.example.test", mainOrigin: "https://example.test", apiOrigin: "", eventOrigin: () => ""}));
+vi.mock("@/utils/origins", () => ({showIntegrity: true, idOrigin: "https://id.example.test", mainOrigin: "https://example.test", apiOrigin: "", eventOrigin: () => ""}));
 vi.mock("next/navigation", () => ({usePathname: () => "/manage"}));
 vi.mock("@/api/clientAuth", () => ({getCurrentUser: vi.fn(async () => ({ID: "u1", Email: "mod@b.test"}))}));
 vi.mock("@/api/authAPI", () => ({signOut: vi.fn()}));

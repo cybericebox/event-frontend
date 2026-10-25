@@ -59,6 +59,7 @@ import {t} from "@/i18n/t";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import {readAdminReturn} from "@/utils/returnOrigin";
 import {adminOrigin} from "@/utils/origins";
+import {showIntegrity} from "@/utils/origins";
 
 type Item = {dividerBefore?: boolean; href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
 type Group = {id: string; label: string; icon: LucideIcon; items: Item[]};
@@ -101,7 +102,7 @@ const groups: Group[] = [
         {href: "/manage/analytics/progress", label: t("manage.nav.analytics.progress"), icon: TrendingUp},
         {href: "/manage/analytics/stands", label: t("manage.nav.analytics.stands"), icon: Server, infrastructureOnly: true},
         {href: "/manage/analytics/usage", label: t("manage.nav.analytics.usage"), icon: Activity, infrastructureOnly: true},
-        {href: "/manage/analytics/integrity", label: t("manage.nav.analytics.integrity"), icon: ShieldCheck, sensitiveOnly: true},
+        ...(showIntegrity ? [{href: "/manage/analytics/integrity", label: t("manage.nav.analytics.integrity"), icon: ShieldCheck, sensitiveOnly: true}] : []),
         {href: "/manage/analytics/communications", label: t("manage.nav.analytics.communications"), icon: MessagesSquare},
         {href: "/manage/analytics/report", label: t("manage.nav.analytics.report"), icon: FileDown},
     ]},
