@@ -34,6 +34,8 @@ export const joinInfoSchema = z.object({
     InvitedTeamName: z.string().nullish().transform(value => value ?? ""),
     InvitedTeamID: z.string().uuid().nullish().transform(value => value ?? null),
     TeamUnavailable: z.boolean().default(false), InvitationExpired: z.boolean().default(false),
+    // The event is not published yet: the invitation starts working after publication.
+    InvitationAwaitingPublication: z.boolean().default(false),
     Participation: participationSchema.nullish().transform(value => value ?? null),
 });
 const joinSchema = joinInfoSchema;

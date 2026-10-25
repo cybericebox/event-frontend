@@ -244,3 +244,11 @@ button.event-sortable__main{cursor:pointer}
 .event-filter-chips>button[aria-pressed="true"]{border-color:var(--ib-action);background:color-mix(in srgb,var(--ib-action) 12%,var(--ib-paper));color:var(--ib-ink)}
 .event-filter-chips>button:focus-visible{outline:2px solid var(--ib-action);outline-offset:1px}
 .event-exercise-picker__count{margin:0;color:var(--ib-dim);font-size:var(--ib-fs-13)}
+/* Multi-select: the counter with «select all shown» / clear, a checkbox on every card, the failed sets after a run. */
+.event-exercise-picker__selection{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-13)}
+.event-exercise-picker__selected{font-variant-numeric:tabular-nums}
+.event-exercise-picker__check{width:16px;height:16px;margin:0;accent-color:var(--ib-action);flex:none;cursor:pointer}
+.event-exercise-picker__row.is-disabled .event-exercise-picker__item,.event-exercise-picker__check:disabled{cursor:default}
+.event-exercise-picker__failures p{margin:0}
+.event-exercise-picker__failures ul{display:grid;gap:var(--ib-1);margin:var(--ib-1) 0 0;padding-left:var(--ib-4)}
+.event-exercise-picker__failures li{display:flex;flex-wrap:wrap;gap:0 var(--ib-2)}

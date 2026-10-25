@@ -41,7 +41,7 @@ vi.mock("@/api/manageParticipants", async original => ({
 const field = (key: string, label: string, extra: Partial<FormField> = {}): FormField => ({id: key, type: "field", key, input: "text", label, ...extra});
 const person = (id: string, name: string, extra: Partial<ManageParticipant> = {}): ManageParticipant => ({
     UserID: id, Name: name, Email: `${id}@test.test`, Pseudonym: "", DisplayName: name, TeamID: null, TeamName: "", Hidden: false, Invited: false, InvitedToTeam: false,
-    InvitedTeamID: null, InvitedTeamName: "", InvitationSentAt: null, InvitationExpired: false, Status: 2, CreatedAt: "2026-09-01T10:00:00Z", DecidedAt: null,
+    InvitedTeamID: null, InvitedTeamName: "", InvitationSentAt: null, InvitationExpired: false, InvitationAwaitingPublication: false, Status: 2, CreatedAt: "2026-09-01T10:00:00Z", DecidedAt: null,
     Answers: {}, FieldsMissing: 0, LastSeenAt: null, LastLabAt: null, ...extra,
 });
 
