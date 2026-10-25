@@ -21,6 +21,13 @@ describe("live block colours", () => {
         expect(colors.textContrast).toBeGreaterThan(4.5);
     });
 
+    it("gives the timer its own last minutes colour, apart from the accent", () => {
+        const colors = liveBlockColors(block({urgentColor: "#E11D48"}, "timer"), theme, "dark");
+        expect(colors.style).toMatchObject({"--live-urgent": "#E11D48", "--live-urgent-ink": liveReadableInk("#E11D48")});
+        expect(colors.style).not.toHaveProperty("--live-accent");
+        expect(liveBlockColors(block({urgentColor: "#E11D48"}, "table"), theme, "dark").style).not.toHaveProperty("--live-urgent");
+    });
+
     it("turns the accent into the text colour on an accent fill", () => {
         const colors = liveBlockColors(block({background: "accent"}), theme, "dark");
         expect(colors.style).toMatchObject({"--live-widget-bg": "#FFD166", "--live-ink": "#16152B", "--live-accent": "#16152B"});

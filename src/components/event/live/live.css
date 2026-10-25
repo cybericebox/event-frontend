@@ -113,8 +113,10 @@
 .live-announcement[data-align="left"]{place-items:center start;text-align:left}
 .live-announcement[data-align="right"]{place-items:center end;text-align:right}
 /* «Останні хвилини»: the digits turn into an accent tile; in the last minute the label steps aside. */
-.live-timer--urgent strong,.live-timer--final strong{padding:0 .14em;border-radius:.1em;background:var(--live-accent);color:var(--live-bg)}
-.live-timer--urgent small{color:var(--live-accent)}
+.live-timer--urgent strong,.live-timer--final strong{padding:0 .14em;border-radius:.1em;background:var(--live-urgent,var(--live-accent));color:var(--live-urgent-ink,var(--live-bg))}
+.live-timer--urgent small{color:var(--live-urgent,var(--live-accent))}
+/* «Великі літери»: every text of the screen in capitals. */
+.live-canvas--upper{text-transform:uppercase}
 /* «На нулі → Сховати»: the editor keeps a quiet hint in the empty block. */
 .live-timer--hidden strong{color:var(--live-faint);font-weight:500}
 .live-clock strong{color:var(--live-ink)}
@@ -351,3 +353,6 @@
 .live-card__gauge figcaption{max-width:100%;overflow:hidden;color:var(--live-faint);line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.live-table__track>i{transition:none}}
 .live-table tr.is-lead td.live-table__progress{color:var(--live-ink)}
+
+/* ?preview: the controls say the screen shows sample results. */
+.live-controls__preview{padding:2px 8px;border-radius:4px;background:var(--live-accent,#ffd166);color:var(--live-bg,#211a52);font-weight:600}

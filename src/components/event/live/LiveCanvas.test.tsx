@@ -3,7 +3,7 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {act, cleanup, fireEvent, render} from "@testing-library/react";
 import {defaultLiveLayout, type LiveLayout, type LiveWidget} from "@/api/manageLive";
 import type {PublicEventInfo} from "@/api/publicEventInfo";
-import {LiveCanvas} from "./LiveCanvas";
+import {LiveCanvas, liveChartLegend} from "./LiveCanvas";
 import {liveSampleResults} from "./liveSample";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
 import type {LiveStage} from "./liveStages";
@@ -245,6 +245,26 @@ describe("live canvas blocks of step 2", () => {
         cleanup();
         const hidden = await mount(only({type: "timer", props: {...passed, atZero: "hide"}}));
         expect(hidden.container.querySelector(".live-timer strong")).toBeNull();
+    });
+
+    it("draws up to 20 chart lines, the second ten lighter and dashed", async () => {
+        const legend = liveChartLegend(liveSampleResults(now), 25);
+        expect(legend.size).toBe(20);
+        expect(new Set(legend.values()).size).toBe(20);
+        stubBoxes(1200, 800);
+        const {container} = await mount(only({type: "chart", w: 8, h: 6, props: {lines: 20}}), true);
+        const paths = [...container.querySelectorAll(".live-chart__plot svg path")];
+        expect(paths.length).toBe(20);
+        expect(paths.filter(path => path.getAttribute("stroke-dasharray")).length).toBe(10);
+    });
+
+    it("shows the whole screen in capitals when the screen asks for it", async () => {
+        const plain = await mount(only({type: "timer"}));
+        expect(plain.container.querySelector(".live-canvas--upper")).toBeNull();
+        cleanup();
+        const layout = only({type: "timer"});
+        const upper = await mount({...layout, screen: {...layout.screen, uppercase: true}});
+        expect(upper.container.querySelector(".live-canvas")?.classList.contains("live-canvas--upper")).toBe(true);
     });
 
     it("previews a scene at a moment of its state", async () => {

@@ -163,3 +163,24 @@ describe("live screen scenes", () => {
         expect(document.querySelector(".live-widget--chart")).not.toBeNull();
     });
 });
+
+describe("live screen preview", () => {
+    afterEach(() => {window.history.replaceState(null, "", "/");});
+
+    it("reads ?preview from the same address, «0» and «false» keep it off", async () => {
+        const {liveScreenPreview} = await import("./LiveScreen");
+        expect(liveScreenPreview(new URLSearchParams("preview"))).toBe(true);
+        expect(liveScreenPreview(new URLSearchParams("token=a&preview=1"))).toBe(true);
+        expect(liveScreenPreview(new URLSearchParams("preview=0"))).toBe(false);
+        expect(liveScreenPreview(new URLSearchParams("preview=false"))).toBe(false);
+        expect(liveScreenPreview(new URLSearchParams("token=a"))).toBe(false);
+    });
+
+    it("fills the screen with the sample results and never asks for the real ones", async () => {
+        window.history.replaceState(null, "", "/live?preview=1");
+        mount();
+        await advance(1000);
+        expect(screen.getByText("Демо-дані")).toBeTruthy();
+        expect(api.results).not.toHaveBeenCalled();
+    });
+});
