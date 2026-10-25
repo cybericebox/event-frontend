@@ -6,6 +6,7 @@ import {useSyncExternalStore} from "react";
 import {ManageApiError} from "@/api/manage";
 import type {ManageParticipant, ManageParticipantDetail} from "@/api/manageParticipants";
 import {ParticipantsManager} from "./ParticipantsManager";
+import {t} from "@/i18n/t";
 
 const nav = vi.hoisted(() => {
     const listeners = new Set<() => void>();
@@ -38,7 +39,7 @@ vi.mock("@/api/manageParticipants", async original => ({
 
 const person = (id: string, name: string, extra: Partial<ManageParticipantDetail> = {}): ManageParticipantDetail => ({
     UserID: id, Name: name, Email: `${id}@test.test`, Pseudonym: "", DisplayName: name, TeamID: null, TeamName: "", Hidden: false, Invited: false, InvitedToTeam: false,
-    InvitedTeamID: null, InvitedTeamName: "", InvitationSentAt: null, InvitationExpired: false, Status: 2, CreatedAt: "2026-09-01T10:00:00Z", DecidedAt: null,
+    InvitedTeamID: null, InvitedTeamName: "", InvitationSentAt: null, InvitationExpired: false, InvitationAwaitingPublication: false, Status: 2, CreatedAt: "2026-09-01T10:00:00Z", DecidedAt: null,
     Answers: {}, FieldsMissing: 0, LastSeenAt: null, LastLabAt: null, TeamRole: null, JoinedVia: "open", Attempts: 0, Solves: 0, ...extra,
 });
 const ID_LIST = "11111111-1111-4111-8111-111111111111";
@@ -56,8 +57,8 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-function renderManager() {
-    render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ParticipantsManager initialTab="participants" /></QueryClientProvider>);
+function renderManager(initialTab: "participants" | "invitations" = "participants") {
+    render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ParticipantsManager initialTab={initialTab} /></QueryClientProvider>);
 }
 
 describe("last online and last in a laboratory", () => {
@@ -113,5 +114,25 @@ describe("participant modal in the URL", () => {
         renderManager();
         await screen.findByRole("dialog");
         await waitFor(() => expect(screen.getAllByText("Учасника не знайдено").length).toBeGreaterThan(0));
+    });
+});
+
+describe("invitations before publication", () => {
+    it("shows a neutral «Очікує публікації» tag with its hint instead of «Прострочено» or «Надіслано»", async () => {
+        rows = [
+            person(ID_LIST, "Олена Коваль", {Invited: true, Status: 1, InvitationSentAt: "2026-09-02T10:00:00Z", InvitationAwaitingPublication: true}),
+            person(ID_OTHER, "Ігор Мельник", {Invited: true, Status: 1, InvitationExpired: true}),
+        ];
+        window.history.replaceState(null, "", "/manage/participants?tab=invitations");
+        nav.set("tab=invitations");
+        renderManager("invitations");
+        const tag = await screen.findByText(t("manage.participants.awaitingPublication"));
+        expect(tag.className).toBe("ib-tag");
+        expect(document.getElementById(tag.getAttribute("aria-describedby")!)?.textContent).toBe(t("manage.participants.awaitingPublicationHint"));
+        const awaiting = tag.closest("tr")!;
+        expect(awaiting.textContent).not.toContain(t("manage.participants.invitationSent"));
+        expect(awaiting.textContent).not.toContain(t("manage.participants.expired"));
+        const expired = screen.getByText(t("manage.participants.expired")).closest("tr")!;
+        expect(expired.textContent).not.toContain(t("manage.participants.awaitingPublication"));
     });
 });

@@ -4,7 +4,7 @@ import type {TableFilter, TableSort} from "@/components/event/manage/tableFilter
 import {requireApiOrigin} from "@/utils/origins";
 
 const id = z.string().uuid();
-const participantSchema = z.object({
+export const participantSchema = z.object({
     UserID: id, Name: z.string(), Email: z.string(),
     Pseudonym: z.string().nullish().transform(value => value ?? ""),
     DisplayName: z.string().nullish().transform(value => value ?? ""),
@@ -13,6 +13,8 @@ const participantSchema = z.object({
     InvitedToTeam: z.boolean().default(false), InvitedTeamID: id.nullable().default(null),
     InvitedTeamName: z.string().nullish().transform(value => value ?? ""),
     InvitationSentAt: z.string().nullable().default(null), InvitationExpired: z.boolean().default(false),
+    // The event is not published yet: the invitation starts working after publication (InvitationExpired is false then).
+    InvitationAwaitingPublication: z.boolean().default(false),
     Status: z.union([z.literal(1), z.literal(2), z.literal(3)]), CreatedAt: z.string(), DecidedAt: z.string().nullable(),
     Answers: z.record(z.string(), z.unknown()).nullish().transform(value => value ?? {}),
     // How many required registration fields are unfilled (0 = complete or not asked).
