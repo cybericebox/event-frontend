@@ -10,6 +10,7 @@ vi.mock("@/utils/origins", async original => ({...(await original() as object), 
 vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 
 import ManageEmailPage from "./page";
+import {zoneOffset} from "@/utils/dateTime";
 
 function renderPage() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><ManageEmailPage /></QueryClientProvider>);
@@ -27,7 +28,7 @@ describe("Електронні листи, список", () => {
         ]);
         renderPage();
         const table = screen.getByRole("table");
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Шаблон", "Тип", "Статус", "Оновлено (GMT+3)", "Надсилати"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Шаблон", "Тип", "Статус", `Оновлено (${zoneOffset()})`, "Надсилати"]);
         const reminder = (await within(table).findByRole("link", {name: "Нагадування про старт"})).closest("tr")!;
         expect(within(reminder).getByText("Опублікована", {selector: ".ib-tag"})).toBeTruthy();
         expect(within(reminder).getByText("Чернетка очікує")).toBeTruthy();
