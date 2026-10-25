@@ -1,10 +1,11 @@
 "use client";
 
-import {useRef, useState} from "react";
+import {useMemo, useRef, useState} from "react";
 import ReactECharts from "echarts-for-react";
 import {Download, Minus, Plus, RotateCcw, type LucideIcon} from "lucide-react";
 import {t} from "@/i18n/t";
-import {resolveToken, useChartTokens} from "@/components/event/charts/chartTokens";
+import {resolveToken, useChartTokens, useResolvedToken} from "@/components/event/charts/chartTokens";
+import {teamColors} from "@/components/event/charts/teamColors";
 import {chartOwn, chartSeries} from "@/components/event/charts/chartTheme";
 import {EventTooltip} from "@/components/ui/EventTooltip";
 import type {ManageResultsSnapshot} from "@/api/manageResults";
@@ -13,9 +14,11 @@ import type {ManageResultsSnapshot} from "@/api/manageResults";
 // `note` is written over the plot (before the start, or with nobody to
 // chart): the axes stay, so the block keeps its place and size.
 type ChartInput = {snapshot: ManageResultsSnapshot; teamIDs: string[]; ownTeamID?: string; startTime: Date; finishTime: Date; note?: string};
+// `colors`: the team line colours (teamColors), the same as on the live screen; the viewer's own team outside the top
+// 15 has none and takes the accent.
 
 // Smooth monotone lines between recorded cumulative scores, with wheel / pinch / drag zoom and a time slider.
-export function scoreChartOption({snapshot, teamIDs, ownTeamID, startTime, finishTime, note}: ChartInput) {
+export function scoreChartOption({snapshot, teamIDs, ownTeamID, startTime, finishTime, note, colors}: ChartInput & {colors?: Map<string, string>}) {
     const series = teamIDs.map(teamID => snapshot.Scoreboard.find(team => team.TeamID === teamID)).filter(team => !!team).map(team => {
         let points = 0;
         const solves = snapshot.Timeline.filter(item => item.EventTeamID === team.TeamID).sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
@@ -29,7 +32,7 @@ export function scoreChartOption({snapshot, teamIDs, ownTeamID, startTime, finis
         };
         for (const item of solves) append(Date.parse(item.SolvedAt), points += item.Points);
         append(finishTime.getTime(), points);
-        return {name: team.TeamName, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, ...(own ? {color: chartOwn} : {}), lineStyle: {width: own ? 3 : 2}, z: own ? 3 : 2, data};
+        return {name: team.TeamName, type: "line", smooth: true, smoothMonotone: "x", showSymbol: false, color: colors?.get(team.TeamID) ?? (own ? chartOwn : undefined), lineStyle: {width: own ? 3 : 2}, z: own ? 3 : 2, data};
     });
     return {
         color: chartSeries,
@@ -58,7 +61,9 @@ export function ScoreChart(input: ChartInput & {title?: string}) {
     const chart = useRef<ReactECharts>(null);
     const [range, setRange] = useState({start: 0, end: 100});
     const [selected, setSelected] = useState<Record<string, boolean>>({});
-    const base = scoreChartOption(input);
+    const background = useResolvedToken("var(--ib-surface)");
+    const colors = useMemo(() => teamColors(input.snapshot, background), [input.snapshot, background]);
+    const base = scoreChartOption({...input, colors});
     const option = useChartTokens({...base, legend: {...base.legend, selected}, dataZoom: base.dataZoom.map(zoom => ({...zoom, minSpan: 1, ...range}))});
     const applyRange = (next: typeof range) => {
         chart.current?.getEchartsInstance().dispatchAction({type: "dataZoom", ...next});
