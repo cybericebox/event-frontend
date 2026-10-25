@@ -11,14 +11,15 @@ import {liveCorners, liveLogoURL, liveWidgetLabels, type LiveCorner} from "./liv
 import {liveCaptionShown, liveCaptionText, liveTextFloors, liveTextProfile, liveTextSize, liveTextSizes, liveTextVars, liveWidgetTextScale, type LiveTextProfile} from "./liveText";
 import {liveAnnouncementFit, liveHeaderRow, liveTableFit, liveTimerFit, liveTitleFit} from "./liveFit";
 import {liveStageSubtitle, liveTimerDigitMode, liveTimerDigits, liveTimerState, liveTimerUrgency, liveTimerZero, type LiveStage} from "./liveStages";
-import {liveFlagsMode, liveFlagsSquare, liveInitials, liveMaxPoints, livePinTop, livePoints, liveTablePage, liveTablePageAt, liveTeamColorIndex} from "./liveTable";
+import {liveFlagsMode, liveFlagsSquare, liveInitials, liveMaxPoints, livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
 import {chartSeries, spreadLabels} from "./liveChart";
+import {teamChartSlots, teamColors} from "@/components/event/charts/teamColors";
 import {liveSampleSpan} from "./liveSample";
 import {LiveQR} from "./LiveQR";
 import {LiveList, measureName, useElementSize, type LiveMetrics} from "./LiveParts";
 import {liveAlign, LiveClock, LiveFactsBlock, LivePodium, LiveStagesBlock} from "./LiveBlocks";
 import {whiteTextContrast} from "@/components/event/manage/deriveTheme";
-import {liveBlockColors, liveHighlightOf, liveMarkerOf, livePlaceImages, type LiveHighlight, type LiveMarker} from "./liveColors";
+import {liveBlockColors, liveFillColor, liveHex, liveHighlightOf, liveMarkerOf, livePlaceImages, type LiveHighlight, type LiveMarker} from "./liveColors";
 import {LivePlaceMark} from "./LiveMarks";
 import {resolveEventLogoURL} from "@/utils/eventLogoURL";
 import {clockLabel} from "@/utils/resultsFreeze";
@@ -28,22 +29,14 @@ import {t, tRich} from "@/i18n/t";
 
 const noStages: LiveStage[] = [];
 
-// Series colours of the «Класика» boards: DS series tokens, which `data-live` on the canvas sets for the board theme
-// (the chart lines and the table legend share them).
-const seriesColors = Array.from({length: 10}, (_, index) => `var(--ib-s${index + 1})`);
-// The chart shows up to 20 lines, each in its own colour. Each theme's 20 colours were picked for the largest
-// smallest distance between any two (OKLab, normal and protan/deutan vision, at least 3:1 on the screen), farthest
-// first: the first N are the most distinct set for N teams (owner, 2026-10-25).
-export const liveChartMaxLines = 20;
-const chartPalettes: Record<LiveLayout["theme"], readonly string[]> = {
-    dark: ["#ff00ff", "#87ff00", "#b46900", "#f0c3ff", "#0fb496", "#a55aa5", "#d2b43c", "#c3f0b4", "#e187e1", "#e10078",
-        "#f07869", "#c300d2", "#00e1c3", "#6987ff", "#ffb496", "#a59600", "#d25ad2", "#e14b5a", "#b4e15a", "#5affe1"],
-    light: ["#f000ff", "#0f4b00", "#e17800", "#5a00a5", "#1e8796", "#961e5a", "#f00f78", "#786900", "#a52dc3", "#c378d2",
-        "#0000ff", "#4b4b87", "#0f87ff", "#690069", "#e10f1e", "#ff5a69", "#a55a5a", "#691e3c", "#96000f", "#3c00d2"],
-};
-function chartColor(index: number, theme: LiveLayout["theme"]): string {
-    const palette = chartPalettes[theme] ?? chartPalettes.dark;
-    return palette[index % palette.length];
+// The chart shows up to 15 lines in the team colours (teamColors): a team keeps its colour while it stays in the top
+// 15, and the palette is picked for the background the lines are drawn on (owner, 2026-10-25).
+export const liveChartMaxLines = teamChartSlots;
+
+// The background under the chart lines: the block's own fill, else the screen (the event brand on the dark theme).
+export function liveChartBackground(widget: LiveWidget | undefined, event: PublicEventInfo, theme: LiveLayout["theme"]): string {
+    const fill = widget ? liveFillColor(widget, event.Theme, theme) : null;
+    return fill ?? (theme === "light" ? "#F7F7F9" : liveHex(event.Theme.Brand) ?? "#211A52");
 }
 
 function frozenSuffix(results?: ManageResultsSnapshot): string {
@@ -96,7 +89,11 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
     const box = {left: axis, top: line * 0.6, width: Math.max(10, size.width - axis - labels - line * 0.6), height: Math.max(10, size.height - line * 2.2)};
     const {series, max, cutX} = chartSeries(results, lines, box, start, end, frozen ? Date.parse(frozen) : null);
     const labelYs = spreadLabels(series.map(item => item.endY), nameLine * 1.15, box.top, box.top + box.height);
-    const colors = (index: number) => chartColor(index, theme);
+    const background = liveChartBackground(widget, event, theme);
+    const palette = useMemo(() => teamColors(results, background), [results, background]);
+    const colors = (index: number) => palette.get(series[index].teamID) ?? "currentColor";
+    // Thick lines read from 15–20 m; a halo in the background colour keeps crossing lines apart. The leader is drawn last, on top.
+    const stroke = Math.max(4, line * 0.24);
     const hasData = !!results?.Scoreboard.length;
     const caption = captionOf(widget, t("live.chart.title", {suffix}));
     return <div className="live-chart" data-live={theme}>
@@ -107,7 +104,10 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
                 <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
                     {cutX !== null && <line className="live-chart__freeze" x1={cutX} x2={cutX} y1={box.top} y2={box.top + box.height} />}
-                    {series.map((item, index) => <path key={item.teamID} d={item.path} fill="none" stroke={colors(index)} strokeWidth={Math.max(3, line * 0.16)} strokeLinecap="round" strokeLinejoin="round" />)}
+                    {series.map((item, index) => ({item, index})).reverse().map(({item, index}) => <g key={item.teamID}>
+                        <path d={item.path} fill="none" stroke={background} strokeWidth={stroke + Math.max(3, line * 0.14)} strokeLinecap="round" strokeLinejoin="round" />
+                        <path d={item.path} fill="none" stroke={colors(index)} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+                    </g>)}
                 </svg>
                 {cutX !== null && <span className="live-chart__freeze-label" style={{left: cutX, top: box.top}}><Snowflake aria-hidden="true" />{t("live.chart.frozen")}</span>}
                 {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{livePoints(max * step)}</span>)}
@@ -223,11 +223,13 @@ function progressShare(cells: number): number {
     return cells === 2 ? 0.27 : cells === 1 ? 0.32 : 0;
 }
 
-function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, marker, images, legend, barMax, progress}: {
+function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, pointsChars, event, highlight, marker, images, legend, paint, barMax, progress}: {
     rows: LiveTeamRow[]; pinned: number; width: number; rowHeight: number; metrics: LiveMetrics; rankChars: number; pointsChars: number; event: PublicEventInfo;
     highlight: LiveHighlight; marker: LiveMarker; images: string[] | null;
     // «Легенда графіка»: the line colour of each team the chart draws.
     legend: Map<string, string> | null;
+    // The team colour of every team in the top 15 (the chart's colours), for the initials circles.
+    paint: Map<string, string>;
     // The points a full bar stands for; null without «Смуги балів».
     barMax: number | null;
     progress: LiveTableProgress;
@@ -258,7 +260,7 @@ function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, points
             <td><LivePlaceMark place={team.Rank} marker={marker} images={images} /></td>
             <td className={fit.names[index].lines === 2 ? "live-table__name is-wrap" : "live-table__name"} style={{fontSize: fit.names[index].font}} title={team.TeamName}>
                 {legend?.has(team.TeamID) && <i className="live-table__legend" style={{background: legend.get(team.TeamID)}} aria-hidden="true" />}
-                {progress.initials && <i className="live-table__avatar" style={{"--live-avatar": seriesColors[liveTeamColorIndex(team.TeamID, seriesColors.length)]} as CSSProperties} aria-hidden="true">{liveInitials(team.TeamName)}</i>}
+                {progress.initials && <i className="live-table__avatar" style={{"--live-avatar": paint.get(team.TeamID) ?? "var(--ib-live-other)"} as CSSProperties} aria-hidden="true">{liveInitials(team.TeamName)}</i>}
                 {team.TeamName}
                 {barMax !== null && !pointsCell && <span className="live-table__bar" aria-hidden="true"><i style={{"--live-bar": Math.max(0, Math.min(1, team.Points / barMax))} as CSSProperties} /></span>}
             </td>
@@ -300,7 +302,7 @@ export function liveTableSource<T>(teams: T[], props: LiveWidget["props"]): {row
     return {rows: teams.slice(offset, limit ? offset + limit : undefined), offset};
 }
 
-function LiveTable({widget, event, results, now, metrics, edit, suffix, legend}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean; suffix: string; legend: Map<string, string> | null}) {
+function LiveTable({widget, event, results, now, metrics, edit, suffix, legend, paint}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; metrics: LiveMetrics; edit: boolean; suffix: string; legend: Map<string, string> | null; paint: Map<string, string>}) {
     const teams = results?.Scoreboard ?? [];
     const {rows: source, offset} = liveTableSource(teams, widget.props);
     const columns = Number(widget.props.columns) === 2 ? 2 : 1;
@@ -334,7 +336,7 @@ function LiveTable({widget, event, results, now, metrics, edit, suffix, legend}:
             const columnWidth = (width - gap * (columns - 1)) / columns;
             return <div className="live-table-columns" style={{gap}}>
                 {split.map((rows, index) => <TableColumn key={index} rows={rows} pinned={index === 0 ? view.pinned : 0} width={columnWidth} rowHeight={geometry.rowHeight}
-                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} highlight={highlight} marker={marker} images={images} legend={shownLegend} barMax={barMax} progress={progress} />)}
+                    metrics={metrics} rankChars={rankChars} pointsChars={pointsChars} event={event} highlight={highlight} marker={marker} images={images} legend={shownLegend} paint={paint} barMax={barMax} progress={progress} />)}
             </div>;
         }}
     </LiveList>;
@@ -371,15 +373,16 @@ function LiveSolves({widget, results, metrics, suffix, participation}: {widget: 
     </LiveList>;
 }
 
-// The chart draws the first `lines` places in the series colours, in rank order.
-export function liveChartLegend(results: ManageResultsSnapshot | undefined, lines: number, theme: LiveLayout["theme"] = "dark"): Map<string, string> {
+// The chart draws the first `lines` places, each in its team colour.
+export function liveChartLegend(results: ManageResultsSnapshot | undefined, lines: number, background: string): Map<string, string> {
     const count = Math.min(liveChartMaxLines, Math.max(1, lines));
-    return new Map((results?.Scoreboard ?? []).slice(0, count).map((team, index) => [team.TeamID, chartColor(index, theme)]));
+    const colors = teamColors(results, background);
+    return new Map((results?.Scoreboard ?? []).slice(0, count).flatMap(team => colors.has(team.TeamID) ? [[team.TeamID, colors.get(team.TeamID)!] as const] : []));
 }
 
 const liveResultsBlocks = new Set<LiveWidget["type"]>(["chart", "table", "solves", "podium", "facts"]);
 
-function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, note, suffix, named, legend}: {
+function WidgetContent({widget, event, stages, results, now, theme, edit, sample, metrics, note, suffix, named, legend, paint}: {
     widget: LiveWidget; event: PublicEventInfo; stages: LiveStage[]; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; edit: boolean; sample: boolean; metrics: LiveMetrics;
     // The note this widget carries (the timer, else the title): no connection or the freeze.
     note: LiveNote | null;
@@ -387,6 +390,8 @@ function WidgetContent({widget, event, stages, results, now, theme, edit, sample
     suffix: string; named: boolean;
     // The chart's line colour per team, for a table legend; null without a chart.
     legend: Map<string, string> | null;
+    // The team colours of the top 15, as on the chart (teams lower down are «others»).
+    paint: Map<string, string>;
 }) {
     const logo = resolveEventLogoURL(event.LogoURL);
     if (widget.type === "title") return <LiveTitle widget={widget} event={event} logo={logo} stages={stages} now={now} note={note} metrics={metrics} />;
@@ -396,7 +401,7 @@ function WidgetContent({widget, event, stages, results, now, theme, edit, sample
     if (widget.type === "chart") return <LiveChart widget={widget} event={event} results={results} now={now} theme={theme} sample={sample} metrics={metrics} suffix={suffix} />;
     // Until Attack-Defense exists the A/D table renders nothing on the screen.
     if (widget.type === "ad_table") return edit ? <div className="live-retired"><strong>{liveWidgetLabels.ad_table}</strong><span>{t("live.retired")}</span></div> : null;
-    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} suffix={suffix} legend={legend} />;
+    if (widget.type === "table") return <LiveTable widget={widget} event={event} results={results} now={now} metrics={metrics} edit={edit} suffix={suffix} legend={legend} paint={paint} />;
     if (widget.type === "solves") return <LiveSolves widget={widget} results={results} metrics={metrics} suffix={suffix} participation={event.Participation} />;
     if (widget.type === "announcement") return <LiveAnnouncement widget={widget} metrics={metrics} />;
     if (widget.type === "logos") return <LiveLogos widget={widget} edit={edit} sample={sample} theme={theme} />;
@@ -457,9 +462,10 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     // The timer names the stage unless the title already shows it.
     const named = !layout.widgets.some(widget => widget.type === "title" && widget.props.subtitleStage === true);
     // The teams the screen's chart draws and their line colours: a table legend reads them.
-    const chartLines = layout.widgets.find(widget => widget.type === "chart")?.props.lines;
-    const hasChart = layout.widgets.some(widget => widget.type === "chart");
-    const legend = useMemo(() => hasChart ? liveChartLegend(results, Number(chartLines) || 5, layout.theme) : null, [hasChart, chartLines, results, layout.theme]);
+    const chart = layout.widgets.find(widget => widget.type === "chart");
+    const chartBackground = liveChartBackground(chart, event, layout.theme);
+    const legend = useMemo(() => chart ? liveChartLegend(results, Number(chart.props.lines) || 5, chartBackground) : null, [chart, chartBackground, results]);
+    const paint = useMemo(() => teamColors(results, chartBackground), [results, chartBackground]);
     const [clock, setClock] = useState(startClock);
     useEffect(() => {const frame = requestAnimationFrame(() => setClock(Date.now())); const timer = setInterval(() => setClock(Date.now()), 1000); return () => {cancelAnimationFrame(frame); clearInterval(timer);};}, []);
     const now = clock && clock + nowOffset;
@@ -481,7 +487,7 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
         return {gridColumn: `${widget.x} / span ${widget.w}`, gridRow: `${widget.y} / span ${widget.h}`, ...(scale !== layout.screen.textScale ? liveTextVars(scale, profile) : {}), ...colors.get(widget.id)?.style};
     };
     const content = (widget: LiveWidget, editing: boolean) => <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={editing} sample={sample}
-        metrics={metricsFor(widget)} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} legend={legend} />;
+        metrics={metricsFor(widget)} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} legend={legend} paint={paint} />;
     return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}${layout.screen.uppercase ? " live-canvas--upper" : ""}`} style={style} ref={canvasRef} data-live={layout.theme} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={blockStyle(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
             {content(widget, true)}

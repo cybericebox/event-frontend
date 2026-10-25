@@ -79,6 +79,13 @@ export function resolveChartTokens<T>(option: T): T {
     return walk(option) as T;
 }
 
+// One token's current colour, read again whenever the theme or the event brand changes.
+export function useResolvedToken(token: string): string {
+    const current = useSyncExternalStore(subscribe, () => version, () => 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `current` is the theme version that invalidates the colour
+    return useMemo(() => resolveToken(token), [token, current]);
+}
+
 export function useChartTokens<T>(option: T): T {
     const current = useSyncExternalStore(subscribe, () => version, () => 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `current` is the theme version that invalidates the colours
