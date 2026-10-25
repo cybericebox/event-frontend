@@ -90,9 +90,3 @@ export function liveInitials(name: string): string {
     return letters.join("").toLocaleUpperCase("uk-UA");
 }
 
-// A stable series colour per team, so an avatar keeps its colour when the team changes places.
-export function liveTeamColorIndex(teamID: string, colors: number): number {
-    let hash = 0;
-    for (const char of teamID) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-    return hash % Math.max(1, colors);
-}

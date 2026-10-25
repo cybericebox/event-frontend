@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {liveFlagsMode, liveFlagsSquare, liveInitials, livePinTop, livePoints, liveTablePage, liveTablePageAt, liveTeamColorIndex} from "./liveTable";
+import {liveFlagsMode, liveFlagsSquare, liveInitials, livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
 
 const teams = (count: number) => Array.from({length: count}, (_, index) => index + 1);
 
@@ -78,9 +78,4 @@ describe("live table progress", () => {
         expect(liveInitials("  ")).toBe("");
     });
 
-    it("keeps one colour per team", () => {
-        const id = "00000000-0000-4000-8000-000000000001";
-        expect(liveTeamColorIndex(id, 10)).toBe(liveTeamColorIndex(id, 10));
-        expect(liveTeamColorIndex(id, 10)).toBeLessThan(10);
-    });
 });
