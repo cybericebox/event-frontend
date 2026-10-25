@@ -35,6 +35,7 @@ Read at runtime by the server.
 | `NEXT_PUBLIC_DOMAIN` | yes | The one base domain, a bare lowercase host name (no scheme, port or path). Every host derives from it: `<DOMAIN>` (landing), `api.`, `id.`, `admin.`, `exercises.<DOMAIN>`, event sites `<tag>.<DOMAIN>`, the shared theme and consent cookies on `.<DOMAIN>`. There are no per-host settings. |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | yes | Support mailbox of the «Send feedback» `mailto:` link shown on every page (the subject carries the app and page path only). |
 | `NEXT_PUBLIC_SHOW_PARTNERS` | no | Default `true`. The string `false` hides the partner names in the footer credit. |
+| `NEXT_PUBLIC_SHOW_INTEGRITY` | no | Default `true`. The string `false` hides «Доброчесність» on the event site: the analytics menu item, its page (404) and the attempt markers. The admin panel is not affected. |
 | `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | no | WireGuard install link in the VPN dialog. Default `https://www.wireguard.com/install/`. |
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |

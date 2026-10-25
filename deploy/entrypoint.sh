@@ -122,8 +122,9 @@ done
 # Optional, with baked defaults.
 : "${NEXT_PUBLIC_GOOGLE_ANALYTICS_ID:=}"
 : "${NEXT_PUBLIC_SHOW_PARTNERS:=true}"
+: "${NEXT_PUBLIC_SHOW_INTEGRITY:=true}"
 : "${NEXT_PUBLIC_WIREGUARD_INSTALL_URL:=https://www.wireguard.com/install/}"
-export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID NEXT_PUBLIC_SHOW_PARTNERS NEXT_PUBLIC_WIREGUARD_INSTALL_URL
+export NEXT_PUBLIC_GOOGLE_ANALYTICS_ID NEXT_PUBLIC_SHOW_PARTNERS NEXT_PUBLIC_SHOW_INTEGRITY NEXT_PUBLIC_WIREGUARD_INSTALL_URL
 
 # One pass: a single sed script with an expression per NEXT_PUBLIC_* variable, run once over each
 # file that holds a placeholder (in parallel: busybox sed is slow on the minified bundles). Only the

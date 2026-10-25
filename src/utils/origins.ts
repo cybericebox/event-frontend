@@ -32,4 +32,6 @@ export const partnerIceNureUrl = "https://ice.nure.ua/ua/";
 export const partnerNureUrl = "https://nure.ua";
 // NEXT_PUBLIC_SHOW_PARTNERS: the string "false" hides the partner credit in the footer.
 export const showPartners = process.env.NEXT_PUBLIC_SHOW_PARTNERS?.trim() !== "false";
+// «Доброчесність» on the event site (the menu item, its page, the attempt markers): NEXT_PUBLIC_SHOW_INTEGRITY=false hides it.
+export const showIntegrity = process.env.NEXT_PUBLIC_SHOW_INTEGRITY?.trim() !== "false";
 export const wireguardInstallUrl = process.env.NEXT_PUBLIC_WIREGUARD_INSTALL_URL?.trim() || "https://www.wireguard.com/install/";
