@@ -274,6 +274,33 @@ describe("live canvas blocks of step 2", () => {
         expect(new Set(groups.map(group => group.querySelector("path")!.getAttribute("stroke"))).size).toBe(1);
     });
 
+    it("moves the chart and counts the points up to new results", async () => {
+        stubBoxes(1200, 800);
+        const layout: LiveLayout = {...defaultLiveLayout, widgets: [
+            {id: "c", type: "chart", x: 1, y: 1, w: 8, h: 6, props: {lines: 5}},
+            {id: "t", type: "table", x: 9, y: 1, w: 4, h: 6, props: {}},
+        ]};
+        const solve = (team: number, points: number, minutes: number) => ({EventTeamID: teamID(team), EventChallengeID: teamID(100 + minutes), ChallengeName: "x", Points: points, SolvedAt: new Date(now - minutes * 60_000).toISOString()});
+        const before = {...board(3), Timeline: [solve(1, 300, 50), solve(2, 200, 40), solve(3, 100, 30)]};
+        const after: ManageResultsSnapshot = {...before, Revision: 2, Timeline: [...before.Timeline, solve(3, 800, 10)],
+            Scoreboard: [{...before.Scoreboard[2], Rank: 1, Points: 900}, {...before.Scoreboard[0], Rank: 2}, {...before.Scoreboard[1], Rank: 3}]};
+        const view = await mount(layout, false, {results: before});
+        const paths = () => [...view.container.querySelectorAll(".live-chart__plot svg g")].map(group => group.querySelectorAll("path")[1].getAttribute("d")).join("|");
+        const points = () => [...view.container.querySelectorAll("td.live-table__points")].map(cell => cell.textContent);
+        view.rerender(<LiveCanvas layout={layout} event={event} results={after} />);
+        await act(async () => {vi.advanceTimersByTime(120);});
+        const moving = paths();
+        const leader = Number(points()[0]?.replace(/\D/g, ""));
+        expect(leader).toBeGreaterThan(100);
+        expect(leader).toBeLessThan(900);
+        await act(async () => {vi.advanceTimersByTime(1500);});
+        expect(points()).toEqual(["900", "300", "200"]);
+        expect(paths()).not.toBe(moving);
+        const settled = paths();
+        await act(async () => {vi.advanceTimersByTime(500);});
+        expect(paths()).toBe(settled);
+    });
+
     it("shows the whole screen in capitals when the screen asks for it", async () => {
         const plain = await mount(only({type: "timer"}));
         expect(plain.container.querySelector(".live-canvas--upper")).toBeNull();

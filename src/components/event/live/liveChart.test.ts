@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {chartSeries, monotonePath, niceMax, spreadLabels, type ChartPoint} from "./liveChart";
+import {blendCurves, chartCutX, chartLines, chartMax, chartStop, curveAt, curvePath, monotonePath, niceMax, spreadLabels, type ChartPoint} from "./liveChart";
 
 // Samples the cubic segments of a path produced by monotonePath.
 function samplePath(path: string): ChartPoint[] {
@@ -50,7 +50,16 @@ describe("spreadLabels", () => {
     });
 });
 
-describe("chartSeries", () => {
+// The pixel lines of the chart, as LiveChart draws them at rest.
+function chartSeries(results: Parameters<typeof chartLines>[0], lines: number, box: {left: number; top: number; width: number; height: number}, start: number, end: number, cut: number | null = null) {
+    const stop = chartStop(start, end, cut);
+    const curves = chartLines(results, lines, start, stop);
+    const max = chartMax(curves);
+    const series = curves.map(line => ({...curvePath(line.curve, box, start, end, max), endX: box.left + Math.min(1, (stop - start) / (end - start)) * box.width}));
+    return {series, max, cutX: chartCutX(box, start, end, stop)};
+}
+
+describe("chart lines", () => {
     it("interpolates smoothly between solve times without narrow steps", () => {
         const team = "01900000-0000-7000-8000-000000000041";
         const results = {
@@ -97,5 +106,23 @@ describe("chartSeries", () => {
         const later = chartSeries(results, 5, box, 0, 100000, 200000);
         expect(later.cutX).toBeNull();
         expect(later.series[0].endX).toBe(100);
+    });
+});
+
+describe("blendCurves", () => {
+    const from = {times: [0, 50, 100], values: [0, 100, 100]};
+    const to = {times: [0, 80, 100], values: [0, 300, 300]};
+
+    it("blends on the union of the knots and is the target at k = 1", () => {
+        const half = blendCurves(from, to, 0.5, 100);
+        expect(half.times).toEqual([0, 50, 80, 100]);
+        expect(half.values).toEqual([0, (100 + 187.5) / 2, (100 + 300) / 2, 200]);
+        expect(blendCurves(from, to, 1, 100)).toBe(to);
+    });
+
+    it("drops knots after the stop (a freeze moves it back)", () => {
+        const blended = blendCurves(from, to, 0.5, 60);
+        expect(Math.max(...blended.times)).toBe(60);
+        expect(curveAt(blended, 60)).toBeCloseTo((100 + 225) / 2);
     });
 });

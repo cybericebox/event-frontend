@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
+import {useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent} from "react";
 import {Coins, Flag, Snowflake, WifiOff} from "lucide-react";
 import {EmptyState} from "@/components/ui/EmptyState";
 import {EventLoading} from "@/components/event/EventLoading";
@@ -12,7 +12,9 @@ import {liveCaptionShown, liveCaptionText, liveTextFloors, liveTextProfile, live
 import {liveAnnouncementFit, liveHeaderRow, liveTableFit, liveTimerFit, liveTitleFit} from "./liveFit";
 import {liveStageSubtitle, liveTimerDigitMode, liveTimerDigits, liveTimerState, liveTimerUrgency, liveTimerZero, type LiveStage} from "./liveStages";
 import {liveFlagsMode, liveFlagsSquare, liveInitials, liveMaxPoints, livePinTop, livePoints, liveTablePage, liveTablePageAt} from "./liveTable";
-import {chartSeries, spreadLabels} from "./liveChart";
+import {chartCutX, chartLines, chartMax, chartStop, curvePath, spreadLabels} from "./liveChart";
+import {useChartMotion, useCountTo, useRowMotion} from "./useLiveMotion";
+import type {ChartTarget} from "./liveMotion";
 import {teamChartSlots, teamColors} from "@/components/event/charts/teamColors";
 import {liveSampleSpan} from "./liveSample";
 import {LiveQR} from "./LiveQR";
@@ -71,10 +73,18 @@ function captionOf(widget: LiveWidget, fallback: string): string | null {
     return liveCaptionShown(widget) ? liveCaptionText(widget, fallback) : null;
 }
 
+// What the chart shows at rest; it keeps its identity until the data changes.
+function useChartTarget(results: ManageResultsSnapshot | undefined, count: number, start: number, stop: number, palette: Map<string, string>): ChartTarget {
+    return useMemo(() => {
+        const lines = chartLines(results, count, start, stop);
+        return {lines: lines.map(item => ({...item, color: palette.get(item.teamID) ?? "currentColor"})), max: chartMax(lines), stop};
+    }, [results, count, start, stop, palette]);
+}
+
 function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean; metrics: LiveMetrics; suffix: string}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const [labelRef, labelSize] = useElementSize<HTMLSpanElement>();
-    const lines = Math.min(liveChartMaxLines, Math.max(1, Number(widget.props.lines) || 5));
+    const count = Math.min(liveChartMaxLines, Math.max(1, Number(widget.props.lines) || 5));
     // Sample results cover their own three hours, anchored by local editor data.
     const sampleEnd = sample && results && "SampleEnd" in results && typeof results.SampleEnd === "number" ? results.SampleEnd : 0;
     const start = sample ? sampleEnd - liveSampleSpan : Date.parse(event.StartTime);
@@ -87,11 +97,14 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
     const named = widget.props.labels !== "none";
     const axis = line * 2.6, labels = named ? Math.min(size.width * 0.32, nameLine * 8) : line * 0.4;
     const box = {left: axis, top: line * 0.6, width: Math.max(10, size.width - axis - labels - line * 0.6), height: Math.max(10, size.height - line * 2.2)};
-    const {series, max, cutX} = chartSeries(results, lines, box, start, end, frozen ? Date.parse(frozen) : null);
-    const labelYs = spreadLabels(series.map(item => item.endY), nameLine * 1.15, box.top, box.top + box.height);
+    const stop = chartStop(start, end, frozen ? Date.parse(frozen) : null);
     const background = liveChartBackground(widget, event, theme);
     const palette = useMemo(() => teamColors(results, background), [results, background]);
-    const colors = (index: number) => palette.get(series[index].teamID) ?? "currentColor";
+    // The lines move to new scores, a new axis maximum and new teams over about 0.6 s.
+    const shown = useChartMotion(useChartTarget(results, count, start, stop, palette));
+    const series = shown.lines.map(item => ({...item, ...curvePath(item.curve, box, start, end, shown.max)}));
+    const cutX = chartCutX(box, start, end, stop);
+    const labelYs = spreadLabels(series.map(item => item.endY), nameLine * 1.15, box.top, box.top + box.height);
     // Thick lines read from 15–20 m; a halo in the background colour keeps crossing lines apart. The leader is drawn last, on top.
     const stroke = Math.max(4, line * 0.24);
     const hasData = !!results?.Scoreboard.length;
@@ -104,15 +117,15 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
                 <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
                     {cutX !== null && <line className="live-chart__freeze" x1={cutX} x2={cutX} y1={box.top} y2={box.top + box.height} />}
-                    {series.map((item, index) => ({item, index})).reverse().map(({item, index}) => <g key={item.teamID}>
+                    {[...series].reverse().map(item => <g key={item.teamID} opacity={item.opacity < 1 ? item.opacity : undefined}>
                         <path d={item.path} fill="none" stroke={background} strokeWidth={stroke + Math.max(3, line * 0.14)} strokeLinecap="round" strokeLinejoin="round" />
-                        <path d={item.path} fill="none" stroke={colors(index)} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+                        <path d={item.path} fill="none" stroke={item.color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
                     </g>)}
                 </svg>
                 {cutX !== null && <span className="live-chart__freeze-label" style={{left: cutX, top: box.top}}><Snowflake aria-hidden="true" />{t("live.chart.frozen")}</span>}
-                {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{livePoints(max * step)}</span>)}
+                {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{livePoints(shown.max * step)}</span>)}
                 {[0, 0.25, 0.5, 0.75, 1].map(step => <span key={step} className="live-chart__time" style={{left: box.left + box.width * step, top: box.top + box.height + line * 0.3, transform: `translateX(-${step * 100}%)`}}>{clockLabel(start + (end - start) * step)}</span>)}
-                {named && series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - nameLine / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors(index)}} aria-hidden="true" /><span>{item.name}</span></span>)}
+                {named && series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - nameLine / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5, opacity: item.opacity < 1 ? item.opacity : undefined}}><i style={{background: item.color}} aria-hidden="true" /><span>{item.name}</span></span>)}
             </>}
         </div>
     </div>;
@@ -252,10 +265,13 @@ function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, points
     const flagsMode = liveFlagsMode(strip, progress.flagsTasks, fit.font);
     const square = liveFlagsSquare(strip, progress.flagsTasks, fit.font);
     const head = event.Participation === 1 ? t("live.table.team") : t("live.table.participant");
+    // A team that moves up or down slides to its new row; a new row fades in.
+    const body = useRef<HTMLTableSectionElement>(null);
+    useRowMotion(body, `${rowHeight}:${width}`);
     return <table className={`live-table${medals ? " live-table--medals" : highlight === "none" ? " live-table--plain" : ""}`} style={{"--live-row-font": `${fit.font}px`} as CSSProperties}>
         <colgroup><col style={{width: fit.rankWidth}} /><col />{pointsCell ? <col style={{width: cellWidth}} /> : <col style={{width: fit.pointsWidth}} />}{flags && <col style={{width: cellWidth}} />}</colgroup>
         <thead><tr style={{height: metrics.caption * liveHeaderRow}}><th>{t("live.table.rank")}</th><th>{head}</th><th className="live-table__points">{t("live.table.points")}</th>{flags && <th>{t("live.table.flags")}</th>}</tr></thead>
-        <tbody style={{fontSize: fit.font}}>{rows.map((team, index) => <tr key={team.TeamID} style={{height: rowHeight}}
+        <tbody ref={body} style={{fontSize: fit.font}}>{rows.map((team, index) => <tr key={team.TeamID} data-row={team.TeamID} style={{height: rowHeight}}
             className={[team.Rank === 1 ? "is-lead" : "", team.Rank <= 3 ? `is-top is-place-${team.Rank}` : "", index === pinned - 1 ? "is-pinned-last" : ""].filter(Boolean).join(" ") || undefined}>
             <td><LivePlaceMark place={team.Rank} marker={marker} images={images} /></td>
             <td className={fit.names[index].lines === 2 ? "live-table__name is-wrap" : "live-table__name"} style={{fontSize: fit.names[index].font}} title={team.TeamName}>
@@ -267,14 +283,20 @@ function TableColumn({rows, pinned, width, rowHeight, metrics, rankChars, points
             {pointsCell ? <td className="live-table__progress" style={{paddingInline: pad}}>
                 <span className="live-table__line" style={{fontSize: cellFont}}>
                     <Coins aria-hidden="true" />
-                    <b style={{fontSize: pointsFont}}>{t("live.table.pointsOf", {points: livePoints(team.Points), max: livePoints(barMax)})}</b>
+                    <b style={{fontSize: pointsFont}}><CountedPoints points={team.Points} max={barMax} /></b>
                 </span>
                 <span className="live-table__track"><i style={{"--live-bar": Math.max(0, Math.min(1, team.Points / barMax))} as CSSProperties} /></span>
-            </td> : <td className="live-table__points">{livePoints(team.Points)}</td>}
+            </td> : <td className="live-table__points"><CountedPoints points={team.Points} /></td>}
             {flags && <LiveFlagsCell solved={team.Solved} tasks={progress.flagsTasks} mode={flagsMode} square={square} font={cellFont} pad={pad} />}
         </tr>)}</tbody>
     </table>;
 }
+// Points count up to a new score instead of jumping.
+function CountedPoints({points, max}: {points: number; max?: number}) {
+    const shown = livePoints(useCountTo(points));
+    return max === undefined ? shown : t("live.table.pointsOf", {points: shown, max: livePoints(max)});
+}
+
 // The avatar before a name, in row-text sizes (its width and the gap after it).
 const avatarLead = 1.75;
 
