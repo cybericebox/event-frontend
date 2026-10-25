@@ -15,6 +15,7 @@ import ManageEmailPage from "@/app/manage/email/page";
 import ManageNotificationsPage from "@/app/manage/notifications/page";
 import {CustomTemplateEditor} from "./CustomTemplateEditor";
 import {templateInput, templateMessage} from "../broadcasts/broadcastModel";
+import {zoneOffset} from "@/utils/dateTime";
 
 beforeAll(() => {
     HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
@@ -34,7 +35,7 @@ describe("Шаблони: тригерні й власні в одному сп�
         wrap(<ManageEmailPage />);
         const table = screen.getByRole("table");
         const custom = (await within(table).findByRole("link", {name: "Технічна перерва"})).closest("tr")!;
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Шаблон", "Тип", "Статус", "Оновлено (GMT+3)", "Надсилати"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Шаблон", "Тип", "Статус", `Оновлено (${zoneOffset()})`, "Надсилати"]);
         expect(within(custom).getByText("Власний")).toBeTruthy();
         expect(within(custom).getByRole("link", {name: "Технічна перерва"}).getAttribute("href")).toBe(`/manage/email/custom/${uuid(70)}`);
         expect(within(custom).queryByRole("switch")).toBeNull();
