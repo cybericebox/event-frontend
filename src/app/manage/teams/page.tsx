@@ -14,7 +14,7 @@ import {getModeratorsTeam} from "@/api/moderatorsBoard";
 import {getManageParticipants} from "@/api/manageParticipants";
 import {getManageTeamFields} from "@/api/manageTeamFields";
 import type {ParticipantAnswers} from "@/api/participantForm";
-import {changeManageTeamMember, deleteManageTeam, formManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, setManageTeamHidden, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
+import {changeManageTeamMember, deleteManageTeam, formAllManageTeams, formManageTeam, getManageTeamProfile, getManageTeamsTable, setManageTeamAdmission, setManageTeamHidden, transferManageTeamCaptain, updateManageTeam, type ManageTeam, type ManageTeamMember} from "@/api/manageTeams";
 import {TeamFieldsInputs} from "@/components/event/TeamFieldsInputs";
 import {isFormField} from "@/components/event/manage/participantFormEditor";
 import {useManager} from "@/components/event/manage/ManagerShell";
@@ -90,6 +90,7 @@ export default function ManageTeamsPage() {
     const isBusy = (teamID?: string | null) => !!teamID && busyTeams.includes(teamID);
     const [confirm, setConfirm] = useState<{kind: "delete"; team: ManageTeam} | {kind: "remove" | "captain"; team: ManageTeam; userID: string; name: string} | {kind: "form"; team: ManageTeam} | null>(null);
     const [confirmError, setConfirmError] = useState("");
+    const [formAll, setFormAll] = useState<{busy: boolean; error: string} | null>(null);
     const fieldsQuery = useQuery({queryKey: ["event-management-team-fields", eventID], queryFn: () => getManageTeamFields(eventID), enabled: teamMode, refetchOnWindowFocus: false});
     const fields = formFields(fieldsQuery.data?.Document.blocks);
     // «Не заповнено» exists once the organizer asked every team for the new required fields.
@@ -209,6 +210,17 @@ export default function ManageTeamsPage() {
         finally {setBusyTeams(ids => ids.filter(id => id !== team.ID));}
     }
 
+    async function formAllTeams() {
+        if (!canManage || formAll?.busy) return;
+        setFormAll({busy: true, error: ""});
+        try {
+            const formed = await formAllManageTeams(eventID);
+            setFormAll(null);
+            await refresh();
+            toast.success(formed > 0 ? t("manage.teams.formAllDone", {count: formed}) : t("manage.teams.formAllNone"));
+        } catch (error) {setFormAll({busy: false, error: failure(error, t("manage.teams.formAllFailed"))});}
+    }
+
     async function removeTeam(team: ManageTeam) {
         if (!canManage || isBusy(team.ID)) return;
         setBusyTeams(ids => [...ids, team.ID]);
@@ -296,7 +308,10 @@ export default function ManageTeamsPage() {
             : teams.length === 0 ? "empty" : "ready";
 
     return <div className="event-manage-settings event-manage-teams">
-        <header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1><p>{t("manage.teams.subtitle")}</p></div><div className="event-manage-heading__actions"><LiveStatus freshness={{kind: "manual", onRefresh: () => {void teamsQuery.refetch(); void participantsQuery.refetch();}, refreshing: teamsQuery.isFetching}} updatedAt={teamsQuery.dataUpdatedAt} />{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>{t("manage.teams.create")}</button>}</div></header>
+        <header className="event-manage-heading"><div><h1>{t("manage.nav.teams")}</h1><p>{t("manage.teams.subtitle")}</p></div><div className="event-manage-heading__actions"><LiveStatus freshness={{kind: "manual", onRefresh: () => {void teamsQuery.refetch(); void participantsQuery.refetch();}, refreshing: teamsQuery.isFetching}} updatedAt={teamsQuery.dataUpdatedAt} />{canManage && <button className="ib-btn" type="button" onClick={() => setFormAll({busy: false, error: ""})}>{t("manage.teams.formAll")}</button>}{canManage && <button className="ib-btn ib-btn--primary" type="button" onClick={() => setCreateOpen(true)}>{t("manage.teams.create")}</button>}</div></header>
+        <ConfirmDialog open={formAll !== null} onCancel={() => {if (!formAll?.busy) setFormAll(null);}} busy={!!formAll?.busy} error={formAll?.error ?? ""}
+            title={t("manage.teams.formAllTitle")} description={t("manage.teams.formAllBody")}
+            confirmLabel={t("manage.teams.formAllConfirm")} busyLabel={t("common.busy.forming")} onConfirm={() => void formAllTeams()} />
         <CreateTeamDialog eventID={eventID} open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
         <TeamInvitationDialog key={inviteTeam?.ID ?? "closed"} eventID={eventID} team={inviteTeam} onClose={() => setInviteTeam(null)} onSent={refresh} />
         <ManageTable event={event} state={tableState} busy={teamsQuery.isFetching && !teamsQuery.isPending} loadingLabel={t("manage.teams.loading")} errorMessage={t("manage.teams.loadFailed")}

@@ -38,7 +38,7 @@ async function request<T>(eventID: string, path: string, schema: z.ZodType<T>, m
         body: payload === undefined ? undefined : JSON.stringify(payload),
     });
     if (!response.ok) throw await manageApiError(response);
-    if (method === "DELETE" || path.includes("/members/") || path.includes("/captain/") || path.endsWith("/form")) return schema.parse(null);
+    if (method === "DELETE" || path.includes("/members/") || path.includes("/captain/") || /^teams\/[^/]+\/form$/.test(path)) return schema.parse(null);
     return z.object({Data: schema}).parse(await response.json()).Data;
 }
 
@@ -69,6 +69,11 @@ export async function setManageTeamHidden(eventID: string, teamID: string, hidde
 // Forms the team without the minimum size check (the moderator's way out of a stuck team).
 export async function formManageTeam(eventID: string, teamID: string): Promise<void> {
     await request(eventID, `teams/${encodeURIComponent(teamID)}/form`, z.null(), "POST");
+}
+
+// Forms every team that is not formed yet (for example right after an import); returns how many it formed.
+export async function formAllManageTeams(eventID: string): Promise<number> {
+    return (await request(eventID, "teams/form", z.object({Formed: z.number().int()}), "POST")).Formed;
 }
 
 export async function deleteManageTeam(eventID: string, teamID: string): Promise<void> {

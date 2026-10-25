@@ -7,6 +7,7 @@ vi.mock("./ManagerShell", () => ({useManager: () => ({event: {EventID: "01a0d498
 vi.mock("@/utils/origins", async original => ({...(await original() as object), apiOrigin: "https://api.test", requireApiOrigin: () => "https://api.test"}));
 
 import {MailJournal} from "./MailJournal";
+import {zoneOffset} from "@/utils/dateTime";
 
 beforeAll(() => {
     HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
@@ -44,7 +45,7 @@ describe("Журнал надсилання", () => {
         renderJournal();
         expect(screen.getByRole("heading", {name: "Журнал надсилання"})).toBeTruthy();
         const table = screen.getByRole("table");
-        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual(["Час (GMT+3)", "Одержувач", "Тип", "Статус", "Спосіб", "Спроби", "Деталі"]);
+        expect(within(table).getAllByRole("columnheader").map(cell => cell.textContent)).toEqual([`Час (${zoneOffset()})`, "Одержувач", "Тип", "Статус", "Спосіб", "Спроби", "Деталі"]);
         await waitFor(() => expect(within(table).getByText("user1@example.com")).toBeTruthy());
         expect(within(table).getByText("550 rejected")).toBeTruthy();
         expect(within(table).getByText("SMTP заходу")).toBeTruthy();
