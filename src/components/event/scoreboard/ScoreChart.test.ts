@@ -48,3 +48,12 @@ describe("score charts are smooth monotone curves", () => {
         expect(progress.series[0]).not.toHaveProperty("step");
     });
 });
+
+describe("results chart team colours", () => {
+    it("draws each team in its team colour; the own team outside the top 15 takes the accent", () => {
+        const own = "00000000-0000-4000-8000-000000000002";
+        const withOwn = {...snapshot, Scoreboard: [...snapshot.Scoreboard, {Rank: 2, TeamID: own, TeamName: "Бета", Points: 0, Solved: 0}]} as unknown as ManageResultsSnapshot;
+        const option = scoreChartOption({snapshot: withOwn, teamIDs: [team, own], ownTeamID: own, startTime: start, finishTime: finish, colors: new Map([[team, "#00f000"]])});
+        expect(option.series.map(series => series.color)).toEqual(["#00f000", "var(--ib-s-own)"]);
+    });
+});

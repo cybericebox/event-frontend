@@ -5,7 +5,7 @@ import type {ManageResultsSnapshot} from "@/api/manageResults";
 import {ScoreChart} from "./ScoreChart";
 
 const chart = vi.hoisted(() => ({dispatchAction: vi.fn(), getDataURL: vi.fn(), onZoom: null as null | ((event: {start: number; end: number}) => void), onLegend: null as null | ((event: {selected: Record<string, boolean>}) => void), option: null as null | {legend: {selected?: Record<string, boolean>}}}));
-vi.mock("@/components/event/charts/chartTokens", () => ({useChartTokens: (option: unknown) => option, resolveToken: () => "#ffffff"}));
+vi.mock("@/components/event/charts/chartTokens", () => ({useChartTokens: (option: unknown) => option, resolveToken: () => "#ffffff", useResolvedToken: () => "#ffffff"}));
 vi.mock("echarts-for-react", async () => {
     const {forwardRef, useImperativeHandle} = await import("react");
     return {default: forwardRef(function MockChart({onEvents, option}: {onEvents: {datazoom: typeof chart.onZoom; legendselectchanged?: typeof chart.onLegend}; option: NonNullable<typeof chart.option>}, ref) {

@@ -247,16 +247,17 @@ describe("live canvas blocks of step 2", () => {
         expect(hidden.container.querySelector(".live-timer strong")).toBeNull();
     });
 
-    it("draws up to 20 chart lines, each in its own colour", async () => {
-        const legend = liveChartLegend(liveSampleResults(now), 25);
-        expect(legend.size).toBe(20);
-        expect(new Set(legend.values()).size).toBe(20);
+    it("draws up to 15 chart lines, each in its team colour over a halo", async () => {
+        const legend = liveChartLegend(liveSampleResults(now), 25, "#211A52");
+        expect(legend.size).toBe(15);
+        expect(new Set(legend.values()).size).toBe(15);
         stubBoxes(1200, 800);
         const {container} = await mount(only({type: "chart", w: 8, h: 6, props: {lines: 20}}), true);
-        const paths = [...container.querySelectorAll(".live-chart__plot svg path")];
-        expect(paths.length).toBe(20);
-        expect(new Set(paths.map(path => path.getAttribute("stroke"))).size).toBe(20);
-        expect(paths.filter(path => path.getAttribute("stroke-dasharray")).length).toBe(0);
+        const groups = [...container.querySelectorAll(".live-chart__plot svg g")];
+        expect(groups.length).toBe(15);
+        const lines = groups.map(group => group.querySelectorAll("path")[1].getAttribute("stroke"));
+        expect(new Set(lines).size).toBe(15);
+        expect(new Set(groups.map(group => group.querySelector("path")!.getAttribute("stroke"))).size).toBe(1);
     });
 
     it("shows the whole screen in capitals when the screen asks for it", async () => {

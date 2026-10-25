@@ -1,6 +1,7 @@
 "use client";
 
 import {useId, useState, type ReactNode} from "react";
+import {teamChartSlots} from "@/components/event/charts/teamColors";
 import {useQuery} from "@tanstack/react-query";
 import {Columns3, ImagePlus, RotateCcw, Rows3, Trash2} from "lucide-react";
 import {imageUploadMessage} from "@/api/apiErrors";
@@ -401,8 +402,8 @@ export function LiveWidgetSettings({event, layout, widget, disabled, placeDisabl
             {widget.type === "chart" && <LiveSegmented label={t("manage.live.prop.chartLabels")} help={t("manage.live.prop.chartLabelsHelp")} value={widget.props.labels === "none" ? "none" : "chart"} disabled={disabled}
                 options={[{value: "chart", label: t("manage.live.prop.chartLabels.chart")}, {value: "none", label: t("manage.live.prop.chartLabels.none")}]} onChange={value => onProp("labels", value === "none" ? value : null)} />}
             {widget.type === "chart" && <LiveField label={t("manage.live.prop.lines")} help={t("manage.live.prop.linesHelp")} required>
-                {() => <EventSelect ariaLabel={t("manage.live.prop.lines")} value={String(Math.min(20, Math.max(5, numberProp(widget, "lines", 5))))} disabled={disabled} onValueChange={value => onProp("lines", Number(value))}
-                    options={Array.from({length: 16}, (_, index) => index + 5).map(value => ({value: String(value), label: String(value)}))} />}
+                {() => <EventSelect ariaLabel={t("manage.live.prop.lines")} value={String(Math.min(teamChartSlots, Math.max(5, numberProp(widget, "lines", 5))))} disabled={disabled} onValueChange={value => onProp("lines", Number(value))}
+                    options={Array.from({length: teamChartSlots - 4}, (_, index) => index + 5).map(value => ({value: String(value), label: String(value)}))} />}
             </LiveField>}
             {(widget.type === "table" || widget.type === "solves") && <RowsFields layout={layout} widget={widget} disabled={disabled} onProp={onProp} />}
             {widget.type === "table" && <>
