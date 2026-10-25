@@ -104,6 +104,12 @@ export function liveBlockColors(widget: LiveWidget, theme: Theme, mode: LiveLayo
     const shownAccent = ownAccent ?? (background ? themeAccent(theme, mode) : null);
     const accent = ownAccent ?? (fill === "accent" || (background && shownAccent && (colorContrast(shownAccent, background) ?? 21) < liveAccentContrastMin) ? ink : shownAccent);
     if (ownAccent || (accent && accent !== themeAccent(theme, mode))) style["--live-accent"] = accent!;
+    // «Колір останніх хвилин»: the timer's own tile colour for the last minutes, apart from the accent.
+    const urgent = widget.type === "timer" ? liveHex(widget.props.urgentColor) : null;
+    if (urgent) {
+        style["--live-urgent"] = urgent;
+        style["--live-urgent-ink"] = liveReadableInk(urgent);
+    }
     // Medal colours serve the medal highlight and the medal, cup and picture marks.
     if ((liveHighlightOf(widget) === "medals" || liveMarkerOf(widget) !== "numbers") && (widget.type === "table" || widget.type === "podium")) {
         livePlaceColors(widget).forEach((color, index) => {

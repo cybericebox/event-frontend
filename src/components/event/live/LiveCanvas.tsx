@@ -31,6 +31,12 @@ const noStages: LiveStage[] = [];
 // Series colours of the «Класика» boards: DS series tokens, which `data-live` on the canvas sets for the board theme
 // (the chart lines and the table legend share them).
 const seriesColors = Array.from({length: 10}, (_, index) => `var(--ib-s${index + 1})`);
+// The chart shows up to 20 lines: the second ten reuses the ten series colours, lighter and dashed.
+export const liveChartMaxLines = 20;
+function chartColor(index: number): string {
+    const base = seriesColors[index % seriesColors.length];
+    return index < seriesColors.length ? base : `color-mix(in srgb, ${base}, #fff 45%)`;
+}
 
 function frozenSuffix(results?: ManageResultsSnapshot): string {
     return results?.Freeze.Applied && results.Freeze.FrozenAt ? t("live.frozenSuffix", {time: clockLabel(results.Freeze.FrozenAt)}) : "";
@@ -67,7 +73,7 @@ function captionOf(widget: LiveWidget, fallback: string): string | null {
 function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean; metrics: LiveMetrics; suffix: string}) {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const [labelRef, labelSize] = useElementSize<HTMLSpanElement>();
-    const lines = Math.min(10, Math.max(1, Number(widget.props.lines) || 5));
+    const lines = Math.min(liveChartMaxLines, Math.max(1, Number(widget.props.lines) || 5));
     // Sample results cover their own three hours, anchored by local editor data.
     const sampleEnd = sample && results && "SampleEnd" in results && typeof results.SampleEnd === "number" ? results.SampleEnd : 0;
     const start = sample ? sampleEnd - liveSampleSpan : Date.parse(event.StartTime);
@@ -82,7 +88,7 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
     const box = {left: axis, top: line * 0.6, width: Math.max(10, size.width - axis - labels - line * 0.6), height: Math.max(10, size.height - line * 2.2)};
     const {series, max, cutX} = chartSeries(results, lines, box, start, end, frozen ? Date.parse(frozen) : null);
     const labelYs = spreadLabels(series.map(item => item.endY), nameLine * 1.15, box.top, box.top + box.height);
-    const colors = seriesColors;
+    const colors = chartColor;
     const hasData = !!results?.Scoreboard.length;
     const caption = captionOf(widget, t("live.chart.title", {suffix}));
     return <div className="live-chart" data-live={theme}>
@@ -93,12 +99,12 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
                 <svg width={size.width} height={size.height} role="img" aria-label={event.Participation === 1 ? t("live.chart.teamsAria") : t("live.chart.participantsAria")}>
                     {[0, 0.25, 0.5, 0.75, 1].map(step => <line key={step} className="live-chart__grid" x1={box.left} x2={box.left + box.width} y1={box.top + box.height * (1 - step)} y2={box.top + box.height * (1 - step)} />)}
                     {cutX !== null && <line className="live-chart__freeze" x1={cutX} x2={cutX} y1={box.top} y2={box.top + box.height} />}
-                    {series.map((item, index) => <path key={item.teamID} d={item.path} fill="none" stroke={colors[index % colors.length]} strokeWidth={Math.max(3, line * 0.16)} strokeLinecap="round" strokeLinejoin="round" />)}
+                    {series.map((item, index) => <path key={item.teamID} d={item.path} fill="none" stroke={colors(index)} strokeDasharray={index >= seriesColors.length ? `${Math.max(6, line * 0.5)} ${Math.max(4, line * 0.3)}` : undefined} strokeWidth={Math.max(3, line * 0.16)} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
                 {cutX !== null && <span className="live-chart__freeze-label" style={{left: cutX, top: box.top}}><Snowflake aria-hidden="true" />{t("live.chart.frozen")}</span>}
                 {[0, 0.5, 1].map(step => <span key={step} className="live-chart__axis" style={{top: box.top + box.height * (1 - step) - line / 2, width: axis - line * 0.5}}>{livePoints(max * step)}</span>)}
                 {[0, 0.25, 0.5, 0.75, 1].map(step => <span key={step} className="live-chart__time" style={{left: box.left + box.width * step, top: box.top + box.height + line * 0.3, transform: `translateX(-${step * 100}%)`}}>{clockLabel(start + (end - start) * step)}</span>)}
-                {named && series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - nameLine / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors[index % colors.length]}} aria-hidden="true" /><span>{item.name}</span></span>)}
+                {named && series.map((item, index) => <span key={item.teamID} className="live-chart__label" style={{top: labelYs[index] - nameLine / 2, left: box.left + box.width + line * 0.5, maxWidth: labels - line * 0.5}}><i style={{background: colors(index)}} aria-hidden="true" /><span>{item.name}</span></span>)}
             </>}
         </div>
     </div>;
@@ -359,8 +365,8 @@ function LiveSolves({widget, results, metrics, suffix, participation}: {widget: 
 
 // The chart draws the first `lines` places in the series colours, in rank order.
 export function liveChartLegend(results: ManageResultsSnapshot | undefined, lines: number): Map<string, string> {
-    const count = Math.min(10, Math.max(1, lines));
-    return new Map((results?.Scoreboard ?? []).slice(0, count).map((team, index) => [team.TeamID, seriesColors[index % seriesColors.length]]));
+    const count = Math.min(liveChartMaxLines, Math.max(1, lines));
+    return new Map((results?.Scoreboard ?? []).slice(0, count).map((team, index) => [team.TeamID, chartColor(index)]));
 }
 
 const liveResultsBlocks = new Set<LiveWidget["type"]>(["chart", "table", "solves", "podium", "facts"]);
@@ -468,7 +474,7 @@ export function LiveCanvas({layout, event, stages = noStages, results, offlineSi
     };
     const content = (widget: LiveWidget, editing: boolean) => <WidgetContent widget={widget} event={event} stages={stages} results={results} now={now} theme={layout.theme} edit={editing} sample={sample}
         metrics={metricsFor(widget)} note={widget.type === badgeHost ? note : null} suffix={suffix} named={named} legend={legend} />;
-    return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}`} style={style} ref={canvasRef} data-live={layout.theme} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+    return <div className={`live-canvas live-canvas--${layout.theme}${showGrid ? " live-canvas--grid" : ""}${edit ? " live-canvas--edit" : ""}${layout.screen.uppercase ? " live-canvas--upper" : ""}`} style={style} ref={canvasRef} data-live={layout.theme} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         {layout.widgets.map(widget => edit ? <button key={widget.id} type="button" className={place(widget)} style={blockStyle(widget)} onClick={() => onSelect?.(widget.id)} onPointerDown={event => onPointerDown?.(event, widget, "move")}>
             {content(widget, true)}
             {liveCorners.map(corner => <span key={corner} className={`live-widget__corner live-widget__corner--${corner}`} role="presentation" data-corner={corner}
