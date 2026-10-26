@@ -36,7 +36,8 @@ export function niceMax(value: number): number {
 }
 
 // A cumulative score over time: knots (ms) with the points reached there,
-// straight between knots and flat after the last one.
+// straight between knots and flat after the last one. Several solves at one
+// moment are several knots at one time: the last one holds.
 export type ChartCurve = {times: number[]; values: number[]};
 export type ChartLine = {teamID: string; name: string; curve: ChartCurve};
 
@@ -48,13 +49,13 @@ export function chartStop(start: number, end: number, cut: number | null): numbe
 
 // The top `lines` teams as score curves. The scores rise straight to their
 // actual solve times: synthetic hold points would compress each rise into a
-// near-vertical step.
-export function chartLines(results: ManageResultsSnapshot | undefined, lines: number, start: number, stop: number): ChartLine[] {
+// near-vertical step. The curves do not depend on «now»: the lines are cut at
+// the stop when drawn, so the running clock never moves them.
+export function chartLines(results: ManageResultsSnapshot | undefined, lines: number, start: number): ChartLine[] {
     return (results?.Scoreboard ?? []).slice(0, lines).map(team => {
         const solves = (results?.Timeline ?? []).filter(item => item.EventTeamID === team.TeamID).sort((a, b) => a.SolvedAt.localeCompare(b.SolvedAt));
-        const clamp = (time: number) => Math.min(stop, Math.max(start, time));
         let sum = 0;
-        const knots = [[start, 0], ...solves.map(solve => [clamp(Date.parse(solve.SolvedAt)), sum += solve.Points]), [stop, sum]];
+        const knots = [[start, 0], ...solves.map(solve => [Math.max(start, Date.parse(solve.SolvedAt)), sum += solve.Points])];
         return {teamID: team.TeamID, name: team.TeamName, curve: {times: knots.map(knot => knot[0]), values: knots.map(knot => knot[1])}};
     });
 }
@@ -66,33 +67,31 @@ export function chartMax(lines: ChartLine[]): number {
 
 export function curveAt(curve: ChartCurve, time: number): number {
     const {times, values} = curve;
-    if (!times.length) return 0;
-    if (time <= times[0]) return values[0];
-    for (let i = 1; i < times.length; i++) {
-        if (time > times[i]) continue;
-        const span = times[i] - times[i - 1];
-        return span > 0 ? values[i - 1] + (values[i] - values[i - 1]) * (time - times[i - 1]) / span : values[i];
-    }
-    return values[values.length - 1];
+    // The first knot after `time`; the one before it is the last knot at or before `time`.
+    const next = times.findIndex(knot => knot > time);
+    if (next === -1) return values.at(-1) ?? 0;
+    if (next === 0) return values[0];
+    return values[next - 1] + (values[next] - values[next - 1]) * (time - times[next - 1]) / (times[next] - times[next - 1]);
 }
 
 // `from` moved the share `k` towards `to`. Both are straight between knots,
-// so the blend is exact on the union of their knots, up to `stop`; at k = 1
-// it is `to` itself.
-export function blendCurves(from: ChartCurve, to: ChartCurve, k: number, stop: number): ChartCurve {
+// so the blend is exact on the union of their knots; at k = 1 it is `to`.
+export function blendCurves(from: ChartCurve, to: ChartCurve, k: number): ChartCurve {
     if (k >= 1) return to;
-    const times = [...new Set([...from.times, ...to.times, stop])].filter(time => time <= stop).sort((a, b) => a - b);
+    const times = [...new Set([...from.times, ...to.times])].sort((a, b) => a - b);
     return {times, values: times.map(time => curveAt(from, time) + (curveAt(to, time) - curveAt(from, time)) * k)};
 }
 
-// A curve in pixel space: x runs from the event start to now (or the finish),
-// y from 0 to `max`.
-export function curvePath(curve: ChartCurve, box: {left: number; top: number; width: number; height: number}, start: number, end: number, max: number): {path: string; endY: number} {
+// A curve in pixel space up to `stop`: x runs from the event start to now (or
+// the finish), y from 0 to `max`.
+export function curvePath(curve: ChartCurve, box: {left: number; top: number; width: number; height: number}, start: number, end: number, stop: number, max: number): {path: string; endY: number} {
     const span = Math.max(1, end - start);
     const x = (time: number) => box.left + Math.min(1, Math.max(0, (time - start) / span)) * box.width;
     const y = (points: number) => box.top + box.height * (1 - points / Math.max(1e-9, max));
-    const points = curve.times.map((time, index): ChartPoint => [x(time), y(curve.values[index])]);
-    return {path: monotonePath(points), endY: y(curve.values.at(-1) ?? 0)};
+    const last = curveAt(curve, stop);
+    const points = curve.times.flatMap((time, index): ChartPoint[] => time < stop ? [[x(time), y(curve.values[index])]] : []);
+    points.push([x(stop), y(last)]);
+    return {path: monotonePath(points), endY: y(last)};
 }
 
 // The x of the freeze moment, or null when the lines run to the end.

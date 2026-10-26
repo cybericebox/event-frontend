@@ -14,8 +14,8 @@ function settle(shown: ReturnType<typeof chartMotionAt>, target: ChartTarget) {
 
 describe("chart motion", () => {
     it("moves the lines and the axis towards the target and settles on it", () => {
-        const before = chartMotionAt({lines: [line("a", 100)], max: 100, stop: 100});
-        const target = {lines: [line("a", 300)], max: 300, stop: 100};
+        const before = chartMotionAt({lines: [line("a", 100)], max: 100});
+        const target = {lines: [line("a", 300)], max: 300};
         const first = chartMotionStep(before, target, liveFollow(16));
         const end = first.motion.lines[0].curve.values.at(-1) ?? 0;
         expect(end).toBeGreaterThan(100);
@@ -29,8 +29,8 @@ describe("chart motion", () => {
     });
 
     it("fades a new team in and keeps the colour of a team that leaves", () => {
-        const before = chartMotionAt({lines: [line("a", 100, "#f00"), line("b", 50, "#0f0")], max: 100, stop: 100});
-        const target = {lines: [line("a", 100, "#f00"), line("c", 60, "#0f0")], max: 100, stop: 100};
+        const before = chartMotionAt({lines: [line("a", 100, "#f00"), line("b", 50, "#0f0")], max: 100});
+        const target = {lines: [line("a", 100, "#f00"), line("c", 60, "#0f0")], max: 100};
         const {motion} = chartMotionStep(before, target, 0.5);
         expect(motion.lines.map(item => [item.teamID, item.color, item.opacity])).toEqual([["a", "#f00", 1], ["c", "#0f0", 0.5], ["b", "#0f0", 0.5]]);
         expect(settle(motion, target).motion.lines.map(item => item.teamID)).toEqual(["a", "c"]);

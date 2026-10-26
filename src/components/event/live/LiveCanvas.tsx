@@ -74,11 +74,11 @@ function captionOf(widget: LiveWidget, fallback: string): string | null {
 }
 
 // What the chart shows at rest; it keeps its identity until the data changes.
-function useChartTarget(results: ManageResultsSnapshot | undefined, count: number, start: number, stop: number, palette: Map<string, string>): ChartTarget {
+function useChartTarget(results: ManageResultsSnapshot | undefined, count: number, start: number, palette: Map<string, string>): ChartTarget {
     return useMemo(() => {
-        const lines = chartLines(results, count, start, stop);
-        return {lines: lines.map(item => ({...item, color: palette.get(item.teamID) ?? "currentColor"})), max: chartMax(lines), stop};
-    }, [results, count, start, stop, palette]);
+        const lines = chartLines(results, count, start);
+        return {lines: lines.map(item => ({...item, color: palette.get(item.teamID) ?? "currentColor"})), max: chartMax(lines)};
+    }, [results, count, start, palette]);
 }
 
 function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}: {widget: LiveWidget; event: PublicEventInfo; results?: ManageResultsSnapshot; now: number; theme: LiveLayout["theme"]; sample: boolean; metrics: LiveMetrics; suffix: string}) {
@@ -100,9 +100,9 @@ function LiveChart({widget, event, results, now, theme, sample, metrics, suffix}
     const stop = chartStop(start, end, frozen ? Date.parse(frozen) : null);
     const background = liveChartBackground(widget, event, theme);
     const palette = useMemo(() => teamColors(results, background), [results, background]);
-    // The lines move to new scores, a new axis maximum and new teams over about 0.6 s.
-    const shown = useChartMotion(useChartTarget(results, count, start, stop, palette));
-    const series = shown.lines.map(item => ({...item, ...curvePath(item.curve, box, start, end, shown.max)}));
+    // The lines move to new scores, a new axis maximum and new teams over about 0.6 s; the running clock only cuts them.
+    const shown = useChartMotion(useChartTarget(results, count, start, palette));
+    const series = shown.lines.map(item => ({...item, ...curvePath(item.curve, box, start, end, stop, shown.max)}));
     const cutX = chartCutX(box, start, end, stop);
     const labelYs = spreadLabels(series.map(item => item.endY), nameLine * 1.15, box.top, box.top + box.height);
     // Thick lines read from 15–20 m; a halo in the background colour keeps crossing lines apart. The leader is drawn last, on top.
