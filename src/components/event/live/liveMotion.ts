@@ -23,7 +23,7 @@ export function liveReducedMotion(): boolean {
 
 export type ChartShownLine = ChartLine & {color: string; opacity: number};
 export type ChartMotion = {lines: ChartShownLine[]; max: number};
-export type ChartTarget = {lines: (ChartLine & {color: string})[]; max: number; stop: number};
+export type ChartTarget = {lines: (ChartLine & {color: string})[]; max: number};
 
 export function chartMotionAt(target: ChartTarget): ChartMotion {
     return {lines: target.lines.map(line => ({...line, opacity: 1})), max: target.max};
@@ -43,7 +43,7 @@ export function chartMotionStep(shown: ChartMotion, target: ChartTarget, k: numb
             settled = false;
             return {...line, opacity: k};
         }
-        const curve = blendCurves(from.curve, line.curve, k, target.stop);
+        const curve = blendCurves(from.curve, line.curve, k);
         const gap = Math.max(0, ...curve.times.map((time, index) => Math.abs(curveAt(line.curve, time) - curve.values[index])));
         const opacity = from.opacity + (1 - from.opacity) * k;
         if (gap > target.max * 2e-3 || 1 - opacity > 0.01) settled = false;
