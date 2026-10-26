@@ -53,9 +53,9 @@ describe("spreadLabels", () => {
 // The pixel lines of the chart, as LiveChart draws them at rest.
 function chartSeries(results: Parameters<typeof chartLines>[0], lines: number, box: {left: number; top: number; width: number; height: number}, start: number, end: number, cut: number | null = null) {
     const stop = chartStop(start, end, cut);
-    const curves = chartLines(results, lines, start, stop);
+    const curves = chartLines(results, lines, start);
     const max = chartMax(curves);
-    const series = curves.map(line => ({...curvePath(line.curve, box, start, end, max), endX: box.left + Math.min(1, (stop - start) / (end - start)) * box.width}));
+    const series = curves.map(line => ({...curvePath(line.curve, box, start, end, stop, max), endX: box.left + Math.min(1, (stop - start) / (end - start)) * box.width}));
     return {series, max, cutX: chartCutX(box, start, end, stop)};
 }
 
@@ -110,19 +110,32 @@ describe("chart lines", () => {
 });
 
 describe("blendCurves", () => {
-    const from = {times: [0, 50, 100], values: [0, 100, 100]};
-    const to = {times: [0, 80, 100], values: [0, 300, 300]};
+    const from = {times: [0, 50], values: [0, 100]};
+    const to = {times: [0, 80], values: [0, 300]};
 
     it("blends on the union of the knots and is the target at k = 1", () => {
-        const half = blendCurves(from, to, 0.5, 100);
-        expect(half.times).toEqual([0, 50, 80, 100]);
-        expect(half.values).toEqual([0, (100 + 187.5) / 2, (100 + 300) / 2, 200]);
-        expect(blendCurves(from, to, 1, 100)).toBe(to);
+        const half = blendCurves(from, to, 0.5);
+        expect(half.times).toEqual([0, 50, 80]);
+        expect(half.values).toEqual([0, (100 + 187.5) / 2, (100 + 300) / 2]);
+        expect(blendCurves(from, to, 1)).toBe(to);
     });
 
-    it("drops knots after the stop (a freeze moves it back)", () => {
-        const blended = blendCurves(from, to, 0.5, 60);
-        expect(Math.max(...blended.times)).toBe(60);
-        expect(curveAt(blended, 60)).toBeCloseTo((100 + 225) / 2);
+    it("takes the last of several solves at one moment", () => {
+        const curve = {times: [0, 50, 50], values: [0, 100, 300]};
+        expect(curveAt(curve, 50)).toBe(300);
+        expect(curveAt(curve, 25)).toBe(50);
+        expect(blendCurves(curve, curve, 0.5).values).toEqual([0, 300]);
+    });
+});
+
+describe("curvePath", () => {
+    it("cuts the line at the stop: the running clock moves no knot", () => {
+        const curve = {times: [0, 50, 100], values: [0, 100, 300]};
+        const box = {left: 0, top: 0, width: 100, height: 300};
+        const early = curvePath(curve, box, 0, 100, 75, 300);
+        // At 75 the rise to the solve at 100 is half done.
+        expect(early.endY).toBeCloseTo(100);
+        expect(early.path).toMatch(/ 75 100$/);
+        expect(curvePath(curve, box, 0, 100, 100, 300).endY).toBe(0);
     });
 });
