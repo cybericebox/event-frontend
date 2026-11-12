@@ -35,6 +35,8 @@ export const placeholderSchema = z.object({
     port: z.number().int().optional(),
     path: z.string().optional(),
     device_name: z.string().optional(),
+    // external.link: the kind of the device entry the author chose (empty = http).
+    access: z.string().optional(),
 });
 export type SnapshotPlaceholder = z.infer<typeof placeholderSchema>;
 const snapshotSchema = z.object({

@@ -43,6 +43,20 @@ describe("descriptionValues", () => {
         expect(links).toEqual({w: "https://web.example.com"});
     });
 
+    it("takes the entry of the kind the author chose, never another kind's URL", () => {
+        const access = [{Device: "r1", Port: 0, Protocol: "terminal", URL: "https://r1-x--term.labs.test"}, {Device: "r1", Port: 80, Protocol: "http", URL: "https://r1-x.labs.test"}, {Device: "r1", Port: 8080, Protocol: "https", URL: "https://r1-x-8080.labs.test"}, {Device: "db", Port: 0, Protocol: "terminal", URL: "https://db-x--term.labs.test"}];
+        const resolve = (extra: Partial<SnapshotPlaceholder>) => descriptionValues([{key: "k", kind: "external.link", device_name: "r1", ...extra}], {...lab, Access: access}).variables.k;
+        expect(resolve({})).toBe("https://r1-x.labs.test");
+        expect(resolve({access: "http"})).toBe("https://r1-x.labs.test");
+        expect(resolve({access: "http", port: 8080})).toBe("https://r1-x-8080.labs.test");
+        expect(resolve({access: "http", port: 9999})).toBe("—");
+        expect(resolve({access: "terminal"})).toBe("https://r1-x--term.labs.test");
+        expect(resolve({access: "vnc"})).toBe("—");
+        const only = (extra: Partial<SnapshotPlaceholder>) => descriptionValues([{key: "k", kind: "external.link", device_name: "db", ...extra}], {...lab, Access: access}).variables.k;
+        expect(only({})).toBe("—");
+        expect(only({access: "terminal"})).toBe("https://db-x--term.labs.test");
+    });
+
     it("shows a dash until the lab supplies the address, and never a link", () => {
         for (const state of [undefined, {...lab, VPNCIDR: ""}]) {
             const {variables, links} = descriptionValues([ip({as_link: true, scheme: "http"}), {key: "ph_x", kind: "external.link", device_name: "web"}], state);

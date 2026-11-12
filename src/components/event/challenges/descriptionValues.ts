@@ -56,6 +56,18 @@ export function hasCurrentRuntime(lab: LabRuntime | undefined, lifecycle: LabLif
         && lab.Lab.ID === lifecycle.ID && lab.Lab.Revision === lifecycle.Revision;
 }
 
+// The access entry an external link points to: kind http (the default) takes a web entry (protocol http/https, and the
+// named port when the placeholder has one); terminal takes the console entry. Another kind's URL is never a fallback.
+function externalLinkUrl(placeholder: SnapshotPlaceholder, lab: LabRuntime | undefined): string {
+    const kind = placeholder.access || "http";
+    const entry = lab?.Access.find(candidate => {
+        if (candidate.Device !== placeholder.device_name || !candidate.URL) return false;
+        if (kind === "http") return (candidate.Protocol === "" || candidate.Protocol === "http" || candidate.Protocol === "https") && (!placeholder.port || candidate.Port === placeholder.port);
+        return candidate.Protocol === kind;
+    });
+    return entry?.URL ?? "";
+}
+
 export function descriptionValues(placeholders: SnapshotPlaceholder[], lab: LabRuntime | undefined, lifecycle?: LabLifecycle | null): DescriptionValues {
     const variables: Record<string, string> = {};
     const links: Record<string, string> = {};
@@ -68,8 +80,8 @@ export function descriptionValues(placeholders: SnapshotPlaceholder[], lab: LabR
             continue;
         }
         if (placeholder.kind === "external.link") {
-            // The proxy access URL of the named device, from the team's lab.
-            const url = lab?.Access.find(entry => entry.Device === placeholder.device_name && entry.URL)?.URL ?? "";
+            // The URL of the named device's entry of the kind the author chose, from the team's lab.
+            const url = externalLinkUrl(placeholder, lab);
             variables[placeholder.key] = url || UNRESOLVED;
             if (url) links[placeholder.key] = url;
             continue;
