@@ -1648,6 +1648,7 @@
   "manage.labs.labCount": "Лабораторій: {count}",
   "manage.labs.loadFailed": "Не вдалося завантажити стенди",
   "manage.labs.loading": "Завантажуємо стенди…",
+  "manage.labs.moderators.accessTerminal": "{device} · термінал",
   "manage.labs.moderators.addressesLoading": "Завантажуємо адреси…",
   "manage.labs.moderators.description": "Готовність завдань і лабораторій для перевірки. Лабораторії доступні через VPN-конфіг команди модераторів.",
   "manage.labs.moderators.empty": "Завдань ще немає.",

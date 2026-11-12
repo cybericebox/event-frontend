@@ -1648,6 +1648,7 @@
   "manage.labs.labCount": "Labs: {count}",
   "manage.labs.loadFailed": "Could not load stands",
   "manage.labs.loading": "Loading stands…",
+  "manage.labs.moderators.accessTerminal": "{device} · console",
   "manage.labs.moderators.addressesLoading": "Loading addresses…",
   "manage.labs.moderators.description": "Challenge and lab readiness for checking. Labs are reachable through the moderators team VPN config.",
   "manage.labs.moderators.empty": "No challenges yet.",
