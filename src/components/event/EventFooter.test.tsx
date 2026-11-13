@@ -39,5 +39,6 @@ it("replaces only the signature with safe event rich text", () => {
 
 it.each([null, {root: {type: "root" as const, children: [{type: "paragraph", children: []}]}}])("uses the platform signature when the custom document is empty", signature => {
     render(<EventFooter signature={signature} />);
-    expect(screen.getByText(/Cyber.*ICE.*Box/)).toBeTruthy();
+    // The credit is twin markup (plain and with the department line); the stylesheet shows one, jsdom shows both.
+    expect(screen.getAllByText(/Cyber.*ICE.*Box/).length).toBeGreaterThan(0);
 });

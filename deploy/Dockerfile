@@ -17,13 +17,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Placeholders substituted at container start by entrypoint.sh. Each value is the variable name wrapped in double
 # underscores: the bare name also appears as an object key in the compiled server code, and only the value may be replaced.
 # Required at start: NEXT_PUBLIC_DOMAIN (the only host input, every host derives from it) and NEXT_PUBLIC_SUPPORT_EMAIL.
-# Optional, defaulted by entrypoint.sh: NEXT_PUBLIC_GOOGLE_ANALYTICS_ID, NEXT_PUBLIC_SHOW_PARTNERS, NEXT_PUBLIC_SHOW_INTEGRITY, NEXT_PUBLIC_WIREGUARD_INSTALL_URL.
+# Optional, defaulted by entrypoint.sh: NEXT_PUBLIC_GOOGLE_ANALYTICS_ID, NEXT_PUBLIC_SHOW_INTEGRITY, NEXT_PUBLIC_WIREGUARD_INSTALL_URL and the installation settings
+# NEXT_PUBLIC_MAIN_SITE_URL, NEXT_PUBLIC_COOKIES_URL, NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT (empty or unset = not shown).
 ENV NEXT_PUBLIC_DOMAIN="__NEXT_PUBLIC_DOMAIN__"
 ENV NEXT_PUBLIC_SUPPORT_EMAIL="__NEXT_PUBLIC_SUPPORT_EMAIL__"
-ENV NEXT_PUBLIC_SHOW_PARTNERS="__NEXT_PUBLIC_SHOW_PARTNERS__"
 ENV NEXT_PUBLIC_SHOW_INTEGRITY="__NEXT_PUBLIC_SHOW_INTEGRITY__"
 ENV NEXT_PUBLIC_WIREGUARD_INSTALL_URL="__NEXT_PUBLIC_WIREGUARD_INSTALL_URL__"
 ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID="__NEXT_PUBLIC_GOOGLE_ANALYTICS_ID__"
+ENV NEXT_PUBLIC_MAIN_SITE_URL="__NEXT_PUBLIC_MAIN_SITE_URL__"
+ENV NEXT_PUBLIC_COOKIES_URL="__NEXT_PUBLIC_COOKIES_URL__"
+ENV NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT="__NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT__"
 
 RUN npm run build \
     && if find -L .next/standalone -name '*.node' -print -quit | grep -q .; then \
@@ -62,6 +65,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --chown=nextjs:nodejs --chmod=0755 deploy/entrypoint.sh /usr/bin/
 # The base-domain derivation (the NEXT_PUBLIC_DOMAIN check), sourced by entrypoint.sh.
 COPY deploy/base-domain.sh /usr/local/lib/base-domain.sh
+# The rule for the optional installation settings (URLs and the flag), sourced by entrypoint.sh.
+COPY deploy/cfg-check.sh /usr/local/lib/cfg-check.sh
 COPY deploy/nginx /etc/cybericebox/nginx
 
 USER nextjs

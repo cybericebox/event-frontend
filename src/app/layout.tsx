@@ -6,6 +6,7 @@ import "@/styles/button.css";
 import "@/styles/navbar.css";
 import "@/styles/tower.css";
 import "@/styles/footer.css";
+import "@/styles/cfg.css";
 import "@/styles/content-blocks.css";
 import "@/styles/hero.css";
 import "@/styles/accordion.css";
@@ -66,6 +67,7 @@ import {Providers} from "@/utils/providers";
 import {AppShell} from "@/components/event/AppShell";
 import {EventActionToaster} from "@/components/ui/EventActionToaster";
 import {cookies, headers} from "next/headers";
+import {settingsAttrs} from "@/utils/settings";
 import {PREVIEW_COOKIE, parsePreviewCookie} from "@/utils/previewCookie";
 import {getPublicEventInfo, PublicEventError} from "@/api/publicEventInfo";
 import {getGrantedEvent} from "@/api/grantedEvent";
@@ -177,7 +179,7 @@ export default async function RootLayout({
         "--ev-accent-live": theme.AccentLive,
     } as React.CSSProperties : undefined;
     return (
-        <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} suppressHydrationWarning>
+        <html lang="uk" className={`${GeistSans.variable} ${GeistMono.variable}`} style={themeStyle} {...settingsAttrs()} suppressHydrationWarning>
         <head>
             <script nonce={nonce} dangerouslySetInnerHTML={{__html: CHUNK_RECOVERY_BOOT_SCRIPT}} />
             <script nonce={nonce} dangerouslySetInnerHTML={{__html: THEME_BOOT_SCRIPT}} />
