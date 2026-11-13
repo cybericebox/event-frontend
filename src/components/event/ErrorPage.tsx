@@ -5,7 +5,6 @@ import Image from "next/image";
 import {Copy} from "lucide-react";
 import crest from "@/styles/assets/crest-128.png";
 import {BRAND} from "@/i18n/brand";
-import {mainOrigin} from "@/utils/origins";
 import {t} from "@/i18n/t";
 import {FeedbackLink} from "@/components/FeedbackLink";
 import {EventBrandLogo, useEventBrandName, useEventBrandUnknown} from "./EventBrandLogo";
@@ -24,7 +23,13 @@ export function platformErrorCode(error: unknown): number | undefined {
 //          brand is the event logo and name when the event is known, the platform crest otherwise
 //          (`platformBrand` forces the crest: the screen must not reveal an event).
 //   block: the shell is already there and only the content failed; the column alone, no footer.
-export function ErrorPage({mode, code, title, text, children, refCode, ticket, report, role, platformBrand = false, homeHref}: {
+// A link to the main site (NEXT_PUBLIC_MAIN_SITE_URL, installation settings): shown only when that site is set (src/styles/cfg.css).
+// Without it the page has no "home" to lead to: `/` of this site would be the page itself (an unknown or hidden event).
+export function MainSiteLink({className, children}: {className?: string; children: ReactNode}) {
+    return <a className={className ? `${className} cfg-main-only` : "cfg-main-only"} href={process.env.NEXT_PUBLIC_MAIN_SITE_URL}>{children}</a>;
+}
+
+export function ErrorPage({mode, code, title, text, children, refCode, ticket, report, role, platformBrand = false, homeHref, platformHome = false}: {
     mode: "page" | "block";
     code: number;
     title: string | [string, string];
@@ -35,7 +40,10 @@ export function ErrorPage({mode, code, title, text, children, refCode, ticket, r
     report?: ReactNode;
     role?: "alert";
     platformBrand?: boolean;
+    // An explicit target (a page where `/` is a different page). Without it: `/` on a page of a known event, the main site otherwise.
     homeHref?: string;
+    // The caller's own "home" action leads to the main site and is already decided by it; the footer follows it even on an event page.
+    platformHome?: boolean;
 }) {
     const lines = typeof title === "string" ? title : title.map((line, i) => <Fragment key={line}>{i > 0 && " "}<span className="ib-error__line">{line}</span></Fragment>);
     const Heading = mode === "page" ? "h1" : "h2";
@@ -52,7 +60,7 @@ export function ErrorPage({mode, code, title, text, children, refCode, ticket, r
     if (mode === "block") return <div className="ib-error ib-error--block" role={role}><div className="ib-error__main">{column}</div></div>;
     return <div className="ib-error ib-error--page" role={role}>
         <main className="ib-error__main" id="main" tabIndex={-1}>{column}</main>
-        <ErrorFooter platformBrand={platformBrand} homeHref={homeHref} />
+        <ErrorFooter platformBrand={platformBrand} homeHref={homeHref} platformHome={platformHome} />
     </div>;
 }
 
@@ -76,11 +84,13 @@ function Ticket({value}: {value: string}) {
     </p>;
 }
 
-function ErrorFooter({platformBrand, homeHref}: {platformBrand: boolean; homeHref?: string}) {
+function ErrorFooter({platformBrand, homeHref, platformHome}: {platformBrand: boolean; homeHref?: string; platformHome: boolean}) {
     const eventName = useEventBrandName();
     const event = !platformBrand && !!eventName;
     const unknown = useEventBrandUnknown();
-    const home = homeHref ?? (event ? "/" : mainOrigin || "/");
+    // The main site, or nowhere: the brand is then plain text and "home" is hidden.
+    const toMainSite = homeHref === undefined && (platformHome || !event);
+    const home = homeHref ?? "/";
     const brand = <>
         {event || (!platformBrand && unknown)
             ? <EventBrandLogo size={18} />
@@ -88,9 +98,11 @@ function ErrorFooter({platformBrand, homeHref}: {platformBrand: boolean; homeHre
         {event ? eventName : BRAND}
     </>;
     return <footer className="ib-error__footer">
-        <a className="ib-error__brand" href={home}>{brand}</a>
+        {toMainSite
+            ? <><MainSiteLink className="ib-error__brand">{brand}</MainSiteLink><span className="ib-error__brand cfg-main-off">{brand}</span></>
+            : <a className="ib-error__brand" href={home}>{brand}</a>}
         <nav className="ib-error__links" aria-label={t("error.page.links")}>
-            <a href={home}>{t("error.goHome")}</a>
+            {toMainSite ? <MainSiteLink>{t("error.goHome")}</MainSiteLink> : <a href={home}>{t("error.goHome")}</a>}
             <FeedbackLink />
         </nav>
     </footer>;

@@ -4,21 +4,21 @@ import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {signOut} from "@/api/authAPI";
 import {getCurrentUser} from "@/api/clientAuth";
-import {mainOrigin} from "@/utils/origins";
 import {signInRedirectTarget} from "@/utils/signInRedirect";
 import {t} from "@/i18n/t";
 import {EventLoading} from "./EventLoading";
 import {SignInRedirect} from "./SignInRedirect";
 import {EventButton} from "@/components/ui/EventButton";
-import {ErrorPage} from "./ErrorPage";
+import {ErrorPage, MainSiteLink} from "./ErrorPage";
 import {clearManualDrafts} from "./manage/manualDraft";
 
 // A feature of a visible event the signed-in account has no rights for (403: /manage, /live).
 // An event the account cannot see at all is EventUnavailableScreen.
 // The error page with code 403, title, one line with the account, and two ways out: another
 // account (sign out, then sign in back to this page) or home. `homeHref` defaults to the
-// platform home, for pages where the event home is the page itself.
-export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mainOrigin || "/"}: {title?: string; homeHref?: string}) {
+// main site, for pages where the event home is the page itself; without the main site setting that "home" is hidden (`/` would be this page).
+// The three callers today (live, live bootstrap, manager shell) pass `homeHref="/"`, which stays; the default is for a caller with no event home of its own.
+export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref}: {title?: string; homeHref?: string}) {
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false});
     const [working, setWorking] = useState(false);
     const [failed, setFailed] = useState(false);
@@ -39,12 +39,14 @@ export function NoAccessScreen({title = t("auth.noAccess.title"), homeHref = mai
     if (user.isPending) return <EventLoading full label={t("shell.loadingEventFull")} />;
     // The session ended meanwhile: that is a 401 after all.
     if (!user.data) return <SignInRedirect />;
-    return <ErrorPage mode="page" role="alert" code={403} title={title} homeHref={homeHref}
+    return <ErrorPage mode="page" role="alert" code={403} title={title} homeHref={homeHref} platformHome
         text={<>
             {t("auth.noAccess.body", {email: user.data?.Email ?? ""})}
             {failed && <><br />{t("account.signOutFailed")}</>}
         </>}>
         <EventButton className="ib-btn ib-btn--primary" type="button" disabled={working} busy={working} busyLabel={t("common.busy.switching")} onClick={() => void switchAccount()}>{t("auth.noAccess.switch")}</EventButton>
-        <a className="ib-link" href={homeHref}>{t("auth.noAccess.home")}</a>
+        {homeHref === undefined
+            ? <MainSiteLink className="ib-link">{t("auth.noAccess.home")}</MainSiteLink>
+            : <a className="ib-link" href={homeHref}>{t("auth.noAccess.home")}</a>}
     </ErrorPage>;
 }
