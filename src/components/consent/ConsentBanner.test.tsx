@@ -24,6 +24,14 @@ describe("ConsentBanner", () => {
         expect(document.cookie).toContain("cib_consent=analytics:granted");
     });
 
+    it("the policy link carries the cfg-cookies class (hidden when no cookie page is set) and the href it is given", () => {
+        render(<ConsentBanner gaId="G-TEST" policyHref="https://example.test/cookies" />);
+        const link = document.querySelector("a.cfg-cookies");
+        expect(link?.getAttribute("href")).toBe("https://example.test/cookies");
+        click("Налаштувати");
+        expect(document.querySelector("p.cfg-cookies")).not.toBeNull();
+    });
+
     it("customize → save choice with analytics off (the default)", () => {
         render(<ConsentBanner gaId="G-TEST" policyHref="/cookies" />);
         click("Налаштувати");

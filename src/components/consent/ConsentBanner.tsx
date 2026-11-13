@@ -26,9 +26,10 @@ const serverSnapshot = () => "ssr";
 
 // A message with one {link} placeholder, the link inserted in its place.
 // The policy link opens in a new tab and stops the click, so the banner/panel and its toggles stay.
-function withLink(key: string, href: string) {
+// The Cookie Policy link is in the markup always; src/styles/cfg.css hides it (cfg-cookies) while NEXT_PUBLIC_COOKIES_URL is empty.
+function withLink(key: string, href: string | undefined) {
     const [before, after = ""] = t(key).split("{link}");
-    return <>{before}<a href={href} {...POLICY_LINK_ATTRS} aria-label={t("consent.policyLinkNewTab")} onClick={(e) => e.stopPropagation()}>{t("consent.policyLink")}</a>{after}</>;
+    return <>{before}<a href={href} className="cfg-cookies" {...POLICY_LINK_ATTRS} aria-label={t("consent.policyLinkNewTab")} onClick={(e) => e.stopPropagation()}>{t("consent.policyLink")}</a>{after}</>;
 }
 
 // Cookie consent in two layers, fixed to the bottom, non-blocking.
@@ -37,7 +38,7 @@ function withLink(key: string, href: string) {
 //    «Зберегти вибір» and «Прийняти всі».
 // Shown when GA is configured and no choice exists; «Налаштування файлів cookie» opens the panel.
 // Esc never counts as consent: it steps back from the panel, or closes a panel opened from settings.
-export function ConsentBanner({gaId, policyHref}: {gaId?: string; policyHref: string}) {
+export function ConsentBanner({gaId, policyHref}: {gaId?: string; policyHref?: string}) {
     const stored = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
     // null = follow the stored choice; "panel" = preferences open.
     const [layer, setLayer] = useState<"banner" | "panel" | null>(null);
@@ -121,7 +122,7 @@ export function ConsentBanner({gaId, policyHref}: {gaId?: string; policyHref: st
                 </label>
             </li>
         </ul>
-        <p className="cb-consent__policy">{withLink("consent.policy", policyHref)}</p>
+        <p className="cb-consent__policy cfg-cookies">{withLink("consent.policy", policyHref)}</p>
         <div className="cb-consent__actions cb-consent__actions--panel">
             <button type="button" className="ib-btn ib-btn--sm" onClick={() => choose({analytics})}>{t("consent.saveChoice")}</button>
             <button type="button" className="ib-btn ib-btn--sm ib-btn--primary" onClick={() => choose(ACCEPT_ALL)}>{t("consent.acceptAll")}</button>

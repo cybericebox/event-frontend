@@ -29,3 +29,6 @@ jobs:
         run: npm run typecheck
       - name: Test
         run: npm test
+      - name: Optional settings survive the image build
+        # Builds the way deploy/Dockerfile does (placeholders), checks the placeholders in the chunks, the substitution and the <html> attributes of a started copy, and an empty build.
+        run: npm run check:cfg

@@ -12,6 +12,7 @@
     "check:ds": "node scripts/sync-ds.mjs --check",
     "sync:errors": "node scripts/sync-error-catalog.mjs",
     "test": "vitest run",
+    "check:cfg": "node scripts/check-cfg.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

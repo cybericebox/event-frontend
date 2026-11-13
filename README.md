@@ -34,13 +34,17 @@ Read at runtime by the server.
 | --- | --- | --- |
 | `NEXT_PUBLIC_DOMAIN` | yes | The one base domain, a bare lowercase host name (no scheme, port or path). Every host derives from it: `<DOMAIN>` (landing), `api.`, `id.`, `admin.`, `exercises.<DOMAIN>`, event sites `<tag>.<DOMAIN>`, the shared theme and consent cookies on `.<DOMAIN>`. There are no per-host settings. |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | yes | Support mailbox of the «Send feedback» `mailto:` link shown on every page (the subject carries the app and page path only). |
-| `NEXT_PUBLIC_SHOW_PARTNERS` | no | Default `true`. The string `false` hides the partner names in the footer credit. |
+| `NEXT_PUBLIC_MAIN_SITE_URL` | no | `https://` URL of the main site. Empty: no link leads to another site. |
+| `NEXT_PUBLIC_COOKIES_URL` | no | `https://` URL of the Cookie Policy. Empty: no link in the cookie banner (the «Налаштування файлів cookie» entries stay and open the panel). |
+| `NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT` | no (default `false`) | `true` shows the line «За підтримки кафедри … · ХНУРЕ» in the footer credit; otherwise the plain «© year Cyber ICE Box» shows. |
 | `NEXT_PUBLIC_SHOW_INTEGRITY` | no | Default `true`. The string `false` hides «Доброчесність» on the event site: the analytics menu item, its page (404) and the attempt markers. The admin panel is not affected. |
 | `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | no | WireGuard install link in the VPN dialog. Default `https://www.wireguard.com/install/`. |
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
 | `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
 | `RENDER_SECRET` | yes | Secret shared with the API (its `RENDER_SECRET`). The server sends it as `X-Render-Secret` to the `/api/render/*` routes that feed server rendering; without it those routes answer 404. Never sent to the browser. |
 | `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
+
+The installation settings (`MAIN_SITE_URL`, `COOKIES_URL`, `SHOW_ICE_DEPARTMENT_SUPPORT`) are optional and mean "no value = not shown": a third-party installation says nothing in our name. A URL is empty or `https://host[:port][/path][?query]` (no spaces, quotes, `<`, `>`, `\`, `#` or userinfo); the flag is `true` or `false`. A bad value fails the build and the container start. Each value is written into an attribute of `<html>` (`data-cfg-*`, `src/utils/settings.ts`) and `src/styles/cfg.css` hides the blocks that need it, so server and client render the same markup. The image bakes placeholders; the entrypoint replaces them in `/app/.next` (server and client chunks). `npm run check:cfg` builds the way the Dockerfile does, checks that every placeholder survives, applies the entrypoint substitution to a copy and starts it to read the `<html>` attributes.
 
 ## Container listeners and TLS
 
