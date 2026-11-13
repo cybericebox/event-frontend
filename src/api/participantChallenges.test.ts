@@ -149,7 +149,7 @@ describe("getOwnBoard", () => {
 describe("getOwnChallengeLab", () => {
     it("retains generic waiting status without scheduler diagnostics", async () => {
         const {getOwnChallengeLab} = await import("./participantChallenges");
-        fetchMock.mockResolvedValue(reply({Data: {Phase: "Queued", Ready: false, Access: []}}));
+        fetchMock.mockResolvedValue(reply({Data: {Phase: "Queued", Ready: false, Gateways: [], Access: []}}));
         expect(await getOwnChallengeLab("e1", "c1")).toMatchObject({Phase: "Queued", Ready: false, Access: []});
     });
 });

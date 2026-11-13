@@ -65,12 +65,12 @@ it("starts a dynamic run on click, polls preparation and opens the ready service
     const {client} = mount({...base, Infrastructure: true, PreviewDynamic: true, Snapshot: {...base.Snapshot, description: {root: {type:"root", children:[{type:"copy-block", children:[{type:"variable",varName:"web"}]}]}}, placeholders:[{key:"web",kind:"external.link",device_name:"web"}]}});
     expect(fetchMock).not.toHaveBeenCalled();
     fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
-    fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false}));
+    fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false, Gateways: []}));
     fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(document.querySelector("dialog[open]")).toBeNull();
     expect(document.querySelector(".ib-cmodal__desc")).toBeNull();
-    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
+    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Gateways: [], Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
     await act(async () => {await client.refetchQueries({queryKey: ["event-challenge-lab", "preview", "event", base.EventChallengeID], exact: true});});
     const tab = {opener: null, close: vi.fn(), location: {href: "about:blank"}};
     vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
@@ -108,7 +108,7 @@ it("names the running labs at the test-lab cap and stops only the one chosen, th
     expect(fetchMock).toHaveBeenCalledTimes(1);
     fetchMock.mockResolvedValueOnce(new Response(null, {status: 204}));
     fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
-    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false}));
+    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false, Gateways: []}));
     fireEvent.click(screen.getAllByRole("button", {name: "Зупинити"})[0]);
     await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3));
     expect(fetchMock.mock.calls[1][0]).toContain("/labs/lab-studio");
@@ -124,7 +124,7 @@ it("starts the preview's laboratory for the chosen length", async () => {
     fireEvent.pointerDown(length, {button: 0, ctrlKey: false});
     fireEvent.click(await screen.findByRole("menuitemradio", {name: "30 хв"}));
     fetchMock.mockResolvedValueOnce(reply({ID: rawTask, SelectionID: selection, Dynamic: true, ExpiresAt: "2099-10-16T12:00:00Z"}));
-    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false}));
+    fetchMock.mockResolvedValue(reply({Phase: "pending", Ready: false, Gateways: []}));
     fireEvent.click(screen.getByRole("button", {name: "Запустити середовище"}));
     await waitFor(() => expect(fetchMock.mock.calls[0]?.[0]).toContain(`/selections/${selection}/start`));
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({LeaseMinutes: 30});

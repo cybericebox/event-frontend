@@ -56,7 +56,7 @@ it.each(["participant", "moderators", "preview"] as const)("keeps %s task unopen
 });
 it("waits for Ready and required late fields, but ignores irrelevant empty networks and unused definitions", async () => {
     api.runtime.mockResolvedValue({...ready, Ready: false});
-    const view = mount({...task, Snapshot: {...task.Snapshot, placeholders: [...task.Snapshot.placeholders, {key: "unused", kind: "internet.subnet"}]}});
+    const view = mount({...task, Snapshot: {...task.Snapshot, placeholders: [...task.Snapshot.placeholders, {key: "unused", kind: "gateway.subnet", gateway: "out"}]}});
     fireEvent.click(view.tile());
     await waitFor(() => expect(view.client.getQueryData(view.key)).toBeTruthy());
     expectPreparing(view.container, view.tile());
@@ -136,7 +136,7 @@ it("keeps preview manual start and length controls reachable without unresolved 
 it("keeps an admitted task and entered flag mounted when a newly unlocked hint needs a late value", async () => {
     api.runtime.mockResolvedValue(ready);
     const hint = {ID: "hint", Level: "nudge" as const, Cost: 0, Unlocked: false, Content: null, UnlockedAt: null, UnlockedByName: ""};
-    const view = mount({...task, HintsEnabled: true, Hints: [hint], Snapshot: {...task.Snapshot, placeholders: [...task.Snapshot.placeholders, {key: "later", kind: "internet.subnet"}]}});
+    const view = mount({...task, HintsEnabled: true, Hints: [hint], Snapshot: {...task.Snapshot, placeholders: [...task.Snapshot.placeholders, {key: "later", kind: "gateway.subnet", gateway: "out"}]}});
     fireEvent.click(view.tile());
     const flag = await screen.findByLabelText("Прапор");
     fireEvent.change(flag, {target: {value: "ICE{typing}"}});
@@ -147,7 +147,7 @@ it("keeps an admitted task and entered flag mounted when a newly unlocked hint n
     expect((flag as HTMLInputElement).value).toBe("ICE{typing}");
     expect(screen.getByRole("status", {name: "Лабораторія запускається…"})).toBeTruthy();
     expect(view.container.querySelector(".event-cmodal__hint-body")?.textContent).not.toContain("—");
-    await act(async () => {view.client.setQueryData(view.key, {...ready, InternetCIDR: "10.9.4.0/24"});});
+    await act(async () => {view.client.setQueryData(view.key, {...ready, Gateways: [...ready.Gateways, {Name: "out", Kind: "internet", CIDR: "10.9.4.0/24", Ready: true}]});});
     await waitFor(() => expect(view.container.querySelector(".event-cmodal__hint-text")?.textContent).toContain("10.9.4.0/24"));
     expect(screen.getByLabelText("Прапор")).toBe(flag);
 });

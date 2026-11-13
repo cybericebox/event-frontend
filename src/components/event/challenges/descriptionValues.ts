@@ -23,6 +23,11 @@ export function linkUrl(scheme: string, ip: string, port?: number, path?: string
     return `${scheme}://${ip}${port ? `:${port}` : ""}${path ?? ""}`;
 }
 
+// The subnet of the named gateway of the lab; empty until the lab has allocated it (or when the gateway is not there).
+function gatewayCidr(lab: LabRuntime, name: string | undefined): string {
+    return lab.Gateways.find(gateway => gateway.Name === name)?.CIDR ?? "";
+}
+
 function resolveOne(placeholder: SnapshotPlaceholder, lab: LabRuntime | undefined): string {
     if (placeholder.kind === "ip" && placeholder.ip_reference === "static") {
         return placeholder.octets_1to3 ? `${placeholder.octets_1to3}.${placeholder.last_octet ?? 0}` : "";
@@ -32,13 +37,14 @@ function resolveOne(placeholder: SnapshotPlaceholder, lab: LabRuntime | undefine
     const lastOctet = placeholder.last_octet ?? 0;
     switch (placeholder.kind) {
         // A subnet always reads as a CIDR (10.128.1.0/24); a bare network address is not a subnet.
-        case "vpn.subnet": return lab.VPNCIDR ?? "";
-        case "internet.subnet": return lab.InternetCIDR ?? "";
+        case "gateway.subnet": return gatewayCidr(lab, placeholder.gateway);
         case "ip": {
             const mask = showMask && !placeholder.as_link;
             switch (placeholder.ip_reference) {
-                case "vpn": return lab.VPNCIDR ? relativeIp(lab.VPNCIDR, lastOctet, mask) : "";
-                case "internet": return lab.InternetCIDR ? relativeIp(lab.InternetCIDR, lastOctet, mask) : "";
+                case "gateway": {
+                    const cidr = gatewayCidr(lab, placeholder.gateway);
+                    return cidr ? relativeIp(cidr, lastOctet, mask) : "";
+                }
                 case "static": return placeholder.octets_1to3 ? `${placeholder.octets_1to3}.${lastOctet}` : "";
                 default: return "";
             }

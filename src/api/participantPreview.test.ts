@@ -34,9 +34,9 @@ it("starts explicitly and reads provisioning, ready and capacity refusal without
     const api = await import("./participantPreview");
     fetchMock.mockResolvedValueOnce(reply({ID: taskID, SelectionID: selection, Dynamic: true, ExpiresAt: "2026-10-16T12:00:00Z"}));
     await api.startPreviewRun("event", selection);
-    fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false}));
+    fetchMock.mockResolvedValueOnce(reply({Phase: "pending", Ready: false, Gateways: []}));
     expect((await api.getPreviewLab("event", selection)).Ready).toBe(false);
-    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
+    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Gateways: [], Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://lab.test"}]}));
     expect((await api.getPreviewLab("event", selection)).Access).toHaveLength(1);
     fetchMock.mockResolvedValueOnce(reply({}, 409));
     await expect(api.startPreviewRun("event", selection)).rejects.toMatchObject({status: 409});
@@ -57,7 +57,7 @@ it("fails closed for a missing preview selection and strips expired runtime acce
     const api = await import("./participantPreview");
     expect(() => api.submitPreviewFlag("event", {EventChallengeID: taskID}, "flag")).toThrow("selection identity");
     expect(fetchMock).not.toHaveBeenCalled();
-    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Expired: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://expired.test"}]}));
+    fetchMock.mockResolvedValueOnce(reply({Phase: "ready", Ready: true, Gateways: [], Expired: true, Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://expired.test"}]}));
     expect(await api.getPreviewLab("event", selection)).toMatchObject({Ready: false, Access: []});
 });
 

@@ -541,7 +541,7 @@ export function ChallengeModal({challenge, stage = null, eventID, mode, teamMode
         try {
             const run = await startPreviewRun(eventID, selectionID, runLength || undefined);
             if (!currentSession()) return;
-            queryClient.setQueryData<ObservedRuntime>(runtimeKey, {previewRunID: run.ID, Lab: null, Phase: "pending", Ready: false, Queue: null, VPNCIDR: "", InternetCIDR: "", Access: []});
+            queryClient.setQueryData<ObservedRuntime>(runtimeKey, {previewRunID: run.ID, Lab: null, Phase: "pending", Ready: false, Queue: null, Gateways: [], Access: []});
             queryClient.setQueryData<OwnBoard>(previewBoardKey(eventID), board => board && ({...board, Challenges: board.Challenges.map(task => task.PreviewSelectionID === selectionID ? {...task, PreviewRunID: run.ID, PreviewExpiresAt: run.ExpiresAt} : task)}));
             setStartedRun({selectionID, id: run.ID, replaces: challenge?.PreviewRunID, expiresAt: run.ExpiresAt});
             onRejected?.();

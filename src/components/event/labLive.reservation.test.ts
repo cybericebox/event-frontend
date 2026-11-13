@@ -13,7 +13,7 @@ describe("the team's resource reservation (staff)", () => {
 
     it("participants never see reservation lines", () => {
         // A participant's lab answer has no reservation field: even if one came, it is dropped.
-        const lab = LabRuntimeSchema.parse({Lab: null, Phase: "ready", Ready: true, Queue: null, VPNCIDR: "", InternetCIDR: "", Access: [], ReservationEndsAt: "2026-10-19T15:05:00Z", ReservationEnded: true});
+        const lab = LabRuntimeSchema.parse({Lab: null, Phase: "ready", Ready: true, Queue: null, Gateways: [], Access: [], ReservationEndsAt: "2026-10-19T15:05:00Z", ReservationEnded: true});
         expect(lab).not.toHaveProperty("ReservationEndsAt");
         expect(lab).not.toHaveProperty("ReservationEnded");
     });

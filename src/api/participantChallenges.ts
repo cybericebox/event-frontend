@@ -27,6 +27,8 @@ export const placeholderSchema = z.object({
     key: z.string().default(""),
     kind: z.string(),
     ip_reference: z.string().optional(),
+    // gateway.subnet, and ip by a gateway: the name of the gateway device.
+    gateway: z.string().optional(),
     octets_1to3: z.string().optional(),
     last_octet: z.number().int().optional(),
     show_mask: z.boolean().optional(),
