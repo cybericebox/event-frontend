@@ -421,7 +421,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                     })}</ul>}
                     {loadingOlder && <div className="event-notifications__older"><EventLoading compact label={t("common.loading")} /></div>}
                 </div>
-                {event && otherEvents > 0 && <a href={event.otherEventsHref} className="event-notifications__other">
+                {event && otherEvents > 0 && <a href={event.otherEventsHref} className="event-notifications__other cfg-main-only">
                     {t("inbox.otherEvents", {count: otherEvents})}<ChevronRight size={16} aria-hidden="true" />
                 </a>}
             </PopoverContent>

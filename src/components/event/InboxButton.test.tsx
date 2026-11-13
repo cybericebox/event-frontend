@@ -53,6 +53,15 @@ async function openInbox() {
 }
 
 describe("inbox", () => {
+    it("the «other events» link carries the cfg-main-only class (hidden without a main site) and the href it is given", async () => {
+        api.getInboxSince.mockResolvedValue({...poll, OtherEventsCount: 3});
+        render(<InboxButton event={{id: "e1", otherEventsHref: "https://example.test/?inbox"}} />);
+        fireEvent.click(screen.getByRole("button", {name: /Вхідні/}));
+        const link = await screen.findByRole("link", {name: /інших заходах/});
+        expect(link.getAttribute("href")).toBe("https://example.test/?inbox");
+        expect(link.classList.contains("cfg-main-only")).toBe(true);
+    });
+
     it.each(["list", "pop-in"])("guards the %s navigation before marking the notification read", async mode => {
         const message = lab("a", {Link: "/manage/schedule", Actions: [{label: "notification action", href: "/manage/schedule"}]});
         api.getInbox.mockResolvedValue({Items: [message], NextCursor: null});

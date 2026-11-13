@@ -67,13 +67,13 @@ describe("installation settings parity", () => {
         for (const cls of used) expect(defined.has(cls), cls).toBe(true);
     });
 
-    it("reads a setting outside settings.ts only as the value of an href or a plain alias of it (never in a comparison a minifier could fold)", () => {
+    it("reads a setting outside settings.ts only as the value of an href, as a path prefix of the inbox link, or a plain alias of it (never in a comparison a minifier could fold)", () => {
         const bad: string[] = [];
         for (const file of files(path.join(ROOT, "src"))) {
             if (file.endsWith("settings.ts") || file.endsWith("settingRules.ts")) continue;
             for (const line of fs.readFileSync(file, "utf8").split("\n")) {
                 for (const name of envNames) {
-                    if (line.includes(`process.env.${name}`) && !new RegExp(`href=\\{process\\.env\\.${name}\\}|^export const \\w+ = process\\.env\\.${name};?$`).test(line.trim())) bad.push(`${path.relative(ROOT, file)}: ${line.trim()}`);
+                    if (line.includes(`process.env.${name}`) && !new RegExp(`href=\\{process\\.env\\.${name}\\}|otherEventsHref: \`\\$\\{process\\.env\\.${name}\\}/\\?inbox\`|^export const \\w+ = process\\.env\\.${name};?$`).test(line.trim())) bad.push(`${path.relative(ROOT, file)}: ${line.trim()}`);
                 }
             }
         }

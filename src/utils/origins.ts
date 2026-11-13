@@ -14,8 +14,6 @@ export const apiOrigin = origin(apiHost);
 export const idOrigin = origin(h.id);
 export const exercisesOrigin = origin(h.exercises);
 export const adminOrigin = origin(h.admin);
-// The platform landing.
-export const mainOrigin = origin(h.main);
 
 // Kept for call sites that need an API origin; the host is always configured.
 export function requireApiOrigin(): string {

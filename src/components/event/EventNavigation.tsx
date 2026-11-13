@@ -23,7 +23,7 @@ import {FeedbackLink} from "@/components/FeedbackLink";
 import {beforeChallenges, comparePageOrder} from "./content/pageNavigationOrder";
 import {resultsAvailability, resultsLinkVisible} from "@/types/resultsAvailability";
 import {withManageOrigin} from "@/utils/returnOrigin";
-import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin, mainOrigin} from "@/utils/origins";
+import {adminOrigin, eventOrigin, exercisesOrigin, idOrigin} from "@/utils/origins";
 import {ACCOUNT_MENU_ICON_PROPS, ACCOUNT_MENU_ICONS, ACCOUNT_MENU_LABELS, accountMenu} from "@/utils/accountMenu";
 import {openConsentSettings} from "@/utils/consent";
 import {COOKIE_POLICY_HREF} from "@/components/consent/CookieSettingsLink";
@@ -153,7 +153,7 @@ export function EventHeaderActions({event, authenticated, approved = false, pinn
             {items.map(item => {
                 if (item === "vpn") return <VpnHeaderButton key={item} />;
                 if (item === "participation") return <PinnedLink key={item} href="/participation" label={t("nav.participation")} />;
-                if (item === "inbox") return <InboxButton key={item} defaultTab={manage ? "requests" : "all"} event={{id: event.EventID, otherEventsHref: `${mainOrigin}/?inbox`}} />;
+                if (item === "inbox") return <InboxButton key={item} defaultTab={manage ? "requests" : "all"} event={{id: event.EventID, otherEventsHref: `${process.env.NEXT_PUBLIC_MAIN_SITE_URL}/?inbox`}} />;
                 return <AccountMenu key={item} event={event} approved={approved} pinned={pinned} theme={theme} />;
             })}
         </>}
