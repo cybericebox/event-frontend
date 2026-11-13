@@ -13,7 +13,7 @@ export const completedLab: LabLifecycle = {
     CloseReason: "solved", ClosedAt: "2026-10-08T12:00:00Z", RuntimeState: "closed",
 };
 
-export const runtimeFixture: LabRuntime = {Lab: runningLab, Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: []};
+export const runtimeFixture: LabRuntime = {Lab: runningLab, Phase: "Ready", Ready: true, Queue: null, Gateways: [{Name: "attack", Kind: "vpn", CIDR: "10.128.1.0/24", Ready: true}], Access: []};
 
 export const manualRunningLab: LabLifecycle = {...runningLab, CanStop: true, SnapshotPolicy: "required"};
 export const manuallyStoppedLab: LabLifecycle = {...manualRunningLab, Revision: "9007199254740994", LogicalClosed: true, CloseReason: "manual", ClosedAt: "2026-10-08T12:00:00Z", RuntimeState: "closed", CanStop: false, CanRestart: true};

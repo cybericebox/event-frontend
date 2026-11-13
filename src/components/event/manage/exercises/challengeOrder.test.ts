@@ -43,7 +43,7 @@ describe("challenge order", () => {
         ]}]}};
         const line = descriptionFirstLine(doc, [
             {key: "web_link", kind: "external.link", device_name: "both"},
-            {key: "lnk", kind: "ip", ip_reference: "vpn", last_octet: 5, as_link: true, scheme: "http", port: 5000},
+            {key: "lnk", kind: "ip", ip_reference: "gateway", gateway: "attack", last_octet: 5, as_link: true, scheme: "http", port: 5000},
         ]);
         expect(line).toBe("Відкрийте [вебпосилання both] і [посилання http://…:5000]");
     });

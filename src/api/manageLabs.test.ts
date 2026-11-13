@@ -10,7 +10,7 @@ import {LabRuntimeSchema, ManageLabsSchema, ModeratorChallengeSchema, getModerat
 afterEach(() => {vi.unstubAllEnvs(); vi.unstubAllGlobals();});
 
 const eventID = "01900000-0000-7000-8000-000000000001";
-const runtime = {Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://web.labs.test"}]};
+const runtime = {Phase: "Ready", Ready: true, Queue: null, Gateways: [{Name: "attack", Kind: "vpn", CIDR: "10.128.1.0/24", Ready: true}], Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://web.labs.test"}]};
 
 describe("runtime lifecycle", () => {
     it("preserves access and authoritative Lab on participant and moderator routes", async () => {

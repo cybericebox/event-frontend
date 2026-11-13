@@ -131,7 +131,7 @@ describe("authoritative shared Lab on the participant board", () => {
         expect(client.getQueryData(labKey("other-event", runningLab.ID))).toEqual(runningLab);
         expect(client.getQueryData(labKey("e", runningLab.ID, "moderators"))).toEqual(runningLab);
         const dialog = document.querySelector("dialog");
-        await act(async () => {boardReply(initial); runtimeReply({Lab: runningLab, Phase: "Ready", Ready: true, VPNCIDR: "", InternetCIDR: "", Access: [], Queue: null});});
+        await act(async () => {boardReply(initial); runtimeReply({Lab: runningLab, Phase: "Ready", Ready: true, Gateways: [], Access: [], Queue: null});});
         await waitFor(() => expect(client.getQueryData<OwnBoard>(key)!.Challenges[0].Lab?.LogicalClosed).toBe(true));
         await waitFor(() => expect(client.getQueryData<LabRuntime>(["event-challenge-lab", "participant", "e", uuid(2)])?.Lab).toEqual(runningLab));
         expect(screen.getByText("Середовище закрито.")).toBeTruthy();
@@ -141,7 +141,7 @@ describe("authoritative shared Lab on the participant board", () => {
 
     it("keeps solved history and the same dialog when canonical B closes while raw access still belongs to A", async () => {
         const client = await start();
-        api.runtime.mockResolvedValue({Lab: runningLab, Phase: "Ready", Ready: true, Queue: null, VPNCIDR: "10.128.1.0/24", InternetCIDR: "", Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
+        api.runtime.mockResolvedValue({Lab: runningLab, Phase: "Ready", Ready: true, Queue: null, Gateways: [{Name: "attack", Kind: "vpn", CIDR: "10.128.1.0/24", Ready: true}], Access: [{Device: "web", Port: 80, Protocol: "http", URL: "https://old.test"}]});
         fireEvent.click(screen.getByRole("button", {name: /^Завдання 1/}));
         await waitFor(() => expect(document.querySelector("[data-copy-block] code")?.textContent).toContain("https://old.test"));
         const dialog = document.querySelector("dialog");
