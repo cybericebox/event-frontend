@@ -1,100 +1,104 @@
 # event-frontend
 
-The event site of the Cyber ICE Box platform, for participants and for event managers. Unlike the other frontends it is server-rendered.
+The event site of the Cyber&nbsp;ICE&nbsp;Box platform. Participants use it to join an event, solve tasks, follow the
+scoreboard and connect to their lab. Event managers use its `/manage` area to set the event up and watch it run.
 
-## Stack
+## Where it sits
 
-Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Radix UI, TanStack Query, Lexical editor, dnd-kit, ECharts. Tests: Vitest with Testing Library. Lint: ESLint 10.
+| Question | Answer |
+|---|---|
+| Who uses it | Participants, team captains and event managers |
+| Backend | The platform API at `api.<DOMAIN>`. Sign-in goes through the ID site (`id.<DOMAIN>`) |
+| Build output | Standalone Node server (`output: "standalone"`). Unlike the other sites it is not a static export |
+| Hosts | One subdomain per event: `<tag>.<DOMAIN>`. Pages render on request |
+| Dev port | 3003 |
 
-## Prerequisites
+## What it does
 
-Node.js 26 or newer (see `.nvmrc`).
+Participant pages:
 
-## Commands
+| Route | Page |
+|---|---|
+| `/` | Event landing page, built from the event's own blocks |
+| `/p/<slug>`, `/faq` | Custom pages and the FAQ |
+| `/join`, `/invite`, `/forms` | Join an event, accept an invitation, fill in registration forms |
+| `/participation` | The participant's registration and status |
+| `/challenges` | Tasks to solve and flag submission |
+| `/team` | Team members and invitations |
+| `/vpn` | VPN access to the lab |
+| `/scoreboard`, `/live` | Standings and the live board |
+
+Manager pages under `/manage`:
+
+| Area | What you do there |
+|---|---|
+| Content | Landing blocks, pages, banners, broadcasts, appearance (logo and accent colour) |
+| Event setup | Settings, schedule, registration, participation, scoring, results, challenge settings |
+| Tasks and labs | Task selection and groups, labs, resources, private registries, test mode |
+| People | Participants, teams, submissions, surveys |
+| Messages | Email and in-app notification templates, mail settings and journal |
+| Analytics | Progress, tasks, participants, stands, usage, integrity, communications, report |
+
+Text is Ukrainian by default, with English available. Event names, page blocks and other content written by the
+organizers are data and are not translated.
+
+## Run it locally
+
+Node.js 26 or newer (see `.nvmrc`). You need a running platform backend; the site derives its API host from the base
+domain.
 
 ```bash
 npm install
-npm run dev      # dev server on http://localhost:3003
-npm run build    # production build (standalone server output)
-npm start        # next start -p 3003
-npm run lint
-npm run typecheck
-npm test         # Vitest (time zone pinned to Europe/Kyiv)
+cp .env.example .env.local   # then fill in the values
+npm run dev                  # http://localhost:3003
 ```
 
-## SSR, not a static export
+An event is chosen by the host name, so open the site on `<tag>.<DOMAIN>`.
 
-The app builds with `output: "standalone"` and runs as a Node server (`next start` or the standalone `server.js`). Event sites are served on per-event subdomains of the platform domain, so pages are rendered on request.
+## Configure
 
-## Configuration
-
-Read at runtime by the server.
+`.env.example` is the template. `NEXT_PUBLIC_DOMAIN` is the only host input: the API, the ID site and the event hosts
+derive from it. A missing required value fails the build or the container start; there are no fallbacks.
+`npm run check:cfg` checks that every config placeholder survives the build. Optional installation values mean "no
+value, not shown":
 
 | Variable | Required | Purpose |
-| --- | --- | --- |
-| `NEXT_PUBLIC_DOMAIN` | yes | The one base domain, a bare lowercase host name (no scheme, port or path). Every host derives from it: `<DOMAIN>` (landing), `api.`, `id.`, `admin.`, `exercises.<DOMAIN>`, event sites `<tag>.<DOMAIN>`, the shared theme and consent cookies on `.<DOMAIN>`. There are no per-host settings. |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` | yes | Support mailbox of the «Send feedback» `mailto:` link shown on every page (the subject carries the app and page path only). |
-| `NEXT_PUBLIC_MAIN_SITE_URL` | no | `https://` URL of the main site. Empty: no link leads to another site. |
-| `NEXT_PUBLIC_COOKIES_URL` | no | `https://` URL of the Cookie Policy. Empty: no link in the cookie banner (the «Налаштування файлів cookie» entries stay and open the panel). |
-| `NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT` | no (default `false`) | `true` shows the line «За підтримки кафедри … · ХНУРЕ» in the footer credit; otherwise the plain «© year Cyber ICE Box» shows. |
-| `NEXT_PUBLIC_SHOW_INTEGRITY` | no | Default `true`. The string `false` hides «Доброчесність» on the event site: the analytics menu item, its page (404) and the attempt markers. The admin panel is not affected. |
-| `NEXT_PUBLIC_WIREGUARD_INSTALL_URL` | no | WireGuard install link in the VPN dialog. Default `https://www.wireguard.com/install/`. |
-| `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | no | Google Analytics 4 measurement id. Analytics is off when unset. |
-| `INTERNAL_API_ORIGIN` | no | API origin used for server-side requests; falls back to the public API origin. |
-| `RENDER_SECRET` | yes | Secret shared with the API (its `RENDER_SECRET`). The server sends it as `X-Render-Secret` to the `/api/render/*` routes that feed server rendering; without it those routes answer 404. Never sent to the browser. |
-| `DEV_ALLOWED_ORIGINS` | no | Dev only: comma list for Next `allowedDevOrigins`; default is derived from the hosts. Missing required keys fail the build and the container start. |
+|---|---|---|
+| `NEXT_PUBLIC_MAIN_SITE_URL` | no | `https://` URL of the main site. Set: the logo leads there. Empty: the logo leads to `/` of this site. |
+| `NEXT_PUBLIC_COOKIES_URL` | no | `https://` URL of the Cookie Policy. Empty: no link in the cookie banner. |
+| `NEXT_PUBLIC_SHOW_ICE_DEPARTMENT_SUPPORT` | no | `true` shows the department support line. Default `false`. |
 
-The installation settings (`MAIN_SITE_URL`, `COOKIES_URL`, `SHOW_ICE_DEPARTMENT_SUPPORT`) are optional and mean "no value = not shown": a third-party installation says nothing in our name. A URL is empty or `https://host[:port][/path][?query]` (no spaces, quotes, `<`, `>`, `\`, `#` or userinfo); the flag is `true` or `false`. A bad value fails the build and the container start. Each value is written into an attribute of `<html>` (`data-cfg-*`, `src/utils/settings.ts`) and `src/styles/cfg.css` hides the blocks that need it, so server and client render the same markup. The image bakes placeholders; the entrypoint replaces them in `/app/.next` (server and client chunks). `npm run check:cfg` builds the way the Dockerfile does, checks that every placeholder survives, applies the entrypoint substitution to a copy and starts it to read the `<html>` attributes.
+## Development commands
 
-## Container listeners and TLS
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` | Production build (standalone server) |
+| `npm start` | `next start -p 3003` |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Unit tests (Vitest; the time zone is pinned to Europe/Kyiv) |
+| `npm run check:cfg` | Checks that config placeholders survive the build |
+| `npm run check:ds` | Fails if a copied design-system file was edited by hand |
+| `npm run sync:errors` | Adds new backend error codes to `messages/errors.*.json` (needs a `daemon` checkout at `../daemon`) |
 
-The image runs tini, nginx and Next.js. nginx is the only listener; Next.js is internal on `127.0.0.1:3001`, a constant of the image (not configurable). The nginx config is in `deploy/nginx/` (`nginx.conf`, `server.conf` with the proxy to Next, and the snippets `listen-http.conf`, `listen-https.conf`, `client-auth.conf`, `health.conf`). `entrypoint.sh` only picks the active snippets from the env (an inactive one becomes an empty file) and fills the values with `envsubst` over a fixed variable list into `/tmp/nginx`, then runs `nginx -t`, so a bad combination fails the start. The defaults are baked in, so the deploy passes none of the variables below: TLS is on when `/tls/tls.crt` and `/tls/tls.key` exist, client certificates are required when `/aop/ca.crt` exists, the health listener is on 8081; without those files it is plain HTTP on port 8080.
+## Rules for changes
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `HTTP_PORT` | `8080` | Plain HTTP listener. Empty = off. |
-| `HTTPS_PORT` | `8443` | TLS listener, on only when the certificate and key are set. |
-| `TLS_CERT_FILE`, `TLS_KEY_FILE` | `/tls/tls.crt`, `/tls/tls.key` | PEM server certificate chain and key. TLS is on when both default files exist. A path set in the env (non-empty) that does not exist or is not readable = start error; with no files it is plain HTTP. |
-| `TLS_MIN_VERSION` | `1.2` | `1.2` or `1.3`. |
-| `TLS_CLIENT_CA_FILE` | `/aop/ca.crt` | PEM bundle of the CAs that signed the client certificates. |
-| `TLS_CLIENT_AUTH` | `require` when TLS is on and `/aop/ca.crt` exists, else `off` | `off`, `optional` (verify if presented; a presented invalid certificate is refused) or `require`. `optional` and `require` need TLS and the CA file at its path, else start error. One line `mode: http`, `mode: https`, `mode: https+client-auth` (plus `+http` when the plain listener is also on) is logged at start. |
-| `HEALTH_PORT` | `8081` | An extra plain listener that serves only `/api/health` (kubelet probes), bound to `HEALTH_BIND` (default `0.0.0.0`). Empty = off, probes then use `HTTP_PORT`. |
-| `NGINX_LIMIT_CONN_PER_IP` | `400` | Concurrent requests per client address (every HTTP/2 stream counts). The default is high because a whole venue often shares one NAT address; the load test sizes it. Over it nginx answers 429. The address is `CF-Connecting-IP` only when the TLS client certificate was verified, else the socket address. `0` = no limit. The health listener is never limited. Timeouts are fixed: client header/body 10s, send 15s, keepalive 30s, upstream connect 5s, read/send 30s. |
-| `TLS_RELOAD_INTERVAL` | `60` | Seconds between checks of the cert, key and CA files; a change runs `nginx -t` and then reloads nginx (a config that does not load keeps the old one). `0` = off. Polling, not inotify, because Kubernetes swaps Secret mounts by symlink. |
+- Every user-visible string goes through `messages/uk.json` and `messages/en.json` and `t("key", { vars })`. Add each
+  key to both files.
+- On event sites the event logo is the loader, and the event logo replaces the crest in busy buttons.
+- Instant controls update the cache before the server answers, and a pending save never disables a control.
 
-With both `HTTP_PORT` empty and no certificate there is nothing to listen on: start error. With client auth on, nginx passes the verification result to Next in `X-SSL-Client-Verify` (`SUCCESS`, `FAILED:<reason>`, `NONE`); a missing or invalid certificate closes the connection (444). Tests: `tests/docker/nginx.sh` (needs docker; runs in CI).
+## Container
 
-## Content-Security-Policy
+nginx sits in front of the Node server (`deploy/Dockerfile`, `deploy/entrypoint.sh`): plain HTTP on 8080, a health
+listener on 8081 (`/healthz` only), and TLS on 8443 when `/tls/tls.crt` and `/tls/tls.key` are mounted. The nginx config
+is in `deploy/nginx/`.
 
-`src/proxy.ts` sets a strict CSP on every page request with a fresh nonce per request (policy built in `src/utils/csp.ts`, tested in `csp.test.ts`). The nonce reaches the render through the `x-nonce` request header; Next stamps its own scripts, the layout stamps the theme boot script and the Google Analytics scripts. Pages are rendered per request, so nonces work.
+## Releases and contributing
 
-- `script-src 'self' 'nonce-…'`: no `unsafe-inline`, no `strict-dynamic`. Google Analytics hosts are added only when `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` is set.
-- `connect-src 'self'` plus the API origin from `api.<NEXT_PUBLIC_DOMAIN>` (fetch and SSE). No other origin is contacted from the browser; sign-in is a redirect to the ID app.
-- `img-src 'self' data: blob: https:`: organizer logos, banners and Markdown images come from any https host; QR codes and previews use data/blob.
-- `style-src 'self' 'nonce-…'` with `style-src-attr 'unsafe-inline'` (React renders `style=""` attributes for theme variables and text alignment).
-- `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, `frame-src 'none'`.
-- Development only: `unsafe-eval`, `ws:`/`wss:` for HMR and `unsafe-inline` styles.
-
-Notification HTML goes through DOMPurify. A new third-party host must be added through env in `csp.ts` and covered by a test. Check the browser console for CSP violations after adding any script, font or remote resource.
-
-## i18n
-
-All user-facing text lives in `messages/uk.json` and `messages/en.json` and is rendered through the translate function `t("key", { vars })`. Ukrainian is the default language. Every key must exist in both files.
-
-## Deployment
-
-Deployment and cluster configuration: see the infrastructure repository.
+Branches, pull requests and releases: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
-
-Copyright 2024-2026 CyberICEBox
-
-### One base domain
-
-`NEXT_PUBLIC_DOMAIN` is the only host input and every host derives from it: main = `DOMAIN`, `api.DOMAIN`, `id.DOMAIN`, `admin.DOMAIN`, `exercises.DOMAIN`, event sites `<tag>.DOMAIN`, the cookie domain = `DOMAIN`. The code reads the derived hosts through one helper (`src/**/hosts.ts`); `deploy/base-domain.sh` (sourced by the container entrypoint) and the domain check in `next.config` reject an unset or malformed domain. `tests/base-domain-vectors.json` holds the shared test vectors that `tests/base-domain.test.ts` runs against all three; `deploy/base-domain.sh` and the vector file are copies kept identical in every frontend repository (the daemon and infrastructure have the same rule and the same vector file).
-
-## Error catalog sync
-
-`messages/errors.en.json` and `messages/errors.uk.json` mirror the backend error catalog (`daemon/error-catalog/`). After the backend adds error codes, run `npm run sync:errors` (daemon checkout expected at `../daemon`, or pass `-- --daemon <path>`). It adds the codes the app does not have yet and keeps the app's existing texts; `-- --check` only lists what is missing (exit 1), `-- --overwrite` also replaces existing texts. Commit the result.
+Apache License 2.0. See [LICENSE](LICENSE).
