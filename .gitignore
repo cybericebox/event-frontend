@@ -49,3 +49,8 @@ next-env.d.ts
 /.superpowers/
 /docs/superpowers/
 /.worktrees/
+
+# agent working folders
+.impeccable/
+.superpowers/
+.claude/
