@@ -8,7 +8,8 @@ import {labLifecycleKey} from "./labLifecycleCache";
 import {labAccessScope, taskBoardKey} from "./labAccessScope";
 import {ApiErrorCode} from "@/api/apiErrors";
 import {openLabLink, ParticipantChallengeError, type OwnBoard, type OwnChallenge} from "@/api/participantChallenges";
-import {proxyDestinationURL} from "@/components/event/content/proxyDestination";
+import {proxyDestinationNext} from "@/components/event/content/proxyDestination";
+import {newGrantTabName, submitGrant} from "./submitGrant";
 import {t} from "@/i18n/t";
 
 import {useParticipantPreview} from "../ParticipantPreview";
@@ -31,10 +32,10 @@ export function labLinkErrorMessage(error: unknown): string {
     return t("challenges.lab.error.failed");
 }
 
-// Opens one web device of a task's lab. The link is fetched on every click (it is
-// short-lived and single use), so no session is kept here. The tab is opened
-// synchronously inside the click, before the request, so the browser treats it as
-// user-initiated; its location is set once the link arrives.
+// Opens one web device of a task's lab. The grant is fetched on every click (it is
+// short-lived), so no session is kept here. The tab is opened synchronously inside the
+// click, before the request, so the browser treats it as user-initiated, and gets a unique
+// name; once the grant arrives it is posted into that tab by a form, never put in a URL.
 export function useLabLink(eventID: string, challengeID: string | undefined, moderators = false, lifecycle?: LabLifecycle, withdrawn = false, previewSelectionID?: string): {
     state: LabLinkState; busyKey: string | null; open: (device: string, port: number, destinationURL?: string) => void; retry: () => void;
 } {
@@ -101,7 +102,8 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
         if (latest.withdrawn || !latest.challengeID || latest.identityMismatch || pending.current || (latest.lifecycle && (latest.lifecycle.LogicalClosed || latest.lifecycle.RuntimeState !== "ready"))) return;
         const requested = {...latest, revision: latest.lifecycle?.Revision ?? null};
         last.current = {device, port, destinationURL};
-        const tab = window.open("about:blank", "_blank");
+        const tabName = newGrantTabName();
+        const tab = window.open("about:blank", tabName);
         if (!tab) {
             setState({status: "error", error: new PopupBlockedError()});
             return;
@@ -134,7 +136,7 @@ export function useLabLink(eventID: string, challengeID: string | undefined, mod
                 if (active()) {last.current = null; setState({status: "idle"});}
                 return;
             }
-            tab.location.href = proxyDestinationURL(link.url, destinationURL);
+            submitGrant(tabName, link, proxyDestinationNext(link.url, destinationURL));
             setState({status: "idle"});
         }).catch(error => {
             tab.close();

@@ -7,6 +7,8 @@ import {deriveHosts} from "@/utils/hosts";
 export type CspEnv = {
     NEXT_PUBLIC_DOMAIN?: string;
     NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?: string;
+    // Comma list of extra lab base domains (agents with another lab domain), optional.
+    NEXT_PUBLIC_LAB_DOMAINS?: string;
     NODE_ENV?: string;
 };
 
@@ -26,6 +28,18 @@ export function generateNonce(): string {
 function hostOrigin(host: string | undefined): string | null {
     const value = host?.trim();
     return value ? `https://${value}` : null;
+}
+
+const DOMAIN_NAME = /^(?=.{1,253}$)[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)+$/;
+
+// Lab devices live at <device>-<code>.<lab base domain>. The grant form is posted to them (form-action also covers
+// the redirect that follows), so every lab base domain is allowed as a wildcard host: our own labs.<domain>
+// (the pattern of the deployment) plus the optional NEXT_PUBLIC_LAB_DOMAINS. An entry that is not a plain domain
+// name is dropped, so the env cannot add a scheme, port, path or another directive to the policy.
+export function labFormTargets(domain: string | undefined, extra: string | undefined): string[] {
+    const bases = [domain?.trim() ? `labs.${domain.trim()}` : "", ...(extra ?? "").split(",")]
+        .map(value => value.trim().toLowerCase()).filter(value => DOMAIN_NAME.test(value));
+    return [...new Set(bases)].map(base => `https://*.${base}`);
 }
 
 export function buildCsp(nonce: string, env: CspEnv): string {
@@ -52,7 +66,7 @@ export function buildCsp(nonce: string, env: CspEnv): string {
         "media-src": ["'self'", "blob:", "https:"],
         "object-src": ["'none'"],
         "base-uri": ["'self'"],
-        "form-action": ["'self'"],
+        "form-action": ["'self'", ...labFormTargets(domain, env.NEXT_PUBLIC_LAB_DOMAINS)],
         "frame-ancestors": ["'none'"],
         "frame-src": ["'none'"],
         "worker-src": ["'self'", "blob:"],

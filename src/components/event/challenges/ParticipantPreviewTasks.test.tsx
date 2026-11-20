@@ -74,9 +74,15 @@ it("starts a dynamic run on click, polls preparation and opens the ready service
     await act(async () => {await client.refetchQueries({queryKey: ["event-challenge-lab", "preview", "event", base.EventChallengeID], exact: true});});
     const tab = {opener: null, close: vi.fn(), location: {href: "about:blank"}};
     vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
-    fetchMock.mockResolvedValueOnce(reply({URL: "https://lab.test/_auth?t=preview", ExpiresAt: "2099-10-16T12:00:00Z"}));
+    const posted: {action: string; target: string; fields: Record<string, string>}[] = [];
+    vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(function (this: HTMLFormElement) {
+        posted.push({action: this.action, target: this.target, fields: Object.fromEntries([...new FormData(this).entries()].map(([name, value]) => [name, String(value)]))});
+    });
+    fetchMock.mockResolvedValueOnce(reply({URL: "https://lab.test/_auth", Grant: "preview.grant", ExpiresAt: "2099-10-16T12:00:00Z"}));
     fireEvent.click(await screen.findByRole("button", {name: "Відкрити в новій вкладці"}));
-    await waitFor(() => expect(tab.location.href).toBe("https://lab.test/_auth?t=preview"));
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0]).toEqual({action: "https://lab.test/_auth", target: expect.stringMatching(/^cib-lab-./), fields: {grant: "preview.grant", next: "/"}});
+    expect(tab.location.href).toBe("about:blank");
     expect(fetchMock.mock.calls.every(([url]) => String(url).includes("/manage/participant-preview/"))).toBe(true);
     expect(fetchMock.mock.calls.at(-1)?.[0]).toContain(`/selections/${selection}/proxy`);
 });

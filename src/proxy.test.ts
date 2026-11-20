@@ -67,6 +67,14 @@ describe("event site status", () => {
         const response = await proxy(request(host()));
         expect(response.headers.get("Content-Security-Policy")).toContain("nonce-");
     });
+    it("lets forms post to the lab hosts of the configured domains, so the grant form is not blocked", async () => {
+        vi.stubEnv("NEXT_PUBLIC_DOMAIN", "example.test");
+        vi.stubEnv("NEXT_PUBLIC_LAB_DOMAINS", "labs.other.test");
+        read.mockResolvedValue({status: 200, body: {}});
+        const csp = (await proxy(request(host()))).headers.get("Content-Security-Policy") ?? "";
+        expect(csp.split("; ").find(part => part.startsWith("form-action "))).toBe("form-action 'self' https://*.labs.example.test https://*.labs.other.test");
+        vi.unstubAllEnvs();
+    });
 });
 
 describe("staff preview grant on a hidden event", () => {
