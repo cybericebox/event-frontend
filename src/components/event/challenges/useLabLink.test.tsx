@@ -101,15 +101,15 @@ describe("useLabLink", () => {
         expect(screen.getByRole("status").textContent).toBe("error|");
     });
 
-    it("closes the tab and posts nothing when the endpoint is not a plain http(s) URL without query", async () => {
-        for (const url of ["https://web-abc123.labs.test/_auth?grant=x", "javascript:alert(1)", "https://u:p@web-abc123.labs.test/_auth"]) {
+    it("closes the tab and posts nothing when the endpoint is not https with exactly the path /_auth", async () => {
+        for (const url of ["https://web-abc123.labs.test/_auth?grant=x", "https://web-abc123.labs.test/_auth#x", "https://web-abc123.labs.test/other", "https://web-abc123.labs.test/", "http://web-abc123.labs.test/_auth", "javascript:alert(1)", "https://u:p@web-abc123.labs.test/_auth"]) {
             openLink.mockResolvedValue({url, grant: "g", expiresAt: 0});
             renderProbe(<Probe />);
             fireEvent.click(screen.getByText("open")); await flush();
             cleanup();
         }
         expect(submitted).toHaveLength(0);
-        expect(tab.close).toHaveBeenCalledTimes(3);
+        expect(tab.close).toHaveBeenCalledTimes(7);
     });
 
     it("fetches a new link on every click and keeps none", async () => {
@@ -174,7 +174,7 @@ describe("late lab link fences", () => {
         fireEvent.click(screen.getByText("open"));
         view.rerender(<Probe {...next} />);
         expect(tab.close).toHaveBeenCalled();
-        await act(async () => {resolve({url: "https://old.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+        await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
         expect(tab.location.href).toBe("about:blank");
         fireEvent.click(screen.getByText("retry"));
         expect(openLink).toHaveBeenCalledTimes(1);
@@ -185,33 +185,33 @@ describe("late lab link fences", () => {
         expect(windowOpen).not.toHaveBeenCalled();
     });
     it.each([{labID: runningLab.ID, revision: "1"}, {labID: null, revision: null}, {labID: "other", revision: runningLab.Revision}])("rejects a reply without the requested generation %j", async fields => {
-        openLink.mockResolvedValue({url: "https://old.test", grant: "g", expiresAt: 0, ...fields});
+        openLink.mockResolvedValue({url: "https://old.test/_auth", grant: "g", expiresAt: 0, ...fields});
         renderProbe(<Probe lifecycle={runningLab} />);
         fireEvent.click(screen.getByText("open")); await flush();
         expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     });
     it("navigates a matching current generation", async () => {
-        openLink.mockResolvedValue({url: "https://fresh.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+        openLink.mockResolvedValue({url: "https://fresh.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
         renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); await flush();
-        expect(submitted).toHaveLength(1); expect(submitted[0].action).toBe("https://fresh.test/"); expect(tab.close).not.toHaveBeenCalled();
+        expect(submitted).toHaveLength(1); expect(submitted[0].action).toBe("https://fresh.test/_auth"); expect(tab.close).not.toHaveBeenCalled();
     });
     it("closes legacy requests when lifecycle appears", async () => {
         let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
         const view = renderProbe(<Probe />); fireEvent.click(screen.getByText("open")); view.rerender(<Probe lifecycle={runningLab} />);
-        await act(async () => {resolve({url: "https://old.test", grant: "g", expiresAt: 0});});
+        await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0});});
         expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     });
     it("closes pending windows on unmount", async () => {
         let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
         const view = renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); view.unmount();
-        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
         expect(tab.location.href).toBe("about:blank");
     });
     it("closes pending windows on session cache removal", async () => {
         client.setQueryData(["event-lab-lifecycle", "participant", "e", runningLab.ID], runningLab);
         let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
         renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open")); await act(async () => {client.clear();});
-        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+        expect(tab.close).toHaveBeenCalled(); await act(async () => {resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
         expect(tab.location.href).toBe("about:blank"); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
     });
 });
@@ -220,7 +220,7 @@ it("fences a shared cache closure before React can render the new lifecycle", as
     const key = ["event-lab-lifecycle", "participant", "e", runningLab.ID]; client.setQueryData(key, runningLab);
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<Probe lifecycle={runningLab} />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(key, completedLab); resolve({url: "https://old.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+    await act(async () => {client.setQueryData(key, completedLab); resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
@@ -240,7 +240,7 @@ it("closes a legacy blank tab when the same task runtime first publishes Lab bef
     client.setQueryData(key, {Lab: null});
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<Probe />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(key, {Lab: runningLab}); resolve({url: "https://old.test", grant: "g", expiresAt: 0, labID: null, revision: null});});
+    await act(async () => {client.setQueryData(key, {Lab: runningLab}); resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: null, revision: null});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
@@ -277,7 +277,7 @@ it.each([false, true])("board publication of canonical B fences A before observe
         client.setQueryData(["event-lab-lifecycle", mode, "e", closed.ID], closed);
         client.setQueryData(boardKey, boardValue(closed, moderators));
         expect(tab.close).toHaveBeenCalled();
-        resolve({url: "https://old.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+        resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
     });
     expect(tab.location.href).toBe("about:blank"); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
@@ -287,7 +287,7 @@ it.each([false, true])("first canonical board Lab fences a pending legacy link (
     client.setQueryData(["event-challenge-lab", mode, "e", fixtureChallenge.EventChallengeID], {...runtimeFixture, Lab: null});
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<BoardProbe moderators={moderators} />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(boardKey, boardValue(replacementLab, moderators)); resolve({url: "https://legacy.test", grant: "g", expiresAt: 0, labID: null, revision: null});});
+    await act(async () => {client.setQueryData(boardKey, boardValue(replacementLab, moderators)); resolve({url: "https://legacy.test/_auth", grant: "g", expiresAt: 0, labID: null, revision: null});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled(); fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
 });
 
@@ -297,7 +297,7 @@ it("a current board without the active task cannot authorize the old pending acc
     client.setQueryData(["event-challenge-lab", "participant", "e", fixtureChallenge.EventChallengeID], runtimeFixture);
     let resolve!: (v: unknown) => void; openLink.mockReturnValue(new Promise(r => {resolve = r;}));
     renderProbe(<BoardProbe moderators={false} />); fireEvent.click(screen.getByText("open"));
-    await act(async () => {client.setQueryData(key, ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: []})); resolve({url: "https://old.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
+    await act(async () => {client.setQueryData(key, ownBoardSchema.parse({ServerNow: "2026-10-08T12:00:00Z", Challenges: []})); resolve({url: "https://old.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});});
     expect(tab.location.href).toBe("about:blank"); expect(tab.close).toHaveBeenCalled();
 });
 
@@ -315,7 +315,7 @@ it("fences a pending ready Lab link synchronously when its returnable stage clos
     await act(async () => {
         client.setQueryData(["event-own-challenges", "e"], {...board, Stages: [{...stage, State: "closed"}]});
         expect(tab.close).toHaveBeenCalled();
-        resolve({url: "https://old-stage.test", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
+        resolve({url: "https://old-stage.test/_auth", grant: "g", expiresAt: 0, labID: runningLab.ID, revision: runningLab.Revision});
     });
     expect(tab.location.href).toBe("about:blank");
     fireEvent.click(screen.getByText("retry")); expect(openLink).toHaveBeenCalledTimes(1);
