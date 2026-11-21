@@ -39,7 +39,8 @@ FROM mirror.gcr.io/library/node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d1939
 
 # The node binary of the base image, without its symbol table and DWARF (about 22 MB); the runtime needs neither.
 FROM mirror.gcr.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS node-bin
-RUN apk add --no-cache binutils
+# libatomic: the amd64 node binary links it since node 26.13.
+RUN apk add --no-cache binutils libatomic
 COPY --from=target-node /usr/local/bin/node /node
 RUN strip --strip-all /node && /node -e "process.exit(0)"
 
@@ -47,7 +48,7 @@ RUN strip --strip-all /node && /node -e "process.exit(0)"
 # the base image's npm, corepack and yarn are not needed to run server.js. The alpine digest is the one the
 # laboratory Dockerfile pins.
 FROM mirror.gcr.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS runner
-RUN apk add --no-cache libstdc++ nginx tini gettext-envsubst
+RUN apk add --no-cache libstdc++ libatomic nginx tini gettext-envsubst
 COPY --from=node-bin /node /usr/local/bin/node
 WORKDIR /app
 
