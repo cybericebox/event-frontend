@@ -1,6 +1,8 @@
 // Inbox categories (docs/INBOX-DESIGN.md §2–3): pure logic shared by InboxButton and its tests.
 // No React or app imports here, so node --test runs it directly.
 
+import { safeLinkHref } from "../../utils/safeUrl"
+
 export type InboxCategory = "requests" | "personal" | "activity"
 export type InboxTab = "all" | InboxCategory
 export const INBOX_TABS: readonly InboxTab[] = ["all", "requests", "personal", "activity"]
@@ -124,10 +126,7 @@ export function bellLabel(unread: number, counts: InboxCounts | null): { key: st
 
 /** A link the inbox may open: a site path, an anchor, http(s) or mailto; anything else is dropped. */
 export function safeHref(value: string): string | null {
-  const href = value.trim()
-  if (href.startsWith("/") && !href.startsWith("//")) return href
-  if (href.startsWith("#") || /^https?:\/\/|^mailto:/i.test(href)) return href
-  return null
+  return safeLinkHref(value, { schemes: ["https:", "http:", "mailto:"], anchors: true })
 }
 
 /** Optimistic counts after one item is read locally (the next poll corrects them).

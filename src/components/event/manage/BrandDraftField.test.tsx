@@ -51,4 +51,11 @@ describe("favicon draft", () => {
         expect(result.current.change).toEqual({Action: "keep"});
         expect(result.current.error).toBeTruthy();
     });
+
+    it("shows no image for a current address that is not a site path or a web address", () => {
+        for (const url of ["javascript:alert(1)", "data:image/svg+xml,<svg/>", "//evil.example/x.png"]) {
+            const {result} = renderHook(() => useBrandDraft(eventID, "favicon", url, maxBytes));
+            expect(result.current.source, url).toBe("");
+        }
+    });
 });

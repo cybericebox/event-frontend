@@ -15,7 +15,7 @@ vi.mock("@/utils/pulse", () => ({
 }));
 const emitPulse = (Banners: string) => act(async () => {for (const listener of [...pulses.listeners]) listener({Banners, Inbox: null});});
 
-import {SiteBanner, SiteBannerBar} from "./SiteBanners";
+import {SiteBanner, SiteBannerBar, safeBannerLink} from "./SiteBanners";
 
 const EVENT_ID = "01a0d498-32b3-7a38-8355-30cc209f56ab";
 const banner = (patch: Record<string, unknown> = {}) => ({ID: "b1", Kind: "site", Title: "", Text: "Сервери недоступні до 18:00", LinkURL: "", LinkLabel: "", Level: "info", Dismissible: true, Version: 1, ...patch});
@@ -39,6 +39,17 @@ const listCalls = (calls: Array<{url: string}>) => calls.filter(call => call.url
 function renderBar() {
     return render(<QueryClientProvider client={new QueryClient()}><SiteBannerBar eventID={EVENT_ID} /></QueryClientProvider>);
 }
+
+describe("banner link check", () => {
+    it("lets a banner go to a site path or a web address only", () => {
+        for (const link of ["/manage", "https://example.com/a", "http://10.0.0.1:8080/x"]) expect(safeBannerLink(link), link).toBe(true);
+        for (const link of ["//evil.example", "/\\evil.example", "/\t/evil.example", "javascript:alert(1)", "data:text/html,x", "https://u:p@evil.example/", "mailto:a@b.c"]) expect(safeBannerLink(link), link).toBe(false);
+    });
+    it("draws no link for an address that would leave the site as a relative one", () => {
+        const {container} = render(<SiteBanner banner={{Text: "t", LinkURL: "/\\evil.example", LinkLabel: "x", Level: "info", Dismissible: false}} />);
+        expect(container.querySelector("a")).toBeNull();
+    });
+});
 
 describe("Site banners", () => {
     beforeEach(() => window.localStorage.clear());

@@ -7,6 +7,18 @@ afterEach(cleanup)
 
 const variables = [{ name: "event_name", description: "Назва заходу", example: "CTF" }]
 
+describe("VariableRichText markup safety", () => {
+  it("shows markup in the saved value as text, never as elements", () => {
+    const value = '<img src=x onerror="window.__xss=1"><script>window.__xss=1</script>{{.event_name}}'
+    render(<VariableRichText value={value} onChange={vi.fn()} variables={variables} dotted ariaLabel="Тема" />)
+    const field = screen.getByRole("textbox", { name: "Тема" })
+    expect(field.querySelector("img, script")).toBeNull()
+    expect(field.textContent).toContain("<img src=x")
+    expect(field.querySelector(".var-pill")?.getAttribute("data-var")).toBe("event_name")
+    expect((window as unknown as { __xss?: number }).__xss).toBeUndefined()
+  })
+})
+
 describe("VariableRichText", () => {
   it("shows variables as pills and emits the dotted token form", () => {
     const onChange = vi.fn()
