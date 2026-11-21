@@ -1006,7 +1006,7 @@ dl.event-email-preview__meta dd{margin:0;min-width:0;color:var(--ib-ink);overflo
 .event-registry-list__main small{color:var(--ib-dim)}
 .event-registry-list__main .event-registry-list__status--broken{color:var(--ib-danger)}
 .event-registry-list__actions{display:flex;gap:var(--ib-2);flex:none}
-/* «Додати з каталогу»: a wider dialog; each row is the select button plus the stats beside it (outside the button). */
+/* “Add from catalog”: a wider dialog; each row is the select button plus the stats beside it (outside the button). */
 .event-dialog--lg{width:880px}
 .event-exercise-picker__row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--ib-1) var(--ib-4);padding:var(--ib-2) var(--ib-3);border:1px solid var(--ib-line);border-radius:var(--ib-r)}
 .event-exercise-picker__row:hover:not(.is-disabled){border-color:var(--ib-control)}

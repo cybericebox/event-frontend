@@ -77,7 +77,7 @@ function useNow(active: boolean): number {
     return now;
 }
 
-// 200000 s → «2 д 7 год», shorter spans use the usual duration.
+// 200000 s → “2 d 7 h”, shorter spans use the usual duration.
 function span(seconds: number): string {
     const days = Math.floor(seconds / 86400);
     if (days > 0) return t("manage.analytics.status.daysHours", {d: days, h: Math.floor((seconds % 86400) / 3600)});

@@ -100,7 +100,7 @@ function bannerWindow(banner: ManageBanner): string {
     return banner.ActiveFrom ? t("manage.banners.window.from", {from: formatBroadcastTime(banner.ActiveFrom)}) : t("manage.banners.window.to", {to: formatBroadcastTime(banner.ActiveTo!)});
 }
 
-// «Банери»: the site banners of the event. Owners and moderators with write
+// “Banners”: the site banners of the event. Owners and moderators with write
 // access create, edit, switch and delete them; viewers only read.
 export function BannersManager() {
     const {event, canManage} = useManager();
@@ -152,7 +152,7 @@ export function BannersManager() {
         if (done) setEditing(current => current === editing ? null : current ? {...current, banner: saved ?? current.banner} : null);
     }
 
-    // «Вимкнути / Увімкнути»: the label flips at once, saves run one after another and block nothing.
+    // “Turn off / Turn on”: the label flips at once, saves run one after another and block nothing.
     function toggle(banner: ManageBanner) {
         if (!canManage) return;
         const key = ["event-manage-banners", eventID];

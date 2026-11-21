@@ -84,7 +84,7 @@ describe("invite dialog", () => {
     const send = () => screen.getByRole("button", {name: "Надіслати запрошення"}) as HTMLButtonElement;
     const people = new File(["email,first_name\na@x.test,Ann\nb@x.test,\n"], "people.csv", {type: "text/csv"});
 
-    it("types addresses in «Вручну»: the field is required and there is no file zone", () => {
+    it("types addresses in 'Manually': the field is required and there is no file zone", () => {
         renderInvite();
         expect(screen.getByRole("button", {name: "Вручну"}).getAttribute("aria-pressed")).toBe("true");
         expect(screen.getByText("Адреси електронної пошти", {exact: false}).textContent).toContain("*");
@@ -93,7 +93,7 @@ describe("invite dialog", () => {
         expect(send().disabled).toBe(true);
     });
 
-    it("takes a file in «З CSV-файлу» with a summary, and says it can be dragged in", async () => {
+    it("takes a file in 'From a CSV file' with a summary, and says it can be dragged in", async () => {
         renderInvite();
         fireEvent.click(screen.getByRole("button", {name: "З CSV-файлу"}));
         expect(screen.queryByRole("textbox", {name: /Адреси/})).toBeNull();

@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {analyticsRequest, periodQuery, wholeEvent, type AnalyticsPeriod} from "@/api/manageAnalytics";
 
-// «Використання»: GET .../manage/analytics/usage. Per participant, the VPN
+// “Usage”: GET .../manage/analytics/usage. Per participant, the VPN
 // connection state and the lab access over the VPN and the web proxy. Counts
 // and times only. Online comes from the last handshake, never from traffic.
 

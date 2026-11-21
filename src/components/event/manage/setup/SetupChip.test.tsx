@@ -25,7 +25,7 @@ function renderChip() {
 }
 
 describe("SetupChip", () => {
-    it("shows a quiet «Готово» linking to the wizard when all is done and published", async () => {
+    it("shows a quiet 'Ready' linking to the wizard when all is done and published", async () => {
         state.infra = false;
         renderChip();
         const chip = await screen.findByRole("link", {name: /Готово/});

@@ -37,7 +37,7 @@ function sendErrorMessage(error: unknown): string {
     return apiErrorMessage(code, t("manage.broadcasts.error.send"));
 }
 
-// «Надіслати повідомлення»: channels, the message (the email editor of the
+// “Send a message”: channels, the message (the email editor of the
 // event's templates and the in-app fields), the audience with a live recipient
 // count, and the previews. Sending asks for confirmation first.
 export function BroadcastCompose() {
@@ -51,7 +51,7 @@ export function BroadcastCompose() {
     const [pendingTemplate, setPendingTemplate] = useState<BroadcastTemplate | null>(null);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState("");
-    // Errors show once a field is left empty or after «Надіслати» is pressed, never on an untouched form.
+    // Errors show once a field is left empty or after “Submit” is pressed, never on an untouched form.
     const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
     const [attempted, setAttempted] = useState(false);
     const fieldsRef = useRef<HTMLDivElement>(null);
@@ -88,7 +88,7 @@ export function BroadcastCompose() {
         else applyTemplate(template);
     }
 
-    // «Надіслати» on an incomplete form shows every error and moves to the first one.
+    // “Submit” on an incomplete form shows every error and moves to the first one.
     function requestSend() {
         setError("");
         if (!validation) {
@@ -99,7 +99,7 @@ export function BroadcastCompose() {
         revealFirstError();
     }
 
-    // «Зберегти як шаблон» stores the message without the audience; an incomplete message shows its errors first.
+    // “Save as template” stores the message without the audience; an incomplete message shows its errors first.
     function requestSaveTemplate() {
         if (!messageValidation(draft)) {setSavingTemplate(true); return;}
         setAttempted(true);

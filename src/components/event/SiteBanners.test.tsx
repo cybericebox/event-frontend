@@ -40,7 +40,7 @@ function renderBar() {
     return render(<QueryClientProvider client={new QueryClient()}><SiteBannerBar eventID={EVENT_ID} /></QueryClientProvider>);
 }
 
-describe("Банери сайту", () => {
+describe("Site banners", () => {
     beforeEach(() => window.localStorage.clear());
     afterEach(() => {cleanup(); pulses.listeners.clear(); pulses.initial = "v1"; vi.useRealTimers(); vi.restoreAllMocks();});
 

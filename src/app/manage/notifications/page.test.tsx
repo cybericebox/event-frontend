@@ -10,7 +10,7 @@ vi.mock("react-hot-toast", () => ({toast: {success: vi.fn(), error: vi.fn()}}));
 
 import ManageNotificationsPage from "./page";
 
-describe("Сповіщення на сайті, список", () => {
+describe("On-site notifications, list", () => {
     afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
     it("lists the in-app notifications with status and switch and links to the template page", async () => {

@@ -44,7 +44,7 @@ export function RegistrySecretsPanel() {
     const [lastRemoval, setLastRemoval] = useState<RegistrySecret | null>(null);
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState("");
-    // The secrets being checked now: only their own «Перевірити зараз» button is busy.
+    // The secrets being checked now: only their own “Check now” button is busy.
     const [checking, setChecking] = useState<ReadonlySet<string>>(new Set());
     const [checkError, setCheckError] = useState<{id: string; message: string} | null>(null);
 

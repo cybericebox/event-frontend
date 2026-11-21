@@ -60,7 +60,7 @@ function renderManager() {
 }
 
 describe("required fields asked from everyone (participants table)", () => {
-    it("shows a «Не заповнено» column with the number of missing fields", async () => {
+    it("shows a 'Not filled in' column with the number of missing fields", async () => {
         form = {...form, RequireExisting: true};
         renderManager();
         await screen.findByText("Олена Коваль");

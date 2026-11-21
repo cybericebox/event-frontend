@@ -5,7 +5,7 @@ import {t} from "@/i18n/t";
 import {liveLogoURL} from "./liveLayout";
 import type {LiveMarker} from "./liveColors";
 
-// «Позначка місць»: places 1–3 as a number, a medal circle, a medal icon, a
+// “Place marks”: places 1–3 as a number, a medal circle, a medal icon, a
 // cup or the organizer's own picture; other places always as a number. The
 // mark sits centred in a box of one width, so places 1–3 and 4+ line up.
 export function LivePlaceMark({place, marker, images}: {place: number; marker: LiveMarker; images: string[] | null}) {

@@ -18,7 +18,7 @@ type FunnelCard = {
     median: number | null;
 };
 
-// The three cards of «Комунікації»: stage counts, the conversion and the
+// The three cards of “Communications”: stage counts, the conversion and the
 // median time. A missing rate or median is «—», never a zero.
 export function funnelCards(funnels: Funnels): FunnelCard[] {
     const {Invitations: invitations, Registration: registration, Applications: applications} = funnels;

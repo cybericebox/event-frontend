@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {analyticsRequest} from "@/api/manageAnalytics";
 
-// «Звіт по заході» (docs/EVENT-ANALYTICS.md §6.8): GET .../manage/analytics/report
+// “Event report” (docs/EVENT-ANALYTICS.md §6.8): GET .../manage/analytics/report
 // and .../report/export.zip. Available only after the finish.
 
 const count = z.number().int();

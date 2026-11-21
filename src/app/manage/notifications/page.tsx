@@ -9,7 +9,7 @@ import {CustomTemplateCreate, useCustomTemplates} from "@/components/event/manag
 import {useSubscriptionToggle} from "@/components/event/manage/notifications/useSubscriptionToggle";
 import {t} from "@/i18n/t";
 
-// «На сайті»: the in-app notifications of the event, like admin's template list.
+// “On site”: the in-app notifications of the event, like admin's template list.
 export default function ManageNotificationsPage() {
     const {event, canManage} = useManager();
     const eventID = event.EventID;

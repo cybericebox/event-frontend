@@ -110,7 +110,7 @@ function AnswersForm({form, saved, fillable, scope, error, onCancel, onSave}: {
     </form>;
 }
 
-// The read view of the answers: groups, labels and values; a required field still owed is marked «Заповніть».
+// The read view of the answers: groups, labels and values; a required field still owed is marked “Fill in”.
 function AnswersRead({form, answers, missing}: {form: ParticipantForm; answers: ParticipantAnswers; missing: readonly string[]}) {
     const shown = visibleFieldKeys(form.Document.blocks, answers);
     return <dl className="event-pp-answers">{answerGroups(form).map(group => <GroupRows key={group.id} title={group.title}>
@@ -129,7 +129,7 @@ function FieldRowRead({field, value, owed}: {field: FormField; value: Participan
     </>;
 }
 
-// «Анкета» / «Анкета команди»: the answers read-only with «Редагувати», which opens the form. `canEdit` is false for
+// “Questionnaire” / “Team questionnaire”: the answers read-only with “Edit”, which opens the form. `canEdit` is false for
 // a member reading the team's card or once the event is over; `whyReadOnly` says why.
 export function AnswersCard({title, note, form, answers, missing, canEdit, whyReadOnly, scope, onSave}: {
     title: string; note?: string; form: ParticipantForm; answers: ParticipantAnswers; missing: readonly string[]; canEdit: boolean; whyReadOnly?: string; scope: "participant" | "team";

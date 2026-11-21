@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {analyticsRequest, periodQuery, type AnalyticsPeriod, wholeEvent} from "@/api/manageAnalytics";
 
-// «Учасники» (§6.2) and «Комунікації» (§6.7): GET /events/{id}/manage/analytics/
+// “Participants” (§6.2) and “Communications” (§6.7): GET /events/{id}/manage/analytics/
 // participants and communications. The period limits the registrations per day
 // (participants) or the whole window (communications); open bounds by default.
 

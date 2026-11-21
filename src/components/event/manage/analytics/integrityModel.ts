@@ -3,7 +3,7 @@ import {integrityKinds} from "@/api/manageAnalyticsIntegrity";
 import {t} from "@/i18n/t";
 import {formatDateTime, formatDuration, noValue} from "./analyticsFormat";
 
-// Pure helpers of «Доброчесність»: kind labels, the one-sentence evidence of a
+// Pure helpers of “Integrity”: kind labels, the one-sentence evidence of a
 // signal and the journal marker. Neutral wording: hints to review, not verdicts.
 
 export const integrityKey = (eventID: string) => ["event-analytics-integrity", eventID] as const;
@@ -12,7 +12,7 @@ export const integrityDismissalsKey = (eventID: string) => ["event-analytics-int
 
 export const kindLabel = (kind: string) => (integrityKinds as readonly string[]).includes(kind) ? t(`manage.analytics.integrity.kind.${kind}`) : kind;
 
-// The participant-facing level name of the task board («Легке», «Розминка»).
+// The participant-facing level name of the task board (“Easy”, “Warm-up”).
 export const levelLabel = (level: IntegrityLevel) => t(`challenges.difficulty.${level}`);
 
 // The precise reason of a kind, one short phrase (chip titles, journal tooltip).

@@ -121,7 +121,7 @@ function IncompleteTeamsTable({data, state, onRetry, error}: {error?: unknown; d
     </div>;
 }
 
-// «Учасники й реєстрація» (§6.2): the participation funnel, registrations per
+// “Participants and registration” (§6.2): the participation funnel, registrations per
 // day and channel, team fill, the registration form answers and the list of
 // approved participants who never attempted a task.
 export function AnalyticsParticipants() {

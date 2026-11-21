@@ -19,7 +19,7 @@ const icons: Record<SetupStepID, LucideIcon> = {
     testMode: FlaskConical,
 };
 
-// «Підготовка заходу»: the step-by-step checklist to run the event. Always
+// “Event setup”: the step-by-step checklist to run the event. Always
 // available, also after the setup, as the list of what is set and what is not.
 export function SetupWizard() {
     const {event} = useManager();

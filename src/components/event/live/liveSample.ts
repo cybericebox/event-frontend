@@ -50,7 +50,7 @@ export function liveSampleResults(now: number): ManageResultsSnapshot & {SampleE
     };
 }
 
-// Sample stages for the «Етапи» block of an event without stages: three
+// Sample stages for the “Stages” block of an event without stages: three
 // two-hour stages from the start with short breaks.
 export function liveSampleStages(start: string): LiveStage[] {
     const at = Date.parse(start);

@@ -42,7 +42,7 @@ function renderPage() {
 }
 
 describe("required fields asked from every team (teams table)", () => {
-    it("shows «Не заповнено» with the number for teams that owe fields", async () => {
+    it("shows 'Not filled in' with the number for teams that owe fields", async () => {
         form = {...form, RequireExisting: true};
         renderPage();
         await screen.findByText("Blue Team");
@@ -58,7 +58,7 @@ describe("required fields asked from every team (teams table)", () => {
 });
 
 describe("staff-only fields (teams table)", () => {
-    it("are editable in the team's «Керувати» dialog and stay out of the answers listing", async () => {
+    it("are editable in the team's 'Manage' dialog and stay out of the answers listing", async () => {
         renderPage();
         await screen.findByText("Blue Team");
         fireEvent.click(screen.getByRole("button", {name: "Керувати командою Blue Team"}));

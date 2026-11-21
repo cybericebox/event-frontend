@@ -19,7 +19,7 @@ export const COMMUNICATIONS_POLL_SECONDS = 30;
 
 const number = new Intl.NumberFormat("uk-UA");
 
-// «Комунікації» (§6.7): mail and in-app notifications per type with errors and
+// “Communications” (§6.7): mail and in-app notifications per type with errors and
 // the in-app read rate, and the completion of every event form.
 export function AnalyticsCommunications() {
     const {event} = useManager();

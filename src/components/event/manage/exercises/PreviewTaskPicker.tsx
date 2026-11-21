@@ -10,7 +10,7 @@ import {t} from "@/i18n/t";
 
 type Chosen = {ExerciseVersionID: string; VariantID: string};
 
-// «Завдання з каталогу»: a search combobox whose dropdown lists the matching tasks as checkbox rows. Tasks that
+// “Catalog exercises”: a search combobox whose dropdown lists the matching tasks as checkbox rows. Tasks that
 // cannot be previewed stay in the list, muted, with the reason; the choosable ones come first.
 export function PreviewTaskPicker({eventID, selected, onAdd, onRemove, onVariant}: {
     eventID: string; selected: Chosen[];

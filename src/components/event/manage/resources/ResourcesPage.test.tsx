@@ -21,7 +21,7 @@ function renderPage() {
 }
 
 describe("ResourcesPage", () => {
-    it("puts the request button in the page header and shows the reserve in GB with «Діє до»", async () => {
+    it("puts the request button in the page header and shows the reserve in GB with 'Valid until'", async () => {
         renderPage();
         const button = await screen.findByRole("button", {name: "Попросити більше ресурсів"});
         expect(button.closest(".event-manage-heading__actions")?.parentElement?.tagName).toBe("HEADER");
@@ -56,7 +56,7 @@ describe("ResourcesPage", () => {
         expect(time.closest(".event-resources__decision")).not.toBe(note);
     });
 
-    it("disables «Попросити більше ресурсів» while a request is still being reviewed", async () => {
+    it("disables 'Ask for more resources' while a request is still being reviewed", async () => {
         mocks.get.mockResolvedValue({...data, Changes: [{ID: "c1", RequestedAt: "2026-10-17T10:00:00Z", Size: amount(0, 8 * GB), Dynamic: null, WindowStart: null, WindowEnd: null,
             Reason: "", Status: "pending", DecidedAt: null, DecisionNote: ""}]});
         render(<QueryClientProvider client={new QueryClient()}><ResourcesPage /></QueryClientProvider>);

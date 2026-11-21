@@ -62,7 +62,7 @@ function renderManager(initialTab: "participants" | "invitations" = "participant
 }
 
 describe("last online and last in a laboratory", () => {
-    it("shows both columns as a relative time with the exact time, and «ніколи» when it never happened", async () => {
+    it("shows both columns as a relative time with the exact time, and 'never' when it never happened", async () => {
         const seen = new Date(Date.now() - 5 * 60_000).toISOString();
         rows = [person(ID_LIST, "Олена Коваль", {LastSeenAt: seen, LastLabAt: null}), person(ID_OTHER, "Ігор Мельник")];
         renderManager();
@@ -118,7 +118,7 @@ describe("participant modal in the URL", () => {
 });
 
 describe("invitations before publication", () => {
-    it("shows a neutral «Очікує публікації» tag with its hint instead of «Прострочено» or «Надіслано»", async () => {
+    it("shows a neutral 'Awaiting publication' tag with its hint instead of 'Expired' or 'Sent'", async () => {
         rows = [
             person(ID_LIST, "Олена Коваль", {Invited: true, Status: 1, InvitationSentAt: "2026-09-02T10:00:00Z", InvitationAwaitingPublication: true}),
             person(ID_OTHER, "Ігор Мельник", {Invited: true, Status: 1, InvitationExpired: true}),

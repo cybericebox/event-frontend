@@ -7,7 +7,7 @@ import {t} from "@/i18n/t";
 import {formatClock} from "./challengeBoardModel";
 
 // The stage timers of the board header, next to the event timer: inside a stage whose countdown is visible,
-// «Етап «…» · Залишилось у етапі»; during a break, «Перерва до …». They count against the server's clock
+// “Stage … · Time left in the stage”; during a break, “Break until …”. They count against the server's clock
 // (ServerNow, carried by the offset), never the browser's own.
 export function StageTimers({board, offset, onZero}: {board: Pick<OwnBoard, "CurrentStage" | "NextOpensAt">; offset: number; onZero: () => void}) {
     const stage = board.CurrentStage;

@@ -18,7 +18,7 @@ export function platformErrorCode(error: unknown): number | undefined {
 
 // The one layout of every error and not-found state (DS error-page): a big muted status code, a title
 // (two lines when `title` is a pair), one line, the actions and, for an error that carries a platform
-// code, the faint «Код помилки» line.
+// code, the faint “Error code” line.
 //   page:  the app shell could not render; centered in the viewport with the thin footer. The footer
 //          brand is the event logo and name when the event is known, the platform crest otherwise
 //          (`platformBrand` forces the crest: the screen must not reveal an event).
@@ -64,7 +64,7 @@ export function ErrorPage({mode, code, title, text, children, refCode, ticket, r
     </div>;
 }
 
-// «Номер звернення» with a small copy button; the result is announced through a live region.
+// “Reference number” with a small copy button; the result is announced through a live region.
 function Ticket({value}: {value: string}) {
     const [copied, setCopied] = useState(false);
     async function copy() {

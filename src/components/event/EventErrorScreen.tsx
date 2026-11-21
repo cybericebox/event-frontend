@@ -14,7 +14,7 @@ export function goBack() {
     else window.location.assign("/");
 }
 
-// The «Повідомити деталі» link: the feedback mailto, prefilled when it is clicked (the page URL and the
+// The “Report details” link: the feedback mailto, prefilled when it is clicked (the page URL and the
 // time are known only in the browser). An API error carries the reference number; a crash carries the
 // trimmed message, the app name and the build version. No personal data beyond what the user types.
 function ReportLink({ticket, message}: {ticket?: string; message: string}) {
@@ -31,7 +31,7 @@ function ReportLink({ticket, message}: {ticket?: string; message: string}) {
     return <a className="ib-link" href={`mailto:${email}`} onClick={fill}>{t("error.page.report")}</a>;
 }
 
-// Error boundary screen, the error page with code 500: «Спробувати ще раз» and «Назад». Never shows error
+// Error boundary screen, the error page with code 500: “Try again” and “Back”. Never shows error
 // details on the page. `error` decides what the page says:
 //   an API error (it carries a platform code or an HTTP status): the backend journaled it, so the text says the report
 //   is received, and the reference «{code}-{request id, 8 chars}» (the 8 characters alone when there is no platform code) shows when the

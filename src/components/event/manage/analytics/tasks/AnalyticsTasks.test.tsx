@@ -65,7 +65,7 @@ function renderTasks() {
     return render(<ManagerContext.Provider value={{event: event as never, canManage: true, canExport: true}}><QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><AnalyticsTasks /></QueryClientProvider></ManagerContext.Provider>);
 }
 
-describe("Завдання", () => {
+describe("Tasks", () => {
     it("lists the tasks with the calibration verdicts and the group summary", async () => {
         mockApi({sensitive: false});
         renderTasks();

@@ -4,7 +4,7 @@ import {zoneLabel} from "@/components/ui/dateTimePicker";
 // option, so Intl uses the browser's). UTC stays only in exports and API params.
 const dateTime = new Intl.DateTimeFormat("uk-UA", {dateStyle: "medium", timeStyle: "short"});
 
-// «29 вер. 2026 р., 17:30» in the viewer's zone.
+// “Sep 29, 2026, 17:30” in the viewer's zone.
 export function formatDateTime(value: string | number | Date): string {
     return dateTime.format(new Date(value));
 }

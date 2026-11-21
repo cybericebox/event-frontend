@@ -20,7 +20,7 @@ import "./resources.css";
 
 const STATUS_TONE: Record<ChangeStatus, string> = {pending: "ib-tag--warn", approved: "ib-tag--ok", rejected: "ib-tag--danger"};
 
-// What a request asks for, as one line: «розмір 8 ГБ · діє до …».
+// What a request asks for, as one line: “size 8 GB · valid until …”.
 function changeSummary(change: ResourceChange): string {
     const parts: string[] = [];
     if (change.Size) parts.push(t("manage.resources.history.size", {value: formatGB(change.Size.MemoryBytes)}));

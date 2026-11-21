@@ -18,8 +18,8 @@ export const LEADER_LINES = 5;
 const axisText = "var(--ib-chart-axis)";
 const palette = {total: "var(--ib-s4)", open: "var(--ib-s1)", approval: "var(--ib-ok)", invitation: "var(--ib-warn)"};
 
-// The score chart of the top teams as smooth lines (the Live «Динаміка балів»
-// data), with «Зараз» while the event runs.
+// The score chart of the top teams as smooth lines (the Live “Score dynamics”
+// data), with “now” while the event runs.
 export function scoresOverviewOption(scores: AnalyticsScores, now?: number) {
     const option = scoreChartOption(scores);
     const marks = now === undefined ? [] : visibleMarkers([{at: new Date(now).toISOString(), label: t("manage.analytics.marker.now")}], scores.Period.From, scores.Period.To);
@@ -83,7 +83,7 @@ export function useOverviewRegistrations(enabled: boolean): RegistrationsQuery {
     });
 }
 
-// «Динаміка балів»: the top teams' running score. It exists in every phase;
+// “Score dynamics”: the top teams' running score. It exists in every phase;
 // before the start it says so (empty).
 export function ScoresCard({query, final}: {query: ScoresQuery; final: boolean}) {
     const {event} = useManager();
@@ -97,7 +97,7 @@ export function ScoresCard({query, final}: {query: ScoresQuery; final: boolean})
     </AnalyticsBlock>;
 }
 
-// «Реєстрації»: before the start, instead of the (empty) activity chart.
+// “Registrations”: before the start, instead of the (empty) activity chart.
 export function RegistrationsCard({query}: {query: RegistrationsQuery}) {
     const {event} = useManager();
     const data = query.data;

@@ -39,7 +39,7 @@ it("shows «—» for hints when the team used none, like the results table", as
     expect(hints.textContent).not.toContain("−0");
 });
 
-it("names the row button «Переглянути» for a read-only viewer", async () => {
+it("names the row button 'View' for a read-only viewer", async () => {
     state.canManage = false;
     renderPage();
     expect(await screen.findByRole("button", {name: "Переглянути команду Blue Team"})).toBeTruthy();

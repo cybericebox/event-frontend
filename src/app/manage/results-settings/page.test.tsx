@@ -30,7 +30,7 @@ async function chooseEnding(label: string) {
     fireEvent.click(await screen.findByRole("menuitemradio", {name: label}));
 }
 
-describe("Налаштування результатів, збереження без миготіння", () => {
+describe("Results settings, saving without blinking", () => {
     beforeEach(() => {window.sessionStorage.clear(); server.canManage = true; server.get.mockResolvedValue(settings);});
     afterEach(() => {cleanup(); server.get.mockReset(); server.put.mockReset();});
 

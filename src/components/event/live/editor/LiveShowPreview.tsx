@@ -16,7 +16,7 @@ import {t} from "@/i18n/t";
 
 export type LivePreviewData = "sample" | "real";
 
-// «Перегляд»: the screen as the hall sees it, over the whole editor window —
+// “Preview”: the screen as the hall sees it, over the whole editor window —
 // no grid, frames or handles, the clock running, table pages turning and
 // logos scrolling. It shows sample data on request (or until the event has
 // results), so the screen can be shown before the event. Esc closes it.
@@ -29,7 +29,7 @@ export function LiveShowPreview({layout, event, stages, results, sample, nowOffs
     const fullscreen = useFullscreen();
     const close = useRef(onClose);
     useEffect(() => {close.current = onClose;});
-    // Opening focuses «Закрити»; closing leaves the browser full screen and returns the focus.
+    // Opening focuses “Close”; closing leaves the browser full screen and returns the focus.
     useEffect(() => {
         const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         closeRef.current?.focus();

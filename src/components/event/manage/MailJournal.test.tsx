@@ -37,7 +37,7 @@ function renderJournal() {
     return render(<QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}><MailJournal /></QueryClientProvider>);
 }
 
-describe("Журнал надсилання", () => {
+describe("Sending log", () => {
     afterEach(cleanup);
 
     it("is its own page with the manage table", async () => {
@@ -76,7 +76,7 @@ describe("Журнал надсилання", () => {
         expect(within(dialog).getByText(/timeout/)).toBeTruthy();
     });
 
-    it("marks SMTP test rows with «Тест» and filters by them", async () => {
+    it("marks SMTP test rows with 'Test' and filters by them", async () => {
         const urls = mockApi([{Items: [item(1, {NotificationType: "smtp_test"}), item(2)], Total: 2}]);
         renderJournal();
         const table = screen.getByRole("table");
@@ -88,7 +88,7 @@ describe("Журнал надсилання", () => {
         await waitFor(() => expect(urls.some(url => url.includes("type=smtp_test"))).toBe(true));
     });
 
-    it("shows «Розсилка» with a link to the broadcast when the row has a BroadcastID", async () => {
+    it("shows 'Broadcast' with a link to the broadcast when the row has a BroadcastID", async () => {
         mockApi([{Items: [item(1, {NotificationType: "broadcast", BroadcastID: "0190c6a4-0000-7000-8000-00000000abcd"}), item(2)], Total: 2}]);
         renderJournal();
         const link = await screen.findByRole("link", {name: "Розсилка"});
@@ -173,7 +173,7 @@ describe("Журнал надсилання", () => {
         expect(within(dialog).getByText(raw)).toBeTruthy();
     });
 
-    it("shows the human SMTP error with the raw text under «Технічні деталі»", async () => {
+    it("shows the human SMTP error with the raw text under 'Technical details'", async () => {
         mockApi([{Items: [item(1, {Targets: [{Channel: "email", Status: "error", Error: "535 5.7.8 bad credentials", ErrorKind: "smtp_auth", ErrorCode: "535", FallbackError: "554 rejected", FallbackErrorKind: "smtp_other", FallbackErrorCode: "554", Attempts: 1, Transport: "event", Recipient: "user1@example.com", UpdatedAt: "2026-09-29T07:31:00Z"}]})], Total: 1}]);
         renderJournal();
         const table = screen.getByRole("table");

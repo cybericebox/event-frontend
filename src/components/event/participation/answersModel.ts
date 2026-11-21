@@ -6,7 +6,7 @@ import {visibleFieldKeys} from "@/components/event/formVisibility";
 
 export type AnswerGroup = {id: string; title: string | null; blocks: FormBlock[]};
 
-// The form's blocks cut into groups at each «Розділ»; blocks before the first heading form an untitled group.
+// The form's blocks cut into groups at each “Section”; blocks before the first heading form an untitled group.
 // Staff-only questions never reach a participant.
 export function answerGroups(form: ParticipantForm): AnswerGroup[] {
     const groups: AnswerGroup[] = [];

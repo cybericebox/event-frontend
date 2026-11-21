@@ -19,7 +19,7 @@ export function ResourcesLine({resources, className = "event-resources-line"}: {
     return hasResources(resources) ? <span className={className} data-resources-total>{resourcesText(resources)}</span> : null;
 }
 
-// The largest variant in short form for a one-line header: «1 vCPU · 1 ГіБ · пристроїв: 3».
+// The largest variant in short form for a one-line header: “1 vCPU · 1 GiB · devices: 3”.
 export function ResourcesShort({resources, className = "event-resources-short"}: {resources: TaskResources | null; className?: string}) {
     if (!hasResources(resources)) return null;
     const max = resources.Max;

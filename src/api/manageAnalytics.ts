@@ -12,7 +12,7 @@ export const wholeEvent: AnalyticsPeriod = {from: null, to: null};
 const count = z.number().int();
 const optionalTime = z.string().nullish().transform(value => value ?? null);
 
-// People: the per-person rows of «Використання» (owner, write moderators, platform staff).
+// People: the per-person rows of “Usage” (owner, write moderators, platform staff).
 export const AnalyticsAccessSchema = z.object({Sections: z.boolean(), Sensitive: z.boolean().default(false), People: z.boolean().default(false)});
 export type AnalyticsAccess = z.infer<typeof AnalyticsAccessSchema>;
 

@@ -1,4 +1,4 @@
-/* «Таблиця результатів» and «Налаштування результатів». */
+/* “Results table” and “Results settings”. */
 .event-results-freeze{flex-wrap:wrap;margin-bottom:0}
 .event-results-freeze>svg{flex:none;color:var(--ib-ok)}
 .event-results-freeze.is-frozen>svg{color:var(--ib-action)}

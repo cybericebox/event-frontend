@@ -3,7 +3,7 @@
 // screen pixels; `caption` and `body` are the effective text sizes of the
 // canvas (liveTextSize).
 
-// A widget caption («Таблиця результатів») takes this many caption sizes,
+// A widget caption (“Results table”) takes this many caption sizes,
 // its gap to the content included.
 export const liveCaptionBlock = 1.8;
 // The table header row, in caption sizes.
@@ -123,7 +123,7 @@ export const liveEstimateWidth: LiveMeasure = (text, font) => text.length * lett
 // ends with «…».
 export function liveTableFit({width, rowHeight, body, rankChars, pointsChars, names, nameLead = 0, measure = liveEstimateWidth}: {
     width: number; rowHeight: number; body: number; rankChars: number; pointsChars: number; names: string[];
-    // Room before the name in row-text sizes: the «Ініціали» avatar.
+    // Room before the name in row-text sizes: the “Initials” avatar.
     nameLead?: number; measure?: LiveMeasure;
 }): LiveTableFit {
     const byHeight = Math.min(rowHeight / liveRowLeading, body * liveRowTextMax);
@@ -188,7 +188,7 @@ export function livePodiumFit({width, height, names, body, caption, measure = li
     return {name, lead: Math.max(name, lead), meta: Math.max(caption, name * 0.6), gap, pad, readable: name >= body};
 }
 
-// «Подіум → Картки»: three equal cards, each a name line over the points and
+// “Podium → Cards”: three equal cards, each a name line over the points and
 // an optional ring. The names fit the card next to the place badge; the
 // points and the ring share the rest of the card.
 export type LiveCardsFit = {name: number; meta: number; points: number; ring: number; gap: number; pad: number; readable: boolean};
@@ -204,7 +204,7 @@ export function liveCardsBox(width: number, height: number): {column: boolean; g
 
 export function liveCardsFit({width, height, names, pointsChars, ring, rings = ring ? 1 : 0, ringLabels = false, body, caption, measure = liveEstimateWidth}: {
     width: number; height: number; names: string[]; pointsChars: number; ring: boolean;
-    // Rings side by side («Бали» and «Прапори»), and whether each carries its label below.
+    // Rings side by side (“Points” and “Flags”), and whether each carries its label below.
     rings?: number; ringLabels?: boolean;
     body: number; caption: number; measure?: LiveMeasure;
 }): LiveCardsFit {

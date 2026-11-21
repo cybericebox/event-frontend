@@ -138,7 +138,7 @@ function PreviewBoard({event}: {event: PublicEventInfo}) {
     const board = useQuery({queryKey: previewBoardKey(event.EventID), queryFn: () => getPreviewBoard(event.EventID), retry: false, refetchInterval: 10000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (!board.data) return <Page>{board.isPending ? <EventLoading label={t("challenges.loading")} /> : <EventLoadError message={t("challenges.loadFailed.title")} error={board.error} onRetry={() => void board.refetch()} />}</Page>;
-    // A dynamic task has no addresses until its lab runs: while «Показати завдання» launches the labs its card shows the loader
+    // A dynamic task has no addresses until its lab runs: while “Show tasks” launches the labs its card shows the loader
     // and does not open. With no run once the launch is over (failed, ended) it opens, so the task's own start button can retry.
     const launching = preview.infraBusy === "starting";
     const challenges = board.data.Challenges.map(task => launching && task.PreviewDynamic && !task.PreviewRunID && task.PreviewCanStart === true
@@ -165,7 +165,7 @@ function ModeratorsBoard({event, finished}: {event: PublicEventInfo; finished: b
     }, select: data => preview.active ? data.filter(item => item.BoardPublished !== false) : data, enabled: !!access.data?.CanManage, retry: false, refetchInterval: 30000});
     useRefreshFailedToast(board.isError && !!board.data, board.errorUpdatedAt);
     if (access.isPending) return <EventLoading label={t("challenges.loading")} />;
-    // Staff without the manage right cannot register for their own event either: no «Приєднатися» for them.
+    // Staff without the manage right cannot register for their own event either: no “Join” for them.
     if (access.data && !access.data.CanManage) return <Page><EmptyState message={t("challenges.viewerOnly")} /></Page>;
     if (!access.data?.CanManage) return <Page><NotParticipant eventID={event.EventID} message={t("challenges.participantsOnly")} action={t("challenges.join")} /></Page>;
     const banner = preview.active ? undefined : <EventBanner title={t("challenges.moderators.bannerTitle")} message={t("challenges.moderators.bannerMessage")} />;
@@ -222,7 +222,7 @@ export function ChallengesBoard() {
     useRefreshFailedToast(challenges.isError && !!challenges.data, challenges.errorUpdatedAt);
     if (!event) return <EventLoading label={t("challenges.loading")} />;
     if (preview.active) {
-        // The test tasks are staff's own: unless «Показати завдання» is off they show whatever the simulated registration, team and event phase say.
+        // The test tasks are staff's own: unless “Show tasks” is off they show whatever the simulated registration, team and event phase say.
         if (preview.state!.tasks) return <PreviewBoard event={event} />;
         if (preview.state!.status !== 2) return <Page><EmptyState message={t("challenges.participantsOnly")} action={<Link className="ib-btn ib-btn--primary" href="/join">{t("challenges.join")}</Link>} /></Page>;
         if (event.Participation === 1 && !preview.state!.team) return <Page banners={<EventBanner title={t("challenges.noTeam.title")} message={t("challenges.noTeam.message")} action={<Link className="ib-btn ib-btn--sm ib-btn--primary" href="/participation?tab=team">{t("challenges.noTeam.action")}</Link>} />} />;

@@ -19,10 +19,10 @@ function labels(form: ParticipantForm | null | undefined, keys: readonly string[
     return keys.map(key => fields.find(field => field.key === key)?.label.trim() || key).join(", ");
 }
 
-// «Заповніть нові поля»: the organizer added required fields and asked
+// “Fill in the new fields”: the organizer added required fields and asked
 // everyone to fill them. Nobody is locked out; a submission block, when the
 // organizer chose it, is said in the text. The fields themselves are marked on
-// «Мій профіль учасника» and «Моя команда».
+// “My participant profile” and “My team”.
 export function MissingFieldsNotice({eventID, ownTeam}: {eventID: string; ownTeam: OwnTeam | null}) {
     const pathname = usePathname();
     const answers = useQuery({queryKey: ["event-own-answers", eventID], queryFn: () => getOwnParticipantAnswers(), retry: false, refetchOnWindowFocus: false});

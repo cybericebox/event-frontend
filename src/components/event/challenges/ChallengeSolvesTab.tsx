@@ -51,7 +51,7 @@ function SolveRow({row, index, now}: {row: ChallengeSolve; index: number; now: n
     </li>;
 }
 
-// «Розвʼязання» tab of the challenge modal: who solved it, first solves on top.
+// “Solves” tab of the challenge modal: who solved it, first solves on top.
 // Pages load as the list reaches its end (IntersectionObserver on a sentinel).
 export function ChallengeSolvesTab({eventID, challengeID, moderators, enabled, previewTask}: {eventID: string; challengeID: string; moderators: boolean; enabled: boolean; previewTask?: OwnChallenge}) {
     const preview = useParticipantPreview(eventID);

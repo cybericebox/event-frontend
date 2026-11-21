@@ -227,7 +227,7 @@ export function FormationCard({captain, formed, needsConfirmation, form, onForm}
     </section>;
 }
 
-// The «Команда» tab of «Моя участь»: the roster, the team's results and, for the captain, the join link and the roster management.
+// The “Team” tab of “My participation”: the roster, the team's results and, for the captain, the join link and the roster management.
 export function TeamTab() {
     const access = useParticipantContext();
     const guest = useGuestEvent();

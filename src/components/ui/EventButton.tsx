@@ -12,7 +12,7 @@ export function BusyMark() {
 type BusyProps = {busy?: false; busyLabel?: string} | {busy: boolean; busyLabel: string};
 
 // A native button with a `busy` state (AGENTS.md «Busy buttons show the operation»): while busy it is disabled and
-// shows the event logo with the operation in the present tense («Зберігаємо…») in place of its icon and label.
+// shows the event logo with the operation in the present tense (“Saving”) in place of its icon and label.
 // Both faces share one grid cell, so the button keeps the width of the wider one and never jumps; the hidden face
 // stays out of the accessible name.
 export function EventButton({busy = false, busyLabel, saveDirty, disabled, className = "", children, type = "button", ...props}: ButtonHTMLAttributes<HTMLButtonElement> & BusyProps & {saveDirty?: boolean}) {

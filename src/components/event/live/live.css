@@ -2,7 +2,7 @@
    (canvas height / 36 × text scale) with LED floors, see liveText.ts. */
 .live-canvas{--live-bg:var(--ev-brand,#211a52);--live-ink:#fff;--live-dim:color-mix(in srgb,var(--ev-brand,#211a52),#fff 86%);--live-faint:color-mix(in srgb,var(--ev-brand,#211a52),#fff 60%);--live-line:color-mix(in srgb,var(--ev-brand,#211a52),#fff 17%);--live-lead:color-mix(in srgb,var(--ev-brand,#211a52),#fff 4%);--live-tile:color-mix(in srgb,var(--ev-brand,#211a52),#fff 13%);--live-accent:var(--ev-accent-live,#fff);--live-logo-filter:brightness(0) invert(1);--live-logo-ink:rgba(255,255,255,.88);--live-pad:max(6px,calc(var(--live-u) * .4));container-type:size;display:grid;grid-template-columns:repeat(var(--live-cols),minmax(0,1fr));grid-template-rows:repeat(var(--live-rows),minmax(0,1fr));gap:0;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;background:var(--live-bg);color:var(--live-ink);font-family:var(--font-geist-sans,var(--ib-font,Arial,sans-serif))}
 .live-canvas--light{--live-bg:#F7F7F9;--live-ink:#16152B;--live-dim:#5A5A70;--live-faint:#66667A;--live-line:#E4E4EC;--live-lead:color-mix(in srgb,#fff,var(--ev-accent-light,#211a52) 8%);--live-tile:#E4E4EC;--live-accent:var(--ev-accent-light,#211a52);--live-logo-filter:brightness(0);--live-logo-ink:rgba(22,21,43,.85)}
-/* «Класика світла»: a brand band across the first grid row. */
+/* “Classic light”: a brand band across the first grid row. */
 .live-canvas--light::before{content:"";grid-column:1/-1;grid-row:1;background:var(--ev-brand,#211a52)}
 .live-widget--band{--live-ink:#fff;--live-dim:color-mix(in srgb,var(--ev-brand,#211a52),#fff 86%);--live-faint:color-mix(in srgb,var(--ev-brand,#211a52),#fff 60%);--live-line:color-mix(in srgb,var(--ev-brand,#211a52),#fff 17%);--live-tile:color-mix(in srgb,var(--ev-brand,#211a52),#fff 13%);--live-accent:var(--ev-accent-live,#fff);--live-logo-filter:brightness(0) invert(1);--live-logo-ink:rgba(255,255,255,.88)}
 .live-widget--masked{background:var(--live-bg)}
@@ -10,7 +10,7 @@
 .live-widget{position:relative;display:block;min-width:0;min-height:0;overflow:hidden;padding:var(--live-pad);border:0;border-radius:0;background:transparent;color:var(--live-ink);text-align:left;font:inherit;cursor:default}
 .live-widget>.event-block-state{--event-block-state-h:0;height:100%;padding:0}
 .live-widget h2{flex:none;height:calc(var(--live-fs-caption) * 1.8);margin:0;overflow:hidden;color:var(--live-faint);font-size:var(--live-fs-caption);font-weight:500;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-/* A list caption holds the title and, for a paged table, «11–17 з 47» with
+/* A list caption holds the title and, for a paged table, “11–17 of 47” with
    a thin bar that fills over the page time. */
 .live-list h2{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:.8em}
 .live-list h2>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -27,9 +27,9 @@
 .live-timer{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;height:100%;min-width:0;text-align:right}
 .live-timer small{max-width:100%;overflow:hidden;color:var(--live-faint);line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
 .live-timer strong{color:var(--live-accent);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.08;white-space:nowrap}
-/* A word in place of the digits («Завершено»): the target passed or there is none. */
+/* A word in place of the digits (“Finished”): the target passed or there is none. */
 .live-timer strong.live-timer__word{font-family:inherit;letter-spacing:-.01em}
-/* «Заморожено о 10:59»: under the timer digits, or in the title subtitle line. */
+/* “Frozen at 10:59”: under the timer digits, or in the title subtitle line. */
 .live-freeze{display:inline-flex;align-items:center;gap:.35em;max-width:100%;padding:.08em .45em;border:1px solid currentColor;border-radius:.3em;color:var(--live-accent);font-weight:600;line-height:1.25;white-space:nowrap}
 .live-freeze svg{flex:none;width:1em;height:1em}
 /* The connection note: the same place, the ink colour, quieter than the accent. */
@@ -98,26 +98,26 @@
 .live-logos__track>div{display:flex;align-items:center;justify-content:space-evenly;gap:calc(var(--live-u) * max(.6, 2.4 - var(--live-logo-count, 1) * .2));height:100%}
 .live-logo{display:inline-flex;flex:none;align-items:center;justify-content:center;height:72%;max-height:calc(var(--live-u) * 3)}
 .live-logo img{display:block;height:100%;max-width:calc(var(--live-u) * 12);max-height:100%;object-fit:contain;opacity:.88}
-/* «Одноколірні»: the logo itself recoloured by a filter (white on the dark
+/* “Single colour”: the logo itself recoloured by a filter (white on the dark
    theme, near-black on the light one). A CSS mask would need the image over
    CORS, which an unpublished event's logo does not allow. */
 .live-logos--mono .live-logo img{filter:var(--live-logo-filter)}
 .live-logos--carousel .live-logos__track>div{justify-content:flex-start;width:max-content;animation:live-logo-scroll 50s linear infinite}
 @keyframes live-logo-scroll{from{transform:translateX(0)}to{transform:translateX(calc(-50% - calc(var(--live-u) * .6)))}}
 @media(prefers-reduced-motion:reduce){.live-logos--carousel .live-logos__track>div{animation:none}}
-/* Alignment of the title, timer, clock and announcement («Вирівнювання»). */
+/* Alignment of the title, timer, clock and announcement (“Alignment”). */
 .live-title[data-align="center"]{justify-content:center;text-align:center}
 .live-title[data-align="right"]{justify-content:flex-end;text-align:right}
 .live-timer[data-align="left"]{align-items:flex-start;text-align:left}
 .live-timer[data-align="center"]{align-items:center;text-align:center}
 .live-announcement[data-align="left"]{place-items:center start;text-align:left}
 .live-announcement[data-align="right"]{place-items:center end;text-align:right}
-/* «Останні хвилини»: the digits turn into an accent tile; in the last minute the label steps aside. */
+/* “Last minutes”: the digits turn into an accent tile; in the last minute the label steps aside. */
 .live-timer--urgent strong,.live-timer--final strong{padding:0 .14em;border-radius:.1em;background:var(--live-urgent,var(--live-accent));color:var(--live-urgent-ink,var(--live-bg))}
 .live-timer--urgent small{color:var(--live-urgent,var(--live-accent))}
-/* «Великі літери»: every text of the screen in capitals. */
+/* “Capital letters”: every text of the screen in capitals. */
 .live-canvas--upper{text-transform:uppercase}
-/* «На нулі → Сховати»: the editor keeps a quiet hint in the empty block. */
+/* “At zero → Hide”: the editor keeps a quiet hint in the empty block. */
 .live-timer--hidden strong{color:var(--live-faint);font-weight:500}
 .live-clock strong{color:var(--live-ink)}
 /* A wide table: two columns side by side, one page split between them. */
@@ -126,7 +126,7 @@
 /* A fixed logos block in 2–3 rows (a sponsors' wall). */
 .live-logos--rows .live-logos__track>div{display:grid;grid-template-columns:repeat(var(--live-logo-cols),minmax(0,1fr));grid-template-rows:repeat(var(--live-logo-rows),minmax(0,1fr));place-items:center;gap:calc(var(--live-u) * .5) calc(var(--live-u) * .8)}
 .live-logos--rows .live-logo{max-width:100%}
-/* «Подіум»: places 2-1-3 as tiles on a common baseline; the winner taller, tinted with the accent. */
+/* “Podium”: places 2-1-3 as tiles on a common baseline; the winner taller, tinted with the accent. */
 .live-podium,.live-facts-block{display:flex;flex-direction:column;height:100%;min-height:0}
 .live-podium__stage{display:flex;flex:1;align-items:flex-end;min-height:0}
 .live-podium__stage>.event-block-state{flex:1;align-self:stretch}
@@ -135,13 +135,13 @@
 .live-podium__place{color:var(--live-accent);font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600;line-height:1.2}
 .live-podium__tile strong{display:-webkit-box;overflow:hidden;font-weight:600;line-height:1.15;overflow-wrap:anywhere;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
 .live-podium__points{color:var(--live-dim);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.2}
-/* «Факти»: a large value over its label, side by side. */
+/* “Facts”: a large value over its label, side by side. */
 .live-facts{display:flex;flex:1;align-items:center;min-height:0;margin:0}
 .live-facts>div{display:flex;flex:1 1 0;flex-direction:column-reverse;min-width:0}
 .live-facts dd{margin:0;overflow:hidden;color:var(--live-ink);font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.1;text-overflow:ellipsis;white-space:nowrap}
 .live-facts .is-text dd{font-family:inherit}
 .live-facts dt{overflow:hidden;color:var(--live-faint);line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
-/* «Етапи»: done ones quiet, the running one on the lead row in the accent. */
+/* “Stages”: done ones quiet, the running one on the lead row in the accent. */
 .live-stages{margin:0;padding:0;list-style:none}
 .live-stages li{display:flex;flex-direction:column;justify-content:center;gap:.15em;padding-inline:.4em;border-bottom:1px solid var(--live-line);line-height:1.2}
 .live-stages li span{min-width:0;overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
@@ -153,7 +153,7 @@
 .live-stages li.is-now small{color:var(--live-dim)}
 .live-stages li.is-done span{color:var(--live-faint)}
 .live-retired{display:grid;align-content:center;gap:.3em;height:100%;color:var(--live-faint);font-size:var(--live-fs-caption)}
-/* «Кольори» of a block (liveColors.ts): a rounded fill with a small gap to
+/* “Colours” of a block (liveColors.ts): a rounded fill with a small gap to
    its neighbours; the quieter text shades and lines follow the block's own
    ink over the fill instead of the theme. */
 .live-widget--fill{margin:calc(var(--live-u) * .12);border-radius:calc(var(--live-u) * .3);background:var(--live-widget-bg,var(--live-tile))}
@@ -161,7 +161,7 @@
 .live-widget--fill>*,.live-widget--inked>*{--live-dim:color-mix(in srgb,var(--live-ink) 84%,transparent);--live-faint:color-mix(in srgb,var(--live-ink) 64%,transparent);--live-line:color-mix(in srgb,var(--live-ink) 18%,transparent);--live-lead:color-mix(in srgb,var(--live-ink) 7%,transparent);--live-tile:color-mix(in srgb,var(--live-ink) 11%,transparent)}
 .live-canvas--edit .live-widget.live-widget--fill{background:var(--live-widget-bg,var(--live-tile))}
 .live-canvas--edit .live-widget.live-widget--fill-tile{background:var(--live-tile)}
-/* «Позначка місць» (LiveMarks.tsx): one centred box for every place, so 1–3 and 4+ line up. */
+/* “Place marks” (LiveMarks.tsx): one centred box for every place, so 1–3 and 4+ line up. */
 .live-mark{display:inline-grid;place-items:center;width:1.7em;height:1.7em;vertical-align:middle;line-height:1;font-family:var(--font-geist-mono,ui-monospace,monospace);font-variant-numeric:tabular-nums}
 .live-mark--medal{width:1.5em;height:1.5em;border-radius:50%;font-size:.86em;font-weight:700}
 .live-mark--medal.is-place-1{background:var(--live-place-1);color:var(--live-place-ink-1)}
@@ -182,13 +182,13 @@
 .live-table--medals tr.is-top td:first-child{color:var(--live-ink)}
 .live-table tr.is-top td:first-child .live-mark--icon,.live-table tr.is-top td:first-child .live-mark--image{width:1.35em;height:1.35em}
 .live-table--medals tr.is-lead td:nth-child(2),.live-table--medals tr.is-lead td:last-child{color:var(--live-ink)}
-/* «Без виділення»: the top three read like any other row. */
+/* “No highlight”: the top three read like any other row. */
 .live-table--plain tr.is-lead{background:none}
 .live-table--plain tr.is-lead td:nth-child(2),.live-table--plain tr.is-lead td:last-child{color:var(--live-ink)}
 .live-table--plain tr.is-top td:first-child{color:var(--live-faint);font-weight:500}
-/* «Легенда графіка»: the team's line colour before its name. */
+/* “Chart legend”: the team's line colour before its name. */
 .live-table__legend{display:inline-block;width:.55em;height:.55em;margin-right:.45em;border-radius:50%;vertical-align:.08em}
-/* «Смуги балів»: a thin bar under the name, as long as the share of the maximum. */
+/* “Points bars”: a thin bar under the name, as long as the share of the maximum. */
 .live-table td.live-table__name{position:relative}
 .live-table__bar{position:absolute;left:calc(var(--live-row-font) * .45);right:calc(var(--live-row-font) * .45);bottom:.12em;height:.14em;border-radius:999px;background:var(--live-line);pointer-events:none}
 .live-table__bar>i{display:block;width:calc(var(--live-bar) * 100%);height:100%;border-radius:inherit;background:var(--live-accent);transition:width .6s}
@@ -204,7 +204,7 @@
 .live-podium--medals .is-place-3 .live-podium__place{color:var(--live-place-3)}
 .live-podium--plain .live-podium__tile.is-lead{background:var(--live-tile)}
 .live-podium--plain .live-podium__place{color:var(--live-faint)}
-/* «Подіум → Картки»: places 1, 2, 3 as equal cards — a place badge, the name,
+/* “Podium → Cards”: places 1, 2, 3 as equal cards — a place badge, the name,
    the points and, when on, a ring with the share of the maximum points. */
 .live-cards{display:flex;flex:1;align-items:stretch;min-height:0}
 .live-cards>.event-block-state{flex:1}
@@ -328,7 +328,7 @@
 /* The neutral error page of /live (no event data): the platform page, above everything, on the page colour. */
 .live-neutral{position:fixed;inset:0;z-index:200;overflow:auto;background:var(--ib-paper)}
 
-/* «Прогрес» of a table row: avatars, the «1600/2100» cell and the flags strip. */
+/* “Progress” of a table row: avatars, the «1600/2100» cell and the flags strip. */
 .live-table th.live-table__points,.live-table td.live-table__points{text-align:right}
 .live-table td.live-table__points{font-family:var(--font-geist-mono,ui-monospace,monospace);font-weight:600}
 .live-table tr.is-lead td.live-table__points{color:var(--live-accent)}

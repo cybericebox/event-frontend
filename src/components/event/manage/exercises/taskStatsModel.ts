@@ -4,7 +4,7 @@ import {difficultyOrder} from "../analytics/tasks/tasksModel";
 import type {BoardSet} from "./challengeOrder";
 
 export type Difficulty = (typeof difficultyOrder)[number];
-// A bucket of a chip row: its key (null = «Не вказана» / «Без категорії» / the whole event / «Без групи») and how many tasks.
+// A bucket of a chip row: its key (null = “Not set” / “No category” / the whole event / “No group”) and how many tasks.
 export type StatBucket<K> = {key: K; count: number};
 
 export type TaskStats = {
@@ -48,7 +48,7 @@ function tally<K>(keys: (K | null)[], order?: readonly K[]): StatBucket<K | null
 }
 
 /**
- * The event-wide figures of «Основні завдання», from the same board data the sets render. Tasks are the sets'
+ * The event-wide figures of “Main challenges”, from the same board data the sets render. Tasks are the sets'
  * board challenges (subtasks). A task counts under every category of its set; categories are sorted by count, then
  * by name. Stages and groups follow the given order (unknown ids are left out), the «none» bucket last.
  */

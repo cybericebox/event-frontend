@@ -3,7 +3,7 @@ import {t} from "@/i18n/t";
 import {holdPoints} from "@/components/event/charts/holdPoints";
 import {chartSeries} from "@/components/event/charts/chartTheme";
 
-// Pure helpers of «Прогрес» (§6.4): the score chart, the matrix cells, the
+// Pure helpers of “Progress” (§6.4): the score chart, the matrix cells, the
 // heatmap and the inactive teams. Chart colours and axes follow the results
 // chart (scoreboard/ScoreChart).
 const axisText = "var(--ib-chart-axis)";

@@ -7,11 +7,11 @@ type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & 
     // Controlled reveal state, so a password + confirmation pair shows / hides together.
     shown?: boolean;
     onShownChange?: (shown: boolean) => void;
-    // A write-only secret is never shown back, so it has no «Показати» button.
+    // A write-only secret is never shown back, so it has no “Show” button.
     writeOnly?: boolean;
 };
 
-// ds-v2 .ib-input-wrap--password: input + «Показати» / «Сховати» text button (as in id-frontend).
+// ds-v2 .ib-input-wrap--password: input + “Show” / “Hide” text button (as in id-frontend).
 export function PasswordInput({className = "event-manage-input", shown: shownProp, onShownChange, writeOnly = false, ...props}: PasswordInputProps) {
     const [shownState, setShownState] = useState(false);
     const shown = shownProp ?? shownState;

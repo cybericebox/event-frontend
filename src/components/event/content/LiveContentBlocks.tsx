@@ -72,7 +72,7 @@ export function LiveContentBlocks({eventID, document, initialVariables, initialN
         schedule();
         return () => { if (timer !== undefined) window.clearTimeout(timer); };
     }, [initialVariables, now]);
-    // A failed refresh keeps the last good values: one missed poll must not hide «Приєднатися».
+    // A failed refresh keeps the last good values: one missed poll must not hide “Join”.
     const currentValues = applyLifecycleBoundaries({...initialVariables, ...values.data}, Math.max(initialNow, now));
     return <ContentBlocks initialNow={initialNow} imageDimensions={imageDimensions} document={document} variables={currentValues} coverImage={coverImage} title={title} eventID={eventID} />;
 }

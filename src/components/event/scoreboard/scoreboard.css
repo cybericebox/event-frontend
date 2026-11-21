@@ -1,4 +1,4 @@
-/* Participant «Результати»: the header row with the Live action, and the
+/* Participant “Results”: the header row with the Live action, and the
    ranking block. Loading and empty states sit centered in the block body,
    which keeps its height from loading to data. No shadows. */
 .event-results__head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--ib-3)}

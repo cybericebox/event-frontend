@@ -64,7 +64,7 @@ import {showIntegrity} from "@/utils/origins";
 type Item = {dividerBefore?: boolean; href: string; label: string; icon: LucideIcon; teamsOnly?: boolean; infrastructureOnly?: boolean; sensitiveOnly?: boolean};
 type Group = {id: string; label: string; icon: LucideIcon; items: Item[]};
 
-// Пауза: повернути до навігації, коли зʼявиться механізм призупинення заходу.
+// Pause: return it to the navigation once an event pause mechanism exists.
 const groups: Group[] = [
     {id: "event", label: t("manage.nav.group.event"), icon: Flag, items: [
         {href: "/manage/settings", label: t("manage.nav.settings"), icon: Settings2},
@@ -94,7 +94,7 @@ const groups: Group[] = [
         {href: "/manage/live", label: t("manage.nav.live"), icon: MonitorPlay},
         {href: "/manage/results-settings", label: t("manage.nav.resultsSettings"), icon: Cog},
     ]},
-    // Shown only to the viewers with analytics access (§7); «Стенди» needs infrastructure, «Доброчесність» the sensitive level.
+    // Shown only to the viewers with analytics access (§7); “Stands” needs infrastructure, “Integrity” the sensitive level.
     {id: "analytics", label: t("manage.nav.group.analytics"), icon: ChartNoAxesCombined, items: [
         {href: "/manage/analytics", label: t("manage.nav.analyticsOverview"), icon: Gauge},
         {href: "/manage/analytics/participants", label: t("manage.nav.analytics.participants"), icon: UserSearch},
@@ -121,7 +121,7 @@ const itemHrefs = groups.flatMap(group => group.items.map(item => item.href));
 const within = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
 // An item is current on its own address and below it, unless a longer item address matches better
-// («Огляд» analytics is not current on «Учасники» analytics).
+// (“Overview” analytics is not current on “Participants” analytics).
 function isCurrent(pathname: string, href: string) {
     return within(pathname, href) && !itemHrefs.some(other => other.length > href.length && within(pathname, other));
 }

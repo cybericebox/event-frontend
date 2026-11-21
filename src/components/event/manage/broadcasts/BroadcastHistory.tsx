@@ -20,7 +20,7 @@ export function BroadcastStatus({status}: {status: Broadcast["Status"]}) {
     return <span className={`event-manage-participants__status ${status === "done" ? "is-2" : status === "failed" ? "is-3" : "is-1"}`}>{t(`manage.broadcasts.status.${status}`)}</span>;
 }
 
-// «Розсилка»: the history of the messages sent to the event's people, newest
+// “Broadcasts”: the history of the messages sent to the event's people, newest
 // first, and the way to send a new one (owners and moderators with write access).
 export function BroadcastHistory() {
     const {event, canManage} = useManager();

@@ -6,7 +6,7 @@ import {EventLoading} from "@/components/event/EventLoading";
 import {teamRedirectHref} from "@/components/event/participation/participationModel";
 import {t} from "@/i18n/t";
 
-// The team is a tab of «Моя участь» now; old links and invitations (/team?join=КОД) land there.
+// The team is a tab of “My participation” now; old links and invitations (/team?join=CODE) land there.
 export default function Page() {
     const router = useRouter();
     useEffect(() => { router.replace(teamRedirectHref(window.location.search)); }, [router]);

@@ -4,7 +4,7 @@ import type {ReactNode} from "react";
 import {ChevronDown} from "lucide-react";
 import {t} from "@/i18n/t";
 
-// The one required mark: the star is decoration, the screen reader hears «Обовʼязкове питання».
+// The one required mark: the star is decoration, the screen reader hears “Required question”.
 export function RequiredMark() {
     return <span className="ib-field__req"><span aria-hidden="true">*</span><span className="ib-sr"> {t("forms.field.required")}</span></span>;
 }

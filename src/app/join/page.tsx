@@ -52,7 +52,7 @@ export default function JoinPage() {
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const formRef = useRef<HTMLFormElement>(null);
-    // A click on «Приєднатися» leaves ?continue=<nonce>: a registration without fields is then sent at once.
+    // A click on “Join” leaves ?continue=<nonce>: a registration without fields is then sent at once.
     const [auto, setAuto] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("continue"));
 
     useEffect(() => {if (invited) router.replace("/invite");}, [invited, router]);

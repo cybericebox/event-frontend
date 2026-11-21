@@ -35,7 +35,7 @@ export const livePaletteItems: LivePaletteItem[] = [
 ];
 
 // The name of a placed widget: its own caption (a logos block: its title),
-// else the type name; «Перші розв'язання» for the first-solves feed.
+// else the type name; “First solves” for the first-solves feed.
 export function liveWidgetName(widget: LiveWidget): string {
     const own = widget.type === "logos" ? widget.props.title : widget.props.caption;
     if (typeof own === "string" && own.trim()) return own.trim();
@@ -159,7 +159,7 @@ export function recomputeGrid(layout: LiveLayout, cols: number, rows: number): L
 
 export type DistributeAxis = "row" | "column";
 
-// «Розподілити рівномірно»: the selected widget's neighbours sharing its rows
+// “Distribute evenly”: the selected widget's neighbours sharing its rows
 // (or columns) get equal widths (or heights) across the span they cover.
 // Returns an error text when the result would break a minimum or an overlap.
 export function distributeWidgets(layout: LiveLayout, id: string, axis: DistributeAxis): LiveLayout | string {

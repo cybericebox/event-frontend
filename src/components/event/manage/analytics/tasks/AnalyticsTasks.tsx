@@ -36,7 +36,7 @@ function VerdictTag({row}: {row: AnalyticsTaskRow}) {
     return <span className={`ib-tag ib-tag--sm ${verdictTone(verdict)}`} title={expected}>{verdictLabel(verdict)}</span>;
 }
 
-// «Завдання» (§6.3): the per-task table with the difficulty calibration and
+// “Task” (§6.3): the per-task table with the difficulty calibration and
 // the group summary; a click on a task opens its drawer.
 export function AnalyticsTasks() {
     const {event} = useManager();

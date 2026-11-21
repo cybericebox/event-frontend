@@ -125,7 +125,7 @@ export function ActionBlock({layoutProps, id, title, text, variant, alignment, s
         status: participantPreview.active ? participantPreview.state!.status : join.isPending ? "loading" : join.isError ? "error" : join.data,
         invitation: participantPreview.active ? {Invited:false,InvitationExpired:false} : invitation.isPending ? "loading" : invitation.data,
     }) : {kind: "hidden" as const};
-    // A signed-in visitor's «Приєднатися» carries this browser's intent, so a registration without fields is sent at once.
+    // A signed-in visitor's “Join” carries this browser's intent, so a registration without fields is sent at once.
     const joinIntent = !viewer && !participantPreview.active && !!identity.data;
     const visible = actions.flatMap((action, index): {index: number; label: string; href?: string; status?: "loading" | "static"; intent?: boolean}[] => {
         if (action.kind !== "join_event") {

@@ -113,7 +113,7 @@ describe("the stages block", () => {
         expect(within(row("Етап 3")).queryByRole("button", {name: "Закрити зараз"})).toBeNull();
     });
 
-    it("flips «Можна повернутися» at once, before the server answers, and never waits for it", async () => {
+    it("flips 'Returnable' at once, before the server answers, and never waits for it", async () => {
         api.list.mockResolvedValue([stage(1, {State: "open", First: true}), stage(2, {Last: true})]);
         let finish: (value: ManageStage) => void = () => {};
         api.update.mockImplementation(() => new Promise<ManageStage>(resolve => {finish = resolve;}));
@@ -163,7 +163,7 @@ describe("the stages block", () => {
         expect(api.remove).toHaveBeenCalledWith("e1", id(2));
     });
 
-    it("says «видалити», not «зберегти», when deleting a stage fails", async () => {
+    it("says 'delete', not 'save', when deleting a stage fails", async () => {
         api.list.mockResolvedValue([stage(1, {First: true}), stage(2, {Last: true})]);
         api.remove.mockRejectedValue(new Error("network"));
         renderManager();
@@ -174,7 +174,7 @@ describe("the stages block", () => {
         expect(screen.queryByText("Не вдалося зберегти етап")).toBeNull();
     });
 
-    it("says «закрити» when closing a stage now fails", async () => {
+    it("says 'close' when closing a stage now fails", async () => {
         api.list.mockResolvedValue([stage(1, {State: "open", First: true, Last: true})]);
         api.update.mockRejectedValue(new Error("network"));
         renderManager();
@@ -184,14 +184,14 @@ describe("the stages block", () => {
         expect(await screen.findByText("Не вдалося закрити етап")).toBeTruthy();
     });
 
-    it("says that «Можна повернутися» is saved at once, unlike the dates behind «Зберегти»", async () => {
+    it("says that 'Returnable' is saved at once, unlike the dates behind 'Save'", async () => {
         api.list.mockResolvedValue([stage(1, {First: true, Last: true})]);
         renderManager();
         await screen.findByRole("listitem", {name: "Етап «Етап 1»"});
         expect(within(row("Етап 1")).getByText("Зберігається одразу.")).toBeTruthy();
     });
 
-    it("keeps the new-stage form closed behind «Додати етап» until asked, and «Скасувати» closes it", async () => {
+    it("keeps the new-stage form closed behind 'Add a stage' until asked, and 'Cancel' closes it", async () => {
         api.list.mockResolvedValue([stage(1, {First: true, Last: true})]);
         renderManager();
         await screen.findByRole("listitem", {name: "Етап «Етап 1»"});

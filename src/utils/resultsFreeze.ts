@@ -16,7 +16,7 @@ export function clockLabel(value: string | number | Date, timeZone?: string): st
     return new Intl.DateTimeFormat("uk-UA", {hour: "2-digit", minute: "2-digit", timeZone}).format(new Date(value));
 }
 
-// «з 17:30» for the banner meta; the viewer's local time.
+// “from 17:30” for the banner meta; the viewer's local time.
 export function frozenSinceLabel(freeze: FreezeTimes, timeZone?: string): string | null {
     return freeze.FrozenAt ? t("shell.freeze.since", {time: clockLabel(freeze.FrozenAt, timeZone)}) : null;
 }

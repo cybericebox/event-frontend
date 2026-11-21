@@ -100,13 +100,13 @@ describe("board filters", () => {
     const practice = challenge(5, 1, {StageID: closed.ID, Practice: true});
     const all = [unstaged, inOpen, inClosed, solvedInClosed, practice];
 
-    it("defaults to «Усі» so a just-solved task stays; «Відкриті» narrows to the unsolved, not closed", () => {
+    it("defaults to 'All' so a just-solved task stays; 'Open' narrows to the unsolved, not closed", () => {
         expect(DEFAULT_BOARD_FILTERS.status).toBe("");
         expect(applyBoardFilters(all, DEFAULT_BOARD_FILTERS, stages)).toEqual(all);
         expect(applyBoardFilters(all, {...DEFAULT_BOARD_FILTERS, status: "open"}, stages)).toEqual([unstaged, inOpen]);
     });
 
-    it("«Відкриті» means can be solved now: no locked tasks, no tasks of a stage that is closed or not open yet", () => {
+    it("'Open' means can be solved now: no locked tasks, no tasks of a stage that is closed or not open yet", () => {
         const locked = challenge(7, 1, {Locked: true});
         const future = challenge(8, 1, {StageID: uuid(99)});
         const returnable = challenge(9, 1, {StageID: closed.ID});

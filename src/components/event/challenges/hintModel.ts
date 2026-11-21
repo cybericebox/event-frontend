@@ -47,7 +47,7 @@ export function hintPlainText(text: string): string {
     return parts.join("").replace(/\s+/g, " ").trim();
 }
 
-// «−30 балів» or «безкоштовно».
+// “−30 points” or “free”.
 export function hintCostLabel(cost: number): string {
     return cost > 0 ? t("challenges.hint.cost", {points: pointsLabel(cost)}) : t("challenges.hint.free");
 }

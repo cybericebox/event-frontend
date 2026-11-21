@@ -12,7 +12,7 @@ export const liveTimerSources: LiveTimerSource[] = ["auto", "stage-end", "stage-
 
 // What the timer shows: a countdown to `target`, the time since `since`
 // (a running event with no finish), or a word instead of the digits: the
-// target `passed` («Завершено»), or there is `none`. Never 00:00:00.
+// target `passed` (“Finished”), or there is `none`. Never 00:00:00.
 export type LiveTimerState =
     | {mode: "countdown"; target: number; label: string}
     | {mode: "elapsed"; since: number; label: string}
@@ -32,7 +32,7 @@ export function liveNextStage(stages: LiveStage[], now: number): LiveStage | nul
     return [...stages].sort((a, b) => time(a.OpensAt) - time(b.OpensAt)).find(stage => time(stage.OpensAt) > now) ?? null;
 }
 
-// «До кінця: Етап 1»; without the name («До кінця етапу») when the title
+// “Until the end: Stage 1”; without the name (“Until the stage ends”) when the title
 // already shows the stage.
 function stageLabel(key: "live.timer.stageEnd" | "live.timer.stageNext", stage: LiveStage, named: boolean): string {
     return named ? t(key, {stage: stage.Name}) : t(`${key}Short`);
@@ -43,7 +43,7 @@ const word = (value: string, label = "", reason: "passed" | "none" = "passed"): 
 
 // The event without its stages: before the start → to the start, running →
 // to the finish (or the time since the start when there is no finish), after
-// the finish → «Завершено».
+// the finish → “Finished”.
 function eventState(event: PublicEventInfo, now: number): LiveTimerState {
     const start = time(event.StartTime);
     const finish = event.FinishTime ? time(event.FinishTime) : null;
@@ -53,9 +53,9 @@ function eventState(event: PublicEventInfo, now: number): LiveTimerState {
     return word(t("live.timer.finished"));
 }
 
-// «Автоматично»: before the start → to the start; then to the end of the
+// “Automatic”: before the start → to the start; then to the end of the
 // current stage; between stages → to the next stage; after the stages → to
-// the finish; after the finish → «Завершено».
+// the finish; after the finish → “Finished”.
 function autoState(event: PublicEventInfo, stages: LiveStage[], now: number, named: boolean): LiveTimerState {
     const start = time(event.StartTime);
     const finish = event.FinishTime ? time(event.FinishTime) : null;
@@ -105,13 +105,13 @@ export function liveTimerState(props: LiveWidget["props"], event: PublicEventInf
     return autoState(event, stages, now, named);
 }
 
-// «Формат»: HH:MM:SS always («full»), MM:SS in the last hour («compact»),
-// or words, «2 год 14 хв» («words»).
+// “Aspect”: HH:MM:SS always («full»), MM:SS in the last hour («compact»),
+// or words, “2 h 14 min” («words»).
 export const liveTimerDigitModes = ["full", "compact", "words"] as const;
 
-// «Формат» in the editor: three choices, each named by an example, over the
+// “Aspect” in the editor: three choices, each named by an example, over the
 // two stored props (digits and showSeconds). «01:05:09» drops the empty hours
-// under an hour; «01:05» has no seconds; «1 год 5 хв» shows seconds only in
+// under an hour; «01:05» has no seconds; “1 h 5 min” shows seconds only in
 // the last minute, when nothing else is left.
 export const liveTimerFormats = ["hms", "hm", "words"] as const;
 export type LiveTimerFormat = typeof liveTimerFormats[number];
@@ -150,7 +150,7 @@ export function liveTimerDigits(state: LiveTimerState, now: number, showSeconds:
     return [hours, minutes, ...(showSeconds ? [rest] : [])].map(pad).join(":");
 }
 
-// «Останні хвилини»: from `lastMinutes` before the target the timer stands
+// “Last minutes”: from `lastMinutes` before the target the timer stands
 // out («urgent»); in the last minute it drops its label and grows («final»).
 export function liveTimerUrgency(state: LiveTimerState, now: number, lastMinutes: number): "calm" | "urgent" | "final" {
     if (state.mode !== "countdown" || lastMinutes <= 0) return "calm";
@@ -161,7 +161,7 @@ export function liveTimerUrgency(state: LiveTimerState, now: number, lastMinutes
 
 export const liveLastMinutesOptions = [0, 1, 3, 5, 10, 15] as const;
 
-// «На нулі»: the word of the passed target («word»), an own text («text»)
+// “At zero”: the word of the passed target («word»), an own text («text»)
 // or nothing at all («hide»).
 export const liveTimerZeroModes = ["word", "text", "hide"] as const;
 export type LiveTimerZeroMode = typeof liveTimerZeroModes[number];
@@ -175,7 +175,7 @@ export function liveTimerZero(state: LiveTimerState, mode: unknown, text: unknow
     return state.word;
 }
 
-// «Підзаголовок = поточний етап»: the running stage, or the next one with
+// “Subtitle = current stage”: the running stage, or the next one with
 // its start time during a break; empty when neither.
 export function liveStageSubtitle(stages: LiveStage[], now: number): string {
     const current = liveCurrentStage(stages, now);

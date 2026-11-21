@@ -27,7 +27,7 @@ import { keepBrand } from "@/i18n/brand"
 import {STORAGE_INBOX_READ} from "@/utils/storageKeys";
 import {useDraftNavigation} from "./manage/manualDraft";
 
-// A link here with ?inbox opens the dropdown on arrival (the event site's «Ще N в інших заходах»).
+// A link here with ?inbox opens the dropdown on arrival (the event site's “N more in other events”).
 const OPEN_PARAM = "inbox";
 // Loop bound of one catch-up (50 items per answer).
 const MAX_CATCH_UP = 20;
@@ -63,7 +63,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
     const [loadingOlder, setLoadingOlder] = useState(false);
     const [olderCursor, setOlderCursor] = useState<string | null>(null);
     const [unread, setUnread] = useState(0);
-    // null = the backend has no categories yet: the dropdown shows only «Усі».
+    // null = the backend has no categories yet: the dropdown shows only “All”.
     const [counts, setCounts] = useState<InboxCounts | null>(null);
     const [otherEvents, setOtherEvents] = useState(0);
     const [error, setError] = useState("");
@@ -301,7 +301,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         else navigate(() => void performFollowLink(item, href));
     }
 
-    // «Вирішено» closes a «Лабораторія впала» request for every recipient (§8.2). The row shows as resolved at once;
+    // “Resolved” closes a “Lab went down” request for every recipient (§8.2). The row shows as resolved at once;
     // on a failure the list is refetched (the rollback) and the reason is shown.
     function resolve(item: Message) {
         setError("");
@@ -337,7 +337,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
         });
     }
 
-    // «Позначити прочитаним» acts on the current tab only.
+    // “Mark as read” acts on the current tab only.
     async function readAll() {
         setError("");
         const current = tab;
@@ -377,7 +377,7 @@ export function InboxButton({defaultTab = "all", event}: InboxButtonProps = {}) 
                         <button className="event-notifications__icon-btn" type="button" aria-label={t("inbox.close")} onClick={() => openInbox(false)}><X size={16} /></button>
                     </div>
                 </div>
-                {/* The segmented control of the catalog's «Область» switch (exercises-frontend). */}
+                {/* The segmented control of the catalog's “Scope” switch (exercises-frontend). */}
                 {tabs.length > 0 && <div className="event-notifications__tabs-wrap">
                     <div role="tablist" aria-label={t("inbox.tabs")} className="event-notifications__tabs">
                         {tabs.map(value => {

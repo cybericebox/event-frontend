@@ -11,7 +11,7 @@ describe("challenge order", () => {
         expect(orderedGroups([group("b", 1), group("z", 0), group("a", 1)]).map(item => item.ID)).toEqual(["z", "a", "b"]);
     });
 
-    it("buckets tasks across sets in board order with «Без групи» last", () => {
+    it("buckets tasks across sets in board order with 'No group' last", () => {
         const first = attachment("s1", "2026-01-01T00:00:00Z");
         const second = attachment("s2", "2026-01-02T00:00:00Z");
         const buckets = groupBuckets([group("web", 1), group("crypto", 0)], [

@@ -29,7 +29,7 @@ function Heading({sub}: {sub?: string}) {
     </div></div></header>;
 }
 
-// «Моя участь»: the profile and, in team mode, the team as two tabs (?tab=team is deep-linkable).
+// “My participation”: the profile and, in team mode, the team as two tabs (?tab=team is deep-linkable).
 export function ParticipationPage() {
     const access = useParticipantContext();
     const guest = useGuestEvent();

@@ -20,7 +20,7 @@ describe("stage timers", () => {
         expect(screen.getByRole("timer").getAttribute("aria-label")).toContain("04 секунди");
     });
 
-    it("shows «Перерва до …» with a countdown to the next stage during a break", () => {
+    it("shows 'Break until …' with a countdown to the next stage during a break", () => {
         vi.setSystemTime(T);
         render(<StageTimers board={{CurrentStage: null, NextOpensAt: "2026-10-01T10:30:00Z"}} offset={0} onZero={() => {}} />);
         expect(screen.getAllByText(/^Перерва до \d{2}:\d{2}$/).length).toBeGreaterThan(0);

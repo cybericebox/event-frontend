@@ -79,12 +79,12 @@ function Feed({overview, state, onRetry, error}: {error?: unknown; overview?: Ov
     </section>;
 }
 
-// «Огляд» (§6.1): a status strip (countdown, progress or duration), the
+// “Overview” (§6.1): a status strip (countdown, progress or duration), the
 // counters, the activity chart with the start / freeze / finish / now markers,
 // the feed of notable moments, and a grid of cards: leaders, tasks, engagement,
 // stands and mail. Before the start it shows the registration counters and the
 // stands and mail cards. Every card keeps its size through loading, empty and
-// error. Setup lives in the «Підготовка заходу» wizard.
+// error. Setup lives in the “Event setup” wizard.
 export function AnalyticsOverview() {
     const {event} = useManager();
     const eventID = event.EventID;

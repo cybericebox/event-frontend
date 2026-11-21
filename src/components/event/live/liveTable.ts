@@ -57,7 +57,7 @@ export function livePoints(points: number): string {
     return Math.round(points).toLocaleString("uk-UA").replace(/\s/g, " ");
 }
 
-// «Прапори»: the solved tasks of a row. One square per task while a square
+// “Flags”: the solved tasks of a row. One square per task while a square
 // stays readable, thin segments while a segment keeps a few pixels, else a
 // single bar. Every mode spans the whole cell, so the «9/10» above it ends
 // where the strip ends.
@@ -81,7 +81,7 @@ export function liveFlagsSquare(width: number, tasks: number, font: number): num
     return Math.max(0, Math.min(font * 0.8, width / (count * (1 + flagsSquareGap) - flagsSquareGap)));
 }
 
-// «Ініціали»: the first letters of the first two words, or the first two
+// “Initials”: the first letters of the first two words, or the first two
 // letters of a one-word name; digits and letters of any script count.
 export function liveInitials(name: string): string {
     const words = name.trim().split(/[^\p{L}\p{N}]+/u).filter(Boolean);

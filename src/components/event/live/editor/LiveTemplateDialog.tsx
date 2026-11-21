@@ -16,14 +16,14 @@ const showBox = {width: 152, height: 86};
 const showScenes = ["before", "running", "finished"] as const;
 const templateKeys = Object.keys(liveTemplates) as LiveTemplateKey[];
 
-// «Шаблони»: template cards rendered as live miniatures with sample data in
-// the current theme and screen. «Повний показ» shows its three states and
-// turns on «Окремий екран для кожного стану»; any other template fills the
+// “Templates”: template cards rendered as live miniatures with sample data in
+// the current theme and screen. “Full show” shows its three states and
+// turns on “A separate screen for each state”; any other template fills the
 // screen being edited (the one screen, or the open state's screen). The replace warning lives in
 // the dialog (and Ctrl+Z undoes), so applying needs no second confirmation.
 export function LiveTemplateDialog({open, layout, scene, separate, event, stages, results, sample, onClose, onApply}: {
     open: boolean; layout: LiveLayout; scene: LiveSceneKey;
-    // «Окремий екран для кожного стану»: the texts name the state's screen.
+    // “A separate screen for each state”: the texts name the state's screen.
     separate: boolean; event: PublicEventInfo; stages?: LiveStage[]; results?: ManageResultsSnapshot; sample: boolean;
     onClose: () => void; onApply: (key: LiveTemplateKey) => void;
 }) {

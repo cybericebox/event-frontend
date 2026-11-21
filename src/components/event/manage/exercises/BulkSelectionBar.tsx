@@ -24,8 +24,8 @@ type Kind = "show" | "hide" | "scoring" | "detach";
 type ScoringKind = "event" | "static" | "dynamic";
 const boardsKey = (eventID: string) => ["event-exercise-boards", eventID];
 
-// The selection bar of «Завдання»: the count and the bulk actions on the selected sets. Each set follows the single
-// action's rules on the server; the bar shows the progress in the busy label, then «Змінено N. Пропущено M.» with the
+// The selection bar of “Task”: the count and the bulk actions on the selected sets. Each set follows the single
+// action's rules on the server; the bar shows the progress in the busy label, then “Changed N. Skipped M.” with the
 // reasons. The caches of the changed sets are updated in place (no broad invalidation).
 export function BulkSelectionBar({eventID, sets, selected, scoringForced, lifecycle, onClear, onRemoved}: {
     eventID: string; sets: BoardSet[]; selected: string[]; scoringForced: boolean; lifecycle: ManageLifecycle;

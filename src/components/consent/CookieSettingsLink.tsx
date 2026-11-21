@@ -7,7 +7,7 @@ import {interceptSettingsLink} from "@/utils/consent";
 // setting empty they stay links and only lose their target (an image gives them an empty href, `next dev` without the variable none).
 export const COOKIE_POLICY_HREF = process.env.NEXT_PUBLIC_COOKIES_URL;
 
-// «Налаштування файлів cookie» in the event footer, always shown: a link to the cookie policy that,
+// “Cookie settings” in the event footer, always shown: a link to the cookie policy that,
 // with JS, opens the consent preferences panel instead (see utils/consent).
 export function CookieSettingsLink() {
     return <a href={COOKIE_POLICY_HREF} data-manual-draft-navigation className="cb-consent-link" onClick={interceptSettingsLink}>{t("consent.settings")}</a>;

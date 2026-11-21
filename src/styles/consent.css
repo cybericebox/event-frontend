@@ -33,7 +33,7 @@
   .cb-consent__actions>.ib-btn{flex:1}
 }
 
-/* «Налаштування файлів cookie» (event footer, 13 px): reads as a footer link */
+/* “Cookie settings” (event footer, 13 px): reads as a footer link */
 .cb-consent-link{padding:0;border:0;background:none;color:var(--ib-dim);font:inherit;font-size:var(--ib-fs-13);cursor:pointer}
 @media (hover:hover) and (pointer:fine){.cb-consent-link:hover{color:var(--ib-ink)}}
 .cb-consent-link:focus-visible{outline:2px solid var(--ib-action);outline-offset:2px}

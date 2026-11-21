@@ -45,7 +45,7 @@ const emptyDraft: AttachDraft = {selected: [], variant: 0, variantMode: 0};
 // attached one request at a time with a variant per team. The selection lives
 // outside the list, so it survives search and filter changes.
 // Without event infrastructure, sets that need it are listed but disabled
-// (the filter starts at «Немає»).
+// (the filter starts at “Without”).
 export function AttachExerciseDialog({eventID, infrastructureAllowed, published = false, open, onClose, onAttached}: {
     eventID: string; infrastructureAllowed: boolean; published?: boolean; open: boolean; onClose: () => void; onAttached: () => Promise<unknown>;
 }) {

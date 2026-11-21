@@ -17,7 +17,7 @@ import {formatDateTime} from "./analyticsFormat";
 import {integrityDismissalsKey, integrityFlagsKey, integrityKey, kindLabel} from "./integrityModel";
 import {zoneOffset} from "@/utils/dateTime";
 
-// «Виключення»: patterns the organizers asked not to highlight (docs/ANTI-CHEAT.md).
+// “Dismissals”: patterns the organizers asked not to highlight (docs/ANTI-CHEAT.md).
 // A dismissal is for this event or for every event using the catalog exercise.
 
 const knownErrors: number[] = [ApiErrorCode.EventAnalyticsSolveNotFound, ApiErrorCode.EventAnalyticsReviewNoteTooLong, ApiErrorCode.EventAnalyticsPatternNotDismissible];

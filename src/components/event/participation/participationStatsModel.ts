@@ -51,7 +51,7 @@ const relative = new Intl.RelativeTimeFormat("uk-UA", {numeric: "auto"});
 export const exactTime = (iso: string) => fullDate.format(Date.parse(iso));
 export const shortTime = (iso: string) => shortDate.format(Date.parse(iso));
 
-// «5 хвилин тому», «вчора»; a moment in the future reads as «щойно».
+// “5 minutes ago”, “yesterday”; a moment in the future reads as “Just now”.
 export function relativeTime(iso: string, now: number): string {
     const seconds = Math.round((Date.parse(iso) - now) / 1000);
     if (seconds > -45) return t("participation.time.justNow");
@@ -64,7 +64,7 @@ export function relativeTime(iso: string, now: number): string {
 
 export type StatsView = "loading" | "error" | "ready";
 
-// The place line: «3 місце» or a dash when the results are not shown.
+// The place line: “3rd place” or a dash when the results are not shown.
 export function placeText(rank: number): string {
     return rank > 0 ? t("participation.stats.place", {rank}) : "—";
 }

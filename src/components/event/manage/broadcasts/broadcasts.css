@@ -1,4 +1,4 @@
-/* «Розсилка» and banners of an event: history, compose form, picker, banner form. No shadows, no accent borders. */
+/* “Broadcasts” and banners of an event: history, compose form, picker, banner form. No shadows, no accent borders. */
 .event-broadcast-heading-actions{display:flex;align-items:center;gap:var(--ib-2)}
 .event-broadcast-audience{display:grid;gap:var(--ib-3);min-width:0}
 .event-broadcast-picker{display:grid;gap:var(--ib-2);min-width:0}

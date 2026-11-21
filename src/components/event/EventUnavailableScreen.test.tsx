@@ -32,7 +32,7 @@ describe("EventUnavailableScreen", () => {
         expect(document.title).toBe("Захід не знайдено або у вас немає доступу");
     });
 
-    it("offers a single secondary «Увійти» without a session", async () => {
+    it("offers a single secondary 'Sign in' without a session", async () => {
         getCurrentUser.mockResolvedValue(null);
         const {container} = render(<QueryClientProvider client={new QueryClient()}><EventUnavailableScreen /></QueryClientProvider>);
         const signIn = await screen.findByRole("link", {name: "Увійти"});

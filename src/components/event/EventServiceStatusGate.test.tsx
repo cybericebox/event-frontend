@@ -162,7 +162,7 @@ describe("EventServiceStatusGate", () => {
         expect(screen.getByText(uk["shell.unavailable.nextTry"].replace("{seconds}", "3"))).toBeTruthy();
     });
 
-    it("retries at once on «Спробувати зараз» and keeps the modal while the API is down", async () => {
+    it("retries at once on 'Try now' and keeps the modal while the API is down", async () => {
         const fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
         vi.stubGlobal("fetch", fetch);
         render(withQuery(<EventServiceStatusGate serverUnavailable />));

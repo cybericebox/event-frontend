@@ -1,7 +1,7 @@
 import type {AttemptFilters} from "@/api/manageAttempts";
 import {localFromISO} from "@/components/ui/dateTimePicker";
 
-// «Журнал спроб» views, addressed as /manage/submissions?tab=<view>.
+// “Attempts log” views, addressed as /manage/submissions?tab=<view>.
 export const journalViews = ["attempts", "hints"] as const;
 export type JournalView = typeof journalViews[number];
 

@@ -16,7 +16,7 @@ import {LiveMiniature} from "./LiveMiniature";
 import {LiveField, LiveNumberInput, LiveSegmented, LiveSwitch} from "./LiveFields";
 import {liveSafeArea, liveSafeAreaOptions} from "../liveText";
 
-// «Враховувати заморожування результатів»: a results setting, applied at once.
+// “Respect the results freeze”: a results setting, applied at once.
 export function LiveFreezeToggle({eventID, canManage}: {eventID: string; canManage: boolean}) {
     const queryClient = useQueryClient();
     const queryKey = ["event-management-results-settings", eventID];

@@ -24,14 +24,14 @@ describe("status wording", () => {
 describe("live status", () => {
     beforeEach(() => {vi.useFakeTimers(); vi.setSystemTime(at + 1000);});
 
-    it("shows «Наживо» with the last confirmation and says what the time means", () => {
+    it("shows 'Live' with the last confirmation and says what the time means", () => {
         render(<LiveStatus freshness={stream("live")} updatedAt={at} />);
         expect(screen.getByText("Наживо")).toBeTruthy();
         expect(screen.getByText("Оновлено 14:05:09")).toBeTruthy();
         expect(screen.getByRole("tooltip").textContent).toBe("Нові дані зʼявляються одразу. «Оновлено» — останнє підтвердження від сервера, що зʼєднання живе (щонайменше кожні 15 с).");
     });
 
-    it("never keeps «Наживо» with an old time: after 2× heartbeat it says «Перепідключення…»", () => {
+    it("never keeps 'Live' with an old time: after 2× heartbeat it says 'Reconnecting…'", () => {
         render(<LiveStatus freshness={stream("live")} updatedAt={at} />);
         expect(screen.getByText("Наживо")).toBeTruthy();
         act(() => {vi.advanceTimersByTime(35_000);});
@@ -39,7 +39,7 @@ describe("live status", () => {
         expect(screen.getByText("Перепідключення…")).toBeTruthy();
     });
 
-    it("says «Автооновлення» in the polling fallback and «Не підключено» when polling fails too", () => {
+    it("says 'Auto-refresh' in the polling fallback and 'Not connected' when polling fails too", () => {
         render(<LiveStatus freshness={stream("fallback")} updatedAt={at} />);
         expect(screen.getByText("Автооновлення")).toBeTruthy();
         expect(screen.getByRole("tooltip").textContent).toBe("Сторінка сама перевіряє нові дані приблизно кожні 30 с. «Оновлено» — час останньої перевірки.");

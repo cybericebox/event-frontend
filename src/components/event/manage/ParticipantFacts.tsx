@@ -12,7 +12,7 @@ function Fact({label, children}: {label: string; children: ReactNode}) {
     return <div><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
-// Key/value rows of the participant modal, styled like the «Деталі надсилання» facts.
+// Key/value rows of the participant modal, styled like the “Sending details” facts.
 export function ParticipantFacts({participant, teamMode, pseudonyms}: {participant: ManageParticipantDetail; teamMode: boolean; pseudonyms: boolean}) {
     const invited = participant.JoinedVia === "invitation";
     return <dl className="event-mail-detail__facts" data-testid="participant-facts">

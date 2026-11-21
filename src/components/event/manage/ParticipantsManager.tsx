@@ -86,7 +86,7 @@ export function ParticipantsManager({initialTab}: {initialTab: ParticipantTab}) 
     });
     const fields = formFields(formQuery.data?.Document.blocks);
     const pseudonyms = !!configQuery.data?.AllowPseudonyms;
-    // «Не заповнено» exists once the organizer asked everyone for the new required fields.
+    // “Not filled in” exists once the organizer asked everyone for the new required fields.
     const askedEveryone = !!formQuery.data?.RequireExisting;
     const specs: FilterSpec[] = [
         {key: "@name", label: tab === "invitations" ? t("manage.participants.col.address") : t("manage.participants.col.name"), kind: "contains"},

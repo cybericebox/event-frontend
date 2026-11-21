@@ -34,7 +34,7 @@ export function ManagerBootstrap({children}: {children: ReactNode}) {
 
     // Every /manage page carries «Event | Cyber ICE Box»; the route's own metadata
     // (a bare brand title) rewrites the tab on navigation, so the title is re-asserted.
-    // The shell reports the open section: «{Вкладка} · Панель заходу · {Захід}».
+    // The shell reports the open section: “{Tab} · Event panel · {Event}”.
     const [section, setSection] = useState<string | null>(null);
     const eventName = event.data?.Name;
     useEffect(() => {

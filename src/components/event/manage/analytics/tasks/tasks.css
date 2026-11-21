@@ -1,4 +1,4 @@
-/* «Завдання» and «Прогрес»: block heads, constant-size tables, the task drawer, the matrix and the team chips. */
+/* “Task” and “Progress”: block heads, constant-size tables, the task drawer, the matrix and the team chips. */
 .event-analytics-tasks__title{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--ib-2)}
 .event-analytics-tasks__title p{flex-basis:100%;color:var(--ib-dim);font-size:var(--ib-fs-13)}
 .event-analytics-tasks__actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--ib-2)}

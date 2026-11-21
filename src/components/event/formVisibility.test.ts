@@ -10,7 +10,7 @@ const blocks: FormBlock[] = [
 ];
 
 describe("conditional questions", () => {
-    it("treats an untouched checkbox as «Ні»", () => {
+    it("treats an untouched checkbox as 'No'", () => {
         expect([...visibleFieldKeys(blocks, {})]).toEqual(["team", "solo"]);
     });
 

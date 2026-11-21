@@ -69,7 +69,7 @@ export async function getManageResults(eventID: string, view: ResultsView = "pag
 const changesSchema = z.object({Revision: z.number().int(), Changes: z.array(z.object({Revision: z.number().int(), Kind: z.string()}).passthrough()), SnapshotRequired: z.boolean(), FreezeKey: z.string()});
 export type ResultsChanges = z.infer<typeof changesSchema>;
 
-// «Автооновлення»: one poll of the result changes after `since` (the stream's
+// “Auto-refresh”: one poll of the result changes after `since` (the stream's
 // change window, without a held connection). "no-cache" revalidates with the
 // ETag, so an unchanged answer is a 304 from the browser cache.
 export async function getResultsChanges(eventID: string, since: number, freezeKey: string | null): Promise<ResultsChanges> {
@@ -148,7 +148,7 @@ export async function putResultsSettings(eventID: string, input: ResultsSettings
     return manageRequest(eventID, "results-settings", settingsSchema, "PUT", input);
 }
 
-// «Відкрити підсумки» (opened) ends the freeze early; false restores it.
+// “Reveal results” (opened) ends the freeze early; false restores it.
 export async function setResultsOpened(eventID: string, opened: boolean): Promise<ResultsSettings> {
     return manageRequest(eventID, "results/opened", settingsSchema, "PUT", {Opened: opened});
 }

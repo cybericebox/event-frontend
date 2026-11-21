@@ -7,7 +7,7 @@ import {t} from "@/i18n/t";
 import "../analytics.css";
 import "./tasks.css";
 
-// A block of «Завдання» / «Прогрес»: the heading with its hint (?) and actions,
+// A block of “Task” / “Progress”: the heading with its hint (?) and actions,
 // then the content (a chart or a table) that keeps its own constant size.
 export function SectionBlock({title, subtitle, hint, actions, children}: {
     title: string; subtitle?: string; hint: string; actions?: ReactNode; children: ReactNode;

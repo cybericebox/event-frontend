@@ -57,7 +57,7 @@ tr.is-locked{background:var(--ib-soft)}
   .event-manage-table tbody tr:hover td.event-manage-table__sticky-end{background:linear-gradient(var(--ib-hover),var(--ib-hover)),var(--ib-surface)}
 }
 .event-manage-team-details{display:grid;gap:var(--ib-4)}
-/* Toolbar popovers: «Колонки» and «Фільтри». DS surface, 1px line, no shadow. */
+/* Toolbar popovers: “Columns” and “Filters”. DS surface, 1px line, no shadow. */
 .event-manage-table__tool{gap:var(--ib-2)}
 .event-manage-table__tool-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 var(--ib-1);border-radius:var(--ib-r-sm);background:var(--ib-soft);color:var(--ib-ink);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-manage-table__reset{margin-left:auto}
@@ -87,7 +87,7 @@ tr.is-locked{background:var(--ib-soft)}
 .event-manage-table__filter legend{margin-bottom:var(--ib-2);padding:0;color:var(--ib-dim);font-size:var(--ib-fs-12);font-weight:var(--ib-w-semibold)}
 .event-manage-table__filter .event-select{width:100%}
 .event-manage-table__filter-options{display:grid;gap:var(--ib-2)}
-/* Data freshness at the top right of the page header («Наживо», «Оновлено …»). */
+/* Data freshness at the top right of the page header (“Live”, “Updated …”). */
 
 /* Card rows (ManageTable cards): a block narrower than a phone screen shows every row as a card, each cell under
    its column name; the row actions take the full width at the bottom. Loading, empty and error stay centered. */

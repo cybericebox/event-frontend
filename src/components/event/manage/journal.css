@@ -1,4 +1,4 @@
-/* «Журнал спроб»: view switch above the table, period pickers and actions in
+/* “Attempts log”: view switch above the table, period pickers and actions in
    the ManageTable toolbar. */
 .event-journal__views{margin-bottom:var(--ib-4)}
 .event-journal__period{display:flex;align-items:center;gap:var(--ib-2);color:var(--ib-dim);font-size:var(--ib-fs-13);white-space:nowrap}

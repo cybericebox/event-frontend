@@ -21,8 +21,8 @@ export const numberOf = (value: string) => value.trim() === "" ? Number.NaN : Nu
 
 export type DynamicErrors = {max: string; min: string; floor: string};
 
-// Per-field errors of a dynamic profile ("" = fine): «Від» (max) above «До»
-// (min), «До» a whole number from 0, «Поріг, %» 1–100 (time decay has no
+// Per-field errors of a dynamic profile ("" = fine): “From” (max) above “To”
+// (min), “To” a whole number from 0, “Threshold, %” 1–100 (time decay has no
 // threshold).
 export function dynamicErrors(profile: DynamicProfile): DynamicErrors {
     const {Mode, MinPoints, MaxPoints, FloorAtPercent} = profile;
@@ -47,7 +47,7 @@ export function staticPointsValid(value: string, required: boolean): boolean {
     return Number.isInteger(points) && points > 0 && points <= MAX_TASK_POINTS;
 }
 
-// «Статичне · 100 балів» / «Динамічне · 500 → 100».
+// “Static · 100 points” / “Dynamic · 500 → 100”.
 export function scoringSummary(profile: DynamicProfile, staticPoints: number): string {
     if (profile.Mode !== 0) return t("manage.challenges.scoring.summaryDynamic", {max: profile.MaxPoints, min: profile.MinPoints});
     return t("manage.challenges.scoring.summaryStatic", {points: staticPoints});

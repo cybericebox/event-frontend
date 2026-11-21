@@ -11,7 +11,7 @@ import {LiveMiniature} from "./LiveMiniature";
 const previewBox = {width: 600, height: 300};
 
 // A palette item opened from the palette: the block large, with sample data,
-// what it shows and «Додати на екран». Dragging an item still adds it
+// what it shows and “Add to the screen”. Dragging an item still adds it
 // directly; this is the look before adding.
 export function LivePaletteDialog({item, layout, event, results, sample, canAdd, blocked, onClose, onAdd}: {
     item: LivePaletteItem | null; layout: LiveLayout | null; event: PublicEventInfo; results?: ManageResultsSnapshot; sample: boolean;

@@ -14,7 +14,7 @@ import {ErrorPage} from "./ErrorPage";
 // access. The API answers all of these alike, so the screen must not tell them apart, and it
 // must not redirect (a redirect would reveal that the event exists). It is the 404 error page in
 // page mode with no event logo, name, accent or favicon: the footer carries the platform crest.
-// The single way on is a secondary «Увійти» (ID sign-in, return_to = this page), offered only
+// The single way on is a secondary “Sign in” (ID sign-in, return_to = this page), offered only
 // while nobody is signed in: a signed-in account, or a failed session check that is not a 401, gets none.
 export function EventUnavailableScreen() {
     const user = useQuery({queryKey: ["event-current-user"], queryFn: getCurrentUser, retry: false, refetchOnWindowFocus: false});
