@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState} from "react";
 import DOMPurify from "isomorphic-dompurify";
 import {X} from "lucide-react";
-import type {InboxMessage} from "./inboxModel";
+import {safeHref, type InboxMessage} from "./inboxModel";
 import {NotificationMessageCard} from "./NotificationMessageCard";
 import {notificationAccent} from "./NotificationIcon";
 import {t} from "@/i18n/t";
@@ -19,15 +19,12 @@ export function popInBodyHTML(body: string): string {
     return keepBrand(DOMPurify.sanitize(body, {ALLOWED_TAGS: ["strong", "b", "em", "i", "br"], ALLOWED_ATTR: []}));
 }
 
-function safeHref(value: string): boolean {
-    const href = value.trim();
-    return (href.startsWith("/") && !href.startsWith("//")) || href.startsWith("#") || /^https?:\/\/|^mailto:/i.test(href);
-}
+const hrefIsSafe = (value: string) => safeHref(value) !== null;
 
 export function NotificationPopIn({message, onClose, onAction}: {
     message: InboxMessage; onClose: () => void; onAction: (href: string) => void;
 }) {
-    const action = message.Actions?.find(item => item.label && safeHref(item.href));
+    const action = message.Actions?.find(item => item.label && hrefIsSafe(item.href));
     // A pop-in with an action stays until it is used or closed: the reader needs time to decide.
     const duration = action ? 0 : popInDuration(message.AutoDismissMs);
     const [paused, setPaused] = useState(false);

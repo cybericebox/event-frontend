@@ -20,6 +20,15 @@ describe("EventRichTextView", () => {
         expect(html).not.toContain("href=");
         expect(html).not.toContain("bad");
     });
+    it("ignores variable names that are inherited object members", () => {
+        const paragraph = (varName: string) => ({type: "paragraph", children: [{type: "variable", varName}]});
+        const value = {root: {type: "root", children: ["constructor", "toString", "__proto__", "hasOwnProperty"].map(paragraph)}};
+        const html = renderToStaticMarkup(<EventRichTextView value={value} variables={{}} links={{}} openVariables={{}} />);
+        expect(html).not.toContain("native code");
+        expect(html).not.toContain("object Object");
+        expect(html).not.toContain("href=");
+        expect(html.match(/—/g)?.length).toBe(4);
+    });
     it("renders H4 through H6 with their own heading styles", () => {
         const children = ["h4", "h5", "h6"].map(tag => ({type: "heading", tag, children: [{type: "text", text: tag}]}));
         const html = renderToStaticMarkup(<EventRichTextView value={{root: {type: "root", children}}} />);

@@ -21,6 +21,7 @@
  */
 
 import { t } from "@/i18n/t"
+import { stripTags } from "@/utils/stripTags"
 
 export type VariableDef = { name: string; description?: string; example?: string }
 
@@ -133,9 +134,7 @@ export function htmlToRawSingleLine(
   html: string,
   opts?: { dotted?: boolean },
 ): string {
-  return stripPills(html, opts)
-    .replace(/<br\s*\/?>/gi, '')
-    .replace(/<[^>]+>/g, '')
+  return stripTags(stripPills(html, opts).replace(/<br\s*\/?>/gi, ''))
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')

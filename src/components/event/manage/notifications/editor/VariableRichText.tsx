@@ -13,9 +13,12 @@ import {
 import { HoverTooltip } from "./HoverTooltip";
 import { cn } from "@/utils/cn";
 import { t } from "@/i18n/t";
+import DOMPurify from "isomorphic-dompurify";
 import { Braces, ChevronDown } from "lucide-react";
 import { VariablePickerMenu } from "./VariablePickerMenu";
 import { historyDirection, placeCaretAtEnd, TemplateFieldHistory } from "./templateFieldHistory";
+
+const PILL_HTML = { ALLOWED_TAGS: ["span"], ALLOWED_ATTR: ["class", "data-var", "data-invalid", "tabindex", "contenteditable"] };
 
 interface Props {
   value: string;
@@ -61,8 +64,8 @@ export function VariableRichText({
     const varNames = variables.map((v) => v.name);
     const variableNames = varNames.join("\u0000");
     if (value === lastRawRef.current && variableNames === lastVariableNamesRef.current) return;
-    const html = rawToHtml(value, varNames, { dotted });
-    divRef.current.innerHTML = html;
+    // The markup is already escaped by rawToHtml; the sanitizer keeps it to pills and text whatever the value holds.
+    divRef.current.innerHTML = DOMPurify.sanitize(rawToHtml(value, varNames, { dotted }), PILL_HTML);
     if (value !== lastRawRef.current) historyRef.current.reset(value);
     lastRawRef.current = value;
     lastVariableNamesRef.current = variableNames;
